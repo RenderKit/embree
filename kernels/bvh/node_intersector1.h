@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh.h"
+#include "node_intersector.h"
 
 namespace embree
 {

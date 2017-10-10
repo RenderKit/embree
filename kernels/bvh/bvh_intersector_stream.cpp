@@ -42,11 +42,11 @@ namespace embree
                                                                                                        RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;
-      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
+      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
-      __aligned(64) Packet<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frustum<N,Nx,K,robust> frusta;
+      __aligned(64) TravRayKStream<K, robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) Frustum<N, Nx, K, robust> frusta;
 
       bool commonOctant = true;
       const size_t m_active = initPacketsAndFrusta<false>(inputPackets, numOctantRays, packet, frusta, commonOctant);
@@ -57,13 +57,13 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+          This->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
-      stack[0].mask    = m_active;
-      stack[0].parent  = 0;
-      stack[0].child   = bvh->root;
+      stack[0].mask   = m_active;
+      stack[0].parent = 0;
+      stack[0].child  = bvh->root;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +134,7 @@ namespace embree
           assert(m_isec & bits);
           bits &= ~m_isec;
 
-          Packet<K,robust> &p = packet[i];
+          TravRayKStream<K, robust>& p = packet[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           p.tfar = min(p.tfar, inputPackets[i]->tfar);
@@ -147,13 +147,13 @@ namespace embree
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
                                                                                                       RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
-      BVH* __restrict__ bvh = (BVH*) This->ptr;
-      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
+      BVH* __restrict__ bvh = (BVH*)This->ptr;
+      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
-      __aligned(64) Packet<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frustum<N,Nx,K,robust> frusta;
+      __aligned(64) TravRayKStream<K, robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) Frustum<N, Nx, K, robust> frusta;
 
       bool commonOctant = true;
       size_t m_active = initPacketsAndFrusta<true>(inputPackets, numOctantRays, packet, frusta, commonOctant);
@@ -166,13 +166,13 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+          This->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
-      stack[0].mask    = m_active;
-      stack[0].parent  = 0;
-      stack[0].child   = bvh->root;
+      stack[0].mask   = m_active;
+      stack[0].parent = 0;
+      stack[0].child  = bvh->root;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -200,7 +200,8 @@ namespace embree
           parent = cur;
 
           __aligned(64) size_t maskK[N];
-          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
+          for (size_t i = 0; i < N; i++)
+            maskK[i] = m_trav_active;
 
           vfloat<Nx> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, frusta, maskK, dist);
@@ -215,7 +216,7 @@ namespace embree
         {
           const AlignedNode* __restrict__ const node = parent.alignedNode();
           size_t b = 0xff;
-          for (size_t i=0;i<N;i++)
+          for (size_t i = 0; i < N; i++)
             if (node->child(i) == cur) { b = i; break; }
           assert(b < N);
           assert(cur == node->child(b));
@@ -239,7 +240,7 @@ namespace embree
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
-          Packet<K,robust> &p = packet[i];
+          TravRayKStream<K, robust>& p = packet[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "node_intersector_packet_stream.h"
 #include "bvh_traverser_stream.h"
 #include "frustum.h"
 
@@ -38,7 +39,8 @@ namespace embree
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
 
       template<bool occluded>
-      __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet<K,robust>* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
+      __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, size_t numOctantRays,
+                                                       TravRayKStream<K, robust>* packet, Frustum<N, Nx, K, robust>& frusta, bool& commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -71,7 +73,7 @@ namespace embree
           const Vec3vf<K>& org = inputPackets[i]->org;
           const Vec3vf<K>& dir = inputPackets[i]->dir;
 
-          new (&packet[i]) Packet<K,robust>(org,dir,packet_min_dist,packet_max_dist);
+          new (&packet[i]) TravRayKStream<K, robust>(org, dir, packet_min_dist, packet_max_dist);
 
           tmp_min_rdir = min(tmp_min_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(pos_inf)));
           tmp_max_rdir = max(tmp_max_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(neg_inf)));
@@ -114,11 +116,11 @@ namespace embree
       }
 
       
-      __forceinline static size_t intersectAlignedNodePacket(const Packet<K,robust>* const packet,
-                                                             const AlignedNode* __restrict__ const node,
-                                                             const size_t bid,
-                                                             const NearFarPreCompute& nf,
-                                                             const size_t m_active)
+      __forceinline static size_t intersectAlignedNodePacket(const TravRayKStream<K,robust>* packet,
+                                                             const AlignedNode* __restrict__ node,
+                                                             size_t bid,
+                                                             const NearFarPrecalculations& nf,
+                                                             size_t m_active)
       {
         assert(m_active);
         const size_t startPacketID = __bsf(m_active) / K;
@@ -126,24 +128,24 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].template intersect<N>(node,bid,nf);
+          const size_t m_hit = intersectNodeK<N>(node, bid, packet[i], nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
       }
       
-      __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
-                                                         Packet<K,robust>* const packet,
-                                                         const AlignedNode* __restrict__ const node,
-                                                         const Frustum<N,Nx,K,robust>& frusta,
-                                                         size_t* const maskK,
+      __forceinline static size_t traverseCoherentStream(size_t m_trav_active,
+                                                         TravRayKStream<K, robust>* packet,
+                                                         const AlignedNode* __restrict__ node,
+                                                         const Frustum<N, Nx, K, robust>& frusta,
+                                                         size_t* maskK,
                                                          vfloat<Nx>& dist)
       {
         size_t m_node_hit = frusta.intersect(node,dist);
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
-        size_t m_first_hit = packet[first_packetID].template intersectRay<N,Nx>(node,first_rayID,frusta.nf);
+        size_t m_first_hit = intersectNode1<N,Nx>(node, packet[first_packetID], first_rayID, frusta.nf);
 
         /* this make traversal independent of the ordering of rays */
         size_t m_node = m_node_hit ^ m_first_hit;
