@@ -25,7 +25,7 @@ namespace embree
   {
     /*! BVH single ray intersector. */
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
-      class BVHNIntersector1
+    class BVHNIntersector1
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector1::Precalculations Precalculations;

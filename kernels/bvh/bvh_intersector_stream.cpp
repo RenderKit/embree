@@ -135,9 +135,9 @@ namespace embree
           bits &= ~m_isec;
 
           Packet<K,robust> &p = packet[i];
-          vbool<K> m_valid = p.min_dist <= p.max_dist;
+          vbool<K> m_valid = p.tnear <= p.tfar;
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
+          p.tfar = min(p.tfar, inputPackets[i]->tfar);
         };
 
       } // traversal + intersection
@@ -240,7 +240,7 @@ namespace embree
           assert(m_isec & bits);
           bits &= ~m_isec;
           Packet<K,robust> &p = packet[i];
-          vbool<K> m_valid = p.min_dist <= p.max_dist;
+          vbool<K> m_valid = p.tnear <= p.tfar;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
