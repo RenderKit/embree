@@ -451,7 +451,7 @@ release-windows-x64-Release-ICC17-TBB-PACKAGE-MSI:
 
 release-macosx-x64-Release-ICC16-TBB-PACKAGE-ZIP:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2,SSE42,AVX,AVX2] tasking:TBB intensity:3 package:ZIP"
-  tags:   [mac, icc17]
+  tags:   [mac, icc16]
   only:   [web]
   artifacts:
     paths:
@@ -459,7 +459,7 @@ release-macosx-x64-Release-ICC16-TBB-PACKAGE-ZIP:
 
 release-macosx-x64-Release-ICC16-TBB-PACKAGE-PKG:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2,SSE42,AVX,AVX2] tasking:TBB intensity:3 package:PKG"
-  tags:   [mac, icc17]
+  tags:   [mac, icc16]
   only:   [web]
   artifacts:
     paths:
