@@ -31,7 +31,7 @@ namespace embree
 
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
-      device(device), 
+      device(device),
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
       flags(sflags), aflags(aflags), 
@@ -89,7 +89,7 @@ namespace embree
     createUserGeometryAccel();
     createUserGeometryMBAccel();
   }
-
+  
   void Scene::printStatistics()
   {
     /* calculate maximal number of time segments */
@@ -800,24 +800,25 @@ namespace embree
     
     /* fast path for unchanged scenes */
     if (!isModified()) {
-      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
+      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, useThreadPool);
       return;
     }
 
     /* report error if scene not ready */
     if (!ready()) {
-      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
+      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, useThreadPool);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
     }
 
     /* initiate build */
     try {
-      scheduler->spawn_root([&]() { commit_task(); this->scheduler = nullptr; }, 1, useThreadPool);
+      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, useThreadPool);
     }
     catch (...) {
-      this->scheduler = nullptr;
       accels.clear();
       updateInterface();
+      Lock<MutexSys> lock(schedulerMutex);
+      this->scheduler = nullptr;
       throw;
     }
   }

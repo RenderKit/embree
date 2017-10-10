@@ -39,7 +39,7 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   only:   [pushes]
   
 continuous-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB intensity:2" # addrsanitizer:ON
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:INT intensity:2 addrsanitizer:ON"
   tags:   [linux, clang]
   only:   [pushes]
 
@@ -60,7 +60,7 @@ continuous-fedora26-x64-RelWithDebInfo-GCC-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:TBB intensity:2"
   tags:   [docker]
   only:   [pushes]
-  
+
 continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB klocwork:ON intensity:2"
   tags:   [linux, icc17, klocwork]
@@ -137,7 +137,7 @@ nightly-macosx-x64-RelWithDebInfo-CLANG-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensity:3"
   tags:   [mac, clang]
   only:   [schedules]
-  
+
 nightly-macosx-x64-RelWithDebInfo-CLANG-AVX-INT:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX tasking:INT intensity:3"
   tags:   [mac, clang] # avx
@@ -164,18 +164,21 @@ nightly-macosx-x64-RelWithDebInfo-ICC16-AVX2-TBB:
 # CLANG compilation and testing of different ISAs
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-SSE2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:TBB intensity:3" # addrsanitizer:ON
-  tags:   [linux, clang]
+  image: embreedocker/fedora:25
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:INT intensity:3 addrsanitizer:ON"
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX-TBB-VALGRIND:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX tasking:TBB intensity:3 memcheck:ON"
-  tags:   [linux, clang] # avx
+  tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-STATIC:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB intensity:3 STATIC_LIB:ON"
-  tags:   [linux, clang] # avx2
+  tags:   [docker] # avx2
   only:   [schedules]
 
 nightly-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
@@ -192,36 +195,42 @@ nightly-linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
 # GCC compilation and testing of different ISAs
 
 nightly-linux-x64-RelWithDebInfo-GCC-SSE2-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:3"
-  tags:   [linux, gcc]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-GCC-AVX-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX tasking:TBB intensity:3"
-  tags:   [linux, gcc] # avx
+  tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:TBB intensity:3"
-  tags:   [linux, gcc] # avx2
+  tags:   [docker] # avx2
   only:   [schedules]
 
 
 # ICC compilation and testing of different ISAs
 
 nightly-linux-x64-RelWithDebInfo-ICC15-SSE2-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 isa:SSE2 tasking:TBB intensity:3"
-  tags:   [linux, icc15]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-ICC16-AVX-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:AVX tasking:TBB intensity:3"
-  tags:   [linux, icc16] # avx
+  tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB intensity:3"
-  tags:   [linux, icc17] # avx2
+  tags:   [docker] # avx2
   only:   [schedules]
 
 nightly-linux-knl-x64-RelWithDebInfo-ICC17-AVX512KNL-TBB:
@@ -294,109 +303,129 @@ nightly-fedora25-x64-RelWithDebInfo-GCC-AVX2-TBB:
 # Compilation test of disabled features
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-NO-ISPC:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB ISPC_SUPPORT:OFF intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-NO-TUTORIALS:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TUTORIALS:OFF intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-BACKFACECULLING:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB BACKFACE_CULLING:ON intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-IGNORE-INVALID-RAYS:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB IGNORE_INVALID_RAYS:ON intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-NO-INTERSECTION-FILTER:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB INTERSECTION_FILTER:OFF intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-RAYMASKS:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB RAY_MASK:ON intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-NO-PACKETS:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB RAY_PACKETS:OFF intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-STATCOUNTER:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB STAT_COUNTER:ON intensity:0"
-  tags:   [linux, clang]
+  tags:   [docker]
   only:   [schedules]
 
 
 # Compilation test of individual ISAs
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISAS-SSE2-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[SSE2] tasking:TBB intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISAS-SSE42-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[SSE42] tasking:TBB intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISAS-AVX-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[AVX] tasking:TBB intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISAS-AVX2-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[AVX2] tasking:TBB intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISAS-AVX512KNL-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[AVX512KNL] tasking:TBB intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISAS-AVX512SKX-TBB:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[AVX512SKX] tasking:TBB intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 
 # Compilation test of individual primitive types enabled
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-TRIS:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-QUADS:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:OFF QUADS:ON LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-LINES:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:ON QUADS:OFF LINES:ON HAIR:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-HAIR:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:ON QUADS:OFF LINES:OFF HAIR:ON SUBDIV:OFF USERGEOM:OFF intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-SUBDIV:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:ON USERGEOM:OFF intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-USERGEOM:
+  image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:ON intensity:0"
-  tags:   [linux, clang4]
+  tags:   [docker]
   only:   [schedules]
 
 
@@ -422,7 +451,7 @@ release-windows-x64-Release-ICC17-TBB-PACKAGE-MSI:
 
 release-macosx-x64-Release-ICC16-TBB-PACKAGE-ZIP:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2,SSE42,AVX,AVX2] tasking:TBB intensity:3 package:ZIP"
-  tags:   [mac, icc17]
+  tags:   [mac, icc16]
   only:   [web]
   artifacts:
     paths:
@@ -430,23 +459,25 @@ release-macosx-x64-Release-ICC16-TBB-PACKAGE-ZIP:
 
 release-macosx-x64-Release-ICC16-TBB-PACKAGE-PKG:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2,SSE42,AVX,AVX2] tasking:TBB intensity:3 package:PKG"
-  tags:   [mac, icc17]
+  tags:   [mac, icc16]
   only:   [web]
   artifacts:
     paths:
       - build/*.dmg
-  
+
 release-linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
+  image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensity:3 package:ZIP"
-  tags:   [centos6, icc17]
+  tags:   [docker]
   only:   [web]
   artifacts:
     paths:
       - build/*.rpm.tar.gz
 
 release-linux-x64-Release-ICC17-TBB-PACKAGE-RPM:
+  image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensity:3 package:RPM"
-  tags:   [centos6, icc17]
+  tags:   [docker]
   only:   [web]
   artifacts:
     paths:
