@@ -908,7 +908,7 @@ void assignShaders(ISPCGeometry* geometry)
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 
-    ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
+    ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterReject);
     //else
@@ -927,7 +927,7 @@ void assignShaders(ISPCGeometry* geometry)
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 
-    ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
+    ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterReject);
     //else
@@ -1040,7 +1040,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
     if (mesh->texcoords)
     {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
@@ -1087,7 +1087,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
     if (mesh->texcoords)
     {
       ISPCQuad* quad = &mesh->quads[ray.primID];
@@ -1156,7 +1156,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == SUBDIV_MESH)
   {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
     const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
@@ -1164,7 +1164,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == LINE_SEGMENTS)
   {
     ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
     const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
     const Vec3fa dz = normalize(cross(dy,dx));
@@ -1177,7 +1177,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == HAIR_SET)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
     Vec3fa p,dp; evalBezier(mesh,ray.primID,ray.u,p,dp);
     const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
@@ -1190,7 +1190,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == CURVES)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
     Vec3fa p,dp; evalBezier(mesh,ray.primID,ray.u,p,dp);
     if (length(dp) < 1E-6f) { // some hair are just points
       dg.Tx = Vec3fa(1,0,0);
@@ -1341,7 +1341,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
     {
-      int materialID = ((ISPCLineSegments*)geometry)->materialID;
+      int materialID = ((ISPCLineSegments*)geometry)->geom.materialID;
       ISPCMaterial* material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;
@@ -1350,7 +1350,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     }
     else if (geometry->type == HAIR_SET)
     {
-      int materialID = ((ISPCHairSet*)geometry)->materialID;
+      int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
       ISPCMaterial* material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;
@@ -1364,7 +1364,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
       }
       else*/
       {
-        int materialID = ((ISPCHairSet*)geometry)->materialID;
+        int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
         ISPCMaterial* material = g_ispc_scene->materials[materialID];
         switch (material->type) {
         case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;

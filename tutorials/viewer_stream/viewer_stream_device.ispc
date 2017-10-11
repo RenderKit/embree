@@ -121,32 +121,32 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   if (geometry->type == TRIANGLE_MESH)
   {
     uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == QUAD_MESH)
   {
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == SUBDIV_MESH)
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == LINE_SEGMENTS)
   {
     uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == HAIR_SET)
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == CURVES)
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == GROUP) {
     foreach_unique (geomID in ray.geomID) {

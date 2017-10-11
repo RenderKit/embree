@@ -144,7 +144,7 @@ namespace embree
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numTriangles = (unsigned) in->numPrimitives();
-    materialID = scene_in->materialID(in->material);
+    geom.materialID = scene_in->materialID(in->material);
   }
 
   ISPCTriangleMesh::~ISPCTriangleMesh () {
@@ -170,7 +170,7 @@ namespace embree
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numQuads = (unsigned) in->numPrimitives();
-    materialID = scene_in->materialID(in->material);
+    geom.materialID = scene_in->materialID(in->material);
   }
 
   ISPCQuadMesh::~ISPCQuadMesh () {
@@ -212,7 +212,7 @@ namespace embree
     numHoles = unsigned(in->holes.size());
     numNormals = unsigned(in->numNormals());
     numTexCoords = unsigned(in->texcoords.size());
-    materialID = scene_in->materialID(in->material);
+    geom.materialID = scene_in->materialID(in->material);
     size_t numEdges = in->position_indices.size();
     size_t numFaces = in->verticesPerFace.size();
     subdivlevel = new float[numEdges];
@@ -244,7 +244,7 @@ namespace embree
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numSegments = (unsigned) in->numPrimitives();
-    materialID = scene_in->materialID(in->material);
+    geom.materialID = scene_in->materialID(in->material);
   }
 
   ISPCLineSegments::~ISPCLineSegments () {
@@ -261,7 +261,7 @@ namespace embree
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numHairs = (unsigned)in->numPrimitives();
-    materialID = scene_in->materialID(in->material);
+    geom.materialID = scene_in->materialID(in->material);
     tessellation_rate = in->tessellation_rate;
   }
 
