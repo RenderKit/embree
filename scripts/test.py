@@ -70,17 +70,6 @@ def runConfig(config):
   if "klocwork" in config:
     conf.append("-D EMBREE_TESTING_KLOCWORK="+config["klocwork"])
 
-  if "tasking" in config:
-    tasking  = config["tasking"]
-    if tasking == "INT":
-      conf.append("-D EMBREE_TASKING_SYSTEM=INTERNAL")
-    elif tasking == "PPL":
-      conf.append("-D EMBREE_TASKING_SYSTEM=PPL")
-    elif tasking.startswith("TBB"):
-      conf.append("-D EMBREE_TASKING_SYSTEM=TBB")
-    else:
-      raise ValueError('unknown tasking system: ' + tasking)
-
   if "package" in config:
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
 
@@ -171,6 +160,22 @@ def runConfig(config):
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
+  ispc_compiler = config["ispc"]
+  if ispc_compiler.startswith("ispc"):
+    ispc_version = ispc_compiler[4:]
+    if ispc_version != "":
+      if OS == "linux":
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"/ispc")
+      elif OS == "macosx":
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
+      elif OS == "windows":
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\ispc.exe")
+      else:
+        sys.stderr.write("unknown operating system "+OS)
+        sys.exit(1)
+  else:
+    raise ValueError('unknown ISPC compiler: ' + ispccompiler + '')
+    
   isa = config["isa"]
   if type(isa) == str:
     conf.append("-D EMBREE_MAX_ISA="+isa+"")
@@ -189,48 +194,49 @@ def runConfig(config):
     if "AVX512SKX" in isa: conf.append("-D EMBREE_ISA_AVX512SKX=ON")
     else                 : conf.append("-D EMBREE_ISA_AVX512SKX=OFF")
 
-  if OS == "linux":
-    conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
-  elif OS == "macosx":
-    conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
-  elif OS == "windows":
-    conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
-  else:
-    sys.stderr.write("unknown operating system "+OS)
-    sys.exit(1)
+  if "tasking" in config:
+    tasking  = config["tasking"]
+    if tasking == "INT":
+      conf.append("-D EMBREE_TASKING_SYSTEM=INTERNAL")
+    elif tasking == "PPL":
+      conf.append("-D EMBREE_TASKING_SYSTEM=PPL")
+    elif tasking.startswith("TBB"):
+      conf.append("-D EMBREE_TASKING_SYSTEM=TBB")
 
-  if tasking.startswith("TBB"):
-    if OS == "linux":
-      if tasking == "TBB2017":
-        conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
-      elif tasking == "TBB":
-        conf.append("-D EMBREE_TBB_ROOT=/usr")
-      else:
-        raise ValueError('unknown tasking system: ' + tasking + '')
+      if OS == "linux":
+        if tasking == "TBB2017":
+          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
+        elif tasking == "TBB":
+          conf.append("-D EMBREE_TBB_ROOT=/usr")
+        else:
+          raise ValueError('unknown tasking system: ' + tasking + '')
       
-    elif OS == "macosx":
-      if tasking == "TBB2017":
-        conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
-      elif tasking == "TBB":
-        conf.append("-D EMBREE_TBB_ROOT=/opt/local")
-      else:
-        raise ValueError('unknown tasking system: ' + tasking + '')
+      elif OS == "macosx":
+        if tasking == "TBB2017":
+          conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
+        elif tasking == "TBB":
+          conf.append("-D EMBREE_TBB_ROOT=/opt/local")
+        else:
+          raise ValueError('unknown tasking system: ' + tasking + '')
       
-    elif OS == "windows":
-      if tasking == "TBB2017": 
-        tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
-        conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
-      else:
-        raise ValueError('unknown tasking system: ' + tasking + '')
+      elif OS == "windows":
+        if tasking == "TBB2017": 
+          tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
+          conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
+        else:
+          raise ValueError('unknown tasking system: ' + tasking + '')
 
-      if platform == "x64":
-        env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
-      else:
-        env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
+        if platform == "x64":
+          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
+        else:
+          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
 
+      else:
+        sys.stderr.write("unknown operating system "+OS)
+        sys.exit(1)
+        
     else:
-      sys.stderr.write("unknown operating system "+OS)
-      sys.exit(1)
+      raise ValueError('unknown tasking system: ' + tasking)      
     
   if "ISPC_SUPPORT" in config:
     conf.append("-D EMBREE_ISPC_SUPPORT="+config["ISPC_SUPPORT"])
