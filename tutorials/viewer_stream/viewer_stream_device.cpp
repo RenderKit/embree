@@ -29,6 +29,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 
 extern "C" ISPCScene* g_ispc_scene;
+extern "C" int g_instancing_mode;
 
 /* scene data */
 RTCDevice g_device = nullptr;
@@ -39,6 +40,14 @@ RTCScene convertScene(ISPCScene* scene_in)
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+
+  /* commit individual objects in case of instancing */
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
+  {
+    for (unsigned int i=0; i<scene_in->numGeometries; i++) {
+      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+    }
+  }
   return scene_out;
 }
 
@@ -106,6 +115,100 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
 
   /* shade pixel */
   return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
+}
+
+
+void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
+{
+  if (geometry->type == TRIANGLE_MESH)
+  {
+    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+    materialID = mesh->materialID;
+  }
+  else if (geometry->type == QUAD_MESH)
+  {
+    ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
+    materialID = mesh->materialID;
+  }
+  else if (geometry->type == SUBDIV_MESH)
+  {
+    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
+    materialID = mesh->materialID;
+  }
+  else if (geometry->type == LINE_SEGMENTS)
+  {
+    ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
+    materialID = mesh->materialID;
+  }
+  else if (geometry->type == HAIR_SET)
+  {
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->materialID;
+  }
+  else if (geometry->type == CURVES)
+  {
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->materialID;
+  }
+  else if (geometry->type == GROUP) {
+    unsigned int geomID = ray.geomID; {
+      postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
+    }
+  }
+  else
+    assert(false);
+}
+
+AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
+{
+  if (instance->numTimeSteps == 1)
+    return AffineSpace3fa(instance->spaces[0]);
+
+   /* calculate time segment itime and fractional time ftime */
+  const int time_segments = instance->numTimeSteps-1;
+  const float time = gtime*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
+}
+
+inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+{
+  int materialID = 0;
+  unsigned int instID = ray.instID; {
+    unsigned int geomID = ray.geomID; {
+      ISPCGeometry* geometry = nullptr;
+      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+        ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+        geometry = g_ispc_scene->geometries[instance->geom.geomID];
+      } else {
+        geometry = g_ispc_scene->geometries[geomID];
+      }
+      postIntersectGeometry(ray,dg,geometry,materialID);
+    }
+  }
+
+  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  {
+    unsigned int instID = ray.instID;
+    {
+      /* get instance and geometry pointers */
+      ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+
+      /* convert normals */
+      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
+      dg.Ng = xfmVector(space,dg.Ng);
+      dg.Ns = xfmVector(space,dg.Ns);
+    }
+  }
+
+  return materialID;
+}
+
+inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
+  const Vec3fa Ng = _Ng;
+  return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
 /* renders a single screen tile */
@@ -181,7 +284,29 @@ void renderTileStandard(int taskIndex,
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
-      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+    {
+      Vec3fa Kd = Vec3fa(0.5f);
+      DifferentialGeometry dg;
+      dg.geomID = ray.geomID;
+      dg.primID = ray.primID;
+      dg.u = ray.u;
+      dg.v = ray.v;
+      dg.P  = ray.org+ray.tfar*ray.dir;
+      dg.Ng = ray.Ng;
+      dg.Ns = ray.Ng;
+      int materialID = postIntersect(ray,dg);
+      dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+      dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+      
+      /* shade */
+      if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+        ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
+        Kd = Vec3fa(material->Kd);
+      }
+      
+      color = Kd*dot(neg(ray.dir),dg.Ns);
+      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+    }
 #else
       color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
 #endif
