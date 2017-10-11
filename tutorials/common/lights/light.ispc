@@ -27,7 +27,7 @@ Light_EvalRes Light_eval(const uniform Light* uniform,
   return res;
 }
 
-export void Light_destroy(const Light* uniform light)
+export void Light_destroy(Light* uniform light)
 {
   delete light;
 }

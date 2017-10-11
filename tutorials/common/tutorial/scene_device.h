@@ -69,11 +69,12 @@ namespace embree
   struct ISPCGeometry
   {
 #if !defined(ISPC)
-    ISPCGeometry (ISPCType type) : type(type), scene(nullptr), geomID(-1) {}
+    ISPCGeometry (ISPCType type) : type(type), scene(nullptr), geomID(-1), materialID(-1) {}
 #endif
     ISPCType type;
     RTCScene scene;
     unsigned int geomID;
+    unsigned int materialID;
   };
 
 #if !defined(ISPC)
@@ -99,9 +100,7 @@ namespace embree
     
     unsigned int numTimeSteps;
     unsigned int numVertices;
-    unsigned int numTriangles;
-    
-    unsigned int materialID;
+    unsigned int numTriangles; 
   };
   
   struct ISPCQuadMesh
@@ -120,7 +119,6 @@ namespace embree
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numQuads;
-    unsigned int materialID;
   };
   
   struct ISPCSubdivMesh
@@ -164,7 +162,6 @@ namespace embree
     unsigned int numHoles;
     unsigned int numNormals;
     unsigned int numTexCoords;
-    unsigned int materialID;
   };
   
   struct ISPCLineSegments
@@ -181,7 +178,6 @@ namespace embree
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numSegments;
-    unsigned int materialID;
   };
   
   struct ISPCHairSet
@@ -198,7 +194,6 @@ namespace embree
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;
-    unsigned int materialID;
     unsigned int tessellation_rate;
   };
   
