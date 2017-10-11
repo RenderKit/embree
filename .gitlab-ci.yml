@@ -38,7 +38,7 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB2017:
   tags:   [mac, clang]
   only:   [pushes]
   
-continuous-linux-x64-RelWithDebInfo-CLANG5-AVX2-TBB2017:
+continuous-linux-x64-RelWithDebInfo-CLANG5-AVX2-INT:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5 isa:AVX2 tasking:INT intensity:2 addrsanitizer:ON"
   tags:   [linux, clang]
