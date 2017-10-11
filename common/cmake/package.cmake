@@ -222,10 +222,10 @@ ELSE()
     SET(CPACK_RPM_devel_PACKAGE_ARCHITECTURE noarch)
     SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
     SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
-    #SET(CPACK_RPM_CHANGELOG_FILE ${CMAKE_BINARY_DIR}/rpm_changelog.txt) # ChangeLog of the RPM
-    #STRING(TIMESTAMP CHANGELOG_DATE "%a %b %d %Y")
-    #SET(RPM_CHANGELOG "* ${CHANGELOG_DATE} Johannes Günther <johannes.guenther@intel.com> - ${EMBREE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}\n- First package")
-    #FILE(WRITE ${CPACK_RPM_CHANGELOG_FILE} ${RPM_CHANGELOG})
+    SET(CPACK_RPM_CHANGELOG_FILE ${CMAKE_BINARY_DIR}/rpm_changelog.txt) # ChangeLog of the RPM
+    STRING(TIMESTAMP CHANGELOG_DATE "%a %b %d %Y")
+    SET(RPM_CHANGELOG "* ${CHANGELOG_DATE} Johannes Günther <johannes.guenther@intel.com> - ${EMBREE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}\n- First package")
+    FILE(WRITE ${CPACK_RPM_CHANGELOG_FILE} ${RPM_CHANGELOG})
     SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
     SET(CPACK_RPM_DEFAULT_DIR_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE) # otherwise cmake directory has wrong 775 permissions
 
