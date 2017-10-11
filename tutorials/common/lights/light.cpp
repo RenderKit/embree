@@ -29,11 +29,11 @@ Light_EvalRes Light_eval(const Light* uniform,
   return res;
 }
 
-extern "C" void Light_destroy(const Light* light)
+extern "C" void Light_destroy(Light* light)
 {
-  alignedFree((void*)light);
+  alignedFree(light);
 }
-    
+
 extern "C" void dummy() {} // just to avoid linker warning under MacOSX
 
 } // namespace embree
