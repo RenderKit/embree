@@ -48,8 +48,8 @@ ELSE (WIN32)
 ENDIF (WIN32)
 
 FIND_PACKAGE(OpenGL)
-IF (NOT OpenGL_FOUND)
-  MESSAGE(FATAL_ERROR "OpenGL not found! Please either install GLUT or disable EMBREE_TUTORIALS.")
+IF (NOT OPENGL_FOUND)
+  MESSAGE(FATAL_ERROR "OpenGL not found! Please either install OpenGL or disable EMBREE_TUTORIALS.")
 ENDIF()
 
 IF (EMBREE_TUTORIALS)
