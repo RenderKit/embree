@@ -72,9 +72,14 @@ def runConfig(config):
 
   if "tasking" in config:
     tasking  = config["tasking"]
-    if tasking == "INT": tasking = "INTERNAL"
-    if tasking == "PPL": tasking = "PPL"
-    conf.append("-D EMBREE_TASKING_SYSTEM="+tasking+"")
+    if tasking == "INT":
+      conf.append("-D EMBREE_TASKING_SYSTEM=INTERNAL")
+    elif tasking == "PPL":
+      conf.append("-D EMBREE_TASKING_SYSTEM=PPL")
+    elif tasking.startswith("TBB"):
+      conf.append("-D EMBREE_TASKING_SYSTEM=TBB")
+    else:
+      raise ValueError('unknown tasking system: ' + tasking)
 
   if "package" in config:
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
