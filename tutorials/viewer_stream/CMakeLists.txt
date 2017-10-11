@@ -22,7 +22,7 @@ IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(viewer_stream_incoherent viewer viewer_stream --incoherent)
   ADD_EMBREE_MODELS_TEST(viewer_stream_quad_coherent viewer viewer_stream -convert-triangles-to-quads)
   ADD_EMBREE_MODELS_TEST(viewer_stream_quad_incoherent viewer viewer_stream -convert-triangles-to-quads --incoherent)
-  ADD_EMBREE_SUBDIV_MODELS_TEST(viewer_stream viewer viewer_stream)
+#  ADD_EMBREE_SUBDIV_MODELS_TEST(viewer_stream viewer viewer_stream)
 ENDIF()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 2)
