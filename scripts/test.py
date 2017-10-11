@@ -198,7 +198,7 @@ def runConfig(config):
     if OS == "linux":
       if tasking == "TBB2017":
         conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
-      else if tasking == "TBB":
+      elif tasking == "TBB":
         conf.append("-D EMBREE_TBB_ROOT=/usr")
       else:
         raise ValueError('unknown tasking system: ' + tasking + '')
@@ -206,7 +206,7 @@ def runConfig(config):
     elif OS == "macosx":
       if tasking == "TBB2017":
         conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
-      else if tasking == "TBB":
+      elif tasking == "TBB":
         conf.append("-D EMBREE_TBB_ROOT=/opt/local")
       else:
         raise ValueError('unknown tasking system: ' + tasking + '')
