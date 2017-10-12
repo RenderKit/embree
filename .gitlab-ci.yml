@@ -14,73 +14,79 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+continuous-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017-KLOCKWORK:
+  image: ospray-kw-centos7
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX2 tasking:TBB2017 klocwork:ON intensity:1"
+  tags:   [kw-scan-docker]
+  only:   [pushes]
+
 #####################################################################
 # Continuous Test
 ####################################################################
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.1-AVX2-TBB2017:
+.continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.1-AVX2-TBB2017:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 intensity:2"
   tags:   [win7, v120]
   only:   [pushes]
 
-continuous-windows-Win32-RelWithDebInfo-V140-ISPC1.9.1-AVX2-TBB2017:
+.continuous-windows-Win32-RelWithDebInfo-V140-ISPC1.9.1-AVX2-TBB2017:
   script: "scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 intensity:2"
   tags:   [win7, v140]
   only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.1-AVX2-TBB2017:
+.continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.1-AVX2-TBB2017:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 intensity:2"
   tags:   [win7, v141]
   only:   [pushes]
  
-continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.1-AVX2-TBB2017:
+.continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.1-AVX2-TBB2017:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 intensity:2"
   tags:   [mac, clang]
   only:   [pushes]
 
-continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512SKX-TBB2017:
+.continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512SKX-TBB2017:
   image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:2"
   tags:   [docker, skx]
   only:   [pushes]
 
-continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512SKX-TBB2017:
+.continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512SKX-TBB2017:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:2"
   tags:   [docker, skx]
   only:   [pushes]
 
-#continuous-linux-knl-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512KNL-TBB2017:
+#.continuous-linux-knl-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512KNL-TBB2017:
 #  image: embreedocker/fedora:26
 #  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:2"
 #  tags:   [docker-knl]
 #  only:   [pushes]
   
-continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.1-AVX2-INT:
+.continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.1-AVX2-INT:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5 ispc:ispc1.9.1 isa:AVX2 tasking:INT intensity:2" # addrsanitizer:ON
   tags:   [docker]
   only:   [pushes]
 
-continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-ISPC1.9.1-AVX2-TBB:
+.continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-ISPC1.9.1-AVX2-TBB:
   image: embreedocker/ubuntu:17.04
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.1 isa:AVX2 tasking:TBB intensity:2"
   tags:   [docker]
   only:   [pushes]
 
-continuous-centos7.4-x64-RelWithDebInfo-GCC-ISPC1.9.1-AVX2-TBB:
+.continuous-centos7.4-x64-RelWithDebInfo-GCC-ISPC1.9.1-AVX2-TBB:
   image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.1 isa:AVX2 tasking:TBB intensity:2"
   tags:   [docker]
   only:   [pushes]
 
-continuous-fedora26-x64-RelWithDebInfo-GCC-ISPC-AVX2-TBB:
+.continuous-fedora26-x64-RelWithDebInfo-GCC-ISPC-AVX2-TBB:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX2 tasking:TBB intensity:2"
   tags:   [docker]
   only:   [pushes]
 
-continuous-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017-KLOCKWORK:
+.continuous-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017-KLOCKWORK:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 klocwork:ON intensity:2"
   tags:   [linux, icc17, klocwork]
   only:   [pushes]
