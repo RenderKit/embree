@@ -35,6 +35,90 @@ extern "C" int g_instancing_mode;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
+#define MAX_EDGE_LEVEL 64.0f
+#define MIN_EDGE_LEVEL  4.0f
+#define LEVEL_FACTOR   64.0f
+
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+{
+  const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
+  const Vec3fa edge = v1-v0;
+  const Vec3fa P = 0.5f*(v1+v0);
+  const Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
+
+void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
+{
+  for (size_t f=startID; f<endID;f++) {
+    unsigned int e = mesh->face_offsets[f];
+    unsigned int N = mesh->verticesPerFace[f];
+    if (N == 4) /* fast path for quads */
+      for (size_t i=0; i<4; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+    else if (N == 3) /* fast path for triangles */
+      for (size_t i=0; i<3; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+    else /* fast path for general polygons */
+      for (size_t i=0; i<N; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
+  }
+}
+
+#if defined(ISPC)
+void updateSubMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+{
+  const size_t size = mesh->numFaces;
+  const size_t startID = ((taskIndex+0)*size)/taskCount;
+  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
+}
+void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* scene_in, const Vec3fa& cam_pos )
+{
+  ISPCGeometry* geometry = g_ispc_scene->geometries[taskIndex];
+  if (geometry->type != SUBDIV_MESH) return;
+  ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
+  unsigned int geomID = mesh->geom.geomID;
+  if (mesh->numFaces < 10000) {
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+  }
+}
+#endif
+
+void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
+{
+  /* first update small meshes */
+#if defined(ISPC)
+  parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      updateMeshEdgeLevelBufferTask((int)i,threadIndex,scene_in,cam_pos);
+  }); 
+#endif
+
+  /* now update large meshes */
+  for (size_t g=0; g<scene_in->numGeometries; g++)
+  {
+    ISPCGeometry* geometry = g_ispc_scene->geometries[g];
+    if (geometry->type != SUBDIV_MESH) continue;
+    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
+#if defined(ISPC)
+    if (mesh->numFaces < 10000) continue;
+    parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      updateSubMeshEdgeLevelBufferTask((int)i,threadIndex,mesh,cam_pos);
+  }); 
+#else
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+#endif
+    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+  }
+}
+
 RTCScene convertScene(ISPCScene* scene_in)
 {
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -341,10 +425,6 @@ extern "C" void device_init (char* cfg)
   /* set error handler */
   rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
 
-  /* create scene */
-  g_scene = convertScene(g_ispc_scene);
-  rtcCommit (g_scene);
-
   /* set render tile function to use */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -357,6 +437,13 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
+  /* create scene */
+  if (!g_scene) {
+    g_scene = convertScene(g_ispc_scene);
+    updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+    rtcCommit (g_scene);
+  }
+  
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
