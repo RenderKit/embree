@@ -164,9 +164,9 @@ nightly-macosx-x64-RelWithDebInfo-ICC16-ISPC1.9.1-AVX2-TBB2017:
 
 # CLANG compilation and testing of different ISAs
 
-nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-SSE2-INT:
+nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-SSE2-TBB:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:SSE2 tasking:INT intensity:3 addrsanitizer:ON"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:SSE2 tasking:TBB2017 intensity:3"
   tags:   [docker]
   only:   [schedules]
 
