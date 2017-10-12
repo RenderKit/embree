@@ -67,10 +67,11 @@ continuous-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017-KLOCKWORK:
   tags:   [linux, icc17, klocwork]
   only:   [pushes]
 
-#continuous-linux-knl-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512KNL-TBB2017:
-#  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:2"
-#  tags:   [linux, knl, clang4]
-#  only:   [pushes]
+continuous-linux-knl-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512KNL-TBB2017:
+  image: embreedocker/fedora:26
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:2"
+  tags:   [docker-knl]
+  only:   [pushes]
 
 continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512SKX-TBB2017:
   image: embreedocker/fedora:26
@@ -185,13 +186,15 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-STATIC:
   only:   [schedules]
 
 nightly-linux-knl-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512KNL-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:3"
-  tags:   [knl, linux, clang4]
+  tags:   [docker-knl]
   only:   [schedules]
   
 nightly-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512SKX-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:3"
-  tags:   [skx, linux, clang4]
+  tags:   [docker, skx]
   only:   [schedules]
 
 
@@ -237,18 +240,21 @@ nightly-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017:
   only:   [schedules]
 
 nightly-linux-knl-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512KNL-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:3"
-  tags:   [knl, linux, icc17]
+  tags:   [docker-knl]
   only:   [schedules]
 
 nightly-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512SKX-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:3"
-  tags:   [skx, linux, icc17]
+  tags:   [docker, skx]
   only:   [schedules]
 
 nightly-linux-skx-x64-RelWithDebInfo-ICC18-ISPC1.9.1-AVX512SKX-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:3"
-  tags:   [skx, linux, icc18]
+  tags:   [docker, skx]
   only:   [schedules]
 
 
