@@ -381,7 +381,9 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(kernels)
-ADD_SUBDIRECTORY(tutorials)
+IF (EMBREE_TUTORIALS)
+  ADD_SUBDIRECTORY(tutorials)
+ENDIF()
 
 ##############################################################
 # Uninstall
