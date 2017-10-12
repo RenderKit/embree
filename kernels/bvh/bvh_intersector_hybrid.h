@@ -19,7 +19,7 @@
 #include "bvh.h"
 #include "../common/ray.h"
 #include "../common/stack_item.h"
-#include "frustum.h"
+#include "node_intersector_frustum.h"
 
 namespace embree
 {

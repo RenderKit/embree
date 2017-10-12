@@ -39,17 +39,19 @@ namespace embree
   {
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
-                                                                                                       RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
+                                                                                                       RayK<K>** inputPackets,
+                                                                                                       size_t numOctantRays,
+                                                                                                       IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;
-      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
+      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
-      __aligned(64) Packet<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frustum<N,Nx,K,robust> frusta;
+      __aligned(64) TravRayKStream<K, robust> packets[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
-      const size_t m_active = initPacketsAndFrusta<false>(inputPackets, numOctantRays, packet, frusta, commonOctant);
+      const size_t m_active = initPacketsAndFrustum<false>(inputPackets, numOctantRays, packets, frustum, commonOctant);
       if (unlikely(m_active == 0)) return;
 
       /* case of non-common origin */
@@ -57,13 +59,13 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+          This->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
-      stack[0].mask    = m_active;
-      stack[0].parent  = 0;
-      stack[0].child   = bvh->root;
+      stack[0].mask   = m_active;
+      stack[0].parent = 0;
+      stack[0].child  = bvh->root;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +94,7 @@ namespace embree
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
           vfloat<Nx> dist;
-          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, frusta, maskK, dist);
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packets, node, frustum, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
           BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
@@ -112,7 +114,7 @@ namespace embree
             }
           assert(b < N);
           assert(cur == node->child(b));
-          m_trav_active = intersectAlignedNodePacket(packet, node, b, frusta.nf, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packets, node, b, frustum.nf, m_trav_active);
         }
 
         /*! this is a leaf node */
@@ -134,7 +136,7 @@ namespace embree
           assert(m_isec & bits);
           bits &= ~m_isec;
 
-          Packet<K,robust> &p = packet[i];
+          TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           p.tfar = min(p.tfar, inputPackets[i]->tfar);
@@ -145,18 +147,20 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
-                                                                                                      RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
+                                                                                                      RayK<K>** inputPackets,
+                                                                                                      size_t numOctantRays,
+                                                                                                      IntersectContext* context)
     {
-      BVH* __restrict__ bvh = (BVH*) This->ptr;
-      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
+      BVH* __restrict__ bvh = (BVH*)This->ptr;
+      __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
-      __aligned(64) Packet<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frustum<N,Nx,K,robust> frusta;
+      __aligned(64) TravRayKStream<K, robust> packets[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
-      size_t m_active = initPacketsAndFrusta<true>(inputPackets, numOctantRays, packet, frusta, commonOctant);
+      size_t m_active = initPacketsAndFrustum<true>(inputPackets, numOctantRays, packets, frustum, commonOctant);
 
       /* valid rays */
       if (unlikely(m_active == 0)) return;
@@ -166,13 +170,13 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+          This->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
-      stack[0].mask    = m_active;
-      stack[0].parent  = 0;
-      stack[0].child   = bvh->root;
+      stack[0].mask   = m_active;
+      stack[0].parent = 0;
+      stack[0].child  = bvh->root;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -200,10 +204,11 @@ namespace embree
           parent = cur;
 
           __aligned(64) size_t maskK[N];
-          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
+          for (size_t i = 0; i < N; i++)
+            maskK[i] = m_trav_active;
 
           vfloat<Nx> dist;
-          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, frusta, maskK, dist);
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packets, node, frustum, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
           BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
@@ -215,11 +220,11 @@ namespace embree
         {
           const AlignedNode* __restrict__ const node = parent.alignedNode();
           size_t b = 0xff;
-          for (size_t i=0;i<N;i++)
+          for (size_t i = 0; i < N; i++)
             if (node->child(i) == cur) { b = i; break; }
           assert(b < N);
           assert(cur == node->child(b));
-          m_trav_active = intersectAlignedNodePacket(packet, node, b, frusta.nf, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packets, node, b, frustum.nf, m_trav_active);
         }
 
         /*! this is a leaf node */
@@ -239,7 +244,7 @@ namespace embree
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
-          Packet<K,robust> &p = packet[i];
+          TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);
@@ -270,7 +275,10 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K>
-    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::intersect(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::intersect(Accel::Intersectors* __restrict__ This,
+                                                                  RayK<K>** inputRays,
+                                                                  size_t numTotalRays,
+                                                                  IntersectContext* context)
     {
       /* fallback to packets */
       for (size_t i = 0; i < numTotalRays; i += K)
@@ -284,7 +292,10 @@ namespace embree
     }
 
     template<int N, int Nx, int K>
-    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::occluded(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::occluded(Accel::Intersectors* __restrict__ This,
+                                                                 RayK<K>** inputRays,
+                                                                 size_t numTotalRays,
+                                                                 IntersectContext* context)
     {
       /* fallback to packets */
       for (size_t i = 0; i < numTotalRays; i += K)

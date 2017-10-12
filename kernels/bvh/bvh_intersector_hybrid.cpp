@@ -385,7 +385,7 @@ namespace embree
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
         tray.tfar  = select(octant_valid, org_ray_tfar , vfloat<K>(neg_inf));
 
-        Frustum<N, Nx, K, robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar);
+        Frustum<robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
 
         StackItemT<NodeRef> stack[stackSizeSingle];  // stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;   // current stack pointer
@@ -413,18 +413,18 @@ namespace embree
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
             vfloat<Nx> fmin;
-            size_t m_frusta_node = frustum.intersect(node,fmin);
+            size_t m_frustum_node = intersectNode<N,Nx>(node, frustum, fmin);
 
-            if (unlikely(!m_frusta_node)) goto pop;
+            if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;
             curDist = pos_inf;
             
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)], 1, 1, 1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_frustum_node)], 1, 1, 1);
 #endif
             size_t num_child_hits = 0;
             do {
-              const size_t i = __bscf(m_frusta_node);
+              const size_t i = __bscf(m_frustum_node);
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
@@ -454,7 +454,7 @@ namespace embree
                   stackPtr++;
                 }                
               }
-            } while(m_frusta_node);
+            } while(m_frustum_node);
 
             if (unlikely(cur == BVH::emptyNode)) goto pop;
 
@@ -789,7 +789,7 @@ namespace embree
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
         tray.tfar  = select(octant_valid, org_ray_tfar,  vfloat<K>(neg_inf));
 
-        const Frustum<N, Nx, K, robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar);
+        const Frustum<robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
 
         StackItemMaskT<NodeRef> stack[stackSizeSingle];  // stack of nodes
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;   // current stack pointer
@@ -817,18 +817,18 @@ namespace embree
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
             vfloat<Nx> fmin;
-            size_t m_frusta_node = frustum.intersect(node,fmin);
+            size_t m_frustum_node = intersectNode<N,Nx>(node, frustum, fmin);
 
-            if (unlikely(!m_frusta_node)) goto pop;
+            if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;
             m_active = 0;
 
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)], 1, 1, 1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_frustum_node)], 1, 1, 1);
 #endif
             size_t num_child_hits = 0;
             do {
-              const size_t i = __bscf(m_frusta_node);
+              const size_t i = __bscf(m_frustum_node);
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
@@ -848,7 +848,7 @@ namespace embree
                 cur = child;
                 m_active = movemask(lhit);
               }
-            } while(m_frusta_node);
+            } while(m_frustum_node);
 
             if (unlikely(cur == BVH::emptyNode)) goto pop;
           }
