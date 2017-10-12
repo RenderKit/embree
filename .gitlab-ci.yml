@@ -73,13 +73,15 @@ continuous-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017-KLOCKWORK:
 #  only:   [pushes]
 
 continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512SKX-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:2"
-  tags:   [linux, skx, icc17]
+  tags:   [docker, skx]
   only:   [pushes]
 
 continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX512SKX-TBB2017:
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX512SKX tasking:TBB2017 intensity:2"
-  tags:   [linux, skx, clang4]
+  tags:   [docker, skx]
   only:   [pushes]
 
 #####################################################################
