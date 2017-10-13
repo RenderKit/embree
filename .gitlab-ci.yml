@@ -80,9 +80,9 @@
   tags:   [docker]
   only:   [pushes]
 
-continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.1-SSE2-TBB-KLOCKWORK:
+continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.1-AVX2-TBB-KLOCKWORK:
   image: embree-kw-centos7
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:SSE2 tasking:TBB klocwork:ON intensity:1"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.1 isa:AVX2 tasking:TBB klocwork:ON intensity:1"
   tags:   [kw-scan-docker]
   only:   [pushes]
 
