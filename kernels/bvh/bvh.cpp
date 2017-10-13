@@ -64,6 +64,7 @@ namespace embree
   template<int N>
   void BVHN<N>::layoutLargeNodes(size_t num)
   {
+#if defined(__X86_64__) // do not use tree rotations on 32 bit platforms, barrier bit in NodeRef will cause issues
     struct NodeArea 
     {
       __forceinline NodeArea() {}
@@ -99,6 +100,7 @@ namespace embree
       lst[i].node->setBarrier();
       
     root = layoutLargeNodesRecursion(root,alloc.getCachedAllocator());
+#endif
   }
   
   template<int N>
