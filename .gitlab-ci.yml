@@ -242,7 +242,7 @@ nightly-linux-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX2-TBB2017:
 
 nightly-linux-knl-x64-RelWithDebInfo-ICC17-ISPC1.9.1-AVX512KNL-TBB2017:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.1 isa:AVX512KNL tasking:TBB2017 intensity:2"
   tags:   [docker-knl]
   only:   [schedules]
 
