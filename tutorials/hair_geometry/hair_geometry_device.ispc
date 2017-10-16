@@ -277,7 +277,7 @@ unmasked void filterDispatch(uniform int* uniform valid,
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilter(uniform int* uniform valid,
+unmasked void occlusionFilter(uniform int* uniform valid_i,
                               void* uniform ptr,
                               const uniform RTCIntersectContext* uniform context,
                               struct RTCRayN* uniform _ray,
@@ -285,6 +285,9 @@ unmasked void occlusionFilter(uniform int* uniform valid,
                               uniform const uintptr_t N)
 {
   assert(N == programCount);
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+ 
   varying RTCRay2* uniform ray = (varying RTCRay2* uniform)_ray;
   /* make all surfaces opaque */
   varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);

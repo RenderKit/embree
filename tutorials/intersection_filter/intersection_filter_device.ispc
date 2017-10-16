@@ -204,11 +204,12 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
   if (context == NULL)
     return;
 
-  if (valid[programIndex] != -1) return;
-  
   /* fast path for SIMD width == N */
   if (programCount == N)
   {
+    /* ignore inactive rays */
+    if (valid[programIndex] != -1) return;
+  
     const uniform unsigned int rayID = 0;
     const float tfar   = RTCHitN_t(potentialHit,N,rayID);
     varying RTCRay2 *uniform ray2 = (varying RTCRay2* uniform)ray;
@@ -296,11 +297,12 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
   if (context == NULL)
     return;
 
-  if (valid[programIndex] != -1) return;
-
   /* fast path for SIMD width == N */
   if (programCount == N)
   {
+    /* ignore inactive rays */
+    if (valid[programIndex] != -1) return;
+  
     const uniform unsigned int rayID = 0;
     const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
     const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);

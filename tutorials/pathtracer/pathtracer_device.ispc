@@ -1297,7 +1297,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-unmasked void intersectionFilterReject(uniform int* uniform valid,
+unmasked void intersectionFilterReject(uniform int* uniform valid_i,
                                        void* uniform ptr,
                                        const uniform RTCIntersectContext* uniform context,
                                        struct RTCRayN* uniform _ray,
@@ -1305,9 +1305,11 @@ unmasked void intersectionFilterReject(uniform int* uniform valid,
                                        uniform const uintptr_t N) 
 {
   assert(N == programCount);
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
 }
 
-unmasked void intersectionFilterOBJ(uniform int* uniform valid,
+unmasked void intersectionFilterOBJ(uniform int* uniform valid_i,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     struct RTCRayN* uniform _ray,
@@ -1315,6 +1317,9 @@ unmasked void intersectionFilterOBJ(uniform int* uniform valid,
                                     uniform const uintptr_t N) 
 {
   assert(N == programCount);
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+  
   const uniform size_t rayID = 0;
   varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
 
@@ -1354,7 +1359,7 @@ unmasked void intersectionFilterOBJ(uniform int* uniform valid,
   }
 }
 
-unmasked void occlusionFilterOpaque(uniform int* uniform valid,
+unmasked void occlusionFilterOpaque(uniform int* uniform valid_i,
                            void* uniform ptr,
                            const uniform RTCIntersectContext* uniform context,
                            struct RTCRayN* uniform _ray,
@@ -1362,11 +1367,15 @@ unmasked void occlusionFilterOpaque(uniform int* uniform valid,
                            uniform const uintptr_t N)  
 {
   assert(N == programCount);
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+   
   varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
   ray->transparency = make_Vec3f(0.0f);
+  ray->geomID = 0;
 }
 
-unmasked void occlusionFilterOBJ(uniform int* uniform valid,
+unmasked void occlusionFilterOBJ(uniform int* uniform valid_i,
                         void* uniform ptr,
                         const uniform RTCIntersectContext* uniform context,
                         struct RTCRayN* uniform _ray,
@@ -1374,6 +1383,9 @@ unmasked void occlusionFilterOBJ(uniform int* uniform valid,
                         uniform const uintptr_t N) 
 {
   assert(N == programCount);
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+  
   const uniform size_t rayID = 0;
   varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
 
@@ -1405,13 +1417,13 @@ unmasked void occlusionFilterOBJ(uniform int* uniform valid,
 
   ray->transparency = ray->transparency * brdf.Kt;
   if (max(max(ray->transparency.x,ray->transparency.y),ray->transparency.z) > 0.0f)
-    valid[programIndex] = 0;
+    valid_i[programIndex] = 0;
   else
     ray->geomID = 0;
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterHair(uniform int* uniform valid,
+unmasked void occlusionFilterHair(uniform int* uniform valid_i,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform _ray,
@@ -1419,6 +1431,9 @@ unmasked void occlusionFilterHair(uniform int* uniform valid,
                                   uniform const uintptr_t N) 
 {
   assert(N == programCount);
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+  
   const uniform size_t rayID = 0;
   varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
   
@@ -1465,7 +1480,7 @@ unmasked void occlusionFilterHair(uniform int* uniform valid,
   Kt = Kt * ray->transparency;
   ray->transparency = Kt;
   if (max(max(ray->transparency.x,ray->transparency.y),ray->transparency.z) > 0.0f)
-    valid[programIndex] = 0;
+    valid_i[programIndex] = 0;
   else
     ray->geomID = 0;
 }
@@ -1513,6 +1528,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
       break;
     }
+
     Vec3f Ns = normalize(ray.Ng);
 
     if (g_use_smooth_normals)
