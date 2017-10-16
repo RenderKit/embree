@@ -314,7 +314,7 @@ namespace embree
     template<typename Index, typename Closure>
     static void spawn(const Index begin, const Index end, const Index blockSize, const Closure& closure)
     {
-      spawn(end-begin, [=,&closure]()
+      spawn(end-begin, [=]()
         {
 	  if (end-begin <= blockSize) {
 	    return closure(range<Index>(begin,end));

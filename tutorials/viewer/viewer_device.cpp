@@ -160,32 +160,32 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == SUBDIV_MESH)
   {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == LINE_SEGMENTS)
   {
     ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == HAIR_SET)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == CURVES)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->materialID;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == GROUP) {
     unsigned int geomID = ray.geomID; {

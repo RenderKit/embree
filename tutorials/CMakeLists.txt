@@ -14,6 +14,44 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+IF (WIN32)
+
+  # detect and select Win32 or x64
+  IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    SET(ARCH x64)
+  ELSE()
+    SET(ARCH Win32)
+  ENDIF()
+
+  # detect Visual Studio version
+  IF (MSVC12)
+    SET(VCVER vc12)
+  ELSE()
+    SET(VCVER vc14)
+  ENDIF()
+
+  FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS common/freeglut/include)
+  FIND_LIBRARY(GLUT_glut_LIBRARY freeglut common/freeglut/${ARCH}/${VCVER})
+  SET(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+  MARK_AS_ADVANCED(
+    GLUT_INCLUDE_DIR
+    GLUT_glut_LIBRARY
+  )
+
+ELSE (WIN32)
+  
+  FIND_PACKAGE(GLUT)
+  IF (NOT GLUT_FOUND)
+    MESSAGE(FATAL_ERROR "GLUT not found! Please either install GLUT or disable EMBREE_TUTORIALS.")
+  ENDIF()
+  
+ENDIF (WIN32)
+
+FIND_PACKAGE(OpenGL)
+IF (NOT OPENGL_FOUND)
+  MESSAGE(FATAL_ERROR "OpenGL not found! Please either install OpenGL or disable EMBREE_TUTORIALS.")
+ENDIF()
+
 ADD_SUBDIRECTORY(common)
 
 ADD_SUBDIRECTORY(verify)
@@ -37,7 +75,8 @@ ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(buildbench)
 
 IF (EMBREE_RAY_PACKETS)
-ADD_SUBDIRECTORY(viewer_stream)
-ADD_SUBDIRECTORY(viewer_anim)
+  ADD_SUBDIRECTORY(viewer_stream)
+  ADD_SUBDIRECTORY(viewer_anim)
 ENDIF()
+
 

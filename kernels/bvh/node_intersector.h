@@ -14,26 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "light.h"
+#pragma once
 
-namespace embree {
+#include "bvh.h"
 
-Light_EvalRes Light_eval(const Light* uniform,
-                         const DifferentialGeometry&,
-                         const Vec3fa&)
+namespace embree
 {
-  Light_EvalRes res;
-  res.value = Vec3fa(0.f);
-  res.dist = inf;
-  res.pdf = 0.f;
-  return res;
+  namespace isa
+  {
+    struct NearFarPrecalculations
+    {
+      size_t nearX, nearY, nearZ;
+      size_t farX, farY, farZ;
+
+      __forceinline NearFarPrecalculations() {}
+
+      __forceinline NearFarPrecalculations(const Vec3fa& dir, size_t N)
+      {
+        const size_t size = sizeof(float)*N;
+        nearX = (dir.x < 0.0f) ? 1*size : 0*size;
+        nearY = (dir.y < 0.0f) ? 3*size : 2*size;
+        nearZ = (dir.z < 0.0f) ? 5*size : 4*size;
+        farX  = nearX ^ size;
+        farY  = nearY ^ size;
+        farZ  = nearZ ^ size;
+      }
+    };
+  }
 }
-
-extern "C" void Light_destroy(Light* light)
-{
-  alignedFree(light);
-}
-
-extern "C" void dummy() {} // just to avoid linker warning under MacOSX
-
-} // namespace embree

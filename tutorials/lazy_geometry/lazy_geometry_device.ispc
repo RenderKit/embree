@@ -43,6 +43,8 @@ struct LazyGeometry
   float radius;
 };
 
+uniform LazyGeometry* uniform g_objects[numSpheres];
+
 unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
 {
   const uniform LazyGeometry* uniform instance = (const uniform LazyGeometry* uniform) instance_i;
@@ -275,7 +277,7 @@ export void device_init (uniform int8* uniform cfg)
   createGroundPlane(g_scene);
   for (uniform int i=0; i<numSpheres; i++) {
     uniform float a = 2.0f*M_PI*(uniform float)i/(uniform float)numSpheres;
-    createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
+    g_objects[i] = createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
   }
   rtcCommit (g_scene);
 
@@ -395,6 +397,10 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  for (uniform int i=0; i<numSpheres; i++) {
+    if (g_objects[i]->object) rtcDeleteScene(g_objects[i]->object);
+    delete g_objects[i];
+  }
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }

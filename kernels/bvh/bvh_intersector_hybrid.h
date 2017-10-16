@@ -19,12 +19,15 @@
 #include "bvh.h"
 #include "../common/ray.h"
 #include "../common/stack_item.h"
-#include "frustum.h"
+#include "node_intersector_frustum.h"
 
 namespace embree
 {
   namespace isa 
   {
+    template<int K, bool robust>
+    struct TravRayK;
+
     /*! BVH hybrid packet intersector. Switches between packet and single ray traversal (optional). */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single = true>
     class BVHNIntersectorKHybrid
@@ -50,22 +53,22 @@ namespace embree
       0;
 
     private:
-      static void intersect1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-                             RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3vi<K>& nearXYZ, IntersectContext* context);
-      static bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-                            RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3vi<K>& nearXYZ, IntersectContext* context);
+      static void intersect1(const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
+                             RayK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
+      static bool occluded1(const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
+                            RayK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
 
     public:
       static void intersect(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
       static void occluded (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
-      static void intersect_coherent(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
-      static void occluded_coherent (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
+      static void intersectCoherent(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
+      static void occludedCoherent (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
     };
 
     /*! BVH packet intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
-      class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
+      class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, false> {};
   }
 }

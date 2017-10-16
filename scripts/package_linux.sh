@@ -8,6 +8,9 @@ function check_symbols
 {
   for sym in `nm $1 | grep $2_`
   do
+    if [ ${#sym} -le 1 ]; then
+        continue;
+    fi;
     version=(`echo $sym | sed 's/.*@@\(.*\)$/\1/g' | grep -E -o "[0-9]+"`)
     if [ ${#version[@]} -ne 0 ]; then
       if [ ${#version[@]} -eq 1 ]; then version[1]=0; fi

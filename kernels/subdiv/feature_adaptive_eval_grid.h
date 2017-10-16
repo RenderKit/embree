@@ -279,7 +279,7 @@ namespace embree
       
       const unsigned y0s = stitch(y0,fine_y,coarse_y);
       const unsigned y1s = stitch(y1,fine_y,coarse_y);
-      const unsigned M = y1s-y0s+1;
+      const unsigned M = y1s-y0s+1 + VSIZEX;
       
       dynamic_large_stack_array(float,px,M,64*sizeof(float));
       dynamic_large_stack_array(float,py,M,64*sizeof(float));
@@ -321,7 +321,7 @@ namespace embree
       
       const unsigned x0s = stitch(x0,fine_x,coarse_x);
       const unsigned x1s = stitch(x1,fine_x,coarse_x);
-      const unsigned M = x1s-x0s+1;
+      const unsigned M = x1s-x0s+1 + VSIZEX;
 
       dynamic_large_stack_array(float,px,M,32*sizeof(float));
       dynamic_large_stack_array(float,py,M,32*sizeof(float));

@@ -27,16 +27,101 @@
 #define SIMPLE_SHADING 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
+extern uniform int g_instancing_mode;
 
 /* scene data */
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
+
+#define MAX_EDGE_LEVEL 64.0f
+#define MIN_EDGE_LEVEL  4.0f
+#define LEVEL_FACTOR   64.0f
+
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
+{
+  const uniform Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const uniform Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
+  const uniform Vec3fa edge = v1-v0;
+  const uniform Vec3fa P = 0.5f*(v1+v0);
+  const uniform Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
+
+void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
+{
+  for (uniform size_t f=startID; f<endID;f++) {
+    uniform unsigned int e = mesh->face_offsets[f];
+    uniform unsigned int N = mesh->verticesPerFace[f];
+    if (N == 4) /* fast path for quads */
+      for (uniform size_t i=0; i<4; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+    else if (N == 3) /* fast path for triangles */
+      for (uniform size_t i=0; i<3; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+    else /* fast path for general polygons */
+      for (uniform size_t i=0; i<N; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
+  }
+}
+
+#if defined(ISPC)
+task void updateSubMeshEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
+{
+  const uniform size_t size = mesh->numFaces;
+  const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
+  const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
+  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
+}
+task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos )
+{
+  uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[taskIndex];
+  if (geometry->type != SUBDIV_MESH) return;
+  uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+  uniform unsigned int geomID = mesh->geom.geomID;
+  if (mesh->numFaces < 10000) {
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    rtcUpdateBuffer(rtcGetGeometry(g_scene,mesh->geom.geomID),RTC_LEVEL_BUFFER);
+  }
+}
+#endif
+
+void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
+{
+  /* first update small meshes */
+#if defined(ISPC)
+  launch[ scene_in->numGeometries ] updateMeshEdgeLevelBufferTask(scene_in,cam_pos); sync;
+#endif
+
+  /* now update large meshes */
+  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
+  {
+    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
+    if (geometry->type != SUBDIV_MESH) continue;
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+#if defined(ISPC)
+    if (mesh->numFaces < 10000) continue;
+    launch[ (mesh->numFaces+4095)/4096 ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;
+#else
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+#endif
+    rtcUpdateBuffer(rtcGetGeometry(g_scene,mesh->geom.geomID),RTC_LEVEL_BUFFER);
+  }
+}
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+
+  /* commit individual objects in case of instancing */
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
+  {
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
+      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+    }
+  }
   return scene_out;
 }
 
@@ -104,6 +189,100 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray, uniform RayStats& stats
 
   /* shade pixel */
   return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
+}
+
+
+void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
+{
+  if (geometry->type == TRIANGLE_MESH)
+  {
+    uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == QUAD_MESH)
+  {
+    uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == SUBDIV_MESH)
+  {
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == LINE_SEGMENTS)
+  {
+    uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == HAIR_SET)
+  {
+    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == CURVES)
+  {
+    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == GROUP) {
+    foreach_unique (geomID in ray.geomID) {
+      postIntersectGeometry(ray,dg,((uniform ISPCGroup*) geometry)->geometries[geomID],materialID);
+    }
+  }
+  else
+    assert(false);
+}
+
+AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
+{
+  if (instance->numTimeSteps == 1)
+    return make_AffineSpace3f(instance->spaces[0]);
+
+   /* calculate time segment itime and fractional time ftime */
+  const int time_segments = instance->numTimeSteps-1;
+  const float time = gtime*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  return (1.0f-ftime)*make_AffineSpace3f(instance->spaces[itime+0]) + ftime*make_AffineSpace3f(instance->spaces[itime+1]);
+}
+
+inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+{
+  int materialID = 0;
+  foreach_unique (instID in ray.instID) {
+    foreach_unique (geomID in ray.geomID) {
+      ISPCGeometry* uniform geometry = NULL;
+      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+        ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
+        geometry = g_ispc_scene->geometries[instance->geom.geomID];
+      } else {
+        geometry = g_ispc_scene->geometries[geomID];
+      }
+      postIntersectGeometry(ray,dg,geometry,materialID);
+    }
+  }
+
+  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  {
+    foreach_unique (instID in ray.instID)
+    {
+      /* get instance and geometry pointers */
+      ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
+
+      /* convert normals */
+      //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
+      AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
+      dg.Ng = xfmVector(space,dg.Ng);
+      dg.Ns = xfmVector(space,dg.Ns);
+    }
+  }
+
+  return materialID;
+}
+
+inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
+  const Vec3f Ng = _Ng;
+  return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
 /* renders a single screen tile */
@@ -179,7 +358,29 @@ void renderTileStandard(uniform int taskIndex,
     Vec3f color = make_Vec3f(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
-      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+    {
+      Vec3f Kd = make_Vec3f(0.5f);
+      DifferentialGeometry dg;
+      dg.geomID = ray.geomID;
+      dg.primID = ray.primID;
+      dg.u = ray.u;
+      dg.v = ray.v;
+      dg.P  = ray.org+ray.tfar*ray.dir;
+      dg.Ng = ray.Ng;
+      dg.Ns = ray.Ng;
+      int materialID = postIntersect(ray,dg);
+      dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+      dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+      
+      /* shade */
+      if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+        uniform ISPCOBJMaterial* material = (uniform ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
+        Kd = make_Vec3f(material->Kd);
+      }
+      
+      color = Kd*dot(neg(ray.dir),dg.Ns);
+      //color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+    }
 #else
       color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
 #endif
@@ -214,10 +415,6 @@ export void device_init (uniform int8* uniform cfg)
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
-  /* create scene */
-  g_scene = convertScene(g_ispc_scene);
-  rtcCommit (g_scene);
-
   /* set render tile function to use */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -230,6 +427,13 @@ export void device_render (uniform int* uniform pixels,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
+  /* create scene */
+  if (!g_scene) {
+    g_scene = convertScene(g_ispc_scene);
+    updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+    rtcCommit (g_scene);
+  }
+  
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;

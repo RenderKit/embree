@@ -10,7 +10,6 @@ import socket
 import subprocess
 
 g_cdash = ""
-g_docker = False
 g_config = {}
 g_mode = "Experimental"
 g_intensity = 2
@@ -47,41 +46,41 @@ else:
   print("unknown platform: "+ sys.platform);
   sys.exit(1)
 
-def string_of_isa(isa):
-  if type(isa) == str: return isa;
-  else: return "ISAS-" + ("-".join(isa))
-
 # runs all tests for specified host machine
 def runConfig(config):
 
   conf = []  # CMake configuration
   env = []  # shell environment
-  platform = config["platform"]
-  build    = config["build"]
-  compiler = config["compiler"]
-  isa      = config["isa"]
-  tasking  = config["tasking"]
-  if "memcheck" in config: memcheck = config["memcheck"]
-  else                   : memcheck = "OFF"
-  if "benchmark" in config: benchmark = config["benchmark"]
-  else                    : benchmark = "OFF"
-  if "sde" in config: sde = config["sde"]
-  else              : sde = "OFF"
+  
+  build = config["build"]
+  conf.append("-D CMAKE_BUILD_TYPE="+build+"")
+    
+  if "memcheck" in config:
+    conf.append("-D EMBREE_TESTING_MEMCHECK="+config["memcheck"]+"")
+
+  if "sde" in config:
+    conf.append("-D EMBREE_TESTING_SDE="+config["sde"]+"")
+
+  if "addrsanitizer" in config:
+    conf.append("-D EMBREE_ADDRESS_SANITIZER="+config["addrsanitizer"]+"")
+    
   if "intensity" in config:
     conf.append("-D EMBREE_TESTING_INTENSITY="+config["intensity"])
-  if tasking == "INT": tasking = "INTERNAL"
-  if tasking == "PPL": tasking = "PPL"
-  name = "gitlab-"+platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
+
+  if "klocwork" in config:
+    conf.append("-D EMBREE_TESTING_KLOCWORK="+config["klocwork"])
+
   if "package" in config:
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
-    if config["package"] == "ZIP": name = name + "-package-zip"
-    else                         : name = name + "-package-installer"
 
-  if "klocwork" in config: name = name + "-klocwork"
+  #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
+  #  env.append("module load cmake")
+
+  nas = "/NAS/packages/apps"
+
+  compiler = config["compiler"]
+  platform = config["platform"]
   ispc_ext = "-vs2013"
-  if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
-    env.append("module load cmake")
-  conf.append("-D CMAKE_BUILD_TYPE="+build+"")
   if OS == "windows":
     ext = ""
     if platform == "x64":
@@ -120,6 +119,27 @@ def runConfig(config):
       conf.append("-T \"LLVM-vs2013\"")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
+    
+  elif OS == "linux":
+    if (compiler == "ICC18"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2018.0/bin/icc")
+    elif (compiler == "ICC17"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2017.1/bin/icc")
+    elif (compiler == "ICC16"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2016.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2016.3/bin/icc")
+    elif (compiler == "ICC15"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2015.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2015.3/bin/icc")
+    elif (compiler == "GCC"):
+      conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
+    elif (compiler == "CLANG5"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v5.0.0/bin/clang++ -D CMAKE_C_COMPILER="+nas+"/clang/v5.0.0/bin/clang")
+    elif (compiler == "CLANG4"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v4.0.0/bin/clang++ -D CMAKE_C_COMPILER="+nas+"/clang/v4.0.0/bin/clang")
+    elif (compiler == "CLANG"):
+      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
+    else:
+      raise ValueError('unknown compiler: ' + compiler + '')
+    
   else:
     if (compiler == "ICC18"):
       conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
@@ -133,25 +153,30 @@ def runConfig(config):
     elif (compiler == "ICC15"):
       conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
       env.append("module load intel/2015")
-    elif (compiler == "ICC"):
-      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
-      env.append("module load intel")
     elif (compiler == "GCC"):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
-    elif (compiler == "CLANG4"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/4")
-    elif (compiler == "CLANG3.9"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/3.9")
-    elif (compiler == "CLANG3.8"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/3.8")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
+  ispc_compiler = config["ispc"]
+  if ispc_compiler.startswith("ispc"):
+    ispc_version = ispc_compiler[4:]
+    if ispc_version != "":
+      if OS == "linux":
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"/ispc")
+      elif OS == "macosx":
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
+      elif OS == "windows":
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\ispc.exe")
+      else:
+        sys.stderr.write("unknown operating system "+OS)
+        sys.exit(1)
+  else:
+    raise ValueError('unknown ISPC compiler: ' + ispccompiler + '')
+    
+  isa = config["isa"]
   if type(isa) == str:
     conf.append("-D EMBREE_MAX_ISA="+isa+"")
   else:
@@ -168,86 +193,81 @@ def runConfig(config):
     else                 : conf.append("-D EMBREE_ISA_AVX512KNL=OFF")
     if "AVX512SKX" in isa: conf.append("-D EMBREE_ISA_AVX512SKX=ON")
     else                 : conf.append("-D EMBREE_ISA_AVX512SKX=OFF")
-    
-  conf.append("-D EMBREE_TASKING_SYSTEM="+tasking+"")
-  conf.append("-D EMBREE_TESTING_MEMCHECK="+memcheck+"")
-  conf.append("-D EMBREE_TESTING_SDE="+sde+"")
 
-  ispc_enabled = True
-  if "ISPC_SUPPORT" in config:
-    conf.append("-D EMBREE_ISPC_SUPPORT="+config["ISPC_SUPPORT"])
-    if config["ISPC_SUPPORT"] == "OFF": name += "-noispc"
-    ispc_enabled = False
-  if "STATIC_LIB" in config:
-    conf.append("-D EMBREE_STATIC_LIB="+config["STATIC_LIB"])
-    if config["STATIC_LIB"] == "ON": name += "-static"
-  if "TUTORIALS" in config:
-    conf.append("-D EMBREE_TUTORIALS="+config["TUTORIALS"])
-    if config["TUTORIALS"] == "OFF": name += "-notutorials"
-  if "BACKFACE_CULLING" in config:
-    conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
-    if config["BACKFACE_CULLING"] == "ON": name += "-backfaceculling"
-  if "IGNORE_INVALID_RAYS" in config:
-    conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
-    if config["IGNORE_INVALID_RAYS"] == "ON": name += "-noinvalid"
-  if "INTERSECTION_FILTER" in config:
-    conf.append("-D EMBREE_INTERSECTION_FILTER="+config["INTERSECTION_FILTER"])
-    if config["INTERSECTION_FILTER"] == "OFF": name += "-nofilter"
-  if "RAY_MASK" in config:
-    conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
-    if config["RAY_MASK"] == "ON": name += "-raymask"
-  if "RAY_PACKETS" in config:
-    conf.append("-D EMBREE_RAY_PACKETS="+config["RAY_PACKETS"])
-    if config["RAY_PACKETS"] == "OFF": name += "-nopackets"
-  if "STAT_COUNTERS" in config:
-    conf.append("-D EMBREE_STAT_COUNTERS="+config["STAT_COUNTERS"])
-    if config["STAT_COUNTERS"] == "ON": name += "-stats"
-  if "TRIS" in config:
-    conf.append("-D EMBREE_GEOMETRY_TRIANGLES="+config["TRIS"])
-    if config["TRIS"] == "ON": name += "-tris"
-  if "QUADS" in config:
-    conf.append("-D EMBREE_GEOMETRY_QUADS="+config["QUADS"])
-    if config["QUADS"] == "ON": name += "-quads"
-  if "LINES" in config:
-    conf.append("-D EMBREE_GEOMETRY_LINES="+config["LINES"])
-    if config["LINES"] == "ON": name += "-lines"
-  if "HAIR" in config:
-    conf.append("-D EMBREE_GEOMETRY_HAIR="+config["HAIR"])
-    if config["HAIR"] == "ON": name += "-hair"
-  if "SUBDIV" in config:
-    conf.append("-D EMBREE_GEOMETRY_SUBDIV="+config["SUBDIV"])
-    if config["SUBDIV"] == "ON": name += "-subdiv"
-  if "USERGEOM" in config:
-    conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
-    if config["USERGEOM"] == "ON": name += "-usergeom"
+  if "tasking" in config:
+    tasking  = config["tasking"]
+    if tasking == "INT":
+      conf.append("-D EMBREE_TASKING_SYSTEM=INTERNAL")
+    elif tasking == "PPL":
+      conf.append("-D EMBREE_TASKING_SYSTEM=PPL")
+    elif tasking.startswith("TBB"):
+      conf.append("-D EMBREE_TASKING_SYSTEM=TBB")
 
-  if not g_docker:
-    if OS == "linux":
-      if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
-      if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
-    elif OS == "macosx":
-      if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
-      if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
-    elif OS == "windows":
-      if ispc_enabled:
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
-        #conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
-  
-      if tasking == "TBB": 
-        tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
-        #tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
-        conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
-  
+      if OS == "linux":
+        if tasking == "TBB2017":
+          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
+        elif tasking == "TBB":
+          conf.append("-D EMBREE_TBB_ROOT=/usr")
+        else:
+          raise ValueError('unknown tasking system: ' + tasking + '')
+      
+      elif OS == "macosx":
+        if tasking == "TBB2017":
+          conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
+        elif tasking == "TBB":
+          conf.append("-D EMBREE_TBB_ROOT=/opt/local")
+        else:
+          raise ValueError('unknown tasking system: ' + tasking + '')
+      
+      elif OS == "windows":
+        if tasking == "TBB2017": 
+          tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
+          conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
+        else:
+          raise ValueError('unknown tasking system: ' + tasking + '')
+
         if platform == "x64":
           env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
         else:
           env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
-    else:
-      sys.stderr.write("unknown operating system "+OS)
-      sys.exit(1)
 
-  if "klocwork" in config:
-    conf.append("-D EMBREE_TESTING_KLOCWORK="+config["klocwork"])
+      else:
+        sys.stderr.write("unknown operating system "+OS)
+        sys.exit(1)
+        
+    else:
+      raise ValueError('unknown tasking system: ' + tasking)      
+    
+  if "ISPC_SUPPORT" in config:
+    conf.append("-D EMBREE_ISPC_SUPPORT="+config["ISPC_SUPPORT"])
+  if "STATIC_LIB" in config:
+    conf.append("-D EMBREE_STATIC_LIB="+config["STATIC_LIB"])
+  if "TUTORIALS" in config:
+    conf.append("-D EMBREE_TUTORIALS="+config["TUTORIALS"])
+  if "BACKFACE_CULLING" in config:
+    conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
+  if "IGNORE_INVALID_RAYS" in config:
+    conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
+  if "INTERSECTION_FILTER" in config:
+    conf.append("-D EMBREE_INTERSECTION_FILTER="+config["INTERSECTION_FILTER"])
+  if "RAY_MASK" in config:
+    conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
+  if "RAY_PACKETS" in config:
+    conf.append("-D EMBREE_RAY_PACKETS="+config["RAY_PACKETS"])
+  if "STAT_COUNTERS" in config:
+    conf.append("-D EMBREE_STAT_COUNTERS="+config["STAT_COUNTERS"])
+  if "TRIS" in config:
+    conf.append("-D EMBREE_GEOMETRY_TRIANGLES="+config["TRIS"])
+  if "QUADS" in config:
+    conf.append("-D EMBREE_GEOMETRY_QUADS="+config["QUADS"])
+  if "LINES" in config:
+    conf.append("-D EMBREE_GEOMETRY_LINES="+config["LINES"])
+  if "HAIR" in config:
+    conf.append("-D EMBREE_GEOMETRY_HAIR="+config["HAIR"])
+  if "SUBDIV" in config:
+    conf.append("-D EMBREE_GEOMETRY_SUBDIV="+config["SUBDIV"])
+  if "USERGEOM" in config:
+    conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
@@ -303,12 +323,10 @@ def runConfig(config):
 
   ctest =  "ctest -VV -S scripts/test.cmake"
   if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
-  ctest += " -D TEST_NAME=\""+name+"\""
   ctest += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)
   ctest += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
   ctest += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
   if g_debugMode:
-    print(name)
     for e in env: print('    '+e)
     print('    '+ctest+'\n')
   else:
@@ -343,9 +361,6 @@ def parseCommandLine(argv):
     parseCommandLine(argv[2:len(argv)])
   elif len(argv)>=2 and argv[0] == "--mode":
     g_mode = argv[1]
-  elif len(argv)>=2 and argv[0] == "--docker":
-    g_docker = True
-    parseCommandLine(argv[1:len(argv)])
   elif len(argv)>=1 and argv[0] == "--debug":
     g_debugMode = True
     parseCommandLine(argv[1:len(argv)])

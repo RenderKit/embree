@@ -21,7 +21,7 @@ namespace embree {
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
-Vec3fa* face_colors = nullptr;
+Vec3fa face_colors[12];
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
@@ -118,7 +118,6 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
   }
 
   /* create face color array */
-  face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
   face_colors[0] = Vec3fa(1,0,0);
   face_colors[1] = Vec3fa(1,0,0);
   face_colors[2] = Vec3fa(0,1,0);
@@ -284,7 +283,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
 }
 
 /* adds an instanced triangle cube to the scene, rotate instance */
-unsigned int addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
+RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 12, 8, 1);
@@ -304,13 +303,14 @@ unsigned int addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos,
     AffineSpace3fa xfm = translation*rotation*scale;
     rtcSetTransform(inst,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
   }
-  unsigned int instID = rtcAttachGeometry(global_scene,inst);
+
+  rtcAttachGeometry(global_scene,inst);
   rtcReleaseGeometry(inst);
-  return instID;
+  return scene;
 }
 
 /* adds an instanced quad cube to the scene, rotate instance and geometry */
-unsigned int addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
+RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
   RTCGeometry geom = rtcNewQuadMesh (g_device, RTC_GEOMETRY_STATIC, 6, 8, num_time_steps);
@@ -344,9 +344,9 @@ unsigned int addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, uns
     rtcSetTransform(inst,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
   }
 
-  unsigned int instID = rtcAttachGeometry(global_scene,inst);
+  rtcAttachGeometry(global_scene,inst);
   rtcReleaseGeometry(inst);
-  return instID;
+  return scene;
 }
 
 // ======================================================================== //
@@ -509,6 +509,13 @@ unsigned int addGroundPlane (RTCScene scene)
   return geomID;
 }
 
+RTCScene scene0 = nullptr;
+RTCScene scene1 = nullptr;
+RTCScene scene2 = nullptr;
+RTCScene scene3 = nullptr;
+Sphere* sphere0 = nullptr;
+Sphere* sphere1 = nullptr;
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
@@ -547,14 +554,14 @@ extern "C" void device_init (char* cfg)
   addCurveOrHair (g_scene,Vec3fa(+5,1, 0),true,g_num_time_steps);
   addCurveOrHair (g_scene,Vec3fa(+5,5, 0),true,g_num_time_steps2);
 
-  addInstancedTriangleCube(g_scene,Vec3fa(-5,1,+5),g_num_time_steps);
-  addInstancedTriangleCube(g_scene,Vec3fa(-5,5,+5),g_num_time_steps2);
+  scene0 = addInstancedTriangleCube(g_scene,Vec3fa(-5,1,+5),g_num_time_steps);
+  scene1 = addInstancedTriangleCube(g_scene,Vec3fa(-5,5,+5),g_num_time_steps2);
 
-  addInstancedQuadCube    (g_scene,Vec3fa( 0,1,+5),g_num_time_steps);
-  addInstancedQuadCube    (g_scene,Vec3fa( 0,5,+5),g_num_time_steps2);
+  scene2 = addInstancedQuadCube    (g_scene,Vec3fa( 0,1,+5),g_num_time_steps);
+  scene3 = addInstancedQuadCube    (g_scene,Vec3fa( 0,5,+5),g_num_time_steps2);
 
-  addUserGeometrySphere   (g_scene,Vec3fa(+5,1,+5),1.0f,g_num_time_steps);
-  addUserGeometrySphere   (g_scene,Vec3fa(+5,5,+5),1.0f,g_num_time_steps2);
+  sphere0 = addUserGeometrySphere   (g_scene,Vec3fa(+5,1,+5),1.0f,g_num_time_steps);
+  sphere1 = addUserGeometrySphere   (g_scene,Vec3fa(+5,5,+5),1.0f,g_num_time_steps2);
 
   addGroundPlane(g_scene);
 
@@ -729,9 +736,14 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
+  alignedFree(sphere0); sphere0 = nullptr;
+  alignedFree(sphere1); sphere1 = nullptr;
+  rtcDeleteScene(scene0); scene0 = nullptr;
+  rtcDeleteScene(scene1); scene1 = nullptr;
+  rtcDeleteScene(scene2); scene2 = nullptr;
+  rtcDeleteScene(scene3); scene3 = nullptr;
   rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
-  alignedFree(face_colors); face_colors = nullptr;
   alignedFree(g_accu); g_accu = nullptr;
   g_accu_width = 0;
   g_accu_height = 0;

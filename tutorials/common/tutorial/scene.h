@@ -38,6 +38,9 @@ namespace embree
   /*! Flattened scene used inside tutorials */
   struct TutorialScene
   {
+    TutorialScene();
+    ~TutorialScene();
+    
     void add (Ref<SceneGraph::GroupNode> node);
     unsigned addGeometry(Ref<SceneGraph::Node> node);
     unsigned materialID(Ref<SceneGraph::MaterialNode> material);

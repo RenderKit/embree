@@ -20,6 +20,17 @@ namespace embree
 {
   extern "C" int g_instancing_mode;
 
+  TutorialScene::TutorialScene() {
+  }
+
+  TutorialScene::~TutorialScene()
+  {
+    /* delete all instanced sub-scenes */
+    for (RTCScene s : geomID_to_scene) {
+      if (s) rtcDeleteScene(s);
+    }
+  }
+  
   void TutorialScene::add(Ref<SceneGraph::GroupNode> group) 
   {
     for (auto& node : group->children) 
@@ -44,7 +55,7 @@ namespace embree
       else {
         addGeometry(node);
       }
-      geomID_to_scene.resize(geometries.size());
+      geomID_to_scene.resize(geometries.size(),nullptr);
       geomID_to_inst.resize(geometries.size());
     }
   }

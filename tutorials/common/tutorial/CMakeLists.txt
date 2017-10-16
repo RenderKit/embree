@@ -14,35 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (WIN32)
-
-  # detect and select Win32 or x64
-  IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(ARCH x64)
-  ELSE()
-    SET(ARCH Win32)
-  ENDIF()
-
-  # detect Visual Studio version
-  IF (MSVC12)
-    SET(VCVER vc12)
-  ELSE()
-    SET(VCVER vc14)
-  ENDIF()
-
-  FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS ../freeglut/include)
-  FIND_LIBRARY(GLUT_glut_LIBRARY freeglut ../freeglut/${ARCH}/${VCVER})
-  SET(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
-  MARK_AS_ADVANCED(
-    GLUT_INCLUDE_DIR
-    GLUT_glut_LIBRARY
-  )
-ELSE (WIN32)
-  FIND_PACKAGE(GLUT REQUIRED)
-ENDIF (WIN32)
-
-FIND_PACKAGE(OpenGL REQUIRED)
-
 INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 ADD_LIBRARY(tutorial STATIC tutorial.cpp application.cpp scene.cpp)
 TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
@@ -65,12 +36,12 @@ ADD_LIBRARY(noise STATIC noise.cpp)
 SET_PROPERTY(TARGET noise PROPERTY FOLDER tutorials/common)
 
 IF (EMBREE_ISPC_SUPPORT)
-  ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial lights_ispc tutorial_device embree)
-  SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
+  ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc scene_device.cpp)
+  TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial lights_ispc embree)
+  SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE CXX)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)
 
   ADD_ISPC_LIBRARY(noise_ispc STATIC noise.ispc)
-  SET_TARGET_PROPERTIES(noise_ispc PROPERTIES LINKER_LANGUAGE C)
+  SET_TARGET_PROPERTIES(noise_ispc PROPERTIES LINKER_LANGUAGE CXX)
   SET_PROPERTY(TARGET noise_ispc PROPERTY FOLDER tutorials/common)
 ENDIF()

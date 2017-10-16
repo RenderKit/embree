@@ -559,6 +559,9 @@ RTCScene g_scene  = nullptr;
 RTCScene g_scene0 = nullptr;
 RTCScene g_scene1 = nullptr;
 RTCScene g_scene2 = nullptr;
+Sphere* g_spheres = nullptr;
+Sphere* g_sphere0 = nullptr;
+Sphere* g_sphere1 = nullptr;
 
 Instance* g_instance[4] = { nullptr, nullptr, nullptr, nullptr };
 
@@ -583,11 +586,11 @@ extern "C" void device_init (char* cfg)
 
   /* create scene with 4 analytical spheres */
   g_scene0 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
-  Sphere* spheres = createAnalyticalSpheres(g_scene0,4);
-  spheres[0].p = Vec3fa( 0, 0,+1); spheres[0].r = 0.5f;
-  spheres[1].p = Vec3fa(+1, 0, 0); spheres[1].r = 0.5f;
-  spheres[2].p = Vec3fa( 0, 0,-1); spheres[2].r = 0.5f;
-  spheres[3].p = Vec3fa(-1, 0, 0); spheres[3].r = 0.5f;
+  g_spheres = createAnalyticalSpheres(g_scene0,4);
+  g_spheres[0].p = Vec3fa( 0, 0,+1); g_spheres[0].r = 0.5f;
+  g_spheres[1].p = Vec3fa(+1, 0, 0); g_spheres[1].r = 0.5f;
+  g_spheres[2].p = Vec3fa( 0, 0,-1); g_spheres[2].r = 0.5f;
+  g_spheres[3].p = Vec3fa(-1, 0, 0); g_spheres[3].r = 0.5f;
   rtcCommit(g_scene0);
 
   /* create scene with 4 triangulated spheres */
@@ -601,9 +604,9 @@ extern "C" void device_init (char* cfg)
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,+1),0.5f);
-  createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5f);
+  g_sphere0 = createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5f);
-  createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5f);
+  g_sphere1 = createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5f);
   rtcCommit(g_scene2);
 
   /* instantiate geometry */
@@ -947,6 +950,9 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene1); g_scene1 = nullptr;
   rtcDeleteScene (g_scene2); g_scene2 = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
+  alignedFree(g_spheres); g_spheres = nullptr;
+  alignedFree(g_sphere0); g_sphere0 = nullptr;
+  alignedFree(g_sphere1); g_sphere1 = nullptr;
 }
 
 } // namespace embree

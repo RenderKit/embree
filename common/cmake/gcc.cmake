@@ -26,6 +26,7 @@ IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
   SET(CMAKE_CXX_FLAGS "")
 ENDIF()
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_SSE2}") 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
 IF (NOT APPLE)

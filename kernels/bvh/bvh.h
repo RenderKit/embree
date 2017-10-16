@@ -43,7 +43,7 @@ namespace embree
     BVH_AN2_AN4D = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D,
     BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
     BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
-    BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D,
     BVH_AN1_UN1 = BVH_FLAG_ALIGNED_NODE | BVH_FLAG_UNALIGNED_NODE,
     BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_AN2_AN4D_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D | BVH_FLAG_UNALIGNED_NODE_MB,
@@ -277,10 +277,23 @@ namespace embree
       }
 
       /*! Sets the barrier bit. */
-      __forceinline void setBarrier() { assert(!isBarrier()); ptr |= barrier_mask; }
+      __forceinline void setBarrier() {
+#if defined(__X86_64__)
+        assert(!isBarrier());
+        ptr |= barrier_mask;
+#else
+        assert(false);
+#endif
+      }
 
       /*! Clears the barrier bit. */
-      __forceinline void clearBarrier() { ptr &= ~barrier_mask; }
+      __forceinline void clearBarrier() {
+#if defined(__X86_64__)
+        ptr &= ~barrier_mask;
+#else
+        assert(false);
+#endif
+      }
 
       /*! Checks if this is an barrier. A barrier tells the top level tree rotations how deep to enter the tree. */
       __forceinline bool isBarrier() const { return (ptr & barrier_mask) != 0; }
