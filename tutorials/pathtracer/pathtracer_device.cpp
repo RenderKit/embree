@@ -1044,7 +1044,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->geom.materialID;
     if (mesh->texcoords)
     {
-      ISPCTriangle* tri = &mesh->triangles[ray.primID];
+      ISPCTriangle* tri = &mesh->triangles[dg.primID];
       const Vec2f st0 = mesh->texcoords[tri->v0];
       const Vec2f st1 = mesh->texcoords[tri->v1];
       const Vec2f st2 = mesh->texcoords[tri->v2];
@@ -1057,7 +1057,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     {
       if (mesh->numTimeSteps == 1)
       {
-        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        ISPCTriangle* tri = &mesh->triangles[dg.primID];
         const Vec3fa n0 = Vec3fa(mesh->normals[0][tri->v0]);
         const Vec3fa n1 = Vec3fa(mesh->normals[0][tri->v1]);
         const Vec3fa n2 = Vec3fa(mesh->normals[0][tri->v2]);
@@ -1066,7 +1066,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
       }
       else
       {
-        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        ISPCTriangle* tri = &mesh->triangles[dg.primID];
         float f = mesh->numTimeSteps*ray.time;
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
@@ -1091,7 +1091,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->geom.materialID;
     if (mesh->texcoords)
     {
-      ISPCQuad* quad = &mesh->quads[ray.primID];
+      ISPCQuad* quad = &mesh->quads[dg.primID];
       const Vec2f st0 = mesh->texcoords[quad->v0];
       const Vec2f st1 = mesh->texcoords[quad->v1];
       const Vec2f st2 = mesh->texcoords[quad->v2];
@@ -1112,7 +1112,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     {
       if (mesh->numTimeSteps == 1)
       {
-        ISPCQuad* quad = &mesh->quads[ray.primID];
+        ISPCQuad* quad = &mesh->quads[dg.primID];
         const Vec3fa n0 = Vec3fa(mesh->normals[0][quad->v0]);
         const Vec3fa n1 = Vec3fa(mesh->normals[0][quad->v1]);
         const Vec3fa n2 = Vec3fa(mesh->normals[0][quad->v2]);
@@ -1127,7 +1127,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
       }
       else
       {
-        ISPCQuad* quad = &mesh->quads[ray.primID];
+        ISPCQuad* quad = &mesh->quads[dg.primID];
         float f = mesh->numTimeSteps*ray.time;
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
@@ -1158,7 +1158,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
     materialID = mesh->geom.materialID;
-    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
   }
@@ -1172,14 +1172,14 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.Tx = dx;
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;
-    int vtx = mesh->indices[ray.primID];
+    int vtx = mesh->indices[dg.primID];
     dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
   }
   else if (geometry->type == HAIR_SET)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->geom.materialID;
-    Vec3fa p,dp; evalBezier(mesh,ray.primID,ray.u,p,dp);
+    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp);
     const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
     const Vec3fa dz = normalize(cross(dy,dx));
@@ -1192,7 +1192,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->geom.materialID;
-    Vec3fa p,dp; evalBezier(mesh,ray.primID,ray.u,p,dp);
+    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp);
     if (length(dp) < 1E-6f) { // some hair are just points
       dg.Tx = Vec3fa(1,0,0);
       dg.Ty = Vec3fa(0,1,0);
@@ -1210,7 +1210,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
-    unsigned int geomID = ray.geomID; {
+    unsigned int geomID = dg.geomID; {
       postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
     }
   }
@@ -1239,8 +1239,8 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
 
   int materialID = 0;
-  unsigned int instID = ray.instID; {
-    unsigned int geomID = ray.geomID; {
+  unsigned int instID = dg.instID; {
+    unsigned int geomID = dg.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
         ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
@@ -1254,7 +1254,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    unsigned int instID = ray.instID;
+    unsigned int instID = dg.instID;
     {
       /* get instance and geometry pointers */
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
@@ -1279,10 +1279,12 @@ void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* con
   assert(N == 1);
   const size_t rayID = 0;
   RTCRay &ray = *(RTCRay*)_ray;
+  
   /* compute differential geometry */
   DifferentialGeometry dg;
   const float tfar = RTCHitN_t(potentialHit,N,rayID);
   Vec3fa Ng(RTCHitN_Ng_x(potentialHit,N,rayID),RTCHitN_Ng_y(potentialHit,N,rayID),RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
   dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
   dg.primID = RTCHitN_primID(potentialHit,N,rayID);
   dg.u = RTCHitN_u(potentialHit,N,rayID);
@@ -1304,6 +1306,7 @@ void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* con
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
+    ray.instID = dg.instID;
     ray.geomID = dg.geomID;
     ray.primID = dg.primID;
     ray.tfar = tfar;
@@ -1329,6 +1332,7 @@ void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* contex
   DifferentialGeometry dg;
   const float tfar = RTCHitN_t(potentialHit,N,rayID);
   Vec3fa Ng(RTCHitN_Ng_x(potentialHit,N,rayID),RTCHitN_Ng_y(potentialHit,N,rayID),RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
   dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
   dg.primID = RTCHitN_primID(potentialHit,N,rayID);
   dg.u = RTCHitN_u(potentialHit,N,rayID);
@@ -1465,6 +1469,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     }
 
     /* compute differential geometry */
+    dg.instID = ray.instID;
     dg.geomID = ray.geomID;
     dg.primID = ray.primID;
     dg.u = ray.u;

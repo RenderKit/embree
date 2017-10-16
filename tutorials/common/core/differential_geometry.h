@@ -22,6 +22,7 @@ namespace embree {
 
 struct DifferentialGeometry
 {
+  int instID;
   int geomID;
   int primID;
   float u,v;
