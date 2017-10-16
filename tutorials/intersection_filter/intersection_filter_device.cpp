@@ -187,8 +187,6 @@ void intersectionFilterN(int* valid,
                          const struct RTCHitN* potentialHit,
                          const size_t N)
 {
-  assert(N == 1);
-
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
