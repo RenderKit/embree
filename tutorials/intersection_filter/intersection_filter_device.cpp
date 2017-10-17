@@ -23,6 +23,8 @@ RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 Vec3fa* colors = nullptr;
 
+// FIXME: fast path for occlusionFilter
+
 /******************************************************************************************/
 /*                             Standard Mode                                              */
 /******************************************************************************************/
@@ -30,8 +32,10 @@ Vec3fa* colors = nullptr;
 #define HIT_LIST_LENGTH 16
 
 /* extended ray structure that includes total transparency along the ray */
-  struct RTCRay2 : public RTCRay
+struct RTCRay2
 {
+  RTCRay ray;
+
   // ray extensions
   float transparency; //!< accumulated transparency value
 
@@ -50,6 +54,7 @@ inline float transparencyFunction(Vec3fa& h)
   //return 0.5f;
 }
 
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
@@ -61,16 +66,16 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   
   /* initialize ray */
   RTCRay2 primary;
-  primary.org = Vec3fa(camera.xfm.p);
-  primary.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  primary.tnear = 0.0f;
-  primary.tfar = (float)(inf);
-  primary.geomID = RTC_INVALID_GEOMETRY_ID;
-  primary.primID = RTC_INVALID_GEOMETRY_ID;
-  primary.mask = 0; // needs to encode rayID 0 for filter
-  primary.time = 0;
+  primary.ray.org = Vec3fa(camera.xfm.p);
+  primary.ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  primary.ray.tnear = 0.0f;
+  primary.ray.tfar = (float)(inf);
+  primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
+  primary.ray.mask = 0; // needs to encode rayID for filter
+  primary.ray.time = 0;
   primary.transparency = 0.0f;
-  
+
   while (true)
   {
     context.userRayExt = &primary;
@@ -79,46 +84,45 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     RayStats_addRay(stats);
 
     /* shade pixels */
-    if (primary.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (primary.ray.geomID == RTC_INVALID_GEOMETRY_ID)
       break;
 
     float opacity = 1.0f-primary.transparency;
-    Vec3fa diffuse = colors[primary.primID];
+    Vec3fa diffuse = colors[primary.ray.primID];
     Vec3fa La = diffuse*0.5f;
     color = color + weight*opacity*La;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
     RTCRay2 shadow;
-    shadow.org = primary.org + primary.tfar*primary.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = (float)(inf);
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = 0; // needs to encode rayID 0 for filter
-    shadow.time = 0;
+    shadow.ray.org = primary.ray.org + primary.ray.tfar*primary.ray.dir;
+    shadow.ray.dir = neg(lightDir);
+    shadow.ray.tnear = 0.001f;
+    shadow.ray.tfar = (float)(inf);
+    shadow.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.ray.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.ray.mask = 0; // needs to encode rayID for filter
+    shadow.ray.time = 0;
     shadow.transparency = 1.0f;
     shadow.firstHit = 0;
     shadow.lastHit = 0;
     context.userRayExt = &shadow;
-
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,*((RTCRay*)&shadow));
     RayStats_addShadowRay(stats);
+
     /* add light contribution */
-    if (shadow.geomID) {
-      Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
+    if (shadow.ray.geomID) {
+      Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
       color = color + weight*opacity*Ll;
     }
 
     /* shoot transmission ray */
     weight *= primary.transparency;
-
-    primary.tnear = 1.001f*primary.tfar;
-    primary.tfar = (float)(inf);
-    primary.geomID = RTC_INVALID_GEOMETRY_ID;
-    primary.primID = RTC_INVALID_GEOMETRY_ID;
+    primary.ray.tnear = 1.001f*primary.ray.tfar;
+    primary.ray.tfar = (float)(inf);
+    primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
     primary.transparency = 0.0f;
   }
   return color;
@@ -181,41 +185,45 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stri
 
 /* intersection filter function */
 void intersectionFilterN(int* valid,
-                         void* ptr,
-                         const RTCIntersectContext* context,
-                         struct RTCRayN* ray,
-                         const struct RTCHitN* potentialHit,
-                         const size_t N)
+                                  void* ptr,
+                                  const RTCIntersectContext* context,
+                                  struct RTCRayN* ray,
+                                  const struct RTCHitN* potentialHit,
+                                  const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
 
-  /* fast path for single rays */
-  if (N == 1)
+  /* fast path for SIMD width == N */
+  if (1 == N)
   {
-    const size_t rayID = 0;
+    /* ignore inactive rays */
+    if (valid[0] != -1) return;
+  
+    const unsigned int rayID = 0;
     const float tfar   = RTCHitN_t(potentialHit,N,rayID);
-    RTCRay2& ray2 = *(RTCRay2*)ray;
-    Vec3fa h = ray2.org + ray2.dir*tfar;
+    RTCRay2 *ray2 = (RTCRay2*)ray;
+    Vec3fa h = ray2->ray.org + ray2->ray.dir*tfar;
     float T = transparencyFunction(h);
     if (T < 1.0f) 
     {
-      ray2.transparency = T;      
-      ray2.instID = RTCHitN_instID(potentialHit,N,rayID);
-      ray2.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-      ray2.primID = RTCHitN_primID(potentialHit,N,rayID);
-      ray2.u      = RTCHitN_u(potentialHit,N,rayID);
-      ray2.v      = RTCHitN_v(potentialHit,N,rayID);
-      ray2.tfar   = tfar;
-      ray2.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
-      ray2.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
-      ray2.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
+      ray2->transparency = T;      
+      ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
+      ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+      ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
+      ray2->ray.u      = RTCHitN_u(potentialHit,N,rayID);
+      ray2->ray.v      = RTCHitN_v(potentialHit,N,rayID);
+      ray2->ray.tfar   = tfar;
+      ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
+      ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
+      ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
     }
-    return;
-  }
+    else
+      valid[0] = 0;
 
-  /* FIXME: do we need the general path? */
+    return;    
+  }
 
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)
@@ -270,54 +278,56 @@ void intersectionFilterN(int* valid,
 
 /* occlusion filter function */
 void occlusionFilterN(int* valid,
-                      void* ptr,
-                      const RTCIntersectContext* context,
-                      struct RTCRayN* ray,
-                      const struct RTCHitN* potentialHit,
-                      const size_t N)
+                               void* ptr,
+                               const RTCIntersectContext* context,
+                               struct RTCRayN* ray,
+                               const struct RTCHitN* potentialHit,
+                               const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
 
-  /* fast path for single rays */
-  if (N == 1)
+  /* fast path for SIMD width == N */
+  if (1 == N)
   {
-    RTCRay2& ray2 = *(RTCRay2*)ray;
-    const size_t rayID = 0;
+    /* ignore inactive rays */
+    if (valid[0] != -1) return;
+  
+    const unsigned int rayID = 0;
     const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
     const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);
     const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+    RTCRay2 *ray2 = (RTCRay2*)ray;
 
-    /* The occlusion filter function may be called multiple times with
-     * the same hit. We remember the last N hits, and skip duplicates. */
-    for (size_t i=ray2.firstHit; i<ray2.lastHit; i++) {
-      unsigned int slot= i%HIT_LIST_LENGTH;
-      if (ray2.hit_geomIDs[slot] == geomID && ray2.hit_primIDs[slot] == primID) 
-      { valid[rayID] = 0;  return; }
+    for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
+      unsigned slot= i%HIT_LIST_LENGTH;
+      if (ray2->hit_geomIDs[slot] == geomID && ray2->hit_primIDs[slot] == primID) {
+        valid[0] = 0;
+        return;
+      }
     }
+
     /* store hit in hit list */
-    unsigned int slot = ray2.lastHit%HIT_LIST_LENGTH;
-    ray2.hit_geomIDs[slot] = geomID;
-    ray2.hit_primIDs[slot] = primID;
-    ray2.lastHit++;
-    if (ray2.lastHit - ray2.firstHit >= HIT_LIST_LENGTH)
-      ray2.firstHit++;
+    unsigned int slot = ray2->lastHit%HIT_LIST_LENGTH;
+    ray2->hit_geomIDs[slot] = geomID;
+    ray2->hit_primIDs[slot] = primID;
+    ray2->lastHit++;
+    if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
+      ray2->firstHit++;
+
+    Vec3fa h = ray2->ray.org + ray2->ray.dir*tfar;
 
     /* calculate and accumulate transparency */
-    Vec3fa h = ray2.org + ray2.dir*tfar;
     float T = transparencyFunction(h);
-    T *= ray2.transparency;
-    ray2.transparency = T;
+    T *= ray2->transparency;
+    ray2->transparency = T;
     if (T == 0.0f) 
-      ray2.geomID = 0;
+      ray2->ray.geomID = 0;
     else
-      valid[rayID] = 0;
-    return;
+      valid[0] = 0;
+    return;    
   }
-
-
-  /* FIXME: do we need the general path? */
 
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)
@@ -430,16 +440,16 @@ void renderTileStandardStream(int taskIndex,
 
     /* initialize ray */
     RTCRay2& primary = primary_stream[N];
-    primary.org = Vec3fa(camera.xfm.p);
-    primary.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
+    primary.ray.org = Vec3fa(camera.xfm.p);
+    primary.ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = 1; { // invalidates inactive rays
-      primary.tnear = mask ? 0.0f         : (float)(pos_inf);
-      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      primary.ray.tnear = mask ? 0.0f         : (float)(pos_inf);
+      primary.ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    primary.geomID = RTC_INVALID_GEOMETRY_ID;
-    primary.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.mask = 0xFFFF0000 + N*1 + 0;
-    primary.time = 0.0f;
+    primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
+    primary.ray.mask = 0xFFFF0000 + N*1 + 0;
+    primary.ray.time = 0.0f;
     primary.transparency = 0.0f;
     N++;
     RayStats_addRay(stats);
@@ -466,15 +476,15 @@ void renderTileStandardStream(int taskIndex,
       /* invalidate shadow rays by default */
       RTCRay2& shadow = shadow_stream[N];
       {
-        shadow.tnear = (float)(pos_inf);
-        shadow.tfar  = (float)(neg_inf);
+        shadow.ray.tnear = (float)(pos_inf);
+        shadow.ray.tfar  = (float)(neg_inf);
       }
 
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
 
       /* terminate rays that hit nothing */
-      if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID) {
+      if (primary_stream[N].ray.geomID == RTC_INVALID_GEOMETRY_ID) {
         valid_stream[N] = false;
         continue;
       }
@@ -482,21 +492,21 @@ void renderTileStandardStream(int taskIndex,
       /* update color */
       RTCRay2& primary = primary_stream[N];
       float opacity = 1.0f-primary.transparency;
-      Vec3fa diffuse = colors[primary.primID];
+      Vec3fa diffuse = colors[primary.ray.primID];
       Vec3fa La = diffuse*0.5f;
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
 
       /* initialize shadow ray */
-      shadow.org = primary.org + primary.tfar*primary.dir;
-      shadow.dir = neg(lightDir);
+      shadow.ray.org = primary.ray.org + primary.ray.tfar*primary.ray.dir;
+      shadow.ray.dir = neg(lightDir);
       bool mask = 1; {
-        shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
-        shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+        shadow.ray.tnear = mask ? 0.001f       : (float)(pos_inf);
+        shadow.ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
       }
-      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-      shadow.primID = RTC_INVALID_GEOMETRY_ID;
-      shadow.mask = 0xFFFF0000 + N*1 + 0;
-      shadow.time = 0;
+      shadow.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      shadow.ray.primID = RTC_INVALID_GEOMETRY_ID;
+      shadow.ray.mask = 0xFFFF0000 + N*1 + 0;
+      shadow.ray.time = 0;
       shadow.transparency = 1.0f;
       shadow.firstHit = 0;
       shadow.lastHit = 0;
@@ -521,10 +531,10 @@ void renderTileStandardStream(int taskIndex,
 
       /* invalidate rays by default */
       RTCRay2& primary = primary_stream[N];
-      float primary_tfar = primary.tfar;
+      float primary_tfar = primary.ray.tfar;
       {
-        primary.tnear = (float)(pos_inf);
-        primary.tfar  = (float)(neg_inf);
+        primary.ray.tnear = (float)(pos_inf);
+        primary.ray.tfar  = (float)(neg_inf);
       }
 
       /* ignore invalid rays */
@@ -533,21 +543,21 @@ void renderTileStandardStream(int taskIndex,
 
       /* add light contrinution */
       float opacity = 1.0f-primary.transparency;
-      Vec3fa diffuse = colors[primary.primID];
+      Vec3fa diffuse = colors[primary.ray.primID];
       RTCRay2& shadow = shadow_stream[N];
-      if (shadow.geomID) {
-        Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
+      if (shadow.ray.geomID) {
+        Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
         color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
       }
 
       /* initialize transmission ray */
       weight_stream[N] *= primary.transparency;
       bool mask = 1; {
-        primary.tnear = mask ? 1.001f*primary_tfar : (float)(pos_inf);
-        primary.tfar  = mask ? (float)(inf)        : (float)(neg_inf);
+        primary.ray.tnear = mask ? 1.001f*primary_tfar : (float)(pos_inf);
+        primary.ray.tfar  = mask ? (float)(inf)        : (float)(neg_inf);
       }
-      primary.geomID = RTC_INVALID_GEOMETRY_ID;
-      primary.primID = RTC_INVALID_GEOMETRY_ID;
+      primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
       primary.transparency = 0.0f;
       RayStats_addRay(stats);
     }
