@@ -695,7 +695,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API RTCGeometry rtcNewInstance2 (RTCDevice hdevice, RTCScene hsource, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewInstance (RTCDevice hdevice, RTCScene hsource, size_t numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     Scene* source = (Scene*) hsource;

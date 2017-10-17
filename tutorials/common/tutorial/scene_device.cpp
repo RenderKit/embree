@@ -513,14 +513,14 @@ namespace embree
     {
       RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
       if (instance->numTimeSteps == 1) {
-        RTCGeometry geom = rtcNewInstance2(device, scene_inst, 1);
+        RTCGeometry geom = rtcNewInstance(device, scene_inst, 1);
         rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);
         rtcReleaseGeometry(geom);
         return geomID;
       }
       else {
-        RTCGeometry geom = rtcNewInstance2(device, scene_inst, instance->numTimeSteps);
+        RTCGeometry geom = rtcNewInstance(device, scene_inst, instance->numTimeSteps);
         for (size_t t=0; t<instance->numTimeSteps; t++)
           rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);

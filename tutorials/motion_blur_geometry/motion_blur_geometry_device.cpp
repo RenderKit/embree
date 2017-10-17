@@ -293,7 +293,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
   rtcReleaseGeometry(geom);
   rtcCommit(scene);
 
-  RTCGeometry inst = rtcNewInstance2(g_device,scene,num_time_steps);
+  RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
   
   for (size_t t=0; t<num_time_steps; t++)
   {
@@ -333,7 +333,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
   rtcReleaseGeometry(geom);  
   rtcCommit(scene);
 
-  RTCGeometry inst = rtcNewInstance2(g_device,scene,num_time_steps);
+  RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
 
   for (size_t t=0; t<num_time_steps; t++)
   {

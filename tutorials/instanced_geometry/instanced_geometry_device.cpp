@@ -154,10 +154,10 @@ extern "C" void device_init (char* cfg)
   rtcCommit (g_scene1);
 
   /* instantiate geometry */
-  g_instance0 = rtcNewInstance2(g_device,g_scene1,1);
-  g_instance1 = rtcNewInstance2(g_device,g_scene1,1);
-  g_instance2 = rtcNewInstance2(g_device,g_scene1,1);
-  g_instance3 = rtcNewInstance2(g_device,g_scene1,1);
+  g_instance0 = rtcNewInstance(g_device,g_scene1,1);
+  g_instance1 = rtcNewInstance(g_device,g_scene1,1);
+  g_instance2 = rtcNewInstance(g_device,g_scene1,1);
+  g_instance3 = rtcNewInstance(g_device,g_scene1,1);
   rtcAttachGeometry(g_scene,g_instance0);
   rtcAttachGeometry(g_scene,g_instance1);
   rtcAttachGeometry(g_scene,g_instance2);

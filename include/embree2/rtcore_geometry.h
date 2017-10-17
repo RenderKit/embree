@@ -128,7 +128,7 @@ typedef struct __RTCGeometry {}* RTCGeometry;
   traversing the ray through the provided scene. If any geometry is
   hit, the instance ID (instID) member of the ray will get set to the
   geometry ID of the instance. */
-RTCORE_API RTCGeometry rtcNewInstance2 (RTCDevice device,
+RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
                                         RTCScene source,                  //!< the scene to instantiate
                                         size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
 
