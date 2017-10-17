@@ -242,14 +242,6 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
-/* extended ray structure that includes total transparency along the ray */
-  struct RTCRay2 : public RTCRay
-{
-  // ray extensions
-  RTCFilterFuncN filter;
-  Vec3fa transparency; //!< accumulated transparency value
-};
-
 bool enableFilterDispatch = false;
 
 /* filter dispatch function */
@@ -261,7 +253,7 @@ void filterDispatch(int* valid,
                     const size_t N)
 {
   assert(N == 1);
-  RTCRay2& ray = *(RTCRay2*) _ray;
+  RTCRay& ray = *(RTCRay*) _ray;
   if (!enableFilterDispatch) return;
   if (ray.filter) ray.filter(valid,ptr,context,_ray,potentialHit,N);
 }
@@ -275,7 +267,7 @@ void filterDispatch(int* valid,
                        const size_t N)
 {
   assert(N == 1);
-  RTCRay2& ray = *(RTCRay2*)_ray;
+  RTCRay& ray = *(RTCRay*)_ray;
   /* make all surfaces opaque */
   unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
@@ -294,7 +286,7 @@ void filterDispatch(int* valid,
     valid[0] = 0;
 }
 
-Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, RTCRay2& ray)
+Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, RTCRay& ray)
 {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -319,7 +311,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  RTCRay2 ray;
+  RTCRay ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -382,7 +374,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* sample directional light */
-    RTCRay2 shadow;
+    RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(Vec3fa(g_dirlight_direction));
     shadow.tnear = tnear_eps;

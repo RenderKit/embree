@@ -72,10 +72,11 @@
 
     // ray extensions
   public:
+    RTCFilterFuncN filter;
     embree::Vec3fa transparency;
   };
 
-  /*! Outputs ray to stream. */
+  /*! Outputs ray to stream. */ 
   inline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray) {
     return cout << "{ " << 
       "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear << ", far = " << ray.tfar << ", time = " << ray.time << ", " <<
