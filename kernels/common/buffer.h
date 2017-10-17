@@ -120,14 +120,14 @@ namespace embree
 
     /*! Buffer construction */
     APIBuffer () 
-      : device(nullptr), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) {}
+      : device(nullptr), ptr(nullptr), allocated(false), shared(false), modified(true), userdata(0) {}
     
     APIBuffer (const BufferRefT<T>& other) 
-      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), allocated(false), shared(true), mapped(false), modified(true), userdata(0) {}
+      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), allocated(false), shared(true), modified(true), userdata(0) {}
 
     /*! Buffer construction */
     APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in, bool allocate = false) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) 
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), modified(true), userdata(0) 
     {
       if (allocate) alloc();
     }
@@ -150,7 +150,6 @@ namespace embree
       ptr = other.ptr;             other.ptr = nullptr;
       allocated = other.allocated; other.allocated = false;
       shared = other.shared;       other.shared = false;
-      mapped = other.mapped;       other.mapped = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
     }
@@ -161,7 +160,6 @@ namespace embree
       ptr = other.ptr;             other.ptr = nullptr;
       allocated = other.allocated; other.allocated = false;
       shared = other.shared;       other.shared = false;
-      mapped = other.mapped;       other.mapped = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
       BufferRefT<T>::operator=(std::move(other));
@@ -171,15 +169,22 @@ namespace embree
   public:
 
     /* inits the buffer */
+    void newBuffer(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
+    {
+      init(device_in,num_in,stride_in);
+      alloc();
+    }
+    
+    /* inits the buffer */
     void init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
     {
+      free();
       device = device_in;
       ptr = nullptr;
       this->ptr_ofs = nullptr;
       this->num = num_in;
       this->stride = stride_in;
       shared = false;
-      mapped = false;
       modified = true;
     }
 
@@ -200,7 +205,8 @@ namespace embree
     /*! allocated buffer */
     void alloc() {
       if (device) device->memoryMonitor(this->bytes(),false);
-      ptr = this->ptr_ofs = (char*) alignedMalloc(this->bytes());
+      size_t b = (this->bytes()+15)&ssize_t(-16);
+      ptr = this->ptr_ofs = (char*) alignedMalloc(b);
       allocated = true; // this flag is sticky, such that we do never allocated a buffer again after it was freed
     }
     
@@ -213,40 +219,15 @@ namespace embree
       ptr = nullptr; this->ptr_ofs = nullptr;
     }
     
-    /*! maps the buffer */
-    void* map()
+    /*! gets buffer pointer */
+    void* get()
     {
       /* report error if buffer is not existing */
       if (!device)
         throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
       
-      /* report error if buffer is already mapped */
-      if (mapped)
-        throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
-      
-      /* allocate buffer */
-      if (!ptr && !shared && !allocated)
-        alloc();
-      
-      /* return mapped buffer */
-      mapped = true;
+      /* return buffer */
       return ptr;
-    }
-    
-    /*! unmaps the buffer */
-    void unmap()
-    {
-      /* report error if buffer not mapped */
-      if (!mapped)
-        throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
-      
-      /* unmap buffer */
-      mapped = false;
-    }
-    
-    /*! checks if the buffer is mapped */
-    __forceinline bool isMapped() const {
-      return mapped; 
     }
     
     /*! mark buffer as modified or unmodified */
@@ -276,7 +257,6 @@ namespace embree
     char* ptr;       //!< pointer to buffer data
     bool allocated;  //!< set if buffer got allocated by us
     bool shared;     //!< set if memory is shared with application
-    bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified
   public:
     int userdata;    //!< special data

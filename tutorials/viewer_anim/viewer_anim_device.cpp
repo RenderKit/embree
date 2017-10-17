@@ -81,9 +81,8 @@ namespace embree {
     /* create object */
     RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, mesh->numTriangles, mesh->numVertices, 1);
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -98,9 +97,8 @@ namespace embree {
     /* create object */
     RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -116,9 +114,8 @@ namespace embree {
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     /* set all other buffers */
     rtcSetBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
@@ -141,9 +138,8 @@ namespace embree {
     /* create object */
     RTCGeometry geom = rtcNewLineSegments (g_device, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -162,9 +158,8 @@ namespace embree {
     default: assert(false);
     }
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
@@ -184,9 +179,8 @@ namespace embree {
     default: assert(false);
     }
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -237,12 +231,11 @@ namespace embree {
                            const Vec3fa* __restrict__ const input1,
                            const float tt)
   {
-    Vec3fa* __restrict__ vertices = (Vec3fa*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* __restrict__ vertices = (Vec3fa*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
     parallel_for(size_t(0),numVertices,[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
           vertices[i] = lerp(input0[i],input1[i],tt);
       });
-    rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
     rtcUpdate(geom);
   }
 

@@ -192,20 +192,21 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
-    /*! Maps specified buffer. */
-    virtual void* map(RTCBufferType type) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-      return nullptr; 
+    /*! Creates a new Embree managed buffer. */
+    virtual void* newBuffer(RTCBufferType type, size_t stride, size_t size) { 
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry");
+      return nullptr;
     }
-
-    /*! Unmap specified buffer. */
-    virtual void unmap(RTCBufferType type) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
+    
     /*! Sets specified buffer. */
     virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Gets pointer of specified buffer. */
+    virtual void* getBuffer(RTCBufferType type) { 
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      return nullptr; 
     }
 
     /*! Set displacement function. */

@@ -59,7 +59,7 @@ namespace embree
     RTCGeometry mesh = rtcNewTriangleMesh (device_i, RTC_GEOMETRY_STATIC, 12, 8);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(mesh,RTC_VERTEX_BUFFER); 
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),8); 
     vertices[0].x = pos.x + -1; vertices[0].y = pos.y + -1; vertices[0].z = pos.z + -1; 
     vertices[1].x = pos.x + -1; vertices[1].y = pos.y + -1; vertices[1].z = pos.z + +1; 
     vertices[2].x = pos.x + -1; vertices[2].y = pos.y + +1; vertices[2].z = pos.z + -1; 
@@ -68,11 +68,10 @@ namespace embree
     vertices[5].x = pos.x + +1; vertices[5].y = pos.y + -1; vertices[5].z = pos.z + +1; 
     vertices[6].x = pos.x + +1; vertices[6].y = pos.y + +1; vertices[6].z = pos.z + -1; 
     vertices[7].x = pos.x + +1; vertices[7].y = pos.y + +1; vertices[7].z = pos.z + +1; 
-    rtcUnmapBuffer(mesh,RTC_VERTEX_BUFFER); 
     
     /* set triangles */
     int tri = 0;
-    Triangle* triangles = (Triangle*) rtcMapBuffer(mesh,RTC_INDEX_BUFFER);
+    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),12);
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -98,8 +97,6 @@ namespace embree
     triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
     triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
     
-    rtcUnmapBuffer(mesh,RTC_INDEX_BUFFER);
-    
     unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
     rtcReleaseGeometry(mesh);
     return geomID;
@@ -112,18 +109,16 @@ namespace embree
     RTCGeometry mesh = rtcNewTriangleMesh (device_i, RTC_GEOMETRY_STATIC, 2, 4);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(mesh,RTC_VERTEX_BUFFER); 
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),4); 
     vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
     vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
     vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
     vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-    rtcUnmapBuffer(mesh,RTC_VERTEX_BUFFER); 
     
     /* set triangles */
-    Triangle* triangles = (Triangle*) rtcMapBuffer(mesh,RTC_INDEX_BUFFER);
+    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),2);
     triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
     triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-    rtcUnmapBuffer(mesh,RTC_INDEX_BUFFER);
 
     unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
     rtcReleaseGeometry(mesh);
@@ -135,16 +130,14 @@ namespace embree
   {
     RTCGeometry geom = rtcNewBezierHairGeometry (device_i, RTC_GEOMETRY_STATIC, 1, 4, 1);
 
-    vfloat4* pos = (vfloat4*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+    vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(vfloat4),4);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);
     pos[1] = vfloat4(0.0f,1.0f,0.0f,0.1f);
     pos[2] = vfloat4(0.0f,2.0f,0.0f,0.1f);
     pos[3] = vfloat4(0.0f,3.0f,0.0f,0.1f);
-    rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
-    int* index = (int*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+    int* index = (int*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),1);
     index[0] = 0;
-    rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
     unsigned int geomID = rtcAttachGeometry(scene_i,geom);
     rtcReleaseGeometry(geom);

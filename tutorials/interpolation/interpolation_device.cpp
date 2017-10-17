@@ -149,9 +149,8 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
   RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_DYNAMIC, NUM_TRI_FACES, NUM_TRI_INDICES, NUM_VERTICES, 0, 0, 0);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ), NUM_VERTICES);
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(Vec3fa),NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
 
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_tri_indices , 0, sizeof(unsigned int), NUM_TRI_INDICES);
   rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_tri_faces,    0, sizeof(unsigned int), NUM_TRI_FACES);
@@ -164,9 +163,8 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
 
-  float* level = (float*) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
+  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_TRI_INDICES);
   for (size_t i=0; i<NUM_TRI_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-  rtcUnmapBuffer(geom, RTC_LEVEL_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
@@ -175,8 +173,8 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 
 void setTriangleSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
 {
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
-  float* level = (float*) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
+  float* level = (float*) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
 
   for (size_t i=0; i<NUM_TRI_INDICES; i+=3)
   {
@@ -185,8 +183,6 @@ void setTriangleSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
     level[i+2] = updateEdgeLevel(cam_pos, vtx, cube_tri_indices, i+2, i+0);
   }
 
-  rtcUnmapBuffer(geom, RTC_LEVEL_BUFFER);
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
   rtcUpdateBuffer(geom, RTC_LEVEL_BUFFER);
 }
 
@@ -196,9 +192,8 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
   RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_DYNAMIC, NUM_QUAD_FACES, NUM_QUAD_INDICES, NUM_VERTICES, 0, 0, 0);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ), NUM_VERTICES);
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(Vec3fa),NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
 
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
   rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
@@ -211,9 +206,8 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
 
-  float* level = (float*) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
+  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER,sizeof(float),NUM_QUAD_INDICES);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-  rtcUnmapBuffer(geom, RTC_LEVEL_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
@@ -222,8 +216,8 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 
 void setQuadSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
 {
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
-  float* level = (float*) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
+  float* level = (float*) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
 
   for (size_t i=0; i<NUM_QUAD_INDICES; i+=4)
   {
@@ -233,8 +227,6 @@ void setQuadSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
     level[i+3] = updateEdgeLevel(cam_pos, vtx, cube_quad_indices, i+3, i+0);
   }
 
-  rtcUnmapBuffer(geom, RTC_LEVEL_BUFFER);
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
   rtcUpdateBuffer(geom, RTC_LEVEL_BUFFER);
 }
 
@@ -244,9 +236,8 @@ unsigned int addTriangleCube (RTCScene scene_i, const Vec3fa& pos)
   RTCGeometry geom = rtcNewTriangleMesh(g_device, RTC_GEOMETRY_DYNAMIC, NUM_TRI_INDICES/3, NUM_VERTICES);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ), NUM_VERTICES);
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(Vec3fa),NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
 
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(unsigned int), NUM_TRI_INDICES/3);
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
@@ -262,9 +253,8 @@ unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
   RTCGeometry geom = rtcNewQuadMesh(g_device, RTC_GEOMETRY_DYNAMIC, NUM_QUAD_INDICES/4, NUM_VERTICES);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ), NUM_VERTICES);
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(Vec3fa),NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
 
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int), NUM_QUAD_INDICES/4);
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
@@ -280,14 +270,13 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   RTCGeometry geom = rtcNewBezierCurveGeometry (g_device, RTC_GEOMETRY_DYNAMIC, 1, NUM_HAIR_VERTICES);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(Vec3fa), NUM_HAIR_VERTICES);
-   Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
-   for (size_t i=0; i<NUM_HAIR_VERTICES; i++) {
-     vtx[i].x = hair_vertices[i][0]+pos.x;
-     vtx[i].y = hair_vertices[i][1]+pos.y;
-     vtx[i].z = hair_vertices[i][2]+pos.z;
-     vtx[i].w = hair_vertices[i][3];
-   }
-  rtcUnmapBuffer(geom, RTC_VERTEX_BUFFER);
+  Vec3fa* vtx = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(Vec3fa), NUM_HAIR_VERTICES);
+  for (size_t i=0; i<NUM_HAIR_VERTICES; i++) {
+    vtx[i].x = hair_vertices[i][0]+pos.x;
+    vtx[i].y = hair_vertices[i][1]+pos.y;
+    vtx[i].z = hair_vertices[i][2]+pos.z;
+    vtx[i].w = hair_vertices[i][3];
+  }
 
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(unsigned int), 1);
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa), NUM_HAIR_VERTICES);
@@ -304,18 +293,16 @@ unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);

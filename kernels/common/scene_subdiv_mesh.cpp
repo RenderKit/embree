@@ -105,6 +105,89 @@ namespace embree
     }
   }
 
+  void* SubdivMesh::newBuffer(RTCBufferType type, size_t stride, size_t size) 
+  { 
+    if (scene && scene->isStatic() && scene->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    /* verify that all accesses are 4 bytes aligned */
+    if (stride & 0x3) 
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+
+    if (type != RTC_LEVEL_BUFFER)
+      if (scene) scene->commitCounterSubdiv++;
+
+    unsigned bid = type & 0xFFFF;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
+    {
+      vertices[bid].newBuffer(device,size,stride);
+      return vertices[bid].get();
+    }
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    {
+      if (bid >= userbuffers.size()) {
+        userbuffers.resize(bid+1);
+        user_buffer_tags.resize(bid+1);
+      }
+      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      return userbuffers[bid].get();
+    }
+    else if (type == RTC_FACE_BUFFER) 
+    {
+      if (scene && size != (size_t)-1) disabling();
+      faceVertices.newBuffer(device,size,stride);
+      setNumPrimitives(size);
+      if (scene && size != (size_t)-1) enabling();
+      return faceVertices.get();
+    }
+
+    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
+    {
+      int begin = (int)topology.size();
+      if (bid >= topology.size()) {
+        topology.resize(bid+1);
+        for (size_t i=begin; i<topology.size(); i++)
+          topology[i] = Topology(this,numEdges());
+      }
+      topology[bid].vertexIndices.newBuffer(device,size,stride);
+      return topology[bid].vertexIndices.get();
+    }
+    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER) {
+      edge_creases.newBuffer(device,size,stride);
+      return edge_creases.get();
+    }
+
+    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER) {
+      edge_crease_weights.newBuffer(device,size,stride);
+      return edge_crease_weights.get();
+    }
+
+    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER) {
+      vertex_creases.newBuffer(device,size,stride);
+      return vertex_creases.get();
+    }
+
+    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER) {
+      vertex_crease_weights.newBuffer(device,size,stride);
+      return vertex_crease_weights.get();
+    }
+
+    else if (type == RTC_HOLE_BUFFER) {
+      holes.newBuffer(device,size,stride);
+      return holes.get();
+    }
+
+    else if (type == RTC_LEVEL_BUFFER) {
+      levels.newBuffer(device,size,stride);
+      return levels.get();
+    }
+
+    else
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+
+    return nullptr;
+  }
+
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
@@ -173,80 +256,40 @@ namespace embree
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
 
-  void* SubdivMesh::map(RTCBufferType type) 
+  void* SubdivMesh::getBuffer(RTCBufferType type) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+int(numTimeSteps)) 
-      return vertices[bid].map();
+      return vertices[bid].get();
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].vertexIndices.map();
+      return topology[bid].vertexIndices.get();
 
     else if (type == RTC_FACE_BUFFER)
-      return faceVertices.map();
+      return faceVertices.get();
 
     else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
-      return edge_creases.map(); 
+      return edge_creases.get(); 
 
     else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
-      return edge_crease_weights.map(); 
+      return edge_crease_weights.get(); 
 
     else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
-      return vertex_creases.map(); 
+      return vertex_creases.get(); 
     
     else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
-      return vertex_crease_weights.map();
+      return vertex_crease_weights.get();
 
     else if (type == RTC_HOLE_BUFFER)
-      return holes.map();
+      return holes.get();
 
     else if (type == RTC_LEVEL_BUFFER)
-      return levels.map(); 
+      return levels.get(); 
 
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
 
     return nullptr;
-  }
-
-  void SubdivMesh::unmap(RTCBufferType type) 
-  {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
-      vertices[bid].unmap();
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].vertexIndices.unmap();
-
-    else if (type == RTC_FACE_BUFFER)
-      faceVertices.unmap();
-
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
-      edge_creases.unmap(); 
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
-      edge_crease_weights.unmap(); 
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
-      vertex_creases.unmap(); 
-    
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
-      vertex_crease_weights.unmap();
-
-    else if (type == RTC_HOLE_BUFFER)
-      holes.unmap();
-
-    else if (type == RTC_LEVEL_BUFFER)
-      levels.unmap(); 
-
-    else 
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
   }
 
   void SubdivMesh::update ()

@@ -43,8 +43,8 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffer */
-  Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
-  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  Vertex*   vertices  = (Vertex*  ) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere geometry */
   int tri = 0;
@@ -85,8 +85,6 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       }
     }
   }
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(g_scene,geom);
   rtcReleaseGeometry(geom);
@@ -100,18 +98,16 @@ unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
@@ -278,7 +274,7 @@ void animateSphere (int id, float time)
 {
   /* animate vertices */
   RTCGeometry geom = rtcGetGeometry(g_scene,id);
-  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
   const Vec3fa pos = position[id];
@@ -303,8 +299,6 @@ void animateSphere (int id, float time)
     v->z = pos.z+r*sin(f*phif)*cos(thetaf);
   }
 #endif
-
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* update mesh */
   rtcUpdate (geom);

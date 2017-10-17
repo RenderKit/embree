@@ -37,9 +37,9 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
+    void* newBuffer(RTCBufferType type, size_t stride, size_t size);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
-    void* map(RTCBufferType type);
-    void unmap(RTCBufferType type);
+    void* getBuffer(RTCBufferType type);
     void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);

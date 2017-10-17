@@ -1000,25 +1000,15 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcMapBuffer(RTCGeometry hgeometry, RTCBufferType type) 
+  RTCORE_API void* rtcNewBuffer(RTCGeometry hgeometry, RTCBufferType type, size_t byteStride, size_t numItems) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcMapBuffer);
+    RTCORE_TRACE(rtcNewBuffer);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    return geometry->map(type);
+    return geometry->newBuffer(type,byteStride,numItems);
     RTCORE_CATCH_END2(geometry);
     return nullptr;
-  }
-
-  RTCORE_API void rtcUnmapBuffer(RTCGeometry hgeometry, RTCBufferType type) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcUnmapBuffer);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->unmap(type);
-    RTCORE_CATCH_END2(geometry);
   }
 
   RTCORE_API void rtcSetBuffer(RTCGeometry hgeometry, RTCBufferType type, const void* ptr, size_t offset, size_t stride, size_t size)
@@ -1032,6 +1022,17 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
+  RTCORE_API void* rtcGetBuffer(RTCGeometry hgeometry, RTCBufferType type) 
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetBuffer);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->getBuffer(type);
+    RTCORE_CATCH_END2(geometry);
+    return nullptr;
+  }
+  
   RTCORE_API void rtcEnable (RTCGeometry hgeometry) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

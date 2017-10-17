@@ -41,8 +41,8 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
   RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffer */
-  uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere geometry */
   uniform int tri = 0;
@@ -83,8 +83,6 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
       }
     }
   }
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   uniform unsigned int geomID = rtcAttachGeometry(g_scene,geom);
   rtcReleaseGeometry(geom);
@@ -98,18 +96,16 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
@@ -276,7 +272,7 @@ void animateSphere (uniform int id, uniform float time)
 {
   /* animate vertices */
   RTCGeometry geom = rtcGetGeometry(g_scene,id);
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
   const uniform float rcpNumTheta = rcp((uniform float)numTheta);
   const uniform float rcpNumPhi   = rcp((uniform float)numPhi);
   const uniform Vec3f pos = position[id];
@@ -297,8 +293,6 @@ void animateSphere (uniform int id, uniform float time)
     v->z = pos.z+r*sin(f*phif)*cos(thetaf);
   }
 #endif
-
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* update mesh */
   rtcUpdate (geom);

@@ -755,30 +755,6 @@ namespace embree
     }
   };
   
-  struct UnmappedBeforeCommitTest : public VerifyApplication::Test
-  {
-    UnmappedBeforeCommitTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
-
-    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
-    {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
-      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(nullptr,rtcDeviceGetError(device));
-      VerifyScene scene(device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(device);
-      unsigned geom0 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50).first;
-      unsigned geom1 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50).first;
-      AssertNoError(device);
-      rtcMapBuffer(rtcGetGeometry(scene,geom0),RTC_INDEX_BUFFER);
-      rtcMapBuffer(rtcGetGeometry(scene,geom1),RTC_VERTEX_BUFFER);
-      AssertNoError(device);
-      rtcCommit (scene);
-      AssertError(device,RTC_INVALID_OPERATION); // error, buffers still mapped
-      return VerifyApplication::PASSED;
-    }
-  };
-
   struct GetBoundsTest : public VerifyApplication::Test
   {
     GeometryType gtype;
@@ -1599,9 +1575,8 @@ namespace embree
     
     static void move_mesh(RTCGeometry mesh, size_t numVertices, Vec3fa& pos) 
     {
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(mesh,RTC_VERTEX_BUFFER); 
+      Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(mesh,RTC_VERTEX_BUFFER); 
       for (size_t i=0; i<numVertices; i++) vertices[i] += Vec3fa(pos);
-      rtcUnmapBuffer(mesh,RTC_VERTEX_BUFFER);
       rtcUpdate(mesh);
     }
 
@@ -3329,20 +3304,18 @@ namespace embree
             }
             case 1: {
               RTCGeometry hgeom = rtcGetGeometry(*task->scene,geom[index].first);
-              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(hgeom,RTC_VERTEX_BUFFER);
+              Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(hgeom,RTC_VERTEX_BUFFER);
               if (vertices) { 
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
-              rtcUnmapBuffer(hgeom,RTC_VERTEX_BUFFER);
               switch (types[index])
               {
               case 4: case 5: case 10: case 11:
                 RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
-                Vec3fa* vertices = (Vec3fa*)rtcMapBuffer(hgeom, RTC_VERTEX_BUFFER1);
+                Vec3fa* vertices = (Vec3fa*)rtcGetBuffer(hgeom, RTC_VERTEX_BUFFER1);
                 if (vertices) {
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
-                rtcUnmapBuffer(hgeom, RTC_VERTEX_BUFFER1);
               }
               break;
             }
@@ -4196,8 +4169,6 @@ namespace embree
       groups.top()->add(new FlagsTest("dynamic_deformable",isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
       groups.top()->add(new FlagsTest("dynamic_dynamic"   ,isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));    
       groups.pop();
-
-      //groups.top()->add(new UnmappedBeforeCommitTest("unmapped_before_commit",isa)); // FIXME: remove
 
       push(new TestGroup("get_bounds",true,true));
       for (auto gtype : gtypes_all)

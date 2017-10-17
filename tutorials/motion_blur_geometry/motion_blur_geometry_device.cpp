@@ -105,7 +105,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,bufID);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,bufID,sizeof(Vec3fa), 8);
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
@@ -114,7 +114,6 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
     }
-    rtcUnmapBuffer(geom,bufID);
   }
 
   /* create face color array */
@@ -146,7 +145,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,bufID);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,bufID,sizeof(Vec3fa), 8);
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
@@ -155,7 +154,6 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
     }
-    rtcUnmapBuffer(geom,bufID);
   }
 
   unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -179,14 +177,13 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
   rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(unsigned int), 0);
   rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(float), 0);
 
-  float* level = (float*) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
+  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_INDICES);
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
-  rtcUnmapBuffer(geom, RTC_LEVEL_BUFFER);
 
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,bufID);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,bufID,sizeof(Vec3fa),8);
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
@@ -195,7 +192,6 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
     }
-    rtcUnmapBuffer(geom,bufID);
   }
 
   unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -224,20 +220,17 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve, unsi
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,bufID);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,bufID,sizeof(Vec3fa),16);
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<16; i++)
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
-
-    rtcUnmapBuffer(geom,bufID);
   }
 
-  int* indices = (int*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  int* indices = (int*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),13);
   for (int i=0; i<13; i++) indices[i] = i;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   alignedFree(bspline);
 
@@ -260,20 +253,17 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,bufID);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,bufID,sizeof(Vec3fa),16);
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<16; i++)
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
-
-    rtcUnmapBuffer(geom,bufID);
   }
 
-  int* indices = (int*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  int* indices = (int*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),15);
   for (int i=0; i<15; i++) indices[i] = i;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   alignedFree(bspline);
 
@@ -318,7 +308,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(geom,bufID);
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,bufID,sizeof(Vec3fa),8);
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
@@ -327,7 +317,6 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v));
     }
-    rtcUnmapBuffer(geom,bufID);
   }
   rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);  
@@ -496,18 +485,16 @@ unsigned int addGroundPlane (RTCScene scene)
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);

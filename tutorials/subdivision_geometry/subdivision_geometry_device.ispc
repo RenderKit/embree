@@ -133,9 +133,8 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_colors, 0, sizeof(uniform Vec3fa), 8);
 
-  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
+  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(uniform float),NUM_INDICES);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
-  rtcUnmapBuffer(geom, RTC_LEVEL_BUFFER);
 
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
@@ -145,9 +144,9 @@ uniform unsigned int addCube (RTCScene scene_i)
 /*! updates the tessellation level for each edge */
 void updateEdgeLevelBuffer( RTCGeometry geom, const uniform Vec3f& cam_pos )
 {
-  uniform float*  uniform level    = (uniform float*  uniform) rtcMapBuffer(geom, RTC_LEVEL_BUFFER);
-  uniform int*    uniform faces    = (uniform int*    uniform) rtcMapBuffer(geom, RTC_INDEX_BUFFER);
-  uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(geom, RTC_VERTEX_BUFFER);
+  uniform float*  uniform level    = (uniform float*  uniform) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
+  uniform int*    uniform faces    = (uniform int*    uniform) rtcGetBuffer(geom, RTC_INDEX_BUFFER);
+  uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
 
   for (uniform size_t f=0; f<NUM_FACES; f++)
   {
@@ -158,10 +157,6 @@ void updateEdgeLevelBuffer( RTCGeometry geom, const uniform Vec3f& cam_pos )
       level[FACE_SIZE*f+i] = max(min(l,MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
     }
   }
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
-  rtcUnmapBuffer(geom,RTC_LEVEL_BUFFER);
-  
   rtcUpdateBuffer(geom,RTC_LEVEL_BUFFER);
 }
 
@@ -172,18 +167,16 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);

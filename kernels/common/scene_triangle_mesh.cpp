@@ -52,6 +52,48 @@ namespace embree
     Geometry::update();
   }
 
+  void* TriangleMesh::newBuffer(RTCBufferType type, size_t stride, size_t size) 
+  { 
+    if (scene && scene->isStatic() && scene->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    /* verify that all accesses are 4 bytes aligned */
+    if (stride & 0x3) 
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+
+    unsigned bid = type & 0xFFFF;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    {
+      size_t t = type - RTC_VERTEX_BUFFER0;
+
+       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*size > 16ll*1024ll*1024ll*1024ll)
+       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+
+      vertices[t].newBuffer(device,size,stride);
+      vertices0 = vertices[0];
+      return vertices[t].get();
+    } 
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    {
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      return userbuffers[bid].get();
+    }
+    else if (type == RTC_INDEX_BUFFER) 
+    {
+      if (scene && size != (size_t)-1) disabling(); 
+      triangles.newBuffer(device,size,stride); 
+      setNumPrimitives(size);
+      if (scene && size != (size_t)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
+      return triangles.get();
+    }
+    else 
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+
+    return nullptr;
+  }
+
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
@@ -93,37 +135,20 @@ namespace embree
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
 
-  void* TriangleMesh::map(RTCBufferType type) 
+  void* TriangleMesh::getBuffer(RTCBufferType type) 
   {
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     
     if (type == RTC_INDEX_BUFFER) {
-      return triangles.map();
+      return triangles.get();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map();
+      return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
       return nullptr;
-    }
-  }
-
-  void TriangleMesh::unmap(RTCBufferType type) 
-  {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    if (type == RTC_INDEX_BUFFER) {
-      triangles.unmap();
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap();
-      vertices0 = vertices[0];
-    }
-    else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
     }
   }
 

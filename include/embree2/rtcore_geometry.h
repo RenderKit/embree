@@ -399,15 +399,7 @@ RTCORE_API void rtcSetSubdivisionMode(RTCGeometry geometry, unsigned topologyID,
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
 RTCORE_API void rtcSetIndexBuffer(RTCGeometry geometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
 
-/*! \brief Maps specified buffer. This function can be used to set index and
- *  vertex buffers of geometries. */
-RTCORE_API void* rtcMapBuffer(RTCGeometry geometry, RTCBufferType type);
-
-/*! \brief Unmaps specified buffer. 
-
-  A buffer has to be unmapped before the rtcEnable, rtcDisable,
-  rtcUpdate, or rtcDeleteGeometry calls are executed. */
-RTCORE_API void rtcUnmapBuffer(RTCGeometry geometry, RTCBufferType type);
+RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, RTCBufferType type, size_t byteStride, size_t numItems);
 
 /*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
@@ -423,6 +415,9 @@ RTCORE_API void rtcUnmapBuffer(RTCGeometry geometry, RTCBufferType type);
  *  buffers of the default layout. */
 RTCORE_API void rtcSetBuffer(RTCGeometry geometry, RTCBufferType type, 
                               const void* ptr, size_t byteOffset, size_t byteStride, size_t size);
+
+/*! \brief Gets pointer to specified buffer. */
+RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, RTCBufferType type);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCGeometry geometry);

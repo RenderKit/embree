@@ -35,7 +35,7 @@ unsigned int addCube (RTCScene scene_i)
   vertex_colors = (Vec3fa*) alignedMalloc(8*sizeof(Vec3fa));
 
   /* set vertices and vertex colors */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vertex),8);
   vertex_colors[0] = Vec3fa(0,0,0); vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1;
   vertex_colors[1] = Vec3fa(0,0,1); vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1;
   vertex_colors[2] = Vec3fa(0,1,0); vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1;
@@ -44,11 +44,10 @@ unsigned int addCube (RTCScene scene_i)
   vertex_colors[5] = Vec3fa(1,0,1); vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1;
   vertex_colors[6] = Vec3fa(1,1,0); vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
   vertex_colors[7] = Vec3fa(1,1,1); vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
-  rtcUnmapBuffer(mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles and face colors */
   int tri = 0;
-  Triangle* triangles = (Triangle*) rtcMapBuffer(mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),12);
 
   // left side
   face_colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -74,8 +73,6 @@ unsigned int addCube (RTCScene scene_i)
   face_colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
   face_colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
 
-  rtcUnmapBuffer(mesh,RTC_INDEX_BUFFER);
-
   rtcSetBuffer(mesh,RTC_USER_VERTEX_BUFFER0,vertex_colors,0,sizeof(Vec3fa), 8);
 
   unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
@@ -90,18 +87,16 @@ unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry mesh = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(mesh,RTC_INDEX_BUFFER);
 
   unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
   rtcReleaseGeometry(mesh);
