@@ -46,7 +46,7 @@ struct LazyGeometry
 };
 
 LazyGeometry* g_objects[numSpheres];
-  
+
 void instanceBoundsFunc(void* uniform, void* instance_i, size_t item, size_t time, RTCBounds& bounds_o)
 {
   const LazyGeometry* instance = (const LazyGeometry*) instance_i;
@@ -161,47 +161,53 @@ void eagerCreate(LazyGeometry* instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFuncN(const int* valid,
-                            void* ptr,
-                            const RTCIntersectContext* context,
-                            RTCRayN* rays,
-                            size_t N,
-                            size_t item)
+void instanceIntersectFuncN(const int* valid, 
+                                     void* ptr,
+                                     const RTCIntersectContext* context,
+                                     RTCRayN* rays,
+                                     size_t N,
+                                     size_t item)
 {
   assert(N == 1);
-  LazyGeometry* instance = (LazyGeometry*)ptr; 
+  LazyGeometry* instance = (LazyGeometry*)ptr;
 
-  RTCRay &ray = *(RTCRay*)rays;
+  if (!valid[0])
+    return;
+  
+  RTCRay *ray = (RTCRay *)rays;
+  
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
   
   /* trace ray inside object */
-  const int geomID = ray.geomID;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersect1(instance->object,context,ray);
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
-  else ray.instID = instance->userID;
+  const int geomID = ray->geomID;
+  ray->geomID = RTC_INVALID_GEOMETRY_ID;
+  rtcIntersect1(instance->object,context,*ray);
+  if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
+  else ray->instID = instance->userID;
 }
 
-  void instanceOccludedFuncN(const int* valid,
-                             void* ptr,
-                             const RTCIntersectContext* context,
-                             RTCRayN* rays,
-                             size_t N,
-                             size_t item)
+void instanceOccludedFuncN(const int* valid, 
+                                    void* ptr,
+                                    const RTCIntersectContext* context,
+                                    RTCRayN* rays,
+                                    size_t N,
+                                    size_t item)
 {
   assert(N == 1);
-  LazyGeometry* instance = (LazyGeometry*)ptr; 
+  LazyGeometry* instance = (LazyGeometry*)ptr;
 
-  RTCRay &ray = *(RTCRay*)rays;
-
+  if (!valid[0])
+    return;
+  
+  RTCRay *ray = (RTCRay *)rays;
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
-
+  
   /* trace ray inside object */
-  rtcOccluded1(instance->object,context,ray);
+  rtcOccluded1(instance->object,context,*ray);
 }
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)

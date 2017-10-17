@@ -169,21 +169,21 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
   assert(N == programCount);
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform)ptr;
 
-  if (valid[programIndex])
-  {
-    varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
- 
-    /* create the object if it is not yet created */
-    if (instance->state != LAZY_VALID)
-      lazyCreate(instance);
-    
+  if (!valid[programIndex])
+    return;
+  
+  varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
+  
+  /* create the object if it is not yet created */
+  if (instance->state != LAZY_VALID)
+    lazyCreate(instance);
+  
   /* trace ray inside object */
-    const int geomID = ray->geomID;
-    ray->geomID = RTC_INVALID_GEOMETRY_ID;
-    rtcIntersect(instance->object,context,*ray);
-    if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
-    else ray->instID = instance->userID;
-  }
+  const int geomID = ray->geomID;
+  ray->geomID = RTC_INVALID_GEOMETRY_ID;
+  rtcIntersect(instance->object,context,*ray);
+  if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
+  else ray->instID = instance->userID;
 }
 
 unmasked void instanceOccludedFuncN(const uniform int* uniform valid, 
@@ -196,16 +196,16 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
   assert(N == programCount);
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform)ptr;
 
-  if (valid[programIndex])
-  {
-    varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
-    /* create the object if it is not yet created */
-    if (instance->state != LAZY_VALID)
-      lazyCreate(instance);
-    
-    /* trace ray inside object */
-    rtcOccluded(instance->object,context,*ray);
-  }
+  if (!valid[programIndex])
+    return;
+  
+  varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
+  /* create the object if it is not yet created */
+  if (instance->state != LAZY_VALID)
+    lazyCreate(instance);
+  
+  /* trace ray inside object */
+  rtcOccluded(instance->object,context,*ray);
 }
 
 uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)
