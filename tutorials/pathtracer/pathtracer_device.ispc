@@ -1281,7 +1281,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    foreach_unique (instID in ray.instID)
+    foreach_unique (instID in dg.instID)
     {
       /* get instance and geometry pointers */
       ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
