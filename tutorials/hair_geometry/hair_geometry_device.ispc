@@ -250,7 +250,7 @@ unmasked void filterDispatch(uniform int* uniform valid,
                              const struct RTCHitN* uniform potentialHit,
                              const uniform unsigned int N)
 {
-  varying RTCRay* uniform ray = (varying RTCRay* uniform)_ray;
+  varying Ray* uniform ray = (varying Ray* uniform)_ray;
   if (!enableFilterDispatch) return;
   if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N);
 }
@@ -267,7 +267,7 @@ unmasked void occlusionFilter(uniform int* uniform valid_i,
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
  
-  varying RTCRay* uniform ray = (varying RTCRay* uniform)_ray;
+  varying Ray* uniform ray = (varying Ray* uniform)_ray;
   /* make all surfaces opaque */
   varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
@@ -282,14 +282,14 @@ unmasked void occlusionFilter(uniform int* uniform valid_i,
   if (eq(T,make_Vec3f(0.0f))) ray->geomID = geomID;
 }
 
-Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, RTCRay& ray)
+Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, Ray& ray)
 {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.filter = occlusionFilter;
   ray.transparency = make_Vec3f(1.0f);
-  rtcOccluded(scene,context,*((varying RTCRay*)&ray));
+  rtcOccluded(scene,context,RTCRay_(ray));
 
   return ray.transparency;
 }
@@ -307,7 +307,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = make_Vec3f(camera.xfm.p);
   ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -329,7 +329,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,&context,*((varying RTCRay*)&ray));
+    rtcIntersect(g_scene,&context,RTCRay_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -370,7 +370,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* sample directional light */
-    RTCRay shadow;
+    Ray shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(make_Vec3f(g_dirlight_direction));
     shadow.tnear = tnear_eps;

@@ -322,7 +322,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
     RayStats& stats = g_stats[threadIndex];
 
-    RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+    Ray rays[TILE_SIZE_X*TILE_SIZE_Y];
 
     /* generate stream of primary rays */
     int N = 0;
@@ -330,7 +330,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       for (unsigned int x=x0; x<x1; x++)
       {
         /* initialize ray */
-        RTCRay& ray = rays[N++];
+        Ray& ray = rays[N++];
 
         ray.org = Vec3fa(camera.xfm.p);
         ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
@@ -349,7 +349,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     context.flags = g_iflags_coherent;
 
     /* trace stream of rays */
-    rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
+    rtcIntersect1M(g_scene,&context,(RTCRay*)rays,N,sizeof(Ray));
 
     /* shade stream of rays */
     Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
@@ -358,7 +358,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       for (unsigned int x=x0; x<x1; x++,N++)
       {
         /* ISPC workaround for mask == 0 */
-        RTCRay& ray = rays[N];
+        Ray& ray = rays[N];
         Vec3fa Ng = ray.Ng;
 
         /* shading */
@@ -398,7 +398,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         /* init shadow/occlusion rays */
         for (int n=0;n<N;n++)
         {
-          RTCRay& ray = rays[n];
+          Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
           const Vec3fa hitpos = ray.org + ray.tfar*ray.dir;
           ray.org = ls_positions[i];
@@ -412,7 +412,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
           RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
-        rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
+        rtcOccluded1M(g_scene,&context,(RTCRay*)rays,N,sizeof(Ray));
 
         /* modify pixel color based on occlusion */
         for (int n=0;n<N;n++)

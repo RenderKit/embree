@@ -285,7 +285,7 @@ void renderTileStandard(uniform int taskIndex,
 
   uniform RayStats& stats = g_stats[threadIndex];
 
-  RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
   uniform int N = 0;
@@ -295,7 +295,7 @@ void renderTileStandard(uniform int taskIndex,
     if (all(__mask == 0)) continue;
 
     /* initialize ray */
-    RTCRay& ray = rays[N++];
+    Ray& ray = rays[N++];
 
     ray.org = make_Vec3f(camera.xfm.p);
     ray.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
@@ -314,7 +314,7 @@ void renderTileStandard(uniform int taskIndex,
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
-  rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
+  rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&rays,N,sizeof(Ray));
 
   /* shade stream of rays */
   Vec3f colors[TILE_SIZE_X*TILE_SIZE_Y];
@@ -323,7 +323,7 @@ void renderTileStandard(uniform int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    RTCRay& ray = rays[N];
+    Ray& ray = rays[N];
 
     Vec3f Ng = ray.Ng;
 
@@ -364,7 +364,7 @@ void renderTileStandard(uniform int taskIndex,
         /* init shadow/occlusion rays */
         for (uniform size_t n=0;n<N;n++)
         {
-          RTCRay& ray = rays[n];
+          Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
           const Vec3f hitpos = ray.org + ray.dir * ray.tfar;
           ray.org = ls_positions[i];
@@ -380,9 +380,9 @@ void renderTileStandard(uniform int taskIndex,
         /* trace shadow rays */
 #if 0
         for (uniform size_t n=0;n<N;n++)
-          rtcOccluded(g_scene,&context,rays[n]);
+          rtcOccluded(g_scene,&context,RTCRay_(rays[n]));
 #else
-        rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));
+        rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,N,sizeof(Ray));
 #endif
         /* modify pixel color based on occlusion */
         for (uniform size_t n=0;n<N;n++)

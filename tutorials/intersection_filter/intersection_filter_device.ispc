@@ -30,9 +30,9 @@ uniform Vec3f* uniform colors = NULL;
 #define HIT_LIST_LENGTH 16
 
 /* extended ray structure that includes total transparency along the ray */
-struct RTCRay2
+struct Ray2
 {
-  RTCRay ray;
+  Ray ray;
 
   // ray extensions
   float transparency; //!< accumulated transparency value
@@ -42,6 +42,12 @@ struct RTCRay2
   unsigned int hit_primIDs[HIT_LIST_LENGTH];
   unsigned int firstHit, lastHit;
 };
+
+inline varying RTCRay& RTCRay_(varying Ray2& ray)
+{
+  varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
+  return *ray_ptr;
+}
 
 /* 3D procedural transparency */
 inline float transparencyFunction(Vec3f& h)
@@ -63,7 +69,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  RTCRay2 primary;
+  Ray2 primary;
   primary.ray.org = make_Vec3f(camera.xfm.p);
   primary.ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   primary.ray.tnear = 0.0f;
@@ -78,7 +84,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   {
     context.userRayExt = &primary;
     /* intersect ray with scene */
-    rtcIntersect(g_scene,&context,*((varying RTCRay*)&primary));
+    rtcIntersect(g_scene,&context,RTCRay_(primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -92,7 +98,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
 
     /* initialize shadow ray */
-    RTCRay2 shadow;
+    Ray2 shadow;
     shadow.ray.org = primary.ray.org + primary.ray.tfar*primary.ray.dir;
     shadow.ray.dir = neg(lightDir);
     shadow.ray.tnear = 0.001f;
@@ -106,7 +112,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.lastHit = 0;
     context.userRayExt = &shadow;
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,*((varying RTCRay*)&shadow));
+    rtcOccluded(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -201,7 +207,7 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
   
     const uniform unsigned int rayID = 0;
     const float tfar   = RTCHitN_t(potentialHit,N,rayID);
-    varying RTCRay2 *uniform ray2 = (varying RTCRay2* uniform)ray;
+    varying Ray2 *uniform ray2 = (varying Ray2* uniform)ray;
     Vec3f h = ray2->ray.org + ray2->ray.dir*tfar;
     float T = transparencyFunction(h);
     if (T < 1.0f) 
@@ -266,9 +272,9 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
       RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
 
       if (context) {
-        varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
+        varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
         assert(eray);
-        scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
+        scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
       }
     }
   }
@@ -296,7 +302,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
     const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);
     const float tfar          = RTCHitN_t(potentialHit,N,rayID);
-    varying RTCRay2 *uniform ray2 = (varying RTCRay2* uniform)ray;
+    varying Ray2 *uniform ray2 = (varying Ray2* uniform)ray;
 
     for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
       unsigned slot= i%HIT_LIST_LENGTH;
@@ -348,19 +354,19 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     /* decode ray IDs */
     int pid = (ray_mask & 0xFFFF) / programCount;
     int rid = (ray_mask & 0xFFFF) % programCount;
-    varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
+    varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
     assert(eray);
 
     /* The occlusion filter function may be called multiple times with
      * the same hit. We remember the last N hits, and skip duplicates. */
     bool already_hit = false;
-    unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(RTCRay2),pid,rid);
-    unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(RTCRay2),pid,rid);
+    unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(Ray2),pid,rid);
+    unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(Ray2),pid,rid);
     for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
-      unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(RTCRay2),pid,rid);
-      unsigned int last_primID = gather(eray->hit_primIDs[0],slot,sizeof(RTCRay2),pid,rid);
+      unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid);
+      unsigned int last_primID = gather(eray->hit_primIDs[0],slot,sizeof(Ray2),pid,rid);
       if (last_geomID == hit_geomID && last_primID == hit_primID) {
         already_hit = true;
         break;
@@ -373,20 +379,20 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
 
     /* store hit in hit list */
     unsigned int slot = eray_lastHit%HIT_LIST_LENGTH;
-    scatter(eray->hit_geomIDs[0],slot,sizeof(RTCRay2),pid,rid,hit_geomID);
-    scatter(eray->hit_primIDs[0],slot,sizeof(RTCRay2),pid,rid,hit_primID);
+    scatter(eray->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid,hit_geomID);
+    scatter(eray->hit_primIDs[0],slot,sizeof(Ray2),pid,rid,hit_primID);
     eray_lastHit++;
-    scatter(eray->lastHit,0,sizeof(RTCRay2),pid,rid,eray_lastHit);
+    scatter(eray->lastHit,0,sizeof(Ray2),pid,rid,eray_lastHit);
     if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
-      scatter(eray->firstHit,0,sizeof(RTCRay2),pid,rid,eray_firstHit+1);
+      scatter(eray->firstHit,0,sizeof(Ray2),pid,rid,eray_firstHit+1);
 
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */
-    T *= gather(eray->transparency,sizeof(RTCRay2),pid,rid);
-    scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
+    T *= gather(eray->transparency,sizeof(Ray2),pid,rid);
+    scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
 
     /* reject a hit if not fully opqaue */
     if (T != 0.0f) valid[vi] = 0;
@@ -416,8 +422,8 @@ void renderTileStandardStream(uniform int taskIndex,
 
   uniform RayStats& stats = g_stats[threadIndex];
 
-  RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3f color_stream[TILE_SIZE_X*TILE_SIZE_Y];
   float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -437,7 +443,7 @@ void renderTileStandardStream(uniform int taskIndex,
     bool mask = __mask; unmasked { valid_stream[N] = mask; }
 
     /* initialize ray */
-    RTCRay2& primary = primary_stream[N];
+    Ray2& primary = primary_stream[N];
     primary.ray.org = make_Vec3f(camera.xfm.p);
     primary.ray.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = __mask; unmasked { // invalidates inactive rays
@@ -461,7 +467,7 @@ void renderTileStandardStream(uniform int taskIndex,
     uniform RTCIntersectContext primary_context;
     primary_context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
+    rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray2));
 
     /* terminate rays and update color */
     N = -1;
@@ -472,7 +478,7 @@ void renderTileStandardStream(uniform int taskIndex,
       if (all(__mask == 0)) continue;
 
       /* invalidate shadow rays by default */
-      RTCRay2& shadow = shadow_stream[N];
+      Ray2& shadow = shadow_stream[N];
       unmasked {
         shadow.ray.tnear = (float)(pos_inf);
         shadow.ray.tfar  = (float)(neg_inf);
@@ -488,7 +494,7 @@ void renderTileStandardStream(uniform int taskIndex,
       }
 
       /* update color */
-      RTCRay2& primary = primary_stream[N];
+      Ray2& primary = primary_stream[N];
       float opacity = 1.0f-primary.transparency;
       Vec3f diffuse = colors[primary.ray.primID];
       Vec3f La = diffuse*0.5f;
@@ -516,7 +522,7 @@ void renderTileStandardStream(uniform int taskIndex,
     uniform RTCIntersectContext shadow_context;
     shadow_context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(RTCRay2));
+    rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2));
 
     /* add light contribution and generate transmission ray */
     N = -1;
@@ -528,7 +534,7 @@ void renderTileStandardStream(uniform int taskIndex,
       if (all(__mask == 0)) continue;
 
       /* invalidate rays by default */
-      RTCRay2& primary = primary_stream[N];
+      Ray2& primary = primary_stream[N];
       float primary_tfar = primary.ray.tfar;
       unmasked {
         primary.ray.tnear = (float)(pos_inf);
@@ -542,7 +548,7 @@ void renderTileStandardStream(uniform int taskIndex,
       /* add light contrinution */
       float opacity = 1.0f-primary.transparency;
       Vec3f diffuse = colors[primary.ray.primID];
-      RTCRay2& shadow = shadow_stream[N];
+      Ray2& shadow = shadow_stream[N];
       if (shadow.ray.geomID) {
         Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
         color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;

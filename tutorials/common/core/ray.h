@@ -39,14 +39,14 @@
 
   /*! Ray structure. Contains all information about a ray including
    *  precomputed reciprocal direction. */
-  struct RTCRay
+  struct Ray
   {
     /*! Default construction does nothing. */
-    __forceinline RTCRay() {}
+    __forceinline Ray() {}
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline RTCRay(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
+    __forceinline Ray(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
 			 float tnear = embree::zero, float tfar = embree::inf, 
 			 float time = embree::zero, int mask = -1)
       : org(org), tnear(tnear), dir(dir), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1)  {}
@@ -76,8 +76,14 @@
     embree::Vec3fa transparency;
   };
 
+typedef Ray Ray1;
+
+__forceinline RTCRay& RTCRay_(Ray& ray) {
+  return (RTCRay&)ray;
+}
+
   /*! Outputs ray to stream. */ 
-  inline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray) {
+  inline std::ostream& operator<<(std::ostream& cout, const Ray& ray) {
     return cout << "{ " << 
       "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear << ", far = " << ray.tfar << ", time = " << ray.time << ", " <<
       "instID = " << ray.instID <<  ", geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";

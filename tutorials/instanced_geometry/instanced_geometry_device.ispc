@@ -196,7 +196,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = make_Vec3f(camera.xfm.p);
   ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -208,7 +208,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   ray.time = 0;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,&context,ray);
+  rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -229,7 +229,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* initialize shadow ray */
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    RTCRay shadow;
+    Ray shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
@@ -240,7 +240,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.time = 0;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,shadow);
+    rtcOccluded(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -301,8 +301,8 @@ void renderTileStandardStream(uniform int taskIndex,
 
   uniform RayStats& stats = g_stats[threadIndex];
 
-  RTCRay primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  RTCRay shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3f color_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
@@ -318,7 +318,7 @@ void renderTileStandardStream(uniform int taskIndex,
     bool mask = __mask; unmasked { valid_stream[N] = mask; }
 
     /* initialize ray */
-    RTCRay& primary = primary_stream[N];
+    Ray& primary = primary_stream[N];
     primary.org = make_Vec3f(camera.xfm.p);
     primary.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = __mask; unmasked { // invalidates inactive rays
@@ -340,7 +340,7 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext primary_context;
   primary_context.flags = g_iflags_coherent;
   primary_context.userRayExt = &primary_stream;
-  rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay));
+  rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray));
 
   /* terminate rays and update color */
   N = -1;
@@ -351,7 +351,7 @@ void renderTileStandardStream(uniform int taskIndex,
     if (all(__mask == 0)) continue;
 
     /* invalidate shadow rays by default */
-    RTCRay& shadow = shadow_stream[N];
+    Ray& shadow = shadow_stream[N];
     unmasked {
       shadow.tnear = (float)(pos_inf);
       shadow.tfar  = (float)(neg_inf);
@@ -367,7 +367,7 @@ void renderTileStandardStream(uniform int taskIndex,
     }
 
     /* calculate shading normal in world space */
-    RTCRay& primary = primary_stream[N];
+    Ray& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
     if (primary.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[primary.instID],Ns);
@@ -398,7 +398,7 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext shadow_context;
   shadow_context.flags = g_iflags_coherent;
   shadow_context.userRayExt = &shadow_stream;
-  rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(RTCRay));
+  rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
 
   /* add light contribution */
   N = -1;
@@ -412,7 +412,7 @@ void renderTileStandardStream(uniform int taskIndex,
     if (valid_stream[N] == false) continue;
 
     /* calculate shading normal in world space */
-    RTCRay& primary = primary_stream[N];
+    Ray& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
     if (primary.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[primary.instID],Ns);
@@ -424,7 +424,7 @@ void renderTileStandardStream(uniform int taskIndex,
       diffuse = colors[primary.instID][primary.geomID];
 
     /* add light contrinution */
-    RTCRay& shadow = shadow_stream[N];
+    Ray& shadow = shadow_stream[N];
     if (shadow.geomID) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
     }

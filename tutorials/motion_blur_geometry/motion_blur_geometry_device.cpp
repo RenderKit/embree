@@ -378,7 +378,7 @@ void sphereIntersectFuncN(const int* valid,
   if (!valid[0])
     return;
   
-  RTCRay *ray = (RTCRay *)rays;
+  Ray *ray = (Ray *)rays;
   
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time*(float)(time_segments);
@@ -432,7 +432,7 @@ void sphereOccludedFuncN(const int* valid,
   if (!valid[0])
     return;
   
-  RTCRay *ray = (RTCRay *)rays;
+  Ray *ray = (Ray *)rays;
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
@@ -576,7 +576,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (g_time != -1) time = g_time;
 
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -588,7 +588,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   ray.time = time;
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,ray);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -616,7 +616,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));
 
     /* initialize shadow ray */
-    RTCRay shadow;
+    Ray shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
@@ -628,7 +628,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.time = time;
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,shadow);
+    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

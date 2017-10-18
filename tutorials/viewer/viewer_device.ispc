@@ -145,7 +145,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 }
 
 
-void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
+void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
   {
@@ -199,7 +199,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
   return (1.0f-ftime)*make_AffineSpace3f(instance->spaces[itime+0]) + ftime*make_AffineSpace3f(instance->spaces[itime+1]);
 }
 
-inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   foreach_unique (instID in ray.instID) {
@@ -246,7 +246,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = make_Vec3f(camera.xfm.p);
   ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -259,7 +259,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   context.flags = g_iflags_coherent;
-  rtcIntersect(g_scene,&context,ray);
+  rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade background black */
