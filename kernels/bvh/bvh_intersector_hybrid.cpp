@@ -30,7 +30,7 @@
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
-#include "../geometry/subdivpatch1cached_intersector.h"
+//#include "../geometry/subdivpatch1cached_intersector.h"
 #include "../geometry/object_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1

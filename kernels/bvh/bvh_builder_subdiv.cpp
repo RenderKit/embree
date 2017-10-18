@@ -628,7 +628,6 @@ namespace embree
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
                 new (&patch) SubdivPatch1Cached(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
-
               if (cached)
               {
                 for (size_t t=0; t<mesh->numTimeSteps; t++)
