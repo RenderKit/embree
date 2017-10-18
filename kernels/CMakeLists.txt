@@ -93,9 +93,6 @@ ENDIF()
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
 
-  common/rtcore_ispc.cpp
-  common/rtcore_ispc.ispc
-
   bvh/bvh_intersector_hybrid4_bvh4.cpp
   bvh/bvh_intersector_stream_bvh4.cpp
   bvh/bvh_intersector_stream_filters.cpp)
@@ -219,7 +216,7 @@ MACRO (CheckGlobals library)
 ENDMACRO()
 
 DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
-ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
+ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_DEFINITIONS "EMBREE_LOWEST_ISA")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
