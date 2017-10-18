@@ -45,116 +45,16 @@ namespace embree
     this->boundsFuncUserPtr = userPtr;
   }
 
-  void UserGeometry::setIntersectFunction (RTCIntersectFunc intersect1, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectFunctionN (and optionally rtcSetIntersectFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector1.intersect = intersect1;
-  }
-
-  void UserGeometry::setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc) 
-  {
-     if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectFunctionN (and optionally rtcSetIntersectFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector4.intersect = (void*)intersect4;
-    intersectors.intersector4.ispc = ispc;
-  }
-
-  void UserGeometry::setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectFunctionN (and optionally rtcSetIntersectFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector8.intersect = (void*)intersect8;
-    intersectors.intersector8.ispc = ispc;
-  }
-
-  void UserGeometry::setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectFunctionN (and optionally rtcSetIntersectFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector16.intersect = (void*)intersect16;
-    intersectors.intersector16.ispc = ispc;
-  }
-
   void UserGeometry::setIntersectFunctionN (RTCIntersectFuncN intersect) 
   {
-    // if (scene && !scene->isStreamMode())
-    //   throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectFunctionN only in stream mode");
-
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     intersectors.intersectorN.intersect = intersect;
   }
 
-  void UserGeometry::setOccludedFunction (RTCOccludedFunc occluded1, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOccludedFunctionN (and optionally rtcSetOccludedFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector1.occluded = occluded1;
-  }
-
-  void UserGeometry::setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOccludedFunctionN (and optionally rtcSetOccludedFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector4.occluded = (void*)occluded4;
-    intersectors.intersector4.ispc = ispc;
-  }
-
-  void UserGeometry::setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOccludedFunctionN (and optionally rtcSetOccludedFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector8.occluded = (void*)occluded8;
-    intersectors.intersector8.ispc = ispc;
-  }
-
-  void UserGeometry::setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOccludedFunctionN (and optionally rtcSetOccludedFunction1Mp) in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector16.occluded = (void*)occluded16;
-    intersectors.intersector16.ispc = ispc;
-  }
-
   void UserGeometry::setOccludedFunctionN (RTCOccludedFuncN occluded) 
   {
-    // if (scene && !scene->isStreamMode())
-    //   throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOccludedFunctionN only in stream mode");
-
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 

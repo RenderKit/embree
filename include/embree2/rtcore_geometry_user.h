@@ -26,29 +26,6 @@ typedef void (*RTCBoundsFunc)(void* userPtr,         /*!< pointer to user data *
                                size_t time,           /*!< time to calculate bounds for */
                                RTCBounds& bounds_o    /*!< returns calculated bounds */);
 
-/*! Type of intersect function pointer for single rays. */
-typedef void (*RTCIntersectFunc)(void* ptr,           /*!< pointer to user data */
-                                 RTCRay& ray,         /*!< ray to intersect */
-                                 size_t item          /*!< item to intersect */);
-
-/*! Type of intersect function pointer for ray packets of size 4. */
-typedef void (*RTCIntersectFunc4)(const void* valid,  /*!< pointer to valid mask */
-                                  void* ptr,          /*!< pointer to user data */
-                                  RTCRay4& ray,       /*!< ray packet to intersect */
-                                  size_t item         /*!< item to intersect */);
-
-/*! Type of intersect function pointer for ray packets of size 8. */
-typedef void (*RTCIntersectFunc8)(const void* valid,  /*!< pointer to valid mask */
-                                  void* ptr,          /*!< pointer to user data */
-                                  RTCRay8& ray,       /*!< ray packet to intersect */
-                                  size_t item         /*!< item to intersect */);
-
-/*! Type of intersect function pointer for ray packets of size 16. */
-typedef void (*RTCIntersectFunc16)(const void* valid, /*!< pointer to valid mask */
-                                   void* ptr,         /*!< pointer to user data */
-                                   RTCRay16& ray,     /*!< ray packet to intersect */
-                                   size_t item        /*!< item to intersect */);
-
 /*! Type of intersect function pointer for ray packets of size N. */
 typedef void (*RTCIntersectFuncN)(const int* valid,                        /*!< pointer to valid mask */
                                   void* ptr,                               /*!< pointer to geometry user data */
@@ -56,29 +33,6 @@ typedef void (*RTCIntersectFuncN)(const int* valid,                        /*!< 
                                   RTCRayN* rays,                           /*!< ray packet to intersect */
                                   size_t N,                                /*!< number of rays in packet */
                                   size_t item                              /*!< item to intersect */);
-
-/*! Type of occlusion function pointer for single rays. */
-typedef void (*RTCOccludedFunc) (void* ptr,           /*!< pointer to user data */ 
-                                 RTCRay& ray,         /*!< ray to test occlusion */
-                                 size_t item          /*!< item to test for occlusion */);
-
-/*! Type of occlusion function pointer for ray packets of size 4. */
-typedef void (*RTCOccludedFunc4) (const void* valid,  /*! pointer to valid mask */
-                                  void* ptr,          /*!< pointer to user data */
-                                  RTCRay4& ray,       /*!< Ray packet to test occlusion. */
-                                  size_t item         /*!< item to test for occlusion */);
-
-/*! Type of occlusion function pointer for ray packets of size 8. */
-typedef void (*RTCOccludedFunc8) (const void* valid,  /*! pointer to valid mask */
-                                  void* ptr,          /*!< pointer to user data */
-                                  RTCRay8& ray,       /*!< Ray packet to test occlusion. */
-                                  size_t item         /*!< item to test for occlusion */);
-
-/*! Type of occlusion function pointer for ray packets of size 16. */
-typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask */
-                                   void* ptr,         /*!< pointer to user data */
-                                   RTCRay16& ray,     /*!< Ray packet to test occlusion. */
-                                   size_t item        /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! pointer to valid mask */

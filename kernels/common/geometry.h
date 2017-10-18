@@ -236,51 +236,11 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
-    /*! Set intersect function for single rays. */
-    virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
-    /*! Set intersect function for ray packets of size 4. */
-    virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
-    /*! Set intersect function for ray packets of size 8. */
-    virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
-    /*! Set intersect function for ray packets of size 16. */
-    virtual void setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
     /*! Set intersect function for ray packets of size N. */
     virtual void setIntersectFunctionN (RTCIntersectFuncN intersect) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
-    /*! Set occlusion function for single rays. */
-    virtual void setOccludedFunction (RTCOccludedFunc occluded, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
-    /*! Set occlusion function for ray packets of size 4. */
-    virtual void setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
-    /*! Set occlusion function for ray packets of size 8. */
-    virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
-    /*! Set occlusion function for ray packets of size 16. */
-    virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
     /*! Set occlusion function for ray packets of size N. */
     virtual void setOccludedFunctionN (RTCOccludedFuncN occluded) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
