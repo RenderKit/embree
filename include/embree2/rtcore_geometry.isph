@@ -98,7 +98,7 @@ typedef unmasked void (*uniform RTCFilterFuncN)(uniform int* uniform valid,     
                                                 const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                                 struct RTCRayN* uniform ray,                  /*!< ray and previous hit */
                                                 const struct RTCHitN* uniform potentialHit,         /*!< potential new hit */
-                                                uniform const uintptr_t N              /*!< number of rays in ray packet */);
+                                                const uniform unsigned int N              /*!< number of rays in ray packet */);
 
 /*! Type of displacement callback functions */
 typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*!< pointer to user data of geometry */
@@ -113,7 +113,7 @@ typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*
                                               uniform float* uniform px,       /*!< x coordinates of points to displace (source and target) */
                                               uniform float* uniform py,       /*!< y coordinates of points to displace (source and target) */
                                               uniform float* uniform pz,       /*!< z coordinates of points to displace (source and target) */
-                                              uniform uintptr_t N                 /*!< number of points to displace */ );
+                                              uniform unsigned int N                 /*!< number of points to displace */ );
 
 /*! \brief Defines an opaque geometry type */
 typedef uniform struct __RTCGeometry {}* uniform RTCGeometry;
@@ -130,7 +130,7 @@ typedef uniform struct __RTCGeometry {}* uniform RTCGeometry;
   instance. */
 RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
                                        RTCScene source,                  //!< the scene to instantiate
-                                       uniform size_t numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
+                                       uniform unsigned int numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
   );
 
 /*! \brief Creates a new geometry instance. 
@@ -150,7 +150,7 @@ RTCORE_API RTCORE_DEPRECATED uniform unsigned int rtcNewGeometryInstance(RTCDevi
 RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< ID of geometry 
                                  uniform RTCMatrixType layout,                   //!< layout of transformation matrix
                                  const uniform float* uniform xfm,               //!< pointer to transformation matrix
-                                 uniform size_t timeStep = 0                     //!< timestep to set the matrix for 
+                                 uniform unsigned int timeStep = 0                     //!< timestep to set the matrix for 
   );
 
 /*! \brief Creates a new triangle mesh. The number of triangles
@@ -169,7 +169,7 @@ RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< I
   used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
                                            uniform RTCGeometryFlags flags,  //!< geometry flags
-                                           uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+                                           uniform unsigned int numTimeSteps = 1  //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
@@ -187,7 +187,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   value of the 4th float used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
                                        uniform RTCGeometryFlags flags,  //!< geometry flags
-                                       uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+                                       uniform unsigned int numTimeSteps = 1  //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -249,7 +249,7 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
 
 RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
                                               uniform RTCGeometryFlags flags,        //!< geometry flags
-                                              uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
+                                              uniform unsigned int numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -363,7 +363,7 @@ RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice device,
   geometric artefacts. */
 RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice device,
                                            uniform RTCGeometryFlags flags,    //!< geometry flags
-                                           uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+                                           uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
@@ -380,7 +380,7 @@ RTCORE_API void rtcSetSubdivisionMode(RTCGeometry geometry, uniform unsigned int
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
 RTCORE_API void rtcSetIndexBuffer(RTCGeometry geometry, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 
-RTCORE_API void* uniform rtcNewBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform size_t byteStride, uniform size_t numItems);
+RTCORE_API void* uniform rtcNewBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform size_t byteStride, uniform unsigned int numItems);
 
 /*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
@@ -395,7 +395,7 @@ RTCORE_API void* uniform rtcNewBuffer(RTCGeometry geometry, uniform RTCBufferTyp
  *  this function is not called, Embree will allocate and manage
  *  buffers of the default layout. */
 RTCORE_API void rtcSetBuffer(RTCGeometry geometry, uniform RTCBufferType type, 
-                             const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform size_t size);
+                             const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int size);
 
 /*! \brief Gets pointer to specified buffer. */
 RTCORE_API void* uniform rtcGetBuffer(RTCGeometry geometry, uniform RTCBufferType type);
@@ -458,7 +458,7 @@ RTCORE_API void* uniform rtcGetUserData (RTCGeometry geometry);
  *  instructions. */
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
-                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats);
+                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform unsigned int numFloats);
 
 /*! Interpolates user data to some varying u/v location. The data
  *  buffer specifies per vertex data to interpolate and can be one of
@@ -480,7 +480,7 @@ void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsign
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                     varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
-                    uniform size_t numFloats);
+                    uniform unsigned int numFloats);
 
 
 /*! \brief Attaches the geometry to some scene. */

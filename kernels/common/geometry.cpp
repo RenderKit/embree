@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  Geometry::Geometry (Device* device, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
+  Geometry::Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCGeometryFlags flags) 
     : device(device), scene(nullptr), geomID(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
@@ -165,8 +165,8 @@ namespace embree
     //if (filter) hasOcclusionFilterMask  |= HAS_FILTERN; else hasOcclusionFilterMask  &= ~HAS_FILTERN;
   }
 
-  void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
+  void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
+                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
   {
     if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
@@ -184,25 +184,25 @@ namespace embree
     float* ddPdudut = nullptr, *ddPdvdvt = nullptr, *ddPdudvt = nullptr;
     if (ddPdudu) { ddPdudut = ddPdudu_tmp; ddPdvdvt = ddPdvdv_tmp; ddPdudvt = ddPdudv_tmp; }
     
-    for (size_t i=0; i<numUVs; i++)
+    for (unsigned int i=0; i<numUVs; i++)
     {
       if (valid && !valid[i]) continue;
       interpolate(primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,ddPdudut,ddPdvdvt,ddPdudvt,numFloats);
       
       if (likely(P)) {
-        for (size_t j=0; j<numFloats; j++) 
+        for (unsigned int j=0; j<numFloats; j++) 
           P[j*numUVs+i] = Pt[j];
       }
       if (likely(dPdu)) 
       {
-        for (size_t j=0; j<numFloats; j++) {
+        for (unsigned int j=0; j<numFloats; j++) {
           dPdu[j*numUVs+i] = dPdut[j];
           dPdv[j*numUVs+i] = dPdvt[j];
         }
       }
       if (likely(ddPdudu)) 
       {
-        for (size_t j=0; j<numFloats; j++) {
+        for (unsigned int j=0; j<numFloats; j++) {
           ddPdudu[j*numUVs+i] = ddPdudut[j];
           ddPdvdv[j*numUVs+i] = ddPdvdvt[j];
           ddPdudv[j*numUVs+i] = ddPdudvt[j];

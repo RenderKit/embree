@@ -47,7 +47,7 @@ struct LazyGeometry
 
 LazyGeometry* g_objects[numSpheres];
 
-void instanceBoundsFunc(void* uniform, void* instance_i, size_t item, size_t time, RTCBounds& bounds_o)
+void instanceBoundsFunc(void* uniform, void* instance_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
 {
   const LazyGeometry* instance = (const LazyGeometry*) instance_i;
   Vec3fa lower = instance->center-Vec3fa(instance->radius);
@@ -163,8 +163,8 @@ void instanceIntersectFuncN(const int* valid,
                                      void* ptr,
                                      const RTCIntersectContext* context,
                                      RTCRayN* rays,
-                                     size_t N,
-                                     size_t item)
+                                     unsigned int N,
+                                     unsigned int item)
 {
   assert(N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
@@ -190,8 +190,8 @@ void instanceOccludedFuncN(const int* valid,
                                     void* ptr,
                                     const RTCIntersectContext* context,
                                     RTCRayN* rays,
-                                    size_t N,
-                                    size_t item)
+                                    unsigned int N,
+                                    unsigned int item)
 {
   assert(N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;

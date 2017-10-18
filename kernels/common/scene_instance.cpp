@@ -28,18 +28,18 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersectorN);
   }
 
-  Instance::Instance (Device* device, Scene* object, size_t numTimeSteps) 
+  Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
     : AccelSet(device,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
   {
     world2local0 = one;
-    for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
+    for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
     boundsFunc = device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
     intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
   }
   
-  void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
+  void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");

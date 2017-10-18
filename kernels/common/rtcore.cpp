@@ -323,7 +323,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcIntersect1M (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) 
+  RTCORE_API void rtcIntersect1M (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay* rays, const unsigned int M, const size_t stride) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -354,7 +354,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcIntersect1Mp (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
+  RTCORE_API void rtcIntersect1Mp (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -385,7 +385,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcIntersectNM (RTCScene hscene, const RTCIntersectContext* user_context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
+  RTCORE_API void rtcIntersectNM (RTCScene hscene, const RTCIntersectContext* user_context, struct RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -423,7 +423,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcIntersectNp (RTCScene hscene, const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) 
+  RTCORE_API void rtcIntersectNp (RTCScene hscene, const RTCIntersectContext* user_context, const RTCRayNp& rays, const unsigned int N) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -548,7 +548,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded1M(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) 
+  RTCORE_API void rtcOccluded1M(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay* rays, const unsigned int M, const size_t stride) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -578,7 +578,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcOccluded1Mp(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
+  RTCORE_API void rtcOccluded1Mp(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -608,7 +608,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcOccludedNM(RTCScene hscene, const RTCIntersectContext* user_context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
+  RTCORE_API void rtcOccludedNM(RTCScene hscene, const RTCIntersectContext* user_context, RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -647,7 +647,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcOccludedNp(RTCScene hscene, const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) 
+  RTCORE_API void rtcOccludedNp(RTCScene hscene, const RTCIntersectContext* user_context, const RTCRayNp& rays, const unsigned int N) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -695,7 +695,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API RTCGeometry rtcNewInstance (RTCDevice hdevice, RTCScene hsource, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewInstance (RTCDevice hdevice, RTCScene hsource, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     Scene* source = (Scene*) hsource;
@@ -728,7 +728,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, RTCGeometryFlags gflags, unsigned* geomIDs, size_t N) 
+  RTCORE_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, RTCGeometryFlags gflags, unsigned* geomIDs, unsigned int N) 
   {
     Device* device = (Device*) hdevice;
     Scene* scene = (Scene*) hscene;
@@ -786,7 +786,7 @@ namespace embree
     return transform;
   }
 
-  RTCORE_API void rtcSetTransform (RTCGeometry hgeometry, RTCMatrixType layout, const float* xfm, size_t timeStep) 
+  RTCORE_API void rtcSetTransform (RTCGeometry hgeometry, RTCMatrixType layout, const float* xfm, unsigned int timeStep) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -798,7 +798,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numItems, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -814,7 +814,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -833,7 +833,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -852,7 +852,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCGeometry rtcNewCurveGeometry ( Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numTimeSteps) 
+  RTCGeometry rtcNewCurveGeometry ( Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, unsigned int numTimeSteps) 
   {
     createCurvesBezierTy createCurvesBezier = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
@@ -931,7 +931,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -950,7 +950,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numTimeSteps) 
+  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -999,7 +999,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcNewBuffer(RTCGeometry hgeometry, RTCBufferType type, size_t byteStride, size_t numItems) 
+  RTCORE_API void* rtcNewBuffer(RTCGeometry hgeometry, RTCBufferType type, size_t byteStride, unsigned int numItems) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1010,7 +1010,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetBuffer(RTCGeometry hgeometry, RTCBufferType type, const void* ptr, size_t offset, size_t stride, size_t size)
+  RTCORE_API void rtcSetBuffer(RTCGeometry hgeometry, RTCBufferType type, const void* ptr, size_t offset, size_t stride, unsigned int size)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1165,7 +1165,7 @@ namespace embree
 
   RTCORE_API void rtcInterpolate(RTCScene hscene, unsigned int geomID, unsigned primID, float u, float v, 
                                  RTCBufferType buffer,
-                                 float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                 float* P, float* dPdu, float* dPdv, unsigned int numFloats)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1180,7 +1180,7 @@ namespace embree
                                   RTCBufferType buffer,
                                   float* P, float* dPdu, float* dPdv, 
                                   float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                  size_t numFloats)
+                                  unsigned int numFloats)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1194,9 +1194,9 @@ namespace embree
 
 #if defined (EMBREE_RAY_PACKETS)
   RTCORE_API void rtcInterpolateN(RTCScene hscene, unsigned int geomID,
-                                  const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                  const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                   RTCBufferType buffer,
-                                  float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                  float* P, float* dPdu, float* dPdv, unsigned int numFloats)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1210,11 +1210,11 @@ namespace embree
 
 #if defined (EMBREE_RAY_PACKETS)
   RTCORE_API void rtcInterpolateN2(RTCScene hscene, unsigned int geomID,
-                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                    RTCBufferType buffer,
                                    float* P, float* dPdu, float* dPdv, 
                                    float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                   size_t numFloats)
+                                   unsigned int numFloats)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;

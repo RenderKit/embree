@@ -27,7 +27,7 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
     : Geometry(device,SUBDIV_MESH,0,numTimeSteps,flags), 
       displFunc(nullptr),
       displBounds(empty),
@@ -92,7 +92,7 @@ namespace embree
     }
   }
 
-  void* SubdivMesh::newBuffer(RTCBufferType type, size_t stride, size_t size) 
+  void* SubdivMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -121,10 +121,10 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling();
+      if (scene && size != (unsigned)-1) disabling();
       faceVertices.newBuffer(device,size,stride);
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling();
+      if (scene && size != (unsigned)-1) enabling();
       return faceVertices.get();
     }
 
@@ -175,7 +175,7 @@ namespace embree
     return nullptr;
   }
 
-  void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
+  void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -205,10 +205,10 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling();
+      if (scene && size != (unsigned)-1) disabling();
       faceVertices.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling();
+      if (scene && size != (unsigned)-1) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
@@ -779,12 +779,12 @@ namespace embree
 
   namespace isa
   {
-    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) 
+    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps) 
     {
       return new SubdivMeshISA(device,flags,numTimeSteps);
     }
     
-    void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+    void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
     {
       /* test if interpolation is enabled */
 #if defined(DEBUG) 
@@ -819,7 +819,7 @@ namespace embree
       bool has_dP = dPdu;     assert(!has_dP  || dPdv);
       bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
       
-      for (size_t i=0; i<numFloats; i+=4)
+      for (unsigned int i=0; i<numFloats; i+=4)
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
         isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),scene->commitCounterSubdiv,
@@ -853,8 +853,8 @@ namespace embree
       }
     }
     
-    void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                     RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
+    void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
+                                     RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
     {
       /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -899,9 +899,9 @@ namespace embree
         
         foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
                        {
-                         for (size_t j=0; j<numFloats; j+=4) 
+                         for (unsigned int j=0; j<numFloats; j+=4) 
                          {
-                           const size_t M = min(size_t(4),numFloats-j);
+                           const size_t M = min(4u,numFloats-j);
                            isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),scene->commitCounterSubdiv,
                                                                             topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                                             P ? P+j*numUVs+i : nullptr,

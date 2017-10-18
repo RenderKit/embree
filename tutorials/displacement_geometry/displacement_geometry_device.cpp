@@ -115,7 +115,7 @@ void displacementFunction(void* ptr,
                                    float* px,           /*!< x coordinates of points to displace (source and target) */
                                    float* py,           /*!< y coordinates of points to displace (source and target) */
                                    float* pz,           /*!< z coordinates of points to displace (source and target) */
-                                   size_t N)
+                                   unsigned int N)
 {
   for (unsigned int i=0; i<N; i++) {
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);

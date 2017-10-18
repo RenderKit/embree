@@ -48,7 +48,7 @@ struct Instance
   Vec3f upper;
 };
 
-unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
+unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds& bounds_o)
 {
   const uniform Instance* uniform instance = (const uniform Instance* uniform) instance_i;
   uniform Vec3f l = instance->lower;
@@ -75,8 +75,8 @@ unmasked void instanceIntersectFunc(const uniform int* uniform valid,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     RTCRayN* uniform rays,
-                                    uniform uintptr_t N,
-                                    uniform uintptr_t item)
+                                    uniform unsigned int N,
+                                    uniform unsigned int item)
 {
   assert(N == programCount);
   if (!valid[programIndex])
@@ -105,8 +105,8 @@ unmasked void instanceOccludedFunc(const uniform int* uniform valid,
                                    void* uniform ptr,
                                    const uniform RTCIntersectContext* uniform context,
                                    RTCRayN* uniform rays,
-                                   uniform uintptr_t N,
-                                   uniform uintptr_t item)
+                                   uniform unsigned int N,
+                                   uniform unsigned int item)
 {
   assert(N == programCount);
   if (!valid[programIndex])
@@ -127,8 +127,8 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
                                      void* uniform ptr,
                                      const uniform RTCIntersectContext* uniform context,
                                      RTCRayN* uniform rays,
-                                     uniform uintptr_t N,
-                                     uniform uintptr_t item)
+                                     uniform unsigned int N,
+                                     uniform unsigned int item)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -188,8 +188,8 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     RTCRayN* uniform rays,
-                                    uniform uintptr_t N,
-                                    uniform uintptr_t item)
+                                    uniform unsigned int N,
+                                    uniform unsigned int item)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -277,7 +277,7 @@ struct Sphere
   uniform unsigned int geomID;
 };
 
-unmasked void sphereBoundsFunc(void* uniform, void* uniform spheres_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
+unmasked void sphereBoundsFunc(void* uniform, void* uniform spheres_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds& bounds_o)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -293,8 +293,8 @@ unmasked void sphereIntersectFunc(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   RTCRayN* uniform rays,
-                                  uniform uintptr_t N,
-                                  uniform uintptr_t item)
+                                  uniform unsigned int N,
+                                  uniform unsigned int item)
 {
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
@@ -336,8 +336,8 @@ unmasked void sphereOccludedFunc(const uniform int* uniform valid,
                                  void* uniform ptr,
                                  const uniform RTCIntersectContext* uniform context,
                                  RTCRayN* uniform rays,
-                                 uniform uintptr_t N,
-                                 uniform uintptr_t item)
+                                 uniform unsigned int N,
+                                 uniform unsigned int item)
 {
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
@@ -369,8 +369,8 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
                                    void* uniform ptr,
                                    const uniform RTCIntersectContext* uniform context,
                                    RTCRayN* uniform rays,
-                                   uniform uintptr_t N,
-                                   uniform uintptr_t item)
+                                   uniform unsigned int N,
+                                   uniform unsigned int item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
@@ -432,8 +432,8 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   RTCRayN* uniform rays,
-                                  uniform uintptr_t N,
-                                  uniform uintptr_t item)
+                                  uniform unsigned int N,
+                                  uniform unsigned int item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 

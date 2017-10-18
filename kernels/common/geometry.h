@@ -62,7 +62,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Device* device, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
+    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCGeometryFlags flags);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -106,7 +106,7 @@ namespace embree
     __forceinline size_t size() const { return numPrimitives; }
 
     /*! sets the number of primitives */
-    __forceinline void setNumPrimitives(size_t numPrimitives_in)
+    __forceinline void setNumPrimitives(unsigned int numPrimitives_in)
     { 
       if ((ssize_t)numPrimitives_in == -1) return;
       if (numPrimitives_in == numPrimitives) return;
@@ -166,13 +166,13 @@ namespace embree
     }
 
     /*! interpolates user data to the specified u/v location */
-    virtual void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) {
+    virtual void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) {
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! interpolates user data to the specified u/v locations */
-    virtual void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    virtual void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
+                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
 
     /*! for subdivision surfaces only */
   public:
@@ -193,13 +193,13 @@ namespace embree
     }
 
     /*! Creates a new Embree managed buffer. */
-    virtual void* newBuffer(RTCBufferType type, size_t stride, size_t size) { 
+    virtual void* newBuffer(RTCBufferType type, size_t stride, unsigned int size) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry");
       return nullptr;
     }
     
     /*! Sets specified buffer. */
-    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) { 
+    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -224,7 +224,7 @@ namespace embree
   public:
     
     /*! Sets transformation of the instance */
-    virtual void setTransform(const AffineSpace3fa& transform, size_t timeStep) {
+    virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -260,9 +260,9 @@ namespace embree
     Scene* scene;              //!< pointer to scene this mesh belongs to
     unsigned geomID;           //!< internal geometry ID
     Type type;                 //!< geometry type 
-    size_t numPrimitives;      //!< number of primitives of this geometry
+    unsigned int numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed
-    unsigned numTimeSteps;     //!< number of time steps
+    unsigned int numTimeSteps;     //!< number of time steps
     float fnumTimeSegments;    //!< number of time segments (precalculation)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled

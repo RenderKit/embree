@@ -21,7 +21,7 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  TriangleMesh::TriangleMesh (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+  TriangleMesh::TriangleMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
     : Geometry(device,TRIANGLE_MESH,0,numTimeSteps,flags)
   {
     vertices.resize(numTimeSteps);
@@ -48,7 +48,7 @@ namespace embree
     Geometry::update();
   }
 
-  void* TriangleMesh::newBuffer(RTCBufferType type, size_t stride, size_t size) 
+  void* TriangleMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -78,10 +78,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling(); 
+      if (scene && size != (unsigned)-1) disabling(); 
       triangles.newBuffer(device,size,stride); 
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
+      if (scene && size != (unsigned)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
       return triangles.get();
     }
     else 
@@ -90,7 +90,7 @@ namespace embree
     return nullptr;
   }
 
-  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
+  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -122,10 +122,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling(); 
+      if (scene && size != (unsigned)-1) disabling(); 
       triangles.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
+      if (scene && size != (unsigned)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -151,7 +151,7 @@ namespace embree
   void TriangleMesh::preCommit () 
   {
     /* verify that stride of all time steps are identical */
-    for (size_t t=0; t<numTimeSteps; t++)
+    for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
   }
@@ -201,7 +201,7 @@ namespace embree
     return true;
   }
   
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -222,7 +222,7 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
     
-    for (size_t i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
     {
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
@@ -251,7 +251,7 @@ namespace embree
   
   namespace isa
   {
-    TriangleMesh* createTriangleMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) {
+    TriangleMesh* createTriangleMesh(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps) {
       return new TriangleMeshISA(device,flags,numTimeSteps);
     }
   }

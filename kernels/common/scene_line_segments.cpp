@@ -21,7 +21,7 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  LineSegments::LineSegments (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+  LineSegments::LineSegments (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
     : Geometry(device,LINE_SEGMENTS,0,numTimeSteps,flags)
   {
     vertices.resize(numTimeSteps);
@@ -48,7 +48,7 @@ namespace embree
     Geometry::update();
   }
 
-  void* LineSegments::newBuffer(RTCBufferType type, size_t stride, size_t size)
+  void* LineSegments::newBuffer(RTCBufferType type, size_t stride, unsigned int size)
   {
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -73,10 +73,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling();
+      if (scene && size != (unsigned)-1) disabling();
       segments.newBuffer(device,size,stride); 
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling();
+      if (scene && size != (unsigned)-1) enabling();
       return segments.get();
     }
     else
@@ -85,7 +85,7 @@ namespace embree
     return nullptr;
   }
 
-  void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size)
+  void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size)
   {
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -111,10 +111,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling();
+      if (scene && size != (unsigned)-1) disabling();
       segments.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling();
+      if (scene && size != (unsigned)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -153,7 +153,7 @@ namespace embree
         return false;
 
     /*! verify segment indices */
-    for (size_t i=0; i<numPrimitives; i++) {
+    for (unsigned int i=0; i<numPrimitives; i++) {
       if (segments[i]+1 >= numVertices()) return false;
     }
 
@@ -169,7 +169,7 @@ namespace embree
     return true;
   }
 
-  void LineSegments::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
+  void LineSegments::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -190,7 +190,7 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
     
-    for (size_t i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
     {
       const size_t ofs = i*sizeof(float);
       const size_t segment = segments[primID];
@@ -206,7 +206,7 @@ namespace embree
 
   namespace isa
   {
-    LineSegments* createLineSegments(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) {
+    LineSegments* createLineSegments(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps) {
       return new LineSegmentsISA(device,flags,numTimeSteps);
     }
   }

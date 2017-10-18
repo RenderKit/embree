@@ -49,7 +49,7 @@ void filterDispatch(int* valid,
                              const RTCIntersectContext* context,
                              struct RTCRayN* ray,
                              const struct RTCHitN* potentialHit,
-                             const size_t N);
+                             const unsigned int N);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -250,7 +250,7 @@ void filterDispatch(int* valid,
                              const RTCIntersectContext* context,
                              struct RTCRayN* _ray,
                              const struct RTCHitN* potentialHit,
-                             const size_t N)
+                             const unsigned int N)
 {
   RTCRay* ray = (RTCRay*)_ray;
   if (!enableFilterDispatch) return;
@@ -263,7 +263,7 @@ void occlusionFilter(int* valid_i,
                               const RTCIntersectContext* context,
                               struct RTCRayN* _ray,
                               const struct RTCHitN* potentialHit,
-                              const size_t N)
+                              const unsigned int N)
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);

@@ -350,7 +350,7 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-void sphereBoundsFunc(void* userPtr, void* spheres_i, size_t item, size_t time, RTCBounds& bounds_o)
+void sphereBoundsFunc(void* userPtr, void* spheres_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
 {
   const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
@@ -368,8 +368,8 @@ void sphereIntersectFuncN(const int* valid,
                                    void* ptr,
                                    const RTCIntersectContext* context,
                                    RTCRayN* rays,
-                                   size_t N,
-                                   size_t item)
+                                   unsigned int N,
+                                   unsigned int item)
 {
   assert(N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
@@ -422,9 +422,8 @@ void sphereOccludedFuncN(const int* valid,
                                   void* ptr,
                                   const RTCIntersectContext* context,
                                   RTCRayN* rays,
-                                  size_t N,
-                                  size_t item)
-  //void* spheres_i, RTCRay& ray, size_t item)
+                                  unsigned int N,
+                                  unsigned int item)
 {
   assert(N == 1);
   const Sphere* spheres = (const Sphere*)ptr;

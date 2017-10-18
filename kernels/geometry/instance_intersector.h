@@ -25,22 +25,22 @@ namespace embree
   {
     struct FastInstanceIntersectorN
     {
-      static void intersect1(const Instance* instance, const RTCIntersectContext* context, Ray& ray, size_t item);
-      static void occluded1 (const Instance* instance, const RTCIntersectContext* context, Ray& ray, size_t item);
+      static void intersect1(const Instance* instance, const RTCIntersectContext* context, Ray& ray, unsigned int item);
+      static void occluded1 (const Instance* instance, const RTCIntersectContext* context, Ray& ray, unsigned int item);
 
       template<int N>
-      static void intersectN(vint<N>* valid, const Instance* instance, const RTCIntersectContext* context, RayK<N>& ray, size_t item);
+      static void intersectN(vint<N>* valid, const Instance* instance, const RTCIntersectContext* context, RayK<N>& ray, unsigned int item);
       template<int N>
-      static void occludedN (vint<N>* valid, const Instance* instance, const RTCIntersectContext* context, RayK<N>& ray, size_t item);
+      static void occludedN (vint<N>* valid, const Instance* instance, const RTCIntersectContext* context, RayK<N>& ray, unsigned int item);
    
-      static void intersect(int* valid, void* ptr, const RTCIntersectContext* context, RTCRayN* rays, size_t N, size_t item);
-      static void occluded (int* valid, void* ptr, const RTCIntersectContext* context, RTCRayN* rays, size_t N, size_t item);
+      static void intersect(const int* valid, void* ptr, const RTCIntersectContext* context, RTCRayN* rays, unsigned int N, unsigned int item);
+      static void occluded (const int* valid, void* ptr, const RTCIntersectContext* context, RTCRayN* rays, unsigned int N, unsigned int item);
     };
 
     struct FastInstanceIntersector1M
     {
-      static void intersect(const Instance* instance, RTCIntersectContext* context, Ray** rays, size_t M, size_t item);
-      static void occluded (const Instance* instance, RTCIntersectContext* context, Ray** rays, size_t M, size_t item);
+      static void intersect(const Instance* instance, RTCIntersectContext* context, Ray** rays, unsigned int M, unsigned int item);
+      static void occluded (const Instance* instance, RTCIntersectContext* context, Ray** rays, unsigned int M, unsigned int item);
     };
   }
 }

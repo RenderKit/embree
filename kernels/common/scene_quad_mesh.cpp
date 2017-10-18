@@ -21,7 +21,7 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  QuadMesh::QuadMesh (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+  QuadMesh::QuadMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
     : Geometry(device,QUAD_MESH,0,numTimeSteps,flags)
   {
     vertices.resize(numTimeSteps);
@@ -48,7 +48,7 @@ namespace embree
     Geometry::update();
   }
 
-  void* QuadMesh::newBuffer(RTCBufferType type, size_t stride, size_t size) 
+  void* QuadMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -79,10 +79,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling();
+      if (scene && size != (unsigned)-1) disabling();
       quads.newBuffer(device,size,stride);
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling();
+      if (scene && size != (unsigned)-1) enabling();
       return quads.get();
     }
     else
@@ -91,7 +91,7 @@ namespace embree
     return nullptr;
   }
 
-  void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
+  void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
   { 
     if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -123,10 +123,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (size_t)-1) disabling();
+      if (scene && size != (unsigned)-1) disabling();
       quads.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (scene && size != (size_t)-1) enabling();
+      if (scene && size != (unsigned)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -149,7 +149,7 @@ namespace embree
   void QuadMesh::preCommit () 
   {
     /* verify that stride of all time steps are identical */
-    for (size_t t=0; t<numTimeSteps; t++)
+    for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
   }
@@ -195,7 +195,7 @@ namespace embree
     return true;
   }
 
-  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
+  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -216,7 +216,7 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
 
-    for (size_t i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
     {
       const vboolx valid = vintx((int)i)+vintx(step) < vintx(int(numFloats));
       const size_t ofs = i*sizeof(float);
@@ -251,7 +251,7 @@ namespace embree
 
   namespace isa
   {
-    QuadMesh* createQuadMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) {
+    QuadMesh* createQuadMesh(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps) {
       return new QuadMeshISA(device,flags,numTimeSteps);
     }
   }

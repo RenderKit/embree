@@ -50,7 +50,7 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(void* uniform, void* instance_i, size_t item, size_t time, RTCBounds& bounds_o)
+void instanceBoundsFunc(void* uniform, void* instance_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
 {
   const Instance* instance = (const Instance*) instance_i;
   Vec3fa l = instance->lower;
@@ -77,8 +77,8 @@ void instanceIntersectFunc(const int* valid,
                                     void* ptr,
                                     const RTCIntersectContext* context,
                                     RTCRayN* rays,
-                                    size_t N,
-                                    size_t item)
+                                    unsigned int N,
+                                    unsigned int item)
 {
   assert(N == 1);
   if (!valid[0])
@@ -107,8 +107,8 @@ void instanceOccludedFunc(const int* valid,
                                    void* ptr,
                                    const RTCIntersectContext* context,
                                    RTCRayN* rays,
-                                   size_t N,
-                                   size_t item)
+                                   unsigned int N,
+                                   unsigned int item)
 {
   assert(N == 1);
   if (!valid[0])
@@ -129,8 +129,8 @@ void instanceIntersectFuncN(const int* valid,
                                      void* ptr,
                                      const RTCIntersectContext* context,
                                      RTCRayN* rays,
-                                     size_t N,
-                                     size_t item)
+                                     unsigned int N,
+                                     unsigned int item)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -190,8 +190,8 @@ void instanceOccludedFuncN(const int* valid,
                                     void* ptr,
                                     const RTCIntersectContext* context,
                                     RTCRayN* rays,
-                                    size_t N,
-                                    size_t item)
+                                    unsigned int N,
+                                    unsigned int item)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -279,7 +279,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(void* uniform, void* spheres_i, size_t item, size_t time, RTCBounds& bounds_o)
+void sphereBoundsFunc(void* uniform, void* spheres_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
 {
   const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
@@ -295,8 +295,8 @@ void sphereIntersectFunc(const int* valid,
                                   void* ptr,
                                   const RTCIntersectContext* context,
                                   RTCRayN* rays,
-                                  size_t N,
-                                  size_t item)
+                                  unsigned int N,
+                                  unsigned int item)
 {
   assert(N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
@@ -338,8 +338,8 @@ void sphereOccludedFunc(const int* valid,
                                  void* ptr,
                                  const RTCIntersectContext* context,
                                  RTCRayN* rays,
-                                 size_t N,
-                                 size_t item)
+                                 unsigned int N,
+                                 unsigned int item)
 {
   assert(N == 1);
   const Sphere* spheres = (const Sphere*) ptr;
@@ -371,8 +371,8 @@ void sphereIntersectFuncN(const int* valid,
                                    void* ptr,
                                    const RTCIntersectContext* context,
                                    RTCRayN* rays,
-                                   size_t N,
-                                   size_t item)
+                                   unsigned int N,
+                                   unsigned int item)
 {
   const Sphere* spheres = (const Sphere*) ptr;
 
@@ -434,8 +434,8 @@ void sphereOccludedFuncN(const int* valid,
                                   void* ptr,
                                   const RTCIntersectContext* context,
                                   RTCRayN* rays,
-                                  size_t N,
-                                  size_t item)
+                                  unsigned int N,
+                                  unsigned int item)
 {
   const Sphere* spheres = (const Sphere*) ptr;
 

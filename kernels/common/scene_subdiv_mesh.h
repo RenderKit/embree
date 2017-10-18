@@ -61,7 +61,7 @@ namespace embree
   public:
 
     /*! subdiv mesh construction */
-    SubdivMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps);
+    SubdivMesh(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps);
 
   public:
     void enabling();
@@ -69,8 +69,8 @@ namespace embree
     void setMask (unsigned mask);
     void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
-    void* newBuffer(RTCBufferType type, size_t stride, size_t size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
     void* getBuffer(RTCBufferType type);
     void update ();
     void updateBuffer (RTCBufferType type);
@@ -323,19 +323,19 @@ namespace embree
   {
     struct SubdivMeshISA : public SubdivMesh
     {
-      SubdivMeshISA (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+      SubdivMeshISA (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
         : SubdivMesh(device,flags,numTimeSteps) {}
 
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
+                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
       template<typename vbool, typename vint, typename vfloat>
-        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
-                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, unsigned int numUVs, 
+                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
     };
   }
 
-  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device* COMMA RTCGeometryFlags COMMA size_t);
+  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device* COMMA RTCGeometryFlags COMMA unsigned int);
 };

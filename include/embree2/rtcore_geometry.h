@@ -97,7 +97,7 @@ typedef void (*RTCFilterFuncN)(int* valid,                            /*!< point
                                const RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                struct RTCRayN* ray,                   /*!< ray and previous hit */
                                const struct RTCHitN* potentialHit,          /*!< potential new hit */
-                               const size_t N                         /*!< size of ray packet */);
+                               const unsigned int N                         /*!< size of ray packet */);
 
 /*! Displacement mapping function. */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
@@ -112,7 +112,7 @@ typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user da
                                     float* px,           /*!< x coordinates of points to displace (source and target) */
                                     float* py,           /*!< y coordinates of points to displace (source and target) */
                                     float* pz,           /*!< z coordinates of points to displace (source and target) */
-                                    size_t N             /*!< number of points to displace */ );
+                                    unsigned int N             /*!< number of points to displace */ );
 
 /*! \brief Defines an opaque geometry type */
 typedef struct __RTCGeometry {}* RTCGeometry;
@@ -129,8 +129,8 @@ typedef struct __RTCGeometry {}* RTCGeometry;
   hit, the instance ID (instID) member of the ray will get set to the
   geometry ID of the instance. */
 RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
-                                        RTCScene source,                  //!< the scene to instantiate
-                                        size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
+                                       RTCScene source,                  //!< the scene to instantiate
+                                       unsigned int numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
 
 /*! \brief Creates a new geometry instance. 
 
@@ -144,13 +144,13 @@ RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
   ID (geomID) member of the ray will get set to the geometry ID of the
   instance. */
 RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryInstance(RTCDevice device, RTCScene scene, unsigned geomID);
-RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryGroup   (RTCDevice device, RTCScene scene, RTCGeometryFlags flags, unsigned* geomIDs, size_t N);
+RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryGroup   (RTCDevice device, RTCScene scene, RTCGeometryFlags flags, unsigned* geomIDs, unsigned int N);
 
 /*! \brief Sets transformation of the instance for specified timestep */
 RTCORE_API void rtcSetTransform ( RTCGeometry geometry,                   //!< ID of geometry 
                                   RTCMatrixType layout,                   //!< layout of transformation matrix
                                   const float* xfm,                       //!< pointer to transformation matrix
-                                  size_t timeStep = 0                     //!< timestep to set the matrix for 
+                                  unsigned int timeStep = 0                     //!< timestep to set the matrix for 
   );
 
 /*! \brief Creates a new triangle mesh. The number of triangles
@@ -169,7 +169,7 @@ RTCORE_API void rtcSetTransform ( RTCGeometry geometry,                   //!< I
   used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
                                            RTCGeometryFlags flags,            //!< geometry flags
-                                           size_t numTimeSteps = 1            //!< number of motion blur time steps
+                                           unsigned int numTimeSteps = 1            //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
@@ -187,7 +187,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   value of the 4th float used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
                                        RTCGeometryFlags flags,        //!< geometry flags
-                                       size_t numTimeSteps = 1        //!< number of motion blur time steps
+                                       unsigned int numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -248,7 +248,7 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
 */
 RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
                                               RTCGeometryFlags flags,        //!< geometry flags
-                                              size_t numTimeSteps = 1        //!< number of motion blur time steps
+                                              unsigned int numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -362,7 +362,7 @@ RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice device,
   geometric artefacts. */
 RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice device,
                                            RTCGeometryFlags flags,            //!< geometry flags
-                                           size_t numTimeSteps = 1            //!< number of motion blur time steps
+                                           unsigned int numTimeSteps = 1            //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
@@ -379,7 +379,7 @@ RTCORE_API void rtcSetSubdivisionMode(RTCGeometry geometry, unsigned topologyID,
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
 RTCORE_API void rtcSetIndexBuffer(RTCGeometry geometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
 
-RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, RTCBufferType type, size_t byteStride, size_t numItems);
+RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, RTCBufferType type, size_t byteStride, unsigned int numItems);
 
 /*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
@@ -394,7 +394,7 @@ RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, RTCBufferType type, size_t b
  *  this function is not called, Embree will allocate and manage
  *  buffers of the default layout. */
 RTCORE_API void rtcSetBuffer(RTCGeometry geometry, RTCBufferType type, 
-                              const void* ptr, size_t byteOffset, size_t byteStride, size_t size);
+                              const void* ptr, size_t byteOffset, size_t byteStride, unsigned int size);
 
 /*! \brief Gets pointer to specified buffer. */
 RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, RTCBufferType type);
@@ -455,7 +455,7 @@ RTCORE_API void* rtcGetUserData (RTCGeometry geometry);
  *  that the last element can be read safely using SSE
  *  instructions. */
 RTCORE_API void rtcInterpolate(RTCScene scene, unsigned int geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
-                               float* P, float* dPdu, float* dPdv, size_t numFloats);
+                               float* P, float* dPdu, float* dPdv, unsigned int numFloats);
 
 /*! Interpolates user data to some u/v location. The data buffer
  *  specifies per vertex data to interpolate and can be one of the
@@ -471,8 +471,8 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned int geomID, unsigned pri
  *  order derivatives by setting ddPdudu, ddPdvdv, and ddPdudv to
  *  NULL. The buffers have to be padded at the end such that the last
  *  element can be read or written safely using SSE instructions. */
-RTCORE_API void rtcInterpolate2(RTCScene scene, unsigned int geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
-                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+RTCORE_API void rtcInterpolate2(RTCScene scene, unsigned int geomID, unsigned int primID, float u, float v, RTCBufferType buffer, 
+                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
 
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
@@ -491,9 +491,9 @@ RTCORE_API void rtcInterpolate2(RTCScene scene, unsigned int geomID, unsigned pr
  *  the end such that the last element can be read safely using SSE
  *  instructions.*/
 RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned int geomID, 
-                                const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                const void* valid, const unsigned int* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                 RTCBufferType buffer, 
-                                float* P, float* dPdu, float* dPdv, size_t numFloats);
+                                float* P, float* dPdu, float* dPdv, unsigned int numFloats);
 
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
@@ -515,9 +515,9 @@ RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned int geomID,
  *  the last element can be read safely using SSE
  *  instructions. */
 RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned int geomID, 
-                                const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                const void* valid, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                 RTCBufferType buffer, 
-                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
 
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);

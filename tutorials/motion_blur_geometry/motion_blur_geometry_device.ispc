@@ -348,7 +348,7 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
+unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds& bounds_o)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -366,8 +366,8 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
                                    void* uniform ptr,
                                    const uniform RTCIntersectContext* uniform context,
                                    RTCRayN* uniform rays,
-                                   uniform uintptr_t N,
-                                   uniform uintptr_t item)
+                                   uniform unsigned int N,
+                                   uniform unsigned int item)
 {
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
@@ -420,9 +420,8 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   RTCRayN* uniform rays,
-                                  uniform uintptr_t N,
-                                  uniform uintptr_t item)
-  //void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
+                                  uniform unsigned int N,
+                                  uniform unsigned int item)
 {
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;

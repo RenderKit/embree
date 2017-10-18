@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  UserGeometry::UserGeometry (Device* device, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
+  UserGeometry::UserGeometry (Device* device, RTCGeometryFlags gflags, unsigned int items, unsigned int numTimeSteps) 
     : AccelSet(device,gflags,items,numTimeSteps) {}
   
   void UserGeometry::setUserData (void* ptr) {

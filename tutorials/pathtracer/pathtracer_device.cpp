@@ -872,35 +872,35 @@ void intersectionFilterReject(int* valid,
                               const RTCIntersectContext* context,
                               struct RTCRayN* ray,
                               const struct RTCHitN* potentialHit,
-                              const size_t N);
+                              const unsigned int N);
 
 void intersectionFilterOBJ(int* valid,
                            void* ptr,
                            const RTCIntersectContext* context,
                            struct RTCRayN* ray,
                            const struct RTCHitN* potentialHit,
-                           const size_t N);
+                           const unsigned int N);
 
 void occlusionFilterOpaque(int* valid,
                            void* ptr,
                            const RTCIntersectContext* context,
                            struct RTCRayN* ray,
                            const struct RTCHitN* potentialHit,
-                           const size_t N);
+                           const unsigned int N);
 
 void occlusionFilterOBJ(int* valid,
                         void* ptr,
                         const RTCIntersectContext* context,
                         struct RTCRayN* ray,
                         const struct RTCHitN* potentialHit,
-                        const size_t N);
+                        const unsigned int N);
 
 void occlusionFilterHair(int* valid,
                          void* ptr,
                          const RTCIntersectContext* context,
                          struct RTCRayN* ray,
                          const struct RTCHitN* potentialHit,
-                         const size_t N);
+                         const unsigned int N);
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
@@ -1304,7 +1304,7 @@ void intersectionFilterReject(int* valid_i,
                                        const RTCIntersectContext* context,
                                        struct RTCRayN* _ray,
                                        const struct RTCHitN* potentialHit,
-                                       const size_t N) 
+                                       const unsigned int N) 
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1316,7 +1316,7 @@ void intersectionFilterOBJ(int* valid_i,
                                     const RTCIntersectContext* context,
                                     struct RTCRayN* _ray,
                                     const struct RTCHitN* potentialHit,
-                                    const size_t N) 
+                                    const unsigned int N) 
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1368,7 +1368,7 @@ void occlusionFilterOpaque(int* valid_i,
                            const RTCIntersectContext* context,
                            struct RTCRayN* _ray,
                            const struct RTCHitN* potentialHit,
-                           const size_t N)  
+                           const unsigned int N)  
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1384,7 +1384,7 @@ void occlusionFilterOBJ(int* valid_i,
                         const RTCIntersectContext* context,
                         struct RTCRayN* _ray,
                         const struct RTCHitN* potentialHit,
-                        const size_t N) 
+                        const unsigned int N) 
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1433,7 +1433,7 @@ void occlusionFilterHair(int* valid_i,
                                   const RTCIntersectContext* context,
                                   struct RTCRayN* _ray,
                                   const struct RTCHitN* potentialHit,
-                                  const size_t N) 
+                                  const unsigned int N) 
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);

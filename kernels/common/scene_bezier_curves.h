@@ -39,14 +39,14 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numTimeSteps); 
+    NativeCurves (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps); 
     
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void* newBuffer(RTCBufferType type, size_t stride, size_t size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
     void* getBuffer(RTCBufferType type);
     void immutable ();
     bool verify ();
@@ -296,33 +296,33 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numTimeSteps)
+      NativeCurvesISA (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
         : NativeCurves(device,subtype,basis,flags,numTimeSteps) {}
 
-      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
     };
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numTimeSteps)
+      CurvesBezier (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
          : NativeCurvesISA(device,subtype,basis,flags,numTimeSteps) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     };
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numTimeSteps)
+      CurvesBSpline (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
          : NativeCurvesISA(device,subtype,basis,flags,numTimeSteps) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA size_t);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA size_t);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA unsigned int);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA unsigned int);
 }

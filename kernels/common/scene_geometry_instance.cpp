@@ -82,7 +82,7 @@ namespace embree
     Geometry::update();
   } 
 
-  void GeometryInstance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
+  void GeometryInstance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");

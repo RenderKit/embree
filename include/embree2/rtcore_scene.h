@@ -147,17 +147,17 @@ RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, const RTCInte
 /*! Intersects a stream of M rays with the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_STREAM flag set. The
  *  stride specifies the offset between rays in bytes. */
-RTCORE_API void rtcIntersect1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t M, const size_t stride);
+RTCORE_API void rtcIntersect1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const unsigned int M, const size_t stride);
 
 /*! Intersects a stream of pointers to M rays with the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_STREAM flag set. */
-RTCORE_API void rtcIntersect1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const size_t M);
+RTCORE_API void rtcIntersect1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const unsigned int M);
 
 /*! Intersects a stream of M ray packets of size N in SOA format with the
  *  scene. This function can only be called for scenes with the
  *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
  *  ray packets in bytes. */
-RTCORE_API void rtcIntersectNM (RTCScene scene, const RTCIntersectContext* context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride);
+RTCORE_API void rtcIntersectNM (RTCScene scene, const RTCIntersectContext* context, struct RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride);
 
 /*! Intersects a stream of M ray packets of size N in SOA format with
  *  the scene. This function can only be called for scenes with the
@@ -165,7 +165,7 @@ RTCORE_API void rtcIntersectNM (RTCScene scene, const RTCIntersectContext* conte
  *  ray packets in bytes. In contrast to the rtcIntersectNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-RTCORE_API void rtcIntersectNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const size_t N);
+RTCORE_API void rtcIntersectNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const unsigned int N);
 
 /*! Tests if a single ray is occluded by the scene. The ray has to be
  *  aligned to 16 bytes. This function can only be called for scenes
@@ -196,18 +196,18 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, const RTCInter
 /*! Tests if a stream of M rays is occluded by the scene. This
  *  function can only be called for scenes with the RTC_INTERSECT_STREAM
  *  flag set. The stride specifies the offset between rays in bytes.*/
-RTCORE_API void rtcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t M, const size_t stride);
+RTCORE_API void rtcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const unsigned int M, const size_t stride);
 
 /*! Tests if a stream of pointers to M rays is occluded by the scene. This
  *  function can only be called for scenes with the RTC_INTERSECT_STREAM
  *  flag set. */
-RTCORE_API void rtcOccluded1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const size_t M);
+RTCORE_API void rtcOccluded1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const unsigned int M);
 
 /*! Tests if a stream of M ray packets of size N in SOA format is occluded by
  *  the scene. This function can only be called for scenes with the
  *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
  *  rays in bytes.*/
-RTCORE_API void rtcOccludedNM (RTCScene scene, const RTCIntersectContext* context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride);
+RTCORE_API void rtcOccludedNM (RTCScene scene, const RTCIntersectContext* context, struct RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride);
 
 /*! Tests if a stream of M ray packets of size N in SOA format is
  *  occluded by the scene. This function can only be called for scenes
@@ -215,7 +215,7 @@ RTCORE_API void rtcOccludedNM (RTCScene scene, const RTCIntersectContext* contex
  *  between rays in bytes. In contrast to the rtcOccludedNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-RTCORE_API void rtcOccludedNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const size_t N);
+RTCORE_API void rtcOccludedNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const unsigned int N);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */
 RTCORE_API void rtcDeleteScene (RTCScene scene);

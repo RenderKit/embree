@@ -221,8 +221,8 @@ namespace embree
   
 #define DEFINE_SET_INTERSECTORN(symbol,intersector)                     \
   AccelSet::IntersectorN symbol() {                                     \
-    return AccelSet::IntersectorN((AccelSet::IntersectFuncN)intersector::intersect, \
-                                  (AccelSet::OccludedFuncN)intersector::occluded, \
+    return AccelSet::IntersectorN(intersector::intersect, \
+                                  intersector::occluded, \
                                   TOSTRING(isa) "::" TOSTRING(symbol)); \
   }
 }

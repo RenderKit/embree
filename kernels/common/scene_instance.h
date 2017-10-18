@@ -33,13 +33,13 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
-    static Instance* create (Device* device, Scene* object, size_t numTimeSteps) {
+    static Instance* create (Device* device, Scene* object, unsigned int numTimeSteps) {
       return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(device,object,numTimeSteps);
     }
   private:
-    Instance (Device* device, Scene* object, size_t numTimeSteps); 
+    Instance (Device* device, Scene* object, unsigned int numTimeSteps); 
   public:
-    virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
+    virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
     virtual void setMask (unsigned mask);
     virtual void build() {}
 
@@ -52,7 +52,7 @@ namespace embree
     __forceinline AffineSpace3fa getWorld2Local(float t) const 
     {
       float ftime;
-      const size_t itime = getTimeSegment(t, fnumTimeSegments, ftime);
+      const unsigned int itime = getTimeSegment(t, fnumTimeSegments, ftime);
       return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
     }
 

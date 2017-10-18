@@ -870,35 +870,35 @@ unmasked void intersectionFilterReject(uniform int* uniform valid,
                               const uniform RTCIntersectContext* uniform context,
                               struct RTCRayN* uniform ray,
                               const struct RTCHitN* uniform potentialHit,
-                              uniform const uintptr_t N);
+                              const uniform unsigned int N);
 
 unmasked void intersectionFilterOBJ(uniform int* uniform valid,
                            void* uniform ptr,
                            const uniform RTCIntersectContext* uniform context,
                            struct RTCRayN* uniform ray,
                            const struct RTCHitN* uniform potentialHit,
-                           uniform const uintptr_t N);
+                           const uniform unsigned int N);
 
 unmasked void occlusionFilterOpaque(uniform int* uniform valid,
                            void* uniform ptr,
                            const uniform RTCIntersectContext* uniform context,
                            struct RTCRayN* uniform ray,
                            const struct RTCHitN* uniform potentialHit,
-                           uniform const uintptr_t N);
+                           const uniform unsigned int N);
 
 unmasked void occlusionFilterOBJ(uniform int* uniform valid,
                         void* uniform ptr,
                         const uniform RTCIntersectContext* uniform context,
                         struct RTCRayN* uniform ray,
                         const struct RTCHitN* uniform potentialHit,
-                        uniform const uintptr_t N);
+                        const uniform unsigned int N);
 
 unmasked void occlusionFilterHair(uniform int* uniform valid,
                          void* uniform ptr,
                          const uniform RTCIntersectContext* uniform context,
                          struct RTCRayN* uniform ray,
                          const struct RTCHitN* uniform potentialHit,
-                         uniform const uintptr_t N);
+                         const uniform unsigned int N);
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -1302,7 +1302,7 @@ unmasked void intersectionFilterReject(uniform int* uniform valid_i,
                                        const uniform RTCIntersectContext* uniform context,
                                        struct RTCRayN* uniform _ray,
                                        const struct RTCHitN* uniform potentialHit,
-                                       uniform const uintptr_t N) 
+                                       const uniform unsigned int N) 
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1314,7 +1314,7 @@ unmasked void intersectionFilterOBJ(uniform int* uniform valid_i,
                                     const uniform RTCIntersectContext* uniform context,
                                     struct RTCRayN* uniform _ray,
                                     const struct RTCHitN* uniform potentialHit,
-                                    uniform const uintptr_t N) 
+                                    const uniform unsigned int N) 
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1366,7 +1366,7 @@ unmasked void occlusionFilterOpaque(uniform int* uniform valid_i,
                            const uniform RTCIntersectContext* uniform context,
                            struct RTCRayN* uniform _ray,
                            const struct RTCHitN* uniform potentialHit,
-                           uniform const uintptr_t N)  
+                           const uniform unsigned int N)  
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1382,7 +1382,7 @@ unmasked void occlusionFilterOBJ(uniform int* uniform valid_i,
                         const uniform RTCIntersectContext* uniform context,
                         struct RTCRayN* uniform _ray,
                         const struct RTCHitN* uniform potentialHit,
-                        uniform const uintptr_t N) 
+                        const uniform unsigned int N) 
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1431,7 +1431,7 @@ unmasked void occlusionFilterHair(uniform int* uniform valid_i,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform _ray,
                                   const struct RTCHitN* uniform potentialHit,
-                                  uniform const uintptr_t N) 
+                                  const uniform unsigned int N) 
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);

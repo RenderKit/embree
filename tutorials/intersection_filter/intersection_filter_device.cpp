@@ -189,7 +189,7 @@ void intersectionFilterN(int* valid,
                                   const RTCIntersectContext* context,
                                   struct RTCRayN* ray,
                                   const struct RTCHitN* potentialHit,
-                                  const size_t N)
+                                  const unsigned int N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -282,7 +282,7 @@ void occlusionFilterN(int* valid,
                                const RTCIntersectContext* context,
                                struct RTCRayN* ray,
                                const struct RTCHitN* potentialHit,
-                               const size_t N)
+                               const unsigned int N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)

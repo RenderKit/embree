@@ -47,7 +47,7 @@ unmasked void filterDispatch(uniform int* uniform valid,
                              const uniform RTCIntersectContext* uniform context,
                              struct RTCRayN* uniform ray,
                              const struct RTCHitN* uniform potentialHit,
-                             uniform const uintptr_t N);
+                             const uniform unsigned int N);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -248,7 +248,7 @@ unmasked void filterDispatch(uniform int* uniform valid,
                              const uniform RTCIntersectContext* uniform context,
                              struct RTCRayN* uniform _ray,
                              const struct RTCHitN* uniform potentialHit,
-                             uniform const uintptr_t N)
+                             const uniform unsigned int N)
 {
   varying RTCRay* uniform ray = (varying RTCRay* uniform)_ray;
   if (!enableFilterDispatch) return;
@@ -261,7 +261,7 @@ unmasked void occlusionFilter(uniform int* uniform valid_i,
                               const uniform RTCIntersectContext* uniform context,
                               struct RTCRayN* uniform _ray,
                               const struct RTCHitN* uniform potentialHit,
-                              uniform const uintptr_t N)
+                              const uniform unsigned int N)
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -524,8 +524,8 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* render frame */
-  uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   enableFilterDispatch = renderTile == renderTileStandard;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;

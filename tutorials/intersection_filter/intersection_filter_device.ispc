@@ -187,7 +187,7 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform ray,
                                   const struct RTCHitN* uniform potentialHit,
-                                  uniform const uintptr_t N)
+                                  const uniform unsigned int N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -280,7 +280,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
                                const uniform RTCIntersectContext* uniform context,
                                struct RTCRayN* uniform ray,
                                const struct RTCHitN* uniform potentialHit,
-                               uniform const uintptr_t N)
+                               const uniform unsigned int N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)

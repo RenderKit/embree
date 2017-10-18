@@ -21,7 +21,7 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, size_t itime, BBox3fa& bounds_o)
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, unsigned int item, unsigned int itime, BBox3fa& bounds_o)
     {
       assert(itime < instance->numTimeSteps);
       unsigned num_time_segments = instance->numTimeSegments();
@@ -39,7 +39,7 @@ namespace embree
       return (RTCBoundsFunc) InstanceBoundsFunction;
     }
 
-    __forceinline void FastInstanceIntersectorN::intersect1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, size_t item)
+    __forceinline void FastInstanceIntersectorN::intersect1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, unsigned int item)
     {
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
@@ -61,7 +61,7 @@ namespace embree
       }
     }
     
-    __forceinline void FastInstanceIntersectorN::occluded1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, size_t item)
+    __forceinline void FastInstanceIntersectorN::occluded1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, unsigned int item)
     {
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
@@ -95,7 +95,7 @@ namespace embree
 #endif
 
     template<int N>
-    __noinline void FastInstanceIntersectorN::intersectN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, size_t item)
+    __noinline void FastInstanceIntersectorN::intersectN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, unsigned int item)
     {
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
@@ -120,7 +120,7 @@ namespace embree
     }
 
     template<int N>
-    __noinline void FastInstanceIntersectorN::occludedN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, size_t item)
+    __noinline void FastInstanceIntersectorN::occludedN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, unsigned int item)
     {
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
@@ -138,7 +138,7 @@ namespace embree
       ray.dir = ray_dir;
     }
 
-    void FastInstanceIntersectorN::intersect(int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, size_t N, size_t item)
+    void FastInstanceIntersectorN::intersect(const int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, unsigned int N, unsigned int item)
     { 
       if (likely(N == 1)) {
         assert(*validi == -1);
@@ -160,7 +160,7 @@ namespace embree
       assert(false);
     }
     
-    void FastInstanceIntersectorN::occluded(int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, size_t N, size_t item)
+    void FastInstanceIntersectorN::occluded(const int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, unsigned int N, unsigned int item)
     {
       if (likely(N == 1)) {
         assert(*validi == -1);

@@ -41,21 +41,21 @@ namespace embree
   public:
 
     /*! quad mesh construction */
-    QuadMesh (Device* device, RTCGeometryFlags flags, size_t numTimeSteps); 
+    QuadMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps); 
   
     /* geometry interface */
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void* newBuffer(RTCBufferType type, size_t stride, size_t size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
     void* getBuffer(RTCBufferType type);
     void preCommit();
     void postCommit ();
     void immutable ();
     bool verify ();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     // FIXME: implement interpolateN
 
   public:
@@ -156,7 +156,7 @@ namespace embree
       if (q.v[2] >= numVertices()) return false;
       if (q.v[3] >= numVertices()) return false;
 
-      for (size_t t=0; t<numTimeSteps; t++)
+      for (unsigned int t=0; t<numTimeSteps; t++)
       {
         const Vec3fa v0 = vertex(q.v[0],t);
         const Vec3fa v1 = vertex(q.v[1],t);
@@ -221,10 +221,10 @@ namespace embree
   {
     struct QuadMeshISA : public QuadMesh
     {
-      QuadMeshISA (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+      QuadMeshISA (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
         : QuadMesh(device,flags,numTimeSteps) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(QuadMesh*, createQuadMesh, Device* COMMA RTCGeometryFlags COMMA size_t);
+  DECLARE_ISA_FUNCTION(QuadMesh*, createQuadMesh, Device* COMMA RTCGeometryFlags COMMA unsigned int);
 }

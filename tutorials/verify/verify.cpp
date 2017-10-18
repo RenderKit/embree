@@ -139,7 +139,7 @@ namespace embree
     float r;
   };
 
-  void BoundsFunc(void*, void* This, size_t index, size_t time, RTCBounds& bounds)
+  void BoundsFunc(void*, void* This, unsigned int index, unsigned int time, RTCBounds& bounds)
   {
     Sphere* sphere = (Sphere*) This;
     BBox3fa* bounds_o = (BBox3fa*)&bounds;
@@ -155,8 +155,8 @@ namespace embree
                       void* ptr,
                       const RTCIntersectContext* context,
                       RTCRayN* rays,
-                      size_t N,
-                      size_t item)
+                      unsigned int N,
+                      unsigned int item)
   {
   }
 
@@ -2442,7 +2442,7 @@ namespace embree
                                     const RTCIntersectContext* context,
                                     RTCRayN* ray,
                                     const RTCHitN* potentialHit,
-                                    const size_t N)
+                                    const unsigned int N)
     {
       if ((size_t)userGeomPtr != 123) 
         return;

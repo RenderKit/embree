@@ -44,19 +44,19 @@ namespace embree
     rtcIntersect16(valid,scene,context,ray);
   }
 
-  extern "C" void ispcIntersect1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t N, const size_t M, const size_t stride) {
+  extern "C" void ispcIntersect1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const unsigned int N, const unsigned int M, const size_t stride) {
     rtcIntersect1M(scene,context,rays,M,stride);
   }
 
-  extern "C" void ispcIntersect1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const size_t N, const size_t M, const size_t stride) {
+  extern "C" void ispcIntersect1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const unsigned int N, const unsigned int M, const size_t stride) {
     rtcIntersect1Mp(scene,context,rays,M);
   }
 
-  extern "C" void ispcIntersectNM (RTCScene scene, const RTCIntersectContext* context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride) {
+  extern "C" void ispcIntersectNM (RTCScene scene, const RTCIntersectContext* context, RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride) {
     rtcIntersectNM(scene,context,rays,N,M,stride);
   }
 
-  extern "C" void ispcIntersectNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  size_t N) {
+  extern "C" void ispcIntersectNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  unsigned int N) {
     rtcIntersectNp(scene,context,rays,N);
   }
   
@@ -76,36 +76,36 @@ namespace embree
     rtcOccluded16(valid,scene,context,ray);
   }
 
-  extern "C" void ispcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t N, const size_t M, const size_t stride) {
+  extern "C" void ispcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const unsigned int N, const unsigned int M, const size_t stride) {
     rtcOccluded1M(scene,context,rays,M,stride);
   }
 
-  extern "C" void ispcOccluded1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const size_t N, const size_t M, const size_t stride) {
+  extern "C" void ispcOccluded1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const unsigned int N, const unsigned int M, const size_t stride) {
     rtcOccluded1Mp(scene,context,rays,M);
   }
 
-  extern "C" void ispcOccludedNM (RTCScene scene, const RTCIntersectContext* context, RTCRayN* rays, const size_t N, const  size_t M, const  size_t stride) {
+  extern "C" void ispcOccludedNM (RTCScene scene, const RTCIntersectContext* context, RTCRayN* rays, const unsigned int N, const  unsigned int M, const  size_t stride) {
     rtcOccludedNM(scene,context,(RTCRayN*)rays,N,M,stride);
   }
 
-  extern "C" void ispcOccludedNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  size_t N) {
+  extern "C" void ispcOccludedNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  unsigned int N) {
     rtcOccludedNp(scene,context,rays,N);
   }
         
   extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
-                                   const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
+                                   const void* valid, const unsigned int* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                    RTCBufferType buffer, 
-                                   float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                   float* P, float* dPdu, float* dPdv, unsigned int numFloats)
   {
     rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats);
   }
 
   extern "C" void ispcInterpolateN2(RTCScene scene, unsigned int geomID, 
-                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
+                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                     RTCBufferType buffer, 
                                     float* P, float* dPdu, float* dPdv,
                                     float* ddPdudu, float* ddPdvdv, float* ddPdudv,
-                                    size_t numFloats)
+                                    unsigned int numFloats)
   {
     rtcInterpolateN2(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
   }
