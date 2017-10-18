@@ -19,25 +19,6 @@
 
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 
-extern "C" void ispcSetIntersectFunction1 (RTCGeometry hgeometry, void* uniform intersect);
-extern "C" void ispcSetIntersectFunction4 (RTCGeometry hgeometry, void* uniform intersect); 
-extern "C" void ispcSetIntersectFunction8 (RTCGeometry hgeometry, void* uniform intersect);
-extern "C" void ispcSetIntersectFunction16 (RTCGeometry hgeometry, void* uniform intersect); 
-extern "C" void ispcSetIntersectFunction1Mp (RTCGeometry hgeometry, void* uniform intersect); 
-extern "C" void ispcSetIntersectFunctionN (RTCGeometry hgeometry, void* uniform intersect); 
-
-extern "C" void ispcSetOccludedFunction1 (RTCGeometry hgeometry, void* uniform occluded);
-extern "C" void ispcSetOccludedFunction4 (RTCGeometry hgeometry, void* uniform occluded);
-extern "C" void ispcSetOccludedFunction8 (RTCGeometry hgeometry, void* uniform occluded);
-extern "C" void ispcSetOccludedFunction16 (RTCGeometry hgeometry, void* uniform occluded);
-extern "C" void ispcSetOccludedFunction1Mp (RTCGeometry hgeometry, void* uniform occluded);
-extern "C" void ispcSetOccludedFunctionN (RTCGeometry hgeometry, void* uniform occluded);
-
-extern "C" void ispcSetIntersectionFilterFunction (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetOcclusionFilterFunction (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetIntersectFunction (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetOccludedFunction (RTCGeometry hgeometry, void* uniform filter);
-
 extern "C" void ispcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
