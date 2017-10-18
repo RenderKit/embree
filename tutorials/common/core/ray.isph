@@ -18,11 +18,6 @@
 
 #include "../math/vec.isph"
 
-/* include API ray definitions, except RTCRay1 and RTCRay, as we define these ourselves */
-#define __RTCRay1__
-#define __RTCRay__
-#include "../../../include/embree2/rtcore_ray.isph"
-
 struct Ray1
 {
   uniform Vec3f org;     //!< Ray origin

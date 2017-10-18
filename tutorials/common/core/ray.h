@@ -33,10 +33,6 @@
 
 #include "../../../common/simd/simd.h"
 
-/* include API ray definitions, except RTCRay1 and RTCRay, as we define these ourselves */
-#define __RTCRay__
-#include "../../../include/embree2/rtcore_ray.h"
-
   /*! Ray structure. Contains all information about a ray including
    *  precomputed reciprocal direction. */
   struct Ray

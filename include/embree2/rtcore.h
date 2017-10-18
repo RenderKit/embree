@@ -179,6 +179,7 @@ typedef bool (*RTCMemoryMonitorFunc)(void* ptr, const ssize_t bytes, const bool 
  *  function. */
 RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* userPtr);
 
+#include "rtcore_ray.h"
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"

@@ -23,8 +23,6 @@
 /*! \{ */
 
 /*! Ray structure for uniform (single) rays. */
-#ifndef __RTCRay1__
-#define __RTCRay1__
 struct RTCRay1 
 {
   /* ray data */
@@ -49,11 +47,8 @@ struct RTCRay1
   unsigned int instID;        //!< instance ID
   varying unsigned int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
-#endif
 
 /*! Ray structure for packets of 4 rays. */
-#ifndef __RTCRay__
-#define __RTCRay__
 struct RTCRay
 {
   /* ray data */
@@ -82,11 +77,8 @@ struct RTCRay
   unsigned int primID;     //!< primitive ID
   unsigned int instID;     //!< instance ID
 };
-#endif
 
 /* Helper functions to access ray packets of runtime size N */
-#ifndef __RTCRayN__
-#define __RTCRayN__
 struct RTCRayN {};
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
 inline varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[1*N+i]); }  //!< y coordinate of ray origin
@@ -112,11 +104,8 @@ inline varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform unsigned int N,
 inline varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[15*N+i]); }; //!< geometry ID
 inline varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[16*N+i]); }; //!< primitive ID
 inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[17*N+i]); }; //!< instance ID
-#endif
 
 /*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
-#ifndef __RTCRayNp__
-#define __RTCRayNp__
 struct RTCRayNp
 {
   /* ray data */
@@ -145,11 +134,8 @@ struct RTCRayNp
   uniform unsigned int* uniform primID;  //!< primitive ID
   uniform unsigned int* uniform instID;  //!< instance ID (optional)
 };
-#endif
 
 /* Helper functions to access hit packets of size N */
-#ifndef __RTCHitN__
-#define __RTCHitN__
 struct RTCHitN {};
 inline varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }; //!< x coordinate of geometry normal
 inline varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }; //!< y coordinate of geometry normal
@@ -162,7 +148,6 @@ inline varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform 
 inline varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[6*N+i]); }; //!< Barycentric u coordinate of hit
 inline varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[7*N+i]); }; //!< Barycentric v coordinate of hit
 inline varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[8*N+i]); }; //!< hit distance
-#endif
 
 /*! @} */
 
