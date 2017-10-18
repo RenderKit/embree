@@ -169,8 +169,6 @@ RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< I
   used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
                                            uniform RTCGeometryFlags flags,  //!< geometry flags
-                                           uniform size_t numTriangles,     //!< number of triangles
-                                           uniform size_t numVertices,      //!< number of vertices
                                            uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
@@ -189,8 +187,6 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   value of the 4th float used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
                                        uniform RTCGeometryFlags flags,  //!< geometry flags
-                                       uniform size_t numQuads,         //!< number of quads
-                                       uniform size_t numVertices,      //!< number of vertices
                                        uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
@@ -253,12 +249,6 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
 
 RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
                                               uniform RTCGeometryFlags flags,        //!< geometry flags
-                                              uniform size_t numFaces,               //!< number of faces
-                                              uniform size_t numEdges,               //!< number of edges
-                                              uniform size_t numVertices,            //!< number of vertices
-                                              uniform size_t numEdgeCreases,         //!< number of edge creases
-                                              uniform size_t numVertexCreases,       //!< number of vertex creases
-                                              uniform size_t numHoles,               //!< number of holes
                                               uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
@@ -282,8 +272,6 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
   that zooming onto one hair might show geometric artefacts. */
 RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice device,
                                                  uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                 uniform unsigned int numCurves,          //!< number of curves
-                                                 uniform unsigned int numVertices,        //!< number of vertices
                                                  uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
@@ -307,8 +295,6 @@ RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice device,
   that zooming onto one hair might show geometric artefacts. */
 RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice device,
                                                   uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                  uniform unsigned int numCurves,          //!< number of curves
-                                                  uniform unsigned int numVertices,        //!< number of vertices
                                                   uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
@@ -331,8 +317,6 @@ RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice device,
   and radius, stored in that order in memory. */
 RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice device,
                                                   uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                  uniform unsigned int numCurves,          //!< number of curves
-                                                  uniform unsigned int numVertices,        //!< number of vertices
                                                   uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
@@ -355,8 +339,6 @@ RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice device,
   and radius, stored in that order in memory. */
 RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice device,
                                                    uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                   uniform unsigned int numCurves,          //!< number of curves
-                                                   uniform unsigned int numVertices,        //!< number of vertices
                                                    uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
@@ -381,8 +363,6 @@ RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice device,
   geometric artefacts. */
 RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice device,
                                            uniform RTCGeometryFlags flags,    //!< geometry flags
-                                           uniform size_t numSegments,        //!< number of line segments
-                                           uniform size_t numVertices,        //!< number of vertices
                                            uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 

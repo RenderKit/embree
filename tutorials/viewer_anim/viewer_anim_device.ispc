@@ -44,7 +44,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
 {
   /* if more than a single timestep, mark object as dynamic */
   uniform RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, mesh->numTriangles, mesh->numVertices, 1);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, mesh->numTimeSteps);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (uniform size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle), mesh->numTriangles);
@@ -56,7 +56,7 @@ void convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   uniform RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-  RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
+  RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, mesh->numTimeSteps);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad), mesh->numQuads);
@@ -68,8 +68,7 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   uniform RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
-                                           mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, mesh->numTimeSteps);
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -90,7 +89,7 @@ void convertLineSegments(uniform ISPCLineSegments* uniform mesh, RTCScene scene_
 {
   /* if more than a single timestep, mark object as dynamic */
   uniform RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-  RTCGeometry geom = rtcNewLineSegments (g_device, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
+  RTCGeometry geom = rtcNewLineSegments (g_device, object_flags, mesh->numTimeSteps);
   uniform Vec3fa* uniform vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(uniform int),mesh->numSegments);
@@ -104,8 +103,8 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   uniform RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
   RTCGeometry geom = 0;
   switch (hair->basis) {
-  case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
-  case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry(g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+  case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, object_flags, hair->numTimeSteps); break;
+  case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry(g_device, object_flags, hair->numTimeSteps); break;
   default: assert(false);
   }
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);
@@ -123,8 +122,8 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   /* create object */
   RTCGeometry geom = NULL;
   switch (hair->basis) {
-  case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
-  case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry(g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+  case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, object_flags, hair->numTimeSteps); break;
+  case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry(g_device, object_flags, hair->numTimeSteps); break;
   default: assert(false);
   }
   /* generate vertex buffer */

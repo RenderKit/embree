@@ -27,9 +27,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
-    : Geometry(device,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
+  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+    : Geometry(device,SUBDIV_MESH,0,numTimeSteps,flags), 
       displFunc(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
@@ -39,20 +38,8 @@ namespace embree
   {
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
-    for (size_t i=0; i<numTimeSteps; i++)
-      vertices[i].init(device,numVertices,sizeof(Vec3fa));
-
-    faceVertices.init(device,numFaces,sizeof(unsigned int));
-    holes.init(device,numHoles,sizeof(int));
-    levels.init(device,numEdges,sizeof(float));
-
-    edge_creases.init(device,numEdgeCreases,2*sizeof(unsigned int));
-    edge_crease_weights.init(device,numEdgeCreases,sizeof(float));
-    vertex_creases.init(device,numVertexCreases,sizeof(unsigned int));
-    vertex_crease_weights.init(device,numVertexCreases,sizeof(float));
-
     topology.resize(1);
-    topology[0] = Topology(this,numEdges);
+    topology[0] = Topology(this);
   }
 
   void SubdivMesh::enabling() 
@@ -147,7 +134,7 @@ namespace embree
       if (bid >= topology.size()) {
         topology.resize(bid+1);
         for (size_t i=begin; i<topology.size(); i++)
-          topology[i] = Topology(this,numEdges());
+          topology[i] = Topology(this);
       }
       topology[bid].vertexIndices.newBuffer(device,size,stride);
       return topology[bid].vertexIndices.get();
@@ -203,7 +190,7 @@ namespace embree
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
     {
-      vertices[bid].set(ptr,offset,stride,size); 
+      vertices[bid].set(device,ptr,offset,stride,size); 
       vertices[bid].checkPadding16();
     }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
@@ -212,14 +199,14 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride); // FIXME: numVertices for compatibility
-      userbuffers[bid].set(ptr,offset,stride,size);  
+      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid].set(device,ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_FACE_BUFFER) 
     {
       if (scene && size != (size_t)-1) disabling();
-      faceVertices.set(ptr,offset,stride,size);
+      faceVertices.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
       if (scene && size != (size_t)-1) enabling();
     }
@@ -230,27 +217,27 @@ namespace embree
       if (bid >= topology.size()) {
         topology.resize(bid+1);
         for (size_t i=begin; i<topology.size(); i++)
-          topology[i] = Topology(this,numEdges());
+          topology[i] = Topology(this);
       }
-      topology[bid].vertexIndices.set(ptr,offset,stride,size);
+      topology[bid].vertexIndices.set(device,ptr,offset,stride,size);
     }
     else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
-      edge_creases.set(ptr,offset,stride,size);
+      edge_creases.set(device,ptr,offset,stride,size);
 
     else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
-      edge_crease_weights.set(ptr,offset,stride,size);
+      edge_crease_weights.set(device,ptr,offset,stride,size);
 
     else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
-      vertex_creases.set(ptr,offset,stride,size);
+      vertex_creases.set(device,ptr,offset,stride,size);
 
     else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
-      vertex_crease_weights.set(ptr,offset,stride,size);
+      vertex_crease_weights.set(device,ptr,offset,stride,size);
 
     else if (type == RTC_HOLE_BUFFER)
-      holes.set(ptr,offset,stride,size);
+      holes.set(device,ptr,offset,stride,size);
 
     else if (type == RTC_LEVEL_BUFFER)
-      levels.set(ptr,offset,stride,size);
+      levels.set(device,ptr,offset,stride,size);
 
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -390,10 +377,9 @@ namespace embree
     return (((uint64_t)x) << 32) | (uint64_t)y;
   }
 
-  SubdivMesh::Topology::Topology(SubdivMesh* mesh, size_t numEdges)
+  SubdivMesh::Topology::Topology(SubdivMesh* mesh)
     : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
   {
-    vertexIndices.init(mesh->device,numEdges,sizeof(unsigned int));
   }
   
   void SubdivMesh::Topology::setSubdivisionMode (RTCSubdivisionMode mode)
@@ -793,10 +779,9 @@ namespace embree
 
   namespace isa
   {
-    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                 size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) 
     {
-      return new SubdivMeshISA(device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+      return new SubdivMeshISA(device,flags,numTimeSteps);
     }
     
     void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 

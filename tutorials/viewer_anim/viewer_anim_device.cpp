@@ -79,7 +79,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, mesh->numTriangles, mesh->numVertices, 1);
+    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -95,7 +95,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -110,8 +110,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
-                                                mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, mesh->numTimeSteps);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
@@ -136,7 +135,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewLineSegments (g_device, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewLineSegments (g_device, object_flags, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -153,8 +152,8 @@ namespace embree {
     /* create object */
     RTCGeometry geom = NULL;
     switch (hair->basis) {
-    case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry (g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, object_flags, hair->numTimeSteps); break;
+    case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry (g_device, object_flags, hair->numTimeSteps); break;
     default: assert(false);
     }
     /* generate vertex buffer */
@@ -174,8 +173,8 @@ namespace embree {
     /* create object */
     RTCGeometry geom = NULL;
     switch (hair->basis) {
-    case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry (g_device, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, object_flags, hair->numTimeSteps); break;
+    case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry (g_device, object_flags, hair->numTimeSteps); break;
     default: assert(false);
     }
     /* generate vertex buffer */

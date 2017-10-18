@@ -21,14 +21,10 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  LineSegments::LineSegments (Device* device, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : Geometry(device,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
+  LineSegments::LineSegments (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+    : Geometry(device,LINE_SEGMENTS,0,numTimeSteps,flags)
   {
-    segments.init(device,numPrimitives,sizeof(int));
     vertices.resize(numTimeSteps);
-    for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(device,numVertices,sizeof(Vec3fa));
-    }
   }
 
   void LineSegments::enabling()
@@ -102,21 +98,21 @@ namespace embree
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(ptr,offset,stride,size);
+      vertices[t].set(device,ptr,offset,stride,size);
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride,size);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid].set(device,ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
       if (scene && size != (size_t)-1) disabling();
-      segments.set(ptr,offset,stride,size); 
+      segments.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
       if (scene && size != (size_t)-1) enabling();
     }
@@ -210,8 +206,8 @@ namespace embree
 
   namespace isa
   {
-    LineSegments* createLineSegments(Device* device, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-      return new LineSegmentsISA(device,flags,numSegments,numVertices,numTimeSteps);
+    LineSegments* createLineSegments(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) {
+      return new LineSegmentsISA(device,flags,numTimeSteps);
     }
   }
 }

@@ -118,9 +118,9 @@ unsigned int cube_faces[12] = {
 unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
-  //RTCGeometry geom = rtcNewTriangleMesh(g_device, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES/3);
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0);
-  //RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 12, 8, 0);
+  //RTCGeometry geom = rtcNewTriangleMesh(g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC);
+  //RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC);
 
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ), 8);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int), NUM_INDICES);
@@ -166,7 +166,7 @@ void updateEdgeLevelBuffer( RTCGeometry geom, const Vec3fa& cam_pos )
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

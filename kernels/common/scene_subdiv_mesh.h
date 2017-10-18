@@ -61,8 +61,7 @@ namespace embree
   public:
 
     /*! subdiv mesh construction */
-    SubdivMesh(Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-               size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    SubdivMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps);
 
   public:
     void enabling();
@@ -154,7 +153,7 @@ namespace embree
       Topology () : halfEdges(nullptr,0) {}
 
       /*! Topology initialization */
-      Topology (SubdivMesh* mesh, size_t numEdges);
+      Topology (SubdivMesh* mesh);
 
       /*! make the class movable */
     public: 
@@ -324,8 +323,8 @@ namespace embree
   {
     struct SubdivMeshISA : public SubdivMesh
     {
-      SubdivMeshISA (Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
-        : SubdivMesh(device,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
+      SubdivMeshISA (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+        : SubdivMesh(device,flags,numTimeSteps) {}
 
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
       void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
@@ -338,5 +337,5 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device* COMMA RTCGeometryFlags COMMA size_t);
 };

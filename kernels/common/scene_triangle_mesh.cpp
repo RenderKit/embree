@@ -21,14 +21,10 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  TriangleMesh::TriangleMesh (Device* device, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(device,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
+  TriangleMesh::TriangleMesh (Device* device, RTCGeometryFlags flags, size_t numTimeSteps)
+    : Geometry(device,TRIANGLE_MESH,0,numTimeSteps,flags)
   {
-    triangles.init(device,numTriangles,sizeof(Triangle));
     vertices.resize(numTimeSteps);
-    for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(device,numVertices,sizeof(Vec3fa));
-    }
   }
 
   void TriangleMesh::enabling() 
@@ -113,21 +109,21 @@ namespace embree
       if (stride*size > 16ll*1024ll*1024ll*1024ll)
        throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
 
-      vertices[t].set(ptr,offset,stride,size);
+      vertices[t].set(device,ptr,offset,stride,size);
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride,size);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid].set(device,ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
       if (scene && size != (size_t)-1) disabling(); 
-      triangles.set(ptr,offset,stride,size); 
+      triangles.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
       if (scene && size != (size_t)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
     }
@@ -255,8 +251,8 @@ namespace embree
   
   namespace isa
   {
-    TriangleMesh* createTriangleMesh(Device* device, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
-      return new TriangleMeshISA(device,flags,numTriangles,numVertices,numTimeSteps);
+    TriangleMesh* createTriangleMesh(Device* device, RTCGeometryFlags flags, size_t numTimeSteps) {
+      return new TriangleMeshISA(device,flags,numTimeSteps);
     }
   }
 }

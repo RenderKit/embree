@@ -120,14 +120,14 @@ namespace embree
 
     /*! Buffer construction */
     APIBuffer () 
-      : device(nullptr), ptr(nullptr), allocated(false), shared(false), modified(true), userdata(0) {}
+      : device(nullptr), ptr(nullptr), shared(false), modified(true), userdata(0) {}
     
     APIBuffer (const BufferRefT<T>& other) 
-      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), allocated(false), shared(true), modified(true), userdata(0) {}
+      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), shared(true), modified(true), userdata(0) {}
 
     /*! Buffer construction */
     APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in, bool allocate = false) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), modified(true), userdata(0) 
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), shared(false), modified(true), userdata(0) 
     {
       if (allocate) alloc();
     }
@@ -148,7 +148,6 @@ namespace embree
     {
       device = other.device;       other.device = nullptr;
       ptr = other.ptr;             other.ptr = nullptr;
-      allocated = other.allocated; other.allocated = false;
       shared = other.shared;       other.shared = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
@@ -158,7 +157,6 @@ namespace embree
     {
       device = other.device;       other.device = nullptr;
       ptr = other.ptr;             other.ptr = nullptr;
-      allocated = other.allocated; other.allocated = false;
       shared = other.shared;       other.shared = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
@@ -189,12 +187,10 @@ namespace embree
     }
 
     /*! sets shared buffer */
-    void set(void* ptr_in, size_t ofs_in, size_t stride_in, size_t num_in)
+    void set(MemoryMonitorInterface* device_in, void* ptr_in, size_t ofs_in, size_t stride_in, size_t num_in)
     {
-      /* report error if buffer is not existing */
-      if (!device)
-        throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
-      
+      free();
+      device = device_in;
       ptr = (char*) ptr_in;
       if (num_in != (size_t)-1) this->num = num_in;
       shared = true;
@@ -207,13 +203,12 @@ namespace embree
       if (device) device->memoryMonitor(this->bytes(),false);
       size_t b = (this->bytes()+15)&ssize_t(-16);
       ptr = this->ptr_ofs = (char*) alignedMalloc(b);
-      allocated = true; // this flag is sticky, such that we do never allocated a buffer again after it was freed
     }
     
     /*! frees the buffer */
     void free()
     {
-      if (shared || !ptr) return;
+      if (shared) return;
       alignedFree(ptr); 
       if (device) device->memoryMonitor(-ssize_t(this->bytes()),true);
       ptr = nullptr; this->ptr_ofs = nullptr;
@@ -255,7 +250,6 @@ namespace embree
   protected:
     MemoryMonitorInterface* device; //!< device to report memory usage to 
     char* ptr;       //!< pointer to buffer data
-    bool allocated;  //!< set if buffer got allocated by us
     bool shared;     //!< set if memory is shared with application
     bool modified;   //!< true if the buffer got modified
   public:

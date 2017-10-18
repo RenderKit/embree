@@ -814,7 +814,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags, size_t numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -824,7 +824,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     createTriangleMeshTy createTriangleMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
-    Geometry* geom = createTriangleMesh(device,gflags,numTriangles,numVertices,numTimeSteps);
+    Geometry* geom = createTriangleMesh(device,gflags,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewTriangleMesh is not supported");
@@ -833,7 +833,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -843,7 +843,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     createQuadMeshTy createQuadMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
-    Geometry* geom = createQuadMesh(device,gflags,numQuads,numVertices,numTimeSteps);
+    Geometry* geom = createQuadMesh(device,gflags,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewQuadMesh is not supported");
@@ -852,7 +852,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCGeometry rtcNewCurveGeometry ( Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCGeometry rtcNewCurveGeometry ( Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numTimeSteps) 
   {
     createCurvesBezierTy createCurvesBezier = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
@@ -861,13 +861,13 @@ namespace embree
 
     Geometry* geom = nullptr;
     switch (basis) {
-    case NativeCurves::BEZIER : geom = createCurvesBezier (device,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
-    case NativeCurves::BSPLINE: geom = createCurvesBSpline(device,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BEZIER : geom = createCurvesBezier (device,subtype,basis,gflags,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = createCurvesBSpline(device,subtype,basis,gflags,numTimeSteps); break;
     }
     return (RTCGeometry) geom->refInc();
   }
 
-  RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -875,7 +875,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BEZIER,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BEZIER,gflags,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierHairGeometry is not supported");
 #endif
@@ -883,7 +883,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -891,7 +891,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BSPLINE,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BSPLINE,gflags,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineHairGeometry is not supported");
 #endif
@@ -899,7 +899,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -907,7 +907,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BEZIER,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BEZIER,gflags,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierCurveGeometry is not supported");
 #endif
@@ -915,7 +915,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -923,7 +923,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BSPLINE,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BSPLINE,gflags,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineCurveGeometry is not supported");
 #endif
@@ -931,7 +931,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -941,7 +941,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_LINES)
     createLineSegmentsTy createLineSegments = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
-    Geometry* geom = createLineSegments(device,gflags,numSegments,numVertices,numTimeSteps);
+    Geometry* geom = createLineSegments(device,gflags,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewLineSegments is not supported");
@@ -950,8 +950,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numTimeSteps) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -961,7 +960,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     createSubdivMeshTy createSubdivMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-    Geometry* geom = createSubdivMesh(device,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    Geometry* geom = createSubdivMesh(device,gflags,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewSubdivisionMesh is not supported");

@@ -326,7 +326,7 @@ namespace embree
 
   unsigned int ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewTriangleMesh (device, gflags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewTriangleMesh (device, gflags, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
@@ -340,7 +340,7 @@ namespace embree
   
   unsigned int ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewQuadMesh (device, gflags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewQuadMesh (device, gflags, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
@@ -354,8 +354,7 @@ namespace embree
   
   unsigned int ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewSubdivisionMesh(device, gflags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
-                                             mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewSubdivisionMesh(device, gflags, mesh->numTimeSteps);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -402,7 +401,7 @@ namespace embree
   
   unsigned int ConvertLineSegments(RTCDevice device, ISPCLineSegments* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewLineSegments (device, gflags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewLineSegments (device, gflags, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
     }
@@ -418,8 +417,8 @@ namespace embree
   unsigned int ConvertHairSet(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     RTCGeometry geom = mesh->basis == BEZIER_BASIS ?
-      rtcNewBezierHairGeometry  (device, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
-      rtcNewBSplineHairGeometry (device, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+      rtcNewBezierHairGeometry  (device, gflags, mesh->numTimeSteps) :
+      rtcNewBSplineHairGeometry (device, gflags, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa),mesh->numVertices);
@@ -437,8 +436,8 @@ namespace embree
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     RTCGeometry geom = mesh->basis == BEZIER_BASIS ?
-      rtcNewBezierCurveGeometry  (device, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
-      rtcNewBSplineCurveGeometry (device, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+      rtcNewBezierCurveGeometry  (device, gflags, mesh->numTimeSteps) :
+      rtcNewBSplineCurveGeometry (device, gflags, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
