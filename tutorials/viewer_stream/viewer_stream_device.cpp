@@ -136,9 +136,9 @@ RTCScene convertScene(ISPCScene* scene_in)
 }
 
 /* renders a single pixel casting with ambient occlusion */
-Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
+Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 {
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+  Ray rays[AMBIENT_OCCLUSION_SAMPLES];
 
   Vec3fa Ng = normalize(ray.Ng);
   if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
@@ -163,7 +163,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
     dir.v = frame(Ng) * dir.v;
 
     /* initialize shadow ray */
-    RTCRay& shadow = rays[i];
+    Ray& shadow = rays[i];
     shadow.org = hitPos;
     shadow.dir = dir.v;
     bool mask = 1; { // invalidate inactive rays
@@ -182,13 +182,13 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccluded1M(g_scene,&context,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
+  rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded1(g_scene,rays[i]);
+    rtcOccluded1(g_scene,RTCRay_(rays[i]));
 #else
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded1M(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+    rtcOccluded1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
 #endif
 
   /* accumulate illumination */
@@ -202,7 +202,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
 }
 
 
-void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
+void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
   {
@@ -256,7 +256,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
-inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned int instID = ray.instID; {
@@ -315,7 +315,7 @@ void renderTileStandard(int taskIndex,
 
   RayStats& stats = g_stats[threadIndex];
 
-  RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
   int N = 0;
@@ -328,7 +328,7 @@ void renderTileStandard(int taskIndex,
     RandomSampler_init(sampler, x, y, 0);
 
     /* initialize ray */
-    RTCRay& ray = rays[N++];
+    Ray& ray = rays[N++];
     ray.org = Vec3fa(camera.xfm.p);
     ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = 1; { // invalidates inactive rays
@@ -347,13 +347,13 @@ void renderTileStandard(int taskIndex,
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
+  rtcIntersect1M(g_scene,&context,(RTCRay*)&rays[0],N,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<N; i++)
-    rtcIntersect1(g_scene,&context,rays[i]);
+    rtcIntersect1(g_scene,&context,RTCRay_(rays[i]));
 #else
   for (size_t i=0; i<N; i++)
-    rtcIntersect1M(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+    rtcIntersect1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
 #endif
 
   /* shade stream of rays */
@@ -362,7 +362,7 @@ void renderTileStandard(int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     
-    RTCRay& ray = rays[N++];
+    Ray& ray = rays[N++];
 
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);

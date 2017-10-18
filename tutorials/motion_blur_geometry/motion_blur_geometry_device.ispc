@@ -376,7 +376,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
   if (!valid[programIndex])
     return;
   
-  varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
+  varying Ray *uniform ray = (varying Ray *uniform)rays;
   
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time*(float)(time_segments);
@@ -430,7 +430,7 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
   if (!valid[programIndex])
     return;
   
-  varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
+  varying Ray *uniform ray = (varying Ray *uniform)rays;
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
@@ -574,7 +574,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   if (g_time != -1) time = g_time;
 
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = make_Vec3f(camera.xfm.p);
   ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -586,7 +586,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   ray.time = time;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,&context,ray);
+  rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -614,7 +614,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Vec3f lightDir = normalize(make_Vec3f(-1,-4,-1));
 
     /* initialize shadow ray */
-    RTCRay shadow;
+    Ray shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
@@ -626,7 +626,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.time = time;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,shadow);
+    rtcOccluded(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

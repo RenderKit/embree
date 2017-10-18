@@ -252,7 +252,7 @@ void filterDispatch(int* valid,
                              const struct RTCHitN* potentialHit,
                              const unsigned int N)
 {
-  RTCRay* ray = (RTCRay*)_ray;
+  Ray* ray = (Ray*)_ray;
   if (!enableFilterDispatch) return;
   if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N);
 }
@@ -269,7 +269,7 @@ void occlusionFilter(int* valid_i,
   bool valid = *((int*) valid_i);
   if (!valid) return;
  
-  RTCRay* ray = (RTCRay*)_ray;
+  Ray* ray = (Ray*)_ray;
   /* make all surfaces opaque */
   unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
@@ -284,14 +284,14 @@ void occlusionFilter(int* valid_i,
   if (eq(T,Vec3fa(0.0f))) ray->geomID = geomID;
 }
 
-Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, RTCRay& ray)
+Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, Ray& ray)
 {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.filter = occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
-  rtcOccluded1(scene,context,*((RTCRay*)&ray));
+  rtcOccluded1(scene,context,RTCRay_(ray));
 
   return ray.transparency;
 }
@@ -309,7 +309,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
@@ -331,7 +331,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect1(g_scene,&context,*((RTCRay*)&ray));
+    rtcIntersect1(g_scene,&context,RTCRay_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -372,7 +372,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* sample directional light */
-    RTCRay shadow;
+    Ray shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(Vec3fa(g_dirlight_direction));
     shadow.tnear = tnear_eps;

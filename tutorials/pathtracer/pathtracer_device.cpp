@@ -1065,7 +1065,7 @@ inline void evalBezier(const ISPCHairSet* hair, const int primID, const float t,
   dp = 3.0f*(p21-p20);
 }
 
-void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
+void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
   {
@@ -1263,7 +1263,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
-inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
 
@@ -1323,7 +1323,7 @@ void intersectionFilterOBJ(int* valid_i,
   if (!valid) return;
   
   const size_t rayID = 0;
-  RTCRay *ray = (RTCRay*)_ray;
+  Ray *ray = (Ray*)_ray;
 
   /* compute differential geometry */
   const float tfar          = RTCHitN_t(potentialHit,N,rayID);
@@ -1374,7 +1374,7 @@ void occlusionFilterOpaque(int* valid_i,
   bool valid = *((int*) valid_i);
   if (!valid) return;
    
-  RTCRay *ray = (RTCRay*)_ray;
+  Ray *ray = (Ray*)_ray;
   ray->transparency = Vec3fa(0.0f);
   ray->geomID = 0;
 }
@@ -1391,7 +1391,7 @@ void occlusionFilterOBJ(int* valid_i,
   if (!valid) return;
   
   const size_t rayID = 0;
-  RTCRay *ray = (RTCRay*)_ray;
+  Ray *ray = (Ray*)_ray;
 
   /* compute differential geometry */
   const float tfar          = RTCHitN_t(potentialHit,N,rayID);
@@ -1440,7 +1440,7 @@ void occlusionFilterHair(int* valid_i,
   if (!valid) return;
   
   const size_t rayID = 0;
-  RTCRay *ray = (RTCRay*)_ray;
+  Ray *ray = (Ray*)_ray;
   
   unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
   Vec3fa Kt = Vec3fa(0.0f);
@@ -1499,7 +1499,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
   float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
-  RTCRay ray = RTCRay(Vec3fa(camera.xfm.p),
+  Ray ray = Ray(Vec3fa(camera.xfm.p),
                         Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
   DifferentialGeometry dg;
@@ -1514,7 +1514,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     /* intersect ray with scene */
     RTCIntersectContext context;
     context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect1(g_scene,&context,ray);
+    rtcIntersect1(g_scene,&context,RTCRay_(ray));
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1582,8 +1582,8 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       const Light* l = g_ispc_scene->lights[i];
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = Vec3fa(1.0f);
-      rtcOccluded1(g_scene,&context,shadow);
+      Ray shadow = Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = Vec3fa(1.0f);
+      rtcOccluded1(g_scene,&context,RTCRay_(shadow));
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
@@ -1596,7 +1596,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     /* setup secondary ray */
     float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
     dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
-    ray = RTCRay(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
+    ray = Ray(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
   }
   return L;
 }

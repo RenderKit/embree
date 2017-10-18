@@ -18,12 +18,7 @@
 
 #include "../math/vec.isph"
 
-/* include API ray definitions, except RTCRay1 and RTCRay, as we define these ourselves */
-#define __RTCRay1__
-#define __RTCRay__
-#include "../../../include/embree2/rtcore_ray.isph"
-
-struct RTCRay1
+struct Ray1
 {
   uniform Vec3f org;     //!< Ray origin
   uniform float tnear;   //!< Start of ray segment
@@ -40,9 +35,15 @@ struct RTCRay1
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
+inline uniform RTCRay1& RTCRay1_(uniform Ray1& ray)
+{
+  uniform RTCRay1* uniform ray_ptr = (uniform RTCRay1* uniform)&ray;
+  return *ray_ptr;
+}
+
 /*! Ray structure. Contains all information about a ray including
  *  precomputed reciprocal direction. */
-struct RTCRay
+struct Ray
 {
   Vec3f org;     //!< Ray origin
   float tnear;   //!< Start of ray segment
@@ -62,15 +63,21 @@ struct RTCRay
   Vec3f transparency;
 };
 
+inline varying RTCRay& RTCRay_(varying Ray& ray)
+{
+  varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
+  return *ray_ptr;
+}
+
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
-inline RTCRay make_Ray(const Vec3f org, 
+inline Ray make_Ray(const Vec3f org, 
                        const Vec3f dir, 
                        const float tnear, 
                        const float tfar,
                        const float time = 0.0f)
 {
-  RTCRay ray;
+  Ray ray;
   ray.org = org;
   ray.dir = dir;
   ray.tnear = tnear;
@@ -85,10 +92,10 @@ inline RTCRay make_Ray(const Vec3f org,
 
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
-inline RTCRay make_Ray(const Vec3f org, 
+inline Ray make_Ray(const Vec3f org, 
                        const Vec3f dir)
 {
-  RTCRay ray;
+  Ray ray;
   ray.org  = org;
   ray.dir  = dir;
   ray.tnear = 0.0f;
@@ -101,7 +108,7 @@ inline RTCRay make_Ray(const Vec3f org,
   return ray;
 }
 
-inline void init_Ray(RTCRay &ray,
+inline void init_Ray(Ray &ray,
                      const Vec3f org, 
                      const Vec3f dir, 
                      const float tnear, 
@@ -118,7 +125,7 @@ inline void init_Ray(RTCRay &ray,
   ray.instID = -1;
 }
 
-inline void init_Ray(RTCRay &ray,
+inline void init_Ray(Ray &ray,
                      const Vec3f org, 
                      const Vec3f dir)
 {
@@ -133,7 +140,7 @@ inline void init_Ray(RTCRay &ray,
   ray.instID = -1;
 }
 
-inline bool noHit(const RTCRay& r) { return r.geomID < 0; }
+inline bool noHit(const Ray& r) { return r.geomID < 0; }
 
-inline bool hadHit(const RTCRay& r) { return r.geomID >= 0; }
+inline bool hadHit(const Ray& r) { return r.geomID >= 0; }
 

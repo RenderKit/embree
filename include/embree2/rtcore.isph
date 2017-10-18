@@ -163,6 +163,7 @@ typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform uintptr_t byt
  *  function. */
 RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* uniform userPtr);
 
+#include "rtcore_ray.isph"
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"
 #include "rtcore_geometry_user.isph"
