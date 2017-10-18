@@ -21,13 +21,6 @@ DISABLE_DEPRECATED_WARNING;
 
 namespace embree
 {
-  /* FIXME: why do we need ispcNewScene2? */
-  extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
-  {
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
-    return rtcDeviceNewScene(device,flags,aflags);
-  }
-
   extern "C" void ispcIntersect1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray) {
     rtcIntersect1(scene,context,ray);
   }
@@ -44,22 +37,6 @@ namespace embree
     rtcIntersect16(valid,scene,context,ray);
   }
 
-  extern "C" void ispcIntersect1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const unsigned int N, const unsigned int M, const size_t stride) {
-    rtcIntersect1M(scene,context,rays,M,stride);
-  }
-
-  extern "C" void ispcIntersect1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const unsigned int N, const unsigned int M, const size_t stride) {
-    rtcIntersect1Mp(scene,context,rays,M);
-  }
-
-  extern "C" void ispcIntersectNM (RTCScene scene, const RTCIntersectContext* context, RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride) {
-    rtcIntersectNM(scene,context,rays,N,M,stride);
-  }
-
-  extern "C" void ispcIntersectNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  unsigned int N) {
-    rtcIntersectNp(scene,context,rays,N);
-  }
-  
   extern "C" void ispcOccluded1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray) {
     rtcOccluded1(scene,context,ray);
   }
@@ -76,22 +53,6 @@ namespace embree
     rtcOccluded16(valid,scene,context,ray);
   }
 
-  extern "C" void ispcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const unsigned int N, const unsigned int M, const size_t stride) {
-    rtcOccluded1M(scene,context,rays,M,stride);
-  }
-
-  extern "C" void ispcOccluded1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const unsigned int N, const unsigned int M, const size_t stride) {
-    rtcOccluded1Mp(scene,context,rays,M);
-  }
-
-  extern "C" void ispcOccludedNM (RTCScene scene, const RTCIntersectContext* context, RTCRayN* rays, const unsigned int N, const  unsigned int M, const  size_t stride) {
-    rtcOccludedNM(scene,context,(RTCRayN*)rays,N,M,stride);
-  }
-
-  extern "C" void ispcOccludedNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  unsigned int N) {
-    rtcOccludedNp(scene,context,rays,N);
-  }
-        
   extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                    RTCBufferType buffer, 
