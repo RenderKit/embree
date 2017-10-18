@@ -99,6 +99,11 @@ nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.1-AVX-TBB2017:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.1 isa:AVX tasking:TBB2017 intensity:3"
   tags:   [win7, v120] # avx
   only:   [schedules]
+
+nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.1-AVX2-TBB2017:
+  script: "scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 intensity:2"
+  tags:   [win7, v140]
+  only:   [pushes]
   
 nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.1-AVX2-PPL:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.1 isa:AVX2 tasking:PPL intensity:3"
