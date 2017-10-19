@@ -192,7 +192,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 /* default floating-point type */
-typedef float real;
+namespace embree {
+  typedef float real;
+}
 
 /* windows does not have ssize_t */
 #if defined(__WIN32__)
