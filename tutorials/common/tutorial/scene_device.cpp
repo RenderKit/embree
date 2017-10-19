@@ -251,8 +251,8 @@ namespace embree
     delete[] positions;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, SceneGraph::HairSetNode::Basis basis, Ref<SceneGraph::HairSetNode> in) 
-    : geom(type == SceneGraph::HairSetNode::HAIR ? HAIR_SET : CURVES), basis(basis == SceneGraph::HairSetNode::BEZIER ? BEZIER_BASIS : BSPLINE_BASIS)
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCCurveType type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
+    : geom(type == RTC_CURVE_RIBBON ? HAIR_SET : CURVES), basis(basis)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -401,7 +401,8 @@ namespace embree
   
   unsigned int ConvertLineSegments(RTCDevice device, ISPCLineSegments* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewLineSegments (device, gflags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (device, gflags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
+    
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
     }
@@ -416,9 +417,7 @@ namespace embree
   
   unsigned int ConvertHairSet(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = mesh->basis == BEZIER_BASIS ?
-      rtcNewBezierHairGeometry  (device, gflags, mesh->numTimeSteps) :
-      rtcNewBSplineHairGeometry (device, gflags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry  (device, gflags, RTC_CURVE_RIBBON, mesh->basis, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa),mesh->numVertices);
@@ -435,9 +434,7 @@ namespace embree
   
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = mesh->basis == BEZIER_BASIS ?
-      rtcNewBezierCurveGeometry  (device, gflags, mesh->numTimeSteps) :
-      rtcNewBSplineCurveGeometry (device, gflags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry  (device, gflags, RTC_CURVE_SURFACE, mesh->basis, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);

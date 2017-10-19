@@ -239,8 +239,8 @@ namespace embree
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type);
-    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type);
+    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, RTCCurveType type);
+    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, RTCCurveType type);
 
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
@@ -1031,10 +1031,10 @@ namespace embree
     }
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type) 
+  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, RTCCurveType type) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BEZIER,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_BASIS_BEZIER,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1059,10 +1059,10 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type) 
+  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, RTCCurveType type) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BSPLINE,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_BASIS_BSPLINE,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++) {
@@ -1228,11 +1228,11 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadLineSegments    (xml);
-      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::HairSetNode::HAIR);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::HairSetNode::HAIR);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadBSplineCurves   (xml,SceneGraph::HairSetNode::HAIR);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::HairSetNode::CURVE);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadBSplineCurves   (xml,SceneGraph::HairSetNode::CURVE);
+      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_RIBBON);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_RIBBON);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadBSplineCurves   (xml,RTC_CURVE_RIBBON);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_SURFACE);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadBSplineCurves   (xml,RTC_CURVE_SURFACE);
       else if (xml->name == "PerspectiveCamera") node = sceneMap[id] = loadPerspectiveCamera(xml);
       else if (xml->name == "Group"           ) node = sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) node = sceneMap[id] = loadTransformNode   (xml);

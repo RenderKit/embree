@@ -92,6 +92,21 @@ enum RTCSubdivisionMode
   RTC_SUBDIV_PIN_ALL = 4,              //!< pin every vertex (interpolates every patch linearly)
 };
 
+/*! Curve Basis */
+enum RTCCurveBasis
+{
+  RTC_BASIS_LINEAR = 0,
+  RTC_BASIS_BEZIER = 1,
+  RTC_BASIS_BSPLINE = 2
+};
+
+/*! Curve type */
+enum RTCCurveType
+{
+  RTC_CURVE_RIBBON,    //!< render curves as ray facing ribbons
+  RTC_CURVE_SURFACE    //!< render curves as real geometric surface
+};
+
 /*! Intersection filter function for ray packets of size N. */
 typedef unmasked void (*uniform RTCFilterFuncN)(uniform int* uniform valid,         /*!< pointer to valid mask */
                                                 void* uniform ptr,                  /*!< pointer to geometry user data */
@@ -270,100 +285,12 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
   considered to be subpixel sized which allows the implementation to
   approximate the intersection calculation. This in particular means
   that zooming onto one hair might show geometric artefacts. */
-RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice device,
-                                                 uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                 uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
 
-/*! \brief Creates a new hair geometry, consisting of multiple hairs
-  represented as cubic bspline curves with varying radii. The number
-  of curves (numCurves), number of vertices (numVertices), and number
-  of time steps have to get specified at construction time (1 for
-  normal meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
-  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
-  and writing to the appropiate buffers. In case of multi-segment
-  motion blur multiple vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
-  step. The index buffer has the default layout of a single 32 bit
-  integer index for each curve, that references the start vertex of
-  the curve. The vertex buffer stores 4 control points per curve, each
-  such control point consists of a single precision (x,y,z) position
-  and radius, stored in that order in memory. Individual hairs are
-  considered to be subpixel sized which allows the implementation to
-  approximate the intersection calculation. This in particular means
-  that zooming onto one hair might show geometric artefacts. */
-RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice device,
-                                                  uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                  uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-/*! \brief Creates a new curve geometry, consisting of multiple curves
-  represented as cubic bezier curves with varying radii. The
-  intersected surface is defined as the sweep of a varying radius
-  circle perpendicular along the curve. The number of curves
-  (numCurves), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time (1 for normal
-  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
-  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
-  and writing to the appropiate buffers. In case of multi-segment
-  motion blur, multiple vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
-  step. The index buffer has the default layout of a single 32 bit
-  integer index for each curve, that references the start vertex of
-  the curve. The vertex buffer stores 4 control points per curve, each
-  such control point consists of a single precision (x,y,z) position
-  and radius, stored in that order in memory. */
-RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice device,
-                                                  uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                  uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-/*! \brief Creates a new curve geometry, consisting of multiple curves
-  represented as cubic bspline curves with varying radii. The
-  intersected surface is defined as the sweep of a varying radius
-  circle perpendicular along the curve. The number of curves
-  (numCurves), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time (1 for normal
-  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
-  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
-  and writing to the appropiate buffers. In case of multi-segment
-  motion blur, multiple vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
-  step. The index buffer has the default layout of a single 32 bit
-  integer index for each curve, that references the start vertex of
-  the curve. The vertex buffer stores 4 control points per curve, each
-  such control point consists of a single precision (x,y,z) position
-  and radius, stored in that order in memory. */
-RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice device,
-                                                   uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                   uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-/*! \brief Creates a new line segment geometry, consisting of multiple
-  segments with varying radii. The number of line segments
-  (numSegments), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time (1 for normal
-  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-  blur). Further, the segment index buffer (RTC_INDEX_BUFFER) and the
-  segment vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
-  and writing to the appropiate buffers. In case of multi-segment
-  motion blur, multiple vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
-  step. The index buffer has the default layout of a single 32 bit
-  integer index for each line segment, that references the start
-  vertex of the segment.  The vertex buffer stores 2 end points per
-  line segment, each such point consists of a single precision (x,y,z)
-  position and radius, stored in that order in memory. Individual
-  segments are considered to be subpixel sized which allows the
-  implementation to approximate the intersection calculation. This in
-  particular means that zooming onto one line segment might show
-  geometric artefacts. */
-RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice device,
-                                           uniform RTCGeometryFlags flags,    //!< geometry flags
-                                           uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
+RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
+                                            uniform RTCGeometryFlags flags,    //!< geometry flags
+                                            uniform RTCCurveType type,
+                                            uniform RTCCurveBasis basis,
+                                            uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair

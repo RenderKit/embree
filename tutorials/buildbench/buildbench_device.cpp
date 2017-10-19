@@ -72,7 +72,7 @@ namespace embree {
 
   void convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = rtcNewLineSegments (g_device, flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex), mesh->numVertices);
     }
@@ -82,12 +82,8 @@ namespace embree {
 
   void convertHairSet(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = nullptr;
-    switch (hair->basis) {
-    case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, flags, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry(g_device, flags, hair->numTimeSteps); break;
-    default: assert(false);
-    }
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, RTC_CURVE_RIBBON, hair->basis, hair->numTimeSteps);
+
     for (size_t t=0; t<hair->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
@@ -98,12 +94,8 @@ namespace embree {
 
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = nullptr;
-    switch (hair->basis) {
-    case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, flags, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry(g_device, flags, hair->numTimeSteps); break;
-    default: assert(false);
-    }
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, RTC_CURVE_SURFACE, hair->basis, hair->numTimeSteps);
+
     for (size_t t=0; t<hair->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }

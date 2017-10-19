@@ -135,7 +135,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewLineSegments (g_device, object_flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -150,12 +150,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = NULL;
-    switch (hair->basis) {
-    case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, object_flags, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry (g_device, object_flags, hair->numTimeSteps); break;
-    default: assert(false);
-    }
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, hair->basis, hair->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
@@ -171,12 +166,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = NULL;
-    switch (hair->basis) {
-    case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, object_flags, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry (g_device, object_flags, hair->numTimeSteps); break;
-    default: assert(false);
-    }
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_SURFACE, hair->basis, hair->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];

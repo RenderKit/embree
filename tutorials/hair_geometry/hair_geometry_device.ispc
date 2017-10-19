@@ -76,7 +76,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
 
 void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewBezierHairGeometry (g_device, RTC_GEOMETRY_STATIC, hair->numTimeSteps);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, hair->numTimeSteps);
   for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
   }

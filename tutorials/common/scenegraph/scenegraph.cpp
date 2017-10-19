@@ -236,26 +236,26 @@ namespace embree
 
   void SceneGraph::HairSetNode::convert_bezier_to_bspline()
   {
-    if (basis != BEZIER) return;
+    if (basis != RTC_BASIS_BEZIER) return;
     for (size_t i=0; i<positions.size(); i++) {
       positions[i] = bezier_to_bspline_helper(hairs,positions[i]);
     }
     for (size_t i=0; i<hairs.size(); i++) {
       hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
-    basis = BSPLINE;
+    basis = RTC_BASIS_BSPLINE;
   }
 
   void SceneGraph::HairSetNode::convert_bspline_to_bezier()
   {
-    if (basis != BSPLINE) return;
+    if (basis != RTC_BASIS_BSPLINE) return;
     for (size_t i=0; i<positions.size(); i++) {
       positions[i] = bspline_to_bezier_helper(hairs,positions[i]);
     }
     for (size_t i=0; i<hairs.size(); i++) {
       hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
-    basis = BEZIER;
+    basis = RTC_BASIS_BEZIER;
   }
 
   bool test_location(const std::vector<avector<Vec3fa>>& in, ssize_t ipos, std::vector<avector<Vec3fa>>& out, ssize_t opos)
@@ -753,7 +753,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      hmesh->type = SceneGraph::HairSetNode::CURVE;
+      hmesh->type = RTC_CURVE_SURFACE;
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;

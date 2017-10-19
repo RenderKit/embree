@@ -852,104 +852,42 @@ namespace embree
     return nullptr;
   }
 
-  RTCGeometry rtcNewCurveGeometry ( Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, unsigned int numTimeSteps) 
+  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, RTCCurveType type, RTCCurveBasis basis, unsigned int numTimeSteps)
   {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewCurveGeometry);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
+#if defined(EMBREE_GEOMETRY_HAIR)
+    createLineSegmentsTy createLineSegments = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
     createCurvesBezierTy createCurvesBezier = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
     createCurvesBSplineTy createCurvesBSpline = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
 
+    if (type != RTC_CURVE_RIBBON & type != RTC_CURVE_SURFACE)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
+      
+    if (basis == RTC_BASIS_LINEAR && type != RTC_CURVE_RIBBON)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type for linear curves");
+
     Geometry* geom = nullptr;
     switch (basis) {
-    case NativeCurves::BEZIER : geom = createCurvesBezier (device,subtype,basis,gflags,numTimeSteps); break;
-    case NativeCurves::BSPLINE: geom = createCurvesBSpline(device,subtype,basis,gflags,numTimeSteps); break;
+    case RTC_BASIS_LINEAR : geom = createLineSegments (device,gflags,numTimeSteps); break;
+    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis,gflags,numTimeSteps); break;
+    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis,gflags,numTimeSteps); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve basis");
     }
     return (RTCGeometry) geom->refInc();
-  }
-
-  RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewBezierHairGeometry);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-#if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BEZIER,gflags,numTimeSteps);
 #else
-    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierHairGeometry is not supported");
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewCurveGeometry is not supported");
 #endif
     RTCORE_CATCH_END(device);
     return nullptr;
   }
-
-  RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewBSplineHairGeometry);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-#if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BSPLINE,gflags,numTimeSteps);
-#else
-    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineHairGeometry is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
-
-  RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewBezierCurveGeometry);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-#if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BEZIER,gflags,numTimeSteps);
-#else
-    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierCurveGeometry is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
-
-  RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewBSplineCurveGeometry);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-#if defined(EMBREE_GEOMETRY_HAIR)
-    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BSPLINE,gflags,numTimeSteps);
-#else
-    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineCurveGeometry is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
-
-  RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewLineSegments);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-#if defined(EMBREE_GEOMETRY_LINES)
-    createLineSegmentsTy createLineSegments = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
-    Geometry* geom = createLineSegments(device,gflags,numTimeSteps);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewLineSegments is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
-
+    
   RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps) 
   {
     Device* device = (Device*) hdevice;

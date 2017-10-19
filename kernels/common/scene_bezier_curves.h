@@ -30,16 +30,10 @@ namespace embree
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
 
-    /*! this geometry represents approximate hair geometry and real bezier surface geometry */
-    enum SubType { HAIR = 1, SURFACE = 0 };
-
-    /*! specified the basis the user specified vertices are stored in */
-    enum Basis { BEZIER = 0, BSPLINE = 1 };
-
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps); 
+    NativeCurves (Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps); 
     
   public:
     void enabling();
@@ -147,8 +141,8 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
-      else                         return curve.accurateBounds();
+      if (likely(subtype == RTC_CURVE_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      else                                     return curve.accurateBounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
@@ -164,8 +158,8 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
-      else                         return curve.accurateBounds();
+      if (likely(subtype == RTC_CURVE_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      else                                     return curve.accurateBounds();
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -283,8 +277,8 @@ namespace embree
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
-    SubType subtype;                                //!< hair or surface geometry
-    Basis basis;                                    //!< basis of user provided vertices
+    RTCCurveType subtype;                                //!< hair or surface geometry
+    RTCCurveBasis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
   public:
     BufferRefT<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
@@ -296,7 +290,7 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
+      NativeCurvesISA (Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
         : NativeCurves(device,subtype,basis,flags,numTimeSteps) {}
 
       template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
@@ -306,7 +300,7 @@ namespace embree
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
+      CurvesBezier (Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
          : NativeCurvesISA(device,subtype,basis,flags,numTimeSteps) {}
 
       void preCommit();
@@ -315,7 +309,7 @@ namespace embree
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
+      CurvesBSpline (Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps)
          : NativeCurvesISA(device,subtype,basis,flags,numTimeSteps) {}
 
       void preCommit();
@@ -323,6 +317,6 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA unsigned int);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA unsigned int);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCCurveType COMMA RTCCurveBasis COMMA RTCGeometryFlags COMMA unsigned int);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCCurveType COMMA RTCCurveBasis COMMA RTCGeometryFlags COMMA unsigned int);
 }

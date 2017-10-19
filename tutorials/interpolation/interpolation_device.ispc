@@ -265,7 +265,7 @@ uniform unsigned int addQuadCube (RTCScene scene_i, const uniform Vec3f& pos)
 /* add curve geometry */
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewBezierCurveGeometry (g_device, RTC_GEOMETRY_DYNAMIC);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_DYNAMIC, RTC_CURVE_SURFACE, RTC_BASIS_BEZIER);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(uniform Vec3fa), NUM_HAIR_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(uniform Vec3fa), NUM_HAIR_VERTICES);
