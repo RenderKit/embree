@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "../common/tasking/taskscheduler.h"
+#include "../tasking/taskscheduler.h"
 #include "../sys/array.h"
 #include "../math/math.h"
-#include "../common/math/range.h"
+#include "../math/range.h"
 
 namespace embree
 {

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "parallel_for.h"
-#include "../common/math/range.h"
+#include "../math/range.h"
 
 namespace embree
 {
