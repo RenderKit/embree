@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "device.h"
-#include "hash.h"
+#include "../hash.h"
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
@@ -32,7 +32,7 @@
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 
-#include "../common/tasking/taskscheduler.h"
+#include "../../common/tasking/taskscheduler.h"
 #include "../../common/sys/alloc.h"
 
 namespace embree

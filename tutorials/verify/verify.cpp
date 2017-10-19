@@ -17,9 +17,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "verify.h"
-#include "../tutorials/common/scenegraph/scenegraph.h"
-#include "../tutorials/common/scenegraph/geometry_creation.h"
-#include "../common/algorithms/parallel_for.h"
+#include "../common/scenegraph/scenegraph.h"
+#include "../common/scenegraph/geometry_creation.h"
+#include "../../common/algorithms/parallel_for.h"
 #include <regex>
 #include <stack>
 

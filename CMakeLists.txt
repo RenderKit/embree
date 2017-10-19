@@ -26,7 +26,6 @@ PROJECT(embree${EMBREE_VERSION_MAJOR})
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
-
 # find git version
 IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   FIND_PACKAGE(Git)
@@ -48,9 +47,8 @@ CONFIGURE_FILE(
 )
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
-  "${PROJECT_BINARY_DIR}/hash.h"
+  "${PROJECT_SOURCE_DIR}/kernels/hash.h"
 )
-FILE(WRITE "${PROJECT_BINARY_DIR}/hash" "${EMBREE_HASH}")
 
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
@@ -154,7 +152,7 @@ ENDIF()
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
-  "${PROJECT_BINARY_DIR}/config.h"
+  "${PROJECT_SOURCE_DIR}/kernels/config.h"
 )
 
 ##############################################################
@@ -360,9 +358,6 @@ include(package)
 ##############################################################
 # Search paths
 ##############################################################
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
-INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
-INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 IF (TASKING_TBB)
   FIND_PACKAGE(TBB REQUIRED)
   INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})

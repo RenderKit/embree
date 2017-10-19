@@ -17,7 +17,6 @@
 #include "xml_loader.h"
 #include "xml_parser.h"
 #include "obj_loader.h"
-#include "config.h"
 
 namespace embree
 {

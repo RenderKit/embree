@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../kernels/common/default.h"
-#include "../include/embree2/rtcore.h"
-#include "../tutorials/common/math/random_sampler.h"
+#include "../../kernels/common/default.h"
+#include "../../include/embree2/rtcore.h"
+#include "../common/math/random_sampler.h"
 
 namespace embree
 {

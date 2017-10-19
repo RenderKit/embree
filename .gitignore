@@ -5,3 +5,8 @@ x64
 *.ncb
 .*sw?
 .DS_Store
+kernels/config.h
+kernels/hash.h
+build
+models
+tbb
