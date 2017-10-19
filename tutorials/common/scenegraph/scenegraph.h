@@ -739,67 +739,6 @@ namespace embree
       float tessellationRate;
     };
 
-    /*! Line Segments */
-    struct LineSegmentsNode : public Node
-    {
-      typedef Vec3fa Vertex;
-
-    public:
-      LineSegmentsNode (Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), material(material) 
-      {
-        for (size_t i=0; i<numTimeSteps; i++)
-          positions.push_back(avector<Vertex>());
-      }
-
-      LineSegmentsNode (Ref<SceneGraph::LineSegmentsNode> imesh, const Transformations& spaces)
-        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)), indices(imesh->indices), material(imesh->material) {}
-      
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
-      }
-
-      virtual BBox3fa bounds() const
-      {
-        BBox3fa b = empty;
-        for (const auto& p : positions)
-          for (auto x : p)
-            b.extend(x);
-        return b;
-      }
-
-      virtual LBBox3fa lbounds() const
-      {
-        avector<BBox3fa> bboxes(positions.size());
-        for (size_t t=0; t<positions.size(); t++) {
-          BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
-          bboxes[t] = b;
-        }
-        return LBBox3fa(bboxes);
-      }
-
-      virtual size_t numPrimitives() const {
-        return indices.size();
-      }
-
-      size_t numVertices() const {
-        assert(positions.size());
-        return positions[0].size();
-      }
-
-      size_t numTimeSteps() const {
-        return positions.size();
-      }
-
-      void verify() const;
-
-    public:
-      std::vector<avector<Vertex>> positions; //!< line control points (x,y,z,r) for multiple timesteps
-      std::vector<unsigned> indices; //!< list of line segments
-      Ref<MaterialNode> material;
-    };
-
     /*! Hair Set. */
     struct HairSetNode : public Node
     {

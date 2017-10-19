@@ -972,7 +972,7 @@ void assignShaders(ISPCGeometry* geometry)
 #endif
   }
   else if (geometry->type == LINE_SEGMENTS) {
-    ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
   }
   else if (geometry->type == HAIR_SET) {
@@ -1193,7 +1193,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   }
   else if (geometry->type == LINE_SEGMENTS)
   {
-    ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->geom.materialID;
     const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
@@ -1201,14 +1201,14 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     dg.Tx = dx;
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;
-    int vtx = mesh->indices[dg.primID];
+    int vtx = mesh->hairs[dg.primID].vertex;
     dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
   }
   else if (geometry->type == HAIR_SET)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->geom.materialID;
-    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp);
+    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp); // FIXME: wrong for bspline basis
     const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
     const Vec3fa dz = normalize(cross(dy,dx));
@@ -1449,7 +1449,7 @@ void occlusionFilterHair(int* valid_i,
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
     {
-      int materialID = ((ISPCLineSegments*)geometry)->geom.materialID;
+      int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
       ISPCMaterial* material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;

@@ -163,22 +163,6 @@ namespace embree
     unsigned int numTexCoords;
   };
   
-  struct ISPCLineSegments
-  {
-#if !defined(ISPC)
-    ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in);
-    ~ISPCLineSegments();
-#endif
-
-    ISPCGeometry geom;
-    Vec3fa** positions;        //!< control points (x,y,z,r)
-    unsigned int* indices;        //!< for each segment, index to first control point
-    
-    unsigned int numTimeSteps;
-    unsigned int numVertices;
-    unsigned int numSegments;
-  };
-  
   struct ISPCHairSet
   {
 #if !defined(ISPC)

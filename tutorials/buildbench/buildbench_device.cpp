@@ -70,14 +70,16 @@ namespace embree {
     mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  void convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertLineSegments(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex), mesh->numVertices);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, hair->numTimeSteps);
+    
+    for (size_t t=0; t<hair->numTimeSteps; t++) {
+      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
-    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
+    rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+    hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
   void convertHairSet(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
@@ -128,7 +130,7 @@ namespace embree {
         convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, gflags);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        convertLineSegments((ISPCLineSegments*) geometry, scene_out, gflags);
+        convertLineSegments((ISPCHairSet*) geometry, scene_out, gflags);
       }
       else if (geometry->type == HAIR_SET) {
         convertHairSet((ISPCHairSet*) geometry, scene_out, gflags);
@@ -158,7 +160,7 @@ namespace embree {
         numPrimitives += ((ISPCQuadMesh*)geometry)->numQuads;
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        numPrimitives += ((ISPCLineSegments*)geometry)->numSegments;
+        numPrimitives += ((ISPCHairSet*)geometry)->numHairs;
       }
       else if (geometry->type == HAIR_SET) {
         numPrimitives += ((ISPCHairSet*)geometry)->numHairs;
@@ -193,7 +195,7 @@ namespace embree {
         rtcUpdate(rtcGetGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        rtcUpdate(rtcGetGeometry(scene_out,((ISPCLineSegments*)geometry)->geom.geomID));
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID));
       }
       else if (geometry->type == HAIR_SET) {
         rtcUpdate(rtcGetGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID));
@@ -222,7 +224,7 @@ namespace embree {
         rtcDetachGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        rtcDetachGeometry(scene_out,((ISPCLineSegments*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else if (geometry->type == HAIR_SET) {
         rtcDetachGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);

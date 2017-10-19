@@ -62,7 +62,7 @@ namespace embree
       case INSTANCE: delete (ISPCInstance*) geometries[i]; break;
       case GROUP: delete (ISPCGroup*) geometries[i]; break;
       case QUAD_MESH: delete (ISPCQuadMesh*) geometries[i]; break;
-      case LINE_SEGMENTS: delete (ISPCLineSegments*) geometries[i]; break;
+      case LINE_SEGMENTS: delete (ISPCHairSet*) geometries[i]; break;
       case CURVES: delete (ISPCHairSet*) geometries[i]; break;
       default: assert(false); break;
       }
@@ -234,25 +234,8 @@ namespace embree
     if (face_offsets) delete[] face_offsets;
   }
   
-  ISPCLineSegments::ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in) 
-    : geom(LINE_SEGMENTS)
-  {
-    positions = new Vec3fa*[in->numTimeSteps()];
-    for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = in->positions[i].data();
-    indices = in->indices.data();
-    numTimeSteps = (unsigned) in->numTimeSteps();
-    numVertices = (unsigned) in->numVertices();
-    numSegments = (unsigned) in->numPrimitives();
-    geom.materialID = scene_in->materialID(in->material);
-  }
-
-  ISPCLineSegments::~ISPCLineSegments () {
-    delete[] positions;
-  }
-  
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCCurveType type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
-    : geom(type == RTC_CURVE_RIBBON ? HAIR_SET : CURVES), basis(basis)
+    : geom(basis == RTC_BASIS_LINEAR ? LINE_SEGMENTS : type == RTC_CURVE_RIBBON ? HAIR_SET : CURVES), basis(basis)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -309,8 +292,6 @@ namespace embree
       geom = (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
       geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
-    else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
-      geom = (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
       geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
@@ -399,14 +380,14 @@ namespace embree
     return geomID;
   }
   
-  unsigned int ConvertLineSegments(RTCDevice device, ISPCLineSegments* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
+  unsigned int ConvertLineSegments(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     RTCGeometry geom = rtcNewCurveGeometry (device, gflags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
     
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
+    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.scene = scene_out;
@@ -460,7 +441,7 @@ namespace embree
       else if (geometry->type == QUAD_MESH)
         ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, gflags, scene_out);
       else if (geometry->type == LINE_SEGMENTS)
-        ConvertLineSegments(device,(ISPCLineSegments*) geometry, gflags, scene_out);
+        ConvertLineSegments(device,(ISPCHairSet*) geometry, gflags, scene_out);
       else if (geometry->type == HAIR_SET)
         ConvertHairSet(device,(ISPCHairSet*) geometry, gflags, scene_out);
       else if (geometry->type == CURVES)
@@ -556,7 +537,7 @@ namespace embree
           rtcDisable(rtcGetGeometry(scene_out,geomID));
         }
         else if (geometry->type == LINE_SEGMENTS) {
-          unsigned int geomID = ConvertLineSegments(g_device,(ISPCLineSegments*) geometry, gflags, scene_out);
+          unsigned int geomID = ConvertLineSegments(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
           assert(geomID == i);
           rtcDisable(rtcGetGeometry(scene_out,geomID));
         }
@@ -610,7 +591,7 @@ namespace embree
         }
         else if (geometry->type == LINE_SEGMENTS) {
           RTCScene objscene = rtcDeviceNewScene(g_device,sflags,aflags);
-          ConvertLineSegments(g_device,(ISPCLineSegments*) geometry,gflags,objscene);
+          ConvertLineSegments(g_device,(ISPCHairSet*) geometry,gflags,objscene);
           scene_in->geomID_to_scene[i] = objscene;
           //rtcCommit(objscene);
         }
@@ -660,7 +641,7 @@ namespace embree
           assert(geomID == i);
         }
         else if (geometry->type == LINE_SEGMENTS) {
-          unsigned int geomID MAYBE_UNUSED = ConvertLineSegments(g_device,(ISPCLineSegments*) geometry, gflags, scene_out);
+          unsigned int geomID MAYBE_UNUSED = ConvertLineSegments(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
           assert(geomID == i);
         }
         else if (geometry->type == HAIR_SET) {

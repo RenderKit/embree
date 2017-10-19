@@ -174,17 +174,6 @@ namespace embree
       THROW_RUNTIME_ERROR("invalid vertex crease weight array");
   }
 
-  void SceneGraph::LineSegmentsNode::verify() const
-  {
-    const size_t N = numVertices();
-    for (const auto& p : positions) 
-      if (p.size() != N) 
-        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    for (auto i : indices)
-      if (size_t(i) >= N)
-        THROW_RUNTIME_ERROR("invalid line segment");
-  }
-
   void SceneGraph::HairSetNode::verify() const
   {
     const size_t N = numVertices();
@@ -472,13 +461,6 @@ namespace embree
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
-    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) 
-    {
-      avector<Vec3fa> positions1;
-      for (auto P : mesh->positions.back()) 
-        positions1.push_back(P+dP);
-      mesh->positions.push_back(std::move(positions1));
-    }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
     {
       avector<Vec3fa> positions1;
@@ -519,16 +501,6 @@ namespace embree
       }
     }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
-    {
-      avector<Vec3fa> positions = std::move(mesh->positions[0]);
-      mesh->positions.clear();
-      for (size_t t=0; t<motion_vector.size(); t++) {
-        avector<Vec3fa> tpositions(positions.size());
-        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
-        mesh->positions.push_back(std::move(tpositions));
-      }
-    }
-    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) 
     {
       avector<Vec3fa> positions = std::move(mesh->positions[0]);
       mesh->positions.clear();
@@ -726,15 +698,15 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      Ref<SceneGraph::LineSegmentsNode> lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
+      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
 
       for (auto hair : hmesh->hairs) {
-        lmesh->indices.push_back(hair.vertex+0);
-        lmesh->indices.push_back(hair.vertex+1);
-        lmesh->indices.push_back(hair.vertex+2);
+        lmesh->hairs.push_back(SceneGraph::HairSetNode::Hair(hair.vertex+0,hair.id));
+        lmesh->hairs.push_back(SceneGraph::HairSetNode::Hair(hair.vertex+1,hair.id));
+        lmesh->hairs.push_back(SceneGraph::HairSetNode::Hair(hair.vertex+2,hair.id));
       }
       return lmesh.dynamicCast<SceneGraph::Node>();
     }
@@ -824,11 +796,6 @@ namespace embree
       if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
-    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
-    {
-      if ((mesh->numTimeSteps() > 1) == mblur)
-        return nullptr;
-    }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
     {
       if ((mesh->numTimeSteps() > 1) == mblur)
@@ -912,9 +879,6 @@ namespace embree
       }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
         group.push_back(new SceneGraph::SubdivMeshNode(mesh,spaces));
-      }
-      else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) {
-        group.push_back(new SceneGraph::LineSegmentsNode(mesh,spaces));
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
         group.push_back(new SceneGraph::HairSetNode(mesh,spaces));

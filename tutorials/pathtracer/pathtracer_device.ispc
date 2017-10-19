@@ -970,7 +970,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
 #endif
   }
   else if (geometry->type == LINE_SEGMENTS) {
-    ISPCLineSegments* uniform mesh = (ISPCLineSegments* uniform) geometry;
+    ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
   }
   else if (geometry->type == HAIR_SET) {
@@ -1191,7 +1191,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   }
   else if (geometry->type == LINE_SEGMENTS)
   {
-    uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
+    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     materialID = mesh->geom.materialID;
     const Vec3f dx = normalize(dg.Ng);
     const Vec3f dy = normalize(cross(neg(ray.dir),dx));
@@ -1199,14 +1199,14 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     dg.Tx = dx;
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;
-    int vtx = mesh->indices[dg.primID];
+    int vtx = mesh->hairs[dg.primID].vertex;
     dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
   }
   else if (geometry->type == HAIR_SET)
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     materialID = mesh->geom.materialID;
-    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp);
+    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp); // FIXME: wrong for bspline basis
     const Vec3f dx = normalize(dg.Ng);
     const Vec3f dy = normalize(cross(neg(ray.dir),dx));
     const Vec3f dz = normalize(cross(dy,dx));
@@ -1447,7 +1447,7 @@ unmasked void occlusionFilterHair(uniform int* uniform valid_i,
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
     {
-      uniform int materialID = ((ISPCLineSegments* uniform)geometry)->geom.materialID;
+      uniform int materialID = ((ISPCHairSet* uniform)geometry)->geom.materialID;
       ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = make_Vec3f(((uniform ISPCHairMaterial* uniform)material)->Kt); break;

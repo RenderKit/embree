@@ -130,18 +130,19 @@ namespace embree {
     rtcReleaseGeometry(geom);
   }
 
-  void convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out)
+  void convertLineSegments(ISPCHairSet* hair, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
-    RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, hair->numTimeSteps);
     /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     /* set index buffer */
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
-    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+    hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
 
@@ -202,7 +203,7 @@ namespace embree {
       convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      convertLineSegments((ISPCLineSegments*) geometry, scene_out);
+      convertLineSegments((ISPCHairSet*) geometry, scene_out);
     }
     else if (geometry->type == HAIR_SET) {
       convertHairSet((ISPCHairSet*) geometry, scene_out);
@@ -265,9 +266,9 @@ namespace embree {
       interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      unsigned int geomID = ((ISPCLineSegments*)geometry)->geom.geomID;
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
       /* if static do nothing */
-      if (((ISPCLineSegments*)geometry)->numTimeSteps <= 1) return;
+      if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(rtcGetGeometry(scene_out,geomID));
     }
     else if (geometry->type == HAIR_SET) {

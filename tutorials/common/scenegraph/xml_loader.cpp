@@ -238,10 +238,9 @@ namespace embree
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, RTCCurveType type);
-    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, RTCCurveType type);
-
+    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, RTCCurveType type); // only for compatibility
+    Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCCurveType type, RTCCurveBasis basis);
+ 
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
@@ -996,25 +995,6 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadLineSegments(const Ref<XML>& xml) 
-  {
-    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::LineSegmentsNode> mesh = new SceneGraph::LineSegmentsNode(material);
-
-    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
-    } else {
-      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
-    }
-
-    mesh->indices = loadUIntArray(xml->childOpt("indices"));
-    mesh->verify();
-    return mesh.dynamicCast<SceneGraph::Node>();
-  }
-
   void fix_bspline_end_points(const std::vector<unsigned>& indices, avector<Vec3fa>& positions)
   {
     for (size_t i=0; i<indices.size(); i++) 
@@ -1055,14 +1035,13 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
-    //mesh->convert_bezier_to_bspline();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, RTCCurveType type) 
+  Ref<SceneGraph::Node> XMLLoader::loadCurves(const Ref<XML>& xml, RTCCurveType type, RTCCurveBasis basis) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_BASIS_BSPLINE,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,basis,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++) {
@@ -1083,15 +1062,16 @@ namespace embree
       mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
     }
 
-    for (auto& vertices : mesh->positions)
-      fix_bspline_end_points(indices,vertices);
+    if (basis == RTC_BASIS_BSPLINE) {
+      for (auto& vertices : mesh->positions)
+        fix_bspline_end_points(indices,vertices);
+    }
 
     std::string tessellation_rate = xml->parm("tessellation_rate");
     if (tessellation_rate != "")
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
-    //mesh->convert_bspline_to_bezier();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -1227,12 +1207,30 @@ namespace embree
       else if (xml->name == "TriangleMesh"    ) node = sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
-      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadLineSegments    (xml);
       else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_RIBBON);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_RIBBON);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadBSplineCurves   (xml,RTC_CURVE_RIBBON);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_SURFACE);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadBSplineCurves   (xml,RTC_CURVE_SURFACE);
+      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_RIBBON,RTC_BASIS_LINEAR);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_RIBBON,RTC_BASIS_BEZIER);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_RIBBON,RTC_BASIS_BSPLINE);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_SURFACE,RTC_BASIS_BEZIER);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_SURFACE,RTC_BASIS_BSPLINE);
+      
+      else if (xml->name == "Curves")
+      {
+        RTCCurveType type;
+        std::string str_type = xml->parm("type");
+        if      (str_type == "ribbon" ) type = RTC_CURVE_RIBBON;
+        else if (str_type == "surface") type = RTC_CURVE_SURFACE;
+        else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_type);
+
+        RTCCurveBasis basis;
+        std::string str_basis = xml->parm("basis");
+        if    (str_basis == "linear") basis = RTC_BASIS_LINEAR;
+        else if (str_basis == "bezier") basis = RTC_BASIS_BEZIER;
+        else if (str_basis == "bspline") basis = RTC_BASIS_BSPLINE;
+        else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve basis: "+str_basis);
+        
+        node = sceneMap[id] = loadCurves(xml,type,basis);
+      }
       else if (xml->name == "PerspectiveCamera") node = sceneMap[id] = loadPerspectiveCamera(xml);
       else if (xml->name == "Group"           ) node = sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) node = sceneMap[id] = loadTransformNode   (xml);

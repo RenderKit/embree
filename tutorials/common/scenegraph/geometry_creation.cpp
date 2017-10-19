@@ -427,11 +427,12 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::LineSegmentsNode> mesh = new SceneGraph::LineSegmentsNode(material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_CURVE_RIBBON,RTC_BASIS_LINEAR,material,mblur?2:1);
 
-    mesh->indices.resize(numLineSegments);
+    mesh->hairs.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
-      mesh->indices[i] = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(2*i);
+      mesh->hairs[i].vertex = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(2*i);
+      mesh->hairs[i].id = 0;
     }
 
     mesh->positions[0].resize(2*numLineSegments);

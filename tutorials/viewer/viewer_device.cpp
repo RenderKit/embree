@@ -174,7 +174,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   }
   else if (geometry->type == LINE_SEGMENTS)
   {
-    ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->geom.materialID;
   }
   else if (geometry->type == HAIR_SET)

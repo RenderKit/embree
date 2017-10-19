@@ -229,18 +229,6 @@ namespace embree
         rtcReleaseGeometry(geom);
         return geomID;
       } 
-      else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
-      {
-        RTCGeometry geom = rtcNewCurveGeometry (device, gflag, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps());
-        AssertNoError(device);
-        for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex),mesh->positions[t].size());
-        rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int),mesh->indices.size());
-        AssertNoError(device);
-        unsigned int geomID = rtcAttachGeometry(scene,geom);
-        rtcReleaseGeometry(geom);
-        return geomID;
-      }
       else {
         THROW_RUNTIME_ERROR("unknown node type");
       }
@@ -328,10 +316,6 @@ namespace embree
       {
         rtcSetBuffer(rtcGetGeometry(scene,geom.first),RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
       } 
-      else if (Ref<SceneGraph::LineSegmentsNode> mesh = geom.second.dynamicCast<SceneGraph::LineSegmentsNode>())
-      {
-        rtcSetBuffer(rtcGetGeometry(scene,geom.first),RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->indices.size()+1));
-      }
     }
 
   public:
