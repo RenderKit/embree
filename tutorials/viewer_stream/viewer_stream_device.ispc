@@ -209,16 +209,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
   }
-  else if (geometry->type == LINE_SEGMENTS)
-  {
-    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == HAIR_SET)
-  {
-    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
   else if (geometry->type == CURVES)
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;

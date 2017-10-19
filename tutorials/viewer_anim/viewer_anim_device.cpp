@@ -130,49 +130,19 @@ namespace embree {
     rtcReleaseGeometry(geom);
   }
 
-  void convertLineSegments(ISPCHairSet* hair, RTCScene scene_out)
-  {
-    /* if more than a single timestep, mark object as dynamic */
-    RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-    /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, hair->numTimeSteps);
-    /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-    /* set index buffer */
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
-    hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
-    rtcReleaseGeometry(geom);
-  }
-
-  void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
-  {
-    /* if more than a single timestep, mark object as dynamic */
-    RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-    /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, hair->basis, hair->numTimeSteps);
-    /* generate vertex buffer */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-    /* set index buffer */
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
-    hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
-    rtcReleaseGeometry(geom);
-  }
-
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_SURFACE, hair->basis, hair->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis, hair->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     /* set index buffer */
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+    if (hair->basis != RTC_BASIS_LINEAR)
+      rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
     hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
@@ -201,12 +171,6 @@ namespace embree {
     }
     else if (geometry->type == QUAD_MESH) {
       convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
-    }
-    else if (geometry->type == LINE_SEGMENTS) {
-      convertLineSegments((ISPCHairSet*) geometry, scene_out);
-    }
-    else if (geometry->type == HAIR_SET) {
-      convertHairSet((ISPCHairSet*) geometry, scene_out);
     }
     else if (geometry->type == CURVES) {
       convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
@@ -264,18 +228,6 @@ namespace embree {
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
       interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
-    }
-    else if (geometry->type == LINE_SEGMENTS) {
-      unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
-      /* if static do nothing */
-      if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(rtcGetGeometry(scene_out,geomID));
-    }
-    else if (geometry->type == HAIR_SET) {
-      unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
-      /* if static do nothing */
-      if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(rtcGetGeometry(scene_out,geomID));
     }
     else if (geometry->type == CURVES) {
       unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;

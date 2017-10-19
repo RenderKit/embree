@@ -58,11 +58,9 @@ namespace embree
       switch (geometries[i]->type) {
       case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geometries[i]; break;
       case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geometries[i]; break;
-      case HAIR_SET: delete (ISPCHairSet*) geometries[i]; break;
       case INSTANCE: delete (ISPCInstance*) geometries[i]; break;
       case GROUP: delete (ISPCGroup*) geometries[i]; break;
       case QUAD_MESH: delete (ISPCQuadMesh*) geometries[i]; break;
-      case LINE_SEGMENTS: delete (ISPCHairSet*) geometries[i]; break;
       case CURVES: delete (ISPCHairSet*) geometries[i]; break;
       default: assert(false); break;
       }
@@ -235,7 +233,7 @@ namespace embree
   }
   
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCCurveType type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
-    : geom(basis == RTC_BASIS_LINEAR ? LINE_SEGMENTS : type == RTC_CURVE_RIBBON ? HAIR_SET : CURVES), basis(basis)
+    : geom(CURVES), type(type), basis(basis)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -380,47 +378,16 @@ namespace embree
     return geomID;
   }
   
-  unsigned int ConvertLineSegments(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
-  {
-    RTCGeometry geom = rtcNewCurveGeometry (device, gflags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, mesh->numTimeSteps);
-    
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
-    }
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
-
-    unsigned int geomID = rtcAttachGeometry(scene_out,geom);
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
-    return geomID;
-  }
-  
-  unsigned int ConvertHairSet(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
-  {
-    RTCGeometry geom = rtcNewCurveGeometry  (device, gflags, RTC_CURVE_RIBBON, mesh->basis, mesh->numTimeSteps);
-
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa),mesh->numVertices);
-    }
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
-    rtcSetTessellationRate(geom,(float)mesh->tessellation_rate);
-
-    unsigned int geomID = rtcAttachGeometry(scene_out,geom);
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
-    return geomID;
-  }
-  
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewCurveGeometry  (device, gflags, RTC_CURVE_SURFACE, mesh->basis, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry  (device, gflags, mesh->type, mesh->basis, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
+    if (mesh->basis != RTC_BASIS_LINEAR)
+      rtcSetTessellationRate(geom,(float)mesh->tessellation_rate);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.scene = scene_out;
@@ -440,10 +407,6 @@ namespace embree
         ConvertTriangleMesh(device,(ISPCTriangleMesh*) geometry, gflags, scene_out);
       else if (geometry->type == QUAD_MESH)
         ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, gflags, scene_out);
-      else if (geometry->type == LINE_SEGMENTS)
-        ConvertLineSegments(device,(ISPCHairSet*) geometry, gflags, scene_out);
-      else if (geometry->type == HAIR_SET)
-        ConvertHairSet(device,(ISPCHairSet*) geometry, gflags, scene_out);
       else if (geometry->type == CURVES)
         ConvertCurveGeometry(device,(ISPCHairSet*) geometry, gflags, scene_out);
       else
@@ -536,16 +499,6 @@ namespace embree
           assert(geomID == i);
           rtcDisable(rtcGetGeometry(scene_out,geomID));
         }
-        else if (geometry->type == LINE_SEGMENTS) {
-          unsigned int geomID = ConvertLineSegments(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
-          assert(geomID == i);
-          rtcDisable(rtcGetGeometry(scene_out,geomID));
-        }
-        else if (geometry->type == HAIR_SET) {
-          unsigned int geomID = ConvertHairSet(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
-          assert(geomID == i);
-          rtcDisable(rtcGetGeometry(scene_out,geomID));
-        }
         else if (geometry->type == CURVES) {
           unsigned int geomID = ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
           assert(geomID == i);
@@ -589,18 +542,6 @@ namespace embree
           scene_in->geomID_to_scene[i] = objscene;
           //rtcCommit(objscene);
         }
-        else if (geometry->type == LINE_SEGMENTS) {
-          RTCScene objscene = rtcDeviceNewScene(g_device,sflags,aflags);
-          ConvertLineSegments(g_device,(ISPCHairSet*) geometry,gflags,objscene);
-          scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
-        }
-        else if (geometry->type == HAIR_SET) {
-          RTCScene objscene = rtcDeviceNewScene(g_device,sflags,aflags);
-          ConvertHairSet(g_device,(ISPCHairSet*) geometry,gflags,objscene);
-          scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
-        }
         else if (geometry->type == CURVES) {
           RTCScene objscene = rtcDeviceNewScene(g_device,sflags,aflags);
           ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry,gflags,objscene);
@@ -638,14 +579,6 @@ namespace embree
         }
         else if (geometry->type == QUAD_MESH) {
           unsigned int geomID MAYBE_UNUSED = ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, gflags, scene_out);
-          assert(geomID == i);
-        }
-        else if (geometry->type == LINE_SEGMENTS) {
-          unsigned int geomID MAYBE_UNUSED = ConvertLineSegments(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
-          assert(geomID == i);
-        }
-        else if (geometry->type == HAIR_SET) {
-          unsigned int geomID MAYBE_UNUSED = ConvertHairSet(g_device,(ISPCHairSet*) geometry, gflags, scene_out);
           assert(geomID == i);
         }
         else if (geometry->type == CURVES) {

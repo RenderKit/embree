@@ -971,14 +971,6 @@ void assignShaders(ISPCGeometry* geometry)
     }
 #endif
   }
-  else if (geometry->type == LINE_SEGMENTS) {
-    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
-  }
-  else if (geometry->type == HAIR_SET) {
-    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
-  }
   else if (geometry->type == CURVES) {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
@@ -1191,52 +1183,53 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     dg.u = st.x;
     dg.v = st.y;
   }
-  else if (geometry->type == LINE_SEGMENTS)
-  {
-    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->geom.materialID;
-    const Vec3fa dx = normalize(dg.Ng);
-    const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
-    const Vec3fa dz = normalize(cross(dy,dx));
-    dg.Tx = dx;
-    dg.Ty = dy;
-    dg.Ng = dg.Ns = dz;
-    int vtx = mesh->hairs[dg.primID].vertex;
-    dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
-  }
-  else if (geometry->type == HAIR_SET)
-  {
-    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->geom.materialID;
-    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp); // FIXME: wrong for bspline basis
-    const Vec3fa dx = normalize(dg.Ng);
-    const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
-    const Vec3fa dz = normalize(cross(dy,dx));
-    dg.Tx = dx;
-    dg.Ty = dy;
-    dg.Ng = dg.Ns = dz;
-    dg.tnear_eps = 1.1f*p.w;
-  }
   else if (geometry->type == CURVES)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->geom.materialID;
-    Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp);
-    if (length(dp) < 1E-6f) { // some hair are just points
-      dg.Tx = Vec3fa(1,0,0);
-      dg.Ty = Vec3fa(0,1,0);
-      dg.Ng = dg.Ns = Vec3fa(0,0,1);
-    }
-    else
+    
+    if (mesh->basis == RTC_BASIS_LINEAR)
     {
-      const Vec3fa dx = normalize(Vec3fa(dp));
-      const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));
-      const Vec3fa dz = normalize(dg.Ng);
+      materialID = mesh->geom.materialID;
+      const Vec3fa dx = normalize(dg.Ng);
+      const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+      const Vec3fa dz = normalize(cross(dy,dx));
       dg.Tx = dx;
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
+      int vtx = mesh->hairs[dg.primID].vertex;
+      dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
     }
-    dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+    else if (mesh->basis == RTC_BASIS_BEZIER || mesh->basis == RTC_BASIS_BSPLINE)
+    {
+      ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+      materialID = mesh->geom.materialID;
+      Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp); // FIXME: this is wrong for bspline basis
+      if (length(dp) < 1E-6f) { // some hair are just points
+        dg.Tx = Vec3fa(1,0,0);
+        dg.Ty = Vec3fa(0,1,0);
+        dg.Ng = dg.Ns = Vec3fa(0,0,1);
+      }
+      else if (mesh->type == RTC_CURVE_RIBBON)
+      {
+        const Vec3fa dx = normalize(dg.Ng);
+        const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+        const Vec3fa dz = normalize(cross(dy,dx));
+        dg.Tx = dx;
+        dg.Ty = dy;
+        dg.Ng = dg.Ns = dz;
+        dg.tnear_eps = 1.1f*p.w;
+      }
+      else if (mesh->type == RTC_CURVE_SURFACE)
+      {
+        const Vec3fa dx = normalize(Vec3fa(dp));
+        const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));
+        const Vec3fa dz = normalize(dg.Ng);
+        dg.Tx = dx;
+        dg.Ty = dy;
+        dg.Ng = dg.Ns = dz;
+        dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+      }
+    }
   }
   else if (geometry->type == GROUP) {
     unsigned int geomID = dg.geomID; {
@@ -1447,37 +1440,13 @@ void occlusionFilterHair(int* valid_i,
   unsigned int geomID = hit_geomID;
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
-    if (geometry->type == LINE_SEGMENTS)
+    if (geometry->type == CURVES)
     {
       int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
       ISPCMaterial* material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;
       default: break;
-      }
-    }
-    else if (geometry->type == HAIR_SET)
-    {
-      int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
-      ISPCMaterial* material = g_ispc_scene->materials[materialID];
-      switch (material->type) {
-      case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;
-      default: break;
-      }
-    }
-    else if (geometry->type == CURVES)
-    {
-      /*if (dot(ray->dir,ray->Ng) > 0.0f) {
-        Kt = Vec3fa(1.0f);
-      }
-      else*/
-      {
-        int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
-        ISPCMaterial* material = g_ispc_scene->materials[materialID];
-        switch (material->type) {
-        case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;
-        default: break;
-        }
       }
     }
   }

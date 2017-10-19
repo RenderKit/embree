@@ -76,7 +76,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
 
 void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, hair->numTimeSteps);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_STATIC, hair->type, hair->basis, hair->numTimeSteps);
   for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
   }
@@ -97,7 +97,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
     if (geometry->type == TRIANGLE_MESH)
       convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
-    else if (geometry->type == HAIR_SET)
+    else if (geometry->type == CURVES)
       convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
   }
 
@@ -341,7 +341,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     float tnear_eps = 0.0001f;
 
     uniform ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
-    if (geometry->type == HAIR_SET)
+    if (geometry->type == CURVES)
     {
       /* calculate tangent space */
       const Vec3f dx = normalize(ray.Ng);

@@ -63,7 +63,7 @@ namespace embree
     unsigned int id;
   };
 
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH };
   
   struct ISPCGeometry
   {
@@ -173,6 +173,7 @@ namespace embree
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;         //!< for each hair, index to first control point
+    RTCCurveType type;
     RTCCurveBasis basis;
     unsigned int numTimeSteps;
     unsigned int numVertices;

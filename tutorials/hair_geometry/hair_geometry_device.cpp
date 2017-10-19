@@ -78,7 +78,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, hair->numTimeSteps);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_STATIC, hair->type, hair->basis, hair->numTimeSteps);
   for (size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
@@ -99,7 +99,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == TRIANGLE_MESH)
       convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
-    else if (geometry->type == HAIR_SET)
+    else if (geometry->type == CURVES)
       convertHairSet((ISPCHairSet*) geometry, scene_out);
   }
 
@@ -343,7 +343,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     float tnear_eps = 0.0001f;
 
     ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
-    if (geometry->type == HAIR_SET)
+    if (geometry->type == CURVES)
     {
       /* calculate tangent space */
       const Vec3fa dx = normalize(ray.Ng);

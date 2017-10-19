@@ -85,42 +85,18 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
   rtcReleaseGeometry(geom);
 }
 
-void convertLineSegments(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
-{
-  /* if more than a single timestep, mark object as dynamic */
-  uniform RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, hair->numTimeSteps);
-  uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);
-  for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
-  rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
-  hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
-  rtcReleaseGeometry(geom);
-}
-
-void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
-{
-  /* if more than a single timestep, mark object as dynamic */
-  uniform RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_RIBBON, hair->basis, hair->numTimeSteps);
-  uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);
-  for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
-  rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
-  hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
-  rtcReleaseGeometry(geom);
-}
-
 void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   uniform RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
   /* create object */
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, RTC_CURVE_SURFACE, hair->basis, hair->numTimeSteps);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis, hair->numTimeSteps);
   /* generate vertex buffer */
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);
   for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
+  if (hair->basis != RTC_BASIS_LINEAR)
+    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
   hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
 }
@@ -148,12 +124,6 @@ void createObject(const uniform size_t i, uniform ISPCScene* uniform scene_in, u
   }
   else if (geometry->type == QUAD_MESH) {
     convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
-  }
-  else if (geometry->type == LINE_SEGMENTS) {
-    convertLineSegments((uniform ISPCHairSet* uniform) geometry, scene_out);
-  }
-  else if (geometry->type == HAIR_SET) {
-    convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
   }
   else if (geometry->type == CURVES) {
     convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
@@ -233,18 +203,6 @@ void interpolateVertices(RTCGeometry geom,
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
       interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
-    }
-    else if (geometry->type == LINE_SEGMENTS) {
-      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geom.geomID;
-      /* if static do nothing */
-      if (((uniform ISPCHairSet* uniform)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(rtcGetGeometry(scene_out,geomID));
-    }
-    else if (geometry->type == HAIR_SET) {
-      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geom.geomID;
-      /* if static do nothing */
-      if (((uniform ISPCHairSet* uniform)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(rtcGetGeometry(scene_out,geomID));
     }
     else if (geometry->type == CURVES) {
       uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geom.geomID;
