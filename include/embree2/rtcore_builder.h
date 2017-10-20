@@ -25,12 +25,12 @@ typedef struct __RTCBVH {}* RTCBVH;
 typedef struct __RTCThreadLocalAllocator {}* RTCThreadLocalAllocator;
 
 /*! Quality settings for BVH build. */
-enum RTCBuildQuality
+/*enum RTCBuildQuality
 {
   RTC_BUILD_QUALITY_LOW = 0,     //!< build low quality BVH (good for dynamic scenes)
   RTC_BUILD_QUALITY_NORMAL = 1,  //!< build standard quality BVH
   RTC_BUILD_QUALITY_HIGH = 2,    //!< build high quality BVH
-};
+  };*/
 
 /*! Settings for builders */
 struct RTCBuildSettings

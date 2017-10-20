@@ -138,6 +138,16 @@ namespace embree
     scene->setProgressMonitorFunction(func,ptr);
     RTCORE_CATCH_END2(scene);
   }
+
+  RTCORE_API void rtcSetBuildMode (RTCScene hscene, RTCAccelFlags accel, RTCBuildQuality quality, RTCBuildHint hint) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBuildMode);
+    RTCORE_VERIFY_HANDLE(hscene);
+    scene->setBuildMode(accel,quality,hint);
+    RTCORE_CATCH_END2(scene);
+  }
   
   RTCORE_API void rtcCommit (RTCScene hscene) 
   {

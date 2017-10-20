@@ -51,6 +51,28 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT_STREAM        = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene  
 };
 
+/*! acceleration structure flags */
+enum RTCAccelFlags
+{
+  RTC_ACCEL_DEFAULT      = 0,          //!< default mode
+  RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
+  RTC_ACCEL_ROBUST       = (1 << 2)    //!< use acceleration structure that allows robust traversal
+};
+
+/*! scene commit flags */
+enum RTCBuildQuality
+{
+  RTC_BUILD_QUALITY_LOW = 0,     //!< create lower quality data structures (for dynamic scenes)
+  RTC_BUILD_QUALITY_NORMAL = 1,  //!< default build quality for most usages
+  RTC_BUILD_QUALITY_HIGH = 2     //!< create higher quality data structures (longer build times)
+};
+
+/*! some additional flags to control the build */
+enum RTCBuildHint
+{
+  RTC_BUILD_HINT_DYNAMIC = (1 << 0)
+};
+
 /*! intersection flags */
 enum RTCIntersectFlags
 {
@@ -83,10 +105,13 @@ typedef unmasked uniform bool (*uniform RTCProgressMonitorFunc)(void* uniform pt
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* uniform ptr);
 
+/*! sets the build mode for a scene */
+RTCORE_API void rtcSetBuildMode(RTCScene scene, uniform RTCAccelFlags accel, uniform RTCBuildQuality quality, uniform RTCBuildHint hint);
+
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing
  *  rays. */
-RTCORE_API void rtcCommit (RTCScene scene); 
+RTCORE_API void rtcCommit (RTCScene scene);
 
 /*! Commits the geometry of the scene in join mode. When Embree is
  *  using TBB (default), threads that call `rtcCommitJoin` will

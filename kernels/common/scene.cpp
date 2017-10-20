@@ -32,6 +32,10 @@ namespace embree
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
       device(device),
+      flags_modified(true),
+      accel_flags(RTC_ACCEL_DEFAULT),
+      quality_flags(RTC_BUILD_QUALITY_NORMAL),
+      hint_flags(RTC_BUILD_HINT_NONE),
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
       flags(sflags), aflags(aflags), 
@@ -695,6 +699,22 @@ namespace embree
     setModified(false);
   }
 
+  void Scene::setBuildMode(RTCAccelFlags accel_flags_i, RTCBuildQuality quality_flags_i, RTCBuildHint hint_flags_i)
+  {
+    if (accel_flags != accel_flags_i) {
+      accel_flags = accel_flags_i;
+      flags_modified = true;
+    }
+    if (quality_flags != quality_flags_i) {
+      quality_flags = quality_flags_i;
+      flags_modified = true;
+    }
+    if (hint_flags != hint_flags_i) {
+      hint_flags = hint_flags_i;
+      flags_modified = true;
+    }
+  }
+                   
 #if defined(TASKING_INTERNAL)
 
   void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 

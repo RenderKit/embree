@@ -54,6 +54,29 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT_STREAM = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene  
 };
 
+/*! acceleration structure flags */
+enum RTCAccelFlags
+{
+  RTC_ACCEL_DEFAULT      = 0,          //!< default mode
+  RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
+  RTC_ACCEL_ROBUST       = (1 << 2)    //!< use acceleration structure that allows robust traversal
+};
+
+/*! scene commit flags */
+enum RTCBuildQuality
+{
+  RTC_BUILD_QUALITY_LOW = 0,     //!< create lower quality data structures (for dynamic scenes)
+  RTC_BUILD_QUALITY_NORMAL = 1,  //!< default build quality for most usages
+  RTC_BUILD_QUALITY_HIGH = 2     //!< create higher quality data structures (longer build times)
+};
+
+/*! some additional flags to control the build */
+enum RTCBuildHint
+{
+  RTC_BUILD_HINT_NONE = 0,
+  RTC_BUILD_HINT_DYNAMIC = (1 << 0)
+};
+
 /*! intersection flags */
 enum RTCIntersectFlags
 {
@@ -85,6 +108,9 @@ typedef bool (*RTCProgressMonitorFunc)(void* ptr, const double n);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr);
+
+/*! sets the build mode for a scene */
+RTCORE_API void rtcSetBuildMode(RTCScene scene, RTCAccelFlags accel, RTCBuildQuality quality, RTCBuildHint hint);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing
