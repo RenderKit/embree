@@ -29,6 +29,7 @@ namespace embree
 
   public:
     void add(Accel* accel);
+    void init();
 
   public:
     static void intersect (Accel::Intersectors* This, RTCRay& ray, IntersectContext* context);

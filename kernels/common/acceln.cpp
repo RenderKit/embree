@@ -38,6 +38,15 @@ namespace embree
     
     accels.push_back(accel);
   }
+
+  void AccelN::init() 
+  {
+    for (size_t i=0; i<accels.size(); i++)
+      delete accels[i];
+    
+    accels.clear();
+    validAccels.clear();
+  }
   
   void AccelN::intersect (Accel::Intersectors* This_in, RTCRay& ray, IntersectContext* context) 
   {

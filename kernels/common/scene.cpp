@@ -72,8 +72,15 @@ namespace embree
       needBezierVertices = true;
       needLineVertices = true;
       needSubdivVertices = true;
-    }
+    }  
+  }
 
+  void Scene::createAccels()
+  {
+    if (!flags_modified)
+      return;
+    
+    accels.init();
     createTriangleAccel();
     createTriangleMBAccel();
     createQuadAccel();
@@ -84,14 +91,15 @@ namespace embree
     createHairMBAccel();
     createLineAccel();
     createLineMBAccel();
-
+    
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
 #endif
-
+    
     // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     createUserGeometryAccel();
     createUserGeometryMBAccel();
+    flags_modified = false;
   }
   
   void Scene::printStatistics()
@@ -670,6 +678,9 @@ namespace embree
         if (geometries[i]) geometries[i]->preCommit();
       });
 
+    /* select acceleration structures to build */
+    createAccels();
+    
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFiltersN+numIntersectionFilters4,
                   numIntersectionFiltersN+numIntersectionFilters8,

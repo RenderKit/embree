@@ -109,6 +109,7 @@ namespace embree
     Scene& operator= (const Scene& other) DELETED; // do not implement
 
   public:
+    void createAccels();
     void createTriangleAccel();
     void createQuadAccel();
     void createTriangleMBAccel();
