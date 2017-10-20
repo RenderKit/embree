@@ -26,40 +26,13 @@ struct RTCRay8;
 struct RTCRay16;
 struct RTCRayNp;
 
-/*! scene flags */
-enum RTCSceneFlags 
-{
-  /* dynamic type flags */
-  RTC_SCENE_STATIC     = (0 << 0),    //!< specifies static scene
-  RTC_SCENE_DYNAMIC    = (1 << 0),    //!< specifies dynamic scene
-
-  /* acceleration structure flags */
-  RTC_SCENE_COMPACT    = (1 << 8),    //!< use memory conservative data structures
-  RTC_SCENE_COHERENT   = (1 << 9),    //!< optimize data structures for coherent rays
-  RTC_SCENE_INCOHERENT = (1 << 10),    //!< optimize data structures for in-coherent rays (enabled by default)
-  RTC_SCENE_HIGH_QUALITY = (1 << 11),  //!< create higher quality data structures
-
-  /* traversal algorithm flags */
-  RTC_SCENE_ROBUST     = (1 << 16)     //!< use more robust traversal algorithms
-};
-
-/*! enabled algorithm flags */
-enum RTCAlgorithmFlags 
-{
-  RTC_INTERSECT1 = (1 << 0),    //!< enables the rtcIntersect1 and rtcOccluded1 functions for this scene
-  RTC_INTERSECT4 = (1 << 1),    //!< enables the rtcIntersect4 and rtcOccluded4 functions for this scene
-  RTC_INTERSECT8 = (1 << 2),    //!< enables the rtcIntersect8 and rtcOccluded8 functions for this scene
-  RTC_INTERSECT16 = (1 << 3),   //!< enables the rtcIntersect16 and rtcOccluded16 functions for this scene
-  RTC_INTERPOLATE = (1 << 4),   //!< enables the rtcInterpolate function for this scene
-  RTC_INTERSECT_STREAM = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene  
-};
-
 /*! acceleration structure flags */
 enum RTCAccelFlags
 {
   RTC_ACCEL_DEFAULT      = 0,          //!< default mode
   RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
-  RTC_ACCEL_ROBUST       = (1 << 2)    //!< use acceleration structure that allows robust traversal
+  RTC_ACCEL_ROBUST       = (1 << 2),   //!< use acceleration structure that allows robust traversal
+  RTC_ACCEL_ROBUST_COMPACT = (1 << 1) | (1 << 2)
 };
 
 /*! scene commit flags */
@@ -101,7 +74,7 @@ RTCORE_FORCEINLINE void rtcInitIntersectionContext(RTCIntersectContext* context)
 typedef struct __RTCScene {}* RTCScene;
 
 /*! Creates a new scene. */
-RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
+RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device);
 
 /*! \brief Type of progress callback function. */
 typedef bool (*RTCProgressMonitorFunc)(void* ptr, const double n);

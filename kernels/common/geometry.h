@@ -134,9 +134,6 @@ namespace embree
     /*! Disable geometry. */
     virtual void disable ();
 
-    /*! Free buffers that are unused */
-    virtual void immutable () {}
-
     /*! Verify the geometry */
     virtual bool verify () { return true; }
 

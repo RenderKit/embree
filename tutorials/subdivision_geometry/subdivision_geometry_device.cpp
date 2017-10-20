@@ -199,7 +199,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1 | RTC_INTERPOLATE);
+  g_scene = rtcDeviceNewScene(g_device);
 
   /* add ground plane */
   addGroundPlane(g_scene);

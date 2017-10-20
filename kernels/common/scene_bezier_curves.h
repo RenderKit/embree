@@ -42,7 +42,6 @@ namespace embree
     void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
     void* getBuffer(RTCBufferType type);
-    void immutable ();
     bool verify ();
     void setTessellationRate(float N);
     // FIXME: implement interpolateN

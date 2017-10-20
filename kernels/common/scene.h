@@ -101,7 +101,7 @@ namespace embree
   public:
     
     /*! Scene construction */
-    Scene (Device* device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
+    Scene (Device* device);
 
   private:
     /*! class is non-copyable */
@@ -190,8 +190,7 @@ namespace embree
       return geometries[i]; 
     }
 
-    __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
-
+    /* flag decoding */
     __forceinline bool isDefaultAccel() { return accel_flags == RTC_ACCEL_DEFAULT; }
     __forceinline bool isCompactAccel() { return accel_flags & RTC_ACCEL_COMPACT; }
     __forceinline bool isRobustAccel()  { return accel_flags & RTC_ACCEL_ROBUST; }
@@ -215,18 +214,6 @@ namespace embree
     AccelN accels;
     std::atomic<size_t> commitCounterSubdiv;
     std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
-    RTCSceneFlags flags;
-    RTCAlgorithmFlags aflags;
-    bool needTriangleIndices; 
-    bool needTriangleVertices; 
-    bool needQuadIndices; 
-    bool needQuadVertices; 
-    bool needBezierIndices;
-    bool needBezierVertices;
-    bool needLineIndices;
-    bool needLineVertices;
-    bool needSubdivIndices;
-    bool needSubdivVertices;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;

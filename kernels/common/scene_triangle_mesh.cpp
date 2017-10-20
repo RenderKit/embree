@@ -150,16 +150,6 @@ namespace embree
     Geometry::postCommit();
   }
 
-  void TriangleMesh::immutable () 
-  {
-    const bool freeTriangles = !scene->needTriangleIndices;
-    const bool freeVertices  = !scene->needTriangleVertices;
-    if (freeTriangles) triangles.free(); 
-    if (freeVertices )
-      for (auto& buffer : vertices)
-        buffer.free();
-  }
-
   bool TriangleMesh::verify () 
   {
     /*! verify size of vertex arrays */
@@ -191,12 +181,6 @@ namespace embree
   
   void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
   {
-    /* test if interpolation is enabled */
-#if defined(DEBUG)
-    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-    
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));

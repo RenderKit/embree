@@ -90,27 +90,25 @@ namespace embree
 
       void build() 
       {
-        /* initialize all half edge structures */
-        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) {
-          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-          parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
-              for (size_t i=range.begin(); i<range.end(); i++)
-                if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-            });
-        }
-
         /* skip build for empty scene */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
+ 
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
+
         //bvh->alloc.reset();
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 
-
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
+        /* initialize all half edge structures */
+        Scene::Iterator<SubdivMesh> iter0(scene,false);
+        parallel_for(size_t(0),iter0.size(),[&](const range<size_t>& range) {
+            for (size_t i=range.begin(); i<range.end(); i++)
+              if (iter0[i]) iter0[i]->initializeHalfEdgeStructures();
+          });
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -244,30 +242,28 @@ namespace embree
         /* initialize all half edge structures */
         bool fastUpdateMode = true;
         numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) 
-        {
-          Scene::Iterator<SubdivMesh,false> iter(scene,scene->isInterpolatable());
-          fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
-          {
-            bool fastUpdate = true;
-            for (size_t i=range.begin(); i<range.end(); i++)
-            {
-              if (!iter[i]) continue;
-              fastUpdate &= !iter[i]->faceVertices.isModified();
-              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
-              fastUpdate &= !iter[i]->holes.isModified();
-              fastUpdate &= iter[i]->levels.isModified();
-              fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
-              fastUpdate &= !iter[i]->edge_creases.isModified();
-              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
-              fastUpdate &= !iter[i]->vertex_creases.isModified();
-              fastUpdate &= !iter[i]->vertex_crease_weights.isModified();               
-              iter[i]->initializeHalfEdgeStructures();
-            }
-            return fastUpdate;
-          }, [](const bool a, const bool b) { return a && b; });
-        }
 
+        Scene::Iterator<SubdivMesh,false> iter(scene,false);
+        fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
+        {
+          bool fastUpdate = true;
+          for (size_t i=range.begin(); i<range.end(); i++)
+          {
+            if (!iter[i]) continue;
+            fastUpdate &= !iter[i]->faceVertices.isModified();
+            for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
+            fastUpdate &= !iter[i]->holes.isModified();
+            fastUpdate &= iter[i]->levels.isModified();
+            fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
+            fastUpdate &= !iter[i]->edge_creases.isModified();
+            fastUpdate &= !iter[i]->edge_crease_weights.isModified();
+            fastUpdate &= !iter[i]->vertex_creases.isModified();
+            fastUpdate &= !iter[i]->vertex_crease_weights.isModified();               
+            iter[i]->initializeHalfEdgeStructures();
+          }
+          return fastUpdate;
+        }, [](const bool a, const bool b) { return a && b; });
+      
         /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
         fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
         numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
@@ -547,30 +543,28 @@ namespace embree
         /* initialize all half edge structures */
         bool fastUpdateMode = true;
         numPrimitives = scene->getNumPrimitives<SubdivMesh,true>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) 
-        {
-          Scene::Iterator<SubdivMesh,true> iter(scene,scene->isInterpolatable());
-          fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
-          {
-            bool fastUpdate = true;
-            for (size_t i=range.begin(); i<range.end(); i++)
-            {
-              if (!iter[i]) continue;
-              fastUpdate &= !iter[i]->faceVertices.isModified();
-              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
-              fastUpdate &= !iter[i]->holes.isModified();
-              fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
-              fastUpdate &= !iter[i]->edge_creases.isModified();
-              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
-              fastUpdate &= !iter[i]->vertex_creases.isModified();
-              fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
-              fastUpdate &= iter[i]->levels.isModified() == true;
-              iter[i]->initializeHalfEdgeStructures();
-            }
-            return fastUpdate;
-          }, [](const bool a, const bool b) { return a && b; });
-        }
 
+        Scene::Iterator<SubdivMesh,true> iter(scene,false);
+        fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
+        {
+          bool fastUpdate = true;
+          for (size_t i=range.begin(); i<range.end(); i++)
+          {
+            if (!iter[i]) continue;
+            fastUpdate &= !iter[i]->faceVertices.isModified();
+            for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
+            fastUpdate &= !iter[i]->holes.isModified();
+            fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
+            fastUpdate &= !iter[i]->edge_creases.isModified();
+            fastUpdate &= !iter[i]->edge_crease_weights.isModified();
+            fastUpdate &= !iter[i]->vertex_creases.isModified();
+            fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
+            fastUpdate &= iter[i]->levels.isModified() == true;
+            iter[i]->initializeHalfEdgeStructures();
+          }
+          return fastUpdate;
+        }, [](const bool a, const bool b) { return a && b; });
+      
         /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
         fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
         numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;

@@ -269,7 +269,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
 /* adds an instanced triangle cube to the scene, rotate instance */
 RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  RTCScene scene = rtcDeviceNewScene(g_device);
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int), 12);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(float), 8);
@@ -295,7 +295,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
 /* adds an instanced quad cube to the scene, rotate instance and geometry */
 RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  RTCScene scene = rtcDeviceNewScene(g_device);
   RTCGeometry geom = rtcNewQuadMesh (g_device, RTC_GEOMETRY_STATIC, num_time_steps);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int), 6);
 
@@ -518,7 +518,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene = rtcDeviceNewScene(g_device);
 
   /* add geometry to the scene */
   addTriangleCube(g_scene,Vec3fa(-5,1,-5),g_num_time_steps);

@@ -1084,7 +1084,6 @@ namespace embree
     else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4<Bezier1i>");
 
-    scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1105,7 +1104,6 @@ namespace embree
     else if (scene->device->line_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder+" for BVH4<Line4i>");
 
-    scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1119,7 +1117,6 @@ namespace embree
     else if (scene->device->line_builder_mb == "sah"         ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH4<Line4iMB>");
 
-    scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1146,7 +1143,6 @@ namespace embree
     else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<Bezier1i>");
 
-    scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1160,7 +1156,6 @@ namespace embree
     else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4OBBBezier1iMBBuilder_OBB(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4OBB<Bezier1iMB>");
 
-    scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1252,7 +1247,6 @@ namespace embree
     else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4iMorton);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4i>");
 
-    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1277,7 +1271,6 @@ namespace embree
     else  if (scene->device->tri_builder_mb == "internal_time_splits") builder = BVH4Triangle4iMBSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4iMB>");
 
-    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1342,7 +1335,6 @@ namespace embree
     else if (scene->device->quad_builder == "sah") builder = BVH4Quad4iSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH4<Quad4i>");
 
-    scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1362,7 +1354,6 @@ namespace embree
     else if (scene->device->quad_builder_mb == "sah") builder = BVH4Quad4iMBSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH4<Quad4iMB>");
 
-    scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1371,7 +1362,6 @@ namespace embree
     BVH4* accel = new BVH4(Quad4i::type,scene);
     Builder* builder = BVH4QuantizedQuad4iSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = QBVH4Quad4iIntersectors(accel);
-    scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1380,7 +1370,6 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4i::type,scene);
     Builder* builder = BVH4QuantizedTriangle4iSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = QBVH4Triangle4iIntersectors(accel);
-    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1391,7 +1380,6 @@ namespace embree
   //     BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
   //     Accel::Intersectors intersectors = BVH4SubdivPatch1CachedIntersectors(accel);
   //     Builder* builder = BVH4SubdivPatch1CachedBuilderSAH(accel,scene,1);
-  //     scene->needSubdivVertices = true;
   //     return new AccelInstance(accel,builder,intersectors);
   //   }
   //   else
@@ -1399,7 +1387,6 @@ namespace embree
   //     BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
   //     Accel::Intersectors intersectors = BVH4SubdivPatch1Intersectors(accel);
   //     Builder* builder = BVH4SubdivPatch1CachedBuilderSAH(accel,scene,0);
-  //     scene->needSubdivVertices = true;
   //     return new AccelInstance(accel,builder,intersectors);
   //   }
   // }
@@ -1419,7 +1406,6 @@ namespace embree
     //   BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
     //   Accel::Intersectors intersectors = BVH4SubdivPatch1EagerMBIntersectors(accel);
     //   Builder* builder = BVH4SubdivPatch1CachedMBBuilderSAH(accel,scene,1);
-    //   scene->needSubdivVertices = true;
     //   return new AccelInstance(accel,builder,intersectors);
     // }
     // else
@@ -1427,7 +1413,6 @@ namespace embree
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1EagerMBIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedMBBuilderSAH(accel,scene,0);
-      scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     // }
   }

@@ -115,7 +115,9 @@ namespace embree
 
     ignore_config_files = false;
     float_exceptions = false;
-    scene_flags = -1;
+    accel_flags = -1;
+    quality_flags = -1;
+    hint_flags = -1;
     verbose = 0;
     benchmark = 0;
 
@@ -384,22 +386,37 @@ namespace embree
       else if (tok == Token::Id("benchmark") && cin->trySymbol("="))
         benchmark = cin->get().Int();
       
-      else if (tok == Token::Id("flags")) {
-        scene_flags = 0;
+      else if (tok == Token::Id("accel_flags")) {
+        accel_flags = 0;
         if (cin->trySymbol("=")) {
           do {
             Token flag = cin->get();
-            if      (flag == Token::Id("static") ) scene_flags |= RTC_SCENE_STATIC;
-            else if (flag == Token::Id("dynamic")) scene_flags |= RTC_SCENE_DYNAMIC;
-            else if (flag == Token::Id("compact")) scene_flags |= RTC_SCENE_COMPACT;
-            else if (flag == Token::Id("coherent")) scene_flags |= RTC_SCENE_COHERENT;
-            else if (flag == Token::Id("incoherent")) scene_flags |= RTC_SCENE_INCOHERENT;
-            else if (flag == Token::Id("high_quality")) scene_flags |= RTC_SCENE_HIGH_QUALITY;
-            else if (flag == Token::Id("robust")) scene_flags |= RTC_SCENE_ROBUST;
+            if      (flag == Token::Id("default") ) accel_flags |= RTC_ACCEL_DEFAULT;
+            else if (flag == Token::Id("compact")) accel_flags |= RTC_ACCEL_COMPACT;
+            else if (flag == Token::Id("robust")) accel_flags |= RTC_ACCEL_ROBUST;
           } while (cin->trySymbol("|"));
         }
       }
 
+      else if (tok == Token::Id("quality_flags")) {
+        if (cin->trySymbol("=")) {
+          Token flag = cin->get();
+          if      (flag == Token::Id("low") ) quality_flags |= RTC_BUILD_QUALITY_LOW;
+          else if (flag == Token::Id("normal") ) quality_flags |= RTC_BUILD_QUALITY_LOW;
+          else if (flag == Token::Id("high") ) quality_flags |= RTC_BUILD_QUALITY_LOW;
+        }
+      }
+
+      else if (tok == Token::Id("accel_flags")) {
+        hint_flags = 0;
+        if (cin->trySymbol("=")) {
+          do {
+            Token flag = cin->get();
+            if (flag == Token::Id("dynamic") ) hint_flags |= RTC_BUILD_HINT_DYNAMIC;
+          } while (cin->trySymbol("|"));
+        }
+      }
+      
       else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
         max_spatial_split_replications = cin->get().Float();
 

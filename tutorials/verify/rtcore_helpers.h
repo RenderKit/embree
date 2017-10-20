@@ -567,33 +567,41 @@ namespace embree
     }
   }
 
-  inline RTCAlgorithmFlags to_aflags(IntersectMode imode)
+  inline std::string to_string(RTCAccelFlags accel_flags)
   {
-    switch (imode) {
-    case MODE_INTERSECT1: return RTC_INTERSECT1;
-    case MODE_INTERSECT4: return RTC_INTERSECT4;
-    case MODE_INTERSECT8: return RTC_INTERSECT8;
-    case MODE_INTERSECT16: return RTC_INTERSECT16;
-    case MODE_INTERSECT1M: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECT1Mp: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECTNM1: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECTNM3: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECTNM4: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECTNM8: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECTNM16: return RTC_INTERSECT_STREAM;
-    case MODE_INTERSECTNp: return RTC_INTERSECT_STREAM;
-    default                : return RTC_INTERSECT1;
-    }
+    if      (accel_flags == (RTCAccelFlags) 0) return "DefaultAccel";
+    else if (accel_flags == RTC_ACCEL_COMPACT) return "CompactAccel";
+    else if (accel_flags == RTC_ACCEL_ROBUST ) return "RobustAccel";
+    else if (accel_flags == (RTCAccelFlags)(RTC_ACCEL_COMPACT | RTC_ACCEL_ROBUST)) return "CompactRobust";
+    else { assert(false); return ""; }
   }
 
-  inline std::string to_string(RTCSceneFlags sflags)
+  inline std::string to_string(RTCBuildQuality quality_flags)
   {
-    std::string str = "";
-    if (sflags & RTC_SCENE_DYNAMIC) str += "Dynamic"; else str += "Static";
-    if (sflags & RTC_SCENE_COMPACT) str += "Compact";
-    if (sflags & RTC_SCENE_ROBUST ) str += "Robust";
-    if (sflags & RTC_SCENE_HIGH_QUALITY) str += "HighQuality";
-    return str;
+    if      (quality_flags == RTC_BUILD_QUALITY_LOW   ) return "LowBuildQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_NORMAL) return "NormalBuildQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_HIGH  ) return "HighBuildQuality";
+    else { assert(false); return ""; }
+  }
+
+  inline std::string to_string(RTCBuildHint hint_flags)
+  {
+    if  (hint_flags & RTC_BUILD_HINT_DYNAMIC) return "DynamicAccel";
+    else return "StaticAccel";
+  }
+
+  struct SceneFlags
+  {
+    SceneFlags (RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHint hflags)
+    : aflags(aflags), qflags(qflags), hflags(hflags) {}
+
+    RTCAccelFlags aflags;
+    RTCBuildQuality qflags;
+    RTCBuildHint hflags;
+  };
+  
+  inline std::string to_string(SceneFlags sflags) {
+    return to_string(sflags.aflags) + "." + to_string(sflags.qflags) + "." + to_string(sflags.hflags);
   }
 
   inline std::string to_string(RTCGeometryFlags gflags)
@@ -606,38 +614,24 @@ namespace embree
     }
   }
 
-  inline std::string to_string(RTCSceneFlags sflags, RTCGeometryFlags gflags) {
+  inline std::string to_string(SceneFlags sflags, RTCGeometryFlags gflags) {
     return to_string(sflags)+to_string(gflags);
   }
 
-  static const size_t numSceneFlags = 64;
+  static const size_t numSceneFlags = 32-8;
 
-  RTCSceneFlags getSceneFlag(size_t i) 
+  SceneFlags getSceneFlags(size_t i) 
   {
-    int flag = 0;                               
-    if (i & 1) flag |= RTC_SCENE_DYNAMIC;
-    if (i & 2) flag |= RTC_SCENE_COMPACT;
-    if (i & 4) flag |= RTC_SCENE_COHERENT;
-    if (i & 8) flag |= RTC_SCENE_INCOHERENT;
-    if (i & 16) flag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 32) flag |= RTC_SCENE_ROBUST;
-    return (RTCSceneFlags) flag;
+    int accel_flags = 0;
+    int hint_flags = 0;
+    if (i & 1) hint_flags  |= RTC_BUILD_HINT_DYNAMIC;
+    if (i & 2) accel_flags |= RTC_ACCEL_COMPACT;
+    if (i & 4) accel_flags |= RTC_ACCEL_ROBUST;
+    int quality_flags = (i>>3)&3;
+    return SceneFlags((RTCAccelFlags)accel_flags,(RTCBuildQuality)quality_flags,(RTCBuildHint)hint_flags);
   }
 
   static const size_t numSceneGeomFlags = 32;
-
-  void getSceneGeomFlag(size_t i, RTCSceneFlags& sflags, RTCGeometryFlags& gflags) 
-  {
-    int sflag = 0, gflag = 0;
-    if (i & 4) {
-      sflag |= RTC_SCENE_DYNAMIC;
-      gflag = min(int(i)&3,2);
-    }
-    if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 16) sflag |= RTC_SCENE_ROBUST;
-    sflags = (RTCSceneFlags) sflag;
-    gflags = (RTCGeometryFlags) gflag;
-  }
 
   inline bool supportsIntersectMode(RTCDevice device, IntersectMode imode)
   { 
@@ -905,15 +899,15 @@ namespace embree
     return "";
   }
 
-   inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode) {
+  inline std::string to_string(SceneFlags sflags, IntersectMode imode) {
     return to_string(sflags) + "." + to_string(imode);
   }
 
-  inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+  inline std::string to_string(SceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
     return to_string(sflags) + "." + to_string(imode,ivariant);
   }
 
-  inline std::string to_string(GeometryType gtype, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+  inline std::string to_string(GeometryType gtype, SceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
     return to_string(gtype) + "." + to_string(sflags) + "." + to_string(imode,ivariant);
   }
 

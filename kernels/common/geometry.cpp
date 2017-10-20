@@ -34,10 +34,6 @@ namespace embree
 
   void Geometry::postCommit()
   {
-    /* make static geometry immutable */
-    //if (scene->isStatic()) 
-    //immutable();
-
     /* clear modified flag */
     if (isEnabled()) 
       clearModified();

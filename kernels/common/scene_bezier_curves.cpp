@@ -128,16 +128,6 @@ namespace embree
     tessellationRate = clamp((int)N,1,16);
   }
 
-  void NativeCurves::immutable () 
-  {
-    const bool freeIndices = !scene->needBezierIndices;
-    const bool freeVertices  = !scene->needBezierVertices;
-    if (freeIndices) curves.free();
-    if (freeVertices )
-      for (auto& buffer : vertices)
-        buffer.free();
-  }
-
   bool NativeCurves::verify () 
   {
     /*! verify consistent size of vertex arrays */
@@ -184,12 +174,6 @@ namespace embree
     __forceinline void NativeCurvesISA::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
                                                            float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
     {
-      /* test if interpolation is enabled */
-#if defined(DEBUG) 
-      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-      
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));

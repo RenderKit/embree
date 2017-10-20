@@ -610,15 +610,11 @@ export void device_init (uniform int8* uniform cfg)
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
-  uniform RTCAlgorithmFlags aflags;
-  if (g_mode == MODE_NORMAL) aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
-  else                       aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_STREAM;
-
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,aflags);
+  g_scene = rtcDeviceNewScene(g_device);
 
   /* create scene with 4 analytical spheres */
-  g_scene0 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
+  g_scene0 = rtcDeviceNewScene(g_device);
   g_spheres = createAnalyticalSpheres(g_scene0,4);
   g_spheres[0].p = make_Vec3f( 0, 0,+1); g_spheres[0].r = 0.5f;
   g_spheres[1].p = make_Vec3f(+1, 0, 0); g_spheres[1].r = 0.5f;
@@ -627,7 +623,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit(g_scene0);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
+  g_scene1 = rtcDeviceNewScene(g_device);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5f);
   createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5f);
@@ -635,7 +631,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit(g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
-  g_scene2 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
+  g_scene2 = rtcDeviceNewScene(g_device);
   createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,+1),0.5f);
   g_sphere0 = createAnalyticalSphere  (g_scene2,make_Vec3f(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,-1),0.5f);

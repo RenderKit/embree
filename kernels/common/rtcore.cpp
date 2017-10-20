@@ -118,13 +118,12 @@ namespace embree
     RTCORE_CATCH_END(nullptr);
   }
 
-  RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
+  RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceNewScene);
     RTCORE_VERIFY_HANDLE(device);
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_INCOHERENT);
-    return (RTCScene) new Scene((Device*)device,flags,aflags);
+    return (RTCScene) new Scene((Device*)device);
     RTCORE_CATCH_END((Device*)device);
     return nullptr;
   }

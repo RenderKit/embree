@@ -90,7 +90,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcDeviceNewScene(g_device);
 
   for (uniform size_t i=0; i<scene_in->numGeometries; i++)
   {

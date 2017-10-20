@@ -171,9 +171,9 @@ namespace embree
 
   public:
     RTCDeviceRef device;
-    std::vector<RTCSceneFlags> sceneFlags;
-    std::vector<RTCSceneFlags> sceneFlagsRobust;
-    std::vector<RTCSceneFlags> sceneFlagsDynamic;
+    std::vector<SceneFlags> sceneFlags;
+    std::vector<SceneFlags> sceneFlagsRobust;
+    std::vector<SceneFlags> sceneFlagsDynamic;
     std::vector<IntersectMode> intersectModes;
     std::vector<IntersectVariant> intersectVariants;
     bool user_specified_tests;

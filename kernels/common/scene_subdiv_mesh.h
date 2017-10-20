@@ -75,7 +75,6 @@ namespace embree
     void update ();
     void updateBuffer (RTCBufferType type);
     void setTessellationRate(float N);
-    void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
 
@@ -191,9 +190,6 @@ namespace embree
 
       /*! marks all buffers as modified */
       void update ();
-
-      /*! frees unused buffers */
-      void immutable();
 
       /*! verifies index array */
       bool verify (size_t numVertices);

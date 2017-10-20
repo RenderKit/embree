@@ -731,10 +731,8 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  uniform RTCAlgorithmFlags aflags;
-  if (g_mode == MODE_NORMAL) aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
-  else                       aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_STREAM;
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC | RTC_SCENE_HIGH_QUALITY,aflags);
+  g_scene = rtcDeviceNewScene(g_device);
+  rtcSetBuildMode(g_scene,RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_HIGH, RTC_BUILD_HINT_NONE);
 
   /* add cube */
   addCube(g_scene,make_Vec3f(0.0f,0.0f,0.0f),make_Vec3f(10.0f,1.0f,1.0f),45.0f);

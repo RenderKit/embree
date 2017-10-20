@@ -337,23 +337,6 @@ namespace embree
     levels.setModified(true);
   }
 
-  void SubdivMesh::immutable () 
-  {
-    const bool freeVertices = !scene->needSubdivVertices;
-    faceVertices.free();
-    if (freeVertices )
-      for (auto& buffer : vertices)
-        buffer.free();
-    levels.free();
-    holes.free();
-    edge_creases.free();
-    edge_crease_weights.free();
-    vertex_creases.free();
-    vertex_crease_weights.free();
-    for (auto& t : topology) 
-      t.immutable();
-  }
-
   __forceinline uint64_t pair64(unsigned int x, unsigned int y) 
   {
     if (x<y) std::swap(x,y);
@@ -374,12 +357,6 @@ namespace embree
   
   void SubdivMesh::Topology::update () {
     vertexIndices.setModified(true); 
-  }
-
-  void SubdivMesh::Topology::immutable () 
-  {
-    const bool freeIndices = !mesh->scene->needSubdivIndices;
-    if (freeIndices) vertexIndices.free();
   }
 
   bool SubdivMesh::Topology::verify (size_t numVertices) 
@@ -700,13 +677,10 @@ namespace embree
       t.initializeHalfEdgeStructures();
 
     /* create interpolation cache mapping for interpolatable meshes */
-    if (scene && scene->isInterpolatable()) 
-    {
-      for (size_t i=0; i<vertex_buffer_tags.size(); i++)
-        vertex_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertices[i].getStride()));
-      for (size_t i=0; i<userbuffers.size(); i++)
-        if (userbuffers[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(userbuffers[i].getStride()));
-    }
+    for (size_t i=0; i<vertex_buffer_tags.size(); i++)
+      vertex_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertices[i].getStride()));
+    for (size_t i=0; i<userbuffers.size(); i++)
+      if (userbuffers[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(userbuffers[i].getStride()));
 
     /* cleanup some state for static scenes */
     if (scene == nullptr || scene->isStaticAccel()) 
@@ -769,12 +743,6 @@ namespace embree
     
     void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
     {
-      /* test if interpolation is enabled */
-#if defined(DEBUG) 
-      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-      
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
@@ -839,12 +807,6 @@ namespace embree
     void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                      RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
     {
-      /* test if interpolation is enabled */
-#if defined(DEBUG)
-      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-      
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));

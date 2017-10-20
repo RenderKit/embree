@@ -125,12 +125,8 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
   }
 
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE;
-  if (g_subdiv_mode)
-    scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
-
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_GEOMETRY_STATIC);
+  rtcSetBuildMode(scene_out,RTC_ACCEL_DEFAULT,RTC_BUILD_QUALITY_NORMAL,RTC_BUILD_HINT_NONE);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)

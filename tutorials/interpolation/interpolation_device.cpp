@@ -31,7 +31,7 @@ namespace embree {
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 Vec3fa* vertex_colors = nullptr;
-unsigned int triCubeID, quadCubeID, quadCubeID2;
+unsigned int triCubeID, quadCubeID;
 
 #define NUM_VERTICES 8
 
@@ -320,7 +320,8 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
+  g_scene = rtcDeviceNewScene(g_device);
+  rtcSetBuildMode(g_scene,RTC_ACCEL_DEFAULT,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -328,9 +329,7 @@ extern "C" void device_init (char* cfg)
   /* add cubes */
   addCurve(g_scene,Vec3fa(4.0f,-1.0f,-3.5f));
   quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
-  quadCubeID2 = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
   triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(4.0f,0.0f,3.5f));
-  rtcDisable(rtcGetGeometry(g_scene,quadCubeID2));
   addTriangleCube(g_scene,Vec3fa(0.0f,0.0f,-3.0f));
   addQuadCube(g_scene,Vec3fa(0.0f,0.0f,3.0f));
 
@@ -373,8 +372,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     if (ray.geomID > 0)
     {
       unsigned int geomID = ray.geomID; {
-        int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
-        rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3);
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;

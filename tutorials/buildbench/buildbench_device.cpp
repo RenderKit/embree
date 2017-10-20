@@ -83,11 +83,10 @@ namespace embree {
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  RTCScene createScene(RTCSceneFlags sflags)
+  RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHint hflags)
   {
-    RTCSceneFlags scene_flags = sflags | RTC_SCENE_INCOHERENT;
-    int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
-    RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+    RTCScene scene_out = rtcDeviceNewScene(g_device);
+    rtcSetBuildMode(scene_out,aflags,qflags,hflags);
     return scene_out;
   }
 
@@ -194,7 +193,7 @@ namespace embree {
   void Benchmark_Dynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_DYNAMIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_SCENE_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
     convertScene(g_scene, scene_in, gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -233,7 +232,7 @@ namespace embree {
   void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_SCENE_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
     convertScene(g_scene, scene_in,gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -270,7 +269,7 @@ namespace embree {
     g_scene = nullptr;
   }
 
-  void Benchmark_Static_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC, RTCSceneFlags sflags = RTC_SCENE_STATIC)
+  void Benchmark_Static_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags, RTCBuildQuality qflags)
   {
     assert(g_scene == nullptr);
     size_t primitives = getNumPrimitives(scene_in);
@@ -279,7 +278,7 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = createScene(sflags);
+      g_scene = createScene(RTC_ACCEL_DEFAULT,qflags,RTC_BUILD_HINT_NONE);
       convertScene(g_scene,scene_in,gflags);
 
       double t0 = getSeconds();
@@ -293,7 +292,7 @@ namespace embree {
       rtcDeleteScene (g_scene);
     }
 
-    if (sflags & RTC_SCENE_HIGH_QUALITY)
+    if (qflags == RTC_BUILD_QUALITY_HIGH)
       std::cout << "BENCHMARK_CREATE_HQ_STATIC_";
     else
       std::cout << "BENCHMARK_CREATE_STATIC_";
@@ -349,9 +348,9 @@ namespace embree {
     Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
     Pause();
-    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_STATIC);
+    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_BUILD_QUALITY_NORMAL);
     Pause();
-    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_HIGH_QUALITY);
+    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_BUILD_QUALITY_HIGH);
     rtcDeleteDevice(g_device); g_device = nullptr;
   }
 

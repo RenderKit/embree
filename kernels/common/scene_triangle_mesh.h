@@ -53,7 +53,6 @@ namespace embree
     void* getBuffer(RTCBufferType type);
     void preCommit();
     void postCommit();
-    void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     // FIXME: implement interpolateN

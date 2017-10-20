@@ -29,7 +29,7 @@ namespace embree
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
   void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
-  Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
+  Scene::Scene (Device* device)
     : Accel(AccelData::TY_UNKNOWN),
       device(device),
       flags_modified(true),
@@ -38,12 +38,6 @@ namespace embree
       hint_flags(RTC_BUILD_HINT_NONE),
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
-      flags(sflags), aflags(aflags), 
-      needTriangleIndices(false), needTriangleVertices(false), 
-      needQuadIndices(false), needQuadVertices(false), 
-      needBezierIndices(false), needBezierVertices(false),
-      needLineIndices(false), needLineVertices(false),
-      needSubdivIndices(false), needSubdivVertices(false),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
@@ -58,21 +52,13 @@ namespace embree
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
 
-    if (device->scene_flags != -1)
-      flags = (RTCSceneFlags) device->scene_flags;
-
-    if (aflags & RTC_INTERPOLATE) {
-      needTriangleIndices = true;
-      needQuadIndices = true;
-      needBezierIndices = true;
-      needLineIndices = true;
-      //needSubdivIndices = true; // not required for interpolation
-      needTriangleVertices = true;
-      needQuadVertices = true;      
-      needBezierVertices = true;
-      needLineVertices = true;
-      needSubdivVertices = true;
-    }  
+    /* one can overwrite flags through device for debugging */
+    if (device->accel_flags != -1)
+      accel_flags = (RTCAccelFlags) device->accel_flags;
+    if (device->quality_flags != -1)
+      quality_flags = (RTCBuildQuality) device->quality_flags;
+    if (device->hint_flags != -1)
+      hint_flags = (RTCBuildHint) device->hint_flags;
   }
   
   void Scene::printStatistics()
@@ -605,8 +591,6 @@ namespace embree
   {
     Lock<SpinLock> lock(geometriesMutex);
     
-    //if (isStatic())
-    //throw_RTCError(RTC_INVALID_OPERATION,"rtcDetachGeometry cannot get called in static scenes");
     if (geomID >= geometries.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry ID");
 
@@ -627,16 +611,6 @@ namespace embree
     is_build = true;
     bounds = accels.bounds;
     intersectors = accels.intersectors;
-
-    /* enable only algorithms choosen by application */
-    if ((aflags & RTC_INTERSECT_STREAM) == 0) 
-    {
-      intersectors.intersectorN = Accel::IntersectorN(&invalid_rtcIntersectN);
-      if ((aflags & RTC_INTERSECT1) == 0) intersectors.intersector1 = Accel::Intersector1(&invalid_rtcIntersect1);
-      if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
-      if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
-      if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
-    }
   }
 
   void Scene::commit_task ()

@@ -120,7 +120,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   {
     /* create the geometry */
     print("creating sphere %i (lazy)\n",instance->userID);
-    instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+    instance->object = rtcDeviceNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* when join mode is not supported we let only a single thread build */
@@ -151,7 +151,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
 void eagerCreate(uniform LazyGeometry* uniform instance)
 {
   print("creating sphere %i (eager)\n",instance->userID);
-  instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  instance->object = rtcDeviceNewScene(g_device);
   createTriangulatedSphere(instance->object,instance->center,instance->radius);
   rtcCommit(instance->object);
   instance->state = LAZY_VALID;
@@ -267,8 +267,8 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-
+  g_scene = rtcDeviceNewScene(g_device);
+  
   /* instantiate geometry */
   createGroundPlane(g_scene);
   for (uniform int i=0; i<numSpheres; i++) {

@@ -134,15 +134,12 @@ extern "C" void device_init (char* cfg)
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
-  RTCAlgorithmFlags aflags;
-  if (g_mode == MODE_NORMAL) aflags = RTC_INTERSECT1;
-  else                       aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM;
-
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,aflags);
+  g_scene = rtcDeviceNewScene(g_device);
+  rtcSetBuildMode(g_scene,RTC_ACCEL_DEFAULT,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
+  g_scene1 = rtcDeviceNewScene(g_device);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5f);

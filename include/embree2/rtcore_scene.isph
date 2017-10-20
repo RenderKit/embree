@@ -25,38 +25,13 @@ struct RTCRay1;
 struct RTCRay;
 struct RTCRayNp;
 
-/*! scene flags */
-enum RTCSceneFlags 
-{
-  /* dynamic type flags */
-  RTC_SCENE_STATIC     = (0 << 0),    //!< specifies static scene
-  RTC_SCENE_DYNAMIC    = (1 << 0),    //!< specifies dynamic scene
-
-  /* acceleration structure flags */
-  RTC_SCENE_COMPACT    = (1 << 8),    //!< use memory conservative data structures
-  RTC_SCENE_COHERENT   = (1 << 9),    //!< optimize data structures for coherent rays (enabled by default)
-  RTC_SCENE_INCOHERENT = (1 << 10),    //!< optimize data structures for in-coherent rays
-  RTC_SCENE_HIGH_QUALITY = (1 << 11),  //!< create higher quality data structures
-
-  /* traversal algorithm flags */
-  RTC_SCENE_ROBUST     = (1 << 16)     //!< use more robust traversal algorithms
-};
-
-/*! enabled algorithm flags */
-enum RTCAlgorithmFlags 
-{
-  RTC_INTERSECT_UNIFORM = (1 << 0),    //!< enables the uniform rtcIntersect1 and uniform rtcOccluded1 functions for this scene
-  RTC_INTERSECT_VARYING = (1 << 1) | (1 << 2) | (1 << 3),  //!< enables the varying rtcIntersect and varying rtcOccluded functions for this scene
-  RTC_INTERPOLATE       = (1 << 4),    //!< enables the rtcInterpolate function for this scene
-  RTC_INTERSECT_STREAM        = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene  
-};
-
 /*! acceleration structure flags */
 enum RTCAccelFlags
 {
   RTC_ACCEL_DEFAULT      = 0,          //!< default mode
   RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
-  RTC_ACCEL_ROBUST       = (1 << 2)    //!< use acceleration structure that allows robust traversal
+  RTC_ACCEL_ROBUST       = (1 << 2),    //!< use acceleration structure that allows robust traversal
+  RTC_ACCEL_ROBUST_COMPACT = (1 << 1) | (1 << 2)
 };
 
 /*! scene commit flags */
@@ -70,6 +45,7 @@ enum RTCBuildQuality
 /*! some additional flags to control the build */
 enum RTCBuildHint
 {
+  RTC_BUILD_HINT_NONE = 0,
   RTC_BUILD_HINT_DYNAMIC = (1 << 0)
 };
 
@@ -97,7 +73,7 @@ RTCORE_FORCEINLINE void rtcInitIntersectionContext(uniform RTCIntersectContext* 
 typedef uniform struct __RTCScene {}* uniform RTCScene;
 
 /*! Creates a new scene. */
-RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
+RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device);
 
 /*! \brief Type of progress callback function. */
 typedef unmasked uniform bool (*uniform RTCProgressMonitorFunc)(void* uniform ptr, const uniform double n);
