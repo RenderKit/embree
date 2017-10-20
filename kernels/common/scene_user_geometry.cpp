@@ -29,35 +29,23 @@ namespace embree
 
   void UserGeometry::setMask (unsigned mask) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   }
 
   void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds, void* userPtr) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->boundsFunc = bounds;
     this->boundsFuncUserPtr = userPtr;
   }
 
   void UserGeometry::setIntersectFunctionN (RTCIntersectFuncN intersect) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     intersectors.intersectorN.intersect = intersect;
   }
 
   void UserGeometry::setOccludedFunctionN (RTCOccludedFuncN occluded) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     intersectors.intersectorN.occluded = occluded;
   }
 }

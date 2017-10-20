@@ -238,7 +238,7 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStaticAccel();
 
         /* if we allocated using the primrefarray we have to keep it alive */
         if (settings.primrefarrayalloc != size_t(inf))
@@ -327,7 +327,7 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStaticAccel();
 	if (staticGeom) {
           prims.clear();
           bvh->shrink();
@@ -443,7 +443,7 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-        if (scene->isStatic()) bvh->shrink();
+        if (scene->isStaticAccel()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
@@ -601,7 +601,7 @@ namespace embree
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
 	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStaticAccel();
 	if (staticGeom) {
           prims0.clear();
           bvh->shrink();

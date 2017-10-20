@@ -133,14 +133,15 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel == "default") 
     {
-      if (isStatic()) {
-        int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      if (quality_flags != RTC_BUILD_QUALITY_LOW)
+      {
+        int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (EMBREE_TARGET_SIMD8)
           if (device->hasISA(AVX))
 	  {
-            if (isHighQuality()) 
+            if (quality_flags == RTC_BUILD_QUALITY_HIGH) 
               accels.add(device->bvh8_factory->BVH8Triangle4(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
             else
               accels.add(device->bvh8_factory->BVH8Triangle4(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST));
@@ -148,7 +149,7 @@ namespace embree
           else 
 #endif
           { 
-            if (isHighQuality()) 
+            if (quality_flags == RTC_BUILD_QUALITY_HIGH) 
               accels.add(device->bvh4_factory->BVH4Triangle4(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
             else 
               accels.add(device->bvh4_factory->BVH4Triangle4(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST));
@@ -173,7 +174,7 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
           if (device->hasISA(AVX))
 	  {
-            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel();
             switch (mode) {
             case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4 (this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::FAST  )); break;
             case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4v(this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::ROBUST)); break;
@@ -184,7 +185,7 @@ namespace embree
           else
 #endif
           {
-            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel();
             switch (mode) {
             case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4 (this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::FAST  )); break;
             case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4v(this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::ROBUST)); break;
@@ -215,7 +216,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel_mb == "default")
     {
-      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
       
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
@@ -253,16 +254,16 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
-      if (isStatic())
+      if (quality_flags != RTC_BUILD_QUALITY_LOW)
       {
         /* static */
-        int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+        int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
         switch (mode) {
         case /*0b00*/ 0:
 #if defined (EMBREE_TARGET_SIMD8)
           if (device->hasISA(AVX))
           {
-            if (isHighQuality()) 
+            if (quality_flags == RTC_BUILD_QUALITY_HIGH) 
               accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
             else
               accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST));
@@ -270,7 +271,7 @@ namespace embree
           else
 #endif
           {
-            if (isHighQuality()) 
+            if (quality_flags == RTC_BUILD_QUALITY_HIGH) 
               accels.add(device->bvh4_factory->BVH4Quad4v(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
             else
               accels.add(device->bvh4_factory->BVH4Quad4v(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST));
@@ -295,7 +296,7 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
           if (device->hasISA(AVX))
 	  {
-            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel();
             switch (mode) {
             case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::FAST)); break;
             case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::ROBUST)); break;
@@ -306,7 +307,7 @@ namespace embree
           else
 #endif
           {
-            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel();
             switch (mode) {
             case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::FAST)); break;
             case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVHFactory::BuildVariant::DYNAMIC,BVHFactory::IntersectVariant::ROBUST)); break;
@@ -334,7 +335,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel_mb == "default") 
     {
-      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
       switch (mode) {
       case /*0b00*/ 0:
 #if defined (EMBREE_TARGET_SIMD8)
@@ -371,8 +372,8 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_HAIR)
     if (device->hair_accel == "default")
     {
-      int mode = 2*(int)isCompact() + 1*(int)isRobust();
-      if (isStatic())
+      int mode = 2*(int)isCompactAccel() + 1*(int)isRobustAccel();
+      if (quality_flags != RTC_BUILD_QUALITY_LOW)
       {
 #if defined (EMBREE_TARGET_SIMD8)
         if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
@@ -423,7 +424,7 @@ namespace embree
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX2) && !isCompact()) // only enable on HSW machines, on SNB this codepath is slower
+      if (device->hasISA(AVX2) && !isCompactAccel()) // only enable on HSW machines, on SNB this codepath is slower
       {
         accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
       }
@@ -446,10 +447,10 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_LINES)
     if (device->line_accel == "default")
     {
-      if (isStatic())
+      if (quality_flags != RTC_BUILD_QUALITY_LOW)
       {
 #if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX) && !isCompact())
+        if (device->hasISA(AVX) && !isCompactAccel())
           accels.add(device->bvh8_factory->BVH8Line4i(this));
         else
 #endif
@@ -474,7 +475,7 @@ namespace embree
     if (device->line_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompact())
+      if (device->hasISA(AVX) && !isCompactAccel())
         accels.add(device->bvh8_factory->BVH8Line4iMB(this));
       else
 #endif
@@ -493,7 +494,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel == "default") 
     {
-      //if (isStatic())
+      //if (quality_flags != RTC_BUILD_QUALITY_LOW)
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
       //else
       //accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
@@ -511,7 +512,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel_mb == "default") 
     {
-      //if (isStatic())
+      //if (quality_flags != RTC_BUILD_QUALITY_LOW)
       accels.add(device->bvh4_factory->BVH4SubdivPatch1EagerMB(this));
       //else
       //accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
@@ -528,9 +529,9 @@ namespace embree
     if (device->object_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompact())
+      if (device->hasISA(AVX) && !isCompactAccel())
       {
-        //if (isStatic()) {
+        //if (quality_flags != RTC_BUILD_QUALITY_LOW) {
         accels.add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::STATIC));
         //} else {
         //accels.add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC));
@@ -539,7 +540,7 @@ namespace embree
       else
 #endif
       {
-        //if (isStatic()) {
+        //if (quality_flags != RTC_BUILD_QUALITY_LOW) {
         accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
         //} else {
         //accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC)); // FIXME: only enable when memory consumption issue with instancing is solved
@@ -559,7 +560,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel_mb == "default"    ) {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompact())
+      if (device->hasISA(AVX) && !isCompactAccel())
         accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
       else
 #endif
@@ -604,8 +605,8 @@ namespace embree
   {
     Lock<SpinLock> lock(geometriesMutex);
     
-    if (isStatic())
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcDetachGeometry cannot get called in static scenes");
+    //if (isStatic())
+    //throw_RTCError(RTC_INVALID_OPERATION,"rtcDetachGeometry cannot get called in static scenes");
     if (geomID >= geometries.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry ID");
 
@@ -686,7 +687,10 @@ namespace embree
     accels.build();
 
     /* make static geometry immutable */
-    if (isStatic()) accels.immutable();
+    if (!isDynamicAccel()) {
+      accels.immutable();
+      flags_modified = true; // in non-dynamic mode we have to re-create accels
+    }
 
     /* call postCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {

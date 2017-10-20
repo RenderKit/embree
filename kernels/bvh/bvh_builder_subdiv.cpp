@@ -191,7 +191,7 @@ namespace embree
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
         
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
+	if (scene->isStaticAccel()) {
           prims.clear();
           bvh->shrink();
         }
@@ -476,7 +476,7 @@ namespace embree
         else rebuild(numSubPatches,numSubPatchesMB);
         
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
+	if (scene->isStaticAccel()) {
           prims.clear();
           bvh->shrink();
         }
@@ -728,7 +728,7 @@ namespace embree
         rebuild(numSubPatches);
         
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
+	if (scene->isStaticAccel()) {
           primsMB.clear();
           bvh->shrink();
         }

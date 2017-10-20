@@ -58,17 +58,12 @@ namespace embree
 
   void SubdivMesh::setMask (unsigned mask) 
   {
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   }
 
   void SubdivMesh::setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)
   {
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     if (topologyID >= topology.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
     topology[topologyID].setSubdivisionMode(mode);
@@ -94,9 +89,6 @@ namespace embree
 
   void* SubdivMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     /* verify that all accesses are 4 bytes aligned */
     if (stride & 0x3) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
@@ -177,9 +169,6 @@ namespace embree
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
   { 
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
@@ -337,9 +326,6 @@ namespace embree
 
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->displFunc   = func;
     if (bounds) this->displBounds = *(BBox3fa*)bounds; 
     else        this->displBounds = empty;
@@ -347,9 +333,6 @@ namespace embree
 
   void SubdivMesh::setTessellationRate(float N)
   {
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     tessellationRate = N;
     levels.setModified(true);
   }
@@ -654,7 +637,7 @@ namespace embree
     else if (update) updateHalfEdges();
    
     /* cleanup some state for static scenes */
-    if (mesh->scene == nullptr || mesh->scene->isStatic()) 
+    if (mesh->scene == nullptr || mesh->scene->isStaticAccel()) 
     {
       halfEdges0.clear();
       halfEdges1.clear();
@@ -726,7 +709,7 @@ namespace embree
     }
 
     /* cleanup some state for static scenes */
-    if (scene == nullptr || scene->isStatic()) 
+    if (scene == nullptr || scene->isStaticAccel()) 
     {
       vertexCreaseMap.clear();
       edgeCreaseMap.clear();

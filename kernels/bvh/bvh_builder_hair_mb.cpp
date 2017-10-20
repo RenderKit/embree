@@ -105,7 +105,7 @@ namespace embree
         //});
         
         /* clear temporary data for static geometry */
-        if (scene->isStatic()) bvh->shrink();
+        if (scene->isStaticAccel()) bvh->shrink();
         bvh->cleanup();
         bvh->postBuild(t0);
       }

@@ -75,18 +75,12 @@ namespace embree
   
   void GeometryInstance::setMask (unsigned mask) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   } 
 
   void GeometryInstance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (timeStep != 0)
       throw_RTCError(RTC_INVALID_OPERATION,"geometry instances only support a single timestep");
 
@@ -109,9 +103,6 @@ namespace embree
   
   void GeometryGroup::setMask (unsigned mask) 
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   } 

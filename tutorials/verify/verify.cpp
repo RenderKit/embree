@@ -705,33 +705,6 @@ namespace embree
     }
   };
 
-  struct FlagsTest : public VerifyApplication::Test
-  {
-    RTCSceneFlags sceneFlags;
-    RTCGeometryFlags geomFlags;
-
-    FlagsTest (std::string name, int isa, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
-      : VerifyApplication::Test(name,isa,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
-
-    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
-    {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
-      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(nullptr,rtcDeviceGetError(device));
-      RTCSceneRef scene = rtcDeviceNewScene(device,sceneFlags,aflags);
-      AssertNoError(device);
-      RTCGeometry geom0 = rtcNewTriangleMesh (device, geomFlags);
-      rtcAttachAndReleaseGeometry(scene,geom0);
-      AssertNoError(device);
-      RTCGeometry geom1 = rtcNewCurveGeometry (device, geomFlags, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER);
-      rtcAttachAndReleaseGeometry(scene,geom1);
-      AssertNoError(device);
-      rtcCommit (scene);
-      AssertNoError(device);
-      return VerifyApplication::PASSED;
-    }
-  };
-  
   struct GetBoundsTest : public VerifyApplication::Test
   {
     GeometryType gtype;
@@ -4137,15 +4110,6 @@ namespace embree
       push(new TestGroup(stringOfISA(isa),false,false));
       
       groups.top()->add(new MultipleDevicesTest("multiple_devices",isa));
-
-      push(new TestGroup("flags",true,true));
-      groups.top()->add(new FlagsTest("static_static"     ,isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
-      groups.top()->add(new FlagsTest("static_deformable" ,isa,VerifyApplication::TEST_SHOULD_FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
-      groups.top()->add(new FlagsTest("static_dynamic"    ,isa,VerifyApplication::TEST_SHOULD_FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
-      groups.top()->add(new FlagsTest("dynamic_static"    ,isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
-      groups.top()->add(new FlagsTest("dynamic_deformable",isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
-      groups.top()->add(new FlagsTest("dynamic_dynamic"   ,isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));    
-      groups.pop();
 
       push(new TestGroup("get_bounds",true,true));
       for (auto gtype : gtypes_all)

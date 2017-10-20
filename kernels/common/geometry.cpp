@@ -35,8 +35,8 @@ namespace embree
   void Geometry::postCommit()
   {
     /* make static geometry immutable */
-    if (scene->isStatic()) 
-      immutable();
+    //if (scene->isStatic()) 
+    //immutable();
 
     /* clear modified flag */
     if (isEnabled()) 
@@ -80,9 +80,6 @@ namespace embree
   
   void Geometry::enable () 
   {
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (isEnabled()) 
       return;
 
@@ -98,9 +95,6 @@ namespace embree
 
   void Geometry::update() 
   {
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (scene)
       scene->setModified();
     
@@ -109,9 +103,6 @@ namespace embree
 
   void Geometry::disable () 
   {
-    if (scene && scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (isDisabled()) 
       return;
 
@@ -127,17 +118,11 @@ namespace embree
 
   void Geometry::setUserData (void* ptr)
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     userPtr = ptr;
   }
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
   { 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
@@ -151,9 +136,6 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
   { 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 

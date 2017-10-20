@@ -190,26 +190,13 @@ namespace embree
       return geometries[i]; 
     }
 
-    /* test if this is a static scene */
-    __forceinline bool isStatic() const { return embree::isStatic(flags); }
-
-    /* test if this is a dynamic scene */
-    __forceinline bool isDynamic() const { return embree::isDynamic(flags); }
-
-    __forceinline bool isCompact() const { return embree::isCompact(flags); }
-    __forceinline bool isCoherent() const { return embree::isCoherent(flags); }
-    __forceinline bool isRobust() const { return embree::isRobust(flags); }
-    __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
     __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
-    __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
 
-    __forceinline bool isExclusiveIntersect1Mode() const { 
-      if (!embree::isIntersect1Mode(aflags)) return false;
-      if (embree::isIntersect4Mode(aflags))  return false;
-      if (embree::isIntersect8Mode(aflags))  return false;
-      if (embree::isIntersect16Mode(aflags)) return false;
-      return true;
-    }
+    __forceinline bool isDefaultAccel() { return accel_flags == RTC_ACCEL_DEFAULT; }
+    __forceinline bool isCompactAccel() { return accel_flags & RTC_ACCEL_COMPACT; }
+    __forceinline bool isRobustAccel()  { return accel_flags & RTC_ACCEL_ROBUST; }
+    __forceinline bool isStaticAccel()  { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }
+    __forceinline bool isDynamicAccel() { return hint_flags & RTC_BUILD_HINT_DYNAMIC; }
 
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }

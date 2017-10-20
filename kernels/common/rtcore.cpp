@@ -1184,8 +1184,6 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hgeometry);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
-    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
     return scene->bind(RTC_INVALID_GEOMETRY_ID,geometry);
     RTCORE_CATCH_END2(scene);
     return -1;
@@ -1201,8 +1199,6 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hgeometry);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
-    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
     unsigned int geomID = scene->bind(RTC_INVALID_GEOMETRY_ID,geometry);
     geometry->refDec();
     return geomID;
@@ -1221,8 +1217,6 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
-    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
     return scene->bind(geomID,geometry);
     RTCORE_CATCH_END2(scene);
     return -1;
@@ -1239,8 +1233,6 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID_in);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
-    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
     unsigned int geomID = scene->bind(geomID_in,geometry);
     geometry->refDec();
     return geomID;

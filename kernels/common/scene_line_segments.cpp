@@ -41,18 +41,12 @@ namespace embree
 
   void LineSegments::setMask (unsigned mask)
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     this->mask = mask;
     Geometry::update();
   }
 
   void* LineSegments::newBuffer(RTCBufferType type, size_t stride, unsigned int size)
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     /* verify that all accesses are 4 bytes aligned */
     if (stride & 0x3) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
@@ -87,9 +81,6 @@ namespace embree
 
   void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size)
   {
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
