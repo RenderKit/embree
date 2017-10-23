@@ -70,6 +70,109 @@ namespace embree
           }
         }
       }
+      else if (unlikely(!intersect && !scene->isRobust())) /* octant sorting for occlusion rays */
+      {
+#define MAX_RAYS_PER_OCTANT 32
+        /* reintroduced SOA path for occlusion rays */
+        __aligned(64) unsigned int octants[8][MAX_RAYS_PER_OCTANT];
+        __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
+
+        unsigned int rays_in_octant[8];        
+        for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
+        size_t inputRayID = 0;
+
+        while(1)
+        {
+          int cur_octant = -1;
+          /* sort rays into octants */
+          for (;inputRayID<N;)
+          {
+            Ray &ray = *(Ray*)((char*)_rayN + inputRayID * stride);
+            /* skip invalid rays */
+            if (unlikely(ray.tnear > ray.tfar || ray.geomID == 0)) { inputRayID++; continue; } // ignore invalid or already occluded rays
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+            if (unlikely(!ray.valid())) {  inputRayID++; continue; }
+#endif
+
+            const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+
+            assert(octantID < 8);
+            octants[octantID][rays_in_octant[octantID]++] = inputRayID;
+            inputRayID++;
+            if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+            {
+              cur_octant = octantID;
+              break;
+            }
+          }
+          /* need to flush rays in octant ? */
+          if (unlikely(cur_octant == -1))
+            for (unsigned int i=0;i<8;i++)
+              if (rays_in_octant[i])
+              {
+                cur_octant = i;
+                break;
+              }
+
+          /* all rays traced ? */
+          if (unlikely(cur_octant == -1))
+            break;
+        
+          unsigned int* rayIDs = &octants[cur_octant][0];
+          const unsigned int numOctantRays = rays_in_octant[cur_octant];
+          assert(numOctantRays);
+
+          /* valid mask corresponds to rayIDs[i] >= 0, code could be SIMDfied */
+          if (unlikely(numOctantRays % VSIZEX)) 
+            for (size_t i=0;i<VSIZEX - (numOctantRays % VSIZEX);i++)
+              rayIDs[numOctantRays + i] = -1;
+
+          /* could get optmized because we know all packets except the last is fully populated */
+          for (unsigned int j = 0; j < numOctantRays; j+= VSIZEX)
+          {
+            const vintx IDs = *(vintx*)&rayIDs[j];
+            const vintx offset = IDs * int(stride);
+            const vboolx valid = IDs >= 0;
+            RayK<VSIZEX> &ray = rays[j/VSIZEX];
+            rayPtrs[j/VSIZEX] = &ray;
+            ray = rayN.getRayByOffset(valid, offset);
+            ray.tnear = select(valid, ray.tnear, zero);
+            ray.tfar  = select(valid, ray.tfar,  neg_inf);            
+          }
+
+#if 0     
+          /* for testing */
+          for (unsigned int j = 0; j < numOctantRays; j+= VSIZEX)
+          {
+            const vintx IDs = *(vintx*)&rayIDs[j];
+            const vboolx valid = IDs >= 0;
+            scene->intersectors.occluded(valid, rays[j/VSIZEX], context);
+          }
+#else
+          scene->intersectors.occludedN(rayPtrs, numOctantRays, context);          
+#endif
+
+          for (unsigned int j = 0; j < numOctantRays; j+= VSIZEX)
+          {
+            const vintx IDs = *(vintx*)&rayIDs[j];
+            const vintx offset = IDs * int(stride);
+            const vboolx valid = IDs >= 0;
+            rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);
+          }
+
+          /* special codepath for very small number of rays per octant */
+          // if (numOctantRays == 1)
+          // {
+          //   else           scene->occluded ((RTCRay&)*rays[0],context);
+          // }        
+          /* codepath for large number of rays per octant */
+          /* incoherent ray stream code path */
+          
+          rays_in_octant[cur_octant] = 0;
+        }
+
+      }
       else
       {
         /* fallback to packets */

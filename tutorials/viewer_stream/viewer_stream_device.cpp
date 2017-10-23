@@ -26,7 +26,7 @@ namespace embree {
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
 
-#define SIMPLE_SHADING 1
+#define SIMPLE_SHADING 0
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;

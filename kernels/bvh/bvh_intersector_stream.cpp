@@ -37,6 +37,14 @@ namespace embree
 {
   namespace isa
   {
+
+    static const int shiftTable[32] = { 
+      (int)1 << 0, (int)1 << 1, (int)1 << 2, (int)1 << 3, (int)1 << 4, (int)1 << 5, (int)1 << 6, (int)1 << 7,  
+      (int)1 << 8, (int)1 << 9, (int)1 << 10, (int)1 << 11, (int)1 << 12, (int)1 << 13, (int)1 << 14, (int)1 << 15,  
+      (int)1 << 16, (int)1 << 17, (int)1 << 18, (int)1 << 19, (int)1 << 20, (int)1 << 21, (int)1 << 22, (int)1 << 23,  
+      (int)1 << 24, (int)1 << 25, (int)1 << 26, (int)1 << 27, (int)1 << 28, (int)1 << 29, (int)1 << 30, (int)1 << 31
+    };
+
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
                                                                                                        RayK<K>** inputPackets,
@@ -151,6 +159,13 @@ namespace embree
                                                                                                       size_t numOctantRays,
                                                                                                       IntersectContext* context)
     {
+      /* special path for incoherent rays */
+      if (unlikely(!isCoherent(context->user->flags)))
+      {
+        occluded_incoherent(This,inputPackets,numOctantRays,context);
+        return;
+      }
+
       BVH* __restrict__ bvh = (BVH*)This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
@@ -254,6 +269,133 @@ namespace embree
       } // traversal + intersection
     }
 
+
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded_incoherent(Accel::Intersectors* __restrict__ This, RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
+    {
+      assert(!isCoherent(context->user->flags));
+      /* no robust mode yet */
+      assert(!robust);
+
+      __aligned(64) TravRayKStreamFast<K> packet[MAX_INTERNAL_STREAM_SIZE/K];
+
+      assert(numOctantRays <= 32);
+      const size_t numPackets = (numOctantRays+K-1)/K;
+      size_t m_active = 0;
+      for (size_t i = 0; i < numPackets; i++)
+      {
+        const vfloat<K> tnear  = inputPackets[i]->tnear;
+        const vfloat<K> tfar   = inputPackets[i]->tfar;
+        vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+        m_active |= (size_t)movemask(m_valid) << (K*i);
+        const Vec3vf<K>& org     = inputPackets[i]->org;
+        const Vec3vf<K>& dir     = inputPackets[i]->dir;
+        vfloat<K> packet_min_dist = max(tnear, 0.0f);
+        vfloat<K> packet_max_dist = select(m_valid, tfar, neg_inf);
+        new (&packet[i]) TravRayKStreamFast<K>(org,dir,packet_min_dist,packet_max_dist);
+      }
+
+      BVH* __restrict__ bvh = (BVH*)This->ptr;
+
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
+      StackItemT<NodeRef>* stackPtr = stack + 1;   //!< current stack pointer
+      stack[0].ptr = bvh->root;
+      stack[0].dist = m_active;
+
+      size_t terminated = ~m_active;
+
+      /* near/far offsets based on first ray */
+      const NearFarPrecalculations nf(Vec3fa(packet[0].rdir.x[0],packet[0].rdir.y[0],packet[0].rdir.z[0]),N);
+
+      while (1) pop:
+      {
+        if (unlikely(stackPtr == stack)) break;
+        STAT3(shadow.trav_stack_pop,1,1,1);
+        stackPtr--;
+        NodeRef cur = NodeRef(stackPtr->ptr);
+        size_t cur_mask = (size_t)stackPtr->dist & (~terminated);
+        if (unlikely(cur_mask == 0)) continue;
+
+        while (true)
+        {
+
+          /*! stop if we found a leaf node */
+          if (unlikely(cur.isLeaf())) break;
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
+
+          const vint<Nx> vmask = traversalLoopOccluded(cur_mask,packet,node,nf,shiftTable);
+
+          size_t mask = movemask( (vmask != vint<Nx>(zero)) /* & valid_children */);
+          if (unlikely(mask == 0)) goto pop;
+
+          __aligned(64) unsigned int child_mask[Nx];
+          vint<Nx>::storeu(child_mask,vmask); // this explicit store here causes much better code generation
+
+          /* select next child and push other children */
+          //const BaseNode* node = cur.baseNode(types);
+
+          /*! one child is hit, continue with that child */
+          size_t r = __bscf(mask);
+          assert(r < N);
+          cur = node->child(r);         
+          cur.prefetch(types);
+          cur_mask = child_mask[r];
+
+          /* simple in order sequence */
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) continue;
+          stackPtr->ptr  = cur;
+          stackPtr->dist = cur_mask;
+          stackPtr++;
+
+          for (; ;)
+          {
+            r = __bscf(mask);
+            assert(r < N);
+
+            cur = node->child(r);          
+            cur.prefetch(types);
+            cur_mask = child_mask[r];
+            assert(cur != BVH::emptyNode);
+            if (likely(mask == 0)) break;
+            stackPtr->ptr  = cur;
+            stackPtr->dist = cur_mask;
+            stackPtr++;
+          }
+        }
+
+        
+        /*! this is a leaf node */
+        assert(cur != BVH::emptyNode);
+        STAT3(shadow.trav_leaves,1,1,1);
+        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);        
+
+
+        size_t bits = cur_mask;
+        size_t lazy_node = 0;
+
+        for (; bits!=0; ) 
+        {
+          const size_t rayID = __bscf(bits);
+
+          RayK<K> &ray = *inputPackets[rayID / K];
+          const size_t k = rayID % K;
+          if (PrimitiveIntersector::occluded(ray,k,context,prim,num,lazy_node)) {
+            ray.geomID[k] = 0;
+            terminated |= (size_t)1 << rayID;
+          }
+          /* lazy node */
+          if (unlikely(lazy_node)) {
+            stackPtr->ptr = lazy_node;
+            stackPtr->dist = cur_mask;
+            stackPtr++;
+          }
+        }
+
+        if (unlikely(terminated == (size_t)-1)) { break; }
+      }
+
+    }
     ////////////////////////////////////////////////////////////////////////////////
     /// ArrayIntersectorKStream Definitions
     ////////////////////////////////////////////////////////////////////////////////

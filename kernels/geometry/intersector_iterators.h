@@ -124,6 +124,24 @@ namespace embree
           return !valid0;
         }
 
+        static __forceinline void intersect(RayK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
+        {
+          PrecalculationsK pre(ray.tnear <= ray.tfar,ray); // FIXME: might cause trouble
+          for (size_t i=0; i<num; i++) {
+            IntersectorK::intersect(pre,ray,k,context,prim[i]);
+          }
+        }
+        
+        static __forceinline bool occluded(RayK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node) 
+        {
+          PrecalculationsK pre(ray.tnear <= ray.tfar,ray); // FIXME: might cause trouble
+          for (size_t i=0; i<num; i++) {
+            if (IntersectorK::occluded(pre,ray,k,context,prim[i]))
+              return true;
+          }
+          return false;
+        }
+
       };
   }
 }
