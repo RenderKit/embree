@@ -27,6 +27,7 @@ namespace embree {
 //#define rtcOccluded1M rtcIntersect1M
 
 #define SIMPLE_SHADING 1
+#define OBJ_MATERIAL 1
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
@@ -369,7 +370,7 @@ void renderTileStandard(int taskIndex,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
     {
-#if 0
+#if OBJ_MATERIAL == 1
       Vec3fa Kd = Vec3fa(0.5f);
       DifferentialGeometry dg;
       dg.geomID = ray.geomID;

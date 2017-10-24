@@ -25,6 +25,7 @@
 //#define rtcOccludedVM rtcIntersectVM
 
 #define SIMPLE_SHADING 1
+#define OBJ_MATERIAL 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform int g_instancing_mode;
@@ -359,7 +360,7 @@ void renderTileStandard(uniform int taskIndex,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
     {
-#if 0
+#if OBJ_MATERIAL == 1
       Vec3f Kd = make_Vec3f(0.5f);
       DifferentialGeometry dg;
       dg.geomID = ray.geomID;
