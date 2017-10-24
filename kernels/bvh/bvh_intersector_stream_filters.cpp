@@ -119,24 +119,20 @@ namespace embree
           if (unlikely(cur_octant == -1))
             break;
         
-          unsigned int* rayIDs = &octants[cur_octant][0];
+          unsigned int* const rayIDs = &octants[cur_octant][0];
           const unsigned int numOctantRays = rays_in_octant[cur_octant];
           assert(numOctantRays);
-
-          /* valid mask corresponds to rayIDs[i] >= 0, code could be SIMDfied */
-          if (unlikely(numOctantRays % VSIZEX)) 
-            for (size_t i=0;i<VSIZEX - (numOctantRays % VSIZEX);i++)
-              rayIDs[numOctantRays + i] = -1;
 
           /* could get optmized because we know all packets except the last is fully populated */
           for (unsigned int j = 0; j < numOctantRays; j+= VSIZEX)
           {
-            const vintx IDs = *(vintx*)&rayIDs[j];
+            const vintx vi = vintx(int(j)) + vintx(step);
+            const vboolx valid = vi < vintx(int(numOctantRays));
+            const vintx IDs = select(valid,*(vintx*)&rayIDs[j],vintx(zero));
             const vintx offset = IDs * int(stride);
-            const vboolx valid = IDs >= 0;
             RayK<VSIZEX> &ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
-            ray = rayN.getRayByOffset(valid, offset);
+            ray = rayN.getRayByOffset(vboolx(true), offset);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);            
           }
@@ -146,7 +142,8 @@ namespace embree
           for (unsigned int j = 0; j < numOctantRays; j+= VSIZEX)
           {
             const vintx IDs = *(vintx*)&rayIDs[j];
-            const vboolx valid = IDs >= 0;
+            const vintx vi = vintx(int(j)) + vintx(step);
+            const vboolx valid = vi < vintx(int(numOctantRays));
             scene->intersectors.occluded(valid, rays[j/VSIZEX], context);
           }
 #else
@@ -155,9 +152,10 @@ namespace embree
 
           for (unsigned int j = 0; j < numOctantRays; j+= VSIZEX)
           {
-            const vintx IDs = *(vintx*)&rayIDs[j];
+            const vintx vi = vintx(int(j)) + vintx(step);
+            const vboolx valid = vi < vintx(int(numOctantRays));
+            const vintx IDs = select(valid,*(vintx*)&rayIDs[j],vintx(zero));
             const vintx offset = IDs * int(stride);
-            const vboolx valid = IDs >= 0;
             rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);
           }
 
