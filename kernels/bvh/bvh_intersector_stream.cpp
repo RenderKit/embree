@@ -400,11 +400,11 @@ namespace embree
     /// ArrayIntersectorKStream Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-    typedef ArrayIntersectorKStream<VSIZEX,TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoeller;
-    typedef ArrayIntersectorKStream<VSIZEX,TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerNoFilter;
-    typedef ArrayIntersectorKStream<VSIZEX,TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
-    typedef ArrayIntersectorKStream<VSIZEX,TriangleMiIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
-    typedef ArrayIntersectorKStream<VSIZEX,TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMIntersectorKMoeller<SIMD_MODE(4) COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoeller;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMIntersectorKMoeller<SIMD_MODE(4) COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerNoFilter;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMvIntersectorKPluecker<SIMD_MODE(4) COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMiIntersectorKMoeller<SIMD_MODE(4) COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMiIntersectorKPluecker<SIMD_MODE(4) COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamMoeller;
     typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA false > > Quad4vIntersectorStreamMoellerNoFilter;
     typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamMoeller;
