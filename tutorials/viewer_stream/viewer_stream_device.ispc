@@ -359,6 +359,7 @@ void renderTileStandard(uniform int taskIndex,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
     {
+#if 0
       Vec3f Kd = make_Vec3f(0.5f);
       DifferentialGeometry dg;
       dg.geomID = ray.geomID;
@@ -379,7 +380,9 @@ void renderTileStandard(uniform int taskIndex,
       }
       
       color = Kd*dot(neg(ray.dir),dg.Ns);
-      //color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+#else
+      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+#endif
     }
 #else
       color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
