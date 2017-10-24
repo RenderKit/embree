@@ -70,7 +70,7 @@ namespace embree
           }
         }
       }
-      else if (unlikely(!intersect && !scene->isRobust())) /* octant sorting for occlusion rays */
+      else if (unlikely(!intersect)) /* octant sorting for occlusion rays */
       {
 #define MAX_RAYS_PER_OCTANT 32
         /* reintroduced SOA path for occlusion rays */

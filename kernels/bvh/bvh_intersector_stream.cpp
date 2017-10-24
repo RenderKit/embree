@@ -38,7 +38,7 @@ namespace embree
   namespace isa
   {
 
-    static const int shiftTable[32] = { 
+    __aligned(64) static const int shiftTable[32] = { 
       (int)1 << 0, (int)1 << 1, (int)1 << 2, (int)1 << 3, (int)1 << 4, (int)1 << 5, (int)1 << 6, (int)1 << 7,  
       (int)1 << 8, (int)1 << 9, (int)1 << 10, (int)1 << 11, (int)1 << 12, (int)1 << 13, (int)1 << 14, (int)1 << 15,  
       (int)1 << 16, (int)1 << 17, (int)1 << 18, (int)1 << 19, (int)1 << 20, (int)1 << 21, (int)1 << 22, (int)1 << 23,  
@@ -274,10 +274,8 @@ namespace embree
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded_incoherent(Accel::Intersectors* __restrict__ This, RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       assert(!isCoherent(context->user->flags));
-      /* no robust mode yet */
-      assert(!robust);
 
-      __aligned(64) TravRayKStreamFast<K> packet[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) TravRayKStream<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
 
       assert(numOctantRays <= 32);
       const size_t numPackets = (numOctantRays+K-1)/K;
@@ -292,7 +290,7 @@ namespace embree
         const Vec3vf<K>& dir     = inputPackets[i]->dir;
         vfloat<K> packet_min_dist = max(tnear, 0.0f);
         vfloat<K> packet_max_dist = select(m_valid, tfar, neg_inf);
-        new (&packet[i]) TravRayKStreamFast<K>(org,dir,packet_min_dist,packet_max_dist);
+        new (&packet[i]) TravRayKStream<K,robust>(org,dir,packet_min_dist,packet_max_dist);
       }
 
       BVH* __restrict__ bvh = (BVH*)This->ptr;
@@ -370,7 +368,17 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);        
 
+#if 0
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector::occluded(cur_mask,inputPackets,context,prim,num,lazy_node);
 
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = cur_mask;
+          stackPtr++;
+        }
+
+#else
         size_t bits = cur_mask;
         size_t lazy_node = 0;
 
@@ -391,6 +399,7 @@ namespace embree
             stackPtr++;
           }
         }
+#endif
 
         if (unlikely(terminated == (size_t)-1)) { break; }
       }
