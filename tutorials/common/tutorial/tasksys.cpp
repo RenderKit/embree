@@ -14,14 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../../common/algorithms/parallel_for.h"
+#include "../../../common/algorithms/parallel_for.h"
 
 namespace embree
 {
   /* Signature of ispc-generated 'task' functions */
   typedef void (*ISPCTaskFunc)(void* data, int threadIndex, int threadCount, int taskIndex, int taskCount);
 
-  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment)
+  extern "C" void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment)
   {
     if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
     std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
@@ -30,14 +30,14 @@ namespace embree
     return ptr;
   }
 
-  extern "C" __dllexport void ISPCSync(void* task)
+  extern "C" void ISPCSync(void* task)
   {
     std::vector<void*>* lst = (std::vector<void*>*)task;
     for (size_t i=0; i<lst->size(); i++) alignedFree((*lst)[i]);
     delete lst;
   }
 
-  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count)
+  extern "C" void ISPCLaunch(void** taskPtr, void* func, void* data, int count)
   {
     parallel_for(0, count,[&] (const range<int>& r) {
         const int threadIndex = (int) TaskScheduler::threadIndex();
