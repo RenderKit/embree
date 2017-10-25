@@ -16,6 +16,10 @@
 
 #pragma once
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+  
 /*! \ingroup embree_kernel_api */
 /*! \{ */
 
@@ -24,21 +28,21 @@ typedef void (*RTCBoundsFunc)(void* userPtr,         /*!< pointer to user data *
                                void* geomUserPtr,     /*!< pointer to geometry user data */
                                unsigned int item,           /*!< item to calculate bounds for */
                                unsigned int time,           /*!< time to calculate bounds for */
-                               RTCBounds& bounds_o    /*!< returns calculated bounds */);
+                               struct RTCBounds* bounds_o    /*!< returns calculated bounds */);
 
 /*! Type of intersect function pointer for ray packets of size N. */
 typedef void (*RTCIntersectFuncN)(const int* valid,                        /*!< pointer to valid mask */
                                   void* ptr,                               /*!< pointer to geometry user data */
-                                  const RTCIntersectContext* context,   /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                  RTCRayN* rays,                           /*!< ray packet to intersect */
+                                  const struct RTCIntersectContext* context,   /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+                                  struct RTCRayN* rays,                           /*!< ray packet to intersect */
                                   unsigned int N,                                /*!< number of rays in packet */
                                   unsigned int item                              /*!< item to intersect */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! pointer to valid mask */
                                   void* ptr,                             /*!< pointer to user data */
-                                  const RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                  RTCRayN* rays,                            /*!< Ray packet to test occlusion for. */
+                                  const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+                                  struct RTCRayN* rays,                            /*!< Ray packet to test occlusion for. */
                                   unsigned int N,                              /*!< number of rays in packet */
                                   unsigned int item                            /*!< item to test for occlusion */);
 
@@ -56,9 +60,9 @@ typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! poi
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
 RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           RTCGeometryFlags gflags, //!< geometry flags
+                                           enum RTCGeometryFlags gflags, //!< geometry flags
                                            unsigned int numGeometries,    /*!< the number of geometries contained in the set */
-                                           unsigned int numTimeSteps = 1  /*!< number of motion blur time steps */
+                                           unsigned int numTimeSteps  /*!< number of motion blur time steps */
   );
 
 /*! Sets the bounding function to calculate bounding boxes of the user
@@ -77,5 +81,8 @@ RTCORE_API void rtcSetIntersectFunction(RTCGeometry hgeometry, RTCIntersectFuncN
  *  geometry. */
 RTCORE_API void rtcSetOccludedFunction(RTCGeometry hgeometry, RTCOccludedFuncN occluded);
 
-
+#if defined(__cplusplus)
+}
+#endif
+  
 /*! @} */

@@ -154,7 +154,9 @@ namespace embree {
   RTCScene createScene(ISPCScene* scene_in)
   {
     RTCScene scene = rtcDeviceNewScene(g_device);
-    rtcSetBuildMode(scene,RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    rtcSetAccelFlags(scene,RTC_ACCEL_DEFAULT);
+    rtcSetBuildQuality(scene, RTC_BUILD_QUALITY_LOW);
+    rtcSetBuildHints(scene, RTC_BUILD_HINT_DYNAMIC);
     return scene;
   }
 

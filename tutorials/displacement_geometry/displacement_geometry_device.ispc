@@ -127,7 +127,7 @@ unmasked void displacementFunction(void* uniform ptr,
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC, 1);
 
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
@@ -147,7 +147,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
@@ -181,7 +181,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(g_scene,RTC_ACCEL_ROBUST,RTC_BUILD_QUALITY_NORMAL,RTC_BUILD_HINT_NONE);
+  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
 
   /* add ground plane */
   addGroundPlane(g_scene);

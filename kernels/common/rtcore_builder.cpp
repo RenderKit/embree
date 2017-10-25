@@ -57,7 +57,7 @@ namespace embree
     }
 
     void* rtcBuildBVHMorton(BVH* bvh,
-                            const RTCBuildSettings& settings,
+                            const RTCBuildSettings* settings,
                             RTCBuildPrimitive* prims_i,
                             size_t numPrimitives,
                             RTCCreateNodeFunc createNode,
@@ -141,14 +141,14 @@ namespace embree
         },
         
         morton_src.data(),morton_tmp.data(),numPrimitives,
-        settings);
+        *settings);
 
       bvh->allocator.cleanup();
       return root.first;
     }
 
     void* rtcBuildBVHBinnedSAH(BVH* bvh,
-                               const RTCBuildSettings& settings,
+                               const RTCBuildSettings* settings,
                                RTCBuildPrimitive* prims,
                                size_t numPrimitives,
                                RTCCreateNodeFunc createNode,
@@ -205,14 +205,14 @@ namespace embree
           if (buildProgress) buildProgress(dn,userPtr);
         },
         
-        (PrimRef*)prims,pinfo,settings);
+        (PrimRef*)prims,pinfo,*settings);
         
       bvh->allocator.cleanup();
       return root;
     }
 
      void* rtcBuildBVHSpatialSAH(BVH* bvh,
-                                 const RTCBuildSettings& settings,
+                                 const RTCBuildSettings* settings,
                                  RTCBuildPrimitive* prims,
                                  size_t numPrimitives,
                                  RTCCreateNodeFunc createNode,
@@ -245,7 +245,7 @@ namespace embree
         __forceinline void operator() (PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const 
         {
           prim.geomIDref() &= BVHBuilderBinnedFastSpatialSAH::GEOMID_MASK;
-          splitPrimitive((RTCBuildPrimitive&)prim,(unsigned)dim,pos,(RTCBounds&)left_o,(RTCBounds&)right_o,userPtr);
+          splitPrimitive((RTCBuildPrimitive*)&prim,(unsigned)dim,pos,(RTCBounds*)&left_o,(RTCBounds*)&right_o,userPtr);
           left_o.geomIDref()  = geomID; left_o.primIDref()  = primID;
           right_o.geomIDref() = geomID; right_o.primIDref() = primID;
         }
@@ -253,7 +253,7 @@ namespace embree
         __forceinline void operator() (const BBox3fa& box, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const 
         {
           PrimRef prim(box,geomID & BVHBuilderBinnedFastSpatialSAH::GEOMID_MASK,primID);
-          splitPrimitive((RTCBuildPrimitive&)prim,(unsigned)dim,pos,(RTCBounds&)left_o,(RTCBounds&)right_o,userPtr);
+          splitPrimitive((RTCBuildPrimitive*)&prim,(unsigned)dim,pos,(RTCBounds*)&left_o,(RTCBounds*)&right_o,userPtr);
         }
    
         RTCSplitPrimitiveFunc splitPrimitive;
@@ -302,15 +302,15 @@ namespace embree
         },
         
         (PrimRef*)prims,
-        pinfo.size()+settings.extraSpace,
-        pinfo,settings);
+        pinfo.size()+settings->extraSpace,
+        pinfo,*settings);
         
       bvh->allocator.cleanup();
       return root;
     }
 
     RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
-                                 const RTCBuildSettings& settings,
+                                 const RTCBuildSettings* settings,
                                  RTCBuildPrimitive* prims,
                                  size_t numPrimitives,
                                  RTCCreateNodeFunc createNode,
@@ -339,12 +339,12 @@ namespace embree
       bvh->allocator.reset();
 
       /* switch between differnet builders based on quality level */
-      if (settings.quality == RTC_BUILD_QUALITY_LOW)
+      if (settings->quality == RTC_BUILD_QUALITY_LOW)
         return rtcBuildBVHMorton   (bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
-      else if (settings.quality == RTC_BUILD_QUALITY_NORMAL)
+      else if (settings->quality == RTC_BUILD_QUALITY_NORMAL)
         return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
-      else if (settings.quality == RTC_BUILD_QUALITY_HIGH) {
-        if (splitPrimitive == nullptr || settings.extraSpace == 0)
+      else if (settings->quality == RTC_BUILD_QUALITY_HIGH) {
+        if (splitPrimitive == nullptr || settings->extraSpace == 0)
           return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
         else
           return rtcBuildBVHSpatialSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,splitPrimitive,buildProgress,userPtr);  

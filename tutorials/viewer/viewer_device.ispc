@@ -126,7 +126,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_GEOMETRY_STATIC);
-  rtcSetBuildMode(scene_out,RTC_ACCEL_DEFAULT,RTC_BUILD_QUALITY_NORMAL,RTC_BUILD_HINT_NONE);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)

@@ -108,7 +108,8 @@ uniform size_t getNumObjects(uniform ISPCScene* uniform scene_in) {
 uniform RTCScene createScene(uniform ISPCScene* uniform scene_in)
 {
   RTCScene scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(scene,RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+  rtcSetBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
+  rtcSetBuildHints(scene, RTC_BUILD_HINT_DYNAMIC);
   return scene;
 }
 

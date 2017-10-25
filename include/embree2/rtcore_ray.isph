@@ -79,7 +79,7 @@ struct RTCRay
 };
 
 /* Helper functions to access ray packets of runtime size N */
-struct RTCRayN {};
+struct RTCRayN;
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
 inline varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[1*N+i]); }  //!< y coordinate of ray origin
 inline varying float& RTCRayN_org_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[2*N+i]); }; //!< z coordinate of ray origin
@@ -136,7 +136,7 @@ struct RTCRayNp
 };
 
 /* Helper functions to access hit packets of size N */
-struct RTCHitN {};
+struct RTCHitN;
 inline varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }; //!< x coordinate of geometry normal
 inline varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }; //!< y coordinate of geometry normal
 inline varying float& RTCHitN_Ng_z(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[2*N+i]); }; //!< z coordinate of geometry normal

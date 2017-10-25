@@ -45,10 +45,10 @@ struct Ray2
   unsigned int firstHit, lastHit;
 };
 
-inline RTCRay& RTCRay_(Ray2& ray)
+inline RTCRay* RTCRay_(Ray2& ray)
 {
   RTCRay* ray_ptr = (RTCRay*)&ray;
-  return *ray_ptr;
+  return ray_ptr;
 }
 
 /* 3D procedural transparency */
@@ -634,7 +634,7 @@ unsigned int cube_quad_faces[NUM_QUAD_FACES] = {
 unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scale, float rotation)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(Vec3fa  ), NUM_VERTICES);
   Vec3fa* ptr = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(Vec3fa), NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) {
@@ -673,7 +673,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
 /* adds a cube to the scene */
 unsigned int addSubdivCube (RTCScene scene_i)
 {
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC, 1);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(Vec3fa  ), NUM_VERTICES);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
   rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
@@ -703,7 +703,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
@@ -734,7 +734,7 @@ extern "C" void device_init (char* cfg)
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(g_scene,RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_HIGH, RTC_BUILD_HINT_NONE);
+  rtcSetBuildQuality(g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
 
   /* add cube */
   addCube(g_scene,Vec3fa(0.0f,0.0f,0.0f),Vec3fa(10.0f,1.0f,1.0f),45.0f);

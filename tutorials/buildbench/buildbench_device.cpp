@@ -83,10 +83,12 @@ namespace embree {
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHint hflags)
+  RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHints hflags)
   {
     RTCScene scene_out = rtcDeviceNewScene(g_device);
-    rtcSetBuildMode(scene_out,aflags,qflags,hflags);
+    rtcSetAccelFlags(scene_out,aflags);
+    rtcSetBuildQuality(scene_out,qflags);
+    rtcSetBuildHints(scene_out,hflags);
     return scene_out;
   }
 

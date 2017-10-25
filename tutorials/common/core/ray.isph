@@ -35,10 +35,10 @@ struct Ray1
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
-inline uniform RTCRay1& RTCRay1_(uniform Ray1& ray)
+inline uniform RTCRay1* uniform RTCRay1_(uniform Ray1& ray)
 {
   uniform RTCRay1* uniform ray_ptr = (uniform RTCRay1* uniform)&ray;
-  return *ray_ptr;
+  return ray_ptr;
 }
 
 /*! Ray structure. Contains all information about a ray including
@@ -63,10 +63,10 @@ struct Ray
   Vec3f transparency;
 };
 
-inline varying RTCRay& RTCRay_(varying Ray& ray)
+inline varying RTCRay* uniform RTCRay_(varying Ray& ray)
 {
   varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
-  return *ray_ptr;
+  return ray_ptr;
 }
 
 /*! Constructs a ray from origin, direction, and ray segment. Near

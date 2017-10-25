@@ -58,7 +58,7 @@ namespace embree
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
     if (device->hint_flags != -1)
-      hint_flags = (RTCBuildHint) device->hint_flags;
+      hint_flags = (RTCBuildHints) device->hint_flags;
   }
   
   void Scene::printStatistics()
@@ -683,20 +683,25 @@ namespace embree
     setModified(false);
   }
 
-  void Scene::setBuildMode(RTCAccelFlags accel_flags_i, RTCBuildQuality quality_flags_i, RTCBuildHint hint_flags_i)
+  void Scene::setAccelFlags(RTCAccelFlags accel_flags_i)
   {
-    if (accel_flags != accel_flags_i) {
-      accel_flags = accel_flags_i;
-      flags_modified = true;
-    }
-    if (quality_flags != quality_flags_i) {
-      quality_flags = quality_flags_i;
-      flags_modified = true;
-    }
-    if (hint_flags != hint_flags_i) {
-      hint_flags = hint_flags_i;
-      flags_modified = true;
-    }
+    if (accel_flags == accel_flags_i) return;
+    accel_flags = accel_flags_i;
+    flags_modified = true;
+  }
+
+  void Scene::setBuildQuality(RTCBuildQuality quality_flags_i)
+  {
+    if (quality_flags == quality_flags_i) return;
+    quality_flags = quality_flags_i;
+    flags_modified = true;
+  }
+
+  void Scene::setBuildHints(RTCBuildHints hint_flags_i)
+  {
+    if (hint_flags == hint_flags_i) return;
+    hint_flags = hint_flags_i;
+    flags_modified = true;
   }
                    
 #if defined(TASKING_INTERNAL)

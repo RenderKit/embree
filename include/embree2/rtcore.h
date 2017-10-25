@@ -18,8 +18,13 @@
 
 #include <stddef.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include "rtcore_version.h"
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #if defined(_WIN32)
 #if defined(_M_X64)
@@ -31,9 +36,9 @@ typedef int ssize_t;
 
 #ifndef RTCORE_API
 #if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
-#  define RTCORE_API extern "C" __declspec(dllimport) 
+#  define RTCORE_API __declspec(dllimport) 
 #else
-#  define RTCORE_API extern "C"
+#  define RTCORE_API 
 #endif
 #endif
 
@@ -76,7 +81,7 @@ struct RTCORE_ALIGN(16) RTCBounds
 };
 
 /*! \brief Defines an opaque device type */
-typedef struct __RTCDevice {}* RTCDevice;
+typedef struct __RTCDevice* RTCDevice;
 
 /*! \brief Creates a new Embree device.
 
@@ -94,7 +99,7 @@ typedef struct __RTCDevice {}* RTCDevice;
   set the RTC_UNSUPPORTED_CPU error code.
   
 */
-RTCORE_API RTCDevice rtcNewDevice(const char* cfg = NULL);
+RTCORE_API RTCDevice rtcNewDevice(const char* cfg);
 
 /*! \brief Deletes an Embree device.
 
@@ -141,10 +146,10 @@ enum RTCParameter {
 };
 
 /*! \brief Configures some device parameters. */
-RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val);
+RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const enum RTCParameter parm, ssize_t val);
 
 /*! \brief Reads some device parameter. */
-RTCORE_API ssize_t rtcDeviceGetParameter1i(RTCDevice device, const RTCParameter parm);
+RTCORE_API ssize_t rtcDeviceGetParameter1i(RTCDevice device, const enum RTCParameter parm);
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
@@ -162,10 +167,10 @@ enum RTCError {
   If an error occurs this flag is set to an error code if it stores no
   previous error. The rtcGetError function reads and returns the
   currently stored error and clears the error flag again. */
-RTCORE_API RTCError rtcDeviceGetError(RTCDevice device);
+RTCORE_API enum RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef void (*RTCErrorFunc)(void* userPtr, const RTCError code, const char* str);
+typedef void (*RTCErrorFunc)(void* userPtr, const enum RTCError code, const char* str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunc func, void* userPtr);
@@ -179,15 +184,23 @@ typedef bool (*RTCMemoryMonitorFunc)(void* ptr, const ssize_t bytes, const bool 
  *  function. */
 RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* userPtr);
 
+#if defined(__cplusplus)
+}
+#endif
+
 #include "rtcore_ray.h"
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
 #include "rtcore_builder.h"
 
+#if defined(__cplusplus)
+
 /*! \brief Helper to easily combing geometry flags */
 inline RTCGeometryFlags operator|(const RTCGeometryFlags a, const RTCGeometryFlags b) {
   return (RTCGeometryFlags)((size_t)a | (size_t)b);
 }
+
+#endif
 
 /*! \} */

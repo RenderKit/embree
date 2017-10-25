@@ -50,7 +50,7 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(void* uniform, void* instance_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
+void instanceBoundsFunc(void* uniform, void* instance_i, unsigned int item, unsigned int time, RTCBounds* bounds_o)
 {
   const Instance* instance = (const Instance*) instance_i;
   Vec3fa l = instance->lower;
@@ -65,12 +65,12 @@ void instanceBoundsFunc(void* uniform, void* instance_i, unsigned int item, unsi
   Vec3fa p111 = xfmPoint(instance->local2world,Vec3fa(u.x,u.y,u.z));
   Vec3fa lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
   Vec3fa upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
-  bounds_o.lower_x = lower.x;
-  bounds_o.lower_y = lower.y;
-  bounds_o.lower_z = lower.z;
-  bounds_o.upper_x = upper.x;
-  bounds_o.upper_y = upper.y;
-  bounds_o.upper_z = upper.z;
+  bounds_o->lower_x = lower.x;
+  bounds_o->lower_y = lower.y;
+  bounds_o->lower_z = lower.z;
+  bounds_o->upper_x = upper.x;
+  bounds_o->upper_y = upper.y;
+  bounds_o->upper_z = upper.z;
 }
 
 void instanceIntersectFunc(const int* valid, 
@@ -249,7 +249,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.l.vy = Vec3fa(0,1,0);
   instance->local2world.l.vz = Vec3fa(0,0,1);
   instance->local2world.p    = Vec3fa(0,0,0);
-  instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
+  instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
   rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
@@ -279,16 +279,16 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(void* uniform, void* spheres_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
+void sphereBoundsFunc(void* uniform, void* spheres_i, unsigned int item, unsigned int time, RTCBounds* bounds_o)
 {
   const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
-  bounds_o.lower_x = sphere.p.x-sphere.r;
-  bounds_o.lower_y = sphere.p.y-sphere.r;
-  bounds_o.lower_z = sphere.p.z-sphere.r;
-  bounds_o.upper_x = sphere.p.x+sphere.r;
-  bounds_o.upper_y = sphere.p.y+sphere.r;
-  bounds_o.upper_z = sphere.p.z+sphere.r;
+  bounds_o->lower_x = sphere.p.x-sphere.r;
+  bounds_o->lower_y = sphere.p.y-sphere.r;
+  bounds_o->lower_z = sphere.p.z-sphere.r;
+  bounds_o->upper_x = sphere.p.x+sphere.r;
+  bounds_o->upper_y = sphere.p.y+sphere.r;
+  bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
 void sphereIntersectFunc(const int* valid, 
@@ -476,7 +476,7 @@ void sphereOccludedFuncN(const int* valid,
 
 Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1,1);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
@@ -492,7 +492,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 
 Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,N);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,N,1);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (size_t i=0; i<N; i++) {
@@ -514,7 +514,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
@@ -570,7 +570,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

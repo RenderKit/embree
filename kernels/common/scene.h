@@ -135,7 +135,10 @@ namespace embree
     void detachGeometry(size_t geomID);
 
     /*! Builds acceleration structure for the scene. */
-    void setBuildMode(RTCAccelFlags accel_flags, RTCBuildQuality quality_flags, RTCBuildHint hint_flags);
+    void setAccelFlags(RTCAccelFlags accel_flags);
+    void setBuildQuality(RTCBuildQuality quality_flags);
+    void setBuildHints(RTCBuildHints hint_flags);
+    
     void commit (size_t threadIndex, size_t threadCount, bool useThreadPool);
     void commit_task ();
     void build () {}
@@ -210,7 +213,7 @@ namespace embree
     bool flags_modified;
     RTCAccelFlags accel_flags;
     RTCBuildQuality quality_flags;
-    RTCBuildHint hint_flags;
+    RTCBuildHints hint_flags;
     AccelN accels;
     std::atomic<size_t> commitCounterSubdiv;
     std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers

@@ -38,7 +38,7 @@ uniform int disabledID = -1;
 uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform Vec3f& pos, const uniform float r)
 {
   /* create a triangulated sphere */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, 1);
 
   /* map triangle and vertex buffer */
   uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
@@ -93,7 +93,7 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
@@ -124,7 +124,9 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(g_scene,RTC_ACCEL_ROBUST,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
+  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
+  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
 
   /* create some triangulated spheres */
   for (uniform int i=0; i<numSpheres; i++)
