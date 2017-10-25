@@ -2131,12 +2131,12 @@ namespace embree
         if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
-        const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        const Vec3fa org(rays[i].orgx,rays[i].orgy,rays[i].orgz);
+        const Vec3fa dir(rays[i].dirx,rays[i].diry,rays[i].dirz);
         const Vec3fa ht  = org + rays[i].tfar*dir;
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[2]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa Ng = Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2]);
+        const Vec3fa Ng = Vec3fa(rays[i].Ngx,rays[i].Ngy,rays[i].Ngz);
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
@@ -2202,12 +2202,12 @@ namespace embree
         if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
 
-        const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
-        const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        const Vec3fa org(rays[i].orgx,rays[i].orgy,rays[i].orgz);
+        const Vec3fa dir(rays[i].dirx,rays[i].diry,rays[i].dirz);
         const Vec3fa ht  = org + rays[i].tfar*dir;
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[3]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa Ng = Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2]);
+        const Vec3fa Ng = Vec3fa(rays[i].Ngx,rays[i].Ngy,rays[i].Ngz);
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
@@ -2329,8 +2329,8 @@ namespace embree
       
       for (size_t i=0; i<numRays; i++) 
       {
-        Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
-        Vec3fa Ng (rays[i].Ng[0], rays[i].Ng[1], rays[i].Ng[2]);
+        Vec3fa dir(rays[i].dirx,rays[i].diry,rays[i].dirz);
+        Vec3fa Ng (rays[i].Ngx, rays[i].Ngy, rays[i].Ngz);
         if (i%2) passed &= rays[i].geomID == RTC_INVALID_GEOMETRY_ID;
         else {
           passed &= rays[i].geomID == 0;
@@ -2694,7 +2694,7 @@ namespace embree
         }
         IntersectWithMode(imode,ivariant,scene,rays,M);
         for (size_t j=0; j<M; j++) {
-          Vec3fa dir(rays[j].dir[0],rays[j].dir[1],rays[j].dir[2]);
+          Vec3fa dir(rays[j].dirx,rays[j].diry,rays[j].dirz);
           //if (abs(dot(normalize(dir),space.vz)) < 0.9f) continue;
           numTests++;
           numFailures += rays[j].primID != primIDs[j];

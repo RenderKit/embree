@@ -26,27 +26,33 @@ extern "C" {
 /*! \{ */
 
 /*! \brief Ray structure for an individual ray */
-struct RTCORE_ALIGN(16)  RTCRay
+struct RTCORE_ALIGN(16) RTCRay
 {
   /* ray data */
-  float org[3];      //!< Ray origin
+  float orgx;        //!< x coordinate of ray origin
+  float orgy;        //!< y coordinate of ray origin
+  float orgz;        //!< z coordinate of ray origin
   float tnear;       //!< Start of ray segment
-  
-  float dir[3];      //!< Ray direction  
+
+  float dirx;        //!< x coordinate of ray direction
+  float diry;        //!< y coordinate of ray direction
+  float dirz;        //!< z coordinate of ray direction
   float tfar;        //!< End of ray segment (set to hit distance)
 
   float time;        //!< Time of this ray for motion blur
-  unsigned mask;        //!< Used to mask out objects during traversal
+  unsigned mask;     //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ng[3];       //!< Unnormalized geometry normal
-  
+  float Ngx;         //!< x coordinate of geometry normal
+  float Ngy;         //!< y coordinate of geometry normal
+  float Ngz;         //!< z coordinate of geometry normal
+   
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit
 
-  unsigned geomID;        //!< geometry ID
-  unsigned primID;        //!< primitive ID
-  unsigned instID;        //!< instance ID
+  unsigned geomID;   //!< geometry ID
+  unsigned primID;   //!< primitive ID
+  unsigned instID;   //!< instance ID
 };
 
 /*! Ray structure for packets of 4 rays. */

@@ -129,19 +129,19 @@ namespace embree
 
   __forceinline void clearRay(RTCRay& ray)
   {
-    ray.org[0] = zero;
-    ray.org[1] = zero;
-    ray.org[2] = zero;
-    ray.dir[0] = zero;
-    ray.dir[1] = zero;
-    ray.dir[2] = zero;
+    ray.orgx = zero;
+    ray.orgy = zero;
+    ray.orgz = zero;
+    ray.dirx = zero;
+    ray.diry = zero;
+    ray.dirz = zero;
     ray.tnear = pos_inf;
     ray.tfar = neg_inf;
     ray.time = 0;
     ray.mask = -1;
-    ray.Ng[0] = 0.0f;
-    ray.Ng[1] = 0.0f;
-    ray.Ng[2] = 0.0f;
+    ray.Ngx = 0.0f;
+    ray.Ngy = 0.0f;
+    ray.Ngz = 0.0f;
     ray.u = 0.0f;
     ray.v = 0.0f;
     ray.geomID = -1;
@@ -152,8 +152,8 @@ namespace embree
   __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
     RTCRay ray; clearRay(ray);
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.orgx = org.x; ray.orgy = org.y; ray.orgz = org.z;
+    ray.dirx = dir.x; ray.diry = dir.y; ray.dirz = dir.z;
     ray.tnear = 0.0f; ray.tfar = inf;
     ray.time = 0; ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
@@ -163,19 +163,19 @@ namespace embree
   __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
   {
     RTCRay ray; clearRay(ray);
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.orgx = org.x; ray.orgy = org.y; ray.orgz = org.z;
+    ray.dirx = dir.x; ray.diry = dir.y; ray.dirz = dir.z;
     ray.tnear = tnear; ray.tfar = tfar;
     ray.time = 0; ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
     return ray;
   }
 
-  __forceinline RTCRay fastMakeRay(const Vec3fa &org, const Vec3fa &dir) 
+  __forceinline RTCRay fastMakeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
     RTCRay ray;
-    *(Vec3fa*)ray.org = org;
-    *(Vec3fa*)ray.dir = dir;
+    *(Vec3fa*)&ray.orgx = org;
+    *(Vec3fa*)&ray.dirx = dir;
     ray.tnear = 0.0f; 
     ray.tfar = inf;
     ray.time = 0; 
@@ -184,15 +184,15 @@ namespace embree
     return ray;
   }
 
-  __forceinline RTCRay fastMakeRay(const Vec3fa &org, RandomSampler &sampler)
+  __forceinline RTCRay fastMakeRay(const Vec3fa& org, RandomSampler& sampler)
   {
     return fastMakeRay(org, 2.0f*RandomSampler_get3D(sampler)-Vec3fa(1.0f));
   }
 
-  __forceinline void fastMakeRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
+  __forceinline void fastMakeRay(RTCRay& ray, const Vec3fa& org, const Vec3fa& dir) 
   {
-    *(Vec3fa*)ray.org = org;
-    *(Vec3fa*)ray.dir = dir;
+    *(Vec3fa*)&ray.orgx = org;
+    *(Vec3fa*)&ray.dirx = dir;
     ray.tnear = 0.0f; 
     ray.tfar = inf;
     ray.time = 0; 
@@ -200,7 +200,7 @@ namespace embree
     ray.geomID = ray.primID = ray.instID = -1;
   }
 
-  __forceinline void fastMakeRay(RTCRay &ray, const Vec3fa &org, RandomSampler &sampler)
+  __forceinline void fastMakeRay(RTCRay& ray, const Vec3fa& org, RandomSampler& sampler)
   {
     fastMakeRay(ray, org, 2.0f*RandomSampler_get3D(sampler)-Vec3fa(1.0f));
   }
@@ -208,8 +208,8 @@ namespace embree
   __forceinline RTCRay fastMakeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
   {
     RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z; // FIXME: optimize
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.orgx = org.x; ray.orgy = org.y; ray.orgz = org.z; // FIXME: optimize
+    ray.dirx = dir.x; ray.diry = dir.y; ray.dirz = dir.z;
     ray.tnear = tnear; ray.tfar = tfar;
     ray.time = 0; ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
@@ -218,12 +218,12 @@ namespace embree
 
   __forceinline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
   {
-    if (*(int*)&ray0.org[0] != *(int*)&ray1.org[0]) return true;
-    if (*(int*)&ray0.org[1] != *(int*)&ray1.org[1]) return true;
-    if (*(int*)&ray0.org[2] != *(int*)&ray1.org[2]) return true;
-    if (*(int*)&ray0.dir[0] != *(int*)&ray1.dir[0]) return true;
-    if (*(int*)&ray0.dir[1] != *(int*)&ray1.dir[1]) return true;
-    if (*(int*)&ray0.dir[2] != *(int*)&ray1.dir[2]) return true;
+    if (*(int*)&ray0.orgx != *(int*)&ray1.orgx) return true;
+    if (*(int*)&ray0.orgy != *(int*)&ray1.orgy) return true;
+    if (*(int*)&ray0.orgz != *(int*)&ray1.orgz) return true;
+    if (*(int*)&ray0.dirx != *(int*)&ray1.dirx) return true;
+    if (*(int*)&ray0.diry != *(int*)&ray1.diry) return true;
+    if (*(int*)&ray0.dirz != *(int*)&ray1.dirz) return true;
     if (*(int*)&ray0.tnear  != *(int*)&ray1.tnear ) return true;
     if (*(int*)&ray0.tfar   != *(int*)&ray1.tfar  ) return true;
     if (*(int*)&ray0.time   != *(int*)&ray1.time  ) return true;
@@ -233,9 +233,9 @@ namespace embree
     if (*(int*)&ray0.instID != *(int*)&ray1.instID) return true;
     if (*(int*)&ray0.geomID != *(int*)&ray1.geomID) return true;
     if (*(int*)&ray0.primID != *(int*)&ray1.primID) return true;
-    if (*(int*)&ray0.Ng[0]  != *(int*)&ray1.Ng[0] ) return true;
-    if (*(int*)&ray0.Ng[1]  != *(int*)&ray1.Ng[1] ) return true;
-    if (*(int*)&ray0.Ng[2]  != *(int*)&ray1.Ng[2] ) return true;
+    if (*(int*)&ray0.Ngx  != *(int*)&ray1.Ngx ) return true;
+    if (*(int*)&ray0.Ngy  != *(int*)&ray1.Ngy ) return true;
+    if (*(int*)&ray0.Ngz  != *(int*)&ray1.Ngz ) return true;
     return false;
   }
 
@@ -243,8 +243,8 @@ namespace embree
   __forceinline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
   {
     return cout << "Ray { " << std::endl
-                << "  org = " << ray.org[0] << " " << ray.org[1] << " " << ray.org[2] << std::endl
-                << "  dir = " << ray.dir[0] << " " << ray.dir[1] << " " << ray.dir[2] << std::endl
+                << "  org = " << ray.orgx << " " << ray.orgy << " " << ray.orgz << std::endl
+                << "  dir = " << ray.dirx << " " << ray.diry << " " << ray.dirz << std::endl
                 << "  near = " << ray.tnear << std::endl
                 << "  far = " << ray.tfar << std::endl
                 << "  time = " << ray.time << std::endl
@@ -254,18 +254,18 @@ namespace embree
                 << "  primID = " << ray.primID <<  std::endl
                 << "  u = " << ray.u <<  std::endl
                 << "  v = " << ray.v << std::endl
-                << "  Ng = " << ray.Ng[0] << " " << ray.Ng[1] << " " << ray.Ng[2] << std::endl
+                << "  Ng = " << ray.Ngx << " " << ray.Ngy << " " << ray.Ngz << std::endl
                 << "}";
   }
 
   __forceinline void setRay(RTCRay4& ray_o, size_t i, const RTCRay& ray_i)
   {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
+    ray_o.orgx[i] = ray_i.orgx;
+    ray_o.orgy[i] = ray_i.orgy;
+    ray_o.orgz[i] = ray_i.orgz;
+    ray_o.dirx[i] = ray_i.dirx;
+    ray_o.diry[i] = ray_i.diry;
+    ray_o.dirz[i] = ray_i.dirz;
     ray_o.tnear[i] = ray_i.tnear;
     ray_o.tfar[i] = ray_i.tfar;
     ray_o.time[i] = ray_i.time;
@@ -275,19 +275,19 @@ namespace embree
     ray_o.primID[i] = ray_i.primID;
     ray_o.u[i] = ray_i.u;
     ray_o.v[i] = ray_i.v;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
+    ray_o.Ngx[i] = ray_i.Ngx;
+    ray_o.Ngy[i] = ray_i.Ngy;
+    ray_o.Ngz[i] = ray_i.Ngz;
   }
 
   __forceinline void setRay(RTCRay8& ray_o, size_t i, const RTCRay& ray_i)
   {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
+    ray_o.orgx[i] = ray_i.orgx;
+    ray_o.orgy[i] = ray_i.orgy;
+    ray_o.orgz[i] = ray_i.orgz;
+    ray_o.dirx[i] = ray_i.dirx;
+    ray_o.diry[i] = ray_i.diry;
+    ray_o.dirz[i] = ray_i.dirz;
     ray_o.tnear[i] = ray_i.tnear;
     ray_o.tfar[i] = ray_i.tfar;
     ray_o.time[i] = ray_i.time;
@@ -297,19 +297,19 @@ namespace embree
     ray_o.primID[i] = ray_i.primID;
     ray_o.u[i] = ray_i.u;
     ray_o.v[i] = ray_i.v;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
+    ray_o.Ngx[i] = ray_i.Ngx;
+    ray_o.Ngy[i] = ray_i.Ngy;
+    ray_o.Ngz[i] = ray_i.Ngz;
   }
 
   __forceinline void setRay(RTCRay16& ray_o, size_t i, const RTCRay& ray_i)
   {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
+    ray_o.orgx[i] = ray_i.orgx;
+    ray_o.orgy[i] = ray_i.orgy;
+    ray_o.orgz[i] = ray_i.orgz;
+    ray_o.dirx[i] = ray_i.dirx;
+    ray_o.diry[i] = ray_i.diry;
+    ray_o.dirz[i] = ray_i.dirz;
     ray_o.tnear[i] = ray_i.tnear;
     ray_o.tfar[i] = ray_i.tfar;
     ray_o.time[i] = ray_i.time;
@@ -319,19 +319,19 @@ namespace embree
     ray_o.primID[i] = ray_i.primID;
     ray_o.u[i] = ray_i.u;
     ray_o.v[i] = ray_i.v;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
+    ray_o.Ngx[i] = ray_i.Ngx;
+    ray_o.Ngy[i] = ray_i.Ngy;
+    ray_o.Ngz[i] = ray_i.Ngz;
   }
 
   __forceinline void setRay(RTCRayN* ray_o, size_t N, size_t i, const RTCRay& ray_i)
   {
-    RTCRayN_org_x(ray_o,N,i) = ray_i.org[0];
-    RTCRayN_org_y(ray_o,N,i) = ray_i.org[1];
-    RTCRayN_org_z(ray_o,N,i) = ray_i.org[2];
-    RTCRayN_dir_x(ray_o,N,i) = ray_i.dir[0];
-    RTCRayN_dir_y(ray_o,N,i) = ray_i.dir[1];
-    RTCRayN_dir_z(ray_o,N,i) = ray_i.dir[2];
+    RTCRayN_org_x(ray_o,N,i) = ray_i.orgx;
+    RTCRayN_org_y(ray_o,N,i) = ray_i.orgy;
+    RTCRayN_org_z(ray_o,N,i) = ray_i.orgz;
+    RTCRayN_dir_x(ray_o,N,i) = ray_i.dirx;
+    RTCRayN_dir_y(ray_o,N,i) = ray_i.diry;
+    RTCRayN_dir_z(ray_o,N,i) = ray_i.dirz;
     RTCRayN_tnear(ray_o,N,i) = ray_i.tnear;
     RTCRayN_tfar(ray_o,N,i) = ray_i.tfar;
     RTCRayN_time(ray_o,N,i) = ray_i.time;
@@ -341,20 +341,20 @@ namespace embree
     RTCRayN_primID(ray_o,N,i) = ray_i.primID;
     RTCRayN_u(ray_o,N,i) = ray_i.u;
     RTCRayN_v(ray_o,N,i) = ray_i.v;
-    RTCRayN_Ng_x(ray_o,N,i) = ray_i.Ng[0];
-    RTCRayN_Ng_y(ray_o,N,i) = ray_i.Ng[1];
-    RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ng[2];
+    RTCRayN_Ng_x(ray_o,N,i) = ray_i.Ngx;
+    RTCRayN_Ng_y(ray_o,N,i) = ray_i.Ngy;
+    RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ngz;
   }
 
   __forceinline RTCRay getRay(RTCRay4& ray_i, size_t i)
   {
     RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
+    ray_o.orgx = ray_i.orgx[i];
+    ray_o.orgy = ray_i.orgy[i];
+    ray_o.orgz = ray_i.orgz[i];
+    ray_o.dirx = ray_i.dirx[i];
+    ray_o.diry = ray_i.diry[i];
+    ray_o.dirz = ray_i.dirz[i];
     ray_o.tnear = ray_i.tnear[i];
     ray_o.tfar = ray_i.tfar[i];
     ray_o.time = ray_i.time[i];
@@ -364,21 +364,21 @@ namespace embree
     ray_o.primID = ray_i.primID[i];
     ray_o.u = ray_i.u[i];
     ray_o.v = ray_i.v[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
+    ray_o.Ngx = ray_i.Ngx[i];
+    ray_o.Ngy = ray_i.Ngy[i];
+    ray_o.Ngz = ray_i.Ngz[i];
     return ray_o;
   }
 
   __forceinline RTCRay getRay(RTCRay8& ray_i, size_t i)
   {
     RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
+    ray_o.orgx = ray_i.orgx[i];
+    ray_o.orgy = ray_i.orgy[i];
+    ray_o.orgz = ray_i.orgz[i];
+    ray_o.dirx = ray_i.dirx[i];
+    ray_o.diry = ray_i.diry[i];
+    ray_o.dirz = ray_i.dirz[i];
     ray_o.tnear = ray_i.tnear[i];
     ray_o.tfar = ray_i.tfar[i];
     ray_o.time = ray_i.time[i];
@@ -388,21 +388,21 @@ namespace embree
     ray_o.primID = ray_i.primID[i];
     ray_o.u = ray_i.u[i];
     ray_o.v = ray_i.v[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
+    ray_o.Ngx = ray_i.Ngx[i];
+    ray_o.Ngy = ray_i.Ngy[i];
+    ray_o.Ngz = ray_i.Ngz[i];
     return ray_o;
   }
 
   __forceinline RTCRay getRay(RTCRay16& ray_i, size_t i)
   {
     RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
+    ray_o.orgx = ray_i.orgx[i];
+    ray_o.orgy = ray_i.orgy[i];
+    ray_o.orgz = ray_i.orgz[i];
+    ray_o.dirx = ray_i.dirx[i];
+    ray_o.diry = ray_i.diry[i];
+    ray_o.dirz = ray_i.dirz[i];
     ray_o.tnear = ray_i.tnear[i];
     ray_o.tfar = ray_i.tfar[i];
     ray_o.time = ray_i.time[i];
@@ -412,21 +412,21 @@ namespace embree
     ray_o.primID = ray_i.primID[i];
     ray_o.u = ray_i.u[i];
     ray_o.v = ray_i.v[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
+    ray_o.Ngx = ray_i.Ngx[i];
+    ray_o.Ngy = ray_i.Ngy[i];
+    ray_o.Ngz = ray_i.Ngz[i];
     return ray_o;
   }
 
   __forceinline RTCRay getRay(RTCRayN* ray_i, size_t N, size_t i)
   {
     RTCRay ray_o;
-    ray_o.org[0] = RTCRayN_org_x(ray_i,N,i);
-    ray_o.org[1] = RTCRayN_org_y(ray_i,N,i);
-    ray_o.org[2] = RTCRayN_org_z(ray_i,N,i);
-    ray_o.dir[0] = RTCRayN_dir_x(ray_i,N,i);
-    ray_o.dir[1] = RTCRayN_dir_y(ray_i,N,i);
-    ray_o.dir[2] = RTCRayN_dir_z(ray_i,N,i);
+    ray_o.orgx = RTCRayN_org_x(ray_i,N,i);
+    ray_o.orgy = RTCRayN_org_y(ray_i,N,i);
+    ray_o.orgz = RTCRayN_org_z(ray_i,N,i);
+    ray_o.dirx = RTCRayN_dir_x(ray_i,N,i);
+    ray_o.diry = RTCRayN_dir_y(ray_i,N,i);
+    ray_o.dirz = RTCRayN_dir_z(ray_i,N,i);
     ray_o.tnear = RTCRayN_tnear(ray_i,N,i);
     ray_o.tfar  = RTCRayN_tfar(ray_i,N,i);
     ray_o.time = RTCRayN_time(ray_i,N,i);
@@ -436,9 +436,9 @@ namespace embree
     ray_o.primID = RTCRayN_primID(ray_i,N,i);
     ray_o.u = RTCRayN_u(ray_i,N,i);
     ray_o.v = RTCRayN_v(ray_i,N,i);
-    ray_o.Ng[0] = RTCRayN_Ng_x(ray_i,N,i);
-    ray_o.Ng[1] = RTCRayN_Ng_y(ray_i,N,i);
-    ray_o.Ng[2] = RTCRayN_Ng_z(ray_i,N,i);
+    ray_o.Ngx = RTCRayN_Ng_x(ray_i,N,i);
+    ray_o.Ngy = RTCRayN_Ng_y(ray_i,N,i);
+    ray_o.Ngz = RTCRayN_Ng_z(ray_i,N,i);
     return ray_o;
   }
 
