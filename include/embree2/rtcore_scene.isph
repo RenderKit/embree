@@ -127,9 +127,9 @@ RTCORE_API void rtcIntersect1 (RTCScene scene, const uniform RTCIntersectContext
  *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
  *  valid mask and ray have both to be aligned to sizeof(varing float)
  *  bytes. */
-RTCORE_API void rtcIntersect4  (const void* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
-RTCORE_API void rtcIntersect8  (const void* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
-RTCORE_API void rtcIntersect16 (const void* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTCORE_API void rtcIntersect4  (const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTCORE_API void rtcIntersect8  (const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTCORE_API void rtcIntersect16 (const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
 inline void rtcIntersect (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
 {
@@ -139,11 +139,11 @@ inline void rtcIntersect (RTCScene scene, const uniform RTCIntersectContext* uni
   }
 
   if (sizeof(varying float) == 16)
-    rtcIntersect4(&imask,scene,context,&ray);
+    rtcIntersect4((uniform int* uniform)&imask,scene,context,&ray);
   else if (sizeof(varying float) == 32)
-    rtcIntersect8(&imask,scene,context,&ray);
+    rtcIntersect8((uniform int* uniform)&imask,scene,context,&ray);
   else if (sizeof(varying float) == 64)
-    rtcIntersect16(&imask,scene,context,&ray);
+    rtcIntersect16((uniform int* uniform)&imask,scene,context,&ray);
 }
 
 /*! Intersects a stream of M rays in AOS layout with the scene. This
@@ -188,9 +188,9 @@ RTCORE_API void rtcOccluded1 (RTCScene scene, const uniform RTCIntersectContext*
  *  only be called for scenes with the RTC_INTERSECT_VARYING flag
  *  set. The valid mask and ray have both to be aligned to
  *  sizeof(varing float) bytes. */
-RTCORE_API void rtcOccluded4 (const void* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
-RTCORE_API void rtcOccluded8 (const void* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
-RTCORE_API void rtcOccluded16(const void* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTCORE_API void rtcOccluded4 (const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTCORE_API void rtcOccluded8 (const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTCORE_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
 inline void rtcOccluded (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray)
 {
@@ -200,11 +200,11 @@ inline void rtcOccluded (RTCScene scene, const uniform RTCIntersectContext* unif
   }
 
   if (sizeof(varying float) == 16)
-    rtcOccluded4(&imask,scene,context,&ray);
+    rtcOccluded4((uniform int* uniform)&imask,scene,context,&ray);
   else if (sizeof(varying float) == 32)
-    rtcOccluded8(&imask,scene,context,&ray);
+    rtcOccluded8((uniform int* uniform)&imask,scene,context,&ray);
   else if (sizeof(varying float) == 64)
-    rtcOccluded16(&imask,scene,context,&ray);
+    rtcOccluded16((uniform int* uniform)&imask,scene,context,&ray);
 }
 
 
