@@ -95,7 +95,7 @@ namespace embree
             if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
 
-            const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+            const unsigned int octantID = movemask(vfloat4(Vec3fa(ray.dir)) < 0.0f) & 0x7;
 
             assert(octantID < 8);
             octants[octantID][rays_in_octant[octantID]++] = inputRayID;
