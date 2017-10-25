@@ -128,7 +128,7 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcDeviceNewScene(g_device);
   rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
   rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHint(g_scene,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
 
   /* create some triangulated spheres */
   for (int i=0; i<numSpheres; i++)

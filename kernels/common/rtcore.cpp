@@ -158,13 +158,13 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetBuildHint (RTCScene hscene, RTCBuildHint hint) 
+  RTCORE_API void rtcSetBuildHints (RTCScene hscene, RTCBuildHints hint) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBuildHint);
+    RTCORE_TRACE(rtcSetBuildHints);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->setBuildHint(hint);
+    scene->setBuildHints(hint);
     RTCORE_CATCH_END2(scene);
   }
   

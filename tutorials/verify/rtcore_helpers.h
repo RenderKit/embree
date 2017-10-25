@@ -584,7 +584,7 @@ namespace embree
     else { assert(false); return ""; }
   }
 
-  inline std::string to_string(RTCBuildHint hint_flags)
+  inline std::string to_string(RTCBuildHints hint_flags)
   {
     if  (hint_flags & RTC_BUILD_HINT_DYNAMIC) return "DynamicAccel";
     else return "StaticAccel";
@@ -592,12 +592,12 @@ namespace embree
 
   struct SceneFlags
   {
-    SceneFlags (RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHint hflags)
+    SceneFlags (RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHints hflags)
     : aflags(aflags), qflags(qflags), hflags(hflags) {}
 
     RTCAccelFlags aflags;
     RTCBuildQuality qflags;
-    RTCBuildHint hflags;
+    RTCBuildHints hflags;
   };
   
   inline std::string to_string(SceneFlags sflags) {
@@ -628,7 +628,7 @@ namespace embree
     if (i & 2) accel_flags |= RTC_ACCEL_COMPACT;
     if (i & 4) accel_flags |= RTC_ACCEL_ROBUST;
     int quality_flags = (i>>3)&3;
-    return SceneFlags((RTCAccelFlags)accel_flags,(RTCBuildQuality)quality_flags,(RTCBuildHint)hint_flags);
+    return SceneFlags((RTCAccelFlags)accel_flags,(RTCBuildQuality)quality_flags,(RTCBuildHints)hint_flags);
   }
 
   static const size_t numSceneGeomFlags = 32;

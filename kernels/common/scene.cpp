@@ -58,7 +58,7 @@ namespace embree
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
     if (device->hint_flags != -1)
-      hint_flags = (RTCBuildHint) device->hint_flags;
+      hint_flags = (RTCBuildHints) device->hint_flags;
   }
   
   void Scene::printStatistics()
@@ -697,7 +697,7 @@ namespace embree
     flags_modified = true;
   }
 
-  void Scene::setBuildHint(RTCBuildHint hint_flags_i)
+  void Scene::setBuildHints(RTCBuildHints hint_flags_i)
   {
     if (hint_flags == hint_flags_i) return;
     hint_flags = hint_flags_i;

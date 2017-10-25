@@ -48,7 +48,7 @@ enum RTCBuildQuality
 };
 
 /*! some additional flags to control the build */
-enum RTCBuildHint
+enum RTCBuildHints
 {
   RTC_BUILD_HINT_NONE = 0,
   RTC_BUILD_HINT_DYNAMIC = (1 << 0)
@@ -93,7 +93,7 @@ RTCORE_API void rtcSetAccelFlags(RTCScene scene, enum RTCAccelFlags accel);
 RTCORE_API void rtcSetBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
 
 /*! sets the build hints of a scene */
-RTCORE_API void rtcSetBuildHint(RTCScene scene, enum RTCBuildHint hint);
+RTCORE_API void rtcSetBuildHints(RTCScene scene, enum RTCBuildHints hints);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing

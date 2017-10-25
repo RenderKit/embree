@@ -167,7 +167,7 @@ namespace embree
     {
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHint(scene,sflags.hflags);
+      rtcSetBuildHints(scene,sflags.hflags);
     }
 
     operator RTCScene() const {
@@ -927,7 +927,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHint(scene,sflags.hflags);
+      rtcSetBuildHints(scene,sflags.hflags);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
@@ -954,7 +954,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHint(scene,sflags.hflags);
+      rtcSetBuildHints(scene,sflags.hflags);
       rtcAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,gflags,1));
       rtcAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,gflags,2));
       rtcAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,gflags,1));
@@ -1010,7 +1010,7 @@ namespace embree
         RTCScene scene = rtcDeviceNewScene(device);
         rtcSetAccelFlags(scene,sflags.aflags);
         rtcSetBuildQuality(scene,sflags.qflags);
-        rtcSetBuildHint(scene,sflags.hflags);
+        rtcSetBuildHints(scene,sflags.hflags);
         
         RTCGeometry geom = rtcNewTriangleMesh(device, gflags, 1);
         rtcSetBuffer(geom, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
@@ -2108,7 +2108,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHint(scene,sflags.hflags);
+      rtcSetBuildHints(scene,sflags.hflags);
       RTCGeometry geom = rtcNewTriangleMesh (device, gflags,1);
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
       rtcSetBuffer(geom, RTC_INDEX_BUFFER , triangles, 0, sizeof(Triangle), 1);
@@ -2181,7 +2181,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHint(scene,sflags.hflags);
+      rtcSetBuildHints(scene,sflags.hflags);
       RTCGeometry geom = rtcNewQuadMesh (device, gflags, 1);
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
       rtcSetBuffer(geom, RTC_INDEX_BUFFER , quads, 0, 4*sizeof(int), 1);

@@ -156,7 +156,7 @@ namespace embree {
     RTCScene scene = rtcDeviceNewScene(g_device);
     rtcSetAccelFlags(scene,RTC_ACCEL_DEFAULT);
     rtcSetBuildQuality(scene, RTC_BUILD_QUALITY_LOW);
-    rtcSetBuildHint(scene, RTC_BUILD_HINT_DYNAMIC);
+    rtcSetBuildHints(scene, RTC_BUILD_HINT_DYNAMIC);
     return scene;
   }
 
