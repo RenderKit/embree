@@ -10,3 +10,5 @@ kernels/hash.h
 build
 models
 tbb
+doc
+
