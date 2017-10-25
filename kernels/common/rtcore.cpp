@@ -138,13 +138,33 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetBuildMode (RTCScene hscene, RTCAccelFlags accel, RTCBuildQuality quality, RTCBuildHint hint) 
+  RTCORE_API void rtcSetAccelFlags (RTCScene hscene, RTCAccelFlags accel) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBuildMode);
+    RTCORE_TRACE(rtcSetAccelFlags);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->setBuildMode(accel,quality,hint);
+    scene->setAccelFlags(accel);
+    RTCORE_CATCH_END2(scene);
+  }
+
+  RTCORE_API void rtcSetBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBuildQuality);
+    RTCORE_VERIFY_HANDLE(hscene);
+    scene->setBuildQuality(quality);
+    RTCORE_CATCH_END2(scene);
+  }
+
+  RTCORE_API void rtcSetBuildHint (RTCScene hscene, RTCBuildHint hint) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBuildHint);
+    RTCORE_VERIFY_HANDLE(hscene);
+    scene->setBuildHint(hint);
     RTCORE_CATCH_END2(scene);
   }
   

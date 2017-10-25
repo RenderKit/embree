@@ -994,7 +994,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_GEOMETRY_STATIC);
-  rtcSetBuildMode(scene_out, RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_NORMAL, RTC_BUILD_HINT_NONE);
 
   /* assign shaders */
   for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
@@ -1011,7 +1010,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
   /* commit changes to scene */
   //progressStart();
-  //rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,NULL);
+  //rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
   rtcCommit (scene_out);
   //rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
   //progressEnd();

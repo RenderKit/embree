@@ -86,8 +86,14 @@ typedef bool (*RTCProgressMonitorFunc)(void* ptr, const double n);
 /*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr);
 
-/*! sets the build mode for a scene */
-RTCORE_API void rtcSetBuildMode(RTCScene scene, enum RTCAccelFlags accel, enum RTCBuildQuality quality, enum RTCBuildHint hint);
+/*! sets the acceleration structure for a scene */
+RTCORE_API void rtcSetAccelFlags(RTCScene scene, enum RTCAccelFlags accel);
+
+/*! sets the build quality of a scene */
+RTCORE_API void rtcSetBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
+
+/*! sets the build hints of a scene */
+RTCORE_API void rtcSetBuildHint(RTCScene scene, enum RTCBuildHint hint);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing

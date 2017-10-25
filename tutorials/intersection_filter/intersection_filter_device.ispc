@@ -732,7 +732,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(g_scene,RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_HIGH, RTC_BUILD_HINT_NONE);
+  rtcSetBuildQuality(g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
 
   /* add cube */
   addCube(g_scene,make_Vec3f(0.0f,0.0f,0.0f),make_Vec3f(10.0f,1.0f,1.0f),45.0f);

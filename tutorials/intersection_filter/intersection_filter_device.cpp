@@ -734,7 +734,7 @@ extern "C" void device_init (char* cfg)
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(g_scene,RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_HIGH, RTC_BUILD_HINT_NONE);
+  rtcSetBuildQuality(g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
 
   /* add cube */
   addCube(g_scene,Vec3fa(0.0f,0.0f,0.0f),Vec3fa(10.0f,1.0f,1.0f),45.0f);

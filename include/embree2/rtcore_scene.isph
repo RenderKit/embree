@@ -81,8 +81,14 @@ typedef unmasked uniform bool (*uniform RTCProgressMonitorFunc)(void* uniform pt
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* uniform ptr);
 
-/*! sets the build mode for a scene */
-RTCORE_API void rtcSetBuildMode(RTCScene scene, uniform RTCAccelFlags accel, uniform RTCBuildQuality quality, uniform RTCBuildHint hint);
+/*! sets the build mode of a scene */
+RTCORE_API void rtcSetAccelFlags(RTCScene scene, uniform RTCAccelFlags accel);
+
+/*! sets the build quality of a scene */
+RTCORE_API void rtcSetBuildQuality(RTCScene scene, uniform RTCBuildQuality quality);
+
+/*! sets the build hints of a scene */
+RTCORE_API void rtcSetBuildHint(RTCScene scene, uniform RTCBuildHint hint);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing

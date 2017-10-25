@@ -183,7 +183,7 @@ extern "C" void device_init (char* cfg)
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildMode(g_scene,RTC_ACCEL_ROBUST,RTC_BUILD_QUALITY_NORMAL,RTC_BUILD_HINT_NONE);
+  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
 
   /* add ground plane */
   addGroundPlane(g_scene);

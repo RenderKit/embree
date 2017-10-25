@@ -86,7 +86,9 @@ namespace embree {
   RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHint hflags)
   {
     RTCScene scene_out = rtcDeviceNewScene(g_device);
-    rtcSetBuildMode(scene_out,aflags,qflags,hflags);
+    rtcSetAccelFlags(scene_out,aflags);
+    rtcSetBuildQuality(scene_out,qflags);
+    rtcSetBuildHint(scene_out,hflags);
     return scene_out;
   }
 
