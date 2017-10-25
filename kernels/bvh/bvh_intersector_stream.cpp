@@ -274,6 +274,7 @@ namespace embree
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded_incoherent(Accel::Intersectors* __restrict__ This, RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       assert(!isCoherent(context->user->flags));
+      assert(types & BVH_FLAG_ALIGNED_NODE);
 
       __aligned(64) TravRayKStream<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
 
@@ -329,9 +330,6 @@ namespace embree
           __aligned(64) unsigned int child_mask[Nx];
           vint<Nx>::storeu(child_mask,vmask); // this explicit store here causes much better code generation
           
-          /* select next child and push other children */
-          //const BaseNode* node = cur.baseNode(types);
-
           /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
           assert(r < N);
@@ -368,17 +366,6 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);        
 
-#if 0
-        size_t lazy_node = 0;
-        terminated |= PrimitiveIntersector::occluded(cur_mask,inputPackets,context,prim,num,lazy_node);
-
-        if (unlikely(lazy_node)) {
-          stackPtr->ptr = lazy_node;
-          stackPtr->dist = cur_mask;
-          stackPtr++;
-        }
-
-#else
         size_t bits = cur_mask;
         size_t lazy_node = 0;
 
@@ -399,8 +386,6 @@ namespace embree
             stackPtr++;
           }
         }
-#endif
-
         if (unlikely(terminated == (size_t)-1)) { break; }
       }
 

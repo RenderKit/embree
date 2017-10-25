@@ -160,6 +160,7 @@ namespace embree
         return m_node_hit;
       }
       
+      // todo: explicit 16-wide path for KNL
       __forceinline static vint<Nx> traversalLoopOccluded(size_t bits,
                                                           TravRayKStreamFast<K>* __restrict__ packets,
                                                           const AlignedNode* __restrict__ node,
