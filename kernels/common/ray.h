@@ -22,11 +22,7 @@
 
 namespace embree
 {
-#if defined(__X86_64__)
-  static const size_t MAX_INTERNAL_STREAM_SIZE = 64;
-#else
   static const size_t MAX_INTERNAL_STREAM_SIZE = 32;
-#endif
 
   /* Ray structure for K rays */
   template<int K>

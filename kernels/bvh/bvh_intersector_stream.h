@@ -159,12 +159,112 @@ namespace embree
         }
         return m_node_hit;
       }
+      
+      // todo: explicit 16-wide path for KNL
+      __forceinline static vint<Nx> traversalLoopOccluded(size_t bits,
+                                                          TravRayKStreamFast<K>* __restrict__ packets,
+                                                          const AlignedNode* __restrict__ node,
+                                                          const NearFarPrecalculations &nf,
+                                                          const int shiftTable[32])
+      {
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
+        assert(bits);
+        vint<Nx> vmask(zero);
+        do
+        {   
+          STAT3(shadow.trav_nodes,1,1,1);
+          const size_t rayID = __bscf(bits);
+          assert(rayID < MAX_INTERNAL_STREAM_SIZE);
+          TravRayKStream<K,robust> &p = packets[rayID / K];
+          const size_t i = rayID % K;
+          const vint<Nx> bitmask(shiftTable[rayID]);
+          const vfloat<Nx> tNearX = msub(bminX, p.rdir.x[i], p.org_rdir.x[i]);
+          const vfloat<Nx> tNearY = msub(bminY, p.rdir.y[i], p.org_rdir.y[i]);
+          const vfloat<Nx> tNearZ = msub(bminZ, p.rdir.z[i], p.org_rdir.z[i]);
+          const vfloat<Nx> tFarX  = msub(bmaxX, p.rdir.x[i], p.org_rdir.x[i]);
+          const vfloat<Nx> tFarY  = msub(bmaxY, p.rdir.y[i], p.org_rdir.y[i]);
+          const vfloat<Nx> tFarZ  = msub(bmaxZ, p.rdir.z[i], p.org_rdir.z[i]); 
+          const vfloat<Nx> tNear  = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(p.tnear[i]));
+          const vfloat<Nx> tFar   = mini(tFarX , tFarY , tFarZ,  vfloat<Nx>(p.tfar[i]));      
+
+#if defined(__AVX512ER__)
+          const vboolx m_node((1 << N)-1);
+          const vbool<Nx> hit_mask = le(m_node,tNear,tFar);
+          vmask = mask_or(hit_mask, vmask, vmask, bitmask);
+#else
+          const vbool<Nx> hit_mask   = tNear <= tFar;
+#if defined(__AVX2__)
+          vmask = vmask | (bitmask & vint<Nx>(hit_mask));
+#else
+          vmask = select(hit_mask, vmask | bitmask, vmask);
+#endif
+#endif
+        } while(bits);     
+        return vmask;        
+      }
+
+      __forceinline static vint<Nx> traversalLoopOccluded(size_t bits,
+                                                          TravRayKStreamRobust<K>* __restrict__ packets,
+                                                          const AlignedNode* __restrict__ node,
+                                                          const NearFarPrecalculations &nf,
+                                                          const int shiftTable[32])
+      {
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
+        assert(bits);
+        vint<Nx> vmask(zero);
+        do
+        {   
+          STAT3(shadow.trav_nodes,1,1,1);
+          const size_t rayID = __bscf(bits);
+          assert(rayID < MAX_INTERNAL_STREAM_SIZE);
+          TravRayKStream<K,robust> &p = packets[rayID / K];
+          const size_t i = rayID % K;
+          const vint<Nx> bitmask(shiftTable[rayID]);
+          const vfloat<Nx> tNearX  = (bminX - p.org.x[i]) * p.rdir.x[i];
+          const vfloat<Nx> tNearY  = (bminY - p.org.y[i]) * p.rdir.y[i];
+          const vfloat<Nx> tNearZ  = (bminZ - p.org.z[i]) * p.rdir.z[i];
+          const vfloat<Nx> tFarX   = (bmaxX - p.org.x[i]) * p.rdir.x[i];
+          const vfloat<Nx> tFarY   = (bmaxY - p.org.y[i]) * p.rdir.y[i];
+          const vfloat<Nx> tFarZ   = (bmaxZ - p.org.z[i]) * p.rdir.z[i]; 
+          const vfloat<Nx> tNear   = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(p.tnear[i]));
+          const vfloat<Nx> tFar    = mini(tFarX , tFarY , tFarZ,  vfloat<Nx>(p.tfar[i]));          
+          const float round_down   = 1.0f-2.0f*float(ulp); 
+          const float round_up     = 1.0f+2.0f*float(ulp);
+#if defined(__AVX512ER__)
+          const vboolx m_node((1 << N)-1);
+          const vbool<Nx> hit_mask = le(m_node,round_down*tNear,round_up*tFar);
+          vmask = mask_or(hit_mask, vmask, vmask, bitmask);
+#else
+          const vbool<Nx> hit_mask = round_down*tNear <= round_up*tFar;
+#if defined(__AVX2__)
+          vmask = vmask | (bitmask & vint<Nx>(hit_mask));
+#else
+          vmask = select(hit_mask, vmask | bitmask, vmask);
+#endif
+#endif
+        } while(bits);     
+        return vmask;        
+      }
+                                                         
 
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
     public:
       static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+
+      static void occluded_incoherent (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+
     };
 
 

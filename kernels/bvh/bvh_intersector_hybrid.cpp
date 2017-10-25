@@ -164,7 +164,8 @@ namespace embree
       do
       {
         const size_t valid_index = __bsf(valid_bits);
-        const vbool<K> octant_valid = octant[valid_index] == octant;
+        vbool<K> octant_valid = octant[valid_index] == octant;
+        if (!single) octant_valid = valid; // deactivate octant sorting in pure chunk mode, otherwise instance traversal performance goes down 
 
 #if defined(__AVX__)
         STAT3(normal.trav_hit_boxes[__popcnt(movemask(octant_valid))], 1, 1, 1);

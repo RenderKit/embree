@@ -124,6 +124,46 @@ namespace embree
           return !valid0;
         }
 
+        static __forceinline void intersect(RayK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
+        {
+          PrecalculationsK pre(ray.tnear <= ray.tfar,ray); // FIXME: might cause trouble
+          for (size_t i=0; i<num; i++) {
+            IntersectorK::intersect(pre,ray,k,context,prim[i]);
+          }
+        }
+        
+        static __forceinline bool occluded(RayK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node) 
+        {
+          PrecalculationsK pre(ray.tnear <= ray.tfar,ray); // FIXME: might cause trouble
+          for (size_t i=0; i<num; i++) {
+            if (IntersectorK::occluded(pre,ray,k,context,prim[i]))
+              return true;
+          }
+          return false;
+        }
+
+
+        static __forceinline size_t occluded(size_t cur_mask, RayK<K>** __restrict__ inputPackets, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node) 
+        {
+          size_t m_occluded = 0;
+          for (size_t i=0; i<num; i++) {
+            size_t bits = cur_mask & (~m_occluded);
+            for (; bits!=0; ) 
+            {
+              const size_t rayID = __bscf(bits);
+              RayK<K> &ray = *inputPackets[rayID / K];
+              const size_t k = rayID % K;            
+              PrecalculationsK pre(ray.tnear <= ray.tfar,ray); // FIXME: might cause trouble
+              if (IntersectorK::occluded(pre,ray,k,context,prim[i]))
+              {
+                m_occluded |= (size_t)1 << rayID;
+                ray.geomID[k] = 0; 
+              }
+            }
+          }
+          return m_occluded;
+        }
+
       };
   }
 }

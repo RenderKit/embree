@@ -27,6 +27,7 @@ namespace embree {
 //#define rtcOccluded1M rtcIntersect1M
 
 #define SIMPLE_SHADING 1
+#define OBJ_MATERIAL 1
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
@@ -357,6 +358,7 @@ void renderTileStandard(int taskIndex,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
     {
+#if OBJ_MATERIAL == 1
       Vec3fa Kd = Vec3fa(0.5f);
       DifferentialGeometry dg;
       dg.geomID = ray.geomID;
@@ -377,7 +379,9 @@ void renderTileStandard(int taskIndex,
       }
       
       color = Kd*dot(neg(ray.dir),dg.Ns);
-      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+#else
+      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+#endif
     }
 #else
       color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
