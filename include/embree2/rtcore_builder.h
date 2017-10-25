@@ -44,7 +44,7 @@ struct RTCBuildSettings
 };
 
 /*! Creates default build settings.  */
-inline struct RTCBuildSettings rtcDefaultBuildSettings()
+__forceinline struct RTCBuildSettings rtcDefaultBuildSettings()
 {
   struct RTCBuildSettings settings;
   settings.size = sizeof(settings);
