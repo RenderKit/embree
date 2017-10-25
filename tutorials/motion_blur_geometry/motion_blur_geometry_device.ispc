@@ -268,7 +268,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform
 RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
 {
   RTCScene scene = rtcDeviceNewScene(g_device);
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(uniform unsigned int), 12);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(uniform float), 8);
   rtcAttachGeometry(scene,geom);
@@ -342,18 +342,18 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds& bounds_o)
+unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds* uniform bounds_o)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
   uniform float ft = 2.0f*M_PI * (uniform float) time / (uniform float) (sphere.num_time_steps-1);
   uniform Vec3f p = sphere.p + make_Vec3f(cos(ft),0.0f,sin(ft));
-  bounds_o.lower_x = p.x-sphere.r;
-  bounds_o.lower_y = p.y-sphere.r;
-  bounds_o.lower_z = p.z-sphere.r;
-  bounds_o.upper_x = p.x+sphere.r;
-  bounds_o.upper_y = p.y+sphere.r;
-  bounds_o.upper_z = p.z+sphere.r;
+  bounds_o->lower_x = p.x-sphere.r;
+  bounds_o->lower_y = p.y-sphere.r;
+  bounds_o->lower_z = p.z-sphere.r;
+  bounds_o->upper_x = p.x+sphere.r;
+  bounds_o->upper_y = p.y+sphere.r;
+  bounds_o->upper_z = p.z+sphere.r;
 }
 
 unmasked void sphereIntersectFuncN(const uniform int* uniform valid, 
@@ -473,7 +473,7 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
 uniform unsigned int addGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);

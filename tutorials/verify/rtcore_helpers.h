@@ -670,7 +670,6 @@ namespace embree
     }
     
     size_t M = (Nrays+N-1)/N;
-    assert(sizeof(RTCRayN) <= sizeof(RTCRay)*N);
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
     case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
@@ -685,42 +684,42 @@ namespace embree
     }
   }
 	
-	__noinline void IntersectWithNpMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t N)
-	{
-		assert(N < 1024);
-		const size_t alignment = size_t(rays) % 64;
-		__aligned(64) char data[1024 * sizeof(RTCRay) + 64];
-		RTCRayN* ray = (RTCRayN*)&data[alignment];
-		for (size_t j = 0; j < N; j++) setRay(ray, N, j, rays[j]);
-
-		RTCRayNp rayp;
-		rayp.orgx = &RTCRayN_org_x(ray, N, 0);
-		rayp.orgy = &RTCRayN_org_y(ray, N, 0);
-		rayp.orgz = &RTCRayN_org_z(ray, N, 0);
-		rayp.dirx = &RTCRayN_dir_x(ray, N, 0);
-		rayp.diry = &RTCRayN_dir_y(ray, N, 0);
-		rayp.dirz = &RTCRayN_dir_z(ray, N, 0);
-		rayp.tnear = &RTCRayN_tnear(ray, N, 0);
-		rayp.tfar = &RTCRayN_tfar(ray, N, 0);
-		rayp.time = &RTCRayN_time(ray, N, 0);
-		rayp.mask = &RTCRayN_mask(ray, N, 0);
-		rayp.instID = &RTCRayN_instID(ray, N, 0);
-		rayp.geomID = &RTCRayN_geomID(ray, N, 0);
-		rayp.primID = &RTCRayN_primID(ray, N, 0);
-		rayp.u = &RTCRayN_u(ray, N, 0);
-		rayp.v = &RTCRayN_v(ray, N, 0);
-		rayp.Ngx = &RTCRayN_Ng_x(ray, N, 0);
-		rayp.Ngy = &RTCRayN_Ng_y(ray, N, 0);
-		rayp.Ngz = &RTCRayN_Ng_z(ray, N, 0);
-
-		switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-		case VARIANT_INTERSECT: rtcIntersectNp(scene, context, rayp, N); break;
-		case VARIANT_OCCLUDED: rtcOccludedNp(scene, context, rayp, N); break;
-		default: assert(false);
-		}
-
-		for (size_t j = 0; j < N; j++) rays[j] = getRay(ray, N, j);
-	}
+  __noinline void IntersectWithNpMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t N)
+  {
+    assert(N < 1024);
+    const size_t alignment = size_t(rays) % 64;
+    __aligned(64) char data[1024 * sizeof(RTCRay) + 64];
+    RTCRayN* ray = (RTCRayN*)&data[alignment];
+    for (size_t j = 0; j < N; j++) setRay(ray, N, j, rays[j]);
+    
+    RTCRayNp rayp;
+    rayp.orgx = &RTCRayN_org_x(ray, N, 0);
+    rayp.orgy = &RTCRayN_org_y(ray, N, 0);
+    rayp.orgz = &RTCRayN_org_z(ray, N, 0);
+    rayp.dirx = &RTCRayN_dir_x(ray, N, 0);
+    rayp.diry = &RTCRayN_dir_y(ray, N, 0);
+    rayp.dirz = &RTCRayN_dir_z(ray, N, 0);
+    rayp.tnear = &RTCRayN_tnear(ray, N, 0);
+    rayp.tfar = &RTCRayN_tfar(ray, N, 0);
+    rayp.time = &RTCRayN_time(ray, N, 0);
+    rayp.mask = &RTCRayN_mask(ray, N, 0);
+    rayp.instID = &RTCRayN_instID(ray, N, 0);
+    rayp.geomID = &RTCRayN_geomID(ray, N, 0);
+    rayp.primID = &RTCRayN_primID(ray, N, 0);
+    rayp.u = &RTCRayN_u(ray, N, 0);
+    rayp.v = &RTCRayN_v(ray, N, 0);
+    rayp.Ngx = &RTCRayN_Ng_x(ray, N, 0);
+    rayp.Ngy = &RTCRayN_Ng_y(ray, N, 0);
+    rayp.Ngz = &RTCRayN_Ng_z(ray, N, 0);
+    
+    switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+    case VARIANT_INTERSECT: rtcIntersectNp(scene, context, &rayp, N); break;
+    case VARIANT_OCCLUDED: rtcOccludedNp(scene, context, &rayp, N); break;
+    default: assert(false);
+    }
+    
+    for (size_t j = 0; j < N; j++) rays[j] = getRay(ray, N, j);
+  }
 	
   __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
   {
@@ -735,8 +734,8 @@ namespace embree
     case MODE_INTERSECT1:
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,&context,rays[i]); break;
-      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,&context,rays[i]); break;
+      case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,&context,&rays[i]); break;
+      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,&context,&rays[i]); break;
       default: assert(false);
       }
       break;
@@ -753,8 +752,8 @@ namespace embree
         for (size_t j=0; j<M; j++) setRay(ray4,j,rays[i+j]);
         for (size_t j=M; j<4; j++) setRay(ray4,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect4(valid,scene,&context,ray4); break;
-        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,&context,ray4); break;
+        case VARIANT_INTERSECT: rtcIntersect4(valid,scene,&context,&ray4); break;
+        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,&context,&ray4); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
@@ -772,8 +771,8 @@ namespace embree
         for (size_t j=0; j<M; j++) setRay(ray8,j,rays[i+j]);
         for (size_t j=M; j<8; j++) setRay(ray8,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect8(valid,scene,&context,ray8); break;
-        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,&context,ray8); break;
+        case VARIANT_INTERSECT: rtcIntersect8(valid,scene,&context,&ray8); break;
+        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,&context,&ray8); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
@@ -791,8 +790,8 @@ namespace embree
         for (size_t j=0; j<M ; j++) setRay(ray16,j,rays[i+j]);
         for (size_t j=M; j<16; j++) setRay(ray16,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect16(valid,scene,&context,ray16); break;
-        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,&context,ray16); break;
+        case VARIANT_INTERSECT: rtcIntersect16(valid,scene,&context,&ray16); break;
+        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,&context,&ray16); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);

@@ -30,14 +30,14 @@ namespace embree
   void buildProgress (size_t dn, void* userPtr) {
   }
 
-  void splitPrimitive (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lprim, RTCBounds& rprim, void* userPtr)
+  void splitPrimitive (const RTCBuildPrimitive* prim, unsigned dim, float pos, RTCBounds* lprim, RTCBounds* rprim, void* userPtr)
   {
     assert(dim < 3);
-    assert(prim.geomID == 0);
-    (BBox3fa&) lprim = (BBox3fa&) prim;
-    (BBox3fa&) rprim = (BBox3fa&) prim;
-    (&lprim.upper_x)[dim] = pos;
-    (&rprim.lower_x)[dim] = pos;
+    assert(prim->geomID == 0);
+    *(BBox3fa*) lprim = *(BBox3fa*) prim;
+    *(BBox3fa*) rprim = *(BBox3fa*) prim;
+    (&lprim->upper_x)[dim] = pos;
+    (&rprim->lower_x)[dim] = pos;
   }
 
   struct Node
@@ -132,7 +132,7 @@ namespace embree
 
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims.data(),prims.size(),
+      Node* root = (Node*) rtcBuildBVH(bvh,&settings,prims.data(),prims.size(),
                                        InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,splitPrimitive,buildProgress,nullptr);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;

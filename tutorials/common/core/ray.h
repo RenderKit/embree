@@ -74,8 +74,8 @@
 
 typedef Ray Ray1;
 
-__forceinline RTCRay& RTCRay_(Ray& ray) {
-  return (RTCRay&)ray;
+__forceinline RTCRay* RTCRay_(Ray& ray) {
+  return (RTCRay*)&ray;
 }
 
   /*! Outputs ray to stream. */ 

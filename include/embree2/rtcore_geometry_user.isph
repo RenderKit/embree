@@ -25,7 +25,7 @@ typedef unmasked void (*RTCBoundsFunc)(void* uniform userPtr,            /*!< po
                                        void* uniform geomUserPtr,        /*!< pointer to geometry user data */
                                        uniform unsigned int item,              /*!< item to calculate bounds for */
                                        uniform unsigned int time,              /*!< time to calculate bounds for */
-                                       uniform RTCBounds& bounds_o       /*!< returns calculated bounds */);
+                                       uniform RTCBounds* uniform bounds_o       /*!< returns calculated bounds */);
 
 
 /*! Type of intersect function pointer for ray packets of size N. */

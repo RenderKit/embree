@@ -131,7 +131,7 @@ typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*
                                               uniform unsigned int N                 /*!< number of points to displace */ );
 
 /*! \brief Defines an opaque geometry type */
-typedef uniform struct __RTCGeometry {}* uniform RTCGeometry;
+typedef uniform struct __RTCGeometry* uniform RTCGeometry;
 
 /*! \brief Creates a new scene instance. 
 

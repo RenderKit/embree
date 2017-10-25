@@ -40,7 +40,7 @@ int disabledID = -1;
 unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
 {
   /* create a triangulated sphere */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, 1);
 
   /* map triangle and vertex buffer */
   Vertex*   vertices  = (Vertex*  ) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
@@ -95,7 +95,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

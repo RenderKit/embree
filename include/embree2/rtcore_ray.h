@@ -18,6 +18,10 @@
 
 #include "rtcore.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+  
 /*! \ingroup embree_kernel_api */
 /*! \{ */
 
@@ -25,7 +29,6 @@
 struct RTCORE_ALIGN(16)  RTCRay
 {
   /* ray data */
-public:
   float org[3];      //!< Ray origin
   float tnear;       //!< Start of ray segment
   
@@ -36,7 +39,6 @@ public:
   unsigned mask;        //!< Used to mask out objects during traversal
   
   /* hit data */
-public:
   float Ng[3];       //!< Unnormalized geometry normal
   
   float u;           //!< Barycentric u coordinate of hit
@@ -51,7 +53,6 @@ public:
 struct RTCORE_ALIGN(16) RTCRay4
 {
   /* ray data */
-public:
   float orgx[4];  //!< x coordinate of ray origin
   float orgy[4];  //!< y coordinate of ray origin
   float orgz[4];  //!< z coordinate of ray origin
@@ -66,7 +67,6 @@ public:
   unsigned mask[4];  //!< Used to mask out objects during traversal
   
   /* hit data */
-public:
   float Ngx[4];   //!< x coordinate of geometry normal
   float Ngy[4];   //!< y coordinate of geometry normal
   float Ngz[4];   //!< z coordinate of geometry normal
@@ -83,7 +83,6 @@ public:
 struct RTCORE_ALIGN(32) RTCRay8
 {
   /* ray data */
-public:
   float orgx[8];  //!< x coordinate of ray origin
   float orgy[8];  //!< y coordinate of ray origin
   float orgz[8];  //!< z coordinate of ray origin
@@ -98,7 +97,6 @@ public:
   unsigned mask[8];  //!< Used to mask out objects during traversal
   
   /* hit data */
-public:
   float Ngx[8];   //!< x coordinate of geometry normal
   float Ngy[8];   //!< y coordinate of geometry normal
   float Ngz[8];   //!< z coordinate of geometry normal
@@ -115,7 +113,6 @@ public:
 struct RTCORE_ALIGN(64) RTCRay16
 {
   /* ray data */
-public:
   float orgx[16];  //!< x coordinate of ray origin
   float orgy[16];  //!< y coordinate of ray origin
   float orgz[16];  //!< z coordinate of ray origin
@@ -130,7 +127,6 @@ public:
   unsigned mask[16];  //!< Used to mask out objects during traversal
   
   /* hit data */
-public:
   float Ngx[16];   //!< x coordinate of geometry normal
   float Ngy[16];   //!< y coordinate of geometry normal
   float Ngz[16];   //!< z coordinate of geometry normal
@@ -143,8 +139,46 @@ public:
   unsigned instID[16];  //!< instance ID
 };
 
+/*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
+struct RTCRayNp
+{
+  /* ray data */
+  float* orgx;  //!< x coordinate of ray origin
+  float* orgy;  //!< y coordinate of ray origin
+  float* orgz;  //!< z coordinate of ray origin
+  float* tnear; //!< Start of ray segment (optional)
+
+  float* dirx;  //!< x coordinate of ray direction
+  float* diry;  //!< y coordinate of ray direction
+  float* dirz;  //!< z coordinate of ray direction  
+  float* tfar;  //!< End of ray segment (set to hit distance)
+ 
+  float* time;  //!< Time of this ray for motion blur (optional)
+  unsigned* mask;  //!< Used to mask out objects during traversal (optional)
+
+  /* hit data */
+  float* Ngx;   //!< x coordinate of geometry normal (optional)
+  float* Ngy;   //!< y coordinate of geometry normal (optional)
+  float* Ngz;   //!< z coordinate of geometry normal (optional)
+
+  float* u;     //!< Barycentric u coordinate of hit
+  float* v;     //!< Barycentric v coordinate of hit
+ 
+  unsigned* geomID;  //!< geometry ID
+  unsigned* primID;  //!< primitive ID
+  unsigned* instID;  //!< instance ID (optional)
+};
+
+struct RTCRayN;
+struct RTCHitN;
+
+#if defined(__cplusplus)
+}
+#endif
+
+#if defined(__cplusplus)
+
 /* Helper functions to access ray packets of runtime size N */
-struct RTCRayN {};
 RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of ray origin
 RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of ray origin
 RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of ray origin
@@ -169,9 +203,22 @@ RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { 
 RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[16*N+i]; }  //!< primitive ID
 RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[17*N+i]; }  //!< instance ID
 
+/* Helper functions to access hit packets of size N */
+RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of geometry normal
+
+RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[3*N+i]; }  //!< instance ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[4*N+i]; }  //!< geometry ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[5*N+i]; }  //!< primitive ID
+
+RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; } //!< Barycentric u coordinate of hit
+RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; } //!< Barycentric v coordinate of hit
+RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; } //!< hit distance
+
 /* Helper structure to create a ray packet of compile time size N */
 template<int N>
-struct RTCRayNt : public RTCRayN
+struct RTCRayNt
 {
   /* ray data */
 public:
@@ -202,57 +249,9 @@ public:
   unsigned instID[N];  //!< instance ID
 };
 
-/*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
-struct RTCRayNp
-{
-  /* ray data */
-public:
-
-  float* orgx;  //!< x coordinate of ray origin
-  float* orgy;  //!< y coordinate of ray origin
-  float* orgz;  //!< z coordinate of ray origin
-  float* tnear; //!< Start of ray segment (optional)
-
-  float* dirx;  //!< x coordinate of ray direction
-  float* diry;  //!< y coordinate of ray direction
-  float* dirz;  //!< z coordinate of ray direction  
-  float* tfar;  //!< End of ray segment (set to hit distance)
- 
-  float* time;  //!< Time of this ray for motion blur (optional)
-  unsigned* mask;  //!< Used to mask out objects during traversal (optional)
-
-  /* hit data */
-public:
-
-  float* Ngx;   //!< x coordinate of geometry normal (optional)
-  float* Ngy;   //!< y coordinate of geometry normal (optional)
-  float* Ngz;   //!< z coordinate of geometry normal (optional)
-
-  float* u;     //!< Barycentric u coordinate of hit
-  float* v;     //!< Barycentric v coordinate of hit
- 
-  unsigned* geomID;  //!< geometry ID
-  unsigned* primID;  //!< primitive ID
-  unsigned* instID;  //!< instance ID (optional)
-};
-
-/* Helper functions to access hit packets of size N */
-struct RTCHitN {};
-RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of geometry normal
-
-RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[3*N+i]; }  //!< instance ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[4*N+i]; }  //!< geometry ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[5*N+i]; }  //!< primitive ID
-
-RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; } //!< Barycentric u coordinate of hit
-RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; } //!< Barycentric v coordinate of hit
-RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; } //!< hit distance
-
 /* Helper structure to create a hit packet of compile time size N */
 template<int N>
-struct RTCHitNt : public RTCHitN
+struct RTCHitNt
 {
   float Ngx[N];        //!< x coordinate of geometry normal
   float Ngy[N];        //!< y coordinate of geometry normal
@@ -266,5 +265,7 @@ struct RTCHitNt : public RTCHitN
   float v[N];          //!< Barycentric v coordinate of hit
   float t[N];          //!< hit distance
 };
+
+#endif
 
 /*! @} */

@@ -60,7 +60,7 @@ RTCORE_ALIGN(16) struct RTCBounds
 };
 
 /*! \brief Defines an opaque device type */
-typedef uniform struct __RTCDevice {}* uniform RTCDevice;
+typedef uniform struct __RTCDevice* uniform RTCDevice;
 
 /*! \brief Creates a new Embree device.
 

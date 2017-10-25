@@ -270,7 +270,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
 RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   RTCScene scene = rtcDeviceNewScene(g_device);
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int), 12);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(float), 8);
   rtcAttachGeometry(scene,geom);
@@ -344,18 +344,18 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-void sphereBoundsFunc(void* userPtr, void* spheres_i, unsigned int item, unsigned int time, RTCBounds& bounds_o)
+void sphereBoundsFunc(void* userPtr, void* spheres_i, unsigned int item, unsigned int time, RTCBounds* bounds_o)
 {
   const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
   float ft = 2.0f*float(pi) * (float) time / (float) (sphere.num_time_steps-1);
   Vec3fa p = sphere.p + Vec3fa(cos(ft),0.0f,sin(ft));
-  bounds_o.lower_x = p.x-sphere.r;
-  bounds_o.lower_y = p.y-sphere.r;
-  bounds_o.lower_z = p.z-sphere.r;
-  bounds_o.upper_x = p.x+sphere.r;
-  bounds_o.upper_y = p.y+sphere.r;
-  bounds_o.upper_z = p.z+sphere.r;
+  bounds_o->lower_x = p.x-sphere.r;
+  bounds_o->lower_y = p.y-sphere.r;
+  bounds_o->lower_z = p.z-sphere.r;
+  bounds_o->upper_x = p.x+sphere.r;
+  bounds_o->upper_y = p.y+sphere.r;
+  bounds_o->upper_z = p.z+sphere.r;
 }
 
 void sphereIntersectFuncN(const int* valid, 
@@ -475,7 +475,7 @@ Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigne
 unsigned int addGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
