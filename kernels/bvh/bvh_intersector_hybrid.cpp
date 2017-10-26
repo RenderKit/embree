@@ -59,7 +59,7 @@ namespace embree
       stack[0].dist = neg_inf;
 
       /* load the ray into SIMD registers */
-      TravRay<N,Nx> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+      TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
       /* pop loop */
       while (true) pop:
@@ -96,7 +96,7 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNNodeTraverser1<N, Nx, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
+          BVHNNodeTraverser1<N, Nx, robust, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /* this is a leaf node */
@@ -544,7 +544,7 @@ namespace embree
         stack[0] = root;
 
         /* load the ray into SIMD registers */
-        TravRay<N,Nx> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+        TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
 	/* pop loop */
 	while (true) pop:
@@ -571,7 +571,7 @@ namespace embree
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N, Nx, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
+            BVHNNodeTraverser1<N, Nx, robust, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
           }
 
           /* this is a leaf node */
