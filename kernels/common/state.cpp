@@ -386,7 +386,7 @@ namespace embree
       else if (tok == Token::Id("benchmark") && cin->trySymbol("="))
         benchmark = cin->get().Int();
       
-      else if (tok == Token::Id("accel")) {
+      else if (tok == Token::Id("accel_flags")) {
         accel_flags = 0;
         if (cin->trySymbol("=")) {
           do {
