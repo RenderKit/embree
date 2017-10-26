@@ -783,7 +783,7 @@ namespace embree
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        mask = intersectNode<N,Nx>(node.alignedNode(), ray, dist);
+        mask = intersectNode(node.alignedNode(), ray, dist);
         return true;
       }
     };
@@ -794,7 +794,7 @@ namespace embree
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        mask = intersectNodeRobust<N,Nx>(node.alignedNode(), ray, dist);
+        mask = intersectNodeRobust(node.alignedNode(), ray, dist);
         return true;
       }
     };
@@ -802,10 +802,10 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        mask = intersectNode<N>(node.alignedNodeMB(), ray, time, dist);
+        mask = intersectNode(node.alignedNodeMB(), ray, time, dist);
         return true;
       }
     };
@@ -813,10 +813,10 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2, true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        mask = intersectNodeRobust<N>(node.alignedNodeMB(), ray, time, dist);
+        mask = intersectNodeRobust(node.alignedNodeMB(), ray, time, dist);
         return true;
       }
     };
@@ -824,7 +824,7 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2_AN4D, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
         mask = intersectNodeMB4D<N>(node, ray, time, dist);
@@ -835,7 +835,7 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2_AN4D, true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
         mask = intersectNodeMB4DRobust<N>(node, ray, time, dist);
@@ -846,10 +846,10 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN1_UN1, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
-        if (likely(node.isAlignedNode()))          mask = intersectNode<N,N>(node.alignedNode(), ray, dist);
-        else if (unlikely(node.isUnalignedNode())) mask = intersectNode<N>(node.unalignedNode(), ray, dist);
+        if (likely(node.isAlignedNode()))          mask = intersectNode(node.alignedNode(), ray, dist);
+        else if (unlikely(node.isUnalignedNode())) mask = intersectNode(node.unalignedNode(), ray, dist);
         else return false;
         return true;
       }
@@ -858,10 +858,10 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2_UN2, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
-        if (likely(node.isAlignedNodeMB()))           mask = intersectNode<N>(node.alignedNodeMB(), ray, time, dist);
-        else if (unlikely(node.isUnalignedNodeMB()))  mask = intersectNode<N>(node.unalignedNodeMB(), ray, time, dist);
+        if (likely(node.isAlignedNodeMB()))           mask = intersectNode(node.alignedNodeMB(), ray, time, dist);
+        else if (unlikely(node.isUnalignedNodeMB()))  mask = intersectNode(node.unalignedNodeMB(), ray, time, dist);
         else return false;
         return true;
       }
@@ -870,11 +870,11 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2_AN4D_UN2, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        if (unlikely(node.isUnalignedNodeMB())) mask = intersectNode<N>(node.unalignedNodeMB(), ray, time, dist);
-        else                                    mask = intersectNodeMB4D<N>(node, ray, time, dist);
+        if (unlikely(node.isUnalignedNodeMB())) mask = intersectNode(node.unalignedNodeMB(), ray, time, dist);
+        else                                    mask = intersectNodeMB4D(node, ray, time, dist);
         return true;
       }
     };
@@ -882,9 +882,9 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_TN_AN1, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
-        if (likely(node.isAlignedNode())) mask = intersectNode<N,N>(node.alignedNode(), ray, dist);
+        if (likely(node.isAlignedNode())) mask = intersectNode(node.alignedNode(), ray, dist);
         else return false;
         return true;
       }
@@ -893,10 +893,10 @@ namespace embree
     template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_TN_AN1_AN2, false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
-        if (likely(node.isAlignedNode()))        mask = intersectNode<N,N>(node.alignedNode(),ray, dist);
-        else if (likely(node.isAlignedNodeMB())) mask = intersectNode<N>(node.alignedNodeMB(),ray, time, dist);
+        if (likely(node.isAlignedNode()))        mask = intersectNode(node.alignedNode(),ray, dist);
+        else if (likely(node.isAlignedNodeMB())) mask = intersectNode(node.alignedNodeMB(),ray, time, dist);
         else return false;
         return true;
       }
@@ -908,7 +908,7 @@ namespace embree
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        mask = intersectNode<N,Nx>((const typename BVHN<N>::QuantizedNode*)node.quantizedNode(), ray, dist);
+        mask = intersectNode((const typename BVHN<N>::QuantizedNode*)node.quantizedNode(), ray, dist);
         return true;
       }
     };
@@ -919,7 +919,7 @@ namespace embree
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        mask = intersectNodeRobust<N,Nx>((const typename BVHN<N>::QuantizedNode*)node.quantizedNode(), ray, dist);
+        mask = intersectNodeRobust((const typename BVHN<N>::QuantizedNode*)node.quantizedNode(), ray, dist);
         return true;
       }
     };
