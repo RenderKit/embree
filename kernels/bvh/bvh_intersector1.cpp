@@ -62,10 +62,10 @@ namespace embree
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx> tray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
-      BVHNNodeTraverser1<N, Nx, types> nodeTraverser(tray);
+      BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
 
       /* pop loop */
       while (true) pop:
@@ -154,10 +154,10 @@ namespace embree
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx> tray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
-      BVHNNodeTraverser1<N, Nx, types> nodeTraverser(tray);
+      BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
 
       /* pop loop */
       while (true) pop:
