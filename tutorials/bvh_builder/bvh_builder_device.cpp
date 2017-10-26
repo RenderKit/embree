@@ -27,7 +27,8 @@ namespace embree
     return true;
   }
 
-  void buildProgress (size_t dn, void* userPtr) {
+  bool buildProgress (void* userPtr, double f) {
+    return true;
   }
 
   void splitPrimitive (const RTCBuildPrimitive* prim, unsigned dim, float pos, RTCBounds* lprim, RTCBounds* rprim, void* userPtr)

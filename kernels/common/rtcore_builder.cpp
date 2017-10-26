@@ -64,9 +64,11 @@ namespace embree
                             RTCSetNodeChildrenFunc setNodeChildren,
                             RTCSetNodeBoundsFunc setNodeBounds,
                             RTCCreateLeafFunc createLeaf,
-                            RTCBuildProgressFunc buildProgress,
+                            RTCProgressMonitorFunc buildProgress,
                             void* userPtr)
     {
+      std::atomic<size_t> progress(0);
+      
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
@@ -136,8 +138,11 @@ namespace embree
         },
         
         /* progress monitor function */
-        [&] (size_t dn) { 
-          if (buildProgress) buildProgress(dn,userPtr);
+        [&] (size_t dn) {
+          if (!buildProgress) return true;
+          const size_t n = progress.fetch_add(dn)+dn;
+          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          return buildProgress(userPtr,f);
         },
         
         morton_src.data(),morton_tmp.data(),numPrimitives,
@@ -155,9 +160,11 @@ namespace embree
                                RTCSetNodeChildrenFunc setNodeChildren,
                                RTCSetNodeBoundsFunc setNodeBounds,
                                RTCCreateLeafFunc createLeaf,
-                               RTCBuildProgressFunc buildProgress,
+                               RTCProgressMonitorFunc buildProgress,
                                void* userPtr)
     {
+      std::atomic<size_t> progress(0);
+  
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
         {
@@ -201,8 +208,11 @@ namespace embree
         },
         
         /* progress monitor function */
-        [&] (size_t dn) { 
-          if (buildProgress) buildProgress(dn,userPtr);
+        [&] (size_t dn) {
+          if (!buildProgress) return true;
+          const size_t n = progress.fetch_add(dn)+dn;
+          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          return buildProgress(userPtr,f);
         },
         
         (PrimRef*)prims,pinfo,*settings);
@@ -220,9 +230,11 @@ namespace embree
                                  RTCSetNodeBoundsFunc setNodeBounds,
                                  RTCCreateLeafFunc createLeaf,
                                  RTCSplitPrimitiveFunc splitPrimitive,
-                                 RTCBuildProgressFunc buildProgress,
+                                 RTCProgressMonitorFunc buildProgress,
                                  void* userPtr)
     {
+      std::atomic<size_t> progress(0);
+  
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
         {
@@ -297,8 +309,11 @@ namespace embree
         },
 
         /* progress monitor function */
-        [&] (size_t dn) { 
-          if (buildProgress) buildProgress(dn,userPtr);
+        [&] (size_t dn) {
+          if (!buildProgress) return true;
+          const size_t n = progress.fetch_add(dn)+dn;
+          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          return buildProgress(userPtr,f);
         },
         
         (PrimRef*)prims,
@@ -318,7 +333,7 @@ namespace embree
                                  RTCSetNodeBoundsFunc setNodeBounds,
                                  RTCCreateLeafFunc createLeaf,
                                  RTCSplitPrimitiveFunc splitPrimitive,
-                                 RTCBuildProgressFunc buildProgress,
+                                 RTCProgressMonitorFunc buildProgress,
                                  void* userPtr)
     {
       BVH* bvh = (BVH*) hbvh;
