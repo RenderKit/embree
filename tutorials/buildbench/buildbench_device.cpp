@@ -227,7 +227,7 @@ namespace embree {
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    rtcDeleteScene (g_scene);
+    rtcReleaseScene (g_scene);
     g_scene = nullptr;
   }
 
@@ -267,7 +267,7 @@ namespace embree {
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    rtcDeleteScene (g_scene);
+    rtcReleaseScene (g_scene);
     g_scene = nullptr;
   }
 
@@ -291,7 +291,7 @@ namespace embree {
         time += t1 - t0;
         iterations++;
       }
-      rtcDeleteScene (g_scene);
+      rtcReleaseScene (g_scene);
     }
 
     if (qflags == RTC_BUILD_QUALITY_HIGH)

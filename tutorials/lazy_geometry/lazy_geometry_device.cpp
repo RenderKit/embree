@@ -400,10 +400,10 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   for (int i=0; i<numSpheres; i++) {
-    if (g_objects[i]->object) rtcDeleteScene(g_objects[i]->object);
+    if (g_objects[i]->object) rtcReleaseScene(g_objects[i]->object);
     delete g_objects[i];
   }
-  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcReleaseScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
 

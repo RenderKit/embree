@@ -717,11 +717,11 @@ export void device_cleanup ()
 {
   delete sphere0; sphere0 = NULL;
   delete sphere1; sphere1 = NULL;
-  rtcDeleteScene(scene0); scene0 = NULL;
-  rtcDeleteScene(scene1); scene1 = NULL;
-  rtcDeleteScene(scene2); scene2 = NULL;
-  rtcDeleteScene(scene3); scene3 = NULL;
-  rtcDeleteScene (g_scene); g_scene = NULL;
+  rtcReleaseScene(scene0); scene0 = NULL;
+  rtcReleaseScene(scene1); scene1 = NULL;
+  rtcReleaseScene(scene2); scene2 = NULL;
+  rtcReleaseScene(scene3); scene3 = NULL;
+  rtcReleaseScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;

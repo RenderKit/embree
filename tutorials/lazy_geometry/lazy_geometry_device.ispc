@@ -394,9 +394,9 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   for (uniform int i=0; i<numSpheres; i++) {
-    if (g_objects[i]->object) rtcDeleteScene(g_objects[i]->object);
+    if (g_objects[i]->object) rtcReleaseScene(g_objects[i]->object);
     delete g_objects[i];
   }
-  rtcDeleteScene (g_scene); g_scene = NULL;
+  rtcReleaseScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }

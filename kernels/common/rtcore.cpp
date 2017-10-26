@@ -105,25 +105,13 @@ namespace embree
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API void rtcDebug() 
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDebug);
-
-#if defined(EMBREE_STAT_COUNTERS)
-    Stat::print(std::cout);
-    Stat::clear();
-#endif
-
-    RTCORE_CATCH_END(nullptr);
-  }
-
   RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceNewScene);
     RTCORE_VERIFY_HANDLE(device);
-    return (RTCScene) new Scene((Device*)device);
+    Scene* scene = new Scene((Device*)device);
+    return (RTCScene) scene->refInc();
     RTCORE_CATCH_END((Device*)device);
     return nullptr;
   }
@@ -714,13 +702,13 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcDeleteScene (RTCScene hscene) 
+  RTCORE_API void rtcReleaseScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeleteScene);
+    RTCORE_TRACE(rtcReleaseScene);
     RTCORE_VERIFY_HANDLE(hscene);
-    delete scene;
+    scene->refDec();
     RTCORE_CATCH_END2(scene);
   }
 

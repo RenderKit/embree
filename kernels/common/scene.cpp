@@ -565,6 +565,11 @@ namespace embree
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
     delete group; group = nullptr;
 #endif
+
+    /* detach all geometries */
+    for (auto& geometry : geometries)
+      if (geometry)
+        geometry->detach();
   }
 
   void Scene::clear() {

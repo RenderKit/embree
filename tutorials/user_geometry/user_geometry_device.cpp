@@ -976,10 +976,10 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = nullptr;
-  rtcDeleteScene (g_scene0); g_scene0 = nullptr;
-  rtcDeleteScene (g_scene1); g_scene1 = nullptr;
-  rtcDeleteScene (g_scene2); g_scene2 = nullptr;
+  rtcReleaseScene (g_scene); g_scene = nullptr;
+  rtcReleaseScene (g_scene0); g_scene0 = nullptr;
+  rtcReleaseScene (g_scene1); g_scene1 = nullptr;
+  rtcReleaseScene (g_scene2); g_scene2 = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
   alignedFree(g_spheres); g_spheres = nullptr;
   alignedFree(g_sphere0); g_sphere0 = nullptr;

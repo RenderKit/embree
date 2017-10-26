@@ -970,10 +970,10 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = NULL;
-  rtcDeleteScene (g_scene0); g_scene0 = NULL;
-  rtcDeleteScene (g_scene1); g_scene1 = NULL;
-  rtcDeleteScene (g_scene2); g_scene2 = NULL;
+  rtcReleaseScene (g_scene); g_scene = NULL;
+  rtcReleaseScene (g_scene0); g_scene0 = NULL;
+  rtcReleaseScene (g_scene1); g_scene1 = NULL;
+  rtcReleaseScene (g_scene2); g_scene2 = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
   delete[] g_spheres; g_spheres = NULL;
   delete g_sphere0; g_sphere0 = NULL;

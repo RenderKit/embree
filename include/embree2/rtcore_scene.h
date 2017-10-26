@@ -226,8 +226,8 @@ RTCORE_API void rtcOccludedNM (RTCScene scene, const struct RTCIntersectContext*
  *  of the ray packet. */
 RTCORE_API void rtcOccludedNp (RTCScene scene, const struct RTCIntersectContext* context, const struct RTCRayNp* rays, const unsigned int N);
 
-/*! Deletes the scene. All contained geometry get also destroyed. */
-RTCORE_API void rtcDeleteScene (RTCScene scene);
+/*! Releases the scene. */
+RTCORE_API void rtcReleaseScene (RTCScene scene);
 
 #if defined(__cplusplus)
 }

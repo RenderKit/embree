@@ -246,7 +246,7 @@ namespace embree
     print_bvh(scene);
 
     /* cleanup */
-    rtcDeleteScene (scene);
+    rtcReleaseScene (scene);
     rtcDeleteDevice(device);
     return 0;
   }

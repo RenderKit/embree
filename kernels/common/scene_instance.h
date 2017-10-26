@@ -37,7 +37,8 @@ namespace embree
       return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(device,object,numTimeSteps);
     }
   private:
-    Instance (Device* device, Scene* object, unsigned int numTimeSteps); 
+    Instance (Device* device, Scene* object, unsigned int numTimeSteps);
+    ~Instance();
   public:
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
     virtual void setMask (unsigned mask);

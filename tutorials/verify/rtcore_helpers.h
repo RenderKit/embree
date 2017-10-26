@@ -98,7 +98,7 @@ namespace embree
     : scene(scene) {}
     
     ~RTCSceneRef () { 
-      rtcDeleteScene(scene); 
+      rtcReleaseScene(scene); 
     }
     
     __forceinline operator RTCScene () const { return scene; }
@@ -107,21 +107,21 @@ namespace embree
     {
       RTCScene tmp = in.scene;
       in.scene = nullptr;
-      if (scene) rtcDeleteScene(scene);
+      if (scene) rtcReleaseScene(scene);
       scene = tmp;
       return *this;
     }
       
     __forceinline RTCSceneRef& operator= (RTCScene in) 
     {
-      if (scene) rtcDeleteScene(scene);
+      if (scene) rtcReleaseScene(scene);
       scene = in;
       return *this;
     }
         
     __forceinline RTCSceneRef& operator= (nullptr_t) 
     {
-      if (scene) rtcDeleteScene(scene);
+      if (scene) rtcReleaseScene(scene);
       scene = nullptr;
       return *this;
     }

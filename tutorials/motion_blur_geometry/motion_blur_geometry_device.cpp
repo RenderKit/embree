@@ -723,11 +723,11 @@ extern "C" void device_cleanup ()
 {
   alignedFree(sphere0); sphere0 = nullptr;
   alignedFree(sphere1); sphere1 = nullptr;
-  rtcDeleteScene(scene0); scene0 = nullptr;
-  rtcDeleteScene(scene1); scene1 = nullptr;
-  rtcDeleteScene(scene2); scene2 = nullptr;
-  rtcDeleteScene(scene3); scene3 = nullptr;
-  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcReleaseScene(scene0); scene0 = nullptr;
+  rtcReleaseScene(scene1); scene1 = nullptr;
+  rtcReleaseScene(scene2); scene2 = nullptr;
+  rtcReleaseScene(scene3); scene3 = nullptr;
+  rtcReleaseScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
   alignedFree(g_accu); g_accu = nullptr;
   g_accu_width = 0;
