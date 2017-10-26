@@ -386,7 +386,7 @@ namespace embree
       else if (tok == Token::Id("benchmark") && cin->trySymbol("="))
         benchmark = cin->get().Int();
       
-      else if (tok == Token::Id("accel_flags")) {
+      else if (tok == Token::Id("accel")) {
         accel_flags = 0;
         if (cin->trySymbol("=")) {
           do {
@@ -398,16 +398,17 @@ namespace embree
         }
       }
 
-      else if (tok == Token::Id("quality_flags")) {
+      else if (tok == Token::Id("quality")) {
         if (cin->trySymbol("=")) {
           Token flag = cin->get();
-          if      (flag == Token::Id("low") ) quality_flags |= RTC_BUILD_QUALITY_LOW;
-          else if (flag == Token::Id("normal") ) quality_flags |= RTC_BUILD_QUALITY_LOW;
-          else if (flag == Token::Id("high") ) quality_flags |= RTC_BUILD_QUALITY_LOW;
+          if      (flag == Token::Id("low") ) quality_flags = RTC_BUILD_QUALITY_LOW;
+          else if (flag == Token::Id("normal") ) quality_flags = RTC_BUILD_QUALITY_NORMAL;
+          else if (flag == Token::Id("medium") ) quality_flags = RTC_BUILD_QUALITY_NORMAL;
+          else if (flag == Token::Id("high") ) quality_flags = RTC_BUILD_QUALITY_HIGH;
         }
       }
 
-      else if (tok == Token::Id("accel_flags")) {
+      else if (tok == Token::Id("hints")) {
         hint_flags = 0;
         if (cin->trySymbol("=")) {
           do {
