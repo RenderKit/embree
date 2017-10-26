@@ -101,7 +101,7 @@ namespace embree
       {
         org = ray_org;
         dir = ray_dir;
-        rdir = rcp_safe(ray_dir);
+        rdir = vfloat<K>(1.0f)/(zero_fix(ray_dir));
 
         if (N)
         {

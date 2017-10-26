@@ -114,7 +114,7 @@ namespace embree
         : org_xyz(ray_org), dir_xyz(ray_dir) 
       {
         const float ulp3 = 1.0f+3.0f*float(ulp);
-        const Vec3fa ray_rdir_near = rcp_safe(ray_dir);
+        const Vec3fa ray_rdir_near = 1.0f/zero_fix(ray_dir);
         const Vec3fa ray_rdir_far  = ray_rdir_near*ulp3;
         org = Vec3vf<N>(ray_org.x,ray_org.y,ray_org.z);
         dir = Vec3vf<N>(ray_dir.x,ray_dir.y,ray_dir.z);
