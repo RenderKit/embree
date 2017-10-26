@@ -1,5 +1,4 @@
 _rtc*
-_ISPC*
 __ZN6embree13TaskScheduler10swapThreadEPNS0_6ThreadE*
 __ZN6embree13TaskScheduler11threadCountEv*
 __ZN6embree13TaskScheduler11threadIndexEv*
