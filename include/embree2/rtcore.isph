@@ -155,7 +155,7 @@ typedef unmasked void (*uniform RTCErrorFunc)(void* uniform userPtr, const unifo
 RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func, void* uniform userPtr);
 
 /*! \brief Type of memory consumption callback function. */
-typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform uintptr_t bytes, const uniform bool post); // FIXME: should be ssize_t
+typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform ssize_t bytes, const uniform bool post);
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The

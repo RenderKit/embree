@@ -198,7 +198,7 @@ RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMon
 
 /*! \brief Helper to easily combing geometry flags */
 inline RTCGeometryFlags operator|(const RTCGeometryFlags a, const RTCGeometryFlags b) {
-  return (RTCGeometryFlags)((size_t)a | (size_t)b);
+  return (RTCGeometryFlags)((unsigned int)a | (unsigned int)b);
 }
 
 #endif
