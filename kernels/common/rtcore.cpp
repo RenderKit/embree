@@ -24,7 +24,7 @@
 #include "device.h"
 #include "scene.h"
 #include "context.h"
-#include "../../include/embree2/rtcore_ray.h"
+#include "../../include/embree3/rtcore_ray.h"
 
 namespace embree
 {  

@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/tutorial_device.h"
-#include "../../include/embree2/rtcore.h"
+#include "../../include/embree3/rtcore.h"
 #include "../../kernels/bvh/bvh.h"
 #include "../../kernels/geometry/trianglev.h"
 

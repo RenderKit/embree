@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../../include/embree2/rtcore.h"
+#include "../../include/embree3/rtcore.h"
 
 namespace embree
 {

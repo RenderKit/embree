@@ -16,8 +16,8 @@
 
 /* we include the Embree headers the very first to make sure they
  * always compile without any internal Embree specific stuff. */
-#include "../../include/embree2/rtcore.h"
-#include "../../include/embree2/rtcore_ray.h"
+#include "../../include/embree3/rtcore.h"
+#include "../../include/embree3/rtcore_ray.h"
 
 /* now we include all Embree internal files we need for testing */
 #include "../../kernels/common/default.h"

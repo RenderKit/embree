@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <embree2/rtcore.isph>
+#include <embree3/rtcore.isph>
 
 export void ispcEntry()
 {

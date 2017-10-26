@@ -43,7 +43,7 @@ ENDIF()
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/rtcore_version.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree2/rtcore_version.h"
+  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_version.h"
 )
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"

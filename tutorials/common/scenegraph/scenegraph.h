@@ -17,7 +17,7 @@
 #pragma once
 
 #include "lights.h"
-#include "../../../include/embree2/rtcore.h"
+#include "../../../include/embree3/rtcore.h"
 #include "../math/random_sampler.h"
 
 namespace embree

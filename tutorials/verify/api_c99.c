@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../../include/embree2/rtcore.h"
-#include "../../include/embree2/rtcore_builder.h"
-#include "../../include/embree2/rtcore_ray.h"
+#include "../../include/embree3/rtcore.h"
+#include "../../include/embree3/rtcore_builder.h"
+#include "../../include/embree3/rtcore_ray.h"
 
 // this C-file just tests if our API headers are C99 compliant
