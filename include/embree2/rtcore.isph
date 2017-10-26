@@ -125,10 +125,10 @@ enum RTCParameter {
 };
 
 /*! \brief Configures some device parameters.*/
-RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
+RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform ssize_t val);
 
 /*! \brief Reads some device parameters. */
-RTCORE_API uniform size_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm); // FIXME: should return ssize_t
+RTCORE_API uniform ssize_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm);
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {

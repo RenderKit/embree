@@ -31,7 +31,7 @@ namespace embree
     return true;
   }
 
-  void splitPrimitive (const RTCBuildPrimitive* prim, unsigned dim, float pos, RTCBounds* lprim, RTCBounds* rprim, void* userPtr)
+  void splitPrimitive (const RTCBuildPrimitive* prim, unsigned int dim, float pos, RTCBounds* lprim, RTCBounds* rprim, void* userPtr)
   {
     assert(dim < 3);
     assert(prim->geomID == 0);
@@ -60,21 +60,21 @@ namespace embree
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
 
-    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr)
+    static void* create (RTCThreadLocalAllocator alloc, unsigned int numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
 
-    static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
+    static void  setChildren (void* nodePtr, void** childPtr, unsigned int numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
         ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
     }
 
-    static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
+    static void  setBounds (void* nodePtr, const RTCBounds** bounds, unsigned int numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
