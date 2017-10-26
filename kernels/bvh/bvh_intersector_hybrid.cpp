@@ -59,7 +59,7 @@ namespace embree
       stack[0].dist = neg_inf;
 
       /* load the ray into SIMD registers */
-      TravRay<N,Nx> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+      TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
       /* pop loop */
       while (true) pop:
@@ -96,7 +96,7 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNNodeTraverser1<N, Nx, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
+          BVHNNodeTraverser1<N, Nx, robust, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /* this is a leaf node */
@@ -161,16 +161,38 @@ namespace embree
       vint<K> octant = ray.octant();
       octant = select(valid, octant, vint<K>(0xffffffff));
 
+      /* test whether we have ray with opposing direction signs in the packet */
+      bool split = false;
+      {
+        size_t bits = valid_bits;
+        vbool<K> vsplit( false );
+        do
+        {
+          const size_t valid_index = __bsf(bits);
+          vbool<K> octant_valid = octant[valid_index] == octant;
+          bits &= ~(size_t)movemask(octant_valid);
+          vsplit |= vint<K>(octant[valid_index]) == (octant^vint<K>(0x7));
+        } while (bits);
+        if (any(vsplit)) split = true;
+      }
+
       do
       {
         const size_t valid_index = __bsf(valid_bits);
-        vbool<K> octant_valid = octant[valid_index] == octant;
-        if (!single) octant_valid = valid; // deactivate octant sorting in pure chunk mode, otherwise instance traversal performance goes down 
+        const vint<K> diff_octant = vint<K>(octant[valid_index])^octant;
+        const vint<K> count_diff_octant = \
+          ((diff_octant >> 2) & 1) +
+          ((diff_octant >> 1) & 1) +
+          ((diff_octant >> 0) & 1);
+
+        vbool<K> octant_valid = (count_diff_octant <= 1) & (octant != vint<K>(0xffffffff));
+        if (!single || !split) octant_valid = valid; // deactivate octant sorting in pure chunk mode, otherwise instance traversal performance goes down 
 
 #if defined(__AVX__)
         STAT3(normal.trav_hit_boxes[__popcnt(movemask(octant_valid))], 1, 1, 1);
 #endif
 
+        octant = select(octant_valid,vint<K>(0xffffffff),octant);
         valid_bits &= ~(size_t)movemask(octant_valid);
 
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
@@ -522,7 +544,7 @@ namespace embree
         stack[0] = root;
 
         /* load the ray into SIMD registers */
-        TravRay<N,Nx> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+        TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
 	/* pop loop */
 	while (true) pop:
@@ -549,7 +571,7 @@ namespace embree
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N, Nx, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
+            BVHNNodeTraverser1<N, Nx, robust, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
           }
 
           /* this is a leaf node */
