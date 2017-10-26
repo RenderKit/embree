@@ -72,7 +72,7 @@ namespace embree
 
       __forceinline void init(const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir)
       {
-        rdir = rcp_safe(ray_dir);
+        rdir = vfloat<K>(1.0f)/(zero_fix(ray_dir));
         org = ray_org;
       }
 
@@ -162,9 +162,8 @@ namespace embree
       const vfloat<Nx> rmaxX = (bmaxX - vfloat<Nx>(ray.org.x[k])) * vfloat<Nx>(ray.rdir.x[k]);
       const vfloat<Nx> rmaxY = (bmaxY - vfloat<Nx>(ray.org.y[k])) * vfloat<Nx>(ray.rdir.y[k]);
       const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(ray.org.z[k])) * vfloat<Nx>(ray.rdir.z[k]);
-      const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
-      const float round_up   = 1.0f+2.0f*float(ulp);
-      const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(ray.tnear[k]));
+      const float round_up = 1.0f+3.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+      const vfloat<Nx> rmin  =            max(rminX, rminY, rminZ, vfloat<Nx>(ray.tnear[k]));
       const vfloat<Nx> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(ray.tfar[k]));
 
       const vbool<Nx> vmask_first_hit = rmin <= rmax;
@@ -191,9 +190,8 @@ namespace embree
       const vfloat<K> rmaxY = (bmaxY - ray.org.y) * ray.rdir.y;
       const vfloat<K> rmaxZ = (bmaxZ - ray.org.z) * ray.rdir.z;
 
-      const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
-      const float round_up   = 1.0f+2.0f*float(ulp);
-      const vfloat<K> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<K>(ray.tnear));
+      const float round_up   = 1.0f+3.0f*float(ulp);
+      const vfloat<K> rmin  =            max(rminX, rminY, rminZ, vfloat<K>(ray.tnear));
       const vfloat<K> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<K>(ray.tfar));
 
       const vbool<K> vmask_first_hit = rmin <= rmax;
