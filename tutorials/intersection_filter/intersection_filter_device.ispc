@@ -188,12 +188,13 @@ inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, c
 }
 
 /* intersection filter function */
-unmasked void intersectionFilterN(uniform int* uniform valid,
+unmasked void intersectionFilterN(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform ray,
                                   const struct RTCHitN* uniform potentialHit,
-                                  const uniform unsigned int N)
+                                  const uniform unsigned int N,
+                                  uniform int* const uniform acceptHit)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -213,6 +214,8 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     if (T < 1.0f) 
     {
       ray2->transparency = T;      
+      acceptHit[programIndex] = 1;
+#if 0
       ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
       ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
       ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
@@ -222,9 +225,10 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
       ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
       ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
       ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
+#endif
     }
-    else
-      valid[programIndex] = 0;
+    //else
+    //  valid[programIndex] = 0;
 
     return;    
   }
@@ -254,11 +258,13 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     float T = transparencyFunction(h);
 
     /* ignore hit if completely transparent */
-    if (T >= 1.0f) valid[vi] = 0;
+    if (T >= 1.0f) 
+      ; //valid[vi] = 0;
 
     /* otherwise accept hit and remember transparency */
     else
     {
+#if 0
       RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
       RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
       RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
@@ -270,7 +276,9 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
       RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
       RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
       RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
-
+#else
+      acceptHit[vi] = 1;
+#endif
       if (context) {
         varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
         assert(eray);
@@ -281,12 +289,13 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterN(uniform int* uniform valid,
+unmasked void occlusionFilterN(const uniform int* uniform valid,
                                void* uniform ptr,
                                const uniform RTCIntersectContext* uniform context,
                                struct RTCRayN* uniform ray,
                                const struct RTCHitN* uniform potentialHit,
-                               const uniform unsigned int N)
+                               const uniform unsigned int N,
+                               uniform int* const uniform acceptHit)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -307,7 +316,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
       unsigned slot= i%HIT_LIST_LENGTH;
       if (ray2->hit_geomIDs[slot] == geomID && ray2->hit_primIDs[slot] == primID) {
-        valid[programIndex] = 0;
+        //valid[programIndex] = 0;
         return;
       }
     }
@@ -327,9 +336,10 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     T *= ray2->transparency;
     ray2->transparency = T;
     if (T == 0.0f) 
-      ray2->ray.geomID = 0;
-    else
-      valid[programIndex] = 0;
+      acceptHit[programIndex] = 1;
+      //ray2->ray.geomID = 0;
+    //else
+    //  valid[programIndex] = 0;
     return;    
   }
 
@@ -373,7 +383,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
       }
     }
     if (already_hit) {
-      valid[vi] = 0;
+      //valid[vi] = 0;
       continue;
     }
 
@@ -395,10 +405,13 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
 
     /* reject a hit if not fully opqaue */
-    if (T != 0.0f) valid[vi] = 0;
+    if (T != 0.0f) 
+      ; //valid[vi] = 0;
 
     /* otherwise accept the hit */
-    else RTCRayN_geomID(ray,N,ui) = 0;
+    else
+      acceptHit[vi] = 1;
+      //RTCRayN_geomID(ray,N,ui) = 0;
   }
 }
 

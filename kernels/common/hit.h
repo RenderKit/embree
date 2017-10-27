@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "ray.h"
 
 namespace embree
 {
@@ -87,5 +88,30 @@ namespace embree
                 << "  t = " << ray.v << std::endl
                 << "  Ng = " << ray.Ng
                 << "}";
+  }
+
+  __forceinline void copyHitToRay(Ray &ray, const Hit& hit)
+  {
+    ray.instID = hit.instID;
+    ray.geomID = hit.geomID;
+    ray.primID = hit.primID;
+    ray.u    = hit.u;
+    ray.v    = hit.v;
+    ray.tfar = hit.t;
+    ray.Ng   = hit.Ng;
+  }
+
+  template<int K>
+    __forceinline void copyHitToRay(const vbool<K> &mask, RayK<K> &ray, const HitK<K> &hit)
+  {
+    vint<K>::storeu(mask,&ray.instID, hit.instID);
+    vint<K>::storeu(mask,&ray.geomID, hit.geomID);
+    vint<K>::storeu(mask,&ray.primID, hit.primID);
+    vfloat<K>::storeu(mask,&ray.u, hit.u);
+    vfloat<K>::storeu(mask,&ray.v, hit.v);
+    vfloat<K>::storeu(mask,&ray.tfar, hit.t);
+    vfloat<K>::storeu(mask,&ray.Ng.x, hit.Ng.x);
+    vfloat<K>::storeu(mask,&ray.Ng.y, hit.Ng.y);
+    vfloat<K>::storeu(mask,&ray.Ng.z, hit.Ng.z);
   }
 }

@@ -25,18 +25,18 @@ extern "C" {
 
 /*! Type of bounding function. */
 typedef void (*RTCBoundsFunc)(void* userPtr,         /*!< pointer to user data */
-                               void* geomUserPtr,     /*!< pointer to geometry user data */
-                               unsigned int item,           /*!< item to calculate bounds for */
-                               unsigned int time,           /*!< time to calculate bounds for */
-                               struct RTCBounds* bounds_o    /*!< returns calculated bounds */);
+                              void* geomUserPtr,     /*!< pointer to geometry user data */
+                              unsigned int item,           /*!< item to calculate bounds for */
+                              unsigned int time,           /*!< time to calculate bounds for */
+                              struct RTCBounds* bounds_o    /*!< returns calculated bounds */);
 
 /*! Type of intersect function pointer for ray packets of size N. */
-typedef void (*RTCIntersectFuncN)(const int* valid,                        /*!< pointer to valid mask */
-                                  void* ptr,                               /*!< pointer to geometry user data */
-                                  const struct RTCIntersectContext* context,   /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                  struct RTCRayN* rays,                           /*!< ray packet to intersect */
-                                  unsigned int N,                                /*!< number of rays in packet */
-                                  unsigned int item                              /*!< item to intersect */);
+typedef void (*RTCIntersectFuncN)(const int* valid,                          /*!< pointer to valid mask */
+                                  void* ptr,                                 /*!< pointer to geometry user data */
+                                  const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+                                  struct RTCRayN* rays,                      /*!< ray packet to intersect */
+                                  unsigned int N,                            /*!< number of rays in packet */
+                                  unsigned int item                          /*!< item to intersect */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! pointer to valid mask */

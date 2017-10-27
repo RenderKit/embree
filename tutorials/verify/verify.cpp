@@ -2407,12 +2407,13 @@ namespace embree
     //         ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
     // }
     
-    static void intersectionFilterN(int* valid,
+    static void intersectionFilterN(const int* valid,
                                     void* userGeomPtr,
                                     const RTCIntersectContext* context,
                                     RTCRayN* ray,
                                     const RTCHitN* potentialHit,
-                                    const unsigned int N)
+                                    const unsigned int N,
+                                    int * const acceptHit)
     {
       if ((size_t)userGeomPtr != 123) 
         return;
@@ -2429,7 +2430,8 @@ namespace embree
 
         /* accept hit */
         else {
-          
+          acceptHit[i] = 1;
+          /*
           RTCRayN_instID(ray,N,i) = RTCHitN_instID(potentialHit,N,i);
           RTCRayN_geomID(ray,N,i) = RTCHitN_geomID(potentialHit,N,i);
           RTCRayN_primID(ray,N,i) = RTCHitN_primID(potentialHit,N,i);
@@ -2440,6 +2442,7 @@ namespace embree
           RTCRayN_Ng_x(ray,N,i) = RTCHitN_Ng_x(potentialHit,N,i);
           RTCRayN_Ng_y(ray,N,i) = RTCHitN_Ng_y(potentialHit,N,i);
           RTCRayN_Ng_z(ray,N,i) = RTCHitN_Ng_z(potentialHit,N,i);
+          */
         }
       }
     }

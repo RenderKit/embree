@@ -31,7 +31,7 @@
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 1
+#define ENABLE_FILTER_FUNCTION 0
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -950,9 +950,9 @@ void assignShaders(ISPCGeometry* uniform geometry)
     }
 #endif
   }
+#if ENABLE_FILTER_FUNCTION == 1
   else if (geometry->type == QUAD_MESH) {
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
-#if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
@@ -967,12 +967,12 @@ void assignShaders(ISPCGeometry* uniform geometry)
         rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
-#endif
   }
   else if (geometry->type == CURVES) {
     ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
   }
+#endif
   else if (geometry->type == GROUP) {
     ISPCGroup* uniform group = (ISPCGroup* uniform) geometry;
     for (uniform size_t i=0; i<group->numGeometries; i++)

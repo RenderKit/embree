@@ -44,12 +44,13 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void filterDispatch(int* valid,
-                             void* ptr,
-                             const RTCIntersectContext* context,
-                             struct RTCRayN* ray,
-                             const struct RTCHitN* potentialHit,
-                             const unsigned int N);
+void filterDispatch(const int* valid,
+                    void* ptr,
+                    const RTCIntersectContext* context,
+                    struct RTCRayN* ray,
+                    const struct RTCHitN* potentialHit,
+                    const unsigned int N,
+                    int* const acceptHit);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -245,25 +246,27 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-void filterDispatch(int* valid,
-                             void* ptr,
-                             const RTCIntersectContext* context,
-                             struct RTCRayN* _ray,
-                             const struct RTCHitN* potentialHit,
-                             const unsigned int N)
+void filterDispatch(const int* valid,
+                    void* ptr,
+                    const RTCIntersectContext* context,
+                    struct RTCRayN* _ray,
+                    const struct RTCHitN* potentialHit,
+                    const unsigned int N,
+                    int *const acceptHit)
 {
   Ray* ray = (Ray*)_ray;
   if (!enableFilterDispatch) return;
-  if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N);
+  if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N,acceptHit);
 }
 
 /* occlusion filter function */
-void occlusionFilter(int* valid_i,
-                              void* ptr,
-                              const RTCIntersectContext* context,
-                              struct RTCRayN* _ray,
-                              const struct RTCHitN* potentialHit,
-                              const unsigned int N)
+void occlusionFilter(const int* valid_i,
+                     void* ptr,
+                     const RTCIntersectContext* context,
+                     struct RTCRayN* _ray,
+                     const struct RTCHitN* potentialHit,
+                     const unsigned int N,
+                     int *const acceptHit)
 {
   assert(N == 1);
   bool valid = *((int*) valid_i);

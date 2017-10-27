@@ -42,12 +42,13 @@ uniform Vec3f hair_dK;
 uniform Vec3f hair_Kr;    //!< reflectivity of hair
 uniform Vec3f hair_Kt;    //!< transparency of hair
 
-unmasked void filterDispatch(uniform int* uniform valid,
+unmasked void filterDispatch(const uniform int* uniform valid,
                              void* uniform ptr,
                              const uniform RTCIntersectContext* uniform context,
                              struct RTCRayN* uniform ray,
                              const struct RTCHitN* uniform potentialHit,
-                             const uniform unsigned int N);
+                             const uniform unsigned int N,
+                             uniform int* const uniform acceptHit);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -243,25 +244,27 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 uniform bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-unmasked void filterDispatch(uniform int* uniform valid,
+unmasked void filterDispatch(const uniform int* uniform valid,
                              void* uniform ptr,
                              const uniform RTCIntersectContext* uniform context,
                              struct RTCRayN* uniform _ray,
                              const struct RTCHitN* uniform potentialHit,
-                             const uniform unsigned int N)
+                             const uniform unsigned int N,
+                             uniform int* const uniform acceptHit)
 {
   varying Ray* uniform ray = (varying Ray* uniform)_ray;
   if (!enableFilterDispatch) return;
-  if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N);
+  if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N,acceptHit);
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilter(uniform int* uniform valid_i,
+unmasked void occlusionFilter(const uniform int* uniform valid_i,
                               void* uniform ptr,
                               const uniform RTCIntersectContext* uniform context,
                               struct RTCRayN* uniform _ray,
                               const struct RTCHitN* uniform potentialHit,
-                              const uniform unsigned int N)
+                              const uniform unsigned int N,
+                              uniform int* const uniform acceptHit)
 {
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);

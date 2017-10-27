@@ -111,12 +111,13 @@ enum RTCCurveType
 };
 
 /*! Intersection filter function for ray packets of size N. */
-typedef void (*RTCFilterFuncN)(int* valid,                            /*!< pointer to valid mask */
-                               void* userPtr,                         /*!< pointer to geometry user data */
+typedef void (*RTCFilterFuncN)(const int* valid,                          /*!< pointer to valid mask */
+                               void* userPtr,                             /*!< pointer to geometry user data */
                                const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                               struct RTCRayN* ray,                   /*!< ray and previous hit */
-                               const struct RTCHitN* potentialHit,          /*!< potential new hit */
-                               const unsigned int N                         /*!< size of ray packet */);
+                               struct RTCRayN* ray,                       /*!< ray and previous hit */
+                               const struct RTCHitN* potentialHit,        /*!< potential new hit */
+                               const unsigned int N,                      /*!< size of ray packet */
+                               int * const acceptHit                      /*!< accept potential hit */ );
 
 /*! Displacement mapping function. */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
