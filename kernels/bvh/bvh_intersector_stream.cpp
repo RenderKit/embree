@@ -299,7 +299,7 @@ namespace embree
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
       StackItemT<NodeRef>* stackPtr = stack + 1;   //!< current stack pointer
       stack[0].ptr = bvh->root;
-      stack[0].dist = m_active;
+      stack[0].dist = (unsigned int)m_active;
 
       size_t terminated = ~m_active;
 
@@ -341,7 +341,7 @@ namespace embree
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) continue;
           stackPtr->ptr  = cur;
-          stackPtr->dist = cur_mask;
+          stackPtr->dist = (unsigned int)cur_mask;
           stackPtr++;
 
           for (; ;)
@@ -355,7 +355,7 @@ namespace embree
             assert(cur != BVH::emptyNode);
             if (likely(mask == 0)) break;
             stackPtr->ptr  = cur;
-            stackPtr->dist = cur_mask;
+            stackPtr->dist = (unsigned int)cur_mask;
             stackPtr++;
           }
         }
@@ -382,7 +382,7 @@ namespace embree
           /* lazy node */
           if (unlikely(lazy_node)) {
             stackPtr->ptr = lazy_node;
-            stackPtr->dist = cur_mask;
+            stackPtr->dist = (unsigned int)cur_mask;
             stackPtr++;
           }
         }
