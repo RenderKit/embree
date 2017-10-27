@@ -155,7 +155,7 @@ namespace embree
       const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
       const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
-      /* determine switch threshold based on flags */
+       /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
 
       vint<K> octant = ray.octant();
