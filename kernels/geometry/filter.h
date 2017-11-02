@@ -77,8 +77,8 @@ namespace embree
       geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4,(int*)&accept);
       accept &= mask;
       const vbool4 final = accept != vint4(zero);
-      if (any(final)) copyHitToRay(final,ray,hit);
-      return accept[k] != 0; // any(valid & (accept != vint4(zero))) is probably faster
+      if (any(final)) { copyHitToRay(final,ray,hit); return true; }
+      return false; //accept[k] != 0; 
     }
     
     __forceinline bool runOcclusionFilter(const Geometry* const geometry, Ray4& ray, const size_t k, IntersectContext* context,
@@ -91,7 +91,7 @@ namespace embree
       accept &= mask;
       const vbool4 final = accept != vint4(zero);
       ray.geomID = select(final, vint4(zero), ray.geomID);
-      return accept[k] != 0; //mask[k] != 0 && ray.geomID[k] == 0;
+      return any(final); // accept[k] != 0; 
     }
     
 #if defined(__AVX__)
@@ -128,8 +128,8 @@ namespace embree
       geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8,(int*)&accept);
       accept &= mask;
       const vbool8 final = accept != vint8(zero);
-      if (any(final)) copyHitToRay(final,ray,hit);
-      return accept[k] != 0; // mask[k] != 0;
+      if (any(final)) { copyHitToRay(final,ray,hit); return true; }
+      return false; //accept[k] != 0; 
     }
     
     __forceinline bool runOcclusionFilter(const Geometry* const geometry, Ray8& ray, const size_t k, IntersectContext* context,
@@ -142,7 +142,7 @@ namespace embree
       accept &= mask;
       const vbool8 final = accept != vint8(zero);
       ray.geomID = select(final, vint8(zero), ray.geomID);
-      return accept[k] != 0; // mask[k] != 0 && ray.geomID[k] == 0;
+      return any(final); //accept[k] != 0; 
     }
     
 #endif
@@ -182,8 +182,8 @@ namespace embree
       geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16,(int*)&accept);
       accept &= mask;
       const vbool16 final = accept != vint16(zero);
-      if (any(final)) copyHitToRay(final,ray,hit);
-      return accept[k] != 0; // mask[k] != 0;
+      if (any(final)) { copyHitToRay(final,ray,hit); return true; }
+      return false; //accept[k] != 0; 
     }
     
     __forceinline bool runOcclusionFilter(const Geometry* const geometry, Ray16& ray, const size_t k, IntersectContext* context,
@@ -196,7 +196,7 @@ namespace embree
       accept &= mask;
       const vbool16 final = accept != vint16(zero);
       ray.geomID = select(final, vint16(zero), ray.geomID);
-      return accept[k] != 0;// mask[k] != 0 && ray.geomID[k] == 0;
+      return any(final); // accept[k] != 0;
     }    
 #endif
 
