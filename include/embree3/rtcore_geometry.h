@@ -115,7 +115,7 @@ typedef void (*RTCFilterFuncN)(const int* valid,                          /*!< p
                                void* userPtr,                             /*!< pointer to geometry user data */
                                const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                struct RTCRayN* ray,                       /*!< ray and previous hit */
-                               const struct RTCHitN* potentialHit,        /*!< potential new hit */
+                               struct RTCHitN* potentialHit,              /*!< potential new hit */
                                const unsigned int N,                      /*!< size of ray packet */
                                int * const acceptHit                      /*!< accept potential hit */ );
 

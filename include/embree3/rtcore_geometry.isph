@@ -112,7 +112,7 @@ typedef unmasked void (*uniform RTCFilterFuncN)(const uniform int* uniform valid
                                                 void* uniform ptr,                                   /*!< pointer to geometry user data */
                                                 const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                                 struct RTCRayN* uniform ray,                         /*!< ray and previous hit */
-                                                const struct RTCHitN* uniform potentialHit,          /*!< potential new hit */
+                                                struct RTCHitN* uniform potentialHit,          /*!< potential new hit */
                                                 const uniform unsigned int N,                        /*!< number of rays in ray packet */
                                                 uniform int *const uniform acceptHit                 /*!< accept potential hit */);
 

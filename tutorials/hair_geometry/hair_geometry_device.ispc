@@ -275,14 +275,17 @@ unmasked void occlusionFilter(const uniform int* uniform valid_i,
   varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    ray->geomID = geomID;
+    //ray->geomID = geomID;
+    acceptHit[programIndex] = 1;
     ray->transparency = make_Vec3f(0.0f);
     return;
   }
   Vec3f T = hair_Kt;
   T = T * ray->transparency;
   ray->transparency = T;
-  if (eq(T,make_Vec3f(0.0f))) ray->geomID = geomID;
+  if (eq(T,make_Vec3f(0.0f))) 
+    acceptHit[programIndex] = 1;
+    //ray->geomID = geomID;
 }
 
 Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, Ray& ray)

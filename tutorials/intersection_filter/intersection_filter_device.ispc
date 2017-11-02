@@ -192,7 +192,7 @@ unmasked void intersectionFilterN(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform ray,
-                                  const struct RTCHitN* uniform potentialHit,
+                                  struct RTCHitN* uniform potentialHit,
                                   const uniform unsigned int N,
                                   uniform int* const uniform acceptHit)
 {
@@ -215,17 +215,15 @@ unmasked void intersectionFilterN(const uniform int* uniform valid,
     {
       ray2->transparency = T;      
       acceptHit[programIndex] = 1;
-#if 0
-      ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
-      ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-      ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
-      ray2->ray.u      = RTCHitN_u(potentialHit,N,rayID);
-      ray2->ray.v      = RTCHitN_v(potentialHit,N,rayID);
-      ray2->ray.tfar   = tfar;
-      ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
-      ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
-      ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
-#endif
+      // ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
+      // ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+      // ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
+      // ray2->ray.u      = RTCHitN_u(potentialHit,N,rayID);
+      // ray2->ray.v      = RTCHitN_v(potentialHit,N,rayID);
+      // ray2->ray.tfar   = tfar;
+      // ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
+      // ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
+      // ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
     }
     //else
     //  valid[programIndex] = 0;
@@ -264,21 +262,19 @@ unmasked void intersectionFilterN(const uniform int* uniform valid,
     /* otherwise accept hit and remember transparency */
     else
     {
-#if 0
-      RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
-      RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
-      RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
+      // RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
+      // RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
+      // RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
 
-      RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
-      RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
-      RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
+      // RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
+      // RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
+      // RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
 
-      RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
-      RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
-      RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
-#else
+      // RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
+      // RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
+      // RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
       acceptHit[vi] = 1;
-#endif
+
       if (context) {
         varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
         assert(eray);
@@ -293,7 +289,7 @@ unmasked void occlusionFilterN(const uniform int* uniform valid,
                                void* uniform ptr,
                                const uniform RTCIntersectContext* uniform context,
                                struct RTCRayN* uniform ray,
-                               const struct RTCHitN* uniform potentialHit,
+                               struct RTCHitN* uniform potentialHit,
                                const uniform unsigned int N,
                                uniform int* const uniform acceptHit)
 {

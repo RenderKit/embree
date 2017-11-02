@@ -194,7 +194,7 @@ void intersectionFilterN(const int* valid,
                          void* ptr,
                          const RTCIntersectContext* context,
                          struct RTCRayN* ray,
-                         const struct RTCHitN* potentialHit,
+                         struct RTCHitN* potentialHit,
                          const unsigned int N,
                          int *const acceptHit)
 {
@@ -216,19 +216,16 @@ void intersectionFilterN(const int* valid,
     if (T < 1.0f) 
     {
       ray2->transparency = T;      
-#if 0
-      ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
-      ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-      ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
-      ray2->ray.u      = RTCHitN_u(potentialHit,N,rayID);
-      ray2->ray.v      = RTCHitN_v(potentialHit,N,rayID);
-      ray2->ray.tfar   = tfar;
-      ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
-      ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
-      ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
-#else
+      // ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
+      // ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+      // ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
+      // ray2->ray.u      = RTCHitN_u(potentialHit,N,rayID);
+      // ray2->ray.v      = RTCHitN_v(potentialHit,N,rayID);
+      // ray2->ray.tfar   = tfar;
+      // ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
+      // ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
+      // ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
       acceptHit[0] = 1;
-#endif
     }
     //else
     //  valid[0] = 0;
@@ -295,7 +292,7 @@ void occlusionFilterN(const int* valid,
                       void* ptr,
                       const RTCIntersectContext* context,
                       struct RTCRayN* ray,
-                      const struct RTCHitN* potentialHit,
+                      struct RTCHitN* potentialHit,
                       const unsigned int N,
                       int *const acceptHit)
 {

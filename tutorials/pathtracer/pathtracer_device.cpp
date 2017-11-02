@@ -33,7 +33,7 @@ namespace embree {
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 0
+#define ENABLE_FILTER_FUNCTION 1
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -867,40 +867,45 @@ extern "C" int g_spp;
 extern "C" bool g_accumulate;
 
 /* occlusion filter function */
-void intersectionFilterReject(int* valid,
+void intersectionFilterReject(const int* valid,
                               void* ptr,
                               const RTCIntersectContext* context,
                               struct RTCRayN* ray,
-                              const struct RTCHitN* potentialHit,
-                              const unsigned int N);
+                              struct RTCHitN* potentialHit,
+                              const unsigned int N,
+                              int *const acceptHit);
 
-void intersectionFilterOBJ(int* valid,
+void intersectionFilterOBJ(const int* valid,
                            void* ptr,
                            const RTCIntersectContext* context,
                            struct RTCRayN* ray,
-                           const struct RTCHitN* potentialHit,
-                           const unsigned int N);
+                           struct RTCHitN* potentialHit,
+                           const unsigned int N,
+                           int *const acceptHit);
 
-void occlusionFilterOpaque(int* valid,
+void occlusionFilterOpaque(const int* valid,
                            void* ptr,
                            const RTCIntersectContext* context,
                            struct RTCRayN* ray,
-                           const struct RTCHitN* potentialHit,
-                           const unsigned int N);
+                           struct RTCHitN* potentialHit,
+                           const unsigned int N,
+                           int *const acceptHit);
 
-void occlusionFilterOBJ(int* valid,
+void occlusionFilterOBJ(const int* valid,
                         void* ptr,
                         const RTCIntersectContext* context,
                         struct RTCRayN* ray,
-                        const struct RTCHitN* potentialHit,
-                        const unsigned int N);
+                        struct RTCHitN* potentialHit,
+                        const unsigned int N,
+                        int *const acceptHit);
 
-void occlusionFilterHair(int* valid,
+void occlusionFilterHair(const int* valid,
                          void* ptr,
                          const RTCIntersectContext* context,
                          struct RTCRayN* ray,
-                         const struct RTCHitN* potentialHit,
-                         const unsigned int N);
+                         struct RTCHitN* potentialHit,
+                         const unsigned int N,
+                         int *const acceptHit);
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
@@ -1287,7 +1292,7 @@ void intersectionFilterReject(const int* valid_i,
                               void* ptr,
                               const RTCIntersectContext* context,
                               struct RTCRayN* _ray,
-                              const struct RTCHitN* potentialHit,
+                              struct RTCHitN* potentialHit,
                               const unsigned int N,
                               int *const acceptHit) 
 {
@@ -1300,7 +1305,7 @@ void intersectionFilterOBJ(const int* valid_i,
                            void* ptr,
                            const RTCIntersectContext* context,
                            struct RTCRayN* _ray,
-                           const struct RTCHitN* potentialHit,
+                           struct RTCHitN* potentialHit,
                            const unsigned int N,
                            int *const acceptHit) 
 {
@@ -1339,13 +1344,14 @@ void intersectionFilterOBJ(const int* valid_i,
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
-    ray->tfar   = tfar;
-    ray->instID = dg.instID;
-    ray->geomID = dg.geomID;
-    ray->primID = dg.primID;    
-    ray->u      = dg.u;
-    ray->v      = dg.v;
-    ray->Ng     = Ng;
+    acceptHit[0] = 1;
+    // ray->tfar   = tfar;
+    // ray->instID = dg.instID;
+    // ray->geomID = dg.geomID;
+    // ray->primID = dg.primID;    
+    // ray->u      = dg.u;
+    // ray->v      = dg.v;
+    // ray->Ng     = Ng;
   }
 }
 
@@ -1353,7 +1359,7 @@ void occlusionFilterOpaque(const int* valid_i,
                            void* ptr,
                            const RTCIntersectContext* context,
                            struct RTCRayN* _ray,
-                           const struct RTCHitN* potentialHit,
+                           struct RTCHitN* potentialHit,
                            const unsigned int N,
                            int *const acceptHit)  
 {
@@ -1371,7 +1377,7 @@ void occlusionFilterOBJ(const int* valid_i,
                         void* ptr,
                         const RTCIntersectContext* context,
                         struct RTCRayN* _ray,
-                        const struct RTCHitN* potentialHit,
+                        struct RTCHitN* potentialHit,
                         const unsigned int N,
                         int *const acceptHit) 
 {
@@ -1421,7 +1427,7 @@ void occlusionFilterHair(const int* valid_i,
                          void* ptr,
                          const RTCIntersectContext* context,
                          struct RTCRayN* _ray,
-                         const struct RTCHitN* potentialHit,
+                         struct RTCHitN* potentialHit,
                          const unsigned int N,
                          int *const acceptHit) 
 {

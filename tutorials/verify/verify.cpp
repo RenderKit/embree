@@ -2411,7 +2411,7 @@ namespace embree
                                     void* userGeomPtr,
                                     const RTCIntersectContext* context,
                                     RTCRayN* ray,
-                                    const RTCHitN* potentialHit,
+                                    RTCHitN* potentialHit,
                                     const unsigned int N,
                                     int * const acceptHit)
     {

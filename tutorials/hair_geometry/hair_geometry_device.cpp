@@ -277,14 +277,17 @@ void occlusionFilter(const int* valid_i,
   unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    ray->geomID = geomID;
+    //ray->geomID = geomID;
     ray->transparency = Vec3fa(0.0f);
+    acceptHit[0] = 1;
     return;
   }
   Vec3fa T = hair_Kt;
   T = T * ray->transparency;
   ray->transparency = T;
-  if (eq(T,Vec3fa(0.0f))) ray->geomID = geomID;
+  if (eq(T,Vec3fa(0.0f))) 
+    acceptHit[0] = 1;
+    //ray->geomID = geomID;
 }
 
 Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, Ray& ray)
