@@ -31,7 +31,7 @@
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 0
+#define ENABLE_FILTER_FUNCTION 1
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -869,7 +869,7 @@ unmasked void intersectionFilterReject(const uniform int* uniform valid,
                                        void* uniform ptr,
                                        const uniform RTCIntersectContext* uniform context,
                                        struct RTCRayN* uniform ray,
-                                       const struct RTCHitN* uniform potentialHit,
+                                       struct RTCHitN* uniform potentialHit,
                                        const uniform unsigned int N,
                                        uniform int *const uniform acceptHit);
 
@@ -877,7 +877,7 @@ unmasked void intersectionFilterOBJ(const uniform int* uniform valid,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     struct RTCRayN* uniform ray,
-                                    const struct RTCHitN* uniform potentialHit,
+                                    struct RTCHitN* uniform potentialHit,
                                     const uniform unsigned int N,
                                     uniform int *const uniform acceptHit);
 
@@ -885,7 +885,7 @@ unmasked void occlusionFilterOpaque(const uniform int* uniform valid,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     struct RTCRayN* uniform ray,
-                                    const struct RTCHitN* uniform potentialHit,
+                                    struct RTCHitN* uniform potentialHit,
                                     const uniform unsigned int N,
                                     uniform int *const uniform acceptHit);
 
@@ -893,7 +893,7 @@ unmasked void occlusionFilterOBJ(const uniform int* uniform valid,
                                  void* uniform ptr,
                                  const uniform RTCIntersectContext* uniform context,
                                  struct RTCRayN* uniform ray,
-                                 const struct RTCHitN* uniform potentialHit,
+                                 struct RTCHitN* uniform potentialHit,
                                  const uniform unsigned int N,
                                  uniform int *const uniform acceptHit);
 
@@ -901,7 +901,7 @@ unmasked void occlusionFilterHair(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform ray,
-                                  const struct RTCHitN* uniform potentialHit,
+                                  struct RTCHitN* uniform potentialHit,
                                   const uniform unsigned int N,
                                   uniform int *const uniform acceptHit);
 
@@ -1290,7 +1290,7 @@ unmasked void intersectionFilterReject(const uniform int* uniform valid_i,
                                        void* uniform ptr,
                                        const uniform RTCIntersectContext* uniform context,
                                        struct RTCRayN* uniform _ray,
-                                       const struct RTCHitN* uniform potentialHit,
+                                       struct RTCHitN* uniform potentialHit,
                                        const uniform unsigned int N,
                                        uniform int *const uniform acceptHit) 
 {
@@ -1303,7 +1303,7 @@ unmasked void intersectionFilterOBJ(const uniform int* uniform valid_i,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     struct RTCRayN* uniform _ray,
-                                    const struct RTCHitN* uniform potentialHit,
+                                    struct RTCHitN* uniform potentialHit,
                                     const uniform unsigned int N,
                                     uniform int *const uniform acceptHit) 
 {
@@ -1343,12 +1343,13 @@ unmasked void intersectionFilterOBJ(const uniform int* uniform valid_i,
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
     ray->tfar   = tfar;
-    ray->instID = dg.instID;
-    ray->geomID = dg.geomID;
-    ray->primID = dg.primID;    
-    ray->u      = dg.u;
-    ray->v      = dg.v;
-    ray->Ng     = Ng;
+    acceptHit[programIndex] = 1;
+    // ray->instID = dg.instID;
+    // ray->geomID = dg.geomID;
+    // ray->primID = dg.primID;    
+    // ray->u      = dg.u;
+    // ray->v      = dg.v;
+    // ray->Ng     = Ng;
   }
 }
 
@@ -1356,7 +1357,7 @@ unmasked void occlusionFilterOpaque(const uniform int* uniform valid_i,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     struct RTCRayN* uniform _ray,
-                                    const struct RTCHitN* uniform potentialHit,
+                                    struct RTCHitN* uniform potentialHit,
                                     const uniform unsigned int N,
                                     uniform int *const uniform acceptHit)  
 {
@@ -1366,14 +1367,15 @@ unmasked void occlusionFilterOpaque(const uniform int* uniform valid_i,
    
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
   ray->transparency = make_Vec3f(0.0f);
-  ray->geomID = 0;
+  acceptHit[programIndex] = 1;
+  //ray->geomID = 0;
 }
 
 unmasked void occlusionFilterOBJ(const uniform int* uniform valid_i,
                                  void* uniform ptr,
                                  const uniform RTCIntersectContext* uniform context,
                                  struct RTCRayN* uniform _ray,
-                                 const struct RTCHitN* uniform potentialHit,
+                                 struct RTCHitN* uniform potentialHit,
                                  const uniform unsigned int N,
                                  uniform int *const uniform acceptHit) 
 {
@@ -1423,7 +1425,7 @@ unmasked void occlusionFilterHair(const uniform int* uniform valid_i,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   struct RTCRayN* uniform _ray,
-                                  const struct RTCHitN* uniform potentialHit,
+                                  struct RTCHitN* uniform potentialHit,
                                   const uniform unsigned int N,
                                   uniform int *const uniform acceptHit) 
 {

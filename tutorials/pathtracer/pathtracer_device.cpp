@@ -1325,8 +1325,8 @@ void intersectionFilterOBJ(const int* valid_i,
   dg.u = RTCHitN_u(potentialHit,N,rayID);
   dg.v = RTCHitN_v(potentialHit,N,rayID);
   Vec3fa Ng = Vec3fa(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+                     RTCHitN_Ng_y(potentialHit,N,rayID),
+                     RTCHitN_Ng_z(potentialHit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;

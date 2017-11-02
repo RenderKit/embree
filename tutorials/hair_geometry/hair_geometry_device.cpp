@@ -48,7 +48,7 @@ void filterDispatch(const int* valid,
                     void* ptr,
                     const RTCIntersectContext* context,
                     struct RTCRayN* ray,
-                    const struct RTCHitN* potentialHit,
+                    struct RTCHitN* potentialHit,
                     const unsigned int N,
                     int* const acceptHit);
 
@@ -250,7 +250,7 @@ void filterDispatch(const int* valid,
                     void* ptr,
                     const RTCIntersectContext* context,
                     struct RTCRayN* _ray,
-                    const struct RTCHitN* potentialHit,
+                    struct RTCHitN* potentialHit,
                     const unsigned int N,
                     int *const acceptHit)
 {
@@ -264,7 +264,7 @@ void occlusionFilter(const int* valid_i,
                      void* ptr,
                      const RTCIntersectContext* context,
                      struct RTCRayN* _ray,
-                     const struct RTCHitN* potentialHit,
+                     struct RTCHitN* potentialHit,
                      const unsigned int N,
                      int *const acceptHit)
 {
