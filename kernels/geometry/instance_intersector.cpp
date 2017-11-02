@@ -47,14 +47,14 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
       const int ray_instID = ray.instID;
-      ray.org = xfmPoint (world2local,ray_org);
-      ray.dir = xfmVector(world2local,ray_dir);
+      ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       ray.instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.intersect((RTCRay&)ray,&context);
       ray.org = ray_org;
-      ray.dir = ray_dir;
+      ray.dir = Vec3fa(ray_dir,ray.tfar());
       if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
         ray.geomID = ray_geomID;
         ray.instID = ray_instID;
@@ -67,8 +67,8 @@ namespace embree
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
-      ray.org = xfmPoint (world2local,ray_org);
-      ray.dir = xfmVector(world2local,ray_dir);
+      ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
       ray.instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
