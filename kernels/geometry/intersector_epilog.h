@@ -64,7 +64,7 @@ namespace embree
           /* update hit information */
           ray.u = hit.u;
           ray.v = hit.v;
-          ray.tfar = hit.t;
+          ray.tfar() = hit.t;
           ray.Ng = hit.Ng;
           ray.geomID = instID;
           ray.primID = primID;
@@ -143,7 +143,7 @@ namespace embree
           /* update hit information */
           ray.u[k] = hit.u;
           ray.v[k] = hit.v;
-          ray.tfar[k] = hit.t;
+          ray.tfar()[k] = hit.t;
           ray.Ng.x[k] = hit.Ng.x;
           ray.Ng.y[k] = hit.Ng.y;
           ray.Ng.z[k] = hit.Ng.z;
@@ -243,7 +243,7 @@ namespace embree
                 const Vec2f uv = hit.uv(i);
                 foundhit |= runIntersectionFilter1(geometry,ray,context,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i]);
                 clear(valid,i);
-                valid &= hit.vt <= ray.tfar; // intersection filters may modify tfar value
+                valid &= hit.vt <= ray.tfar(); // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -256,7 +256,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u = uv.x;
           ray.v = uv.y;
-          ray.tfar = hit.vt[i];
+          ray.tfar() = hit.vt[i];
           ray.Ng.x = hit.vNg.x[i];
           ray.Ng.y = hit.vNg.y[i];
           ray.Ng.z = hit.vNg.z[i];
@@ -323,7 +323,7 @@ namespace embree
                 const Vec2f uv = hit.uv(i);
                 foundhit |= runIntersectionFilter1(geometry,ray,context,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i]);
                 clear(valid,i);
-                valid &= hit.vt <= ray.tfar; // intersection filters may modify tfar value
+                valid &= hit.vt <= ray.tfar(); // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -448,7 +448,7 @@ namespace embree
               Vec2f uv = hit.uv(i);
               foundhit |= runIntersectionFilter1(geometry,ray,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
               clear(valid,i);
-              valid &= hit.vt <= ray.tfar; // intersection filters may modify tfar value
+              valid &= hit.vt <= ray.tfar(); // intersection filters may modify tfar value
               if (unlikely(none(valid))) break;
               i = select_min(valid,hit.vt);
             }
@@ -460,7 +460,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u = uv.x;
           ray.v = uv.y;
-          ray.tfar = hit.vt[i];
+          ray.tfar() = hit.vt[i];
           const Vec3fa Ng = hit.Ng(i);
           ray.Ng.x = Ng.x;
           ray.Ng.y = Ng.y;
@@ -561,7 +561,7 @@ namespace embree
           /* update hit information */
           vfloat<K>::store(valid,&ray.u,u);
           vfloat<K>::store(valid,&ray.v,v);
-          vfloat<K>::store(valid,&ray.tfar,t);
+          vfloat<K>::store(valid,&ray.tfar(),t);
           vint<K>::store(valid,&ray.geomID,geomID);
           vint<K>::store(valid,&ray.primID,primID);
           vfloat<K>::store(valid,&ray.Ng.x,Ng.x);
@@ -666,7 +666,7 @@ namespace embree
           /* update hit information */
           vfloat<K>::store(valid,&ray.u,u);
           vfloat<K>::store(valid,&ray.v,v);
-          vfloat<K>::store(valid,&ray.tfar,t);
+          vfloat<K>::store(valid,&ray.tfar(),t);
           vint<K>::store(valid,&ray.geomID,geomID);
           vint<K>::store(valid,&ray.primID,primID);
           vfloat<K>::store(valid,&ray.Ng.x,Ng.x);
@@ -780,7 +780,7 @@ namespace embree
                 const Vec2f uv = hit.uv(i);
                 foundhit = foundhit | runIntersectionFilter(geometry,ray,k,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i]);
                 clear(valid,i);
-                valid &= hit.vt <= ray.tfar[k]; // intersection filters may modify tfar value
+                valid &= hit.vt <= ray.tfar()[k]; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -796,7 +796,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
           ray.v[k] = uv.y;
-          ray.tfar[k] = hit.vt[i];
+          ray.tfar()[k] = hit.vt[i];
           ray.Ng.x[k] = hit.vNg.x[i];
           ray.Ng.y[k] = hit.vNg.y[i];
           ray.Ng.z[k] = hit.vNg.z[i];
@@ -915,7 +915,7 @@ namespace embree
                 const Vec2f uv = hit.uv(i);
                 foundhit = foundhit | runIntersectionFilter(geometry,ray,k,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
                 clear(valid,i);
-                valid &= hit.vt <= ray.tfar[k]; // intersection filters may modify tfar value
+                valid &= hit.vt <= ray.tfar()[k]; // intersection filters may modify tfar value
                 if (unlikely(none(valid))) break;
                 i = select_min(valid,hit.vt);
               }
@@ -932,7 +932,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
           ray.v[k] = uv.y;
-          ray.tfar[k] = hit.vt[i];
+          ray.tfar()[k] = hit.vt[i];
           const Vec3fa Ng = hit.Ng(i);
           ray.Ng.x[k] = Ng.x;
           ray.Ng.y[k] = Ng.y;

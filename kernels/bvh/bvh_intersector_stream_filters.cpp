@@ -46,8 +46,8 @@ namespace embree
             const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
-            ray.tnear = select(valid, ray.tnear, zero);
-            ray.tfar  = select(valid, ray.tfar,  neg_inf);
+            ray.tnear() = select(valid, ray.tnear(), zero);
+            ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
 
             rays[packetIndex] = ray;
             rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
@@ -90,7 +90,7 @@ namespace embree
           {
             Ray &ray = *(Ray*)((char*)_rayN + inputRayID * stride);
             /* skip invalid rays */
-            if (unlikely(ray.tnear > ray.tfar || ray.geomID == 0)) { inputRayID++; continue; } // ignore invalid or already occluded rays
+            if (unlikely(ray.tnear() > ray.tfar() || ray.geomID == 0)) { inputRayID++; continue; } // ignore invalid or already occluded rays
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
             if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
@@ -133,8 +133,8 @@ namespace embree
             RayK<VSIZEX> &ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
             ray = rayN.getRayByOffset(vboolx(true), offset);
-            ray.tnear = select(valid, ray.tnear, zero);
-            ray.tfar  = select(valid, ray.tfar,  neg_inf);            
+            ray.tnear() = select(valid, ray.tnear(), zero);
+            ray.tfar()  = select(valid, ray.tfar(),  neg_inf);            
           }
 
 #if 0     
@@ -181,7 +181,7 @@ namespace embree
           const vintx offset = vi * int(stride);
 
           RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
-          valid &= ray.tnear <= ray.tfar;
+          valid &= ray.tnear() <= ray.tfar();
 
           if (intersect)
             scene->intersectors.intersect(valid, ray, context);
@@ -215,8 +215,8 @@ namespace embree
             const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i+j);
-            ray.tnear = select(valid, ray.tnear, zero);
-            ray.tfar  = select(valid, ray.tfar,  neg_inf);
+            ray.tnear() = select(valid, ray.tnear(), zero);
+            ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
 
             rays[packetIndex] = ray;
             rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
@@ -248,7 +248,7 @@ namespace embree
           vboolx valid = vi < vintx(int(N));
 
           RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i);
-          valid &= ray.tnear <= ray.tfar;
+          valid &= ray.tnear() <= ray.tfar();
 
           if (intersect)
             scene->intersectors.intersect(valid, ray, context);
@@ -310,7 +310,7 @@ namespace embree
           {
             const size_t offset = i * stride;
             RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-            const vboolx valid = ray.tnear <= ray.tfar;
+            const vboolx valid = ray.tnear() <= ray.tfar();
 
             if (intersect)
               scene->intersectors.intersect(valid, ray, context);
@@ -333,7 +333,7 @@ namespace embree
             vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(int(N));
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
-            valid &= ray.tnear <= ray.tfar;
+            valid &= ray.tnear() <= ray.tfar();
 
             if (intersect)
               scene->intersectors.intersect(valid, ray, context);
@@ -369,8 +369,8 @@ namespace embree
             const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
-            ray.tnear = select(valid, ray.tnear, zero);
-            ray.tfar  = select(valid, ray.tfar,  neg_inf);
+            ray.tnear() = select(valid, ray.tnear(), zero);
+            ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
 
             rays[packetIndex] = ray;
             rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
@@ -404,7 +404,7 @@ namespace embree
           const size_t offset = i * sizeof(float);
 
           RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
-          valid &= ray.tnear <= ray.tfar;
+          valid &= ray.tnear() <= ray.tfar();
 
           if (intersect)
             scene->intersectors.intersect(valid, ray, context);

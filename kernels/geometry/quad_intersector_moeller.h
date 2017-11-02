@@ -344,7 +344,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
-        valid &= (absDen*vfloat<M>(ray.tnear[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar[k]));
+        valid &= (absDen*vfloat<M>(ray.tnear()[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar()[k]));
         if (likely(none(valid))) return false;
         
         /* calculate hit information */
@@ -409,7 +409,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<K> T = dot(tri_Ng,C) ^ sgnDen;
-        valid &= (absDen*ray.tnear < T) & (T <= absDen*ray.tfar);
+        valid &= (absDen*ray.tnear() < T) & (T <= absDen*ray.tfar());
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */

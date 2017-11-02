@@ -347,7 +347,7 @@ namespace embree
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *rayN[i];
-            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear() <= ray.tfar();
             occluded(valid,ray,context);
           }      
         }

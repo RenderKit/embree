@@ -67,7 +67,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar, *inputPackets[i], context);
+          This->intersect(inputPackets[i]->tnear() <= inputPackets[i]->tfar(), *inputPackets[i], context);
         return;
       }
 
@@ -147,7 +147,7 @@ namespace embree
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          p.tfar = min(p.tfar, inputPackets[i]->tfar);
+          p.tfar = min(p.tfar, inputPackets[i]->tfar());
         };
 
       } // traversal + intersection
@@ -185,7 +185,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar, *inputPackets[i], context);
+          This->occluded(inputPackets[i]->tnear() <= inputPackets[i]->tfar(), *inputPackets[i], context);
         return;
       }
 
@@ -283,8 +283,8 @@ namespace embree
       size_t m_active = 0;
       for (size_t i = 0; i < numPackets; i++)
       {
-        const vfloat<K> tnear  = inputPackets[i]->tnear;
-        const vfloat<K> tfar   = inputPackets[i]->tfar;
+        const vfloat<K> tnear  = inputPackets[i]->tnear();
+        const vfloat<K> tfar   = inputPackets[i]->tfar();
         vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
         m_active |= (size_t)movemask(m_valid) << (K*i);
         const Vec3vf<K>& org     = inputPackets[i]->org;
@@ -422,7 +422,7 @@ namespace embree
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
         RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear <= ray.tfar;
+        valid &= ray.tnear() <= ray.tfar();
         This->intersect(valid, ray, context);
       }
     }
@@ -439,7 +439,7 @@ namespace embree
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
         RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear <= ray.tfar;
+        valid &= ray.tnear() <= ray.tfar();
         This->occluded(valid, ray, context);
       }
     }

@@ -75,7 +75,7 @@ namespace embree
         if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray1.tfar)))
           continue;
 #else
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar()[k]))
           continue;
 #endif
 
@@ -107,7 +107,7 @@ namespace embree
         size_t lazy_node = 0;
         PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
 
-        tray1.tfar = ray.tfar[k];
+        tray1.tfar = ray.tfar()[k];
 
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
@@ -146,14 +146,14 @@ namespace embree
 
       /* verify correct input */
       assert(all(valid, ray.valid()));
-      assert(all(valid, ray.tnear >= 0.0f));
+      assert(all(valid, ray.tnear() >= 0.0f));
       assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
-      const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
+      const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
 
        /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
@@ -242,7 +242,7 @@ namespace embree
                 const size_t i = __bscf(bits);
                 intersect1(bvh, cur, i, pre, ray, tray, context);
               }
-              tray.tfar = min(tray.tfar, ray.tfar);
+              tray.tfar = min(tray.tfar, ray.tfar());
               continue;
             }
           }
@@ -356,7 +356,7 @@ namespace embree
 
           size_t lazy_node = 0;
           PrimitiveIntersectorK::intersect(valid_leaf, pre, ray, context, prim, items, lazy_node);
-          tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
+          tray.tfar = select(valid_leaf, ray.tfar(), tray.tfar);
 
           if (unlikely(lazy_node)) {
             *sptr_node = lazy_node; sptr_node++;
@@ -387,14 +387,14 @@ namespace embree
 
       /* verify correct input */
       assert(all(valid, ray.valid()));
-      assert(all(valid, ray.tnear >= 0.0f));
+      assert(all(valid, ray.tnear() >= 0.0f));
       assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
-      const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
+      const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
 
       vint<K> octant = ray.octant();
       octant = select(valid, octant, vint<K>(0xffffffff));
@@ -508,9 +508,9 @@ namespace embree
           PrimitiveIntersectorK::intersect(valid_leaf, pre, ray, context, prim,items, lazy_node);
 
           /* reduce max distance interval on successful intersection */
-          if (likely(any((ray.tfar < tray.tfar) & valid_leaf)))
+          if (likely(any((ray.tfar() < tray.tfar) & valid_leaf)))
           {
-            tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
+            tray.tfar = select(valid_leaf, ray.tfar(), tray.tfar);
             frustum.updateMaxDist(tray.tfar);
           }
 
@@ -622,14 +622,14 @@ namespace embree
 
       /* verify correct input */
       assert(all(valid, ray.valid()));
-      assert(all(valid, ray.tnear >= 0.0f));
+      assert(all(valid, ray.tnear() >= 0.0f));
       assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
-      const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
+      const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
 
       tray.tnear = select(valid, org_ray_tnear, vfloat<K>(pos_inf));
       tray.tfar  = select(valid, org_ray_tfar , vfloat<K>(neg_inf));
@@ -789,14 +789,14 @@ namespace embree
 
       /* verify correct input */
       assert(all(valid, ray.valid()));
-      assert(all(valid, ray.tnear >= 0.0f));
+      assert(all(valid, ray.tnear() >= 0.0f));
       assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
       Precalculations pre(valid,ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
-      const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
+      const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
 
       vbool<K> terminated = !valid;
 

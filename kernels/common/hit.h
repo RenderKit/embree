@@ -97,7 +97,7 @@ namespace embree
     ray.primID = hit.primID;
     ray.u    = hit.u;
     ray.v    = hit.v;
-    ray.tfar = hit.t;
+    ray.tfar() = hit.t;
     ray.Ng   = hit.Ng;
   }
 
@@ -109,7 +109,7 @@ namespace embree
     vint<K>::storeu(mask,&ray.primID, hit.primID);
     vfloat<K>::storeu(mask,&ray.u, hit.u);
     vfloat<K>::storeu(mask,&ray.v, hit.v);
-    vfloat<K>::storeu(mask,&ray.tfar, hit.t);
+    vfloat<K>::storeu(mask,&ray._tfar, hit.t);
     vfloat<K>::storeu(mask,&ray.Ng.x, hit.Ng.x);
     vfloat<K>::storeu(mask,&ray.Ng.y, hit.Ng.y);
     vfloat<K>::storeu(mask,&ray.Ng.z, hit.Ng.z);

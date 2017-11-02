@@ -84,7 +84,7 @@ namespace embree
           const vfloat<M> d2 = madd(p.x,p.x,p.y*p.y);
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          valid &= (d2 <= r2) & (vfloat<M>(ray.tnear) < t) & (t <= vfloat<M>(ray.tfar));
+          valid &= (d2 <= r2) & (vfloat<M>(ray.tnear()) < t) & (t <= vfloat<M>(ray.tfar()));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
@@ -141,7 +141,7 @@ namespace embree
           const vfloat<M> d2 = madd(p.x,p.x,p.y*p.y);
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          valid &= (d2 <= r2) & (vfloat<M>(ray.tnear[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
+          valid &= (d2 <= r2) & (vfloat<M>(ray.tnear()[k]) < t) & (t <= vfloat<M>(ray.tfar()[k]));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
