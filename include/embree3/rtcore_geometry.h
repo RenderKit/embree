@@ -450,6 +450,9 @@ RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned int geomID,
                                 enum RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
 
+/*! Commits the geometry. */
+RTCORE_API void rtcCommitGeometry (RTCGeometry geom);
+
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);
 

@@ -1181,6 +1181,16 @@ namespace embree
   }
 #endif
 
+  RTCORE_API void rtcCommitGeometry (RTCGeometry hgeometry)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommitGeometry);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->commit();
+    RTCORE_CATCH_END2(geometry);
+  }
+
   RTCORE_API unsigned int rtcAttachGeometry (RTCScene hscene, RTCGeometry hgeometry)
   {
     Scene* scene = (Scene*) hscene;

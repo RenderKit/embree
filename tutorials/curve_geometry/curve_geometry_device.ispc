@@ -67,6 +67,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair_indices,0,sizeof(uniform unsigned int),NUM_CURVES);
   rtcSetBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(uniform Vec3fa),NUM_VERTICES);
   rtcSetBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(uniform Vec3fa),NUM_VERTICES);
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -90,6 +91,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;

@@ -210,8 +210,9 @@ namespace embree
 
   void AccelN::clear()
   {
-    for (size_t i=0; i<accels.size(); i++) 
+    for (size_t i=0; i<accels.size(); i++) {
       accels[i]->clear();
+    }
   }
 }
 

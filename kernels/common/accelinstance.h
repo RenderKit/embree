@@ -43,8 +43,8 @@ namespace embree
     }
     
     void clear() {
-      accel->clear();
-      builder->clear();
+      if (accel) accel->clear();
+      if (builder) builder->clear();
     }
 
   private:

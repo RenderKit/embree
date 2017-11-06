@@ -166,6 +166,7 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
   float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_TRI_INDICES);
   for (size_t i=0; i<NUM_TRI_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -184,6 +185,7 @@ void setTriangleSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
   }
 
   rtcUpdateBuffer(geom, RTC_LEVEL_BUFFER);
+  rtcCommitGeometry(geom);
 }
 
 /* adds a subdiv cube to the scene */
@@ -209,6 +211,7 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
   float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER,sizeof(float),NUM_QUAD_INDICES);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -228,6 +231,7 @@ void setQuadSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
   }
 
   rtcUpdateBuffer(geom, RTC_LEVEL_BUFFER);
+  rtcCommitGeometry(geom);
 }
 
 /* adds a triangle cube to the scene */
@@ -242,6 +246,7 @@ unsigned int addTriangleCube (RTCScene scene_i, const Vec3fa& pos)
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(unsigned int), NUM_TRI_INDICES/3);
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -259,6 +264,7 @@ unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int), NUM_QUAD_INDICES/4);
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -281,6 +287,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(unsigned int), 1);
   rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa), NUM_HAIR_VERTICES);
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene, geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -304,6 +311,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;

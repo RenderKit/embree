@@ -805,7 +805,7 @@ namespace embree
       return;
     }
 
-    if (!isModified() /* && 0 */) {
+    if (!isModified()) {
       if (threadCount) group_barrier.wait(threadCount);
       return;
     }

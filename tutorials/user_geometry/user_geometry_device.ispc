@@ -252,6 +252,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
   rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
   return instance;
@@ -261,7 +262,7 @@ void updateInstance (RTCScene scene, uniform Instance* uniform instance)
 {
   instance->world2local = rcp(instance->local2world);
   instance->normal2world = transposed(rcp(instance->local2world.l));
-  rtcUpdate(instance->geometry);
+  rtcCommitGeometry(instance->geometry);
 }
 
 // ======================================================================== //
@@ -484,6 +485,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(geom,sphereIntersectFunc);
   rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
 }
@@ -501,6 +503,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(geom,sphereIntersectFunc);
   rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return spheres;
 }
@@ -559,6 +562,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
     }
   }
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -582,6 +586,7 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
