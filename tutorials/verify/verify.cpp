@@ -4013,7 +4013,7 @@ namespace embree
       
       if (update)
         for (unsigned int i=0; i<numMeshes; i++) 
-          rtcUpdate(rtcGetGeometry(*scene,i));
+          rtcCommitGeometry(rtcGetGeometry(*scene,i));
       
       create_geometry_bytes_used = 0;
       rtcCommit (*scene);

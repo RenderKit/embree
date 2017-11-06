@@ -997,16 +997,6 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcUpdate (RTCGeometry hgeometry) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcUpdate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->update();
-    RTCORE_CATCH_END2(geometry);
-  }
-
   RTCORE_API void rtcUpdateBuffer (RTCGeometry hgeometry, RTCBufferType type) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

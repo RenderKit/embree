@@ -305,8 +305,7 @@ void animateSphere (int id, float time)
   }
 #endif
 
-  /* update mesh */
-  rtcUpdate (geom);
+  /* commit mesh */
   rtcCommitGeometry(geom);
 }
 

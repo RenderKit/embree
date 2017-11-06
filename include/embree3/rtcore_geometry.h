@@ -333,14 +333,6 @@ RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, enum RTCBufferType type);
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCGeometry geometry);
 
-/*! \brief Update all geometry buffers. 
-
-  Each time geometry buffers got modified, the user has to call some
-  update function to tell the ray tracing engine which buffers got
-  modified. The rtcUpdate function taggs each geometry buffer of the
-  specified geometry as modified. */
-RTCORE_API void rtcUpdate (RTCGeometry geometry);
-
 /*! \brief Update spefific geometry buffer. 
 
   Each time geometry buffers got modified, the user has to call some
