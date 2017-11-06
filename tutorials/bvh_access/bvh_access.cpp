@@ -96,7 +96,8 @@ namespace embree
     // back side
     triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
     triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
-    
+
+    rtcCommitGeometry(mesh);
     unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
     rtcReleaseGeometry(mesh);
     return geomID;
@@ -120,6 +121,7 @@ namespace embree
     triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
     triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+    rtcCommitGeometry(mesh);
     unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
     rtcReleaseGeometry(mesh);
     return geomID;
@@ -139,6 +141,7 @@ namespace embree
     int* index = (int*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),1);
     index[0] = 0;
 
+    rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_i,geom);
     rtcReleaseGeometry(geom);
     return geomID;

@@ -86,6 +86,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
     }
   }
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(g_scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -109,6 +110,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -303,8 +305,8 @@ void animateSphere (int id, float time)
   }
 #endif
 
-  /* update mesh */
-  rtcUpdate (geom);
+  /* commit mesh */
+  rtcCommitGeometry(geom);
 }
 
 /* called by the C++ code to render */

@@ -23,20 +23,39 @@ namespace embree
     : device(device), scene(nullptr), geomID(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
-      enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),
+      enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1), used(1),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr) {}
 
   Geometry::~Geometry() {
   }
 
-  void Geometry::preCommit() {
+  void Geometry::update() 
+  {
+    if (scene)
+      scene->setModified();
+
+    state = MODIFIED;
+  }
+  
+  void Geometry::commit() 
+  {
+    if (scene)
+      scene->setModified();
+
+    state = COMMITTED;
+  }
+
+  void Geometry::preCommit()
+  {
+    if (state == MODIFIED)
+      throw_RTCError(RTC_INVALID_OPERATION,"geometry got not committed");
   }
 
   void Geometry::postCommit()
   {
-    /* clear modified flag */
-    if (isEnabled()) 
-      clearModified();
+    /* set state to build */
+    if (isEnabled())
+      state = BUILD;
   }
 
   void Geometry::updateIntersectionFilters(bool enable)
@@ -87,14 +106,6 @@ namespace embree
 
     used++;
     enabled = true;
-  }
-
-  void Geometry::update() 
-  {
-    if (scene)
-      scene->setModified();
-    
-    modified = true;
   }
 
   void Geometry::disable () 

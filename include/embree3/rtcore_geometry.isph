@@ -477,7 +477,8 @@ inline void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying
                     numFloats);
 }
 
-
+/*! Commits the geometry. */
+RTCORE_API void rtcCommitGeometry (RTCGeometry geom);
 
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API uniform unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);

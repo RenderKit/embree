@@ -334,14 +334,6 @@ RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, enum RTCBufferType type);
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCGeometry geometry);
 
-/*! \brief Update all geometry buffers. 
-
-  Each time geometry buffers got modified, the user has to call some
-  update function to tell the ray tracing engine which buffers got
-  modified. The rtcUpdate function taggs each geometry buffer of the
-  specified geometry as modified. */
-RTCORE_API void rtcUpdate (RTCGeometry geometry);
-
 /*! \brief Update spefific geometry buffer. 
 
   Each time geometry buffers got modified, the user has to call some
@@ -450,6 +442,9 @@ RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned int geomID,
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                 enum RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+
+/*! Commits the geometry. */
+RTCORE_API void rtcCommitGeometry (RTCGeometry geom);
 
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);

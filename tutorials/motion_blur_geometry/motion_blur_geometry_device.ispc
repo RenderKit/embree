@@ -128,6 +128,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
   face_colors[10] = make_Vec3f(1,1,0);
   face_colors[11] = make_Vec3f(1,1,0);
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -154,6 +155,7 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos, unif
     }
   }
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -192,6 +194,7 @@ uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, un
     }
   }
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -226,6 +229,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform
 
   delete[] bspline;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -259,6 +263,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform
 
   delete[] bspline;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -271,6 +276,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& p
   RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(uniform unsigned int), 12);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(uniform float), 8);
+  rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   rtcCommit(scene);
@@ -285,6 +291,8 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& p
     uniform AffineSpace3f xfm = translation*rotation*scale;
     rtcSetTransform(inst,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
   }
+
+  rtcCommitGeometry(inst);
   rtcAttachGeometry(global_scene,inst);
   rtcReleaseGeometry(inst);
   return scene;
@@ -310,6 +318,8 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
       vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v));
     }
   }
+
+  rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);  
   rtcCommit(scene);
@@ -324,6 +334,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
     rtcSetTransform(inst,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
   }
 
+  rtcCommitGeometry(inst);
   rtcAttachGeometry(global_scene,inst);
   rtcReleaseGeometry(inst);
   return scene;
@@ -465,6 +476,7 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(geom,sphereIntersectFuncN);
   rtcSetOccludedFunction (geom,sphereOccludedFuncN);
+  rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
 }
@@ -487,6 +499,7 @@ uniform unsigned int addGroundPlane (RTCScene scene)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;

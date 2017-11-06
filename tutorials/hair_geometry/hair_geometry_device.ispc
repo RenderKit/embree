@@ -71,6 +71,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
   rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
 }
@@ -84,6 +85,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
   rtcSetOcclusionFilterFunction(geom,filterDispatch);
   rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
 }

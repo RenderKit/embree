@@ -672,6 +672,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -701,6 +702,7 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -724,6 +726,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;

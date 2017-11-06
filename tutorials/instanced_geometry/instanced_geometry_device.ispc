@@ -81,6 +81,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
     }
   }
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -104,6 +105,7 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -490,10 +492,10 @@ export void device_render (uniform int* uniform pixels,
   rtcSetTransform(g_instance3,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[3],0);
 
   /* update scene */
-  rtcUpdate(g_instance0);
-  rtcUpdate(g_instance1);
-  rtcUpdate(g_instance2);
-  rtcUpdate(g_instance3);
+  rtcCommitGeometry(g_instance0);
+  rtcCommitGeometry(g_instance1);
+  rtcCommitGeometry(g_instance2);
+  rtcCommitGeometry(g_instance3);
   rtcCommit (g_scene);
 
   /* render all pixels */

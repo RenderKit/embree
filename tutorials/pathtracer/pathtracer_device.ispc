@@ -1688,9 +1688,10 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #if defined(ISPC)
     launch[ (mesh->numFaces+4095)/4096 ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;
 #else
-      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-      rtcUpdateBuffer(rtcGetGeometry(g_scene,geomID),RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(rtcGetGeometry(g_scene,geomID),RTC_LEVEL_BUFFER);
+    rtcCommitGeometry(rtcGetGeometry(g_scene,geomID));
   }
 }
 

@@ -997,16 +997,6 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcUpdate (RTCGeometry hgeometry) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcUpdate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->update();
-    RTCORE_CATCH_END2(geometry);
-  }
-
   RTCORE_API void rtcUpdateBuffer (RTCGeometry hgeometry, RTCBufferType type) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
@@ -1180,6 +1170,16 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 #endif
+
+  RTCORE_API void rtcCommitGeometry (RTCGeometry hgeometry)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommitGeometry);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->commit();
+    RTCORE_CATCH_END2(geometry);
+  }
 
   RTCORE_API unsigned int rtcAttachGeometry (RTCScene hscene, RTCGeometry hgeometry)
   {
