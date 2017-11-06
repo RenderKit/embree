@@ -238,7 +238,7 @@ namespace embree
         for (int i=0; i<N+1; i++)
         {
           float r = getFloat(token);
-          MAYBE_UNUSED float t = getInt(token);
+          MAYBE_UNUSED float t = (float)getInt(token);
           if (i != 0) hair[3*i-1].w = r;
           hair[3*i+0].w = r;
           if (i != N) hair[3*i+1].w = r;
@@ -599,7 +599,7 @@ namespace embree
      
      for (size_t i=0; i<curGroupHair.size(); i++) {
        for (size_t j=0; j<curGroupHair[i].size(); j++) {
-         if (j%3 == 0) curves.push_back(SceneGraph::HairSetNode::Hair(vertices.size(),i));
+         if (j%3 == 0) curves.push_back(SceneGraph::HairSetNode::Hair((unsigned int)vertices.size(),(unsigned int)i));
          vertices.push_back(curGroupHair[i][j]);
        }
      }

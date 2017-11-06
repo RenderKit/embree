@@ -142,7 +142,7 @@ namespace embree
                                                          size_t* maskK,
                                                          vfloat<Nx>& dist)
       {
-        size_t m_node_hit = intersectNode<N,Nx>(node, frustum, dist);
+        size_t m_node_hit = intersectNodeFrustum<N,Nx>(node, frustum, dist);
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;

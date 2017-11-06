@@ -215,8 +215,8 @@ namespace embree
       {
         unsigned int geomID = 0;
         switch (mesh->basis) {
-        case SceneGraph::HairSetNode::BEZIER : geomID = rtcNewBezierHairGeometry (scene, gflag, mesh->numPrimitives() , mesh->numVertices(), (unsigned int)mesh->numTimeSteps()); break;
-        case SceneGraph::HairSetNode::BSPLINE: geomID = rtcNewBSplineHairGeometry (scene, gflag, mesh->numPrimitives(), mesh->numVertices(), (unsigned int)mesh->numTimeSteps()); break;
+        case SceneGraph::HairSetNode::BEZIER : geomID = rtcNewBezierHairGeometry (scene, gflag, (unsigned int)mesh->numPrimitives() , (unsigned int)mesh->numVertices(), (unsigned int)mesh->numTimeSteps()); break;
+        case SceneGraph::HairSetNode::BSPLINE: geomID = rtcNewBSplineHairGeometry (scene, gflag, (unsigned int)mesh->numPrimitives(), (unsigned int)mesh->numVertices(), (unsigned int)mesh->numTimeSteps()); break;
         default: assert(false);
         }
         AssertNoError(device);
@@ -1392,7 +1392,7 @@ namespace embree
 
         if (failed0 || failed1)
         {
-          double num_primitives = bytes_one_thread.first;
+          double num_primitives = (double)bytes_one_thread.first;
           std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
             "expected = " << bytes_expected/num_primitives << " B, " << 
             "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 

@@ -206,7 +206,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx>
-    __forceinline size_t intersectNode(const typename BVHN<N>::AlignedNode* __restrict__ node,
+    __forceinline size_t intersectNodeFrustum(const typename BVHN<N>::AlignedNode* __restrict__ node,
                                        const FrustumFast& frustum, vfloat<Nx>& dist)
     {
       const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + frustum.nf.nearX);
@@ -236,7 +236,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx>
-    __forceinline size_t intersectNode(const typename BVHN<N>::AlignedNode* __restrict__ node,
+    __forceinline size_t intersectNodeFrustum(const typename BVHN<N>::AlignedNode* __restrict__ node,
                                        const FrustumRobust& frustum, vfloat<Nx>& dist)
     {
       const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + frustum.nf.nearX);
