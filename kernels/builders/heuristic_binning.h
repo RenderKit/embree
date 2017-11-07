@@ -106,7 +106,6 @@ namespace embree
         {
           return any(((vint4)bin_unsafe(center2(ref.bounds())) < vSplitPos) & splitDimMask);
         }
-
         /*! calculates left spatial position of bin */
         __forceinline float pos(const size_t bin, const size_t dim) const {
           return madd(float(bin),1.0f / scale[dim],ofs[dim]);
@@ -206,18 +205,18 @@ namespace embree
       __forceinline BBox &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
       __forceinline const BBox &bounds(const size_t binID, const size_t dimID) const { return _bounds[binID][dimID]; }
 
-      __forceinline int &counts(const size_t binID, const size_t dimID)             { return _counts[binID][dimID]; }
-      __forceinline const int &counts(const size_t binID, const size_t dimID) const { return _counts[binID][dimID]; }
+      __forceinline unsigned int &counts(const size_t binID, const size_t dimID)             { return _counts[binID][dimID]; }
+      __forceinline const unsigned int &counts(const size_t binID, const size_t dimID) const { return _counts[binID][dimID]; }
 
-      __forceinline vint4 &counts(const size_t binID)             { return _counts[binID]; }
-      __forceinline const vint4 &counts(const size_t binID) const { return _counts[binID]; }
+      __forceinline vuint4 &counts(const size_t binID)             { return _counts[binID]; }
+      __forceinline const vuint4 &counts(const size_t binID) const { return _counts[binID]; }
 
       /*! clears the bin info */
       __forceinline void clear() 
       {
 	for (size_t i=0; i<BINS; i++) {
 	  bounds(i,0) = bounds(i,1) = bounds(i,2) = empty;
-	  counts(i) = vint4(zero);
+	  counts(i) = vuint4(zero);
 	}
       }
       
@@ -355,8 +354,8 @@ namespace embree
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
 	vfloat4 rAreas[BINS];
-	vint4 rCounts[BINS];
-	vint4 count = 0; BBox bx = empty; BBox by = empty; BBox bz = empty;
+	vuint4 rCounts[BINS];
+	vuint4 count = 0; BBox bx = empty; BBox by = empty; BBox bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
           count += counts(i);
@@ -367,8 +366,8 @@ namespace embree
           rAreas[i][3] = 0.0f;
         }
 	/* sweep from left to right and compute SAH */
-	vint4 blocks_add = (1 << blocks_shift)-1;
-	vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0; 
+	vuint4 blocks_add = (1 << blocks_shift)-1;
+	vuint4 ii = 1; vfloat4 vbestSAH = pos_inf; vuint4 vbestPos = 0; 
 	count = 0; bx = empty; by = empty; bz = empty;
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
         {
@@ -378,8 +377,8 @@ namespace embree
           bz.extend(bounds(i-1,2)); float Az = expectedApproxHalfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
-          const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
+          const vuint4 lCount = (count     +blocks_add) >> int(blocks_shift);
+          const vuint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
           const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
@@ -454,7 +453,7 @@ namespace embree
 
     private:
       BBox _bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
-      vint4   _counts[BINS];    //!< counts number of primitives that map into the bins
+      vuint4   _counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
 #if defined(__AVX512F__)
@@ -592,7 +591,7 @@ namespace embree
         vfloat16 max_x0,max_x1,max_x2;
         vfloat16 max_y0,max_y1,max_y2;
         vfloat16 max_z0,max_z1,max_z2;
-        vint16 count0,count1,count2;
+        vuint16 count0,count1,count2;
 
         min_x0 = init_min;
         min_x1 = init_min;
@@ -676,9 +675,9 @@ namespace embree
             max_y2 = mask_max(m_update_z,max_y2,max_y2,b_max_y);
             max_z2 = mask_max(m_update_z,max_z2,max_z2,b_max_z);
             // ------------------------------------------------------------------------
-            count0 = mask_add(m_update_x,count0,count0,vint16(1));
-            count1 = mask_add(m_update_y,count1,count1,vint16(1));
-            count2 = mask_add(m_update_z,count2,count2,vint16(1));      
+            count0 = mask_add(m_update_x,count0,count0,vuint16(1));
+            count1 = mask_add(m_update_y,count1,count1,vuint16(1));
+            count2 = mask_add(m_update_z,count2,count2,vuint16(1));      
           }
 
 
@@ -727,9 +726,9 @@ namespace embree
             max_y2 = mask_max(m_update_z,max_y2,max_y2,b_max_y);
             max_z2 = mask_max(m_update_z,max_z2,max_z2,b_max_z);
             // ------------------------------------------------------------------------
-            count0 = mask_add(m_update_x,count0,count0,vint16(1));
-            count1 = mask_add(m_update_y,count1,count1,vint16(1));
-            count2 = mask_add(m_update_z,count2,count2,vint16(1));      
+            count0 = mask_add(m_update_x,count0,count0,vuint16(1));
+            count1 = mask_add(m_update_y,count1,count1,vuint16(1));
+            count2 = mask_add(m_update_z,count2,count2,vuint16(1));      
           }
 
         }
@@ -783,9 +782,9 @@ namespace embree
           max_y2 = mask_max(m_update_z,max_y2,max_y2,b_max_y);
           max_z2 = mask_max(m_update_z,max_z2,max_z2,b_max_z);
           // ------------------------------------------------------------------------
-          count0 = mask_add(m_update_x,count0,count0,vint16(1));
-          count1 = mask_add(m_update_y,count1,count1,vint16(1));
-          count2 = mask_add(m_update_z,count2,count2,vint16(1));      
+          count0 = mask_add(m_update_x,count0,count0,vuint16(1));
+          count1 = mask_add(m_update_y,count1,count1,vuint16(1));
+          count2 = mask_add(m_update_z,count2,count2,vuint16(1));      
         }
 
         lower[0] = Vec3vf16( min_x0, min_y0, min_z0 );
@@ -836,7 +835,7 @@ namespace embree
 	float bestSAH = inf;
 	int   bestDim = -1;
 	int   bestPos = 0;
-	const vint16 blocks_add = (1 << blocks_shift)-1;
+	const vuint16 blocks_add = (1 << blocks_shift)-1;
         const vfloat16 inf(pos_inf);
 	for (size_t dim=0; dim<3; dim++) 
         {
@@ -846,16 +845,16 @@ namespace embree
 
           const vfloat16 rArea16 = prefix_area_rl(lower[dim].x,lower[dim].y,lower[dim].z, upper[dim].x,upper[dim].y,upper[dim].z);
           const vfloat16 lArea16 = prefix_area_lr(lower[dim].x,lower[dim].y,lower[dim].z, upper[dim].x,upper[dim].y,upper[dim].z);
-          const vint16  lCount16 = prefix_sum(count[dim]);
-          const vint16  rCount16 = reverse_prefix_sum(count[dim]); 
+          const vuint16  lCount16 = prefix_sum(count[dim]);
+          const vuint16  rCount16 = reverse_prefix_sum(count[dim]); 
 
           /* compute best split in this dimension */
           const vfloat16 leftArea  = lArea16;
           const vfloat16 rightArea = align_shift_right<1>(zero,rArea16);
-          const vint16 lC = lCount16;
-          const vint16 rC = align_shift_right<1>(zero,rCount16);
-          const vint16 leftCount  = ( lC + blocks_add) >> blocks_shift;
-          const vint16 rightCount = ( rC + blocks_add) >> blocks_shift;
+          const vuint16 lC = lCount16;
+          const vuint16 rC = align_shift_right<1>(zero,rCount16);
+          const vuint16 leftCount  = ( lC + blocks_add) >> blocks_shift;
+          const vuint16 rightCount = ( rC + blocks_add) >> blocks_shift;
           const vbool16 valid = (leftArea < inf) & (rightArea < inf) & vbool16(0x7fff); // handles inf entries
           const vfloat16 sah = select(valid,madd(leftArea,vfloat16(leftCount),rightArea*vfloat16(rightCount)),vfloat16(pos_inf));
           /* test if this is a better dimension */
@@ -929,7 +928,7 @@ namespace embree
     private:
       Vec3vf16 lower[3];
       Vec3vf16 upper[3];
-      vint16   count[3];
+      vuint16   count[3];
     };
 #endif
   }
