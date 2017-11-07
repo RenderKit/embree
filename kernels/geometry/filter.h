@@ -65,31 +65,5 @@ namespace embree
       ray.geomID = select(final, vint<K>(zero), ray.geomID);
       return final;
     }
-
-    template<int K>
-      __forceinline bool runIntersectionFilter(const Geometry* const geometry, RayK<K>& ray, const size_t k, IntersectContext* context, HitK<K>& hit)
-    {
-      const vbool<K> valid(1 << k);
-      assert(geometry->intersectionFilterN);
-      vint<K> mask = valid.mask32(); vint<K> accept(zero);
-      geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,K,(int*)&accept);
-      accept &= mask;
-      const vbool<K> final = accept != vint<K>(zero);
-      if (any(final)) { copyHitToRay(final,ray,hit); return true; }
-      return false;
-    }
-
-    template<int K>
-      __forceinline bool runOcclusionFilter(const Geometry* const geometry, RayK<K>& ray, const size_t k, IntersectContext* context, HitK<K>& hit)
-    {
-      const vbool<K> valid(1 << k);
-      assert(geometry->occlusionFilterN);
-      vint<K> mask = valid.mask32(); vint<K> accept(zero);
-      geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,K,(int*)&accept);
-      accept &= mask;
-      const vbool<K> final = accept != vint<K>(zero);
-      ray.geomID = select(final, vint<K>(zero), ray.geomID);
-      return any(final);
-    }
   }
 }
