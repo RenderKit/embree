@@ -356,7 +356,7 @@ namespace embree
       /* switch between differnet builders based on quality level */
       if (settings->quality == RTC_BUILD_QUALITY_LOW)
         return rtcBuildBVHMorton   (bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
-      else if (settings->quality == RTC_BUILD_QUALITY_NORMAL)
+      else if (settings->quality == RTC_BUILD_QUALITY_MEDIUM)
         return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
       else if (settings->quality == RTC_BUILD_QUALITY_HIGH) {
         if (splitPrimitive == nullptr || settings->extraSpace == 0)

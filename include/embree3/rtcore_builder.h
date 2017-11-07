@@ -48,7 +48,7 @@ RTCORE_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
 {
   struct RTCBuildSettings settings;
   settings.size = sizeof(settings);
-  settings.quality = RTC_BUILD_QUALITY_NORMAL;
+  settings.quality = RTC_BUILD_QUALITY_MEDIUM;
   settings.maxBranchingFactor = 2;
   settings.maxDepth = 32;
   settings.sahBlockSize = 1;

@@ -401,10 +401,9 @@ namespace embree
       else if (tok == Token::Id("quality")) {
         if (cin->trySymbol("=")) {
           Token flag = cin->get();
-          if      (flag == Token::Id("low") ) quality_flags = RTC_BUILD_QUALITY_LOW;
-          else if (flag == Token::Id("normal") ) quality_flags = RTC_BUILD_QUALITY_NORMAL;
-          else if (flag == Token::Id("medium") ) quality_flags = RTC_BUILD_QUALITY_NORMAL;
-          else if (flag == Token::Id("high") ) quality_flags = RTC_BUILD_QUALITY_HIGH;
+          if      (flag == Token::Id("low"))    quality_flags = RTC_BUILD_QUALITY_LOW;
+          else if (flag == Token::Id("medium")) quality_flags = RTC_BUILD_QUALITY_MEDIUM;
+          else if (flag == Token::Id("high"))   quality_flags = RTC_BUILD_QUALITY_HIGH;
         }
       }
 

@@ -186,7 +186,7 @@ namespace embree
     build(RTC_BUILD_QUALITY_LOW,prims,cfg);
 
     std::cout << "Normal quality BVH build:" << std::endl;
-    build(RTC_BUILD_QUALITY_NORMAL,prims,cfg);
+    build(RTC_BUILD_QUALITY_MEDIUM,prims,cfg);
 
     std::cout << "High quality BVH build:" << std::endl;
     build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);

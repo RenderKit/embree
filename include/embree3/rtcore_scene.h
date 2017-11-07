@@ -43,7 +43,7 @@ enum RTCAccelFlags
 enum RTCBuildQuality
 {
   RTC_BUILD_QUALITY_LOW = 0,     //!< create lower quality data structures (for dynamic scenes)
-  RTC_BUILD_QUALITY_NORMAL = 1,  //!< default build quality for most usages
+  RTC_BUILD_QUALITY_MEDIUM = 1,  //!< default build quality for most usages
   RTC_BUILD_QUALITY_HIGH = 2     //!< create higher quality data structures (longer build times)
 };
 
