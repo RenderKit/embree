@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(RTCBoundsFunction,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
 
   InstanceFactory::InstanceFactory(int features)

@@ -864,7 +864,7 @@ namespace embree
   }
 #endif
 
-  void Scene::setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr) 
+  void Scene::setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr) 
   {
     static MutexSys mutex;
     mutex.lock();

@@ -213,15 +213,15 @@ namespace embree
     }
 
     /*! Set displacement function. */
-    virtual void setDisplacementFunction (RTCDisplacementFunc filter, RTCBounds* bounds) {
+    virtual void setDisplacementFunction (RTCDisplacementFunction filter, RTCBounds* bounds) {
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersection filter function for ray packets of size N. */
-    virtual void setIntersectionFilterFunctionN (RTCFilterFuncN filterN);
+    virtual void setIntersectionFilterFunctionN (RTCFilterFunctionN filterN);
 
     /*! Set occlusion filter function for ray packets of size N. */
-    virtual void setOcclusionFilterFunctionN (RTCFilterFuncN filterN);
+    virtual void setOcclusionFilterFunctionN (RTCFilterFunctionN filterN);
 
     /*! for instances only */
   public:
@@ -235,17 +235,17 @@ namespace embree
   public:
 
     /*! Set bounds function. */
-    virtual void setBoundsFunction (RTCBoundsFunc bounds, void* userPtr) { 
+    virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersect function for ray packets of size N. */
-    virtual void setIntersectFunctionN (RTCIntersectFuncN intersect) { 
+    virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
     /*! Set occlusion function for ray packets of size N. */
-    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded) { 
+    virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -276,8 +276,8 @@ namespace embree
     
   public:
 
-    RTCFilterFuncN intersectionFilterN;
-    RTCFilterFuncN occlusionFilterN;
+    RTCFilterFunctionN intersectionFilterN;
+    RTCFilterFunctionN occlusionFilterN;
 
   };
 }

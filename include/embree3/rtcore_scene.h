@@ -81,10 +81,10 @@ typedef struct __RTCScene* RTCScene;
 RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device);
 
 /*! \brief Type of progress callback function. */
-typedef bool (*RTCProgressMonitorFunc)(void* ptr, const double n);
+typedef bool (*RTCProgressMonitorFunction)(void* ptr, const double n);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
-RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr);
+RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction func, void* ptr);
 
 /*! sets the acceleration structure for a scene */
 RTCORE_API void rtcSetAccelFlags(RTCScene scene, enum RTCAccelFlags accel);

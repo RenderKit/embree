@@ -27,9 +27,9 @@ namespace embree
     UserGeometry (Device* device, RTCGeometryFlags gflags, unsigned int items, unsigned int numTimeSteps); 
     virtual void setUserData (void* ptr);
     virtual void setMask (unsigned mask);
-    virtual void setBoundsFunction (RTCBoundsFunc bounds, void* userPtr);
-    virtual void setIntersectFunctionN (RTCIntersectFuncN intersect);
-    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded);
+    virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr);
+    virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect);
+    virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded);
     virtual void build() {}
   };
 }

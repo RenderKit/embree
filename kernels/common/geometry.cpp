@@ -128,7 +128,7 @@ namespace embree
     userPtr = ptr;
   }
   
-  void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
+  void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
@@ -141,7 +141,7 @@ namespace embree
     //if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
   }
 
-  void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
+  void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 

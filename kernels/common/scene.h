@@ -243,11 +243,11 @@ namespace embree
       Scene* scene;
     };
     BuildProgressMonitorInterface progressInterface;
-    RTCProgressMonitorFunc progress_monitor_function;
+    RTCProgressMonitorFunction progress_monitor_function;
     void* progress_monitor_ptr;
     std::atomic<size_t> progress_monitor_counter;
     void progressMonitor(double nprims);
-    void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr);
+    void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
 
   public:
     struct GeometryCounts 

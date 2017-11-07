@@ -111,7 +111,7 @@ enum RTCCurveType
 };
 
 /*! Intersection filter function for ray packets of size N. */
-typedef void (*RTCFilterFuncN)(const int* valid,                          /*!< pointer to valid mask */
+typedef void (*RTCFilterFunctionN)(const int* valid,                          /*!< pointer to valid mask */
                                void* userPtr,                             /*!< pointer to geometry user data */
                                const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                struct RTCRayN* ray,                       /*!< ray and previous hit */
@@ -120,7 +120,7 @@ typedef void (*RTCFilterFuncN)(const int* valid,                          /*!< p
                                int * const acceptHit                      /*!< accept potential hit */ );
 
 /*! Displacement mapping function. */
-typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
+typedef void (*RTCDisplacementFunction)(void* ptr,           /*!< pointer to user data of geometry */
                                     unsigned geomID,     /*!< ID of geometry to displace */
                                     unsigned primID,     /*!< ID of primitive of geometry to displace */
                                     unsigned time,       /*!< time step to calculate displacement for */
@@ -350,13 +350,13 @@ RTCORE_API void rtcUpdateBuffer (RTCGeometry geometry, enum RTCBufferType type);
 RTCORE_API void rtcDisable (RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, RTCDisplacementFunc func, struct RTCBounds* bounds);
+RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, RTCDisplacementFunction func, struct RTCBounds* bounds);
 
 /*! \brief Sets the intersection filter function for single rays. */
-RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry geometry, RTCFilterFuncN func);
+RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry geometry, RTCFilterFunctionN func);
 
 /*! \brief Sets the occlusion filter function for single rays. */
-RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry geometry, RTCFilterFuncN func);
+RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry geometry, RTCFilterFunctionN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed

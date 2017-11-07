@@ -138,7 +138,7 @@ enum RTCError {
   RTC_INVALID_OPERATION = 3, //!< The operation is not allowed for the specified object.
   RTC_OUT_OF_MEMORY = 4,     //!< There is not enough memory left to execute the command.
   RTC_UNSUPPORTED_CPU = 5,   //!< The CPU is not supported as it does not support SSE2.
-  RTC_CANCELLED = 6          //!< The user has cancelled the operation through the RTCProgressMonitorFunc callback
+  RTC_CANCELLED = 6          //!< The user has cancelled the operation through the RTCProgressMonitorFunction callback
 };
 
 /*! \brief Returns the value of the per-thread error flag. 
@@ -149,19 +149,19 @@ enum RTCError {
 RTCORE_API uniform RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef unmasked void (*uniform RTCErrorFunc)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
+typedef unmasked void (*uniform RTCErrorFunction)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func, void* uniform userPtr);
+RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunction func, void* uniform userPtr);
 
 /*! \brief Type of memory consumption callback function. */
-typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform ssize_t bytes, const uniform bool post);
+typedef uniform bool (*uniform RTCMemoryMonitorFunction)(const uniform ssize_t bytes, const uniform bool post);
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The
  *  userPtr pointer is passed to each invokation of the callback
  *  function. */
-RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* uniform userPtr);
+RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* uniform userPtr);
 
 #include "rtcore_ray.isph"
 #include "rtcore_scene.isph"

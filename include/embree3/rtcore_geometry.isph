@@ -108,7 +108,7 @@ enum RTCCurveType
 };
 
 /*! Intersection filter function for ray packets of size N. */
-typedef unmasked void (*uniform RTCFilterFuncN)(const uniform int* uniform valid,                    /*!< pointer to valid mask */
+typedef unmasked void (*uniform RTCFilterFunctionN)(const uniform int* uniform valid,                    /*!< pointer to valid mask */
                                                 void* uniform ptr,                                   /*!< pointer to geometry user data */
                                                 const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                                 struct RTCRayN* uniform ray,                         /*!< ray and previous hit */
@@ -117,7 +117,7 @@ typedef unmasked void (*uniform RTCFilterFuncN)(const uniform int* uniform valid
                                                 uniform int *const uniform acceptHit                 /*!< accept potential hit */);
 
 /*! Type of displacement callback functions */
-typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*!< pointer to user data of geometry */
+typedef unmasked void (*RTCDisplacementFunction)(void* uniform ptr,               /*!< pointer to user data of geometry */
                                               uniform unsigned int geomID,     /*!< ID of geometry to displace */
                                               uniform unsigned int primID,     /*!< ID of primitive of geometry to displace */
                                               uniform unsigned int time,       /*!< time step to calculate displacement for */
@@ -355,13 +355,13 @@ RTCORE_API void rtcUpdateBuffer (RTCGeometry geometry, uniform RTCBufferType typ
 RTCORE_API void rtcDisable (RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);
+RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, uniform RTCDisplacementFunction func, uniform RTCBounds *uniform bounds);
 
 /*! \brief Sets the intersection filter function for ray packets of size N. */
-RTCORE_API  void rtcSetIntersectionFilterFunction (RTCGeometry geometry, uniform RTCFilterFuncN func);
+RTCORE_API  void rtcSetIntersectionFilterFunction (RTCGeometry geometry, uniform RTCFilterFunctionN func);
 
 /*! \brief Sets the occlusion filter function for ray packets of size N. */
-RTCORE_API  void rtcSetOcclusionFilterFunction (RTCGeometry geometry, uniform RTCFilterFuncN func);
+RTCORE_API  void rtcSetOcclusionFilterFunction (RTCGeometry geometry, uniform RTCFilterFunctionN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed

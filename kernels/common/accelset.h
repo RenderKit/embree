@@ -32,8 +32,8 @@ namespace embree
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
 
-    typedef RTCIntersectFuncN IntersectFuncN;  
-    typedef RTCOccludedFuncN OccludedFuncN;
+    typedef RTCIntersectFunctionN IntersectFuncN;  
+    typedef RTCOccludedFunctionN OccludedFuncN;
     typedef void (*ErrorFunc) ();
 
       struct IntersectorN
@@ -207,7 +207,7 @@ namespace embree
 
 
     public:
-      RTCBoundsFunc boundsFunc;
+      RTCBoundsFunction boundsFunc;
       void* boundsFuncUserPtr;
 
       struct Intersectors 

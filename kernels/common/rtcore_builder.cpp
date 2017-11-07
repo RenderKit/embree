@@ -60,11 +60,11 @@ namespace embree
                             const RTCBuildSettings* settings,
                             RTCBuildPrimitive* prims_i,
                             size_t numPrimitives,
-                            RTCCreateNodeFunc createNode,
-                            RTCSetNodeChildrenFunc setNodeChildren,
-                            RTCSetNodeBoundsFunc setNodeBounds,
-                            RTCCreateLeafFunc createLeaf,
-                            RTCProgressMonitorFunc buildProgress,
+                            RTCCreateNodeFunction createNode,
+                            RTCSetNodeChildrenFunction setNodeChildren,
+                            RTCSetNodeBoundsFunction setNodeBounds,
+                            RTCCreateLeafFunction createLeaf,
+                            RTCProgressMonitorFunction buildProgress,
                             void* userPtr)
     {
       std::atomic<size_t> progress(0);
@@ -156,11 +156,11 @@ namespace embree
                                const RTCBuildSettings* settings,
                                RTCBuildPrimitive* prims,
                                size_t numPrimitives,
-                               RTCCreateNodeFunc createNode,
-                               RTCSetNodeChildrenFunc setNodeChildren,
-                               RTCSetNodeBoundsFunc setNodeBounds,
-                               RTCCreateLeafFunc createLeaf,
-                               RTCProgressMonitorFunc buildProgress,
+                               RTCCreateNodeFunction createNode,
+                               RTCSetNodeChildrenFunction setNodeChildren,
+                               RTCSetNodeBoundsFunction setNodeBounds,
+                               RTCCreateLeafFunction createLeaf,
+                               RTCProgressMonitorFunction buildProgress,
                                void* userPtr)
     {
       std::atomic<size_t> progress(0);
@@ -225,12 +225,12 @@ namespace embree
                                  const RTCBuildSettings* settings,
                                  RTCBuildPrimitive* prims,
                                  size_t numPrimitives,
-                                 RTCCreateNodeFunc createNode,
-                                 RTCSetNodeChildrenFunc setNodeChildren,
-                                 RTCSetNodeBoundsFunc setNodeBounds,
-                                 RTCCreateLeafFunc createLeaf,
-                                 RTCSplitPrimitiveFunc splitPrimitive,
-                                 RTCProgressMonitorFunc buildProgress,
+                                 RTCCreateNodeFunction createNode,
+                                 RTCSetNodeChildrenFunction setNodeChildren,
+                                 RTCSetNodeBoundsFunction setNodeBounds,
+                                 RTCCreateLeafFunction createLeaf,
+                                 RTCSplitPrimitiveFunction splitPrimitive,
+                                 RTCProgressMonitorFunction buildProgress,
                                  void* userPtr)
     {
       std::atomic<size_t> progress(0);
@@ -251,7 +251,7 @@ namespace embree
       /* function that splits a build primitive */
       struct Splitter
       {
-        Splitter (RTCSplitPrimitiveFunc splitPrimitive, unsigned geomID, unsigned primID, void* userPtr)
+        Splitter (RTCSplitPrimitiveFunction splitPrimitive, unsigned geomID, unsigned primID, void* userPtr)
           : splitPrimitive(splitPrimitive), geomID(geomID), primID(primID), userPtr(userPtr) {}
         
         __forceinline void operator() (PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const 
@@ -268,7 +268,7 @@ namespace embree
           splitPrimitive((RTCBuildPrimitive*)&prim,(unsigned)dim,pos,(RTCBounds*)&left_o,(RTCBounds*)&right_o,userPtr);
         }
    
-        RTCSplitPrimitiveFunc splitPrimitive;
+        RTCSplitPrimitiveFunction splitPrimitive;
         unsigned geomID;
         unsigned primID;
         void* userPtr;
@@ -328,12 +328,12 @@ namespace embree
                                  const RTCBuildSettings* settings,
                                  RTCBuildPrimitive* prims,
                                  size_t numPrimitives,
-                                 RTCCreateNodeFunc createNode,
-                                 RTCSetNodeChildrenFunc setNodeChildren,
-                                 RTCSetNodeBoundsFunc setNodeBounds,
-                                 RTCCreateLeafFunc createLeaf,
-                                 RTCSplitPrimitiveFunc splitPrimitive,
-                                 RTCProgressMonitorFunc buildProgress,
+                                 RTCCreateNodeFunction createNode,
+                                 RTCSetNodeChildrenFunction setNodeChildren,
+                                 RTCSetNodeBoundsFunction setNodeBounds,
+                                 RTCCreateLeafFunction createLeaf,
+                                 RTCSplitPrimitiveFunction splitPrimitive,
+                                 RTCProgressMonitorFunction buildProgress,
                                  void* userPtr)
     {
       BVH* bvh = (BVH*) hbvh;

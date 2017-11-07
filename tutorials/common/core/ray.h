@@ -68,7 +68,7 @@
 
     // ray extensions
   public:
-    RTCFilterFuncN filter;
+    RTCFilterFunctionN filter;
     embree::Vec3fa transparency;
   };
 
