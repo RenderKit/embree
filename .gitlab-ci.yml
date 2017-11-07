@@ -18,8 +18,8 @@
 # Continuous Test
 ####################################################################
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2rc2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2rc2 isa:AVX2 tasking:TBB2017 intensity:3"
+continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.1-AVX2-TBB2017:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 intensity:3"
   tags:   [win7, v120]
   only:   [pushes]
 
