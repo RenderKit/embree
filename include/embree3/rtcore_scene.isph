@@ -28,7 +28,7 @@ struct RTCRayNp;
 /*! acceleration structure flags */
 enum RTCAccelFlags
 {
-  RTC_ACCEL_DEFAULT      = 0,          //!< default mode
+  RTC_ACCEL_FAST      = 0,          //!< default mode
   RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
   RTC_ACCEL_ROBUST       = (1 << 2),    //!< use acceleration structure that allows robust traversal
   RTC_ACCEL_ROBUST_COMPACT = (1 << 1) | (1 << 2)

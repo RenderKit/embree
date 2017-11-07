@@ -33,7 +33,7 @@ namespace embree
     : Accel(AccelData::TY_UNKNOWN),
       device(device),
       flags_modified(true),
-      accel_flags(RTC_ACCEL_DEFAULT),
+      accel_flags(RTC_ACCEL_FAST),
       quality_flags(RTC_BUILD_QUALITY_NORMAL),
       hint_flags(RTC_BUILD_HINT_NONE),
       commitCounterSubdiv(0), 

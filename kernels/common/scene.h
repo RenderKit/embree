@@ -194,7 +194,7 @@ namespace embree
     }
 
     /* flag decoding */
-    __forceinline bool isDefaultAccel() { return accel_flags == RTC_ACCEL_DEFAULT; }
+    __forceinline bool isFastAccel() { return accel_flags == RTC_ACCEL_FAST; }
     __forceinline bool isCompactAccel() { return accel_flags & RTC_ACCEL_COMPACT; }
     __forceinline bool isRobustAccel()  { return accel_flags & RTC_ACCEL_ROBUST; }
     __forceinline bool isStaticAccel()  { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }

@@ -199,7 +199,7 @@ namespace embree {
   void Benchmark_Dynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_DYNAMIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
     convertScene(g_scene, scene_in, gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -238,7 +238,7 @@ namespace embree {
   void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
     convertScene(g_scene, scene_in,gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -284,7 +284,7 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = createScene(RTC_ACCEL_DEFAULT,qflags,RTC_BUILD_HINT_NONE);
+      g_scene = createScene(RTC_ACCEL_FAST,qflags,RTC_BUILD_HINT_NONE);
       convertScene(g_scene,scene_in,gflags);
 
       double t0 = getSeconds();

@@ -391,7 +391,7 @@ namespace embree
         if (cin->trySymbol("=")) {
           do {
             Token flag = cin->get();
-            if      (flag == Token::Id("default") ) accel_flags |= RTC_ACCEL_DEFAULT;
+            if      (flag == Token::Id("default") ) accel_flags |= RTC_ACCEL_FAST;
             else if (flag == Token::Id("compact")) accel_flags |= RTC_ACCEL_COMPACT;
             else if (flag == Token::Id("robust")) accel_flags |= RTC_ACCEL_ROBUST;
           } while (cin->trySymbol("|"));
