@@ -165,7 +165,7 @@ def runConfig(config):
     ispc_version = ispc_compiler[4:]
     if ispc_version != "":
       if OS == "linux":
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"/ispc")
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"-linux/ispc")
       elif OS == "macosx":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
       elif OS == "windows":
