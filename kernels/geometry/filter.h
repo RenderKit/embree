@@ -29,7 +29,15 @@ namespace embree
     {
       assert(geometry->intersectionFilterN);
       int mask = -1; int accept = 0;
-      geometry->intersectionFilterN(&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,1,&accept);
+      RTCFilterFunctionNArguments args;
+      args.valid = &mask;
+      args.geomUserPtr = geometry->userPtr;
+      args.context = context->user;
+      args.ray = (RTCRayN*)&ray;
+      args.potentialHit = (RTCHitN*)&hit;
+      args.N = 1;
+      args.acceptHit = &accept;
+      geometry->intersectionFilterN(&args);
       if (accept != 0) copyHitToRay(ray,hit);
       return accept != 0;
     }
@@ -38,7 +46,15 @@ namespace embree
     {
       assert(geometry->occlusionFilterN);
       int mask = -1; int accept = 0;
-      geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,1, (int*)&accept);
+      RTCFilterFunctionNArguments args;
+      args.valid = &mask;
+      args.geomUserPtr = geometry->userPtr;
+      args.context = context->user;
+      args.ray = (RTCRayN*)&ray;
+      args.potentialHit = (RTCHitN*)&hit;
+      args.N = 1;
+      args.acceptHit = &accept;
+      geometry->occlusionFilterN(&args);
       return accept != 0;
     }
 
@@ -47,7 +63,15 @@ namespace embree
     {
       assert(geometry->intersectionFilterN);
       vint<K> mask = valid.mask32(); vint<K> accept(zero);
-      geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,K,(int*)&accept);
+      RTCFilterFunctionNArguments args;
+      args.valid = (int*)&mask;
+      args.geomUserPtr = geometry->userPtr;
+      args.context = context->user;
+      args.ray = (RTCRayN*)&ray;
+      args.potentialHit = (RTCHitN*)&hit;
+      args.N = K;
+      args.acceptHit = (int*)&accept;
+      geometry->intersectionFilterN(&args);
       accept &= mask;
       const vbool<K> final = accept != vint<K>(zero);
       if (any(final)) copyHitToRay(final,ray,hit);
@@ -59,7 +83,15 @@ namespace embree
     {
       assert(geometry->occlusionFilterN);
       vint<K> mask = valid.mask32(); vint<K> accept(zero);
-      geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,K,(int*)&accept);
+      RTCFilterFunctionNArguments args;
+      args.valid = (int*)&mask;
+      args.geomUserPtr = geometry->userPtr;
+      args.context = context->user;
+      args.ray = (RTCRayN*)&ray;
+      args.potentialHit = (RTCHitN*)&hit;
+      args.N = K;
+      args.acceptHit = (int*)&accept;
+      geometry->occlusionFilterN(&args);
       accept &= mask;
       const vbool<K> final = accept != vint<K>(zero);
       ray.geomID = select(final, vint<K>(zero), ray.geomID);

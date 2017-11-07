@@ -2428,30 +2428,24 @@ namespace embree
     //         ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
     // }
     
-    static void intersectionFilterN(const int* valid,
-                                    void* userGeomPtr,
-                                    const RTCIntersectContext* context,
-                                    RTCRayN* ray,
-                                    RTCHitN* potentialHit,
-                                    const unsigned int N,
-                                    int * const acceptHit)
+    static void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     {
-      if ((size_t)userGeomPtr != 123) 
+      if ((size_t)args->geomUserPtr != 123) 
         return;
 
-      for (size_t i=0; i<N; i++)
+      for (size_t i=0; i<args->N; i++)
       {
-	if (valid[i] != -1) continue;
+	if (args->valid[i] != -1) continue;
 
         /* reject hit */
         //PRINT( RTCHitN_primID(potentialHit,N,i) & 2 );
-        if (RTCHitN_primID(potentialHit,N,i) & 2) {
+        if (RTCHitN_primID(args->potentialHit,args->N,i) & 2) {
           //valid[i] = 0;
         }
 
         /* accept hit */
         else {
-          acceptHit[i] = 1;
+          args->acceptHit[i] = 1;
           /*
           RTCRayN_instID(ray,N,i) = RTCHitN_instID(potentialHit,N,i);
           RTCRayN_geomID(ray,N,i) = RTCHitN_geomID(potentialHit,N,i);

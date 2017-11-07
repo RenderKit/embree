@@ -188,14 +188,15 @@ inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, c
 }
 
 /* intersection filter function */
-unmasked void intersectionFilterN(const uniform int* uniform valid,
-                                  void* uniform ptr,
-                                  const uniform RTCIntersectContext* uniform context,
-                                  struct RTCRayN* uniform ray,
-                                  struct RTCHitN* uniform potentialHit,
-                                  const uniform unsigned int N,
-                                  uniform int* const uniform acceptHit)
+unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  const uniform RTCIntersectContext* uniform context =  args->context;
+  struct RTCRayN* uniform ray = args->ray;
+  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  const uniform unsigned int N = args->N;
+  uniform int* const uniform acceptHit = args->acceptHit;
+                                  
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;
@@ -285,14 +286,15 @@ unmasked void intersectionFilterN(const uniform int* uniform valid,
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterN(const uniform int* uniform valid,
-                               void* uniform ptr,
-                               const uniform RTCIntersectContext* uniform context,
-                               struct RTCRayN* uniform ray,
-                               struct RTCHitN* uniform potentialHit,
-                               const uniform unsigned int N,
-                               uniform int* const uniform acceptHit)
+unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  const uniform RTCIntersectContext* uniform context =  args->context;
+  struct RTCRayN* uniform ray = args->ray;
+  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  const uniform unsigned int N = args->N;
+  uniform int* const uniform acceptHit = args->acceptHit;
+                                  
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;

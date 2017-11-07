@@ -44,13 +44,7 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void filterDispatch(const int* valid,
-                    void* ptr,
-                    const RTCIntersectContext* context,
-                    struct RTCRayN* ray,
-                    struct RTCHitN* potentialHit,
-                    const unsigned int N,
-                    int* const acceptHit);
+void filterDispatch(const RTCFilterFunctionNArguments* const args);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -248,28 +242,24 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-void filterDispatch(const int* valid,
-                    void* ptr,
-                    const RTCIntersectContext* context,
-                    struct RTCRayN* _ray,
-                    struct RTCHitN* potentialHit,
-                    const unsigned int N,
-                    int *const acceptHit)
+void filterDispatch(const RTCFilterFunctionNArguments* const args)
 {
-  Ray* ray = (Ray*)_ray;
+  Ray* ray = (Ray*) args->ray;
   if (!enableFilterDispatch) return;
-  if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N,acceptHit);
+  if (ray->filter) ray->filter(args);
 }
 
 /* occlusion filter function */
-void occlusionFilter(const int* valid_i,
-                     void* ptr,
-                     const RTCIntersectContext* context,
-                     struct RTCRayN* _ray,
-                     struct RTCHitN* potentialHit,
-                     const unsigned int N,
-                     int *const acceptHit)
+void occlusionFilter(const RTCFilterFunctionNArguments* const args)
+
 {
+  const int* valid_i = args->valid;
+  void* ptr = args->geomUserPtr;
+  const RTCIntersectContext* context =  args->context;
+  struct RTCRayN* _ray = args->ray;
+  struct RTCHitN* potentialHit = args->potentialHit;
+  const unsigned int N = args->N;
+  int* const acceptHit = args->acceptHit;
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
@@ -280,8 +270,8 @@ void occlusionFilter(const int* valid_i,
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     //ray->geomID = geomID;
-    ray->transparency = Vec3fa(0.0f);
     acceptHit[0] = 1;
+    ray->transparency = Vec3fa(0.0f);
     return;
   }
   Vec3fa T = hair_Kt;

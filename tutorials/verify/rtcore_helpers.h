@@ -579,7 +579,7 @@ namespace embree
   inline std::string to_string(RTCBuildQuality quality_flags)
   {
     if      (quality_flags == RTC_BUILD_QUALITY_LOW   ) return "LowBuildQuality";
-    else if (quality_flags == RTC_BUILD_QUALITY_MEDIUM) return "NormalBuildQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_MEDIUM) return "MediumBuildQuality";
     else if (quality_flags == RTC_BUILD_QUALITY_HIGH  ) return "HighBuildQuality";
     else { assert(false); return ""; }
   }
