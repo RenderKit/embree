@@ -486,6 +486,14 @@ namespace embree
 #endif
   }
 
+  __forceinline vfloat4 vuint_to_float_fast(__m128i a) { // works only for < UINT_MAX
+    const __m128i x2 = _mm_srli_epi32(a, 1);     
+    const __m128i x1 = _mm_sub_epi32(a, x2);     
+    const __m128 x2f = _mm_cvtepi32_ps(x2);
+    const __m128 x1f = _mm_cvtepi32_ps(x1);
+    return _mm_add_ps(x2f, x1f);
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////

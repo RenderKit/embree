@@ -377,8 +377,8 @@ namespace embree
           bz.extend(bounds(i-1,2)); float Az = expectedApproxHalfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vuint4 lCount = (count     +blocks_add) >> int(blocks_shift);
-          const vuint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
+          const vuint4 lCount = (count     +blocks_add) >> (unsigned int)(blocks_shift); // if blocks_shift >=1 then lCount < 4B and could be represented with an vint4, which would allow for faster vfloat4 conversions.
+          const vuint4 rCount = (rCounts[i]+blocks_add) >> (unsigned int)(blocks_shift);
           const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
