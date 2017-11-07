@@ -252,8 +252,6 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
 
 {
   const uniform int* uniform valid_i = args->valid;
-  void* uniform ptr = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context =  args->context;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;

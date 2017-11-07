@@ -254,8 +254,6 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
 
 {
   const int* valid_i = args->valid;
-  void* ptr = args->geomUserPtr;
-  const RTCIntersectContext* context =  args->context;
   struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;

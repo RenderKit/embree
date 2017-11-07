@@ -1266,7 +1266,6 @@ unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* unifor
 unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
 {
   const uniform int* uniform valid_i = args->valid;
-  const uniform RTCIntersectContext* uniform context =  args->context;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
@@ -1322,7 +1321,6 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
 {
   const uniform int* uniform valid_i = args->valid;
   struct RTCRayN* uniform _ray = args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
   uniform int* const uniform acceptHit = args->acceptHit;
   
@@ -1339,8 +1337,6 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
 unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
 {
   const uniform int* uniform valid_i = args->valid;
-  void* uniform ptr = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context =  args->context;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
@@ -1391,8 +1387,6 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
 unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args)
 {
   const uniform int* uniform valid_i = args->valid;
-  void* uniform ptr = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context =  args->context;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;

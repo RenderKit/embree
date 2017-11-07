@@ -1268,7 +1268,6 @@ void intersectionFilterReject(const RTCFilterFunctionNArguments* const args)
 void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 {
   const int* valid_i = args->valid;
-  const RTCIntersectContext* context =  args->context;
   struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
@@ -1324,7 +1323,6 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
 {
   const int* valid_i = args->valid;
   struct RTCRayN* _ray = args->ray;
-  struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
   int* const acceptHit = args->acceptHit;
   
@@ -1341,8 +1339,6 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
 void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 {
   const int* valid_i = args->valid;
-  void* ptr = args->geomUserPtr;
-  const RTCIntersectContext* context =  args->context;
   struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
@@ -1393,8 +1389,6 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
 {
   const int* valid_i = args->valid;
-  void* ptr = args->geomUserPtr;
-  const RTCIntersectContext* context =  args->context;
   struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;

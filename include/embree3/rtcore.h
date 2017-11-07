@@ -191,7 +191,6 @@ RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMon
 #include "rtcore_ray.h"
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
-#include "rtcore_geometry_user.h"
 #include "rtcore_builder.h"
 
 #if defined(__cplusplus)

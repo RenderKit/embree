@@ -166,7 +166,6 @@ RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMon
 #include "rtcore_ray.isph"
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"
-#include "rtcore_geometry_user.isph"
 
 /*! \} */
 
