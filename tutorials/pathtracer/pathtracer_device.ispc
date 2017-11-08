@@ -899,13 +899,16 @@ void device_key_pressed_handler(uniform int key)
 
 void assignShaders(ISPCGeometry* uniform geometry)
 {
-  RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
-  if (geometry->type == SUBDIV_MESH) {
+  if (geometry->type == SUBDIV_MESH)
+  {
+    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
 #endif
   }
-  else if (geometry->type == TRIANGLE_MESH) {
+  else if (geometry->type == TRIANGLE_MESH)
+  {
+    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
@@ -925,7 +928,9 @@ void assignShaders(ISPCGeometry* uniform geometry)
 #endif
   }
 #if ENABLE_FILTER_FUNCTION == 1
-  else if (geometry->type == QUAD_MESH) {
+  else if (geometry->type == QUAD_MESH)
+  {
+    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
 
@@ -942,7 +947,9 @@ void assignShaders(ISPCGeometry* uniform geometry)
       }
     }
   }
-  else if (geometry->type == CURVES) {
+  else if (geometry->type == CURVES)
+  {
+    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
   }
 #endif
