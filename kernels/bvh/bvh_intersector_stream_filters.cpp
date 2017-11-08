@@ -127,11 +127,10 @@ namespace embree
           {
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx IDs = select(valid, *(vintx*)&rayIDs[j], vintx(zero));
-            const vintx offset = IDs * int(stride);
+            const vintx offset = *(vintx*)&rayIDs[j] * int(stride);
             RayK<VSIZEX>& ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
-            ray = rayN.getRayByOffset(vboolx(true), offset);
+            ray = rayN.getRayByOffset(valid, offset);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
           }
@@ -142,8 +141,7 @@ namespace embree
           {
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx IDs = select(valid, *(vintx*)&rayIDs[j], vintx(zero));
-            const vintx offset = IDs * int(stride);
+            const vintx offset = *(vintx*)&rayIDs[j] * int(stride);
             rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);
           }
 

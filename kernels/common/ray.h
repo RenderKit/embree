@@ -825,57 +825,8 @@ namespace embree
     template<int K>
     __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, const vint<K>& offset)
     {
-      /* check whether we can use the fast path */
-      if (likely(all(valid)))
-        return getRayByOffset(offset);
-
-      RayK<K> ray;
-
-  #if defined(__AVX2__)
-      ray.org.x  = vfloat<K>::template gather<1>(valid, &ptr->org.x, offset);
-      ray.org.y  = vfloat<K>::template gather<1>(valid, &ptr->org.y, offset);
-      ray.org.z  = vfloat<K>::template gather<1>(valid, &ptr->org.z, offset);
-      ray.dir.x  = vfloat<K>::template gather<1>(valid, &ptr->dir.x, offset);
-      ray.dir.y  = vfloat<K>::template gather<1>(valid, &ptr->dir.y, offset);
-      ray.dir.z  = vfloat<K>::template gather<1>(valid, &ptr->dir.z, offset);
-      ray.tnear  = vfloat<K>::template gather<1>(valid, &ptr->tnear, offset);
-      ray.tfar   = vfloat<K>::template gather<1>(valid, &ptr->tfar, offset);
-      ray.time   = vfloat<K>::template gather<1>(valid, &ptr->time, offset);
-      ray.mask   = vint<K>::template gather<1>(valid, &ptr->mask, offset);
-      ray.instID = vint<K>::template gather<1>(valid, (int*)&ptr->instID, offset);
-  #else
-      ray.org = zero;
-      ray.dir = zero;
-      ray.tnear = zero;
-      ray.tfar = zero;
-      ray.time = zero;
-      ray.mask = zero;
-      ray.instID = zero;
-
-      for (size_t k = 0; k < K; k++)
-      {
-        if (likely(valid[k]))
-        {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
-
-          ray.org.x[k]  = ray_k->org.x;
-          ray.org.y[k]  = ray_k->org.y;
-          ray.org.z[k]  = ray_k->org.z;
-          ray.dir.x[k]  = ray_k->dir.x;
-          ray.dir.y[k]  = ray_k->dir.y;
-          ray.dir.z[k]  = ray_k->dir.z;
-          ray.tnear[k]  = ray_k->tnear;
-          ray.tfar[k]   = ray_k->tfar;
-          ray.time[k]   = ray_k->time;
-          ray.mask[k]   = ray_k->mask;
-          ray.instID[k] = ray_k->instID;
-        }
-      }
-  #endif
-
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-
-      return ray;
+      const vint<K> validOffset = select(valid, offset, vintx(zero));
+      return getRayByOffset(validOffset);
     }
 
     template<int K>
