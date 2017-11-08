@@ -44,7 +44,7 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void filterDispatch(const RTCFilterFunctionNArguments* const args);
+void occlusionFilter(const RTCFilterFunctionNArguments* const args);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -66,7 +66,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -79,7 +79,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-  rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
   rtcSetTessellationRate(geom,hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -239,22 +239,14 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
-bool enableFilterDispatch = false;
-
-/* filter dispatch function */
-void filterDispatch(const RTCFilterFunctionNArguments* const args)
-{
-  Ray* ray = (Ray*) args->ray;
-  if (!enableFilterDispatch) return;
-  if (ray->filter) ray->filter(args);
-}
-
 /* occlusion filter function */
 void occlusionFilter(const RTCFilterFunctionNArguments* const args)
 
 {
+  Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
+  if (!transparency) return;
+    
   const int* valid_i = args->valid;
-  struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
   int* const acceptHit = args->acceptHit;
@@ -262,34 +254,32 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   bool valid = *((int*) valid_i);
   if (!valid) return;
  
-  Ray* ray = (Ray*)_ray;
   /* make all surfaces opaque */
   unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    //ray->geomID = geomID;
     acceptHit[0] = 1;
-    ray->transparency = Vec3fa(0.0f);
+    *transparency = Vec3fa(0.0f);
     return;
   }
   Vec3fa T = hair_Kt;
-  T = T * ray->transparency;
-  ray->transparency = T;
+  T = T * *transparency;
+  *transparency = T;
   if (eq(T,Vec3fa(0.0f))) 
     acceptHit[0] = 1;
-    //ray->geomID = geomID;
 }
 
 Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, Ray& ray)
 {
+  Vec3fa transparency = Vec3fa(1.0f);
+  context->userRayExt = &transparency;
+  
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.filter = occlusionFilter;
-  ray.transparency = Vec3fa(1.0f);
   rtcOccluded1(scene,context,RTCRay_(ray));
 
-  return ray.transparency;
+  return transparency;
 }
 
 /* task that renders a single screen tile */
@@ -314,7 +304,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
-  ray.filter = nullptr;
 
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa weight = Vec3fa(1.0f);
@@ -398,7 +387,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = time;
-    ray.filter = nullptr;
     weight = weight * c/wi.w;
 
 #else
@@ -524,13 +512,11 @@ extern "C" void device_render (int* pixels,
   /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderTile == renderTileStandard;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
-  enableFilterDispatch = false;
 }
 
 /* called by the C++ code for cleanup */

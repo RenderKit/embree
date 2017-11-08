@@ -42,7 +42,7 @@ uniform Vec3f hair_dK;
 uniform Vec3f hair_Kr;    //!< reflectivity of hair
 uniform Vec3f hair_Kt;    //!< transparency of hair
 
-unmasked void filterDispatch(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -64,7 +64,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
-  rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -77,7 +77,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
-  rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
   rtcSetTessellationRate(geom,hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -237,22 +237,14 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
-uniform bool enableFilterDispatch = false;
-
-/* filter dispatch function */
-unmasked void filterDispatch(const RTCFilterFunctionNArguments* uniform const args)
-{
-  varying Ray* uniform ray = (varying Ray* uniform) args->ray;
-  if (!enableFilterDispatch) return;
-  if (ray->filter) ray->filter(args);
-}
-
 /* occlusion filter function */
 unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args)
 
 {
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  if (!transparency) return;
+    
   const uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
   uniform int* const uniform acceptHit = args->acceptHit;
@@ -260,34 +252,32 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
  
-  varying Ray* uniform ray = (varying Ray* uniform)_ray;
   /* make all surfaces opaque */
   varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    //ray->geomID = geomID;
     acceptHit[programIndex] = 1;
-    ray->transparency = make_Vec3f(0.0f);
+    *transparency = make_Vec3f(0.0f);
     return;
   }
   Vec3f T = hair_Kt;
-  T = T * ray->transparency;
-  ray->transparency = T;
+  T = T * *transparency;
+  *transparency = T;
   if (eq(T,make_Vec3f(0.0f))) 
     acceptHit[programIndex] = 1;
-    //ray->geomID = geomID;
 }
 
 Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, Ray& ray)
 {
+  Vec3f transparency = make_Vec3f(1.0f);
+  context->userRayExt = &transparency;
+  
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.filter = occlusionFilter;
-  ray.transparency = make_Vec3f(1.0f);
   rtcOccluded(scene,context,RTCRay_(ray));
 
-  return ray.transparency;
+  return transparency;
 }
 
 /* task that renders a single screen tile */
@@ -312,7 +302,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
-  ray.filter = NULL;
 
   Vec3f color = make_Vec3f(0.0f);
   Vec3f weight = make_Vec3f(1.0f);
@@ -396,7 +385,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = time;
-    ray.filter = NULL;
     weight = weight * c/wi.w;
 
 #else
@@ -522,9 +510,7 @@ export void device_render (uniform int* uniform pixels,
   /* render frame */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderTile == renderTileStandard;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
-  enableFilterDispatch = false;
 }
 
 /* called by the C++ code for cleanup */

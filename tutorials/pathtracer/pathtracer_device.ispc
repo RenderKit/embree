@@ -1324,22 +1324,25 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
 
 unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args)
 {
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  if (!transparency) return;
+  
   const uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
   uniform int* const uniform acceptHit = args->acceptHit;
   
   assert(args->N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
    
-  varying Ray *uniform ray = (varying Ray* uniform)_ray;
-  ray->transparency = make_Vec3f(0.0f);
+  *transparency = make_Vec3f(0.0f);
   acceptHit[programIndex] = 1;
-  //ray->geomID = 0;
 }
 
 unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
 {
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  if (!transparency) return;
+  
   const uniform int* uniform valid_i = args->valid;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
@@ -1380,18 +1383,20 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
-  ray->transparency = ray->transparency * brdf.Kt;
-  if (max(max(ray->transparency.x,ray->transparency.y),ray->transparency.z) > 0.0f)
+  *transparency = *transparency * brdf.Kt;
+  if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
     ; //valid_i[programIndex] = 0;
   else
-    acceptHit[programIndex] = 1; // ray->geomID = 0;
+    acceptHit[programIndex] = 1;
 }
 
 /* occlusion filter function */
 unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args)
 {
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  if (!transparency) return;
+  
   const uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
   uniform int* const uniform acceptHit = args->acceptHit;
@@ -1401,7 +1406,6 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
   if (!valid) return;
   
   const uniform size_t rayID = 0;
-  varying Ray *uniform ray = (varying Ray* uniform)_ray;
   
   unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
   Vec3f Kt = make_Vec3f(0.0f);
@@ -1419,12 +1423,12 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
     }
   }
 
-  Kt = Kt * ray->transparency;
-  ray->transparency = Kt;
-  if (max(max(ray->transparency.x,ray->transparency.y),ray->transparency.z) > 0.0f)
+  Kt = Kt * *transparency;
+  *transparency = Kt;
+  if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
     ; //valid_i[programIndex] = 0;
   else
-    acceptHit[programIndex] = 1; //ray->geomID = 0;
+    acceptHit[programIndex] = 1;
 }
 
 Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -1519,12 +1523,14 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       const uniform Light* uniform l = g_ispc_scene->lights[i];
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
-      Ray shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = make_Vec3f(1.0f);
+      Vec3f transparency = make_Vec3f(1.0f);
+      Ray shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time);
+      context.userRayExt = &transparency;
       rtcOccluded(g_scene,&context,RTCRay_(shadow));
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
-        L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
+      if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
+        L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
     }
 
     if (wi1.pdf <= 1E-4f /* 0.0f */) break;

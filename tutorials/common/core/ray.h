@@ -33,9 +33,8 @@
 
 #include "../../../common/simd/simd.h"
 
-  /*! Ray structure. Contains all information about a ray including
-   *  precomputed reciprocal direction. */
-  struct Ray
+  /*! Ray structure. */
+  struct __aligned(16) Ray
   {
     /*! Default construction does nothing. */
     __forceinline Ray() {}
@@ -65,11 +64,6 @@
     unsigned int geomID;           //!< geometry ID
     unsigned int primID;           //!< primitive ID
     unsigned int instID;           //!< instance ID
-
-    // ray extensions
-  public:
-    RTCFilterFunctionN filter;
-    embree::Vec3fa transparency;
   };
 
 typedef Ray Ray1;

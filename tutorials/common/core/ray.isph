@@ -57,10 +57,6 @@ struct Ray
   int geomID;    //!< geometry ID
   int primID;    //!< primitive ID
   int instID;    //!< instance ID
-
-  // ray extensions
-  RTCFilterFunctionN filter; 
-  Vec3f transparency;
 };
 
 inline varying RTCRay* uniform RTCRay_(varying Ray& ray)
