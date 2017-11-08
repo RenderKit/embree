@@ -1241,8 +1241,7 @@ namespace embree
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetGeometry);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
+    // do not verify hscene and geomID for performance reasons
     return (RTCGeometry) scene->get(geomID);
     RTCORE_CATCH_END2(scene);
     return nullptr;
