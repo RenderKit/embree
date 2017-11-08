@@ -819,6 +819,11 @@ namespace embree
     __forceinline RayStreamAOS(void* rays)
       : ptr((Ray*)rays) {}
 
+    __forceinline Ray& getRayByOffset(size_t offset)
+    {
+      return *(Ray*)((char*)ptr + offset);
+    }
+
     template<int K>
     __forceinline RayK<K> getRayByOffset(const vint<K>& offset);
 
@@ -1024,6 +1029,11 @@ namespace embree
     __forceinline RayStreamAOP(void* rays)
       : ptr((Ray**)rays) {}
 
+    __forceinline Ray& getRayByIndex(size_t index)
+    {
+      return *ptr[index];
+    }
+
     template<int K>
     __forceinline RayK<K> getRayByIndex(const vint<K>& index);
 
@@ -1035,7 +1045,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByIndex(const vbool<K>& valid_i, size_t index, const RayK<K>& ray, bool intersect = true)
+    __forceinline void setHitByIndex(const vbool<K>& valid_i, const vint<K>& index, const RayK<K>& ray, bool intersect = true)
     {
       vbool<K> valid = valid_i;
       valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
@@ -1046,7 +1056,7 @@ namespace embree
         while (valid_bits != 0)
         {
           const size_t k = __bscf(valid_bits);
-          Ray* __restrict__ ray_k = ptr[index+k];
+          Ray* __restrict__ ray_k = ptr[index[k]];
 
           ray_k->geomID = ray.geomID[k];
           if (intersect)
