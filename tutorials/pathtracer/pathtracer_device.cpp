@@ -903,7 +903,6 @@ void assignShaders(ISPCGeometry* geometry)
 {
   RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
   if (geometry->type == SUBDIV_MESH) {
-    ISPCSubdivMesh* mesh = (ISPCSubdivMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
 #endif
@@ -946,7 +945,6 @@ void assignShaders(ISPCGeometry* geometry)
     }
   }
   else if (geometry->type == CURVES) {
-    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
   }
 #endif

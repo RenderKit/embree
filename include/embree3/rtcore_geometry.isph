@@ -122,12 +122,18 @@ struct RTCFilterFunctionNArguments
 /*! Intersection filter function for ray packets of size N. */
 typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform const args);
 
+/*! Arguments for RTCBoundsFunction */
+struct RTCBoundsFunctionArguments
+{
+  void* uniform userPtr;            /*!< pointer to user data */
+  void* uniform geomUserPtr;        /*!< pointer to geometry user data */
+  uniform unsigned int item;              /*!< item to calculate bounds for */
+  uniform unsigned int time;              /*!< time to calculate bounds for */
+  uniform RTCBounds* uniform bounds_o;       /*!< returns calculated bounds */
+};
+
 /*! Type of bounding function. */
-typedef unmasked void (*RTCBoundsFunction)(void* uniform userPtr,            /*!< pointer to user data */
-                                       void* uniform geomUserPtr,        /*!< pointer to geometry user data */
-                                       uniform unsigned int item,              /*!< item to calculate bounds for */
-                                       uniform unsigned int time,              /*!< time to calculate bounds for */
-                                       uniform RTCBounds* uniform bounds_o       /*!< returns calculated bounds */);
+typedef unmasked void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* uniform const args);
 
 /*! Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments

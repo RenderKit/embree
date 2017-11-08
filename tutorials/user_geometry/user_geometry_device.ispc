@@ -48,9 +48,10 @@ struct Instance
   Vec3f upper;
 };
 
-unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds* uniform bounds_o)
+unmasked void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* uniform const args)
 {
-  const uniform Instance* uniform instance = (const uniform Instance* uniform) instance_i;
+  const uniform Instance* uniform instance = (const uniform Instance* uniform) args->geomUserPtr;
+  uniform RTCBounds* uniform bounds_o = args->bounds_o;
   uniform Vec3f l = instance->lower;
   uniform Vec3f u = instance->upper;
   uniform Vec3f p000 = xfmPoint(instance->local2world,make_Vec3f(l.x,l.y,l.z));
@@ -281,10 +282,11 @@ struct Sphere
   uniform unsigned int geomID;
 };
 
-unmasked void sphereBoundsFunc(void* uniform, void* uniform spheres_i, uniform unsigned int item, uniform unsigned int time, uniform RTCBounds* uniform bounds_o)
+unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform const args)
 {
-  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
-  const uniform Sphere& sphere = spheres[item];
+  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
+  uniform RTCBounds* uniform bounds_o = args->bounds_o;
+  const uniform Sphere& sphere = spheres[args->item];
   bounds_o->lower_x = sphere.p.x-sphere.r;
   bounds_o->lower_y = sphere.p.y-sphere.r;
   bounds_o->lower_z = sphere.p.z-sphere.r;
@@ -297,7 +299,6 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
   uniform unsigned int N = args->N;
   uniform unsigned int item = args->item;
@@ -342,7 +343,6 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
   uniform unsigned int N = args->N;
   uniform unsigned int item = args->item;
@@ -377,7 +377,6 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
   uniform unsigned int N = args->N;
   uniform unsigned int item = args->item;
@@ -441,7 +440,6 @@ unmasked void sphereOccludedFuncN(const RTCIntersectFunctionNArguments* uniform 
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  const uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
   uniform unsigned int N = args->N;
   uniform unsigned int item = args->item;

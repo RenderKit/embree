@@ -21,22 +21,25 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, unsigned int item, unsigned int itime, BBox3fa& bounds_o)
+    void InstanceBoundsFunction(const struct RTCBoundsFunctionArguments* const args)
     {
+      const Instance* instance = (const Instance*) args->geomUserPtr;
+      unsigned int itime = args->time;
+
       assert(itime < instance->numTimeSteps);
       unsigned num_time_segments = instance->numTimeSegments();
       if (num_time_segments == 0) {
-        bounds_o = xfmBounds(instance->local2world[itime],instance->object->bounds.bounds());
+        *((BBox3fa*)args->bounds_o) = xfmBounds(instance->local2world[itime],instance->object->bounds.bounds());
       }
       else {
         const float ftime = float(itime) / float(num_time_segments);
         const BBox3fa obounds = instance->object->bounds.interpolate(ftime);
-        bounds_o = xfmBounds(instance->local2world[itime],obounds);
+        *((BBox3fa*)args->bounds_o) = xfmBounds(instance->local2world[itime],obounds);
       }
     }
 
     RTCBoundsFunction InstanceBoundsFunc() {
-      return (RTCBoundsFunction) InstanceBoundsFunction;
+      return InstanceBoundsFunction;
     }
 
     __forceinline void FastInstanceIntersectorN::intersect1(const struct RTCIntersectFunctionNArguments* const args)

@@ -75,7 +75,13 @@ namespace embree
       {
         BBox3fa box;
         assert(i < size());
-        boundsFunc(boundsFuncUserPtr,intersectors.ptr,i,itime,(RTCBounds*)&box);
+        RTCBoundsFunctionArguments args;
+        args.userPtr = boundsFuncUserPtr;
+        args.geomUserPtr = intersectors.ptr;
+        args.item = i;
+        args.time = itime;
+        args.bounds_o = (RTCBounds*)&box;
+        boundsFunc(&args);
         return box;
       }
 
@@ -84,8 +90,16 @@ namespace embree
       {
         BBox3fa box[2];
         assert(i < size());
-        boundsFunc(boundsFuncUserPtr,intersectors.ptr,i,itime+0,(RTCBounds*)&box[0]);
-        boundsFunc(boundsFuncUserPtr,intersectors.ptr,i,itime+1,(RTCBounds*)&box[1]);
+        RTCBoundsFunctionArguments args;
+        args.userPtr = boundsFuncUserPtr;
+        args.geomUserPtr = intersectors.ptr;
+        args.item = i;
+        args.time = itime+0;
+        args.bounds_o = (RTCBounds*)&box[0];
+        boundsFunc(&args);
+        args.time = itime+1;
+        args.bounds_o = (RTCBounds*)&box[1];
+        boundsFunc(&args);
         return LBBox3fa(box[0],box[1]);
       }
 
@@ -100,10 +114,9 @@ namespace embree
       /*! calculates the build bounds of the i'th item at the itime'th time segment, if it's valid */
       __forceinline bool buildBounds(size_t i, size_t itime, BBox3fa& bbox) const
       {
-        const BBox3fa bounds0 = bounds(i,itime+0);
-        const BBox3fa bounds1 = bounds(i,itime+1);
-        bbox = bounds0; // use bounding box of first timestep to build BVH
-        return isvalid(bounds0) && isvalid(bounds1);
+        const LBBox3fa bounds = linearBounds(i,itime);
+        bbox = bounds.bounds0; // use bounding box of first timestep to build BVH
+        return isvalid(bounds);
       }
 
       /*! calculates the linear bounds of the i'th primitive for the specified time range */

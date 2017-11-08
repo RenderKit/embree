@@ -139,10 +139,10 @@ namespace embree
     float r;
   };
 
-  void BoundsFunc(void*, void* This, unsigned int index, unsigned int time, RTCBounds* bounds)
+  void BoundsFunc(const struct RTCBoundsFunctionArguments* const args)
   {
-    Sphere* sphere = (Sphere*) This;
-    BBox3fa* bounds_o = (BBox3fa*)bounds;
+    Sphere* sphere = (Sphere*) args->geomUserPtr;
+    BBox3fa* bounds_o = (BBox3fa*)args->bounds_o;
     bounds_o->lower.x = sphere->pos.x-sphere->r;
     bounds_o->lower.y = sphere->pos.y-sphere->r;
     bounds_o->lower.z = sphere->pos.z-sphere->r;

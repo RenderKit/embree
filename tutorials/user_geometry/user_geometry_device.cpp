@@ -50,9 +50,10 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(void* uniform, void* instance_i, unsigned int item, unsigned int time, RTCBounds* bounds_o)
+void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 {
-  const Instance* instance = (const Instance*) instance_i;
+  const Instance* instance = (const Instance*) args->geomUserPtr;
+  RTCBounds* bounds_o = args->bounds_o;
   Vec3fa l = instance->lower;
   Vec3fa u = instance->upper;
   Vec3fa p000 = xfmPoint(instance->local2world,Vec3fa(l.x,l.y,l.z));
@@ -283,10 +284,11 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(void* uniform, void* spheres_i, unsigned int item, unsigned int time, RTCBounds* bounds_o)
+void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 {
-  const Sphere* spheres = (const Sphere*) spheres_i;
-  const Sphere& sphere = spheres[item];
+  const Sphere* spheres = (const Sphere*) args->geomUserPtr;
+  RTCBounds* bounds_o = args->bounds_o;
+  const Sphere& sphere = spheres[args->item];
   bounds_o->lower_x = sphere.p.x-sphere.r;
   bounds_o->lower_y = sphere.p.y-sphere.r;
   bounds_o->lower_z = sphere.p.z-sphere.r;
@@ -299,7 +301,6 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  const RTCIntersectContext* context = args->context;
   RTCRayN* rays = args->rays;
   unsigned int N = args->N;
   unsigned int item = args->item;
@@ -344,7 +345,6 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  const RTCIntersectContext* context = args->context;
   RTCRayN* rays = args->rays;
   unsigned int N = args->N;
   unsigned int item = args->item;
@@ -379,7 +379,6 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  const RTCIntersectContext* context = args->context;
   RTCRayN* rays = args->rays;
   unsigned int N = args->N;
   unsigned int item = args->item;
@@ -443,7 +442,6 @@ void sphereOccludedFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  const RTCIntersectContext* context = args->context;
   RTCRayN* rays = args->rays;
   unsigned int N = args->N;
   unsigned int item = args->item;
