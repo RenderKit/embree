@@ -25,22 +25,14 @@ namespace embree
   {
     struct FastInstanceIntersectorN
     {
-      static void intersect1(const Instance* instance, const RTCIntersectContext* context, Ray& ray, unsigned int item);
-      static void occluded1 (const Instance* instance, const RTCIntersectContext* context, Ray& ray, unsigned int item);
+      static void intersect1(const struct RTCIntersectFunctionNArguments* const args);
+      static void occluded1 (const struct RTCOccludedFunctionNArguments* const args);
 
-      template<int N>
-      static void intersectN(vint<N>* valid, const Instance* instance, const RTCIntersectContext* context, RayK<N>& ray, unsigned int item);
-      template<int N>
-      static void occludedN (vint<N>* valid, const Instance* instance, const RTCIntersectContext* context, RayK<N>& ray, unsigned int item);
+      template<int N> static void intersectN(const struct RTCIntersectFunctionNArguments* const args);
+      template<int N> static void occludedN (const struct RTCOccludedFunctionNArguments* const args);
    
-      static void intersect(const int* valid, void* ptr, const RTCIntersectContext* context, RTCRayN* rays, unsigned int N, unsigned int item);
-      static void occluded (const int* valid, void* ptr, const RTCIntersectContext* context, RTCRayN* rays, unsigned int N, unsigned int item);
-    };
-
-    struct FastInstanceIntersector1M
-    {
-      static void intersect(const Instance* instance, RTCIntersectContext* context, Ray** rays, unsigned int M, unsigned int item);
-      static void occluded (const Instance* instance, RTCIntersectContext* context, Ray** rays, unsigned int M, unsigned int item);
+      static void intersect(const struct RTCIntersectFunctionNArguments* const args);
+      static void occluded (const struct RTCOccludedFunctionNArguments* const args);
     };
   }
 }

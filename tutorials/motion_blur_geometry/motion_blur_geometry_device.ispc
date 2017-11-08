@@ -367,13 +367,14 @@ unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, u
   bounds_o->upper_z = p.z+sphere.r;
 }
 
-unmasked void sphereIntersectFuncN(const uniform int* uniform valid, 
-                                   void* uniform ptr,
-                                   const uniform RTCIntersectContext* uniform context,
-                                   RTCRayN* uniform rays,
-                                   uniform unsigned int N,
-                                   uniform unsigned int item)
+unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[item];
@@ -421,13 +422,14 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
   }
 }
 
-unmasked void sphereOccludedFuncN(const uniform int* uniform valid, 
-                                  void* uniform ptr,
-                                  const uniform RTCIntersectContext* uniform context,
-                                  RTCRayN* uniform rays,
-                                  uniform unsigned int N,
-                                  uniform unsigned int item)
+unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[item];

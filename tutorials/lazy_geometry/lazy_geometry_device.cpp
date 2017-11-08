@@ -160,13 +160,14 @@ void eagerCreate(LazyGeometry* instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFuncN(const int* valid, 
-                                     void* ptr,
-                                     const RTCIntersectContext* context,
-                                     RTCRayN* rays,
-                                     unsigned int N,
-                                     unsigned int item)
+void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
+  const int* valid = args->valid;
+  void* ptr  = args->geomUserPtr;
+  const RTCIntersectContext* context = args->context;
+  RTCRayN* rays = args->rays;
+  unsigned int N = args->N;
+  unsigned int item = args->item;
   assert(N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 
@@ -187,13 +188,14 @@ void instanceIntersectFuncN(const int* valid,
   else ray->instID = instance->userID;
 }
 
-void instanceOccludedFuncN(const int* valid, 
-                                    void* ptr,
-                                    const RTCIntersectContext* context,
-                                    RTCRayN* rays,
-                                    unsigned int N,
-                                    unsigned int item)
+void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 {
+  const int* valid = args->valid;
+  void* ptr  = args->geomUserPtr;
+  const RTCIntersectContext* context = args->context;
+  RTCRayN* rays = args->rays;
+  unsigned int N = args->N;
+  unsigned int item = args->item;
   assert(N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 

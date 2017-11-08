@@ -71,13 +71,15 @@ unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, unifor
   bounds_o->upper_z = upper.z;
 }
 
-unmasked void instanceIntersectFunc(const uniform int* uniform valid, 
-                                    void* uniform ptr,
-                                    const uniform RTCIntersectContext* uniform context,
-                                    RTCRayN* uniform rays,
-                                    uniform unsigned int N,
-                                    uniform unsigned int item)
+unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* uniform const args)
 {
+  
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+                                    
   assert(N == programCount);
   if (!valid[programIndex])
     return;
@@ -101,13 +103,14 @@ unmasked void instanceIntersectFunc(const uniform int* uniform valid,
   }
 }
 
-unmasked void instanceOccludedFunc(const uniform int* uniform valid, 
-                                   void* uniform ptr,
-                                   const uniform RTCIntersectContext* uniform context,
-                                   RTCRayN* uniform rays,
-                                   uniform unsigned int N,
-                                   uniform unsigned int item)
+unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  
   assert(N == programCount);
   if (!valid[programIndex])
     return;
@@ -123,23 +126,23 @@ unmasked void instanceOccludedFunc(const uniform int* uniform valid,
   ray->dir = ray_dir;
 }
 
-unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
-                                     void* uniform ptr,
-                                     const uniform RTCIntersectContext* uniform context,
-                                     RTCRayN* uniform rays,
-                                     uniform unsigned int N,
-                                     uniform unsigned int item)
+unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
 {
   /* avoid crashing when debug visualizations are used */
-  if (context == NULL)
+  if (args->context == NULL)
     return;
 
   /* fast path */
-  if (N == programCount) {
-    instanceIntersectFunc(valid,ptr,context,rays,N,item);
+  if (args->N == programCount) {
+    instanceIntersectFunc(args);
     return;
   }
-      
+
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -184,23 +187,23 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
   }
 }
 
-unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
-                                    void* uniform ptr,
-                                    const uniform RTCIntersectContext* uniform context,
-                                    RTCRayN* uniform rays,
-                                    uniform unsigned int N,
-                                    uniform unsigned int item)
+unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
 {
   /* avoid crashing when debug visualizations are used */
-  if (context == NULL)
+  if (args->context == NULL)
     return;
 
   /* fast path */
-  if (N == programCount) {
-    instanceOccludedFunc(valid,ptr,context,rays,N,item);
+  if (args->N == programCount) {
+    instanceOccludedFunc(args);
     return;
   }
 
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -290,13 +293,15 @@ unmasked void sphereBoundsFunc(void* uniform, void* uniform spheres_i, uniform u
   bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
-unmasked void sphereIntersectFunc(const uniform int* uniform valid, 
-                                  void* uniform ptr,
-                                  const uniform RTCIntersectContext* uniform context,
-                                  RTCRayN* uniform rays,
-                                  uniform unsigned int N,
-                                  uniform unsigned int item)
+unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
+  
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[item];
@@ -333,13 +338,15 @@ unmasked void sphereIntersectFunc(const uniform int* uniform valid,
   }
 }
 
-unmasked void sphereOccludedFunc(const uniform int* uniform valid,
-                                 void* uniform ptr,
-                                 const uniform RTCIntersectContext* uniform context,
-                                 RTCRayN* uniform rays,
-                                 uniform unsigned int N,
-                                 uniform unsigned int item)
+unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
+  
   assert(N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
   const uniform Sphere& sphere = spheres[item];
@@ -366,13 +373,14 @@ unmasked void sphereOccludedFunc(const uniform int* uniform valid,
   }
 }
 
-unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
-                                   void* uniform ptr,
-                                   const uniform RTCIntersectContext* uniform context,
-                                   RTCRayN* uniform rays,
-                                   uniform unsigned int N,
-                                   uniform unsigned int item)
+unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -429,13 +437,14 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
   }
 }
 
-unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
-                                  void* uniform ptr,
-                                  const uniform RTCIntersectContext* uniform context,
-                                  RTCRayN* uniform rays,
-                                  uniform unsigned int N,
-                                  uniform unsigned int item)
+unmasked void sphereOccludedFuncN(const RTCIntersectFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
   /* iterate over all rays in ray packet */

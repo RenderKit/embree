@@ -158,13 +158,14 @@ void eagerCreate(uniform LazyGeometry* uniform instance)
   instance->state = LAZY_VALID;
 }
 
-unmasked void instanceIntersectFuncN(const uniform int* uniform valid, 
-                                     void* uniform ptr,
-                                     const uniform RTCIntersectContext* uniform context,
-                                     RTCRayN* uniform rays,
-                                     uniform unsigned int N,
-                                     uniform unsigned int item)
+unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
   assert(N == programCount);
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform)ptr;
 
@@ -185,13 +186,14 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
   else ray->instID = instance->userID;
 }
 
-unmasked void instanceOccludedFuncN(const uniform int* uniform valid, 
-                                    void* uniform ptr,
-                                    const uniform RTCIntersectContext* uniform context,
-                                    RTCRayN* uniform rays,
-                                    uniform unsigned int N,
-                                    uniform unsigned int item)
+unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  const uniform RTCIntersectContext* uniform context = args->context;
+  RTCRayN* uniform rays = args->rays;
+  uniform unsigned int N = args->N;
+  uniform unsigned int item = args->item;
   assert(N == programCount);
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform)ptr;
 

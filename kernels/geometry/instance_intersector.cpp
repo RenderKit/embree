@@ -39,8 +39,12 @@ namespace embree
       return (RTCBoundsFunction) InstanceBoundsFunction;
     }
 
-    __forceinline void FastInstanceIntersectorN::intersect1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, unsigned int item)
+    __forceinline void FastInstanceIntersectorN::intersect1(const struct RTCIntersectFunctionNArguments* const args)
     {
+      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const RTCIntersectContext* user_context = args->context;
+      Ray& ray = *(Ray*)args->rays;
+      
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
@@ -61,8 +65,12 @@ namespace embree
       }
     }
     
-    __forceinline void FastInstanceIntersectorN::occluded1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, unsigned int item)
+  __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
     {
+      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const RTCIntersectContext* user_context = args->context;
+      Ray& ray = *(Ray*)args->rays;
+      
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
@@ -95,8 +103,13 @@ namespace embree
 #endif
 
     template<int N>
-    __noinline void FastInstanceIntersectorN::intersectN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, unsigned int item)
+    __noinline void FastInstanceIntersectorN::intersectN(const struct RTCIntersectFunctionNArguments* const args)
     {
+      const vint<N>* validi = (const vint<N>*) args->valid;
+      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const RTCIntersectContext* user_context = args->context;
+      RayK<N>& ray = *(RayK<N>*)args->rays;
+      
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
@@ -120,8 +133,13 @@ namespace embree
     }
 
     template<int N>
-    __noinline void FastInstanceIntersectorN::occludedN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, unsigned int item)
+    __noinline void FastInstanceIntersectorN::occludedN(const struct RTCOccludedFunctionNArguments* const args)
     {
+      const vint<N>* validi = (const vint<N>*) args->valid;
+      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const RTCIntersectContext* user_context = args->context;
+      RayK<N>& ray = *(RayK<N>*)args->rays;
+      
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
@@ -138,46 +156,30 @@ namespace embree
       ray.dir = ray_dir;
     }
 
-    void FastInstanceIntersectorN::intersect(const int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, unsigned int N, unsigned int item)
-    { 
-      if (likely(N == 1)) {
-        assert(*validi == -1);
-        return intersect1((const Instance*)ptr,user_context,*(Ray*)rays,item);
-      }
-      else if (likely(N == 4)) {
-        return intersectN((vint4*)validi,(const Instance*)ptr,user_context,*(Ray4*)rays,item);
-      }
+    void FastInstanceIntersectorN::intersect(const struct RTCIntersectFunctionNArguments* const args)
+    {
+      const unsigned int N = args->N;
+      if      (likely(N ==  1)) return intersect1(args);
+      else if (likely(N ==  4)) return intersectN<4>(args);
 #if defined(__AVX__)
-      else if (likely(N == 8)) {
-        return intersectN((vint8*)validi,(const Instance*)ptr,user_context,*(Ray8*)rays,item);
-      }
+      else if (likely(N ==  8)) return intersectN<8>(args);
 #endif
 #if defined(__AVX512F__)
-      else if (likely(N == 16)) {
-        return intersectN((vint16*)validi,(const Instance*)ptr,user_context,*(Ray16*)rays,item);
-      }
+      else if (likely(N == 16)) return intersectN<16>(args);
 #endif
       assert(false);
     }
     
-    void FastInstanceIntersectorN::occluded(const int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, unsigned int N, unsigned int item)
+    void FastInstanceIntersectorN::occluded(const struct RTCOccludedFunctionNArguments* const args)
     {
-      if (likely(N == 1)) {
-        assert(*validi == -1);
-        return occluded1((const Instance*)ptr,user_context,*(Ray*)rays,item);
-      }
-      else if (likely(N == 4)) {
-        return occludedN((vint4*)validi,(const Instance*)ptr,user_context,*(Ray4*)rays,item);
-      }
+      const unsigned int N = args->N;
+      if      (likely(N ==  1)) return occluded1(args);
+      else if (likely(N ==  4)) return occludedN<4>(args);    
 #if defined(__AVX__)
-      else if (likely(N == 8)) {
-        return occludedN((vint8*)validi,(const Instance*)ptr,user_context,*(Ray8*)rays,item);
-      }
+      else if (likely(N ==  8)) return occludedN<8>(args);
 #endif
 #if defined(__AVX512F__)
-      else if (likely(N == 16)) {
-        return occludedN((vint16*)validi,(const Instance*)ptr,user_context,*(Ray16*)rays,item);
-      }
+      else if (likely(N == 16)) return occludedN<16>(args);
 #endif
       assert(false);
     }

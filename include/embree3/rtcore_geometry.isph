@@ -129,22 +129,33 @@ typedef unmasked void (*RTCBoundsFunction)(void* uniform userPtr,            /*!
                                        uniform unsigned int time,              /*!< time to calculate bounds for */
                                        uniform RTCBounds* uniform bounds_o       /*!< returns calculated bounds */);
 
+/*! Arguments for RTCIntersectFunctionN */
+struct RTCIntersectFunctionNArguments
+{
+  const uniform int* uniform valid; /*! pointer to valid mask */
+  void* uniform geomUserPtr;                /*!< pointer to geometry user data */
+  const uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  RTCRayN* uniform rays;               /*!< ray packet of size N */
+  uniform unsigned int N;                 /*< number of rays in ray packet */
+  uniform unsigned int item;              /*< item to intersect */
+};
 
 /*! Type of intersect function pointer for ray packets of size N. */
-typedef unmasked void (*RTCIntersectFunctionN)(const uniform int* uniform valid, /*! pointer to valid mask */
-                                           void* uniform ptr,                /*!< pointer to geometry user data */
-                                           const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                           RTCRayN* uniform rays,               /*!< ray packet of size N */
-                                           uniform unsigned int N,                 /*< number of rays in ray packet */
-                                           uniform unsigned int item              /*< item to intersect */);
+typedef unmasked void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* uniform const args);
+
+/*! Arguments for RTCOccludedFunctionN */
+struct RTCOccludedFunctionNArguments
+{
+  const uniform int* uniform valid; /*! pointer to valid mask */
+  void* uniform geomUserPtr;                /*!< pointer to geometry user data */
+  const uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  RTCRayN* uniform rays;               /*!< ray packet of size N */
+  uniform unsigned int N;                 /*< number of rays in ray packet */
+  uniform unsigned int item;              /*< item to intersect */
+};
 
 /*! Type of occlusion function pointer for ray packets of size N. */
-typedef unmasked void (*RTCOccludedFunctionN) (const uniform int* uniform valid,  /*! pointer to valid mask */
-                                           void* uniform ptr,                 /*!< pointer to geometry user data */ 
-                                           const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                           RTCRayN* uniform rays,                 /*!< ray packet of size N */
-                                           uniform unsigned int N,                  /*< number of rays in ray packet*/
-                                           uniform unsigned int item                /*< item to test for occlusion */);
+typedef unmasked void (*RTCOccludedFunctionN) (const struct RTCOccludedFunctionNArguments* uniform const args);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments

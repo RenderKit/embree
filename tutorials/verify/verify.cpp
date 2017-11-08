@@ -151,13 +151,10 @@ namespace embree
     bounds_o->upper.z = sphere->pos.z+sphere->r;
   }
 
-  void IntersectFuncN(const int* valid,
-                      void* ptr,
-                      const RTCIntersectContext* context,
-                      RTCRayN* rays,
-                      unsigned int N,
-                      unsigned int item)
-  {
+  void IntersectFuncN(const struct RTCIntersectFunctionNArguments* const args) {
+  }
+
+  void OccludedFuncN(const struct RTCOccludedFunctionNArguments* const args) {
   }
 
   struct VerifyScene : public RefCount
@@ -301,7 +298,7 @@ namespace embree
       rtcSetBoundsFunction(geom,BoundsFunc,nullptr);
       rtcSetUserData(geom,sphere);
       rtcSetIntersectFunction(geom,IntersectFuncN);
-      rtcSetOccludedFunction(geom,IntersectFuncN);
+      rtcSetOccludedFunction(geom,OccludedFuncN);
       rtcCommitGeometry(geom);
       unsigned int geomID = rtcAttachGeometry(scene,geom);
       rtcReleaseGeometry(geom);
