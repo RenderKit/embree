@@ -162,7 +162,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcCommit);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->commit(0,0,true);
+    scene->commit(false);
     RTCORE_CATCH_END2(scene);
   }
 
@@ -172,32 +172,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcCommitJoin);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->commit(0,0,false);
-    RTCORE_CATCH_END2(scene);
-  }
-
-  RTCORE_API void rtcCommitThread(RTCScene hscene, unsigned int threadID, unsigned int numThreads) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcCommitThread);
-    RTCORE_VERIFY_HANDLE(hscene);
-
-    if (unlikely(numThreads == 0)) 
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid number of threads specified");
-    if (unlikely(threadID >= numThreads)) 
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid thread ID");
-
-    /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
-    unsigned int mxcsr = _mm_getcsr();
-    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
-    
-    /* perform scene build */
-    scene->commit(threadID,numThreads,false);
-
-    /* reset MXCSR register again */
-    _mm_setcsr(mxcsr);
-    
+    scene->commit(true);
     RTCORE_CATCH_END2(scene);
   }
 

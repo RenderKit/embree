@@ -139,7 +139,7 @@ namespace embree
     void setBuildQuality(RTCBuildQuality quality_flags);
     void setBuildHints(RTCBuildHints hint_flags);
     
-    void commit (size_t threadIndex, size_t threadCount, bool useThreadPool);
+    void commit (bool join);
     void commit_task ();
     void build () {}
 

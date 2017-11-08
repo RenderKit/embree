@@ -2967,8 +2967,6 @@ namespace embree
     }
   }
 
-  static bool build_join_test = false;
-
   struct RegressionTask
   {
     RegressionTask (VerifyApplication::Test* test, unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
@@ -3029,11 +3027,7 @@ namespace embree
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
-          if (build_join_test) rtcCommitJoin(*task->scene);
-          else                 {
-            rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
-            rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
-          }
+          rtcCommitJoin(*task->scene);
 	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
             task->errorCounter++;
@@ -3104,11 +3098,7 @@ namespace embree
       if (thread->threadCount) {
 	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
-        if (build_join_test) rtcCommitJoin(*task->scene);
-        else                 {
-          rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
-          rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);          
-        }
+        rtcCommitJoin(*task->scene);
       } else {
         if (!hasError) {
           rtcCommit(*task->scene);
@@ -3147,8 +3137,7 @@ namespace embree
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
-          if (build_join_test) rtcCommitJoin(*task->scene);
-          else	               rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
+          rtcCommitJoin(*task->scene);
 	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
             task->errorCounter++;
@@ -3336,8 +3325,7 @@ namespace embree
       if (thread->threadCount) {
 	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
-        if (build_join_test) rtcCommitJoin(*task->scene);
-        else                 rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
+        rtcCommitJoin(*task->scene);
       } else {
         if (!hasError) 
           rtcCommit(*task->scene);
@@ -3400,7 +3388,6 @@ namespace embree
       {
         if (mode)
         {
-          build_join_test = (mode == 2);
           unsigned numThreads = getNumberOfLogicalThreads();
           
           std::vector<RegressionTask*> tasks;
@@ -4421,11 +4408,6 @@ namespace embree
       
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
       groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
-
-      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_THREAD)) {
-	groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
-	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
-      }
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_JOIN)) {
 	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));

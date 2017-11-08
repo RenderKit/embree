@@ -711,7 +711,7 @@ namespace embree
                    
 #if defined(TASKING_INTERNAL)
 
-  void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 
+  void Scene::commit (bool join) 
   {
     Lock<MutexSys> buildLock(buildMutex,false);
 
@@ -727,30 +727,30 @@ namespace embree
     }
 
     /* worker threads join build */
-    if (!buildLock.isLocked()) {
+    if (!buildLock.isLocked())
+    {
+      if (!join) 
+        throw_RTCError(RTC_INVALID_OPERATION,"use rtcCommitJoin to join a build operation");
+      
       scheduler->join();
       return;
     }
 
-    /* wait for all threads in rtcCommitThread mode */
-    if (threadCount != 0)
-      scheduler->wait_for_threads(threadCount);
-    
     /* fast path for unchanged scenes */
     if (!isModified()) {
-      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, useThreadPool);
+      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
       return;
     }
 
     /* report error if scene not ready */
     if (!ready()) {
-      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, useThreadPool);
+      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
     }
 
     /* initiate build */
     try {
-      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, useThreadPool);
+      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
     }
     catch (...) {
       accels.clear();
@@ -765,25 +765,17 @@ namespace embree
 
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
 
-  void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 
+  void Scene::commit (bool join) 
   {
-    /* let threads wait for build to finish in rtcCommitThread mode */
-    if (threadCount != 0) {
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcCommitThread not supported");
-#endif
-      if (threadIndex > 0) {
-        group_barrier.wait(threadCount); // FIXME: use barrier that waits in condition
-        group->wait();
-        return;
-      }
-    }
-
     /* try to obtain build lock */
     Lock<MutexSys> lock(buildMutex,buildMutex.try_lock());
 
     /* join hierarchy build */
-    if (!lock.isLocked()) {
+    if (!lock.isLocked())
+    {
+      if (!join) 
+        throw_RTCError(RTC_INVALID_OPERATION,"use rtcCommitJoin to join a build operation");
+      
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
       throw_RTCError(RTC_INVALID_OPERATION,"join not supported");
 #endif
@@ -806,12 +798,10 @@ namespace embree
     }
 
     if (!isModified()) {
-      if (threadCount) group_barrier.wait(threadCount);
       return;
     }
 
     if (!ready()) {
-      if (threadCount) group_barrier.wait(threadCount);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
@@ -835,7 +825,6 @@ namespace embree
           group->run([&]{
               tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
             });
-          if (threadCount) group_barrier.wait(threadCount);
           group->wait();
 #if USE_TASK_ARENA
         }); 
@@ -847,7 +836,6 @@ namespace embree
       group->run([&]{
           concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
-      if (threadCount) group_barrier.wait(threadCount);
       group->wait();
 
 #endif

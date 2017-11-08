@@ -121,7 +121,6 @@ enum RTCParameter {
   RTC_CONFIG_USER_GEOMETRY = 22,             //!< checks if user geometries are supported
 
   RTC_CONFIG_COMMIT_JOIN = 23,               //!< checks if rtcCommitJoin can be used to join build operation (not supported when compiled with some older TBB versions)
-  RTC_CONFIG_COMMIT_THREAD = 24,             //!< checks if rtcCommitThread is available (not supported when compiled with some older TBB versions)
 };
 
 /*! \brief Configures some device parameters.*/
