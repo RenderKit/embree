@@ -165,8 +165,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
   void* uniform ptr  = args->geomUserPtr;
   const uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
-  uniform unsigned int N = args->N;
-  assert(N == programCount);
+  assert(args->N == programCount);
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform)ptr;
 
   if (!valid[programIndex])
@@ -192,8 +191,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
   void* uniform ptr  = args->geomUserPtr;
   const uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
-  uniform unsigned int N = args->N;
-  assert(N == programCount);
+  assert(args->N == programCount);
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform)ptr;
 
   if (!valid[programIndex])

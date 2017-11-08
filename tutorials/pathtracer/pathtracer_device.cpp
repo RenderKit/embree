@@ -1321,10 +1321,9 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
 {
   const int* valid_i = args->valid;
   struct RTCRayN* _ray = args->ray;
-  const unsigned int N = args->N;
   int* const acceptHit = args->acceptHit;
   
-  assert(N == 1);
+  assert(args->N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
    

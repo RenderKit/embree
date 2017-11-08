@@ -1319,10 +1319,9 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
 {
   const uniform int* uniform valid_i = args->valid;
   struct RTCRayN* uniform _ray = args->ray;
-  const uniform unsigned int N = args->N;
   uniform int* const uniform acceptHit = args->acceptHit;
   
-  assert(N == programCount);
+  assert(args->N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
    
