@@ -130,40 +130,7 @@ namespace embree
         assert(intersectors.intersectorN.intersect);
         intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,1,item);
       }
-   
-      /*! Intersects a packet of 4 rays with the scene. */
-#if defined(__SSE__)   
-      __forceinline void intersect (const vbool4& valid, Ray4& ray, size_t item, IntersectContext* context) 
-      {
-        assert(item < size());
-        vint4 mask = valid.mask32();
-        assert(intersectors.intersectorN.intersect);          
-        intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,4,item);
-      }
-#endif
-      
-#if defined(__AVX__)
-      /*! Intersects a packet of 8 rays with the scene. */
-      __forceinline void intersect (const vbool8& valid, Ray8& ray, size_t item, IntersectContext* context) 
-      {
-        assert(item < size());
-        vint8 mask = valid.mask32();
-        assert(intersectors.intersectorN.intersect);
-        intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,8,item);
-      }
-#endif
 
-      /*! Intersects a packet of 16 rays with the scene. */
-#if defined(__AVX512F__)
-      __forceinline void intersect (const vbool16& valid, Ray16& ray, size_t item, IntersectContext* context) 
-      {
-        assert(item < size());
-        vint16 mask = valid.mask32();
-        assert(intersectors.intersectorN.intersect);
-        intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,16,item);
-      }
-#endif
-      
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (Ray& ray, size_t item, IntersectContext* context) 
       {
@@ -171,40 +138,26 @@ namespace embree
         assert(intersectors.intersectorN.occluded);          
         intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,1,item);
       }
-      
-      /*! Tests if a packet of 4 rays is occluded by the scene. */
-#if defined(__SSE__)
-      __forceinline void occluded (const vbool4& valid, Ray4& ray, size_t item, IntersectContext* context) 
+   
+      /*! Intersects a packet of K rays with the scene. */
+      template<int K>
+        __forceinline void intersect (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context) 
       {
         assert(item < size());
-        vint4 mask = valid.mask32();
-        assert(intersectors.intersectorN.occluded);          
-        intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,4,item);
+        vint<K> mask = valid.mask32();
+        assert(intersectors.intersectorN.intersect);          
+        intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,K,item);
       }
-#endif
-      
-      /*! Tests if a packet of 8 rays is occluded by the scene. */
-#if defined(__AVX__)
-      __forceinline void occluded (const vbool8& valid, Ray8& ray, size_t item, IntersectContext* context) 
-      {
-        assert(item < size());
-        vint8 mask = valid.mask32();
-        assert(intersectors.intersectorN.occluded);          
-        intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,8,item);
-      }
-#endif
-      
-      /*! Tests if a packet of 16 rays is occluded by the scene. */
-#if defined(__AVX512F__)
-      __forceinline void occluded (const vbool16& valid, Ray16& ray, size_t item, IntersectContext* context) 
-      {
-        assert(item < size());
-        vint16 mask = valid.mask32();
-        assert(intersectors.intersectorN.occluded);          
-        intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,16,item);
-      }
-#endif
 
+      /*! Tests if a packet of K rays is occluded by the scene. */
+      template<int K>
+        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context) 
+      {
+        assert(item < size());
+        vint<K> mask = valid.mask32();
+        assert(intersectors.intersectorN.occluded);          
+        intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,K,item);
+      }
 
     public:
       RTCBoundsFunction boundsFunc;
