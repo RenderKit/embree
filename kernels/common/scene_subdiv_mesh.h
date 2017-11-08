@@ -76,6 +76,7 @@ namespace embree
     void updateBuffer (RTCBufferType type);
     void setTessellationRate(float N);
     bool verify ();
+    void commit();
     void setDisplacementFunction (RTCDisplacementFunction func, RTCBounds* bounds);
 
   public:
@@ -307,12 +308,17 @@ namespace embree
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */
   private:
-    
+
     /*! map with all vertex creases */
     parallel_map<uint32_t,float> vertexCreaseMap;
     
     /*! map with all edge creases */
     parallel_map<uint64_t,float> edgeCreaseMap;
+
+  protected:
+    
+    /*! counts number of geometry commits */
+    size_t commitCounter;
   };
 
   namespace isa

@@ -1788,12 +1788,11 @@ namespace embree
       return passed;
     }
     
-    bool checkSubdivInterpolation(const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometry geom, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    bool checkSubdivInterpolation(const RTCDeviceRef& device, RTCGeometry geom, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
     {
       rtcSetSubdivisionMode(geom,0,RTC_SUBDIV_SMOOTH_BOUNDARY);
       AssertNoError(device);
       rtcCommitGeometry(geom);
-      rtcCommit(scene);
       AssertNoError(device);
       bool passed = true;
       passed &= checkInterpolation1D(geom,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
@@ -1811,8 +1810,6 @@ namespace embree
       rtcSetSubdivisionMode(geom,0,RTC_SUBDIV_PIN_CORNERS);
       rtcCommitGeometry(geom);
       AssertNoError(device);
-      rtcCommit(scene);
-      AssertNoError(device);
       
       passed &= checkInterpolationSharpVertex(geom,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
       passed &= checkInterpolationSharpVertex(geom,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
@@ -1826,11 +1823,8 @@ namespace embree
       errorHandler(nullptr,rtcDeviceGetError(device));
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
-      RTCSceneRef scene = rtcDeviceNewScene(device);
-      AssertNoError(device);
       RTCGeometry geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC, 1);
       AssertNoError(device);
-      unsigned int geomID = rtcAttachGeometry(scene,geom);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
       rtcSetBuffer(geom, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
@@ -1861,15 +1855,15 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
-      //passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
-      passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
-      passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
-      //passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
-      passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
-      passed &= checkSubdivInterpolation(device,scene,geom,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
 
       rtcReleaseGeometry(geom);
       AssertNoError(device);
@@ -1920,11 +1914,8 @@ namespace embree
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
-      RTCSceneRef scene = rtcDeviceNewScene(device);
-      AssertNoError(device);
       RTCGeometry geom = rtcNewTriangleMesh(device, RTC_GEOMETRY_STATIC, 1);
       AssertNoError(device);
-      rtcAttachGeometry(scene,geom);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
       AssertNoError(device);
@@ -1952,7 +1943,6 @@ namespace embree
       rtcDisable(geom);
       AssertNoError(device);
       rtcCommitGeometry(geom);
-      rtcCommit(scene);
       AssertNoError(device);
       
       bool passed = true;
@@ -2029,11 +2019,8 @@ namespace embree
 
       size_t M = num_interpolation_hair_vertices*N+16; // padds the arrays with some valid data
       
-      RTCSceneRef scene = rtcDeviceNewScene(device);
-      AssertNoError(device);
       RTCGeometry geom = rtcNewCurveGeometry(device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, 1);
       AssertNoError(device);
-      rtcAttachGeometry(scene,geom);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
       AssertNoError(device);
@@ -2061,7 +2048,6 @@ namespace embree
       rtcDisable(geom);
       AssertNoError(device);
       rtcCommitGeometry(geom);
-      rtcCommit(scene);
       AssertNoError(device);
       
       bool passed = true;

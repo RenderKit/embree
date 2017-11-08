@@ -215,7 +215,6 @@ namespace embree
     RTCBuildQuality quality_flags;
     RTCBuildHints hint_flags;
     AccelN accels;
-    std::atomic<size_t> commitCounterSubdiv;
     std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
     MutexSys buildMutex;
     SpinLock geometriesMutex;

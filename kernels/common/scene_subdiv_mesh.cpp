@@ -34,7 +34,8 @@ namespace embree
       tessellationRate(2.0f),
       numHalfEdges(0),
       faceStartEdge(device,0),
-      invalid_face(device,0)
+      invalid_face(device,0),
+      commitCounter(0)
   {
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
@@ -77,7 +78,7 @@ namespace embree
         unsigned iid = indexBuffer & 0xFFFF;
         if ((unsigned)userbuffers[vid].userdata != iid) {
           userbuffers[vid].userdata = iid;
-          if (scene) scene->commitCounterSubdiv++; // triggers recalculation of cached interpolation data
+          commitCounter++; // triggers recalculation of cached interpolation data
         }
       } else {
         throw_RTCError(RTC_INVALID_OPERATION,"invalid index buffer specified");
@@ -94,7 +95,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     if (type != RTC_LEVEL_BUFFER)
-      if (scene) scene->commitCounterSubdiv++;
+      commitCounter++;
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
@@ -174,7 +175,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     if (type != RTC_LEVEL_BUFFER)
-      if (scene) scene->commitCounterSubdiv++;
+      commitCounter++;
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
@@ -285,7 +286,7 @@ namespace embree
   void SubdivMesh::updateBuffer (RTCBufferType type)
   {
     if (type != RTC_LEVEL_BUFFER)
-      if (scene) scene->commitCounterSubdiv++;
+      commitCounter++;
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps)
@@ -697,7 +698,7 @@ namespace embree
     edge_creases.setModified(false);
     edge_crease_weights.setModified(false);
     vertex_creases.setModified(false);
-    vertex_crease_weights.setModified(false); 
+    vertex_crease_weights.setModified(false);
 
     double t1 = getSeconds();
 
@@ -732,6 +733,13 @@ namespace embree
 
     return true;
   }
+
+  void SubdivMesh::commit () 
+  {
+    initializeHalfEdgeStructures();
+    Geometry::commit();
+  }
+  
 #endif
 
   namespace isa
@@ -773,7 +781,7 @@ namespace embree
       for (unsigned int i=0; i<numFloats; i+=4)
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
-        isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),scene->commitCounterSubdiv,
+        isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),commitCounter,
                                         topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
                                         has_P ? &Pt : nullptr, 
                                         has_dP ? &dPdut : nullptr, 
@@ -847,7 +855,7 @@ namespace embree
                          for (unsigned int j=0; j<numFloats; j+=4) 
                          {
                            const size_t M = min(4u,numFloats-j);
-                           isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),scene->commitCounterSubdiv,
+                           isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),commitCounter,
                                                                             topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                                             P ? P+j*numUVs+i : nullptr,
                                                                             dPdu ? dPdu+j*numUVs+i : nullptr,
