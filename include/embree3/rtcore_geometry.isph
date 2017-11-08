@@ -476,7 +476,7 @@ RTCORE_API void* uniform rtcGetUserData (RTCGeometry geometry);
  *  structure of array (SoA) layout. The buffer has to be padded at
  *  the end such that the last element can be read safely using SSE
  *  instructions.*/
-RTCORE_API void rtcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
+RTCORE_API void rtcInterpolateN(RTCGeometry geometry, 
                                 const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform unsigned int numUVs, 
                                 uniform RTCBufferType buffer, 
                                 uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform unsigned int numFloats);
@@ -500,7 +500,7 @@ RTCORE_API void rtcInterpolateN(RTCScene scene, uniform unsigned int geomID,
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-RTCORE_API void rtcInterpolateN2(RTCScene scene, uniform unsigned int geomID, 
+RTCORE_API void rtcInterpolateN2(RTCGeometry geometry, 
                                 const void* uniform valid, const uniform unsigned* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform unsigned int numUVs, 
                                 uniform RTCBufferType buffer, 
                                 uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform float* uniform ddPdudu, uniform float* uniform ddPdvdv, uniform float* uniform ddPdudv, uniform unsigned int numFloats);
@@ -519,7 +519,7 @@ RTCORE_API void rtcInterpolateN2(RTCScene scene, uniform unsigned int geomID,
  *  (SoA) layout. The buffer has to be padded at the end such
  *  that the last element can be read safely using SSE
  *  instructions. */
-inline void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
+inline void rtcInterpolate(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform unsigned int numFloats)
 {
@@ -527,7 +527,7 @@ inline void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying 
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  rtcInterpolateN(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
+  rtcInterpolateN(geometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
                    (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
                    (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,numFloats);
 }
@@ -548,7 +548,7 @@ inline void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying 
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-inline void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
+inline void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                     varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
@@ -558,7 +558,7 @@ inline void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  rtcInterpolateN2(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
+  rtcInterpolateN2(geometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
                     (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
                     (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,
                     (uniform float* uniform)ddPdudu,(uniform float* uniform)ddPdvdv,(uniform float* uniform)ddPdudv,

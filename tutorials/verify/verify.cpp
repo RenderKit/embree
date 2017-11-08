@@ -1743,12 +1743,12 @@ namespace embree
     InterpolateSubdivTest (std::string name, int isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
 
-    bool checkInterpolation2D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkInterpolation2D(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N_total+i] + 4.0f*data[(v0-4+0)*N_total+i] + 1.0f*data[(v0-4+1)*N_total+i]);
@@ -1760,12 +1760,12 @@ namespace embree
       return passed;
     }
     
-    bool checkInterpolation1D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkInterpolation1D(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
@@ -1774,12 +1774,12 @@ namespace embree
       return passed;
     }
     
-    bool checkInterpolationSharpVertex(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkInterpolationSharpVertex(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         float v = data[v0*N_total+i];
@@ -1796,17 +1796,17 @@ namespace embree
       rtcCommit(scene);
       AssertNoError(device);
       bool passed = true;
-      passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
-      passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation1D(geom,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation1D(geom,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
       
-      passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
-      passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation2D(geom,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation2D(geom,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
       
-      //passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
-      //passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
+      //passed &= checkInterpolation1D(geom,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
+      //passed &= checkInterpolation1D(geom,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
       
-      passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
-      passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
       
       rtcSetSubdivisionMode(geom,0,RTC_SUBDIV_PIN_CORNERS);
       rtcCommitGeometry(geom);
@@ -1814,8 +1814,8 @@ namespace embree
       rtcCommit(scene);
       AssertNoError(device);
       
-      passed &= checkInterpolationSharpVertex(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
-      passed &= checkInterpolationSharpVertex(scene,geomID,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
       return passed;
     }
     
@@ -1885,12 +1885,12 @@ namespace embree
     InterpolateTrianglesTest (std::string name, int isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
-    bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkTriangleInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
       assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         float p0 = data[v0*N_total+i];
@@ -1902,13 +1902,13 @@ namespace embree
       return passed;
     }
     
-    bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    bool checkTriangleInterpolation(RTCGeometry geom, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
     {
       bool passed = true;
-      passed &= checkTriangleInterpolation(scene,geomID,0,0.0f,0.0f,0,1,5,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(scene,geomID,0,0.5f,0.5f,0,1,5,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(scene,geomID,17,0.0f,0.0f,10,15,14,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(scene,geomID,17,0.5f,0.5f,10,15,14,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,0,0.0f,0.0f,0,1,5,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,0,0.5f,0.5f,0,1,5,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,17,0.0f,0.0f,10,15,14,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,17,0.5f,0.5f,10,15,14,buffer,vertices0,N,N_total);
       return passed;
     }
 
@@ -1924,7 +1924,7 @@ namespace embree
       AssertNoError(device);
       RTCGeometry geom = rtcNewTriangleMesh(device, RTC_GEOMETRY_STATIC, 1);
       AssertNoError(device);
-      unsigned int geomID = rtcAttachGeometry(scene,geom);
+      rtcAttachGeometry(scene,geom);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
       AssertNoError(device);
@@ -1956,15 +1956,15 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
+      passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
+      passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
 
       rtcReleaseGeometry(geom);
       AssertNoError(device);
@@ -1987,12 +1987,12 @@ namespace embree
     InterpolateHairTest (std::string name, int isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
-    bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkHairInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
       assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         const float p00 = data[(v0+0)*N_total+i];
@@ -2011,13 +2011,13 @@ namespace embree
       return passed;
     }
     
-    bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    bool checkHairInterpolation(RTCGeometry geom, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
     {
       bool passed = true;
-      passed &= checkHairInterpolation(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(scene,geomID,1,0.5f,0.0f,3,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(scene,geomID,2,0.0f,0.0f,6,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(scene,geomID,3,0.2f,0.0f,9,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,1,0.5f,0.0f,3,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,2,0.0f,0.0f,6,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,3,0.2f,0.0f,9,buffer,vertices0,N,N_total);
       return passed;
     }
     
@@ -2033,7 +2033,7 @@ namespace embree
       AssertNoError(device);
       RTCGeometry geom = rtcNewCurveGeometry(device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, 1);
       AssertNoError(device);
-      unsigned int geomID = rtcAttachGeometry(scene,geom);
+      rtcAttachGeometry(scene,geom);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
       AssertNoError(device);
@@ -2065,15 +2065,15 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
+      passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
+      passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
 
       rtcReleaseGeometry(geom);
       AssertNoError(device);

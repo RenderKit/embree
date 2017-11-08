@@ -466,7 +466,7 @@ RTCORE_API void* rtcGetUserData (RTCGeometry geometry);
  *  either valid or NULL. The buffer has to be padded at the end such
  *  that the last element can be read safely using SSE
  *  instructions. */
-RTCORE_API void rtcInterpolate(RTCScene scene, unsigned int geomID, unsigned primID, float u, float v, enum RTCBufferType buffer, 
+RTCORE_API void rtcInterpolate(RTCGeometry geometry, unsigned primID, float u, float v, enum RTCBufferType buffer, 
                                float* P, float* dPdu, float* dPdv, unsigned int numFloats);
 
 /*! Interpolates user data to some u/v location. The data buffer
@@ -483,7 +483,7 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned int geomID, unsigned pri
  *  order derivatives by setting ddPdudu, ddPdvdv, and ddPdudv to
  *  NULL. The buffers have to be padded at the end such that the last
  *  element can be read or written safely using SSE instructions. */
-RTCORE_API void rtcInterpolate2(RTCScene scene, unsigned int geomID, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
+RTCORE_API void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
 
 /*! Interpolates user data to an array of u/v locations. The valid
@@ -502,7 +502,7 @@ RTCORE_API void rtcInterpolate2(RTCScene scene, unsigned int geomID, unsigned in
  *  structure of array (SoA) layout. The buffer has to be padded at
  *  the end such that the last element can be read safely using SSE
  *  instructions.*/
-RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned int geomID, 
+RTCORE_API void rtcInterpolateN(RTCGeometry geometry,
                                 const void* valid, const unsigned int* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                 enum RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, unsigned int numFloats);
@@ -526,7 +526,7 @@ RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned int geomID,
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned int geomID, 
+RTCORE_API void rtcInterpolateN2(RTCGeometry geometry, 
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                 enum RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);

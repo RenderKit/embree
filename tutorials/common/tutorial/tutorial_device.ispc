@@ -253,7 +253,8 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, u
   {
     Vec2f st = make_Vec2f(0,0);
     foreach_unique (geomID in ray.geomID) {
-      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER_(2),&st.x,NULL,NULL,2);
+      RTCGeometry geometry = rtcGetGeometry(g_scene,geomID);
+      rtcInterpolate(geometry,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER_(2),&st.x,NULL,NULL,2);
     }
     if (render_texcoords_mode%2 == 0)
       return make_Vec3f(st.x,st.y,0.0f);
@@ -652,11 +653,12 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   Vec3f dP00dv, dP01dv, dP10dv, dP11dv;
   Vec3f dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
   foreach_unique (geomID in ray.geomID) {
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
-    rtcInterpolate2(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
+    RTCGeometry geometry = rtcGetGeometry(g_scene,geomID);
+    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
+    rtcInterpolate2(geometry,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
   }
   Vec3f dPdu0 = (P10-P00)/eps;
   Vec3f dPdv0 = (P01-P00)/eps;
