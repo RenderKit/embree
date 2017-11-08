@@ -151,9 +151,6 @@ namespace embree
     /* bind geometry to the scene */
     unsigned int bind (unsigned geomID, Ref<Geometry> geometry);
     
-    /* determines of the scene is ready to get build */
-    bool ready() { return numMappedBuffers == 0; }
-
     /* determines if scene is modified */
     __forceinline bool isModified() const { return modified; }
 
@@ -215,7 +212,6 @@ namespace embree
     RTCBuildQuality quality_flags;
     RTCBuildHints hint_flags;
     AccelN accels;
-    std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;

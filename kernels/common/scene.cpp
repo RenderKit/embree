@@ -36,7 +36,6 @@ namespace embree
       accel_flags(RTC_ACCEL_FAST),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       hint_flags(RTC_BUILD_HINT_NONE),
-      numMappedBuffers(0),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
@@ -741,12 +740,6 @@ namespace embree
       return;
     }
 
-    /* report error if scene not ready */
-    if (!ready()) {
-      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
-      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
-    }
-
     /* initiate build */
     try {
       scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
@@ -797,11 +790,6 @@ namespace embree
     }
 
     if (!isModified()) {
-      return;
-    }
-
-    if (!ready()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
 
