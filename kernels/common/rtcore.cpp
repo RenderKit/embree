@@ -1243,7 +1243,7 @@ namespace embree
     RTCORE_TRACE(rtcGetGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    return (RTCGeometry) scene->get_locked(geomID).ptr; // FIXME: incRef???
+    return (RTCGeometry) scene->get(geomID);
     RTCORE_CATCH_END2(scene);
     return nullptr;
   }
