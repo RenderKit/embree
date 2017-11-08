@@ -493,16 +493,6 @@ namespace embree
 #endif
   }
 
-  __forceinline vfloat4 vuint_to_float(const vuint4 v) { 
-
-    const __m128i a   = _mm_and_si128(v,_mm_set1_epi32(0x7FFFFFFF));
-    const __m128i b   = _mm_and_si128(_mm_srai_epi32(v,31),_mm_set1_epi32(0x4F000000)); // 0x4F000000 = 2^31 
-    const __m128  af  = _mm_cvtepi32_ps(a);
-    const __m128  bf  = _mm_castsi128_ps(b);  
-    const __m128 sum  = _mm_add_ps(af,bf);
-    return sum;
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////

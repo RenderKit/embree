@@ -375,6 +375,7 @@ namespace embree
           const vuint4 lCount = (count     +blocks_add) >> (unsigned int)(blocks_shift);
           const vuint4 rCount = (rCounts[i]+blocks_add) >> (unsigned int)(blocks_shift);
           const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
+          // const vfloat4 sah = madd(lArea,vfloat4(vint4(lCount)),rArea*vfloat4(vint4(rCount)));
           const vbool4 mask = sah < vbestSAH;
           vbestPos      = select(mask,ii ,vbestPos);
           vbestSAH      = select(mask,sah,vbestSAH);

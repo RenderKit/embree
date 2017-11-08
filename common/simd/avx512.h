@@ -23,9 +23,9 @@
 
 #include "vboolf16_avx512.h"
 #include "vint16_avx512.h"
+#include "vuint16_avx512.h"
 #include "vfloat16_avx512.h"
 
-#include "vuint16_avx512.h"
 #include "vboold8_avx512.h"
 #include "vllong8_avx512.h"
 #include "vdouble8_avx512.h"
