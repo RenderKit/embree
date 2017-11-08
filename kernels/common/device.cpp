@@ -450,12 +450,6 @@ namespace embree
     case RTC_CONFIG_INTERSECTION_FILTER: return 0;
 #endif
 
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
-    case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 1;
-#else
-    case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
-#endif
-
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
 #else
