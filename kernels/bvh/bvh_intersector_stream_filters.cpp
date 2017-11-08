@@ -192,7 +192,7 @@ namespace embree
             const vboolx valid = vij < vintx(int(N));
             const size_t packetIndex = j / VSIZEX;
 
-            RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i+j);
+            RayK<VSIZEX> ray = rayN.getRayByIndex(valid, vij);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -225,7 +225,7 @@ namespace embree
           const vintx vi = vintx(int(i)) + vintx(step);
           vboolx valid = vi < vintx(int(N));
 
-          RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i);
+          RayK<VSIZEX> ray = rayN.getRayByIndex(valid, vi);
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
