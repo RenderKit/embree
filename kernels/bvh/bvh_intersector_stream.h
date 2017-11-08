@@ -117,11 +117,11 @@ namespace embree
       }
 
       
-      __forceinline static size_t intersectAlignedNodePacket(const TravRayKStream<K,robust>* packets,
+      __forceinline static size_t intersectAlignedNodePacket(size_t m_active,
+                                                             const TravRayKStream<K,robust>* packets,
                                                              const AlignedNode* __restrict__ node,
-                                                             size_t bid,
-                                                             const NearFarPrecalculations& nf,
-                                                             size_t m_active)
+                                                             size_t boxID,
+                                                             const NearFarPrecalculations& nf)
       {
         assert(m_active);
         const size_t startPacketID = __bsf(m_active) / K;
@@ -129,13 +129,13 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = intersectNodeK<N>(node, bid, packets[i], nf);
+          const size_t m_hit = intersectNodeK<N>(node, boxID, packets[i], nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
       }
       
-      __forceinline static size_t traverseCoherentStream(size_t m_trav_active,
+      __forceinline static size_t traverseCoherentStream(size_t m_active,
                                                          TravRayKStream<K, robust>* packets,
                                                          const AlignedNode* __restrict__ node,
                                                          const Frustum<robust>& frustum,
@@ -143,7 +143,7 @@ namespace embree
                                                          vfloat<Nx>& dist)
       {
         size_t m_node_hit = intersectNodeFrustum<N,Nx>(node, frustum, dist);
-        const size_t first_index    = __bsf(m_trav_active);
+        const size_t first_index    = __bsf(m_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
         size_t m_first_hit = intersectNode1<N,Nx>(node, packets[first_packetID], first_rayID, frustum.nf);
@@ -152,20 +152,20 @@ namespace embree
         size_t m_node = m_node_hit ^ m_first_hit;
         while (unlikely(m_node))
         {
-          const size_t b = __bscf(m_node);
-          const size_t m_current = m_trav_active & intersectAlignedNodePacket(packets, node, b, frustum.nf, m_trav_active);
-          m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
-          maskK[b] = m_current;
+          const size_t boxID = __bscf(m_node);
+          const size_t m_current = m_active & intersectAlignedNodePacket(m_active, packets, node, boxID, frustum.nf);
+          m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << boxID);
+          maskK[boxID] = m_current;
         }
         return m_node_hit;
       }
       
-      // todo: explicit 16-wide path for KNL
-      __forceinline static vint<Nx> traversalLoopOccluded(size_t bits,
-                                                          TravRayKStreamFast<K>* __restrict__ packets,
-                                                          const AlignedNode* __restrict__ node,
-                                                          const NearFarPrecalculations &nf,
-                                                          const int shiftTable[32])
+      // TODO: explicit 16-wide path for KNL
+      __forceinline static vint<Nx> traverseIncoherentStream(size_t m_active,
+                                                             TravRayKStreamFast<K>* __restrict__ packets,
+                                                             const AlignedNode* __restrict__ node,
+                                                             const NearFarPrecalculations& nf,
+                                                             const int shiftTable[32])
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -173,12 +173,12 @@ namespace embree
         const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farX));
         const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
         const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
-        assert(bits);
+        assert(m_active);
         vint<Nx> vmask(zero);
         do
         {   
           STAT3(shadow.trav_nodes,1,1,1);
-          const size_t rayID = __bscf(bits);
+          const size_t rayID = __bscf(m_active);
           assert(rayID < MAX_INTERNAL_STREAM_SIZE);
           TravRayKStream<K,robust> &p = packets[rayID / K];
           const size_t i = rayID % K;
@@ -194,25 +194,25 @@ namespace embree
 
 #if defined(__AVX512ER__)
           const vboolx m_node((1 << N)-1);
-          const vbool<Nx> hit_mask = le(m_node,tNear,tFar);
+          const vbool<Nx> hit_mask = le(m_node, tNear, tFar);
           vmask = mask_or(hit_mask, vmask, vmask, bitmask);
 #else
-          const vbool<Nx> hit_mask   = tNear <= tFar;
+          const vbool<Nx> hit_mask = tNear <= tFar;
 #if defined(__AVX2__)
           vmask = vmask | (bitmask & vint<Nx>(hit_mask));
 #else
           vmask = select(hit_mask, vmask | bitmask, vmask);
 #endif
 #endif
-        } while(bits);     
+        } while(m_active);
         return vmask;        
       }
 
-      __forceinline static vint<Nx> traversalLoopOccluded(size_t bits,
-                                                          TravRayKStreamRobust<K>* __restrict__ packets,
-                                                          const AlignedNode* __restrict__ node,
-                                                          const NearFarPrecalculations &nf,
-                                                          const int shiftTable[32])
+      __forceinline static vint<Nx> traverseIncoherentStream(size_t m_active,
+                                                             TravRayKStreamRobust<K>* __restrict__ packets,
+                                                             const AlignedNode* __restrict__ node,
+                                                             const NearFarPrecalculations& nf,
+                                                             const int shiftTable[32])
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -220,29 +220,29 @@ namespace embree
         const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farX));
         const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
         const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
-        assert(bits);
+        assert(m_active);
         vint<Nx> vmask(zero);
         do
         {   
           STAT3(shadow.trav_nodes,1,1,1);
-          const size_t rayID = __bscf(bits);
+          const size_t rayID = __bscf(m_active);
           assert(rayID < MAX_INTERNAL_STREAM_SIZE);
           TravRayKStream<K,robust> &p = packets[rayID / K];
           const size_t i = rayID % K;
           const vint<Nx> bitmask(shiftTable[rayID]);
-          const vfloat<Nx> tNearX  = (bminX - p.org.x[i]) * p.rdir.x[i];
-          const vfloat<Nx> tNearY  = (bminY - p.org.y[i]) * p.rdir.y[i];
-          const vfloat<Nx> tNearZ  = (bminZ - p.org.z[i]) * p.rdir.z[i];
-          const vfloat<Nx> tFarX   = (bmaxX - p.org.x[i]) * p.rdir.x[i];
-          const vfloat<Nx> tFarY   = (bmaxY - p.org.y[i]) * p.rdir.y[i];
-          const vfloat<Nx> tFarZ   = (bmaxZ - p.org.z[i]) * p.rdir.z[i]; 
-          const vfloat<Nx> tNear   = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(p.tnear[i]));
-          const vfloat<Nx> tFar    = mini(tFarX , tFarY , tFarZ,  vfloat<Nx>(p.tfar[i]));          
-          const float round_down   = 1.0f-2.0f*float(ulp); 
-          const float round_up     = 1.0f+2.0f*float(ulp);
+          const vfloat<Nx> tNearX = (bminX - p.org.x[i]) * p.rdir.x[i];
+          const vfloat<Nx> tNearY = (bminY - p.org.y[i]) * p.rdir.y[i];
+          const vfloat<Nx> tNearZ = (bminZ - p.org.z[i]) * p.rdir.z[i];
+          const vfloat<Nx> tFarX  = (bmaxX - p.org.x[i]) * p.rdir.x[i];
+          const vfloat<Nx> tFarY  = (bmaxY - p.org.y[i]) * p.rdir.y[i];
+          const vfloat<Nx> tFarZ  = (bmaxZ - p.org.z[i]) * p.rdir.z[i];
+          const vfloat<Nx> tNear  = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(p.tnear[i]));
+          const vfloat<Nx> tFar   = mini(tFarX , tFarY , tFarZ,  vfloat<Nx>(p.tfar[i]));
+          const float round_down  = 1.0f-2.0f*float(ulp);
+          const float round_up    = 1.0f+2.0f*float(ulp);
 #if defined(__AVX512ER__)
           const vboolx m_node((1 << N)-1);
-          const vbool<Nx> hit_mask = le(m_node,round_down*tNear,round_up*tFar);
+          const vbool<Nx> hit_mask = le(m_node, round_down*tNear, round_up*tFar);
           vmask = mask_or(hit_mask, vmask, vmask, bitmask);
 #else
           const vbool<Nx> hit_mask = round_down*tNear <= round_up*tFar;
@@ -252,8 +252,8 @@ namespace embree
           vmask = select(hit_mask, vmask | bitmask, vmask);
 #endif
 #endif
-        } while(bits);     
-        return vmask;        
+        } while(m_active);
+        return vmask;
       }
                                                          
 
@@ -263,8 +263,7 @@ namespace embree
       static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
 
-      static void occluded_incoherent (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
-
+      static void occludedIncoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
     };
 
 
