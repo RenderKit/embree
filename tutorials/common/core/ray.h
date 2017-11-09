@@ -42,9 +42,15 @@
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
-                      float tnear = embree::zero, float tfar = embree::inf, 
-                      float time = embree::zero, int mask = -1,unsigned int geomID = RTC_INVALID_GEOMETRY_ID, unsigned int primID = RTC_INVALID_GEOMETRY_ID, unsigned int instID = RTC_INVALID_GEOMETRY_ID)
+    __forceinline Ray(const embree::Vec3fa& org, 
+                      const embree::Vec3fa& dir, 
+                      float tnear = embree::zero, 
+                      float tfar = embree::inf, 
+                      float time = embree::zero, 
+                      int mask = -1,
+                      unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
+                      unsigned int primID = RTC_INVALID_GEOMETRY_ID, 
+                      unsigned int instID = RTC_INVALID_GEOMETRY_ID)
       : org(org,tnear), dir(dir,tfar), time(time), mask(mask), geomID(geomID), primID(primID), instID(instID)  {}
 
     /*! Tests if we hit something. */
