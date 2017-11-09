@@ -79,7 +79,7 @@ namespace embree
   public:
 
     /*! tests if geometry is enabled */
-    __forceinline bool isEnabled() const { return numPrimitives && enabled; }
+    __forceinline bool isEnabled() const { return enabled; }
 
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
@@ -91,7 +91,7 @@ namespace embree
     __forceinline bool isInstanced() const { return used-enabled; }
 
     /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return numPrimitives != 0 && state != BUILD; }
+    __forceinline bool isModified() const { return state != BUILD; }
 
     /*! test if this is a static geometry */
     __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
