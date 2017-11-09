@@ -36,7 +36,7 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8) {}
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), finished_range_threshold(inf) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -44,6 +44,7 @@ namespace embree
         size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimal size of a leaf
         size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t finished_range_threshold;  //!< finished range threshold
       };
 
       template<typename NodeRef,
@@ -53,7 +54,8 @@ namespace embree
         typename CreateUnalignedNodeFunc,
         typename SetUnalignedNodeFunc,
         typename CreateLeafFunc,
-        typename ProgressMonitor>
+        typename ProgressMonitor,
+        typename ReportFinishedRangeFunc>
 
         class BuilderT
         {
@@ -82,6 +84,7 @@ namespace embree
                     const SetUnalignedNodeFunc& setUnalignedNode,
                     const CreateLeafFunc& createLeaf,
                     const ProgressMonitor& progressMonitor,
+                    const ReportFinishedRangeFunc& reportFinishedRange,
                     const Settings settings)
 
             : cfg(settings),
@@ -93,6 +96,7 @@ namespace embree
             setUnalignedNode(setUnalignedNode),
             createLeaf(createLeaf),
             progressMonitor(progressMonitor),
+            reportFinishedRange(reportFinishedRange),
             alignedHeuristic(prims), unalignedHeuristic(scene,prims), strandHeuristic(scene,prims) {}
 
           /*! creates a large leaf that could be larger than supported by the BVH */
@@ -220,7 +224,7 @@ namespace embree
           }
 
           /*! recursive build */
-          NodeRef recurse(size_t depth, const PrimInfoRange& pinfo, Allocator alloc, bool toplevel)
+          NodeRef recurse(size_t depth, const PrimInfoRange& pinfo, Allocator alloc, bool toplevel, bool alloc_barrier)
           {
             /* get thread local allocator */
             if (!alloc)
@@ -274,33 +278,37 @@ namespace embree
 
             } while (numChildren < cfg.branchingFactor);
 
+            NodeRef node;
+
             /* create aligned node */
             if (aligned)
             {
-              const NodeRef node = createAlignedNode(alloc);
+              node = createAlignedNode(alloc);
 
               /* spawn tasks or ... */
               if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
               {
                 parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                     for (size_t i=r.begin(); i<r.end(); i++) {
-                      setAlignedNode(node,i,recurse(depth+1,children[i],nullptr,true),children[i].geomBounds);
+                      const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
+                      setAlignedNode(node,i,recurse(depth+1,children[i],nullptr,true,child_alloc_barrier),children[i].geomBounds);
                       _mm_mfence(); // to allow non-temporal stores during build
                     }
                   });
               }
               /* ... continue sequentially */
               else {
-                for (size_t i=0; i<numChildren; i++)
-                  setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false),children[i].geomBounds);
+                for (size_t i=0; i<numChildren; i++) {
+                  const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
+                  setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false,child_alloc_barrier),children[i].geomBounds);
+                }
               }
-              return node;
             }
 
             /* create unaligned node */
             else
             {
-              const NodeRef node = createUnalignedNode(alloc);
+              node = createUnalignedNode(alloc);
 
               /* spawn tasks or ... */
               if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
@@ -310,7 +318,8 @@ namespace embree
                       const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]);
                       const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                       const OBBox3fa obounds(space,sinfo.geomBounds);
-                      setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true),obounds);
+                      const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
+                      setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true,child_alloc_barrier),obounds);
                       _mm_mfence(); // to allow non-temporal stores during build
                     }
                   });
@@ -322,11 +331,17 @@ namespace embree
                   const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]);
                   const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                   const OBBox3fa obounds(space,sinfo.geomBounds);
-                  setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false),obounds);
+                  const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
+                  setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false,child_alloc_barrier),obounds);
                 }
               }
-              return node;
             }
+
+            /* reports a finished range of primrefs */
+            if (unlikely(alloc_barrier))
+              reportFinishedRange(pinfo);
+
+            return node;
           }
 
         private:
@@ -339,6 +354,7 @@ namespace embree
           const SetUnalignedNodeFunc& setUnalignedNode;
           const CreateLeafFunc& createLeaf;
           const ProgressMonitor& progressMonitor;
+          const ReportFinishedRangeFunc& reportFinishedRange;
 
         private:
           HeuristicBinningSAH alignedHeuristic;
@@ -353,7 +369,8 @@ namespace embree
         typename CreateUnalignedNodeFunc,
         typename SetUnalignedNodeFunc,
         typename CreateLeafFunc,
-        typename ProgressMonitor>
+        typename ProgressMonitor,
+        typename ReportFinishedRangeFunc>
 
         static NodeRef build (const CreateAllocFunc& createAlloc,
                               const CreateAlignedNodeFunc& createAlignedNode,
@@ -362,6 +379,7 @@ namespace embree
                               const SetUnalignedNodeFunc& setUnalignedNode,
                               const CreateLeafFunc& createLeaf,
                               const ProgressMonitor& progressMonitor,
+                              const ReportFinishedRangeFunc& reportFinishedRange,
                               Scene* scene,
                               PrimRef* prims,
                               const PrimInfo& pinfo,
@@ -371,14 +389,15 @@ namespace embree
             CreateAllocFunc,
             CreateAlignedNodeFunc,SetAlignedNodeFunc,
             CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
-            CreateLeafFunc,ProgressMonitor> Builder;
+            CreateLeafFunc,ProgressMonitor,
+            ReportFinishedRangeFunc> Builder;
 
           Builder builder(scene,prims,createAlloc,
                           createAlignedNode,setAlignedNode,
                           createUnalignedNode,setUnalignedNode,
-                          createLeaf,progressMonitor,settings);
+                          createLeaf,progressMonitor,reportFinishedRange,settings);
 
-          NodeRef root = builder.recurse(1,pinfo,nullptr,true);
+          NodeRef root = builder.recurse(1,pinfo,nullptr,true,false);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
         }
