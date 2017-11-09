@@ -29,14 +29,14 @@ namespace embree
 
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) scene->world.numTriangles += triangles.size();
-    else                   scene->worldMB.numTriangles += triangles.size();
+    if (numTimeSteps == 1) scene->world.numTriangles += numPrimitives;
+    else                   scene->worldMB.numTriangles += numPrimitives;
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) scene->world.numTriangles -= triangles.size();
-    else                   scene->worldMB.numTriangles -= triangles.size();
+    if (numTimeSteps == 1) scene->world.numTriangles -= numPrimitives;
+    else                   scene->worldMB.numTriangles -= numPrimitives;
   }
 
   void TriangleMesh::setMask (unsigned mask) 
@@ -72,10 +72,8 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && scene) disabling(); 
       triangles.newBuffer(device,size,stride); 
       setNumPrimitives(size);
-      if (isEnabled() && scene) enabling();
       return triangles.get();
     }
     else 
@@ -115,10 +113,8 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && scene) disabling(); 
       triangles.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (isEnabled() && scene) enabling();
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");

@@ -110,13 +110,28 @@ namespace embree
 
     /*! sets the number of primitives */
     __forceinline void setNumPrimitives(unsigned int numPrimitives_in)
-    { 
-      if ((ssize_t)numPrimitives_in == -1) return;
-      if (numPrimitives_in == numPrimitives) return;
+    {
+      if (numPrimitives_in == numPrimitives)
+        return;
+      
+      if (isEnabled() && scene) disabling();
       numPrimitives = numPrimitives_in;
       numPrimitivesChanged = true;
+      if (isEnabled() && scene) enabling();
     }
 
+    /*! sets number of time steps */
+    __forceinline void setNumTimeSteps (unsigned numTimeSteps_in)
+    {
+      if (numTimeSteps_in == numTimeSteps)
+        return;
+      
+      if (isEnabled() && scene) disabling();
+      numTimeSteps = numTimeSteps_in;
+      fnumTimeSegments = float(numTimeSteps_in-1);
+      if (isEnabled() && scene) enabling();
+    }
+    
     /*! for all geometries */
   public:
 
@@ -254,15 +269,6 @@ namespace embree
       return numTimeSteps-1;
     }
 
-    /*! sets number of time steps */
-    __forceinline void setNumTimeSteps (unsigned numTimeSteps_i)
-    {
-      if (scene) disabling();
-      numTimeSteps = numTimeSteps_i;
-      fnumTimeSegments = float(numTimeSteps_i-1);
-      if (scene) enabling();
-    }
-    
   public:
     __forceinline bool hasIntersectionFilter() { return intersectionFilterN != nullptr; }
     __forceinline bool hasOcclusionFilter() { return occlusionFilterN != nullptr; }

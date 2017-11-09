@@ -29,14 +29,14 @@ namespace embree
 
   void QuadMesh::enabling() 
   { 
-    if (numTimeSteps == 1) scene->world.numQuads += quads.size();
-    else                   scene->worldMB.numQuads += quads.size();
+    if (numTimeSteps == 1) scene->world.numQuads += numPrimitives;
+    else                   scene->worldMB.numQuads += numPrimitives;
   }
   
   void QuadMesh::disabling() 
   { 
-    if (numTimeSteps == 1) scene->world.numQuads -= quads.size();
-    else                   scene->worldMB.numQuads -= quads.size();
+    if (numTimeSteps == 1) scene->world.numQuads -= numPrimitives;
+    else                   scene->worldMB.numQuads -= numPrimitives;
   }
 
   void QuadMesh::setMask (unsigned mask) 
@@ -72,10 +72,8 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && scene) disabling();
       quads.newBuffer(device,size,stride);
       setNumPrimitives(size);
-      if (isEnabled() && scene) enabling();
       return quads.get();
     }
     else
@@ -114,10 +112,8 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && scene) disabling();
       quads.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (isEnabled() && scene) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");

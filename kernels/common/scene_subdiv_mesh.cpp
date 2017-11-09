@@ -47,15 +47,15 @@ namespace embree
   void SubdivMesh::enabling() 
   { 
     scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches += size();
-    else                   scene->worldMB.numSubdivPatches += size();
+    if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
+    else                   scene->worldMB.numSubdivPatches += numPrimitives;
   }
   
   void SubdivMesh::disabling() 
   { 
     scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches -= size();
-    else                   scene->worldMB.numSubdivPatches -= size();
+    if (numTimeSteps == 1) scene->world.numSubdivPatches -= numPrimitives;
+    else                   scene->worldMB.numSubdivPatches -= numPrimitives;
   }
 
   void SubdivMesh::setMask (unsigned mask) 
@@ -120,10 +120,8 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (isEnabled() && scene) disabling();
       faceVertices.newBuffer(device,size,stride);
       setNumPrimitives(size);
-      if (isEnabled() && scene) enabling();
       return faceVertices.get();
     }
 
@@ -210,10 +208,8 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (isEnabled() && scene) disabling();
       faceVertices.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (isEnabled() && scene) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER_(RTC_MAX_INDEX_BUFFERS))
