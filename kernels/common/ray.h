@@ -368,31 +368,31 @@ namespace embree
       : ptr((char*)rays), N(N) {}
 
     /* ray data access functions */
-    __forceinline float* orgx(size_t offset) { return (float*)&ptr[0*4*N+offset]; }  //!< x coordinate of ray origin
-    __forceinline float* orgy(size_t offset) { return (float*)&ptr[1*4*N+offset]; }  //!< y coordinate of ray origin
-    __forceinline float* orgz(size_t offset) { return (float*)&ptr[2*4*N+offset]; };  //!< z coordinate of ray origin
+    __forceinline float* orgx(size_t offset = 0) { return (float*)&ptr[0*4*N+offset]; }  //!< x coordinate of ray origin
+    __forceinline float* orgy(size_t offset = 0) { return (float*)&ptr[1*4*N+offset]; }  //!< y coordinate of ray origin
+    __forceinline float* orgz(size_t offset = 0) { return (float*)&ptr[2*4*N+offset]; };  //!< z coordinate of ray origin
 
-    __forceinline float* dirx(size_t offset) { return (float*)&ptr[3*4*N+offset]; };  //!< x coordinate of ray direction
-    __forceinline float* diry(size_t offset) { return (float*)&ptr[4*4*N+offset]; };  //!< y coordinate of ray direction
-    __forceinline float* dirz(size_t offset) { return (float*)&ptr[5*4*N+offset]; };  //!< z coordinate of ray direction
+    __forceinline float* dirx(size_t offset = 0) { return (float*)&ptr[3*4*N+offset]; };  //!< x coordinate of ray direction
+    __forceinline float* diry(size_t offset = 0) { return (float*)&ptr[4*4*N+offset]; };  //!< y coordinate of ray direction
+    __forceinline float* dirz(size_t offset = 0) { return (float*)&ptr[5*4*N+offset]; };  //!< z coordinate of ray direction
 
-    __forceinline float* tnear(size_t offset) { return (float*)&ptr[6*4*N+offset]; }; //!< Start of ray segment
-    __forceinline float* tfar (size_t offset) { return (float*)&ptr[7*4*N+offset]; }; //!< End of ray segment (set to hit distance)
+    __forceinline float* tnear(size_t offset = 0) { return (float*)&ptr[6*4*N+offset]; }; //!< Start of ray segment
+    __forceinline float* tfar (size_t offset = 0) { return (float*)&ptr[7*4*N+offset]; }; //!< End of ray segment (set to hit distance)
 
-    __forceinline float* time(size_t offset) { return (float*)&ptr[8*4*N+offset]; };  //!< Time of this ray for motion blur
-    __forceinline int*   mask(size_t offset) { return (int*)  &ptr[9*4*N+offset]; };  //!< Used to mask out objects during traversal (optional)
+    __forceinline float* time(size_t offset = 0) { return (float*)&ptr[8*4*N+offset]; };  //!< Time of this ray for motion blur
+    __forceinline int*   mask(size_t offset = 0) { return (int*)  &ptr[9*4*N+offset]; };  //!< Used to mask out objects during traversal (optional)
 
     /* hit data access functions */
-    __forceinline float* Ngx(size_t offset) { return (float*)&ptr[10*4*N+offset]; };   //!< x coordinate of geometry normal
-    __forceinline float* Ngy(size_t offset) { return (float*)&ptr[11*4*N+offset]; };   //!< y coordinate of geometry normal
-    __forceinline float* Ngz(size_t offset) { return (float*)&ptr[12*4*N+offset]; };   //!< z coordinate of geometry normal
+    __forceinline float* Ngx(size_t offset = 0) { return (float*)&ptr[10*4*N+offset]; };   //!< x coordinate of geometry normal
+    __forceinline float* Ngy(size_t offset = 0) { return (float*)&ptr[11*4*N+offset]; };   //!< y coordinate of geometry normal
+    __forceinline float* Ngz(size_t offset = 0) { return (float*)&ptr[12*4*N+offset]; };   //!< z coordinate of geometry normal
 
-    __forceinline float* u(size_t offset) { return (float*)&ptr[13*4*N+offset]; };     //!< Barycentric u coordinate of hit
-    __forceinline float* v(size_t offset) { return (float*)&ptr[14*4*N+offset]; };     //!< Barycentric v coordinate of hit
+    __forceinline float* u(size_t offset = 0) { return (float*)&ptr[13*4*N+offset]; };     //!< Barycentric u coordinate of hit
+    __forceinline float* v(size_t offset = 0) { return (float*)&ptr[14*4*N+offset]; };     //!< Barycentric v coordinate of hit
 
-    __forceinline int* geomID(size_t offset) { return (int*)&ptr[15*4*N+offset]; };  //!< geometry ID
-    __forceinline int* primID(size_t offset) { return (int*)&ptr[16*4*N+offset]; };  //!< primitive ID
-    __forceinline int* instID(size_t offset) { return (int*)&ptr[17*4*N+offset]; };  //!< instance ID
+    __forceinline int* geomID(size_t offset = 0) { return (int*)&ptr[15*4*N+offset]; };  //!< geometry ID
+    __forceinline int* primID(size_t offset = 0) { return (int*)&ptr[16*4*N+offset]; };  //!< primitive ID
+    __forceinline int* instID(size_t offset = 0) { return (int*)&ptr[17*4*N+offset]; };  //!< instance ID
 
 
     __forceinline void setRayByIndex(size_t index, const Ray& ray, int* valid)
@@ -631,6 +631,103 @@ namespace embree
       const float nnear = tnear(offset)[0];
       const float ffar  = tfar(offset)[0];
       return nnear <= ffar;
+    }
+
+    template<int K>
+    __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, const vint<K>& offset)
+    {
+      RayK<K> ray;
+
+#if defined(__AVX2__)
+      ray.org.x  = vfloat<K>::template gather<1>(valid, orgx(), offset);
+      ray.org.y  = vfloat<K>::template gather<1>(valid, orgy(), offset);
+      ray.org.z  = vfloat<K>::template gather<1>(valid, orgz(), offset);
+      ray.dir.x  = vfloat<K>::template gather<1>(valid, dirx(), offset);
+      ray.dir.y  = vfloat<K>::template gather<1>(valid, diry(), offset);
+      ray.dir.z  = vfloat<K>::template gather<1>(valid, dirz(), offset);
+      ray.tfar   = vfloat<K>::template gather<1>(valid, tfar(), offset);
+      ray.tnear  = vfloat<K>::template gather<1>(valid, tnear(), offset);
+      ray.time   = vfloat<K>::template gather<1>(valid, time(), offset);
+      ray.mask   = vint<K>::template gather<1>(valid, mask(), offset);
+      ray.instID = vint<K>::template gather<1>(valid, instID(), offset);
+#else
+      ray.org = zero;
+      ray.dir = zero;
+      ray.tnear = zero;
+      ray.tfar = zero;
+      ray.time = zero;
+      ray.mask = zero;
+      ray.instID = zero;
+
+      for (size_t k = 0; k < K; k++)
+      {
+        if (likely(valid[k]))
+        {
+          const size_t ofs = offset[k];
+
+          ray.org.x[k]  = *orgx(ofs);
+          ray.org.y[k]  = *orgy(ofs);
+          ray.org.z[k]  = *orgz(ofs);
+          ray.dir.x[k]  = *dirx(ofs);
+          ray.dir.y[k]  = *diry(ofs);
+          ray.dir.z[k]  = *dirz(ofs);
+          ray.tfar[k]   = *tfar(ofs);
+          ray.tnear[k]  = *tnear(ofs);
+          ray.time[k]   = *time(ofs);
+          ray.mask[k]   = *mask(ofs);
+          ray.instID[k] = *instID(ofs);
+        }
+      }
+#endif
+
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+      return ray;
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray, bool intersect = true)
+    {
+      vbool<K> valid = valid_i;
+      valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
+
+      if (likely(any(valid)))
+      {
+#if defined(__AVX512F__)
+        vint<K>::template scatter<1>(valid, geomID(), offset, ray.geomID);
+        if (intersect)
+        {
+          vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar);
+          vfloat<K>::template scatter<1>(valid, u(), offset, ray.u);
+          vfloat<K>::template scatter<1>(valid, v(), offset, ray.v);
+          vint<K>::template scatter<1>(valid, primID(), offset, ray.primID);
+          vfloat<K>::template scatter<1>(valid, Ngx(), offset, ray.Ng.x);
+          vfloat<K>::template scatter<1>(valid, Ngy(), offset, ray.Ng.y);
+          vfloat<K>::template scatter<1>(valid, Ngz(), offset, ray.Ng.z);
+          vint<K>::template scatter<1>(valid, instID(), offset, ray.instID);
+        }
+#else
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
+        {
+          const size_t k = __bscf(valid_bits);
+          const size_t ofs = offset[k];
+
+          *geomID(ofs) = ray.geomID[k];
+          if (intersect)
+          {
+            *tfar(ofs) = ray.tfar[k];
+            *u(ofs) = ray.u[k];
+            *v(ofs) = ray.v[k];
+            *primID(ofs) = ray.primID[k];
+            *Ngx(ofs) = ray.Ng.x[k];
+            *Ngy(ofs) = ray.Ng.y[k];
+            *Ngz(ofs) = ray.Ng.z[k];
+            *instID(ofs) = ray.instID[k];
+          }
+        }
+#endif
+      }
     }
 
     char* __restrict__ ptr;
