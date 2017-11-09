@@ -564,7 +564,7 @@ namespace embree
             const unsigned int octantID = rayN.getOctantByOffset(offset);
 
             assert(octantID < 8);
-            octants[octantID][raysInOctant[octantID]++] = (unsigned int)inputRayID;
+            octants[octantID][raysInOctant[octantID]++] = (unsigned int)offset;
             inputRayID++;
             if (unlikely(raysInOctant[octantID] == MAX_INTERNAL_STREAM_SIZE))
             {
@@ -584,7 +584,7 @@ namespace embree
           if (unlikely(curOctant == -1))
             break;
 
-          unsigned int* const rayIDs = &octants[curOctant][0];
+          unsigned int* const rayOffsets = &octants[curOctant][0];
           const unsigned int numOctantRays = raysInOctant[curOctant];
           assert(numOctantRays);
 
@@ -592,7 +592,7 @@ namespace embree
           {
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx offset = *(vintx*)&rayIDs[j] * sizeof(float);
+            const vintx offset = *(vintx*)&rayOffsets[j];
             RayK<VSIZEX>& ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
             ray = rayN.getRayByOffset(valid, offset);
@@ -606,7 +606,7 @@ namespace embree
           {
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx offset = *(vintx*)&rayIDs[j] * sizeof(float);
+            const vintx offset = *(vintx*)&rayOffsets[j];
             rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);
           }
 

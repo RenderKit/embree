@@ -645,8 +645,8 @@ namespace embree
       ray.dir.x  = vfloat<K>::template gather<1>(valid, dirx(), offset);
       ray.dir.y  = vfloat<K>::template gather<1>(valid, diry(), offset);
       ray.dir.z  = vfloat<K>::template gather<1>(valid, dirz(), offset);
-      ray.tfar   = vfloat<K>::template gather<1>(valid, tfar(), offset);
       ray.tnear  = vfloat<K>::template gather<1>(valid, tnear(), offset);
+      ray.tfar   = vfloat<K>::template gather<1>(valid, tfar(), offset);
       ray.time   = vfloat<K>::template gather<1>(valid, time(), offset);
       ray.mask   = vint<K>::template gather<1>(valid, mask(), offset);
       ray.instID = vint<K>::template gather<1>(valid, instID(), offset);
@@ -671,8 +671,8 @@ namespace embree
           ray.dir.x[k]  = *dirx(ofs);
           ray.dir.y[k]  = *diry(ofs);
           ray.dir.z[k]  = *dirz(ofs);
-          ray.tfar[k]   = *tfar(ofs);
           ray.tnear[k]  = *tnear(ofs);
+          ray.tfar[k]   = *tfar(ofs);
           ray.time[k]   = *time(ofs);
           ray.mask[k]   = *mask(ofs);
           ray.instID[k] = *instID(ofs);
