@@ -479,7 +479,7 @@ namespace embree
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
 
-            const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+            const unsigned int octantID = rayN.getOctantByOffset(offset);
 
             assert(octantID < 8);
             octants[octantID][raysInOctant[octantID]++] = (unsigned int)inputRayID;
