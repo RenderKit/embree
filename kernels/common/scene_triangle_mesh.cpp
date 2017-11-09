@@ -72,10 +72,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene) disabling(); 
+      if (isEnabled() && scene) disabling(); 
       triangles.newBuffer(device,size,stride); 
       setNumPrimitives(size);
-      if (scene) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
+      if (isEnabled() && scene) enabling();
       return triangles.get();
     }
     else 
@@ -115,10 +115,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene) disabling(); 
+      if (isEnabled() && scene) disabling(); 
       triangles.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (scene) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
+      if (isEnabled() && scene) enabling();
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
