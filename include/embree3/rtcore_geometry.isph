@@ -449,27 +449,6 @@ RTCORE_API void* uniform rtcGetUserData (RTCGeometry geometry);
  *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
  *  contain numFloats floating point values to interpolate for each
  *  vertex of the geometry. The P array will get filled with the
- *  interpolated data, and the dPdu and dPdv arrays with the u and v
- *  derivative of the interpolation. If the pointers P is NULL, the
- *  value will not get calculated. If dPdu and dPdv are NULL the
- *  derivatives will not get calculated. Both dPdu and dPdv have to be
- *  either valid or NULL. These destination arrays are filled in
- *  structure of array (SoA) layout. The buffer has to be padded at
- *  the end such that the last element can be read safely using SSE
- *  instructions.*/
-RTCORE_API void rtcInterpolateN(RTCGeometry geometry, 
-                                const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform unsigned int numUVs, 
-                                uniform RTCBufferType buffer, 
-                                uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform unsigned int numFloats);
-
-/*! Interpolates user data to an array of u/v locations. The valid
- *  pointer points to an integer array that specified which entries in
- *  the u/v arrays are valid (-1 denotes valid, and 0 invalid). If the
- *  valid pointer is NULL all elements are considers valid. The data
- *  buffer specifies per vertex data to interpolate and can be one of
- *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
- *  contain numFloats floating point values to interpolate for each
- *  vertex of the geometry. The P array will get filled with the
  *  interpolated datam the dPdu and dPdv arrays with the u and v
  *  derivative of the interpolation, and the ddPdudu, ddPdvdv, and
  *  ddPdudv arrays with the respective second derivatives. One can
@@ -481,37 +460,11 @@ RTCORE_API void rtcInterpolateN(RTCGeometry geometry,
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-RTCORE_API void rtcInterpolateN2(RTCGeometry geometry, 
+RTCORE_API void rtcInterpolateN(RTCGeometry geometry, 
                                 const void* uniform valid, const uniform unsigned* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform unsigned int numUVs, 
                                 uniform RTCBufferType buffer, 
                                 uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform float* uniform ddPdudu, uniform float* uniform ddPdvdv, uniform float* uniform ddPdudv, uniform unsigned int numFloats);
 
-
-/*! Interpolates user data to some varying u/v location. The data
- *  buffer specifies per vertex data to interpolate and can be one of
- *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
- *  numFloats floating point values to interpolate for each vertex of
- *  the geometry. The P array will get filled with the interpolated
- *  data, and the dPdu and dPdv arrays with the u and v derivative of
- *  the interpolation. If the pointers P is NULL, the value will not
- *  get calculated. If dPdu and dPdv are NULL the derivatives will not
- *  get calculated. Both dPdu and dPdv have to be either valid or
- *  NULL. These destination arrays are filled in structure of array
- *  (SoA) layout. The buffer has to be padded at the end such
- *  that the last element can be read safely using SSE
- *  instructions. */
-inline void rtcInterpolate(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
-                    uniform RTCBufferType buffer,
-                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform unsigned int numFloats)
-{
-  varying bool mask = __mask;
-  unmasked {
-    varying int imask = mask ? -1 : 0;
-  }
-  rtcInterpolateN(geometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
-                   (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
-                   (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,numFloats);
-}
 
 /*! Interpolates user data to some varying u/v location. The data
  *  buffer specifies per vertex data to interpolate and can be one of
@@ -529,21 +482,21 @@ inline void rtcInterpolate(RTCGeometry geometry, varying unsigned int primID, va
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-inline void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
-                    uniform RTCBufferType buffer,
-                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
-                    varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
-                    uniform unsigned int numFloats)
+inline void rtcInterpolate(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+                           uniform RTCBufferType buffer,
+                           varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
+                           varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
+                           uniform unsigned int numFloats)
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  rtcInterpolateN2(geometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
-                    (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
-                    (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,
-                    (uniform float* uniform)ddPdudu,(uniform float* uniform)ddPdvdv,(uniform float* uniform)ddPdudv,
-                    numFloats);
+  rtcInterpolateN(geometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
+                  (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
+                  (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,
+                  (uniform float* uniform)ddPdudu,(uniform float* uniform)ddPdvdv,(uniform float* uniform)ddPdudv,
+                  numFloats);
 }
 
 /*! Commits the geometry. */

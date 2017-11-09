@@ -1081,25 +1081,13 @@ namespace embree
 
   RTCORE_API void rtcInterpolate(RTCGeometry hgeometry, unsigned primID, float u, float v, 
                                  RTCBufferType buffer,
-                                 float* P, float* dPdu, float* dPdv, unsigned int numFloats)
+                                 float* P, float* dPdu, float* dPdv, 
+                                 float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
+                                 unsigned int numFloats)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcInterpolate2(RTCGeometry hgeometry, unsigned primID, float u, float v, 
-                                  RTCBufferType buffer,
-                                  float* P, float* dPdu, float* dPdv, 
-                                  float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                  unsigned int numFloats)
-  {
-    Geometry* geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcInterpolate2);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END2(geometry);
@@ -1109,26 +1097,13 @@ namespace embree
   RTCORE_API void rtcInterpolateN(RTCGeometry hgeometry,
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                   RTCBufferType buffer,
-                                  float* P, float* dPdu, float* dPdv, unsigned int numFloats)
+                                  float* P, float* dPdu, float* dPdv, 
+                                  float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
+                                  unsigned int numFloats)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcInterpolateN2(RTCGeometry hgeometry,
-                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                   RTCBufferType buffer,
-                                   float* P, float* dPdu, float* dPdv, 
-                                   float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                   unsigned int numFloats)
-  {
-    Geometry* geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcInterpolateN2);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END2(geometry);

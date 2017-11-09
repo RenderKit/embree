@@ -256,7 +256,7 @@ Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera, RayStats
     Vec2f st = Vec2f(0,0);
     unsigned int geomID = ray.geomID; {
       RTCGeometry geometry = rtcGetGeometry(g_scene,geomID);
-      rtcInterpolate(geometry,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER_(2),&st.x,nullptr,nullptr,2);
+      rtcInterpolate(geometry,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER_(2),&st.x,nullptr,nullptr,nullptr,nullptr,nullptr,2);
     }
     if (render_texcoords_mode%2 == 0)
       return Vec3fa(st.x,st.y,0.0f);
@@ -656,11 +656,11 @@ Vec3fa renderPixelDifferentials(float x, float y, const ISPCCamera& camera, RayS
   Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
   unsigned int geomID = ray.geomID; {
     RTCGeometry geometry = rtcGetGeometry(g_scene,geomID);
-    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
-    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
-    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
-    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
-    rtcInterpolate2(geometry,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
   }
   Vec3fa dPdu0 = (P10-P00)/eps;
   Vec3fa dPdv0 = (P01-P00)/eps;
