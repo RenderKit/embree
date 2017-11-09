@@ -284,8 +284,8 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         ray.org = Vec3fa(camera.xfm.p);
         ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
         bool mask = 1; { // invalidates inactive rays
-          ray.tnear = mask ? 0.0f         : (float)(pos_inf);
-          ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+          ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
+          ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
         }
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
         ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -349,11 +349,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         {
           Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
-          const Vec3fa hitpos = ray.org + ray.tfar*ray.dir;
+          const Vec3fa hitpos = ray.org + ray.tfar() * ray.dir;
           ray.org = ls_positions[i];
           ray.dir = hitpos - ray.org;
-          ray.tnear = 1E-4f;
-          ray.tfar  = valid ? 0.99f : -1.0f;
+          ray.tnear() = 1E-4f;
+          ray.tfar()  = valid ? 0.99f : -1.0f;
           ray.geomID = RTC_INVALID_GEOMETRY_ID;
           ray.primID = RTC_INVALID_GEOMETRY_ID;
           ray.mask = 0;

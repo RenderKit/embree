@@ -188,7 +188,7 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1, unsigned int geomID = RTC_INVALID_GEOMETRY_ID, unsigned int primID = RTC_INVALID_GEOMETRY_ID, unsigned int instID = RTC_INVALID_GEOMETRY_ID)
-      : org(Vec3fa(org,tnear)), dir(Vec3fa(dir,tfar)),  time(time), mask(mask), geomID(geomID), primID(primID), instID(instID) {}
+      : org(org,tnear), dir(dir,tfar),  time(time), mask(mask), geomID(geomID), primID(primID), instID(instID) {}
 
     /* Tests if we hit something */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }

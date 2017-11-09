@@ -295,15 +295,11 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  Ray ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = time;
+  Ray ray(camera.xfm.p,
+          normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz),
+          0.0f,
+          inf,
+          time);
 
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa weight = Vec3fa(1.0f);
@@ -357,12 +353,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* sample directional light */
-    Ray shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(Vec3fa(g_dirlight_direction));
-    shadow.tnear = tnear_eps;
-    shadow.tfar = inf;
-    shadow.time = time;
+    Ray shadow(ray.org + ray.tfar()*ray.dir,
+               neg(Vec3fa(g_dirlight_direction)),
+               tnear_eps,
+               inf,
+               time);
+
     Vec3fa T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
@@ -379,14 +375,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate secondary ray and offset it out of the hair */
     float sign = dot(Vec3fa(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
-    ray.org = ray.org + ray.tfar*ray.dir + sign*tnear_eps*brdf.dz;
-    ray.dir = Vec3fa(wi);
-    ray.tnear = 0.001f;
-    ray.tfar = inf;
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = time;
+    ray = Ray(ray.org + ray.tfar() * ray.dir + sign*tnear_eps*brdf.dz,
+              Vec3fa(wi),
+              0.001f,
+              inf,
+              time);
+
     weight = weight * c/wi.w;
 
 #else

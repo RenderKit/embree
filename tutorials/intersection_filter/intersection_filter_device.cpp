@@ -72,14 +72,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   
   /* initialize ray */
   Ray2 primary;
-  primary.ray.org = Vec3fa(camera.xfm.p);
-  primary.ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  primary.ray.tnear = 0.0f;
-  primary.ray.tfar = (float)(inf);
-  primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
-  primary.ray.mask = 0; // needs to encode rayID for filter
-  primary.ray.time = 0;
+  primary.ray = Ray(camera.xfm.p,
+                    normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz),
+                    0.0f,
+                    (float)(inf),
+                    0.0f,
+                    0);
   primary.transparency = 0.0f;
 
   while (true)
@@ -101,14 +99,13 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* initialize shadow ray */
     Ray2 shadow;
-    shadow.ray.org = primary.ray.org + primary.ray.tfar*primary.ray.dir;
-    shadow.ray.dir = neg(lightDir);
-    shadow.ray.tnear = 0.001f;
-    shadow.ray.tfar = (float)(inf);
-    shadow.ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.ray.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.ray.mask = 0; // needs to encode rayID for filter
-    shadow.ray.time = 0;
+    shadow.ray = Ray(primary.ray.org + primary.ray.tfar() * primary.ray.dir,
+                     neg(lightDir),
+                     0.001f,
+                     (float)(inf),
+                     0.0f,
+                     0 // needs to encode rayID for filter 
+      );
     shadow.transparency = 1.0f;
     shadow.firstHit = 0;
     shadow.lastHit = 0;
@@ -125,8 +122,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* shoot transmission ray */
     weight *= primary.transparency;
-    primary.ray.tnear = 1.001f*primary.ray.tfar;
-    primary.ray.tfar = (float)(inf);
+    primary.ray.tnear() = 1.001f*primary.ray.tfar();
+    primary.ray.tfar() = (float)(inf);
     primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
     primary.transparency = 0.0f;
@@ -448,8 +445,8 @@ void renderTileStandardStream(int taskIndex,
     primary.ray.org = Vec3fa(camera.xfm.p);
     primary.ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = 1; { // invalidates inactive rays
-      primary.ray.tnear = mask ? 0.0f         : (float)(pos_inf);
-      primary.ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      primary.ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
+      primary.ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
     }
     primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -481,8 +478,8 @@ void renderTileStandardStream(int taskIndex,
       /* invalidate shadow rays by default */
       Ray2& shadow = shadow_stream[N];
       {
-        shadow.ray.tnear = (float)(pos_inf);
-        shadow.ray.tfar  = (float)(neg_inf);
+        shadow.ray.tnear() = (float)(pos_inf);
+        shadow.ray.tfar()  = (float)(neg_inf);
       }
 
       /* ignore invalid rays */
@@ -502,11 +499,11 @@ void renderTileStandardStream(int taskIndex,
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
 
       /* initialize shadow ray */
-      shadow.ray.org = primary.ray.org + primary.ray.tfar*primary.ray.dir;
+      shadow.ray.org = primary.ray.org + primary.ray.tfar() * primary.ray.dir;
       shadow.ray.dir = neg(lightDir);
       bool mask = 1; {
-        shadow.ray.tnear = mask ? 0.001f       : (float)(pos_inf);
-        shadow.ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+        shadow.ray.tnear() = mask ? 0.001f       : (float)(pos_inf);
+        shadow.ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
       }
       shadow.ray.geomID = RTC_INVALID_GEOMETRY_ID;
       shadow.ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -536,10 +533,10 @@ void renderTileStandardStream(int taskIndex,
 
       /* invalidate rays by default */
       Ray2& primary = primary_stream[N];
-      float primary_tfar = primary.ray.tfar;
+      float primary_tfar = primary.ray.tfar();
       {
-        primary.ray.tnear = (float)(pos_inf);
-        primary.ray.tfar  = (float)(neg_inf);
+        primary.ray.tnear() = (float)(pos_inf);
+        primary.ray.tfar()  = (float)(neg_inf);
       }
 
       /* ignore invalid rays */
@@ -558,8 +555,8 @@ void renderTileStandardStream(int taskIndex,
       /* initialize transmission ray */
       weight_stream[N] *= primary.transparency;
       bool mask = 1; {
-        primary.ray.tnear = mask ? 1.001f*primary_tfar : (float)(pos_inf);
-        primary.ray.tfar  = mask ? (float)(inf)        : (float)(neg_inf);
+        primary.ray.tnear() = mask ? 1.001f*primary_tfar : (float)(pos_inf);
+        primary.ray.tfar()  = mask ? (float)(inf)        : (float)(neg_inf);
       }
       primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
       primary.ray.primID = RTC_INVALID_GEOMETRY_ID;

@@ -246,19 +246,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   const Vec3fa org = Vec3fa(camera.xfm.p);
   const Vec3fa dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
 
-#if 1
   Ray ray(org,dir,0.0f,inf,RandomSampler_get1D(sampler));
-#else
-  Ray ray;
-  ray.org = org;
-  ray.dir = dir;
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = RandomSampler_get1D(sampler);
-#endif
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -266,6 +254,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
+#if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
@@ -280,7 +269,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   dg.primID = ray.primID;
   dg.u = ray.u;
   dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar*ray.dir;
+  dg.P  = ray.org+ray.tfar()*ray.dir;
   dg.Ng = ray.Ng;
   dg.Ns = ray.Ng;
 
@@ -305,6 +294,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   }
 
   return color*dot(neg(ray.dir),dg.Ns);
+#else
+  return Vec3fa(0.0f);
+#endif
+
 }
 
 /* renders a single screen tile */
