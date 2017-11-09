@@ -436,7 +436,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
             vfloat<Nx> fmin;
-            size_t m_frustum_node = intersectNode<N,Nx>(node, frustum, fmin);
+            size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
 
             if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;
@@ -828,7 +828,7 @@ namespace embree
           NodeRef cur = NodeRef(stackPtr->ptr);
 
           /* cull node of active rays have already been terminated */
-          size_t m_active = stackPtr->mask & (~movemask(terminated));
+          size_t m_active = (size_t)stackPtr->mask & (~(size_t)movemask(terminated));
 
           if (unlikely(m_active == 0)) continue;
 
@@ -840,7 +840,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
             vfloat<Nx> fmin;
-            size_t m_frustum_node = intersectNode<N,Nx>(node, frustum, fmin);
+            size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
 
             if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;

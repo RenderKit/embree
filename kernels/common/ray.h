@@ -1,4 +1,4 @@
-// ======================================================================== //
+﻿// ======================================================================== //
 // Copyright 2009-2017 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
@@ -837,57 +837,8 @@ namespace embree
     template<int K>
     __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, const vint<K>& offset)
     {
-      /* check whether we can use the fast path */
-      if (likely(all(valid)))
-        return getRayByOffset(offset);
-
-      RayK<K> ray;
-
-  #if defined(__AVX2__)
-      ray.org.x  = vfloat<K>::template gather<1>(valid, &ptr->org.x, offset);
-      ray.org.y  = vfloat<K>::template gather<1>(valid, &ptr->org.y, offset);
-      ray.org.z  = vfloat<K>::template gather<1>(valid, &ptr->org.z, offset);
-      ray.dir.x  = vfloat<K>::template gather<1>(valid, &ptr->dir.x, offset);
-      ray.dir.y  = vfloat<K>::template gather<1>(valid, &ptr->dir.y, offset);
-      ray.dir.z  = vfloat<K>::template gather<1>(valid, &ptr->dir.z, offset);
-      ray.tnear() = vfloat<K>::template gather<1>(valid, &ptr->tnear(), offset);
-      ray.tfar()  = vfloat<K>::template gather<1>(valid, &ptr->tfar(), offset);
-      ray.time   = vfloat<K>::template gather<1>(valid, &ptr->time, offset);
-      ray.mask   = vint<K>::template gather<1>(valid, &ptr->mask, offset);
-      ray.instID = vint<K>::template gather<1>(valid, (int*)&ptr->instID, offset);
-  #else
-      ray.org = zero;
-      ray.dir = zero;
-      ray.tnear() = zero;
-      ray.tfar() = zero;
-      ray.time = zero;
-      ray.mask = zero;
-      ray.instID = zero;
-
-      for (size_t k = 0; k < K; k++)
-      {
-        if (likely(valid[k]))
-        {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
-
-          ray.org.x[k]  = ray_k->org.x;
-          ray.org.y[k]  = ray_k->org.y;
-          ray.org.z[k]  = ray_k->org.z;
-          ray.dir.x[k]  = ray_k->dir.x;
-          ray.dir.y[k]  = ray_k->dir.y;
-          ray.dir.z[k]  = ray_k->dir.z;
-          ray.tnear()[k]  = ray_k->tnear();
-          ray.tfar()[k]   = ray_k->tfar();
-          ray.time[k]   = ray_k->time;
-          ray.mask[k]   = ray_k->mask;
-          ray.instID[k] = ray_k->instID;
-        }
-      }
-  #endif
-
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-
-      return ray;
+      const vint<K> validOffset = select(valid, offset, vintx(zero));
+      return getRayByOffset(validOffset);
     }
 
     template<int K>
@@ -1083,48 +1034,13 @@ namespace embree
       : ptr((Ray**)rays) {}
 
     template<int K>
-    __forceinline RayK<K> getRayByIndex(size_t index);
+    __forceinline RayK<K> getRayByIndex(const vint<K>& index);
 
     template<int K>
-    __forceinline RayK<K> getRayByIndex(const vbool<K>& valid, size_t index)
+    __forceinline RayK<K> getRayByIndex(const vbool<K>& valid, const vint<K>& index)
     {
-      /* check whether we can use the fast path */
-      if (likely(all(valid)))
-        return getRayByIndex<K>(index);
-
-      RayK<K> ray;
-
-      ray.org = zero;
-      ray.dir = zero;
-      ray.tnear() = zero;
-      ray.tfar() = zero;
-      ray.time = zero;
-      ray.mask = zero;
-      ray.instID = zero;
-
-      for (size_t k = 0; k < K; k++)
-      {
-        if (likely(valid[k]))
-        {
-          Ray* __restrict__ ray_k = ptr[index+k];
-
-          ray.org.x[k]   = ray_k->org.x;
-          ray.org.y[k]   = ray_k->org.y;
-          ray.org.z[k]   = ray_k->org.z;
-          ray.dir.x[k]   = ray_k->dir.x;
-          ray.dir.y[k]   = ray_k->dir.y;
-          ray.dir.z[k]   = ray_k->dir.z;
-          ray.tnear()[k] = ray_k->tnear();
-          ray.tfar()[k]  = ray_k->tfar();
-          ray.time[k]    = ray_k->time;
-          ray.mask[k]    = ray_k->mask;
-          ray.instID[k]  = ray_k->instID;
-        }
-      }
-
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-
-      return ray;
+      const vint<K> validIndex = select(valid, index, vintx(zero));
+      return getRayByIndex(validIndex);
     }
 
     template<int K>
@@ -1161,35 +1077,35 @@ namespace embree
   };
 
   template<>
-  __forceinline Ray4 RayStreamAOP::getRayByIndex(size_t index)
+  __forceinline Ray4 RayStreamAOP::getRayByIndex(const vint4& index)
   {
     Ray4 ray;
 
     /* gather: instID */
     for (size_t k = 0; k < 4; k++)
-      ray.instID[k] = ptr[index+k]->instID;
+      ray.instID[k] = ptr[index[k]]->instID;
 
     /* load and transpose: org.x, org.y, org.z */
-    const vfloat4 a0 = vfloat4::loadu(&ptr[index+0]->org);
-    const vfloat4 a1 = vfloat4::loadu(&ptr[index+1]->org);
-    const vfloat4 a2 = vfloat4::loadu(&ptr[index+2]->org);
-    const vfloat4 a3 = vfloat4::loadu(&ptr[index+3]->org);
+    const vfloat4 a0 = vfloat4::loadu(&ptr[index[0]]->org);
+    const vfloat4 a1 = vfloat4::loadu(&ptr[index[1]]->org);
+    const vfloat4 a2 = vfloat4::loadu(&ptr[index[2]]->org);
+    const vfloat4 a3 = vfloat4::loadu(&ptr[index[3]]->org);
 
     transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z, ray.tnear());
 
     /* load and transpose: dir.x, dir.y, dir.z */
-    const vfloat4 b0 = vfloat4::loadu(&ptr[index+0]->dir);
-    const vfloat4 b1 = vfloat4::loadu(&ptr[index+1]->dir);
-    const vfloat4 b2 = vfloat4::loadu(&ptr[index+2]->dir);
-    const vfloat4 b3 = vfloat4::loadu(&ptr[index+3]->dir);
+    const vfloat4 b0 = vfloat4::loadu(&ptr[index[0]]->dir);
+    const vfloat4 b1 = vfloat4::loadu(&ptr[index[1]]->dir);
+    const vfloat4 b2 = vfloat4::loadu(&ptr[index[2]]->dir);
+    const vfloat4 b3 = vfloat4::loadu(&ptr[index[3]]->dir);
 
     transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tfar());
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tfar());
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tfar());
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tfar());
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->tfar());
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->tfar());
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->tfar());
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->tfar());
 
     vfloat4 maskf;
     transpose(c0,c1,c2,c3, ray.tfar(), ray.time, maskf);
@@ -1202,35 +1118,35 @@ namespace embree
 
 #if defined(__AVX__)
   template<>
-  __forceinline Ray8 RayStreamAOP::getRayByIndex(size_t index)
+  __forceinline Ray8 RayStreamAOP::getRayByIndex(const vint8& index)
   {
     Ray8 ray;
 
     /* gather: instID */
     for (size_t k = 0; k < 8; k++)
-      ray.instID[k] = ptr[index+k]->instID;
+      ray.instID[k] = ptr[index[k]]->instID;
 
     /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
-    const vfloat8 ab0 = vfloat8::loadu(&ptr[index+0]->org);
-    const vfloat8 ab1 = vfloat8::loadu(&ptr[index+1]->org);
-    const vfloat8 ab2 = vfloat8::loadu(&ptr[index+2]->org);
-    const vfloat8 ab3 = vfloat8::loadu(&ptr[index+3]->org);
-    const vfloat8 ab4 = vfloat8::loadu(&ptr[index+4]->org);
-    const vfloat8 ab5 = vfloat8::loadu(&ptr[index+5]->org);
-    const vfloat8 ab6 = vfloat8::loadu(&ptr[index+6]->org);
-    const vfloat8 ab7 = vfloat8::loadu(&ptr[index+7]->org);
+    const vfloat8 ab0 = vfloat8::loadu(&ptr[index[0]]->org);
+    const vfloat8 ab1 = vfloat8::loadu(&ptr[index[1]]->org);
+    const vfloat8 ab2 = vfloat8::loadu(&ptr[index[2]]->org);
+    const vfloat8 ab3 = vfloat8::loadu(&ptr[index[3]]->org);
+    const vfloat8 ab4 = vfloat8::loadu(&ptr[index[4]]->org);
+    const vfloat8 ab5 = vfloat8::loadu(&ptr[index[5]]->org);
+    const vfloat8 ab6 = vfloat8::loadu(&ptr[index[6]]->org);
+    const vfloat8 ab7 = vfloat8::loadu(&ptr[index[7]]->org);
 
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tfar());
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tfar());
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tfar());
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tfar());
-    const vfloat4 c4 = vfloat4::loadu(&ptr[index+4]->tfar());
-    const vfloat4 c5 = vfloat4::loadu(&ptr[index+5]->tfar());
-    const vfloat4 c6 = vfloat4::loadu(&ptr[index+6]->tfar());
-    const vfloat4 c7 = vfloat4::loadu(&ptr[index+7]->tfar());
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->tfar());
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->tfar());
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->tfar());
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->tfar());
+    const vfloat4 c4 = vfloat4::loadu(&ptr[index[4]]->tfar());
+    const vfloat4 c5 = vfloat4::loadu(&ptr[index[5]]->tfar());
+    const vfloat4 c6 = vfloat4::loadu(&ptr[index[6]]->tfar());
+    const vfloat4 c7 = vfloat4::loadu(&ptr[index[7]]->tfar());
 
     vfloat8 maskf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tfar(), ray.time, maskf);
@@ -1244,52 +1160,52 @@ namespace embree
 
 #if defined(__AVX512F__)
   template<>
-  __forceinline Ray16 RayStreamAOP::getRayByIndex(size_t index)
+  __forceinline Ray16 RayStreamAOP::getRayByIndex(const vint16& index)
   {
     Ray16 ray;
 
     /* gather: instID */
     for (size_t k = 0; k < 16; k++)
-      ray.instID[k] = ptr[index+k]->instID;
+      ray.instID[k] = ptr[index[k]]->instID;
 
     /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
-    const vfloat8 ab0  = vfloat8::loadu(&ptr[index+ 0]->org);
-    const vfloat8 ab1  = vfloat8::loadu(&ptr[index+ 1]->org);
-    const vfloat8 ab2  = vfloat8::loadu(&ptr[index+ 2]->org);
-    const vfloat8 ab3  = vfloat8::loadu(&ptr[index+ 3]->org);
-    const vfloat8 ab4  = vfloat8::loadu(&ptr[index+ 4]->org);
-    const vfloat8 ab5  = vfloat8::loadu(&ptr[index+ 5]->org);
-    const vfloat8 ab6  = vfloat8::loadu(&ptr[index+ 6]->org);
-    const vfloat8 ab7  = vfloat8::loadu(&ptr[index+ 7]->org);
-    const vfloat8 ab8  = vfloat8::loadu(&ptr[index+ 8]->org);
-    const vfloat8 ab9  = vfloat8::loadu(&ptr[index+ 9]->org);
-    const vfloat8 ab10 = vfloat8::loadu(&ptr[index+10]->org);
-    const vfloat8 ab11 = vfloat8::loadu(&ptr[index+11]->org);
-    const vfloat8 ab12 = vfloat8::loadu(&ptr[index+12]->org);
-    const vfloat8 ab13 = vfloat8::loadu(&ptr[index+13]->org);
-    const vfloat8 ab14 = vfloat8::loadu(&ptr[index+14]->org);
-    const vfloat8 ab15 = vfloat8::loadu(&ptr[index+15]->org);
+    const vfloat8 ab0  = vfloat8::loadu(&ptr[index[0]]->org);
+    const vfloat8 ab1  = vfloat8::loadu(&ptr[index[1]]->org);
+    const vfloat8 ab2  = vfloat8::loadu(&ptr[index[2]]->org);
+    const vfloat8 ab3  = vfloat8::loadu(&ptr[index[3]]->org);
+    const vfloat8 ab4  = vfloat8::loadu(&ptr[index[4]]->org);
+    const vfloat8 ab5  = vfloat8::loadu(&ptr[index[5]]->org);
+    const vfloat8 ab6  = vfloat8::loadu(&ptr[index[6]]->org);
+    const vfloat8 ab7  = vfloat8::loadu(&ptr[index[7]]->org);
+    const vfloat8 ab8  = vfloat8::loadu(&ptr[index[8]]->org);
+    const vfloat8 ab9  = vfloat8::loadu(&ptr[index[9]]->org);
+    const vfloat8 ab10 = vfloat8::loadu(&ptr[index[10]]->org);
+    const vfloat8 ab11 = vfloat8::loadu(&ptr[index[11]]->org);
+    const vfloat8 ab12 = vfloat8::loadu(&ptr[index[12]]->org);
+    const vfloat8 ab13 = vfloat8::loadu(&ptr[index[13]]->org);
+    const vfloat8 ab14 = vfloat8::loadu(&ptr[index[14]]->org);
+    const vfloat8 ab15 = vfloat8::loadu(&ptr[index[15]]->org);
 
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
               ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0  = vfloat4::loadu(&ptr[index+ 0]->tfar());
-    const vfloat4 c1  = vfloat4::loadu(&ptr[index+ 1]->tfar());
-    const vfloat4 c2  = vfloat4::loadu(&ptr[index+ 2]->tfar());
-    const vfloat4 c3  = vfloat4::loadu(&ptr[index+ 3]->tfar());
-    const vfloat4 c4  = vfloat4::loadu(&ptr[index+ 4]->tfar());
-    const vfloat4 c5  = vfloat4::loadu(&ptr[index+ 5]->tfar());
-    const vfloat4 c6  = vfloat4::loadu(&ptr[index+ 6]->tfar());
-    const vfloat4 c7  = vfloat4::loadu(&ptr[index+ 7]->tfar());
-    const vfloat4 c8  = vfloat4::loadu(&ptr[index+ 8]->tfar());
-    const vfloat4 c9  = vfloat4::loadu(&ptr[index+ 9]->tfar());
-    const vfloat4 c10 = vfloat4::loadu(&ptr[index+10]->tfar());
-    const vfloat4 c11 = vfloat4::loadu(&ptr[index+11]->tfar());
-    const vfloat4 c12 = vfloat4::loadu(&ptr[index+12]->tfar());
-    const vfloat4 c13 = vfloat4::loadu(&ptr[index+13]->tfar());
-    const vfloat4 c14 = vfloat4::loadu(&ptr[index+14]->tfar());
-    const vfloat4 c15 = vfloat4::loadu(&ptr[index+15]->tfar());
+    const vfloat4 c0  = vfloat4::loadu(&ptr[index[0]]->tfar());
+    const vfloat4 c1  = vfloat4::loadu(&ptr[index[1]]->tfar());
+    const vfloat4 c2  = vfloat4::loadu(&ptr[index[2]]->tfar());
+    const vfloat4 c3  = vfloat4::loadu(&ptr[index[3]]->tfar());
+    const vfloat4 c4  = vfloat4::loadu(&ptr[index[4]]->tfar());
+    const vfloat4 c5  = vfloat4::loadu(&ptr[index[5]]->tfar());
+    const vfloat4 c6  = vfloat4::loadu(&ptr[index[6]]->tfar());
+    const vfloat4 c7  = vfloat4::loadu(&ptr[index[7]]->tfar());
+    const vfloat4 c8  = vfloat4::loadu(&ptr[index[8]]->tfar());
+    const vfloat4 c9  = vfloat4::loadu(&ptr[index[9]]->tfar());
+    const vfloat4 c10 = vfloat4::loadu(&ptr[index[10]]->tfar());
+    const vfloat4 c11 = vfloat4::loadu(&ptr[index[11]]->tfar());
+    const vfloat4 c12 = vfloat4::loadu(&ptr[index[12]]->tfar());
+    const vfloat4 c13 = vfloat4::loadu(&ptr[index[13]]->tfar());
+    const vfloat4 c14 = vfloat4::loadu(&ptr[index[14]]->tfar());
+    const vfloat4 c15 = vfloat4::loadu(&ptr[index[15]]->tfar());
 
     vfloat16 maskf, dummy;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,

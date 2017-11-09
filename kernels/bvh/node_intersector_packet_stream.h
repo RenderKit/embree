@@ -190,9 +190,9 @@ namespace embree
       const vfloat<K> rmaxY = (bmaxY - ray.org.y) * ray.rdir.y;
       const vfloat<K> rmaxZ = (bmaxZ - ray.org.z) * ray.rdir.z;
 
-      const float round_up   = 1.0f+3.0f*float(ulp);
+      const float round_up  = 1.0f+3.0f*float(ulp);
       const vfloat<K> rmin  =            max(rminX, rminY, rminZ, vfloat<K>(ray.tnear));
-      const vfloat<K> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<K>(ray.tfar));
+      const vfloat<K> rmax  = round_up * min(rmaxX, rmaxY, rmaxZ, vfloat<K>(ray.tfar));
 
       const vbool<K> vmask_first_hit = rmin <= rmax;
 

@@ -72,6 +72,7 @@ cmake \
 
 # create RPM files
 cmake \
+-D EMBREE_INSTALL_DEPENDENCIES=OFF \
 -D EMBREE_ZIP_MODE=OFF \
 -D CPACK_PACKAGING_INSTALL_PREFIX=/usr \
 -D EMBREE_TBB_ROOT=/usr ..
@@ -86,6 +87,7 @@ tar czf embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz embree-*-${EMBREE_VERSION}-*.
 
 # create tar.gz files
 cmake \
+-D EMBREE_INSTALL_DEPENDENCIES=ON \
 -D EMBREE_ZIP_MODE=ON \
 -D CPACK_PACKAGING_INSTALL_PREFIX=/ \
 -D CMAKE_INSTALL_INCLUDEDIR=include \

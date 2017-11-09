@@ -37,7 +37,6 @@ namespace embree
 {
   namespace isa
   {
-
     __aligned(64) static const int shiftTable[32] = { 
       (int)1 << 0, (int)1 << 1, (int)1 << 2, (int)1 << 3, (int)1 << 4, (int)1 << 5, (int)1 << 6, (int)1 << 7,  
       (int)1 << 8, (int)1 << 9, (int)1 << 10, (int)1 << 11, (int)1 << 12, (int)1 << 13, (int)1 << 14, (int)1 << 15,  
@@ -100,7 +99,8 @@ namespace embree
           parent = cur;
 
           __aligned(64) size_t maskK[N];
-          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
+          for (size_t i = 0; i < N; i++)
+            maskK[i] = m_trav_active;
           vfloat<Nx> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packets, node, frustum, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
@@ -113,16 +113,12 @@ namespace embree
         if (unlikely(parent != 0 && cur.isLeaf()))
         {
           const AlignedNode* __restrict__ const node = parent.alignedNode();
-          size_t b = 0xff;
-          for (size_t i=0;i<N;i++)
-            if (node->child(i) == cur) 
-            {
-              b = i;
-              break;
-            }
-          assert(b < N);
-          assert(cur == node->child(b));
-          m_trav_active = intersectAlignedNodePacket(packets, node, b, frustum.nf, m_trav_active);
+          size_t boxID = 0xff;
+          for (size_t i = 0; i < N; i++)
+            if (node->child(i) == cur) { boxID = i; break; }
+          assert(boxID < N);
+          assert(cur == node->child(boxID));
+          m_trav_active = intersectAlignedNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
         }
 
         /*! this is a leaf node */
@@ -162,7 +158,7 @@ namespace embree
       /* special path for incoherent rays */
       if (unlikely(!isCoherent(context->user->flags)))
       {
-        occluded_incoherent(This,inputPackets,numOctantRays,context);
+        occludedIncoherent(This,inputPackets,numOctantRays,context);
         return;
       }
 
@@ -234,12 +230,12 @@ namespace embree
         if (unlikely(parent != 0 && cur.isLeaf()))
         {
           const AlignedNode* __restrict__ const node = parent.alignedNode();
-          size_t b = 0xff;
+          size_t boxID = 0xff;
           for (size_t i = 0; i < N; i++)
-            if (node->child(i) == cur) { b = i; break; }
-          assert(b < N);
-          assert(cur == node->child(b));
-          m_trav_active = intersectAlignedNodePacket(packets, node, b, frustum.nf, m_trav_active);
+            if (node->child(i) == cur) { boxID = i; break; }
+          assert(boxID < N);
+          assert(cur == node->child(boxID));
+          m_trav_active = intersectAlignedNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
         }
 
         /*! this is a leaf node */
@@ -253,7 +249,7 @@ namespace embree
 #if defined(__SSE4_2__)
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
 #endif
-        while(bits)
+        while (bits)
         {
           size_t i = __bsf(bits) / K;
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
@@ -271,7 +267,10 @@ namespace embree
 
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded_incoherent(Accel::Intersectors* __restrict__ This, RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedIncoherent(Accel::Intersectors* __restrict__ This,
+                                                                                                                RayK<K>** inputPackets,
+                                                                                                                size_t numOctantRays,
+                                                                                                                IntersectContext* context)
     {
       assert(!isCoherent(context->user->flags));
       assert(types & BVH_FLAG_ALIGNED_NODE);
@@ -287,24 +286,24 @@ namespace embree
         const vfloat<K> tfar   = inputPackets[i]->tfar();
         vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
         m_active |= (size_t)movemask(m_valid) << (K*i);
-        const Vec3vf<K>& org     = inputPackets[i]->org;
-        const Vec3vf<K>& dir     = inputPackets[i]->dir;
+        const Vec3vf<K>& org = inputPackets[i]->org;
+        const Vec3vf<K>& dir = inputPackets[i]->dir;
         vfloat<K> packet_min_dist = max(tnear, 0.0f);
         vfloat<K> packet_max_dist = select(m_valid, tfar, neg_inf);
-        new (&packet[i]) TravRayKStream<K,robust>(org,dir,packet_min_dist,packet_max_dist);
+        new (&packet[i]) TravRayKStream<K,robust>(org, dir, packet_min_dist, packet_max_dist);
       }
 
       BVH* __restrict__ bvh = (BVH*)This->ptr;
 
-      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
-      StackItemT<NodeRef>* stackPtr = stack + 1;   //!< current stack pointer
+      StackItemMaskT<NodeRef> stack[stackSizeSingle]; // stack of nodes
+      StackItemMaskT<NodeRef>* stackPtr = stack + 1;  // current stack pointer
       stack[0].ptr = bvh->root;
-      stack[0].dist = (unsigned int)m_active;
+      stack[0].mask = m_active;
 
       size_t terminated = ~m_active;
 
       /* near/far offsets based on first ray */
-      const NearFarPrecalculations nf(Vec3fa(packet[0].rdir.x[0],packet[0].rdir.y[0],packet[0].rdir.z[0]),N);
+      const NearFarPrecalculations nf(Vec3fa(packet[0].rdir.x[0], packet[0].rdir.y[0], packet[0].rdir.z[0]), N);
 
       while (1) pop:
       {
@@ -312,23 +311,22 @@ namespace embree
         STAT3(shadow.trav_stack_pop,1,1,1);
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ptr);
-        size_t cur_mask = (size_t)stackPtr->dist & (~terminated);
+        size_t cur_mask = stackPtr->mask & (~terminated);
         if (unlikely(cur_mask == 0)) continue;
 
         while (true)
         {
-
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
           const AlignedNode* __restrict__ const node = cur.alignedNode();
 
-          const vint<Nx> vmask = traversalLoopOccluded(cur_mask,packet,node,nf,shiftTable);
+          const vint<Nx> vmask = traverseIncoherentStream(cur_mask, packet, node, nf, shiftTable);
 
-          size_t mask = movemask( (vmask != vint<Nx>(zero)) );
+          size_t mask = movemask(vmask != vint<Nx>(zero));
           if (unlikely(mask == 0)) goto pop;
 
           __aligned(64) unsigned int child_mask[Nx];
-          vint<Nx>::storeu(child_mask,vmask); // this explicit store here causes much better code generation
+          vint<Nx>::storeu(child_mask, vmask); // this explicit store here causes much better code generation
           
           /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
@@ -341,7 +339,7 @@ namespace embree
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) continue;
           stackPtr->ptr  = cur;
-          stackPtr->dist = (unsigned int)cur_mask;
+          stackPtr->mask = cur_mask;
           stackPtr++;
 
           for (; ;)
@@ -355,41 +353,44 @@ namespace embree
             assert(cur != BVH::emptyNode);
             if (likely(mask == 0)) break;
             stackPtr->ptr  = cur;
-            stackPtr->dist = (unsigned int)cur_mask;
+            stackPtr->mask = cur_mask;
             stackPtr++;
           }
         }
-
         
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);
-        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);        
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
         size_t bits = cur_mask;
         size_t lazy_node = 0;
 
-        for (; bits!=0; ) 
+        for (; bits != 0;)
         {
           const size_t rayID = __bscf(bits);
 
           RayK<K> &ray = *inputPackets[rayID / K];
           const size_t k = rayID % K;
-          if (PrimitiveIntersector::occluded(ray,k,context,prim,num,lazy_node)) {
+          if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
+          {
             ray.geomID[k] = 0;
             terminated |= (size_t)1 << rayID;
           }
+
           /* lazy node */
-          if (unlikely(lazy_node)) {
+          if (unlikely(lazy_node))
+          {
             stackPtr->ptr = lazy_node;
-            stackPtr->dist = (unsigned int)cur_mask;
+            stackPtr->mask = cur_mask;
             stackPtr++;
           }
         }
-        if (unlikely(terminated == (size_t)-1)) { break; }
-      }
 
+        if (unlikely(terminated == (size_t)-1)) break;
+      }
     }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// ArrayIntersectorKStream Definitions
     ////////////////////////////////////////////////////////////////////////////////
