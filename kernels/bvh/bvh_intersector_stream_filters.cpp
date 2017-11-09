@@ -390,7 +390,7 @@ namespace embree
               if (unlikely(!ray.valid())) { inputRayID++; continue; }
   #endif
 
-              const unsigned int octantID = rayN.getOctantByOffset(offset);
+              const unsigned int octantID = (unsigned int)rayN.getOctantByOffset(offset);
 
               assert(octantID < 8);
               octants[octantID][raysInOctant[octantID]++] = (unsigned int)offset;
@@ -561,7 +561,7 @@ namespace embree
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
 
-            const unsigned int octantID = rayN.getOctantByOffset(offset);
+            const unsigned int octantID = (unsigned int)rayN.getOctantByOffset(offset);
 
             assert(octantID < 8);
             octants[octantID][raysInOctant[octantID]++] = (unsigned int)offset;
