@@ -266,7 +266,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
-#if 0
+#if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
