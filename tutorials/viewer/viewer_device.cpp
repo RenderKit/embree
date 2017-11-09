@@ -281,7 +281,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   dg.primID = ray.primID;
   dg.u = ray.u;
   dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar*ray.dir;
+  dg.P  = ray.org+ray.tfar()*ray.dir;
   dg.Ng = ray.Ng;
   dg.Ns = ray.Ng;
 
