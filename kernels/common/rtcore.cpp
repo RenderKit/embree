@@ -86,7 +86,7 @@ namespace embree
     return RTC_UNKNOWN_ERROR;
   }
 
-  RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice hdevice, RTCErrorFunc func, void* userPtr) 
+  RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice hdevice, RTCErrorFunction func, void* userPtr) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -96,7 +96,7 @@ namespace embree
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunc func, void* userPtr) 
+  RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunction func, void* userPtr) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -116,7 +116,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunc func, void* ptr) 
+  RTCORE_API void rtcSetProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction func, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -997,16 +997,6 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcUpdate (RTCGeometry hgeometry) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcUpdate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->update();
-    RTCORE_CATCH_END2(geometry);
-  }
-
   RTCORE_API void rtcUpdateBuffer (RTCGeometry hgeometry, RTCBufferType type) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
@@ -1058,7 +1048,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunc bounds, void* userPtr)
+  RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1068,7 +1058,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunc func, RTCBounds* bounds)
+  RTCORE_API void rtcSetDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func, RTCBounds* bounds)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1078,7 +1068,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFuncN intersect) 
+  RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunctionN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1088,7 +1078,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFuncN occluded) 
+  RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1098,7 +1088,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN intersect) 
+  RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1108,7 +1098,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN intersect) 
+  RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1180,6 +1170,16 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 #endif
+
+  RTCORE_API void rtcCommitGeometry (RTCGeometry hgeometry)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommitGeometry);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->commit();
+    RTCORE_CATCH_END2(geometry);
+  }
 
   RTCORE_API unsigned int rtcAttachGeometry (RTCScene hscene, RTCGeometry hgeometry)
   {

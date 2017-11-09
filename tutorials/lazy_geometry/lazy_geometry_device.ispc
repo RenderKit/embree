@@ -108,6 +108,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
     }
   }
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -219,6 +220,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
   rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
 
@@ -248,6 +250,7 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;

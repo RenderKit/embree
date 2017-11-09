@@ -188,14 +188,15 @@ inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, c
 }
 
 /* intersection filter function */
-unmasked void intersectionFilterN(const uniform int* uniform valid,
-                                  void* uniform ptr,
-                                  const uniform RTCIntersectContext* uniform context,
-                                  struct RTCRayN* uniform ray,
-                                  struct RTCHitN* uniform potentialHit,
-                                  const uniform unsigned int N,
-                                  uniform int* const uniform acceptHit)
+unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  const uniform RTCIntersectContext* uniform context =  args->context;
+  struct RTCRayN* uniform ray = args->ray;
+  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  const uniform unsigned int N = args->N;
+  uniform int* const uniform acceptHit = args->acceptHit;
+                                  
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;
@@ -285,14 +286,15 @@ unmasked void intersectionFilterN(const uniform int* uniform valid,
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterN(const uniform int* uniform valid,
-                               void* uniform ptr,
-                               const uniform RTCIntersectContext* uniform context,
-                               struct RTCRayN* uniform ray,
-                               struct RTCHitN* uniform potentialHit,
-                               const uniform unsigned int N,
-                               uniform int* const uniform acceptHit)
+unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
+  const uniform int* uniform valid = args->valid;
+  const uniform RTCIntersectContext* uniform context =  args->context;
+  struct RTCRayN* uniform ray = args->ray;
+  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  const uniform unsigned int N = args->N;
+  uniform int* const uniform acceptHit = args->acceptHit;
+                                  
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;
@@ -672,6 +674,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -701,6 +704,7 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -724,6 +728,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;

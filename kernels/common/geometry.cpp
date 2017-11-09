@@ -23,20 +23,39 @@ namespace embree
     : device(device), scene(nullptr), geomID(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
-      enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),
+      enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1), used(1),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr) {}
 
   Geometry::~Geometry() {
   }
 
-  void Geometry::preCommit() {
+  void Geometry::update() 
+  {
+    if (scene)
+      scene->setModified();
+
+    state = MODIFIED;
+  }
+  
+  void Geometry::commit() 
+  {
+    if (scene)
+      scene->setModified();
+
+    state = COMMITTED;
+  }
+
+  void Geometry::preCommit()
+  {
+    if (state == MODIFIED)
+      throw_RTCError(RTC_INVALID_OPERATION,"geometry got not committed");
   }
 
   void Geometry::postCommit()
   {
-    /* clear modified flag */
-    if (isEnabled()) 
-      clearModified();
+    /* set state to build */
+    if (isEnabled())
+      state = BUILD;
   }
 
   void Geometry::updateIntersectionFilters(bool enable)
@@ -89,14 +108,6 @@ namespace embree
     enabled = true;
   }
 
-  void Geometry::update() 
-  {
-    if (scene)
-      scene->setModified();
-    
-    modified = true;
-  }
-
   void Geometry::disable () 
   {
     if (isDisabled()) 
@@ -117,7 +128,7 @@ namespace embree
     userPtr = ptr;
   }
   
-  void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
+  void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
@@ -130,7 +141,7 @@ namespace embree
     //if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
   }
 
-  void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
+  void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 

@@ -33,7 +33,7 @@ struct RTCRayNp;
 /*! acceleration structure flags */
 enum RTCAccelFlags
 {
-  RTC_ACCEL_DEFAULT      = 0,          //!< default mode
+  RTC_ACCEL_FAST      = 0,          //!< default mode
   RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
   RTC_ACCEL_ROBUST       = (1 << 2),   //!< use acceleration structure that allows robust traversal
   RTC_ACCEL_ROBUST_COMPACT = (1 << 1) | (1 << 2)
@@ -43,7 +43,7 @@ enum RTCAccelFlags
 enum RTCBuildQuality
 {
   RTC_BUILD_QUALITY_LOW = 0,     //!< create lower quality data structures (for dynamic scenes)
-  RTC_BUILD_QUALITY_NORMAL = 1,  //!< default build quality for most usages
+  RTC_BUILD_QUALITY_MEDIUM = 1,  //!< default build quality for most usages
   RTC_BUILD_QUALITY_HIGH = 2     //!< create higher quality data structures (longer build times)
 };
 
@@ -81,10 +81,10 @@ typedef struct __RTCScene* RTCScene;
 RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device);
 
 /*! \brief Type of progress callback function. */
-typedef bool (*RTCProgressMonitorFunc)(void* ptr, const double n);
+typedef bool (*RTCProgressMonitorFunction)(void* ptr, const double n);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
-RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr);
+RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction func, void* ptr);
 
 /*! sets the acceleration structure for a scene */
 RTCORE_API void rtcSetAccelFlags(RTCScene scene, enum RTCAccelFlags accel);

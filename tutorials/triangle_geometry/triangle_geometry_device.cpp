@@ -74,10 +74,9 @@ unsigned int addCube (RTCScene scene_i)
   face_colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
 
   rtcSetBuffer(mesh,RTC_USER_VERTEX_BUFFER0,vertex_colors,0,sizeof(Vec3fa), 8);
-
-  unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
-  rtcReleaseGeometry(mesh);
-  return geomID;
+  
+  rtcCommitGeometry(mesh);
+  return rtcAttachAndReleaseGeometry(scene_i,mesh);
 }
 
 /* adds a ground plane to the scene */
@@ -97,10 +96,9 @@ unsigned int addGroundPlane (RTCScene scene_i)
   Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-
-  unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
-  rtcReleaseGeometry(mesh);
-  return geomID;
+  
+  rtcCommitGeometry(mesh);
+  return rtcAttachAndReleaseGeometry(scene_i,mesh);
 }
 
 /* called by the C++ code for initialization */

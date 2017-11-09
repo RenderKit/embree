@@ -190,14 +190,15 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stri
 }
 
 /* intersection filter function */
-void intersectionFilterN(const int* valid,
-                         void* ptr,
-                         const RTCIntersectContext* context,
-                         struct RTCRayN* ray,
-                         struct RTCHitN* potentialHit,
-                         const unsigned int N,
-                         int *const acceptHit)
+void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
 {
+  const int* valid = args->valid;
+  const RTCIntersectContext* context =  args->context;
+  struct RTCRayN* ray = args->ray;
+  struct RTCHitN* potentialHit = args->potentialHit;
+  const unsigned int N = args->N;
+  int* const acceptHit = args->acceptHit;
+                                  
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
@@ -216,6 +217,7 @@ void intersectionFilterN(const int* valid,
     if (T < 1.0f) 
     {
       ray2->transparency = T;      
+      acceptHit[0] = 1;
       // ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
       // ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
       // ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
@@ -225,7 +227,6 @@ void intersectionFilterN(const int* valid,
       // ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
       // ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
       // ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
-      acceptHit[0] = 1;
     }
     //else
     //  valid[0] = 0;
@@ -259,25 +260,24 @@ void intersectionFilterN(const int* valid,
 
     /* ignore hit if completely transparent */
     if (T >= 1.0f) 
-      //valid[vi] = 0;
-      ;
+      ; //valid[vi] = 0;
+
     /* otherwise accept hit and remember transparency */
     else
     {
-#if 0
-      RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
-      RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
-      RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
+      // RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
+      // RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
+      // RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
 
-      RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
-      RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
-      RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
+      // RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
+      // RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
+      // RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
 
-      RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
-      RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
-      RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
-#endif
+      // RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
+      // RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
+      // RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
       acceptHit[vi] = 1;
+
       if (context) {
         Ray2* eray = (Ray2*) context->userRayExt;
         assert(eray);
@@ -288,14 +288,15 @@ void intersectionFilterN(const int* valid,
 }
 
 /* occlusion filter function */
-void occlusionFilterN(const int* valid,
-                      void* ptr,
-                      const RTCIntersectContext* context,
-                      struct RTCRayN* ray,
-                      struct RTCHitN* potentialHit,
-                      const unsigned int N,
-                      int *const acceptHit)
+void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
 {
+  const int* valid = args->valid;
+  const RTCIntersectContext* context =  args->context;
+  struct RTCRayN* ray = args->ray;
+  struct RTCHitN* potentialHit = args->potentialHit;
+  const unsigned int N = args->N;
+  int* const acceptHit = args->acceptHit;
+                                  
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
@@ -338,7 +339,7 @@ void occlusionFilterN(const int* valid,
       acceptHit[0] = 1;
       //ray2->ray.geomID = 0;
     //else
-    //valid[0] = 0;
+    //  valid[0] = 0;
     return;    
   }
 
@@ -405,8 +406,8 @@ void occlusionFilterN(const int* valid,
 
     /* reject a hit if not fully opqaue */
     if (T != 0.0f) 
-      ;
-      //valid[vi] = 0;
+      ; //valid[vi] = 0;
+
     /* otherwise accept the hit */
     else
       acceptHit[vi] = 1;
@@ -675,6 +676,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -704,6 +706,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -727,6 +730,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;

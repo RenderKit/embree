@@ -33,8 +33,8 @@ namespace embree
     : Accel(AccelData::TY_UNKNOWN),
       device(device),
       flags_modified(true),
-      accel_flags(RTC_ACCEL_DEFAULT),
-      quality_flags(RTC_BUILD_QUALITY_NORMAL),
+      accel_flags(RTC_ACCEL_FAST),
+      quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       hint_flags(RTC_BUILD_HINT_NONE),
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
@@ -805,7 +805,7 @@ namespace embree
       return;
     }
 
-    if (!isModified() /* && 0 */) {
+    if (!isModified()) {
       if (threadCount) group_barrier.wait(threadCount);
       return;
     }
@@ -864,7 +864,7 @@ namespace embree
   }
 #endif
 
-  void Scene::setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr) 
+  void Scene::setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr) 
   {
     static MutexSys mutex;
     mutex.lock();

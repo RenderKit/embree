@@ -569,7 +569,7 @@ namespace embree
 
   inline std::string to_string(RTCAccelFlags accel_flags)
   {
-    if      (accel_flags == (RTCAccelFlags) 0) return "DefaultAccel";
+    if      (accel_flags == RTC_ACCEL_FAST) return "FastAccel";
     else if (accel_flags == RTC_ACCEL_COMPACT) return "CompactAccel";
     else if (accel_flags == RTC_ACCEL_ROBUST ) return "RobustAccel";
     else if (accel_flags == (RTCAccelFlags)(RTC_ACCEL_COMPACT | RTC_ACCEL_ROBUST)) return "CompactRobust";
@@ -579,7 +579,7 @@ namespace embree
   inline std::string to_string(RTCBuildQuality quality_flags)
   {
     if      (quality_flags == RTC_BUILD_QUALITY_LOW   ) return "LowBuildQuality";
-    else if (quality_flags == RTC_BUILD_QUALITY_NORMAL) return "NormalBuildQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_MEDIUM) return "MediumBuildQuality";
     else if (quality_flags == RTC_BUILD_QUALITY_HIGH  ) return "HighBuildQuality";
     else { assert(false); return ""; }
   }

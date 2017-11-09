@@ -310,6 +310,7 @@ namespace embree
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+    rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.scene = scene_out;
     mesh->geom.geomID = geomID;
@@ -324,6 +325,7 @@ namespace embree
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+    rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.scene = scene_out;
     mesh->geom.geomID = geomID;
@@ -370,6 +372,7 @@ namespace embree
     rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
+    rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.scene = scene_out;
@@ -388,6 +391,7 @@ namespace embree
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
     if (mesh->basis != RTC_BASIS_LINEAR)
       rtcSetTessellationRate(geom,(float)mesh->tessellation_rate);
+    rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.scene = scene_out;
@@ -424,6 +428,7 @@ namespace embree
     DISABLE_DEPRECATED_WARNING;
     RTCGeometry geom = rtcNewGeometryGroup (device, scene_out, gflags, geometries.data(), geometries.size());
     ENABLE_DEPRECATED_WARNING;
+    rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     group->geom.scene = scene_out;
@@ -442,6 +447,7 @@ namespace embree
         RTCGeometry geom = rtcNewGeometryInstance(device, scene_out, geom_inst);
         ENABLE_DEPRECATED_WARNING;
         rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
+        rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);
         rtcReleaseGeometry(geom);
         return geomID;
@@ -455,6 +461,7 @@ namespace embree
       if (instance->numTimeSteps == 1) {
         RTCGeometry geom = rtcNewInstance(device, scene_inst, 1);
         rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
+        rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);
         rtcReleaseGeometry(geom);
         return geomID;
@@ -463,6 +470,7 @@ namespace embree
         RTCGeometry geom = rtcNewInstance(device, scene_inst, instance->numTimeSteps);
         for (size_t t=0; t<instance->numTimeSteps; t++)
           rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
+        rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);
         rtcReleaseGeometry(geom);
         return geomID;

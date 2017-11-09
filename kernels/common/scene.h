@@ -194,7 +194,7 @@ namespace embree
     }
 
     /* flag decoding */
-    __forceinline bool isDefaultAccel() { return accel_flags == RTC_ACCEL_DEFAULT; }
+    __forceinline bool isFastAccel() { return accel_flags == RTC_ACCEL_FAST; }
     __forceinline bool isCompactAccel() { return accel_flags & RTC_ACCEL_COMPACT; }
     __forceinline bool isRobustAccel()  { return accel_flags & RTC_ACCEL_ROBUST; }
     __forceinline bool isStaticAccel()  { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }
@@ -243,11 +243,11 @@ namespace embree
       Scene* scene;
     };
     BuildProgressMonitorInterface progressInterface;
-    RTCProgressMonitorFunc progress_monitor_function;
+    RTCProgressMonitorFunction progress_monitor_function;
     void* progress_monitor_ptr;
     std::atomic<size_t> progress_monitor_counter;
     void progressMonitor(double nprims);
-    void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr);
+    void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
 
   public:
     struct GeometryCounts 

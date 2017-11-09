@@ -170,19 +170,19 @@ enum RTCError {
 RTCORE_API enum RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef void (*RTCErrorFunc)(void* userPtr, const enum RTCError code, const char* str);
+typedef void (*RTCErrorFunction)(void* userPtr, const enum RTCError code, const char* str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunc func, void* userPtr);
+RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunction func, void* userPtr);
 
 /*! \brief Type of memory consumption callback function. */
-typedef bool (*RTCMemoryMonitorFunc)(void* ptr, const ssize_t bytes, const bool post);
+typedef bool (*RTCMemoryMonitorFunction)(void* ptr, const ssize_t bytes, const bool post);
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The
  *  userPtr pointer is passed to each invokation of the callback
  *  function. */
-RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* userPtr);
+RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* userPtr);
 
 #if defined(__cplusplus)
 }
@@ -191,7 +191,6 @@ RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMon
 #include "rtcore_ray.h"
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
-#include "rtcore_geometry_user.h"
 #include "rtcore_builder.h"
 
 #if defined(__cplusplus)

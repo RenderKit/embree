@@ -42,13 +42,7 @@ uniform Vec3f hair_dK;
 uniform Vec3f hair_Kr;    //!< reflectivity of hair
 uniform Vec3f hair_Kt;    //!< transparency of hair
 
-unmasked void filterDispatch(const uniform int* uniform valid,
-                             void* uniform ptr,
-                             const uniform RTCIntersectContext* uniform context,
-                             struct RTCRayN* uniform ray,
-                             struct RTCHitN* uniform potentialHit,
-                             const uniform unsigned int N,
-                             uniform int* const uniform acceptHit);
+unmasked void filterDispatch(const RTCFilterFunctionNArguments* uniform const args);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -71,6 +65,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
   rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
 }
@@ -84,6 +79,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
   rtcSetOcclusionFilterFunction(geom,filterDispatch);
   rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
 }
@@ -244,28 +240,22 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 uniform bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-unmasked void filterDispatch(const uniform int* uniform valid,
-                             void* uniform ptr,
-                             const uniform RTCIntersectContext* uniform context,
-                             struct RTCRayN* uniform _ray,
-                             struct RTCHitN* uniform potentialHit,
-                             const uniform unsigned int N,
-                             uniform int* const uniform acceptHit)
+unmasked void filterDispatch(const RTCFilterFunctionNArguments* uniform const args)
 {
-  varying Ray* uniform ray = (varying Ray* uniform)_ray;
+  varying Ray* uniform ray = (varying Ray* uniform) args->ray;
   if (!enableFilterDispatch) return;
-  if (ray->filter) ray->filter(valid,ptr,context,_ray,potentialHit,N,acceptHit);
+  if (ray->filter) ray->filter(args);
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilter(const uniform int* uniform valid_i,
-                              void* uniform ptr,
-                              const uniform RTCIntersectContext* uniform context,
-                              struct RTCRayN* uniform _ray,
-                              struct RTCHitN* uniform potentialHit,
-                              const uniform unsigned int N,
-                              uniform int* const uniform acceptHit)
+unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args)
+
 {
+  const uniform int* uniform valid_i = args->valid;
+  struct RTCRayN* uniform _ray = args->ray;
+  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  const uniform unsigned int N = args->N;
+  uniform int* const uniform acceptHit = args->acceptHit;
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;

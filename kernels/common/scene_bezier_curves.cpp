@@ -258,6 +258,7 @@ namespace embree
 #else
       NativeCurves::preCommit();
 #endif
+      Geometry::preCommit();
     }
     
     void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
@@ -276,6 +277,7 @@ namespace embree
 #else
       if (isEnabled()) commit_helper<BSplineCurve3fa,BezierCurve3fa>();
 #endif
+      Geometry::preCommit();
     }
     
     void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 

@@ -101,20 +101,16 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-unmasked void displacementFunction(void* uniform ptr,
-                                   uniform unsigned int geomID,
-                                   uniform unsigned int primID,
-                                   uniform unsigned int time,
-                                   const uniform float* uniform u,      /*!< u coordinates (source) */
-                                   const uniform float* uniform v,      /*!< v coordinates (source) */
-                                   const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
-                                   const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
-                                   const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
-                                   uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
-                                   uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
-                                   uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
-                                   uniform unsigned int N)
+unmasked void displacementFunction(const struct RTCDisplacementFunctionArguments* uniform const args)
 {
+  const uniform float* uniform nx = args->nx;
+  const uniform float* uniform ny = args->ny;
+  const uniform float* uniform nz = args->nz;
+  uniform float* uniform px = args->px;
+  uniform float* uniform py = args->py;
+  uniform float* uniform pz = args->pz;
+  uniform unsigned int N = args->N;
+                                   
   foreach (i=0 ... N) {
     const Vec3f P = make_Vec3f(px[i],py[i],pz[i]);
     const Vec3f Ng = make_Vec3f(nx[i],ny[i],nz[i]);
@@ -138,6 +134,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcSetDisplacementFunction(geom,displacementFunction,NULL);
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -161,6 +158,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;

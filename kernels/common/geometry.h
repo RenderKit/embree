@@ -59,6 +59,12 @@ namespace embree
     enum Type { TRIANGLE_MESH = 1, QUAD_MESH = 2, BEZIER_CURVES = 4, LINE_SEGMENTS = 8, SUBDIV_MESH = 16, USER_GEOMETRY = 32, INSTANCE = 64, GROUP = 128 };
     static const int NUM_TYPES = 8;
 
+    enum State {
+      MODIFIED = 0,
+      COMMITTED = 1,
+      BUILD = 2
+    };
+
   public:
     
     /*! Geometry constructor */
@@ -85,10 +91,7 @@ namespace embree
     __forceinline bool isInstanced() const { return used-enabled; }
 
     /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return numPrimitives && modified; }
-
-    /*! clears modified flag */
-    __forceinline void clearModified() { modified = false; }
+    __forceinline bool isModified() const { return numPrimitives != 0 && state != BUILD; }
 
     /*! test if this is a static geometry */
     __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
@@ -119,12 +122,15 @@ namespace embree
 
     Geometry* attach(Scene* scene, unsigned int geomID);
     void detach();
-    
+
     /*! Enable geometry. */
     virtual void enable ();
 
     /*! Update geometry. */
     virtual void update ();
+    
+    /*! commit of geometry */
+    virtual void commit();
 
     /*! Update geometry buffer. */
     virtual void updateBuffer (RTCBufferType type) {
@@ -145,7 +151,7 @@ namespace embree
 
     /*! called before every build */
     virtual void preCommit();
-
+  
     /*! called after every build */
     virtual void postCommit();
 
@@ -207,15 +213,15 @@ namespace embree
     }
 
     /*! Set displacement function. */
-    virtual void setDisplacementFunction (RTCDisplacementFunc filter, RTCBounds* bounds) {
+    virtual void setDisplacementFunction (RTCDisplacementFunction filter, RTCBounds* bounds) {
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersection filter function for ray packets of size N. */
-    virtual void setIntersectionFilterFunctionN (RTCFilterFuncN filterN);
+    virtual void setIntersectionFilterFunctionN (RTCFilterFunctionN filterN);
 
     /*! Set occlusion filter function for ray packets of size N. */
-    virtual void setOcclusionFilterFunctionN (RTCFilterFuncN filterN);
+    virtual void setOcclusionFilterFunctionN (RTCFilterFunctionN filterN);
 
     /*! for instances only */
   public:
@@ -229,17 +235,17 @@ namespace embree
   public:
 
     /*! Set bounds function. */
-    virtual void setBoundsFunction (RTCBoundsFunc bounds, void* userPtr) { 
+    virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersect function for ray packets of size N. */
-    virtual void setIntersectFunctionN (RTCIntersectFuncN intersect) { 
+    virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
     /*! Set occlusion function for ray packets of size N. */
-    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded) { 
+    virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -263,15 +269,15 @@ namespace embree
     float fnumTimeSegments;    //!< number of time segments (precalculation)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
-    bool modified;             //!< true if geometry is modified
+    State state;
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
     std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
 
-    RTCFilterFuncN intersectionFilterN;
-    RTCFilterFuncN occlusionFilterN;
+    RTCFilterFunctionN intersectionFilterN;
+    RTCFilterFunctionN occlusionFilterN;
 
   };
 }

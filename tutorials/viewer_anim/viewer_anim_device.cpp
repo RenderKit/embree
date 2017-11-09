@@ -79,12 +79,13 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, 1);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     /* set index buffer */
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+    rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
@@ -95,12 +96,13 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, 1);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     /* set index buffer */
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+    rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
@@ -110,7 +112,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, 1);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
@@ -126,6 +128,7 @@ namespace embree {
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
     rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
 
+    rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
@@ -135,7 +138,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis, hair->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis, 1);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
@@ -143,6 +146,7 @@ namespace embree {
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     if (hair->basis != RTC_BASIS_LINEAR)
       rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+    rtcCommitGeometry(geom);
     hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
@@ -154,7 +158,7 @@ namespace embree {
   RTCScene createScene(ISPCScene* scene_in)
   {
     RTCScene scene = rtcDeviceNewScene(g_device);
-    rtcSetAccelFlags(scene,RTC_ACCEL_DEFAULT);
+    rtcSetAccelFlags(scene,RTC_ACCEL_FAST);
     rtcSetBuildQuality(scene, RTC_BUILD_QUALITY_LOW);
     rtcSetBuildHints(scene, RTC_BUILD_HINT_DYNAMIC);
     return scene;
@@ -192,7 +196,7 @@ namespace embree {
         for (size_t i=range.begin(); i<range.end(); i++)
           vertices[i] = lerp(input0[i],input1[i],tt);
       });
-    rtcUpdate(geom);
+    rtcCommitGeometry(geom);
   }
 
   void updateVertexData(const unsigned int ID,
@@ -207,7 +211,7 @@ namespace embree {
       unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCSubdivMesh*)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(rtcGetGeometry(scene_out,geomID));
+      rtcCommitGeometry(rtcGetGeometry(scene_out,geomID));
     }
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
@@ -235,7 +239,7 @@ namespace embree {
       unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(rtcGetGeometry(scene_out,geomID));
+      rtcCommitGeometry(rtcGetGeometry(scene_out,geomID));
     }
     else
       assert(false);

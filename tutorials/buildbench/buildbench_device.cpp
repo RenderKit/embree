@@ -38,6 +38,7 @@ namespace embree {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+    rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
@@ -48,6 +49,7 @@ namespace embree {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+    rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
@@ -67,6 +69,7 @@ namespace embree {
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
     rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
+    rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
@@ -80,6 +83,7 @@ namespace embree {
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     if (hair->basis != RTC_BASIS_LINEAR)
       rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+    rtcCommitGeometry(geom);
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
@@ -153,16 +157,16 @@ namespace embree {
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        rtcUpdate(rtcGetGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID));
+        rtcCommitGeometry(rtcGetGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        rtcUpdate(rtcGetGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID));
+        rtcCommitGeometry(rtcGetGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == QUAD_MESH) {
-        rtcUpdate(rtcGetGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID));
+        rtcCommitGeometry(rtcGetGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == CURVES) {
-        rtcUpdate(rtcGetGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID));
+        rtcCommitGeometry(rtcGetGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID));
       }
       else
         assert(false);
@@ -195,7 +199,7 @@ namespace embree {
   void Benchmark_Dynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_DYNAMIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
     convertScene(g_scene, scene_in, gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -234,7 +238,7 @@ namespace embree {
   void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_DEFAULT, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
     convertScene(g_scene, scene_in,gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -280,7 +284,7 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = createScene(RTC_ACCEL_DEFAULT,qflags,RTC_BUILD_HINT_NONE);
+      g_scene = createScene(RTC_ACCEL_FAST,qflags,RTC_BUILD_HINT_NONE);
       convertScene(g_scene,scene_in,gflags);
 
       double t0 = getSeconds();
@@ -350,7 +354,7 @@ namespace embree {
     Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
     Pause();
-    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_BUILD_QUALITY_NORMAL);
+    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_BUILD_QUALITY_MEDIUM);
     Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_BUILD_QUALITY_HIGH);
     rtcDeleteDevice(g_device); g_device = nullptr;

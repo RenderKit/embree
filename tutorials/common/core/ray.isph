@@ -59,7 +59,7 @@ struct Ray
   int instID;    //!< instance ID
 
   // ray extensions
-  RTCFilterFuncN filter; 
+  RTCFilterFunctionN filter; 
   Vec3f transparency;
 };
 

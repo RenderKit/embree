@@ -110,32 +110,102 @@ enum RTCCurveType
   RTC_CURVE_SURFACE    //!< render curves as real geometric surface
 };
 
+/*! Arguments for RTCFilterFunctionN callback */
+struct RTCFilterFunctionNArguments
+{
+  const int* valid;                          /*!< pointer to valid mask */
+  void* geomUserPtr;                         /*!< pointer to geometry user data */
+  const struct RTCIntersectContext* context; /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  struct RTCRayN* ray;                       /*!< ray and previous hit */
+  struct RTCHitN* potentialHit;              /*!< potential new hit */
+  unsigned int N;                            /*!< size of ray packet */
+  int* acceptHit;                            /*!< accept potential hit */
+};
+  
 /*! Intersection filter function for ray packets of size N. */
-typedef void (*RTCFilterFuncN)(const int* valid,                          /*!< pointer to valid mask */
-                               void* userPtr,                             /*!< pointer to geometry user data */
-                               const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                               struct RTCRayN* ray,                       /*!< ray and previous hit */
-                               struct RTCHitN* potentialHit,              /*!< potential new hit */
-                               const unsigned int N,                      /*!< size of ray packet */
-                               int * const acceptHit                      /*!< accept potential hit */ );
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
 
+/*! Type of bounding function. */
+typedef void (*RTCBoundsFunction)(void* userPtr,         /*!< pointer to user data */
+                              void* geomUserPtr,     /*!< pointer to geometry user data */
+                              unsigned int item,           /*!< item to calculate bounds for */
+                              unsigned int time,           /*!< time to calculate bounds for */
+                              struct RTCBounds* bounds_o    /*!< returns calculated bounds */);
+
+/*! Type of intersect function pointer for ray packets of size N. */
+typedef void (*RTCIntersectFunctionN)(const int* valid,                          /*!< pointer to valid mask */
+                                  void* ptr,                                 /*!< pointer to geometry user data */
+                                  const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+                                  struct RTCRayN* rays,                      /*!< ray packet to intersect */
+                                  unsigned int N,                            /*!< number of rays in packet */
+                                  unsigned int item                          /*!< item to intersect */);
+
+/*! Type of occlusion function pointer for ray packets of size N. */
+typedef void (*RTCOccludedFunctionN) (const int* valid,                      /*! pointer to valid mask */
+                                  void* ptr,                             /*!< pointer to user data */
+                                  const struct RTCIntersectContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+                                  struct RTCRayN* rays,                            /*!< Ray packet to test occlusion for. */
+                                  unsigned int N,                              /*!< number of rays in packet */
+                                  unsigned int item                            /*!< item to test for occlusion */);
+
+/*! Arguments for RTCDisplacementFunction callback */
+struct RTCDisplacementFunctionArguments
+{
+  void* geomUserPtr;      /*!< pointer to user data of geometry */
+  unsigned int geomID;    /*!< ID of geometry to displace */
+  unsigned int primID;    /*!< ID of primitive of geometry to displace */
+  unsigned int time;      /*!< time step to calculate displacement for */
+  const float* u;         /*!< u coordinates (source) */
+  const float* v;         /*!< v coordinates (source) */
+  const float* nx;        /*!< x coordinates of normalized normal at point to displace (source) */
+  const float* ny;        /*!< y coordinates of normalized normal at point to displace (source) */
+  const float* nz;        /*!< z coordinates of normalized normal at point to displace (source) */
+  float* px;              /*!< x coordinates of points to displace (source and target) */
+  float* py;              /*!< y coordinates of points to displace (source and target) */
+  float* pz;              /*!< z coordinates of points to displace (source and target) */
+  unsigned int N;         /*!< number of points to displace */
+};
+ 
 /*! Displacement mapping function. */
-typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
-                                    unsigned geomID,     /*!< ID of geometry to displace */
-                                    unsigned primID,     /*!< ID of primitive of geometry to displace */
-                                    unsigned time,       /*!< time step to calculate displacement for */
-                                    const float* u,      /*!< u coordinates (source) */
-                                    const float* v,      /*!< v coordinates (source) */
-                                    const float* nx,     /*!< x coordinates of normalized normal at point to displace (source) */
-                                    const float* ny,     /*!< y coordinates of normalized normal at point to displace (source) */
-                                    const float* nz,     /*!< z coordinates of normalized normal at point to displace (source) */
-                                    float* px,           /*!< x coordinates of points to displace (source and target) */
-                                    float* py,           /*!< y coordinates of points to displace (source and target) */
-                                    float* pz,           /*!< z coordinates of points to displace (source and target) */
-                                    unsigned int N             /*!< number of points to displace */ );
+typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionArguments* const args);
 
 /*! \brief Defines an opaque geometry type */
 typedef struct __RTCGeometry* RTCGeometry;
+
+/*! Creates a new user geometry object. This feature makes it possible
+ *  to add arbitrary types of geometry to the scene by providing
+ *  appropiate bounding, intersect and occluded functions. A user
+ *  geometry object is a set of user geometries. As the rtcIntersect
+ *  and rtcOccluded functions support different ray packet sizes, the
+ *  user also has to provide different versions of intersect and
+ *  occluded function pointers for these packet sizes. However, the
+ *  ray packet size of the called function pointer always matches the
+ *  packet size of the originally invoked rtcIntersect and rtcOccluded
+ *  functions. A user data pointer, that points to a user specified
+ *  representation of the geometry, is passed to each intersect and
+ *  occluded function invokation, as well as the index of the geometry
+ *  of the set to intersect. */
+RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
+                                           enum RTCGeometryFlags gflags, //!< geometry flags
+                                           unsigned int numGeometries,    /*!< the number of geometries contained in the set */
+                                           unsigned int numTimeSteps  /*!< number of motion blur time steps */
+  );
+
+/*! Sets the bounding function to calculate bounding boxes of the user
+ *  geometry items when building spatial index structures. The
+ *  calculated bounding box have to be conservative and should be
+ *  tight. */
+RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr);
+
+/*! Set intersect function for ray packets of size N. The rtcIntersectN function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
+RTCORE_API void rtcSetIntersectFunction(RTCGeometry hgeometry, RTCIntersectFunctionN intersect);
+
+/*! Set occlusion function for ray packets of size N. The rtcOccludedN function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
+RTCORE_API void rtcSetOccludedFunction(RTCGeometry hgeometry, RTCOccludedFunctionN occluded);
 
 /*! \brief Creates a new scene instance. 
 
@@ -334,14 +404,6 @@ RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, enum RTCBufferType type);
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCGeometry geometry);
 
-/*! \brief Update all geometry buffers. 
-
-  Each time geometry buffers got modified, the user has to call some
-  update function to tell the ray tracing engine which buffers got
-  modified. The rtcUpdate function taggs each geometry buffer of the
-  specified geometry as modified. */
-RTCORE_API void rtcUpdate (RTCGeometry geometry);
-
 /*! \brief Update spefific geometry buffer. 
 
   Each time geometry buffers got modified, the user has to call some
@@ -358,13 +420,13 @@ RTCORE_API void rtcUpdateBuffer (RTCGeometry geometry, enum RTCBufferType type);
 RTCORE_API void rtcDisable (RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, RTCDisplacementFunc func, struct RTCBounds* bounds);
+RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, RTCDisplacementFunction func, struct RTCBounds* bounds);
 
 /*! \brief Sets the intersection filter function for single rays. */
-RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry geometry, RTCFilterFuncN func);
+RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry geometry, RTCFilterFunctionN func);
 
 /*! \brief Sets the occlusion filter function for single rays. */
-RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry geometry, RTCFilterFuncN func);
+RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry geometry, RTCFilterFunctionN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed
@@ -450,6 +512,9 @@ RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned int geomID,
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                                 enum RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+
+/*! Commits the geometry. */
+RTCORE_API void rtcCommitGeometry (RTCGeometry geom);
 
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);

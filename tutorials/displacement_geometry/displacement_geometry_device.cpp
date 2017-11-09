@@ -103,20 +103,16 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(void* ptr,
-                                   unsigned int geomID,
-                                   unsigned int primID,
-                                   unsigned int time,
-                                   const float* u,      /*!< u coordinates (source) */
-                                   const float* v,      /*!< v coordinates (source) */
-                                   const float* nx,     /*!< x coordinates of normal at point to displace (source) */
-                                   const float* ny,     /*!< y coordinates of normal at point to displace (source) */
-                                   const float* nz,     /*!< z coordinates of normal at point to displace (source) */
-                                   float* px,           /*!< x coordinates of points to displace (source and target) */
-                                   float* py,           /*!< y coordinates of points to displace (source and target) */
-                                   float* pz,           /*!< z coordinates of points to displace (source and target) */
-                                   unsigned int N)
+void displacementFunction(const struct RTCDisplacementFunctionArguments* const args)
 {
+  const float* nx = args->nx;
+  const float* ny = args->ny;
+  const float* nz = args->nz;
+  float* px = args->px;
+  float* py = args->py;
+  float* pz = args->pz;
+  unsigned int N = args->N;
+                                   
   for (unsigned int i=0; i<N; i++) {
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
     const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
@@ -140,6 +136,7 @@ unsigned int addCube (RTCScene scene_i)
 
   rtcSetDisplacementFunction(geom,displacementFunction,nullptr);
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
@@ -163,6 +160,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
+  rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;

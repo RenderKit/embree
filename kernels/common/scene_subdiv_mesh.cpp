@@ -324,7 +324,7 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunction func, RTCBounds* bounds) 
   {
     this->displFunc   = func;
     if (bounds) this->displBounds = *(BBox3fa*)bounds; 
