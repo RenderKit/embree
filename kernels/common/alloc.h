@@ -771,6 +771,7 @@ namespace embree
         }
         else
           assert(false);
+
         return NULL;
       }
 

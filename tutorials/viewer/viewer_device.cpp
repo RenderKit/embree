@@ -270,6 +270,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   RTCIntersectContext context;
   context.flags = g_iflags_coherent;
   rtcIntersect1Ex(g_scene,&context,ray);
+
   RayStats_addRay(stats);
 
   /* shade background black */
