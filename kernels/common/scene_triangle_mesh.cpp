@@ -117,6 +117,10 @@ namespace embree
       triangles.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
       if (scene && size != (unsigned)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
+      // if (isEnabled() && size != (size_t)-1) disabling();
+      // triangles.set(ptr,offset,stride,size); 
+      // setNumPrimitives(size);
+      // if (isEnabled() && size != (size_t)-1) enabling();
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");

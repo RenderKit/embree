@@ -174,7 +174,7 @@ namespace embree
     static __forceinline void scatter(void* ptr, const vint4& index, const vfloat4& v)
     {
 #if defined(__AVX512VL__)
-      _mm_i32scatter_ps((float*)ptr,index,v,scale);
+      _mm_i32scatter_ps((float*)ptr, index, v, scale);
 #else
       *(float*)(((char*)ptr)+scale*index[0]) = v[0];
       *(float*)(((char*)ptr)+scale*index[1]) = v[1];
@@ -187,7 +187,7 @@ namespace embree
     static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vfloat4& v)
     {
 #if defined(__AVX512VL__)
-      _mm_mask_i32scatter_ps((float*)ptr,mask,index,v,scale);
+      _mm_mask_i32scatter_ps((float*)ptr ,mask, index, v, scale);
 #else
       if (likely(mask[0])) *(float*)(((char*)ptr)+scale*index[0]) = v[0];
       if (likely(mask[1])) *(float*)(((char*)ptr)+scale*index[1]) = v[1];
