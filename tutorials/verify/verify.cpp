@@ -2402,12 +2402,11 @@ namespace embree
         /* reject hit */
         //PRINT( RTCHitN_primID(potentialHit,N,i) & 2 );
         if (RTCHitN_primID(args->potentialHit,args->N,i) & 2) {
-          //valid[i] = 0;
+          args->valid[i] = 0;
         }
 
         /* accept hit */
         else {
-          args->acceptHit[i] = 1;
           /*
           RTCRayN_instID(ray,N,i) = RTCHitN_instID(potentialHit,N,i);
           RTCRayN_geomID(ray,N,i) = RTCHitN_geomID(potentialHit,N,i);
