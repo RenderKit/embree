@@ -850,13 +850,13 @@ namespace embree
         if (intersect)
         {
           vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar);
-          vfloat<K>::template scatter<1>(valid, Ng.x, offset, ray.Ng.x);
-          vfloat<K>::template scatter<1>(valid, Ng.y, offset, ray.Ng.y);
-          vfloat<K>::template scatter<1>(valid, Ng.z, offset, ray.Ng.z);
           vfloat<K>::template scatter<1>(valid, u, offset, ray.u);
           vfloat<K>::template scatter<1>(valid, v, offset, ray.v);
-          vint<K>::template scatter<1>(valid, (int*)&ptr->primID, offset, ray.primID);
-          vint<K>::template scatter<1>(valid, (int*)&ptr->instID, offset, ray.instID);
+          vint<K>::template scatter<1>(valid, (int*)primID, offset, ray.primID);
+          if (likely(Ngx)) vfloat<K>::template scatter<1>(valid, Ngx, offset, ray.Ng.x);
+          if (likely(Ngy)) vfloat<K>::template scatter<1>(valid, Ngy, offset, ray.Ng.y);
+          if (likely(Ngz)) vfloat<K>::template scatter<1>(valid, Ngz, offset, ray.Ng.z);
+          if (likely(instID)) vint<K>::template scatter<1>(valid, (int*)instID, offset, ray.instID);
         }
 #else
         size_t valid_bits = movemask(valid);
