@@ -246,10 +246,9 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
   if (!transparency) return;
     
-  const int* valid_i = args->valid;
+  int* valid_i = args->valid;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
-  int* const acceptHit = args->acceptHit;
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
@@ -258,15 +257,16 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    acceptHit[0] = 1;
     *transparency = Vec3fa(0.0f);
     return;
   }
   Vec3fa T = hair_Kt;
   T = T * *transparency;
   *transparency = T;
-  if (eq(T,Vec3fa(0.0f))) 
-    acceptHit[0] = 1;
+  if (eq(T,Vec3fa(0.0f)))
+    ;
+  else
+    valid_i[0] = 0;
 }
 
 Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, Ray& ray)

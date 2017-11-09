@@ -244,10 +244,9 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
   if (!transparency) return;
     
-  const uniform int* uniform valid_i = args->valid;
+  uniform int* uniform valid_i = args->valid;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
-  uniform int* const uniform acceptHit = args->acceptHit;
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
@@ -256,15 +255,16 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    acceptHit[programIndex] = 1;
     *transparency = make_Vec3f(0.0f);
     return;
   }
   Vec3f T = hair_Kt;
   T = T * *transparency;
   *transparency = T;
-  if (eq(T,make_Vec3f(0.0f))) 
-    acceptHit[programIndex] = 1;
+  if (eq(T,make_Vec3f(0.0f)))
+    ;
+  else
+    valid_i[programIndex] = 0;
 }
 
 Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, Ray& ray)

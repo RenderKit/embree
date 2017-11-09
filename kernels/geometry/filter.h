@@ -29,25 +29,25 @@ namespace embree
   {
     __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
     {
-      int mask = -1; int accept = 0;
       RTCFilterFunctionNArguments args;
+      int mask = -1;
       args.valid = &mask;
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = 1;
-      args.acceptHit = &accept;
+      
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
       if (geometry->intersectionFilterN)
 #endif
         geometry->intersectionFilterN(&args);
-      if (accept == 0)
+      if (mask == 0)
         return false;
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
       if (context->context->filter)
         context->context->filter(&args);
-      if (accept == 0)
+      if (mask == 0)
         return false;
 #endif
       copyHitToRay(ray,hit);
@@ -56,58 +56,55 @@ namespace embree
     
     __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
     {
-      int mask = -1; int accept = 0;
       RTCFilterFunctionNArguments args;
+      int mask = -1;
       args.valid = &mask;
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = 1;
-      args.acceptHit = &accept;
+
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
       if (geometry->occlusionFilterN)
 #endif
         geometry->occlusionFilterN(&args);
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
-      if (accept == 0)
+      if (mask == 0)
         return false;
       if (context->context->filter)
         context->context->filter(&args);
 #endif
-      return accept != 0;
+      return mask != 0;
     }
 
     template<int K>
     __forceinline vbool<K> runIntersectionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, IntersectContext* context, HitK<K>& hit)
     {
-      vint<K> mask = valid.mask32(); vint<K> accept(zero);
-      
       RTCFilterFunctionNArguments args;
+      vint<K> mask = valid.mask32();
       args.valid = (int*)&mask;
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = K;
-      args.acceptHit = (int*)&accept;
 
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
       if (geometry->intersectionFilterN)
 #endif
-      {
         geometry->intersectionFilterN(&args);
-        mask &= accept;
-      }
+
       vbool<K> valid_o = mask != vint<K>(zero);
+      assert(none(!valid & valid_o));
       if (none(valid_o)) return valid_o;
 
 #if EMBREE_INTERSERTION_FILTER_CONTEXT      
-      if (context->context->filter) {
+      if (context->context->filter)
         context->context->filter(&args);
-        mask &= accept;
-      }
+
       valid_o = mask != vint<K>(zero);
+      assert(none(!valid & valid_o));
       if (none(valid_o)) return valid_o;
 #endif
       
@@ -118,36 +115,31 @@ namespace embree
     template<int K>
       __forceinline vbool<K> runOcclusionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, IntersectContext* context, HitK<K>& hit)
     {
-      assert(geometry->occlusionFilterN);
-      vint<K> mask = valid.mask32(); vint<K> accept(zero);
-      
       RTCFilterFunctionNArguments args;
+      vint<K> mask = valid.mask32();
       args.valid = (int*)&mask;
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = K;
-      args.acceptHit = (int*)&accept;
 
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
       if (geometry->occlusionFilterN)
 #endif
-      {
         geometry->occlusionFilterN(&args);
-        mask &= accept;
-      }
+
       vbool<K> valid_o = mask != vint<K>(zero);
+      assert(none(!valid & valid_o));
       
 #if EMBREE_INTERSERTION_FILTER_CONTEXT
       if (none(valid_o)) return valid_o;
 
-      if (context->context->filter) {
+      if (context->context->filter)
         context->context->filter(&args);
-        mask &= accept;
-      }
 
       valid_o = mask != vint<K>(zero);
+      assert(none(!valid & valid_o));
 #endif
       
       ray.geomID = select(valid_o, vint<K>(zero), ray.geomID);

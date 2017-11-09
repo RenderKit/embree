@@ -1272,11 +1272,10 @@ void intersectionFilterReject(const RTCFilterFunctionNArguments* const args)
 
 void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 {
-  const int* valid_i = args->valid;
+  int* valid_i = args->valid;
   struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
-  int* const acceptHit = args->acceptHit;
   
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1314,7 +1313,6 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
     ray->tfar   = tfar;
-    acceptHit[0] = 1;
     // ray->instID = dg.instID;
     // ray->geomID = dg.geomID;
     // ray->primID = dg.primID;    
@@ -1322,6 +1320,8 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
     // ray->v      = dg.v;
     // ray->Ng     = Ng;
   }
+  else
+    valid_i[0] = 0;
 }
 
 void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
@@ -1329,15 +1329,13 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
   Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
   if (!transparency) return;
   
-  const int* valid_i = args->valid;
-  int* const acceptHit = args->acceptHit;
+  int* valid_i = args->valid;
   
   assert(args->N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
    
   *transparency = Vec3fa(0.0f);
-  acceptHit[0] = 1;
 }
 
 void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
@@ -1345,11 +1343,10 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
   if (!transparency) return;
   
-  const int* valid_i = args->valid;
+  int* valid_i = args->valid;
   struct RTCRayN* _ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
-  int* const acceptHit = args->acceptHit;
   
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1387,9 +1384,7 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 
   *transparency = *transparency * brdf.Kt;
   if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
-    ; //valid_i[0] = 0;
-  else
-    acceptHit[0] = 1;
+    valid_i[0] = 0;
 }
 
 /* occlusion filter function */
@@ -1398,10 +1393,9 @@ void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
   Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
   if (!transparency) return;
   
-  const int* valid_i = args->valid;
+  int* valid_i = args->valid;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
-  int* const acceptHit = args->acceptHit;
   
   assert(N == 1);
   bool valid = *((int*) valid_i);
@@ -1428,9 +1422,7 @@ void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
   Kt = Kt * *transparency;
   *transparency = Kt;
   if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
-    ; //valid_i[0] = 0;
-  else
-    acceptHit[0] = 1;
+    valid_i[0] = 0;
 }
 
 Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats)

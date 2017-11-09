@@ -67,13 +67,12 @@ struct RTCIntersectContext
 /*! Arguments for RTCFilterFunctionN callback */
 struct RTCFilterFunctionNArguments
 {
-  const uniform int* uniform valid;                    /*!< pointer to valid mask */
+  uniform int* uniform valid;                    /*!< pointer to valid mask */
   void* uniform geomUserPtr;                           /*!< pointer to geometry user data */
   const RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   struct RTCRayN* uniform ray;                         /*!< ray and previous hit */
   struct RTCHitN* uniform potentialHit;                /*!< potential new hit */
   uniform unsigned int N;                              /*!< number of rays in ray packet */
-  uniform int * uniform acceptHit;                     /*!< accept potential hit */
 };
 
 /*! Intersection filter function for ray packets of size N. */

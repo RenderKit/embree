@@ -1270,11 +1270,10 @@ unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* unifor
 
 unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
 {
-  const uniform int* uniform valid_i = args->valid;
+  uniform int* uniform valid_i = args->valid;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
-  uniform int* const uniform acceptHit = args->acceptHit;
   
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1312,7 +1311,6 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
     ray->tfar   = tfar;
-    acceptHit[programIndex] = 1;
     // ray->instID = dg.instID;
     // ray->geomID = dg.geomID;
     // ray->primID = dg.primID;    
@@ -1320,6 +1318,8 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
     // ray->v      = dg.v;
     // ray->Ng     = Ng;
   }
+  else
+    valid_i[programIndex] = 0;
 }
 
 unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args)
@@ -1327,15 +1327,13 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
   if (!transparency) return;
   
-  const uniform int* uniform valid_i = args->valid;
-  uniform int* const uniform acceptHit = args->acceptHit;
+  uniform int* uniform valid_i = args->valid;
   
   assert(args->N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
    
   *transparency = make_Vec3f(0.0f);
-  acceptHit[programIndex] = 1;
 }
 
 unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
@@ -1343,11 +1341,10 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
   if (!transparency) return;
   
-  const uniform int* uniform valid_i = args->valid;
+  uniform int* uniform valid_i = args->valid;
   struct RTCRayN* uniform _ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
-  uniform int* const uniform acceptHit = args->acceptHit;
   
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1385,9 +1382,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
 
   *transparency = *transparency * brdf.Kt;
   if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
-    ; //valid_i[programIndex] = 0;
-  else
-    acceptHit[programIndex] = 1;
+    valid_i[programIndex] = 0;
 }
 
 /* occlusion filter function */
@@ -1396,10 +1391,9 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
   if (!transparency) return;
   
-  const uniform int* uniform valid_i = args->valid;
+  uniform int* uniform valid_i = args->valid;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
-  uniform int* const uniform acceptHit = args->acceptHit;
   
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
@@ -1426,9 +1420,7 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
   Kt = Kt * *transparency;
   *transparency = Kt;
   if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
-    ; //valid_i[programIndex] = 0;
-  else
-    acceptHit[programIndex] = 1;
+    valid_i[programIndex] = 0;
 }
 
 Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera, uniform RayStats& stats)
