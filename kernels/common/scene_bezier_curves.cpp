@@ -21,20 +21,20 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps) 
-    : Geometry(device,BEZIER_CURVES,0,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags) 
+    : Geometry(device,BEZIER_CURVES,0,1,flags), subtype(subtype), basis(basis), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
 
   void NativeCurves::enabling() 
-  { 
+  {
     if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
     else                   scene->worldMB.numBezierCurves += numPrimitives; 
   }
   
   void NativeCurves::disabling() 
-  { 
+  {
     if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
     else                   scene->worldMB.numBezierCurves -= numPrimitives;
   }
@@ -52,13 +52,14 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-      size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].newBuffer(device,size,stride);
-      return vertices[t].get();
-    } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].newBuffer(device,size,stride);
+      setNumTimeSteps(vertices.size());
+      return vertices[bid].get();
+    }
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
       userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
@@ -85,12 +86,15 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-      size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(device,ptr,offset,stride,size); 
-      vertices[t].checkPadding16();
-    } 
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].set(device,ptr,offset,stride,size); 
+      vertices[bid].checkPadding16();
+      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
+      //  vertices.pop_back();
+      setNumTimeSteps(vertices.size());
+    }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
@@ -248,8 +252,8 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps) {
-      return new CurvesBezier(device,subtype,basis,flags,numTimeSteps);
+    NativeCurves* createCurvesBezier(Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags) {
+      return new CurvesBezier(device,subtype,basis,flags);
     }
     
     void CurvesBezier::preCommit() {
@@ -267,8 +271,8 @@ namespace embree
       interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
     }
     
-    NativeCurves* createCurvesBSpline(Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags, unsigned int numTimeSteps) {
-      return new CurvesBSpline(device,subtype,basis,flags,numTimeSteps);
+    NativeCurves* createCurvesBSpline(Device* device, RTCCurveType subtype, RTCCurveBasis basis, RTCGeometryFlags flags) {
+      return new CurvesBSpline(device,subtype,basis,flags);
     }
     
     void CurvesBSpline::preCommit() {

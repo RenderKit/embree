@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  QuadMesh::QuadMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
-    : Geometry(device,QUAD_MESH,0,numTimeSteps,flags)
+  QuadMesh::QuadMesh (Device* device, RTCGeometryFlags flags)
+    : Geometry(device,QUAD_MESH,0,1,flags)
   {
     vertices.resize(numTimeSteps);
   }
@@ -52,18 +52,17 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-      size_t t = type - RTC_VERTEX_BUFFER0;
-      if (size == -1) size = vertices[t].size();
-
       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
       if (stride*size > 16ll*1024ll*1024ll*1024ll) 
        throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
 
-      vertices[t].newBuffer(device,size,stride); 
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].newBuffer(device,size,stride); 
       vertices0 = vertices[0];
-      return vertices[t].get();
+      setNumTimeSteps(vertices.size());
+      return vertices[bid].get();
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
@@ -92,18 +91,19 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-      size_t t = type - RTC_VERTEX_BUFFER0;
-      if (size == -1) size = vertices[t].size();
-
       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
       if (stride*size > 16ll*1024ll*1024ll*1024ll) 
        throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
 
-      vertices[t].set(device,ptr,offset,stride,size); 
-      vertices[t].checkPadding16();
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].set(device,ptr,offset,stride,size); 
+      vertices[bid].checkPadding16();
       vertices0 = vertices[0];
+      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
+      //  vertices.pop_back();
+      setNumTimeSteps(vertices.size());
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
@@ -128,7 +128,7 @@ namespace embree
     if (type == RTC_INDEX_BUFFER) {
       return quads.get();
     }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps)) {
       return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
@@ -181,7 +181,7 @@ namespace embree
   void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
   {
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -228,8 +228,8 @@ namespace embree
 
   namespace isa
   {
-    QuadMesh* createQuadMesh(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps) {
-      return new QuadMeshISA(device,flags,numTimeSteps);
+    QuadMesh* createQuadMesh(Device* device, RTCGeometryFlags flags) {
+      return new QuadMeshISA(device,flags);
     }
   }
 }

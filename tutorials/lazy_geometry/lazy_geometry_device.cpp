@@ -64,7 +64,7 @@ void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
@@ -237,7 +237,7 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

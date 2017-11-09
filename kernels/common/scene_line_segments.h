@@ -31,7 +31,7 @@ namespace embree
   public:
 
     /*! line segments construction */
-    LineSegments (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps);
+    LineSegments (Device* device, RTCGeometryFlags flags);
 
   public:
     void enabling();
@@ -180,10 +180,10 @@ namespace embree
   {
     struct LineSegmentsISA : public LineSegments
     {
-      LineSegmentsISA (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
-        : LineSegments(device,flags,numTimeSteps) {}
+      LineSegmentsISA (Device* device, RTCGeometryFlags flags)
+        : LineSegments(device,flags) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device* COMMA RTCGeometryFlags COMMA unsigned int);
+  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device* COMMA RTCGeometryFlags);
 }

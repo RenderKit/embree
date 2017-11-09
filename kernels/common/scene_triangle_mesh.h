@@ -41,7 +41,7 @@ namespace embree
   public:
 
     /*! triangle mesh construction */
-    TriangleMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps); 
+    TriangleMesh (Device* device, RTCGeometryFlags flags); 
 
     /* geometry interface */
   public:
@@ -218,10 +218,10 @@ namespace embree
   {
     struct TriangleMeshISA : public TriangleMesh
     {
-      TriangleMeshISA (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
-        : TriangleMesh(device,flags,numTimeSteps) {}
+      TriangleMeshISA (Device* device, RTCGeometryFlags flags)
+        : TriangleMesh(device,flags) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(TriangleMesh*, createTriangleMesh, Device* COMMA RTCGeometryFlags COMMA unsigned int);
+  DECLARE_ISA_FUNCTION(TriangleMesh*, createTriangleMesh, Device* COMMA RTCGeometryFlags);
 }

@@ -276,8 +276,7 @@ RTCORE_API void rtcSetTransform ( RTCGeometry geometry,                   //!< I
   point coordinates aligned to 16 bytes. The value of the 4th float
   used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
-                                           enum RTCGeometryFlags flags,            //!< geometry flags
-                                           unsigned int numTimeSteps            //!< number of motion blur time steps
+                                           enum RTCGeometryFlags flags            //!< geometry flags
   );
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
@@ -294,8 +293,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   precision x,y,z floating point coordinates aligned to 16 bytes. The
   value of the 4th float used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
-                                       enum RTCGeometryFlags flags,        //!< geometry flags
-                                       unsigned int numTimeSteps        //!< number of motion blur time steps
+                                       enum RTCGeometryFlags flags        //!< geometry flags
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -355,8 +353,7 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
 
 */
 RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
-                                              enum RTCGeometryFlags flags,        //!< geometry flags
-                                              unsigned int numTimeSteps        //!< number of motion blur time steps
+                                              enum RTCGeometryFlags flags        //!< geometry flags
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -381,8 +378,7 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
 RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
                                             enum RTCGeometryFlags flags,    //!< geometry flags
                                             enum RTCCurveType type,
-                                            enum RTCCurveBasis basis,
-                                            unsigned int numTimeSteps    //!< number of motion blur time steps
+                                            enum RTCCurveBasis basis
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair

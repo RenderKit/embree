@@ -27,8 +27,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps)
-    : Geometry(device,SUBDIV_MESH,0,numTimeSteps,flags), 
+  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags)
+    : Geometry(device,SUBDIV_MESH,0,1,flags), 
       displFunc(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
@@ -37,6 +37,7 @@ namespace embree
       invalid_face(device,0),
       commitCounter(0)
   {
+    
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
     topology.resize(1);
@@ -98,9 +99,14 @@ namespace embree
       commitCounter++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
+      if (bid >= vertices.size()) {
+        vertices.resize(bid+1);
+        vertex_buffer_tags.resize(bid+1);
+      }
       vertices[bid].newBuffer(device,size,stride);
+      setNumTimeSteps(vertices.size());
       return vertices[bid].get();
     }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
@@ -178,12 +184,21 @@ namespace embree
       commitCounter++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
+      if (bid >= vertices.size()) {
+        vertices.resize(bid+1);
+        vertex_buffer_tags.resize(bid+1);
+      }
       vertices[bid].set(device,ptr,offset,stride,size); 
       vertices[bid].checkPadding16();
+      /*while (vertices.size() > 1 && vertices.back().getPtr() == nullptr) {
+        vertices.pop_back();
+        vertex_buffer_tags.pop_back();
+        }*/
+      setNumTimeSteps(vertices.size());
     }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
     {
       if (bid >= userbuffers.size()) {
         userbuffers.resize(bid+1);
@@ -201,7 +216,7 @@ namespace embree
       if (scene && size != (unsigned)-1) enabling();
     }
 
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
+    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER_(RTC_MAX_INDEX_BUFFERS))
     {
       int begin = (int)topology.size();
       if (bid >= topology.size()) {
@@ -236,7 +251,7 @@ namespace embree
   void* SubdivMesh::getBuffer(RTCBufferType type) 
   {
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+int(numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps))
       return vertices[bid].get();
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
@@ -289,7 +304,7 @@ namespace embree
       commitCounter++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps)
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps))
       vertices[bid].setModified(true);
     
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
@@ -744,9 +759,9 @@ namespace embree
 
   namespace isa
   {
-    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags, unsigned int numTimeSteps) 
+    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags) 
     {
-      return new SubdivMeshISA(device,flags,numTimeSteps);
+      return new SubdivMeshISA(device,flags);
     }
     
     void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 

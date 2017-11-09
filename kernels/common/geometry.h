@@ -254,6 +254,15 @@ namespace embree
       return numTimeSteps-1;
     }
 
+    /*! sets number of time steps */
+    __forceinline void setNumTimeSteps (unsigned numTimeSteps_i)
+    {
+      if (scene) disabling();
+      numTimeSteps = numTimeSteps_i;
+      fnumTimeSegments = float(numTimeSteps_i-1);
+      if (scene) enabling();
+    }
+    
   public:
     __forceinline bool hasIntersectionFilter() { return intersectionFilterN != nullptr; }
     __forceinline bool hasOcclusionFilter() { return occlusionFilterN != nullptr; }

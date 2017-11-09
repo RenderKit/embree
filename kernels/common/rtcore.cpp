@@ -806,17 +806,16 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewTriangleMesh);
     RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     createTriangleMeshTy createTriangleMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
-    Geometry* geom = createTriangleMesh(device,gflags,numTimeSteps);
+    Geometry* geom = createTriangleMesh(device,gflags);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewTriangleMesh is not supported");
@@ -825,17 +824,16 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewQuadMesh);
     RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_QUADS)
     createQuadMeshTy createQuadMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
-    Geometry* geom = createQuadMesh(device,gflags,numTimeSteps);
+    Geometry* geom = createQuadMesh(device,gflags);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewQuadMesh is not supported");
@@ -844,13 +842,12 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, RTCCurveType type, RTCCurveBasis basis, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, RTCCurveType type, RTCCurveBasis basis)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewCurveGeometry);
     RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_HAIR)
     createLineSegmentsTy createLineSegments = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
@@ -867,9 +864,9 @@ namespace embree
 
     Geometry* geom = nullptr;
     switch (basis) {
-    case RTC_BASIS_LINEAR : geom = createLineSegments (device,gflags,numTimeSteps); break;
-    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis,gflags,numTimeSteps); break;
-    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis,gflags,numTimeSteps); break;
+    case RTC_BASIS_LINEAR : geom = createLineSegments (device,gflags); break;
+    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis,gflags); break;
+    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis,gflags); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve basis");
     }
     return (RTCGeometry) geom->refInc();
@@ -880,17 +877,16 @@ namespace embree
     return nullptr;
   }
     
-  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numTimeSteps) 
+  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewSubdivisionMesh);
     RTCORE_VERIFY_HANDLE(hdevice);
-    RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     createSubdivMeshTy createSubdivMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-    Geometry* geom = createSubdivMesh(device,gflags,numTimeSteps);
+    Geometry* geom = createSubdivMesh(device,gflags);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewSubdivisionMesh is not supported");

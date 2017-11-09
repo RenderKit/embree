@@ -645,7 +645,7 @@ unsigned int cube_quad_faces[NUM_QUAD_FACES] = {
 unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scale, float rotation)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(Vec3fa  ), NUM_VERTICES);
   Vec3fa* ptr = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(Vec3fa), NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) {
@@ -685,7 +685,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
 /* adds a cube to the scene */
 unsigned int addSubdivCube (RTCScene scene_i)
 {
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, RTC_GEOMETRY_STATIC);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(Vec3fa  ), NUM_VERTICES);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
   rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
@@ -716,7 +716,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

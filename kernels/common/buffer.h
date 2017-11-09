@@ -243,7 +243,7 @@ namespace embree
     /*! checks padding to 16 byte check, fails hard */
     __forceinline void checkPadding16() const 
     {
-      if (BufferRef::size()) 
+      if (ptr && BufferRef::size()) 
         volatile int MAYBE_UNUSED w = *((int*)BufferRef::getPtr(BufferRef::size()-1)+3); // FIXME: is failing hard avoidable?
     }
 

@@ -79,7 +79,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags, 1);
+    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -96,7 +96,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags, 1);
+    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -112,7 +112,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags, 1);
+    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
@@ -138,7 +138,7 @@ namespace embree {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis, 1);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];

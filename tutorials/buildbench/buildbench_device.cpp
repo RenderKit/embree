@@ -33,7 +33,7 @@ namespace embree {
 
   void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewTriangleMesh (g_device, flags);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
@@ -44,7 +44,7 @@ namespace embree {
 
   void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = rtcNewQuadMesh (g_device, flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewQuadMesh (g_device, flags);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
@@ -55,7 +55,7 @@ namespace embree {
 
   void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = rtcNewSubdivisionMesh(g_device,flags, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewSubdivisionMesh(g_device,flags);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -75,7 +75,7 @@ namespace embree {
 
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, hair->type, hair->basis, hair->numTimeSteps);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, flags, hair->type, hair->basis);
 
     for (size_t t=0; t<hair->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);

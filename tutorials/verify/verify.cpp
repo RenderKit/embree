@@ -177,7 +177,7 @@ namespace embree
       
       if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
-        RTCGeometry geom = rtcNewTriangleMesh (device, gflag, mesh->numTimeSteps());
+        RTCGeometry geom = rtcNewTriangleMesh (device, gflag);
         AssertNoError(device);
         rtcSetBuffer(geom,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),mesh->triangles.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
@@ -190,7 +190,7 @@ namespace embree
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
       {
-        RTCGeometry geom = rtcNewQuadMesh (device, gflag, mesh->numTimeSteps());
+        RTCGeometry geom = rtcNewQuadMesh (device, gflag);
         AssertNoError(device);
         rtcSetBuffer(geom,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad),mesh->quads.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
@@ -203,7 +203,7 @@ namespace embree
       } 
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
-        RTCGeometry geom = rtcNewSubdivisionMesh (device, gflag, mesh->numTimeSteps());
+        RTCGeometry geom = rtcNewSubdivisionMesh (device, gflag);
         AssertNoError(device);
         rtcSetBuffer(geom,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int),mesh->verticesPerFace.size());
         rtcSetBuffer(geom,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int),mesh->position_indices.size());
@@ -224,7 +224,7 @@ namespace embree
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
       {
-        RTCGeometry geom = rtcNewCurveGeometry (device, gflag, mesh->type, mesh->basis, (unsigned int)mesh->numTimeSteps());
+        RTCGeometry geom = rtcNewCurveGeometry (device, gflag, mesh->type, mesh->basis);
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
           rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex),mesh->positions[t].size());
@@ -797,34 +797,20 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
 
-      RTCGeometry geom0 = rtcNewTriangleMesh (device, RTC_GEOMETRY_STATIC, 1);
+      RTCGeometry geom0 = rtcNewTriangleMesh (device, RTC_GEOMETRY_STATIC);
       rtcSetUserData(geom0,(void*)1);
-      RTCGeometry geom1 = rtcNewTriangleMesh (device, RTC_GEOMETRY_STATIC, 2);
+      RTCGeometry geom1 = rtcNewQuadMesh (device, RTC_GEOMETRY_STATIC);
       rtcSetUserData(geom1,(void*)2);
-      RTCGeometry geom2 = rtcNewQuadMesh (device, RTC_GEOMETRY_STATIC, 1);
+      RTCGeometry geom2 = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC);
       rtcSetUserData(geom2,(void*)3);
-      RTCGeometry geom3 = rtcNewQuadMesh (device, RTC_GEOMETRY_STATIC, 2);
+      RTCGeometry geom3 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER);
       rtcSetUserData(geom3,(void*)4);
-      RTCGeometry geom4 = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC, 1);
+      RTCGeometry geom4 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE);
       rtcSetUserData(geom4,(void*)5);
-      RTCGeometry geom5 = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC, 2);
+      RTCGeometry geom5 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR);
       rtcSetUserData(geom5,(void*)6);
-      RTCGeometry geom6 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, 1);
+      RTCGeometry geom6 = rtcNewUserGeometry(device,RTC_GEOMETRY_STATIC,0,1);
       rtcSetUserData(geom6,(void*)7);
-      RTCGeometry geom7 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, 2);
-      rtcSetUserData(geom7,(void*)8);
-      RTCGeometry geom8 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE, 1);
-      rtcSetUserData(geom8,(void*)9);
-      RTCGeometry geom9 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE, 2);
-      rtcSetUserData(geom9,(void*)10);
-      RTCGeometry geom10 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, 1);
-      rtcSetUserData(geom10,(void*)11);
-      RTCGeometry geom11 = rtcNewCurveGeometry (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR, 2);
-      rtcSetUserData(geom11,(void*)12);
-      RTCGeometry geom12 = rtcNewUserGeometry(device,RTC_GEOMETRY_STATIC,0,1);
-      rtcSetUserData(geom12,(void*)13);
-      RTCGeometry geom13 = rtcNewUserGeometry(device,RTC_GEOMETRY_STATIC,0,2);
-      rtcSetUserData(geom13,(void*)14);
       AssertNoError(device);
       
       if ((size_t)rtcGetUserData(geom0 ) !=  1) return VerifyApplication::FAILED;
@@ -834,13 +820,6 @@ namespace embree
       if ((size_t)rtcGetUserData(geom4 ) !=  5) return VerifyApplication::FAILED;
       if ((size_t)rtcGetUserData(geom5 ) !=  6) return VerifyApplication::FAILED;
       if ((size_t)rtcGetUserData(geom6 ) !=  7) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom7 ) !=  8) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom8 ) !=  9) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom9 ) != 10) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom10) != 11) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom11) != 12) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom12) != 13) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom13) != 14) return VerifyApplication::FAILED;
       AssertNoError(device);
 
       return VerifyApplication::PASSED;
@@ -864,16 +843,16 @@ namespace embree
 
       RTCGeometry geom = nullptr;
       switch (gtype) {
-      case TRIANGLE_MESH    : geom = rtcNewTriangleMesh   (device, RTC_GEOMETRY_STATIC, 1); break;
-      case TRIANGLE_MESH_MB : geom = rtcNewTriangleMesh   (device, RTC_GEOMETRY_STATIC, 2); break;
-      case QUAD_MESH        : geom = rtcNewQuadMesh       (device, RTC_GEOMETRY_STATIC, 1); break;
-      case QUAD_MESH_MB     : geom = rtcNewQuadMesh       (device, RTC_GEOMETRY_STATIC, 2); break;
-      case SUBDIV_MESH      : geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC, 1); break;
-      case SUBDIV_MESH_MB   : geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC, 2); break;
-      case HAIR_GEOMETRY    : geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, 1); break;
-      case HAIR_GEOMETRY_MB : geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BSPLINE, 2); break;
-      case CURVE_GEOMETRY   : geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BEZIER, 1); break;
-      case CURVE_GEOMETRY_MB: geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE, 2); break;
+      case TRIANGLE_MESH    : geom = rtcNewTriangleMesh   (device, RTC_GEOMETRY_STATIC); break;
+      case TRIANGLE_MESH_MB : geom = rtcNewTriangleMesh   (device, RTC_GEOMETRY_STATIC); break;
+      case QUAD_MESH        : geom = rtcNewQuadMesh       (device, RTC_GEOMETRY_STATIC); break;
+      case QUAD_MESH_MB     : geom = rtcNewQuadMesh       (device, RTC_GEOMETRY_STATIC); break;
+      case SUBDIV_MESH      : geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC); break;
+      case SUBDIV_MESH_MB   : geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC); break;
+      case HAIR_GEOMETRY    : geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER); break;
+      case HAIR_GEOMETRY_MB : geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BSPLINE); break;
+      case CURVE_GEOMETRY   : geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BEZIER); break;
+      case CURVE_GEOMETRY_MB: geom = rtcNewCurveGeometry  (device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE); break;
       default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
       }
       AssertNoError(device);
@@ -964,16 +943,16 @@ namespace embree
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
       rtcSetBuildHints(scene,sflags.hflags);
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,gflags,1));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,gflags,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,gflags,1));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,gflags,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,gflags,1));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,gflags,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_RIBBON,RTC_BASIS_BEZIER,1));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_RIBBON,RTC_BASIS_BSPLINE,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_SURFACE,RTC_BASIS_BEZIER,1));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_SURFACE,RTC_BASIS_BEZIER,2));
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,gflags));
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,gflags,2));
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,gflags));
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,gflags,2));
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,gflags));
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,gflags,2));
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_RIBBON,RTC_BASIS_BEZIER));
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_RIBBON,RTC_BASIS_BSPLINE,2));
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_SURFACE,RTC_BASIS_BEZIER));
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,gflags,RTC_CURVE_SURFACE,RTC_BASIS_BEZIER,2));
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,gflags,0,1));
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,gflags,0,2));
       rtcCommit (scene);
@@ -1021,7 +1000,7 @@ namespace embree
         rtcSetBuildQuality(scene,sflags.qflags);
         rtcSetBuildHints(scene,sflags.hflags);
         
-        RTCGeometry geom = rtcNewTriangleMesh(device, gflags, 1);
+        RTCGeometry geom = rtcNewTriangleMesh(device, gflags);
         rtcSetBuffer(geom, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
         rtcSetBuffer(geom, RTC_INDEX_BUFFER, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
         rtcCommitGeometry(geom);
@@ -1456,13 +1435,13 @@ namespace embree
           int index = random_int()%128;
           if (geom[index] == -1) {
             if (random_bool()) {
-              RTCGeometry hgeom = rtcNewTriangleMesh(device,RTC_GEOMETRY_STATIC,1);
+              RTCGeometry hgeom = rtcNewTriangleMesh(device,RTC_GEOMETRY_STATIC);
               rtcCommitGeometry(hgeom);
               unsigned int geomID = rtcAttachAndReleaseGeometryByID(scene,hgeom,index);
               geom[geomID] = geomID;
               AssertNoError(device);
             } else {
-              RTCGeometry hgeom = rtcNewTriangleMesh(device,RTC_GEOMETRY_STATIC,1);
+              RTCGeometry hgeom = rtcNewTriangleMesh(device,RTC_GEOMETRY_STATIC);
               rtcCommitGeometry(hgeom);
               unsigned int geomID = rtcAttachAndReleaseGeometry(scene,hgeom);
               geom[geomID] = geomID;
@@ -1823,7 +1802,7 @@ namespace embree
       errorHandler(nullptr,rtcDeviceGetError(device));
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
-      RTCGeometry geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC, 1);
+      RTCGeometry geom = rtcNewSubdivisionMesh(device, RTC_GEOMETRY_STATIC);
       AssertNoError(device);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
@@ -1914,7 +1893,7 @@ namespace embree
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
-      RTCGeometry geom = rtcNewTriangleMesh(device, RTC_GEOMETRY_STATIC, 1);
+      RTCGeometry geom = rtcNewTriangleMesh(device, RTC_GEOMETRY_STATIC);
       AssertNoError(device);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
@@ -2019,7 +1998,7 @@ namespace embree
 
       size_t M = num_interpolation_hair_vertices*N+16; // padds the arrays with some valid data
       
-      RTCGeometry geom = rtcNewCurveGeometry(device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER, 1);
+      RTCGeometry geom = rtcNewCurveGeometry(device, RTC_GEOMETRY_STATIC, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER);
       AssertNoError(device);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
@@ -2111,7 +2090,7 @@ namespace embree
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
       rtcSetBuildHints(scene,sflags.hflags);
-      RTCGeometry geom = rtcNewTriangleMesh (device, gflags,1);
+      RTCGeometry geom = rtcNewTriangleMesh (device, gflags);
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
       rtcSetBuffer(geom, RTC_INDEX_BUFFER , triangles, 0, sizeof(Triangle), 1);
       rtcCommitGeometry(geom);
@@ -2185,7 +2164,7 @@ namespace embree
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
       rtcSetBuildHints(scene,sflags.hflags);
-      RTCGeometry geom = rtcNewQuadMesh (device, gflags, 1);
+      RTCGeometry geom = rtcNewQuadMesh (device, gflags);
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
       rtcSetBuffer(geom, RTC_INDEX_BUFFER , quads, 0, 4*sizeof(int), 1);
       rtcCommitGeometry(geom);

@@ -26,7 +26,7 @@ uniform Vec3fa* uniform vertex_colors = NULL;
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  RTCGeometry mesh = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry mesh = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
 
   /* create face and vertex color arrays */
   face_colors = uniform new uniform Vec3f[12];
@@ -81,7 +81,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry mesh = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 1);
+  RTCGeometry mesh = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);

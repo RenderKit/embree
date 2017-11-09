@@ -203,7 +203,7 @@ typedef uniform struct __RTCGeometry* uniform RTCGeometry;
 RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
                                            uniform RTCGeometryFlags flags,  //!< geometry flags
                                            uniform unsigned int numGeometries,    /*!< the number of geometries contained in the set */
-                                           uniform unsigned int numTimeSteps = 1  /*!< number of motion blur time steps */
+                                           uniform unsigned int numTimeSteps  /*!< number of motion blur time steps */
   );
 
 /*! Sets the bounding function to calculate bounding boxes of the user
@@ -234,7 +234,7 @@ RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOcclud
   instance. */
 RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
                                        RTCScene source,                  //!< the scene to instantiate
-                                       uniform unsigned int numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
+                                       uniform unsigned int numTimeSteps   //!< number of timesteps, one matrix per timestep
   );
 
 /*! \brief Creates a new geometry instance. 
@@ -272,8 +272,7 @@ RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< I
   point coordinates aligned to 16 bytes. The value of the 4th float
   used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
-                                           uniform RTCGeometryFlags flags,  //!< geometry flags
-                                           uniform unsigned int numTimeSteps = 1  //!< number of motion blur time steps
+                                           uniform RTCGeometryFlags flags  //!< geometry flags
   );
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
@@ -290,8 +289,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   precision x,y,z floating point coordinates aligned to 16 bytes. The
   value of the 4th float used for alignment can be arbitrary. */
 RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
-                                       uniform RTCGeometryFlags flags,  //!< geometry flags
-                                       uniform unsigned int numTimeSteps = 1  //!< number of motion blur time steps
+                                       uniform RTCGeometryFlags flags  //!< geometry flags
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -352,8 +350,7 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
 */
 
 RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
-                                              uniform RTCGeometryFlags flags,        //!< geometry flags
-                                              uniform unsigned int numTimeSteps = 1        //!< number of motion blur time steps
+                                              uniform RTCGeometryFlags flags        //!< geometry flags
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -378,8 +375,7 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
 RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
                                             uniform RTCGeometryFlags flags,    //!< geometry flags
                                             uniform RTCCurveType type,
-                                            uniform RTCCurveBasis basis,
-                                            uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
+                                            uniform RTCCurveBasis basis
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
