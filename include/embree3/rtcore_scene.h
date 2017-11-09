@@ -61,16 +61,33 @@ enum RTCIntersectFlags
   RTC_INTERSECT_INCOHERENT               = 1   //!< optimize for incoherent rays
 };
 
+/*! Arguments for RTCFilterFunctionN callback */
+struct RTCFilterFunctionNArguments
+{
+  const int* valid;                          /*!< pointer to valid mask */
+  void* geomUserPtr;                         /*!< pointer to geometry user data */
+  const struct RTCIntersectContext* context; /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  struct RTCRayN* ray;                       /*!< ray and previous hit */
+  struct RTCHitN* potentialHit;              /*!< potential new hit */
+  unsigned int N;                            /*!< size of ray packet */
+  int* acceptHit;                            /*!< accept potential hit */
+};
+  
+/*! Intersection filter function for ray packets of size N. */
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
+  
 /*! intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
   enum RTCIntersectFlags flags;   //!< intersection flags
-  void* userRayExt;          //!< can be used to pass extended ray data to callbacks
+  //RTCFilterFunctionN filter;      //!< filter function to execute
+  void* userRayExt;               //!< can be used to pass extended ray data to callbacks
 };
 
 RTCORE_FORCEINLINE void rtcInitIntersectionContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_INCOHERENT;
+  //context->filter = NULL;
   context->userRayExt = NULL;
 }
 
