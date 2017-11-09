@@ -120,10 +120,10 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (scene && size != (unsigned)-1) disabling();
+      if (scene) disabling();
       faceVertices.newBuffer(device,size,stride);
       setNumPrimitives(size);
-      if (scene && size != (unsigned)-1) enabling();
+      if (scene) enabling();
       return faceVertices.get();
     }
 
@@ -210,10 +210,10 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (scene && size != (unsigned)-1) disabling();
+      if (scene) disabling();
       faceVertices.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (scene && size != (unsigned)-1) enabling();
+      if (scene) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER_(RTC_MAX_INDEX_BUFFERS))

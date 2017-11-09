@@ -67,10 +67,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (unsigned)-1) disabling();
+      if (scene) disabling();
       curves.newBuffer(device,size,stride); 
       setNumPrimitives(size);
-      if (scene && size != (unsigned)-1) enabling();
+      if (scene) enabling();
       return curves.get();
     }
     else 
@@ -104,10 +104,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (scene && size != (unsigned)-1) disabling();
+      if (scene) disabling();
       curves.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (scene && size != (unsigned)-1) enabling();
+      if (scene) enabling();
     }
     else 
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
