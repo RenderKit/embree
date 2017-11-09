@@ -110,21 +110,6 @@ enum RTCCurveType
   RTC_CURVE_SURFACE    //!< render curves as real geometric surface
 };
 
-/*! Arguments for RTCFilterFunctionN callback */
-struct RTCFilterFunctionNArguments
-{
-  const int* valid;                          /*!< pointer to valid mask */
-  void* geomUserPtr;                         /*!< pointer to geometry user data */
-  const struct RTCIntersectContext* context; /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-  struct RTCRayN* ray;                       /*!< ray and previous hit */
-  struct RTCHitN* potentialHit;              /*!< potential new hit */
-  unsigned int N;                            /*!< size of ray packet */
-  int* acceptHit;                            /*!< accept potential hit */
-};
-  
-/*! Intersection filter function for ray packets of size N. */
-typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
-
 /*! Arguments for RTCBoundsFunction */
 struct RTCBoundsFunctionArguments
 {
