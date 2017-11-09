@@ -247,10 +247,11 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float reduce_add(const Vec3fa& vv) { 
-    const vfloat4 v(vv);
-    const vfloat4 h = shuffle<1,0,3,2>(v) + v ; 
-    return _mm_cvtss_f32(shuffle<2,3,0,1>(h) + h); 
+  __forceinline float reduce_add(const Vec3fa& v) { 
+    const vfloat4 a(v);
+    const vfloat4 b = shuffle<1>(a);
+    const vfloat4 c = shuffle<2>(a);
+    return _mm_cvtss_f32(a+b+c); 
   }
 
   __forceinline float reduce_mul(const Vec3fa& v) { return v.x*v.y*v.z; }
