@@ -75,6 +75,10 @@ namespace embree
       quads.newBuffer(device,size,stride);
       setNumPrimitives(size);
       return quads.get();
+      // if (isEnabled() && size != (size_t)-1) disabling();
+      // quads.set(ptr,offset,stride,size);
+      // setNumPrimitives(size);
+      // if (isEnabled() && size != (size_t)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");

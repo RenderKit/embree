@@ -56,7 +56,13 @@ namespace embree
 
     __forceinline Vec3fa( const Vec3fa& other, const int      a1) { m128 = other.m128; a = a1; }
     __forceinline Vec3fa( const Vec3fa& other, const unsigned a1) { m128 = other.m128; u = a1; }
-    __forceinline Vec3fa( const Vec3fa& other, const float    w1) { m128 = other.m128; w = w1; }
+    __forceinline Vec3fa( const Vec3fa& other, const float    w1) {      
+#if defined (__SSE4_1__)
+      m128 = _mm_insert_ps(other.m128, _mm_set_ss(w1),3 << 4);
+#else
+      m128 = other.m128; w = w1;
+#endif
+    }
     //__forceinline Vec3fa( const float x, const float y, const float z, const int      a) : x(x), y(y), z(z), a(a) {} // not working properly!
     //__forceinline Vec3fa( const float x, const float y, const float z, const unsigned a) : x(x), y(y), z(z), u(a) {} // not working properly!
     __forceinline Vec3fa( const float x, const float y, const float z, const float w) : m128(_mm_set_ps(w, z, y, x)) {}
@@ -241,7 +247,13 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float reduce_add(const Vec3fa& v) { return v.x+v.y+v.z; }
+  __forceinline float reduce_add(const Vec3fa& v) { 
+    const vfloat4 a(v);
+    const vfloat4 b = shuffle<1>(a);
+    const vfloat4 c = shuffle<2>(a);
+    return _mm_cvtss_f32(a+b+c); 
+  }
+
   __forceinline float reduce_mul(const Vec3fa& v) { return v.x*v.y*v.z; }
   __forceinline float reduce_min(const Vec3fa& v) { return min(v.x,v.y,v.z); }
   __forceinline float reduce_max(const Vec3fa& v) { return max(v.x,v.y,v.z); }

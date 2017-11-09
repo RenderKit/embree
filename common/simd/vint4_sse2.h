@@ -184,6 +184,32 @@ namespace embree
 #endif
     }
 
+    template<int scale = 4>
+    static __forceinline void scatter(void* ptr, const vint4& index, const vint4& v)
+    {
+#if defined(__AVX512VL__)
+      _mm_i32scatter_epi32((int*)ptr, index, v, scale);
+#else
+      *(int*)(((char*)ptr)+scale*index[0]) = v[0];
+      *(int*)(((char*)ptr)+scale*index[1]) = v[1];
+      *(int*)(((char*)ptr)+scale*index[2]) = v[2];
+      *(int*)(((char*)ptr)+scale*index[3]) = v[3];
+#endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vint4& v)
+    {
+#if defined(__AVX512VL__)
+      _mm_mask_i32scatter_epi32((int*)ptr, mask, index, v, scale);
+#else
+      if (likely(mask[0])) *(int*)(((char*)ptr)+scale*index[0]) = v[0];
+      if (likely(mask[1])) *(int*)(((char*)ptr)+scale*index[1]) = v[1];
+      if (likely(mask[2])) *(int*)(((char*)ptr)+scale*index[2]) = v[2];
+      if (likely(mask[3])) *(int*)(((char*)ptr)+scale*index[3]) = v[3];
+#endif
+    }
+
 #if defined(__x86_64__)
     static __forceinline vint4 broadcast64(long long a) { return _mm_set1_epi64x(a); }
 #endif

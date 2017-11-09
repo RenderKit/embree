@@ -26,6 +26,7 @@ cmake --clean-first --build . --config Release --target PREINSTALL -- /m /nologo
 
 REM create installers
 cmake ^
+-D EMBREE_INSTALL_DEPENDENCIES=ON ^
 -D EMBREE_ZIP_MODE=OFF ^
 -D CMAKE_INSTALL_INCLUDEDIR=include ^
 -D CMAKE_INSTALL_LIBDIR=lib ^
@@ -37,6 +38,7 @@ cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
 REM create ZIP files
 cmake ^
+-D EMBREE_INSTALL_DEPENDENCIES=ON ^
 -D EMBREE_ZIP_MODE=ON ^
 -D CMAKE_INSTALL_INCLUDEDIR=include ^
 -D CMAKE_INSTALL_LIBDIR=lib ^

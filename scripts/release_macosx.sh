@@ -28,6 +28,7 @@ cmake \
 
 # create installers
 cmake \
+-D EMBREE_INSTALL_DEPENDENCIES=OFF \
 -D EMBREE_ZIP_MODE=OFF \
 -D CMAKE_INSTALL_PREFIX=/opt/local \
 -D CMAKE_INSTALL_INCLUDEDIR=include \
@@ -40,6 +41,7 @@ make -j 4 package
 
 # create ZIP files
 cmake \
+-D EMBREE_INSTALL_DEPENDENCIES=ON \
 -D EMBREE_ZIP_MODE=ON \
 -D CMAKE_MACOSX_RPATH=ON \
 -D CMAKE_INSTALL_INCLUDEDIR=include \

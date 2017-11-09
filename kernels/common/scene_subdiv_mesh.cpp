@@ -123,6 +123,10 @@ namespace embree
       faceVertices.newBuffer(device,size,stride);
       setNumPrimitives(size);
       return faceVertices.get();
+      // if (isEnabled() && size != (size_t)-1) disabling();
+      // faceVertices.set(ptr,offset,stride,size);
+      // setNumPrimitives(size);
+      // if (isEnabled() && size != (size_t)-1) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)

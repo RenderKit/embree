@@ -98,6 +98,9 @@ OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
+OPTION(EMBREE_INSTALL_DEPENDENCIES "Install Embree dependencies in binary packages and install" OFF)
+MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
+
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 

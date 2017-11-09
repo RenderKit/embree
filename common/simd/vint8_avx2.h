@@ -150,6 +150,40 @@ namespace embree
 #endif
     }
 
+    template<int scale = 4>
+    static __forceinline void scatter(void* ptr, const vint8& ofs, const vint8& v)
+    {
+#if defined(__AVX512VL__)
+      _mm256_i32scatter_epi32((int*)ptr, ofs, v, scale);
+#else
+      *(int*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      *(int*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      *(int*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      *(int*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      *(int*)(((char*)ptr)+scale*ofs[4]) = v[4];
+      *(int*)(((char*)ptr)+scale*ofs[5]) = v[5];
+      *(int*)(((char*)ptr)+scale*ofs[6]) = v[6];
+      *(int*)(((char*)ptr)+scale*ofs[7]) = v[7];
+#endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf8& mask, void* ptr, const vint8& ofs, const vint8& v)
+    {
+#if defined(__AVX512VL__)
+      _mm256_mask_i32scatter_epi32((int*)ptr, mask, ofs, v, scale);
+#else
+      if (likely(mask[0])) *(int*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      if (likely(mask[1])) *(int*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      if (likely(mask[2])) *(int*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      if (likely(mask[3])) *(int*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      if (likely(mask[4])) *(int*)(((char*)ptr)+scale*ofs[4]) = v[4];
+      if (likely(mask[5])) *(int*)(((char*)ptr)+scale*ofs[5]) = v[5];
+      if (likely(mask[6])) *(int*)(((char*)ptr)+scale*ofs[6]) = v[6];
+      if (likely(mask[7])) *(int*)(((char*)ptr)+scale*ofs[7]) = v[7];
+#endif
+    }
+
     static __forceinline vint8 broadcast64(const long long &a) { return _mm256_set1_epi64x(a); }
     
     ////////////////////////////////////////////////////////////////////////////////
