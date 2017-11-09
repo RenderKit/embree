@@ -78,10 +78,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (size != (size_t)-1) disabling();
+      if (isEnabled() && size != (size_t)-1) disabling();
       curves.set(ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (size != (size_t)-1) enabling();
+      if (isEnabled() && size != (size_t)-1) enabling();
     }
     else 
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 

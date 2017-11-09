@@ -137,10 +137,10 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (size != (size_t)-1) disabling();
+      if (isEnabled() && size != (size_t)-1) disabling();
       faceVertices.set(ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (size != (size_t)-1) enabling();
+      if (isEnabled() && size != (size_t)-1) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
