@@ -1193,7 +1193,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+        dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
       }
     }
   }
@@ -1224,7 +1224,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
-  dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+  dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
 
   int materialID = 0;
   unsigned int instID = dg.instID; {
@@ -1308,7 +1308,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
-    ray->tfar   = tfar;
+    ray->tfar()   = tfar;
     acceptHit[0] = 1;
     // ray->instID = dg.instID;
     // ray->geomID = dg.geomID;
@@ -1487,7 +1487,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     dg.primID = ray.primID;
     dg.u = ray.u;
     dg.v = ray.v;
-    dg.P  = ray.org+ray.tfar*ray.dir;
+    dg.P  = ray.org+ray.tfar()*ray.dir;
     dg.Ng = ray.Ng;
     dg.Ns = Ns;
     int materialID = postIntersect(ray,dg);
@@ -1498,7 +1498,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     Vec3fa c = Vec3fa(1.0f);
     const Vec3fa transmission = medium.transmission;
     if (ne(transmission,Vec3fa(1.0f)))
-      c = c * pow(transmission,ray.tfar);
+      c = c * pow(transmission,ray.tfar());
 
     /* calculate BRDF */
     BRDF brdf;

@@ -148,7 +148,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 
   /* calculate hit point */
   float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
+  Vec3fa hitPos = ray.org + ray.tfar() * ray.dir;
 
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
@@ -168,8 +168,8 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
     shadow.org = hitPos;
     shadow.dir = dir.v;
     bool mask = 1; { // invalidate inactive rays
-      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      shadow.tnear() = mask ? 0.001f       : (float)(pos_inf);
+      shadow.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
     }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
@@ -323,8 +323,8 @@ void renderTileStandard(int taskIndex,
     ray.org = Vec3fa(camera.xfm.p);
     ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = 1; { // invalidates inactive rays
-      ray.tnear = mask ? 0.0f         : (float)(pos_inf);
-      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
+      ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
     }
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -367,7 +367,7 @@ void renderTileStandard(int taskIndex,
       dg.primID = ray.primID;
       dg.u = ray.u;
       dg.v = ray.v;
-      dg.P  = ray.org+ray.tfar*ray.dir;
+      dg.P  = ray.org+ray.tfar()*ray.dir;
       dg.Ng = ray.Ng;
       dg.Ns = ray.Ng;
       int materialID = postIntersect(ray,dg);

@@ -43,18 +43,18 @@
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
     __forceinline Ray(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
-			 float tnear = embree::zero, float tfar = embree::inf, 
-			 float time = embree::zero, int mask = -1)
-      : org(org), tnear(tnear), dir(dir), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1)  {}
+                      float tnear = embree::zero, float tfar = embree::inf, 
+                      float time = embree::zero, int mask = -1,unsigned int geomID = RTC_INVALID_GEOMETRY_ID, unsigned int primID = RTC_INVALID_GEOMETRY_ID, unsigned int instID = RTC_INVALID_GEOMETRY_ID)
+      : org(org,tnear), dir(dir,tfar), time(time), mask(mask), geomID(geomID), primID(primID), instID(instID)  {}
 
     /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
   public:
-    embree::Vec3f org;        //!< Ray origin
-    float tnear;              //!< Start of ray segment
-    embree::Vec3f dir;        //!< Ray direction
-    float tfar;               //!< End of ray segment
+    embree::Vec3fa org;       //!< Ray origin + tnear
+    //float tnear;              //!< Start of ray segment
+    embree::Vec3fa dir;        //!< Ray direction + tfar
+    //float tfar;               //!< End of ray segment
     float time;               //!< Time of this ray for motion blur.
     unsigned int mask;        //!< used to mask out objects during traversal
 
@@ -65,6 +65,11 @@
     unsigned int geomID;           //!< geometry ID
     unsigned int primID;           //!< primitive ID
     unsigned int instID;           //!< instance ID
+
+    __forceinline float &tnear() { return org.w; };
+    __forceinline float &tfar()  { return dir.w; };
+    __forceinline float const &tnear() const { return org.w; };
+    __forceinline float const &tfar()  const { return dir.w; };
 
     // ray extensions
   public:
@@ -81,6 +86,6 @@ __forceinline RTCRay* RTCRay_(Ray& ray) {
   /*! Outputs ray to stream. */ 
   inline std::ostream& operator<<(std::ostream& cout, const Ray& ray) {
     return cout << "{ " << 
-      "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear << ", far = " << ray.tfar << ", time = " << ray.time << ", " <<
+      "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear() << ", far = " << ray.tfar() << ", time = " << ray.time << ", " <<
       "instID = " << ray.instID <<  ", geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";
 }

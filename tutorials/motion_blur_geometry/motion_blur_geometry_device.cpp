@@ -405,18 +405,18 @@ void sphereIntersectFuncN(const int* valid,
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
     ray->u = 0.0f;
     ray->v = 0.0f;
-    ray->tfar = t0;
+    ray->tfar() = t0;
     ray->geomID = sphere.geomID;
     ray->primID = (unsigned int) item;
     ray->Ng = ray->org+t0*ray->dir-sphere_p;
   }
-  if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
     ray->u = 0.0f;
     ray->v = 0.0f;
-    ray->tfar = t1;
+    ray->tfar() = t1;
     ray->geomID = sphere.geomID;
     ray->primID = (unsigned int) item;
     ray->Ng = ray->org+t1*ray->dir-sphere_p;
@@ -458,10 +458,10 @@ void sphereOccludedFuncN(const int* valid,
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
     ray->geomID = 0;
   }
-  if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
     ray->geomID = 0;
   }
 }
@@ -583,16 +583,11 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (g_time != -1) time = g_time;
 
   /* initialize ray */
-  Ray ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.instID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = time;
+  Ray ray(camera.xfm.p,
+          normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz),
+          0.0f,
+          inf,
+          time);
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene,&context,RTCRay_(ray));
@@ -623,16 +618,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));
 
     /* initialize shadow ray */
-    Ray shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.instID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = time;
+    Ray shadow(ray.org + ray.tfar() * ray.dir, neg(lightDir), 0.001f, inf, time, -1, 1, 0);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));

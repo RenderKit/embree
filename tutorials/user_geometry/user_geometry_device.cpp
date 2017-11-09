@@ -161,8 +161,8 @@ void instanceIntersectFuncN(const int* valid,
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     bool mask = 1; {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
+      ray.tnear() = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar()  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
     }
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
@@ -175,7 +175,7 @@ void instanceIntersectFuncN(const int* valid,
     /* update hit */
     RTCRayN_u(rays,N,ui) = ray.u;
     RTCRayN_v(rays,N,ui) = ray.v;
-    RTCRayN_tfar(rays,N,ui) = ray.tfar;
+    RTCRayN_tfar(rays,N,ui) = ray.tfar();
     RTCRayN_instID(rays,N,ui) = instance->userID;
     RTCRayN_geomID(rays,N,ui) = ray.geomID;
     RTCRayN_primID(rays,N,ui) = ray.primID;
@@ -222,8 +222,8 @@ void instanceOccludedFuncN(const int* valid,
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     bool mask = 1; {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : (float)(neg_inf);
+      ray.tnear() = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar()  = mask ? RTCRayN_tfar(rays,N,ui)  : (float)(neg_inf);
     }
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
@@ -316,18 +316,18 @@ void sphereIntersectFunc(const int* valid,
     const float rcpA = rcp(A);
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
-    if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+    if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
       ray->u = 0.0f;
       ray->v = 0.0f;
-      ray->tfar = t0;
+      ray->tfar() = t0;
       ray->geomID = sphere.geomID;
       ray->primID = (unsigned int) item;
       ray->Ng = ray->org+t0*ray->dir-sphere.p;
     }
-    if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+    if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
       ray->u = 0.0f;
       ray->v = 0.0f;
-      ray->tfar = t1;
+      ray->tfar() = t1;
       ray->geomID = sphere.geomID;
       ray->primID = (unsigned int) item;
       ray->Ng = ray->org+t1*ray->dir-sphere.p;
@@ -360,10 +360,10 @@ void sphereOccludedFunc(const int* valid,
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
     ray->geomID = 0;
   }
-  if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
     ray->geomID = 0;
   }
 }
@@ -695,8 +695,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = (float)(inf);
+  ray.tnear() = 0.0f;
+  ray.tfar() = (float)(inf);
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.instID = 4; // set default instance ID
@@ -722,15 +722,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* initialize shadow ray */
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    Ray shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = (float)(inf);
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Ray shadow(ray.org + ray.tfar() * ray.dir, neg(lightDir), 0.001f, inf, 0.0f, -1, 1, 0);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
@@ -815,8 +807,8 @@ void renderTileStandardStream(int taskIndex,
     primary.org = Vec3fa(camera.xfm.p);
     primary.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = 1; { // invalidates inactive rays
-      primary.tnear = mask ? 0.0f         : (float)(pos_inf);
-      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      primary.tnear() = mask ? 0.0f         : (float)(pos_inf);
+      primary.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
     }
     primary.instID = 4; // set default instance ID
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -846,8 +838,8 @@ void renderTileStandardStream(int taskIndex,
     /* invalidate shadow rays by default */
     Ray& shadow = shadow_stream[N];
     {
-      shadow.tnear = (float)(pos_inf);
-      shadow.tfar  = (float)(neg_inf);
+      shadow.tnear() = (float)(pos_inf);
+      shadow.tfar()  = (float)(neg_inf);
     }
 
     /* ignore invalid rays */
@@ -867,11 +859,11 @@ void renderTileStandardStream(int taskIndex,
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
     /* initialize shadow ray */
-    shadow.org = primary.org + primary.tfar*primary.dir;
+    shadow.org = primary.org + primary.tfar()*primary.dir;
     shadow.dir = neg(lightDir);
     bool mask = 1; {
-      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      shadow.tnear() = mask ? 0.001f       : (float)(pos_inf);
+      shadow.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
     }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
