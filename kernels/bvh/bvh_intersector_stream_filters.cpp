@@ -363,7 +363,7 @@ namespace embree
         else if (unlikely(!intersect))
         {
           /* octant sorting for occlusion rays */
-          RayPacketSOA rayN(rayData, VSIZEX);
+          RayStreamSOA rayN(rayData, VSIZEX);
 
           __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
           __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
@@ -464,7 +464,7 @@ namespace embree
         for (size_t i = 0; i < numPackets; i++)
         {
           const size_t offsetN = i * stride;
-          RayPacketSOA rayN(rayData + offsetN, N);
+          RayStreamSOA rayN(rayData + offsetN, N);
 
           for (size_t j = 0; j < N; j += VSIZEX)
           {

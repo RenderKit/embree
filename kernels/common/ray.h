@@ -362,9 +362,9 @@ namespace embree
   }
 
 
-  struct RayPacketSOA
+  struct RayStreamSOA
   {
-    __forceinline RayPacketSOA(void* rays, size_t N)
+    __forceinline RayStreamSOA(void* rays, size_t N)
       : ptr((char*)rays), N(N) {}
 
     /* ray data access functions */
@@ -735,10 +735,10 @@ namespace embree
   };
 
   template<size_t MAX_K>
-  struct StackRayPacketSOA : public RayPacketSOA
+  struct StackRayStreamSOA : public RayStreamSOA
   {
-    __forceinline StackRayPacketSOA(size_t K)
-      : RayPacketSOA(data, K) { assert(K <= MAX_K); }
+    __forceinline StackRayStreamSOA(size_t K)
+      : RayStreamSOA(data, K) { assert(K <= MAX_K); }
 
     char data[MAX_K / 4 * sizeof(Ray4)];
   };
