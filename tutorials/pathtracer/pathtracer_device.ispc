@@ -1436,7 +1436,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
                         make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
   DifferentialGeometry dg;
-
+ 
   /* iterative path tracer loop */
   for (uniform int i=0; i<MAX_PATH_LENGTH; i++)
   {
@@ -1446,6 +1446,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
     /* intersect ray with scene */
     uniform RTCIntersectContext context;
+    rtcInitIntersectionContext(&context);
     context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
     rtcIntersect(g_scene,&context,RTCRay_(ray));
     RayStats_addRay(stats);

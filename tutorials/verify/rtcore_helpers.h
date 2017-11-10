@@ -724,6 +724,7 @@ namespace embree
   __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
   {
     RTCIntersectContext context;
+    rtcInitIntersectionContext(&context);
     context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
     context.userRayExt = nullptr;
 

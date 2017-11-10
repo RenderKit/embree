@@ -295,6 +295,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       }
 
     RTCIntersectContext context;
+    rtcInitIntersectionContext(&context);
     context.flags = g_iflags_coherent;
 
     /* trace stream of rays */

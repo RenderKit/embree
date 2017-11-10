@@ -18,7 +18,6 @@
 
 #include "../common/ray.h"
 #include "../common/scene_subdiv_mesh.h"
-#include "filter.h"
 #include "../bvh/bvh.h"
 #include "../subdiv/tessellation.h"
 #include "../subdiv/tessellation_cache.h"

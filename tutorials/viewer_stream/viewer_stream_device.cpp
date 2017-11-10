@@ -179,6 +179,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
   }
 
   RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
@@ -334,6 +335,7 @@ void renderTileStandard(int taskIndex,
   }
 
   RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */

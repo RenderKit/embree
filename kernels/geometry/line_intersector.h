@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "filter.h"
 
 namespace embree
 {

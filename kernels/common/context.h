@@ -29,6 +29,14 @@ namespace embree
     __forceinline IntersectContext(Scene* scene, const RTCIntersectContext* user_context)
       : scene(scene), user(user_context), flags(0), geomID_to_instID(nullptr) {}
 
+    __forceinline bool hasContextFilter() const {
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      return user->filter != nullptr;
+#else
+      return false;
+#endif
+    }
+    
   public:
     Scene* scene;
     const RTCIntersectContext* user;

@@ -57,9 +57,11 @@ namespace embree
           
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
-          if (unlikely(filter && geometry->hasIntersectionFilter())) {
-            HitK<1> h(ray.instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
-            return runIntersectionFilter1(geometry,ray,context,h);
+          if (filter) {
+            if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
+              HitK<1> h(ray.instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
+              return runIntersectionFilter1(geometry,ray,context,h);
+            }
           }
 #endif
           
@@ -102,9 +104,11 @@ namespace embree
           
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
-          if (unlikely(filter && geometry->hasOcclusionFilter())) {
-            HitK<1> h(ray.instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
-            return runOcclusionFilter1(geometry,ray,context,h);
+          if (filter) {
+            if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
+              HitK<1> h(ray.instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
+              return runOcclusionFilter1(geometry,ray,context,h);
+            }
           }
 #endif
           return true;
@@ -140,9 +144,11 @@ namespace embree
           
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
-          if (filter && unlikely(geometry->hasIntersectionFilter())) {
-            HitK<K> h(ray.instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
-            return any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+          if (filter) {
+            if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
+              HitK<K> h(ray.instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
+              return any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+            }
           }
 #endif
           
@@ -187,10 +193,12 @@ namespace embree
 
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
-          if (filter && unlikely(geometry->hasOcclusionFilter())) {
-            hit.finalize();
-            HitK<K> h(ray.instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
-            return any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+          if (filter) {
+            if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
+              hit.finalize();
+              HitK<K> h(ray.instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
+              return any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+            }
           }
 #endif 
           return true;
@@ -246,7 +254,7 @@ namespace embree
 #if defined(EMBREE_INTERSECTION_FILTER) 
             /* call intersection filter function */
             if (filter) {
-              if (unlikely(geometry->hasIntersectionFilter())) {
+              if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
                 const Vec2f uv = hit.uv(i);
                 HitK<1> h(ray.instID,instID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
                 foundhit |= runIntersectionFilter1(geometry,ray,context,h);
@@ -327,7 +335,7 @@ namespace embree
 #if defined(EMBREE_INTERSECTION_FILTER) 
             /* call intersection filter function */
             if (filter) {
-              if (unlikely(geometry->hasIntersectionFilter())) {
+              if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
                 const Vec2f uv = hit.uv(i);
                 HitK<1> h(ray.instID,instID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
                 foundhit |= runIntersectionFilter1(geometry,ray,context,h);
@@ -398,7 +406,7 @@ namespace embree
 #if defined(EMBREE_INTERSECTION_FILTER)
             /* if we have no filter then the test passed */
             if (filter) {
-              if (unlikely(geometry->hasOcclusionFilter())) 
+              if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
               {
                 const Vec2f uv = hit.uv(i);
                 HitK<1> h(ray.instID,instID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
@@ -448,7 +456,7 @@ namespace embree
           
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
-          if (unlikely(geometry->hasIntersectionFilter())) 
+          if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) 
           {
             bool foundhit = false;
             while (true) 
@@ -507,7 +515,7 @@ namespace embree
           
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
-          if (unlikely(geometry->hasOcclusionFilter())) 
+          if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
           {
             hit.finalize();
             for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) 
@@ -563,7 +571,7 @@ namespace embree
           /* occlusion filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
-            if (unlikely(geometry->hasIntersectionFilter())) {
+            if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               HitK<K> h(ray.instID,geomID,primID,u,v,t,Ng);
               return runIntersectionFilter(valid,geometry,ray,context,h);
             }
@@ -619,7 +627,7 @@ namespace embree
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
-            if (unlikely(geometry->hasOcclusionFilter()))
+            if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
             {
               vfloat<K> u, v, t; 
               Vec3vf<K> Ng;
@@ -670,7 +678,7 @@ namespace embree
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
-            if (unlikely(geometry->hasIntersectionFilter())) {
+            if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               HitK<K> h(ray.instID,geomID,primID,u,v,t,Ng);
               return runIntersectionFilter(valid,geometry,ray,context,h);
             }
@@ -721,7 +729,7 @@ namespace embree
           /* occlusion filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
-            if (unlikely(geometry->hasOcclusionFilter()))
+            if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
             {
               vfloat<K> u, v, t; 
               Vec3vf<K> Ng;
@@ -790,7 +798,7 @@ namespace embree
 #if defined(EMBREE_INTERSECTION_FILTER) 
             /* call intersection filter function */
             if (filter) {
-              if (unlikely(geometry->hasIntersectionFilter())) {
+              if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
                 assert(i<M);
                 const Vec2f uv = hit.uv(i);
                 HitK<K> h(ray.instID,geomID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
@@ -872,7 +880,7 @@ namespace embree
 #if defined(EMBREE_INTERSECTION_FILTER)
             /* execute occlusion filer */
             if (filter) {
-              if (unlikely(geometry->hasOcclusionFilter())) 
+              if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
               {
                 const Vec2f uv = hit.uv(i);
                 HitK<K> h(ray.instID,geomID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
@@ -924,7 +932,7 @@ namespace embree
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
-            if (unlikely(geometry->hasIntersectionFilter())) 
+            if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) 
             {
               bool foundhit = false;
               while (true) 
@@ -991,7 +999,7 @@ namespace embree
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
-            if (unlikely(geometry->hasOcclusionFilter())) 
+            if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
             {
               hit.finalize();
               for (size_t m=movemask(valid_i), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))

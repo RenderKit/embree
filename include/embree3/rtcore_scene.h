@@ -51,7 +51,8 @@ enum RTCBuildQuality
 enum RTCBuildHints
 {
   RTC_BUILD_HINT_NONE = 0,
-  RTC_BUILD_HINT_DYNAMIC = (1 << 0)
+  RTC_BUILD_HINT_DYNAMIC = (1 << 0),                 //!< provides better build performance for dynamic scenes
+  RTC_BUILD_HINT_CONTEXT_FILTER_FUNCTION = (1 << 1)  //!< enables support for intersection filter function inside context
 };
 
 /*! intersection flags */
@@ -79,14 +80,14 @@ typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* con
 struct RTCIntersectContext
 {
   enum RTCIntersectFlags flags;   //!< intersection flags
-  //RTCFilterFunctionN filter;      //!< filter function to execute
+  RTCFilterFunctionN filter;      //!< filter function to execute
   void* userRayExt;               //!< can be used to pass extended ray data to callbacks
 };
 
 RTCORE_FORCEINLINE void rtcInitIntersectionContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_INCOHERENT;
-  //context->filter = NULL;
+  context->filter = NULL;
   context->userRayExt = NULL;
 }
 

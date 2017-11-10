@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "filter.h"
 
 // FIXME: remove this file later
 //#define Bezier1Intersector1 Hair1Intersector1

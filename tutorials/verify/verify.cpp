@@ -3590,6 +3590,7 @@ namespace embree
 	  const size_t y1 = min(y0 + tileSizeY, height);
       
       RTCIntersectContext context;
+      rtcInitIntersectionContext(&context);
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
       context.userRayExt = nullptr;
 
@@ -3753,6 +3754,7 @@ namespace embree
     void render_block(size_t i, size_t dn)
     {
       RTCIntersectContext context;
+      rtcInitIntersectionContext(&context);
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
       context.userRayExt = nullptr;
 

@@ -191,15 +191,24 @@ namespace embree
     }
 
     /* flag decoding */
-    __forceinline bool isFastAccel() { return accel_flags == RTC_ACCEL_FAST; }
-    __forceinline bool isCompactAccel() { return accel_flags & RTC_ACCEL_COMPACT; }
-    __forceinline bool isRobustAccel()  { return accel_flags & RTC_ACCEL_ROBUST; }
-    __forceinline bool isStaticAccel()  { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }
-    __forceinline bool isDynamicAccel() { return hint_flags & RTC_BUILD_HINT_DYNAMIC; }
-
-
-    __forceinline bool hasFilterFunction() {
+    __forceinline bool isFastAccel() const { return accel_flags == RTC_ACCEL_FAST; }
+    __forceinline bool isCompactAccel() const { return accel_flags & RTC_ACCEL_COMPACT; }
+    __forceinline bool isRobustAccel()  const { return accel_flags & RTC_ACCEL_ROBUST; }
+    __forceinline bool isStaticAccel()  const { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }
+    __forceinline bool isDynamicAccel() const { return hint_flags & RTC_BUILD_HINT_DYNAMIC; }
+    
+    __forceinline bool hasContextFilterFunction() const {
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      return hint_flags & RTC_BUILD_HINT_CONTEXT_FILTER_FUNCTION;
+#else
+      return false;
+#endif
+    }
+    __forceinline bool hasGeometryFilterFunction() {
       return numIntersectionFiltersN != 0;
+    }
+    __forceinline bool hasFilterFunction() {
+      return hasContextFilterFunction() || hasGeometryFilterFunction();
     }
     
     /* test if scene got already build */

@@ -245,6 +245,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_coherent;
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "filter.h"
 #include "quad_intersector.h"
 
 #define Bezier1Intersector1 Ribbon1Intersector1
