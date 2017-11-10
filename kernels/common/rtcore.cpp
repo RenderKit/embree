@@ -142,6 +142,10 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetBuildQuality);
     RTCORE_VERIFY_HANDLE(hscene);
+    if (quality != RTC_BUILD_QUALITY_LOW &&
+        quality != RTC_BUILD_QUALITY_MEDIUM &&
+        quality != RTC_BUILD_QUALITY_HIGH)
+      throw std::runtime_error("invalid build quality");
     scene->setBuildQuality(quality);
     RTCORE_CATCH_END2(scene);
   }
@@ -720,7 +724,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, RTCGeometryFlags gflags, unsigned* geomIDs, unsigned int N) 
+  RTCORE_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, unsigned* geomIDs, unsigned int N) 
   {
     Device* device = (Device*) hdevice;
     Scene* scene = (Scene*) hscene;
@@ -739,7 +743,7 @@ namespace embree
       if (geometries[i]->getType() != geometries[0]->getType())
         throw_RTCError(RTC_INVALID_ARGUMENT,"geometries inside group have to be of same type");
     }
-    Geometry* geom = new GeometryGroup(device,gflags,geometries);
+    Geometry* geom = new GeometryGroup(device,geometries);
     return (RTCGeometry) geom->refInc();
     RTCORE_CATCH_END(device);
     return nullptr;
@@ -790,14 +794,14 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numItems, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, unsigned int numItems, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry2);
     RTCORE_VERIFY_HANDLE(hdevice);
 #if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = new UserGeometry(device,gflags,numItems,numTimeSteps);
+    Geometry* geom = new UserGeometry(device,numItems,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry is not supported");
@@ -806,7 +810,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags)
+  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -815,7 +819,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     createTriangleMeshTy createTriangleMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
-    Geometry* geom = createTriangleMesh(device,gflags);
+    Geometry* geom = createTriangleMesh(device);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewTriangleMesh is not supported");
@@ -824,7 +828,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags)
+  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -833,7 +837,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     createQuadMeshTy createQuadMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
-    Geometry* geom = createQuadMesh(device,gflags);
+    Geometry* geom = createQuadMesh(device);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewQuadMesh is not supported");
@@ -842,7 +846,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, RTCCurveType type, RTCCurveBasis basis)
+  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCCurveType type, RTCCurveBasis basis)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -864,9 +868,9 @@ namespace embree
 
     Geometry* geom = nullptr;
     switch (basis) {
-    case RTC_BASIS_LINEAR : geom = createLineSegments (device,gflags); break;
-    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis,gflags); break;
-    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis,gflags); break;
+    case RTC_BASIS_LINEAR : geom = createLineSegments (device); break;
+    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis); break;
+    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve basis");
     }
     return (RTCGeometry) geom->refInc();
@@ -877,7 +881,7 @@ namespace embree
     return nullptr;
   }
     
-  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags) 
+  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -886,7 +890,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     createSubdivMeshTy createSubdivMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-    Geometry* geom = createSubdivMesh(device,gflags);
+    Geometry* geom = createSubdivMesh(device);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewSubdivisionMesh is not supported");
@@ -895,6 +899,22 @@ namespace embree
     return nullptr;
   }
 
+  /*! sets the build quality of the geometry */
+  RTCORE_API void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetGeometryBuildQuality);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    if (quality != RTC_BUILD_QUALITY_LOW &&
+        quality != RTC_BUILD_QUALITY_MEDIUM &&
+        quality != RTC_BUILD_QUALITY_HIGH &&
+        quality != RTC_BUILD_QUALITY_REFIT)
+      throw std::runtime_error("invalid build quality");
+    geometry->setBuildQuality(quality);
+    RTCORE_CATCH_END2(geometry);
+  }
+  
   RTCORE_API void rtcSetMask (RTCGeometry hgeometry, int mask) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

@@ -238,9 +238,9 @@ namespace embree
   };
 
 #if !defined(ISPC)  
-  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCGeometryFlags gflags);
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality);
 #else
-  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCGeometryFlags gflags);
+  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality);
 #endif
 
 #if !defined(ISPC)                    

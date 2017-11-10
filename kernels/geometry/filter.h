@@ -21,8 +21,6 @@
 #include "../common/hit.h"
 #include "../common/context.h"
 
-#define EMBREE_INTERSERTION_FILTER_CONTEXT 0
-
 namespace embree
 {
   namespace isa
@@ -38,16 +36,21 @@ namespace embree
       args.potentialHit = (RTCHitN*)&hit;
       args.N = 1;
 
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (geometry->intersectionFilterN)
 #endif
+      {
+        assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(&args);
+      }
       
       if (mask == 0)
         return false;
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
-      if (context->context->filter)
-        context->context->filter(&args);
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      if (context->user->filter) {
+        assert(context->scene->hasContextFilterFunction());
+        context->user->filter(&args);
+      }
 
       if (mask == 0)
         return false;
@@ -67,15 +70,21 @@ namespace embree
       args.potentialHit = (RTCHitN*)&hit;
       args.N = 1;
 
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (geometry->occlusionFilterN)
 #endif
+      {
+        assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(&args);
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
+      }
+      
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (mask == 0)
         return false;
-      if (context->context->filter)
-        context->context->filter(&args);
+      if (context->user->filter) {
+        assert(context->scene->hasContextFilterFunction());
+        context->user->filter(&args);
+      }
 #endif
       return mask != 0;
     }
@@ -92,18 +101,23 @@ namespace embree
       args.potentialHit = (RTCHitN*)&hit;
       args.N = K;
 
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (geometry->intersectionFilterN)
 #endif
+      {
+        assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(&args);
+      }
 
       vbool<K> valid_o = mask != vint<K>(zero);
       assert(none(!valid & valid_o));
       if (none(valid_o)) return valid_o;
 
-#if EMBREE_INTERSERTION_FILTER_CONTEXT      
-      if (context->context->filter)
-        context->context->filter(&args);
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)      
+      if (context->user->filter) {
+        assert(context->scene->hasContextFilterFunction());
+        context->user->filter(&args);
+      }
 
       valid_o = mask != vint<K>(zero);
       assert(none(!valid & valid_o));
@@ -126,19 +140,24 @@ namespace embree
       args.potentialHit = (RTCHitN*)&hit;
       args.N = K;
 
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (geometry->occlusionFilterN)
 #endif
+      {
+        assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(&args);
+      }
 
       vbool<K> valid_o = mask != vint<K>(zero);
       assert(none(!valid & valid_o));
       
-#if EMBREE_INTERSERTION_FILTER_CONTEXT
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (none(valid_o)) return valid_o;
 
-      if (context->context->filter)
-        context->context->filter(&args);
+      if (context->user->filter) {
+        assert(context->scene->hasContextFilterFunction());
+        context->user->filter(&args);
+      }
 
       valid_o = mask != vint<K>(zero);
       assert(none(!valid & valid_o));

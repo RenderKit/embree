@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "filter.h"
 #include "cylinder.h"
 #include "plane.h"
 #include "line_intersector.h"

@@ -76,14 +76,6 @@ enum RTCMatrixType {
   RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
 };
 
-/*! \brief Supported geometry flags to specify handling in dynamic scenes. */
-enum RTCGeometryFlags 
-{
-  RTC_GEOMETRY_STATIC     = 0,    //!< specifies static geometry that will change rarely
-  RTC_GEOMETRY_DEFORMABLE = 1,    //!< specifies dynamic geometry with deformable motion (BVH refit possible)
-  RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
-};
-
 /*! \brief Interpolation mode for subdivision surfaces. The modes are
  *  ordered to interpolate successively more linear. */
 enum RTCSubdivisionMode
@@ -189,7 +181,6 @@ typedef struct __RTCGeometry* RTCGeometry;
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
 RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           enum RTCGeometryFlags gflags, //!< geometry flags
                                            unsigned int numGeometries,    /*!< the number of geometries contained in the set */
                                            unsigned int numTimeSteps  /*!< number of motion blur time steps */
   );
@@ -237,7 +228,7 @@ RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
   ID (geomID) member of the ray will get set to the geometry ID of the
   instance. */
 RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryInstance(RTCDevice device, RTCScene scene, unsigned geomID);
-RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryGroup   (RTCDevice device, RTCScene scene, enum RTCGeometryFlags flags, unsigned* geomIDs, unsigned int N);
+RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryGroup   (RTCDevice device, RTCScene scene, unsigned* geomIDs, unsigned int N);
 
 /*! \brief Sets transformation of the instance for specified timestep */
 RTCORE_API void rtcSetTransform ( RTCGeometry geometry,                   //!< ID of geometry 
@@ -260,9 +251,7 @@ RTCORE_API void rtcSetTransform ( RTCGeometry geometry,                   //!< I
   vertex. The vertex buffer stores single precision x,y,z floating
   point coordinates aligned to 16 bytes. The value of the 4th float
   used for alignment can be arbitrary. */
-RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
-                                           enum RTCGeometryFlags flags            //!< geometry flags
-  );
+RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device);
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
   number of vertices (numVertices), and number of time steps (1 for
@@ -277,9 +266,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   index points to the ith vertex. The vertex buffer stores single
   precision x,y,z floating point coordinates aligned to 16 bytes. The
   value of the 4th float used for alignment can be arbitrary. */
-RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
-                                       enum RTCGeometryFlags flags        //!< geometry flags
-  );
+RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device);
 
 /*! \brief Creates a new subdivision mesh. The number of faces
  (numFaces), edges/indices (numEdges), vertices (numVertices), edge
@@ -337,9 +324,7 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
  weights results in undefined behaviour.
 
 */
-RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
-                                              enum RTCGeometryFlags flags        //!< geometry flags
-  );
+RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bezier curves with varying radii. The number of
@@ -361,7 +346,6 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
   that zooming onto one hair might show geometric artefacts. */
 
 RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
-                                            enum RTCGeometryFlags flags,    //!< geometry flags
                                             enum RTCCurveType type,
                                             enum RTCCurveBasis basis
   );
@@ -370,6 +354,9 @@ RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
  *  optionally to set a different tessellation rate per edge.*/
 RTCORE_API void rtcSetTessellationRate (RTCGeometry geometry, float tessellationRate);
+
+/*! sets the build quality of the geometry */
+RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuality quality);
 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCGeometry geometry, int mask);

@@ -19,10 +19,10 @@
 
 namespace embree
 {
-  Geometry::Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCGeometryFlags flags) 
+  Geometry::Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps) 
     : device(device), scene(nullptr), geomID(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
-      numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
+      numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), quality(RTC_BUILD_QUALITY_MEDIUM),
       enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1), used(1),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr) {}
 

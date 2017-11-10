@@ -27,8 +27,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags)
-    : Geometry(device,SUBDIV_MESH,0,1,flags), 
+  SubdivMesh::SubdivMesh (Device* device)
+    : Geometry(device,SUBDIV_MESH,0,1), 
       displFunc(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
@@ -759,9 +759,8 @@ namespace embree
 
   namespace isa
   {
-    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags) 
-    {
-      return new SubdivMeshISA(device,flags);
+    SubdivMesh* createSubdivMesh(Device* device) {
+      return new SubdivMeshISA(device);
     }
     
     void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 

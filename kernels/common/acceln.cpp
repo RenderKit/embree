@@ -196,10 +196,10 @@ namespace embree
       bounds.extend(validAccels[i]->bounds);
   }
 
-  void AccelN::select(bool filter4, bool filter8, bool filter16, bool filterN)
+  void AccelN::select(bool filter)
   {
     for (size_t i=0; i<accels.size(); i++) 
-      accels[i]->intersectors.select(filter4,filter8,filter16,filterN);
+      accels[i]->intersectors.select(filter);
   }
 
   void AccelN::deleteGeometry(size_t geomID) 

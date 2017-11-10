@@ -127,7 +127,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
   }
 
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
@@ -245,6 +245,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_coherent;
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);

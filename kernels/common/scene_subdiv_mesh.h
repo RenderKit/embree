@@ -61,7 +61,7 @@ namespace embree
   public:
 
     /*! subdiv mesh construction */
-    SubdivMesh(Device* device, RTCGeometryFlags flags);
+    SubdivMesh(Device* device);
 
   public:
     void enabling();
@@ -325,8 +325,8 @@ namespace embree
   {
     struct SubdivMeshISA : public SubdivMesh
     {
-      SubdivMeshISA (Device* device, RTCGeometryFlags flags)
-        : SubdivMesh(device,flags) {}
+      SubdivMeshISA (Device* device)
+        : SubdivMesh(device) {}
 
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
@@ -339,5 +339,5 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device* COMMA RTCGeometryFlags);
+  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device*);
 };

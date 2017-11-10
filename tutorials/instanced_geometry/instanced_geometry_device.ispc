@@ -34,7 +34,7 @@ void renderTileStandardStream(uniform int taskIndex,
 uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* map triangle and vertex buffers */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
@@ -91,7 +91,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
 uniform unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
@@ -338,6 +338,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
   /* trace rays */
   uniform RTCIntersectContext primary_context;
+  rtcInitIntersectionContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
   primary_context.userRayExt = &primary_stream;
   rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray));
@@ -396,6 +397,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
   /* trace shadow rays */
   uniform RTCIntersectContext shadow_context;
+  rtcInitIntersectionContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
   shadow_context.userRayExt = &shadow_stream;
   rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));

@@ -41,7 +41,7 @@ namespace embree
   public:
 
     /*! quad mesh construction */
-    QuadMesh (Device* device, RTCGeometryFlags flags); 
+    QuadMesh (Device* device); 
   
     /* geometry interface */
   public:
@@ -220,10 +220,10 @@ namespace embree
   {
     struct QuadMeshISA : public QuadMesh
     {
-      QuadMeshISA (Device* device, RTCGeometryFlags flags)
-        : QuadMesh(device,flags) {}
+      QuadMeshISA (Device* device)
+        : QuadMesh(device) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(QuadMesh*, createQuadMesh, Device* COMMA RTCGeometryFlags);
+  DECLARE_ISA_FUNCTION(QuadMesh*, createQuadMesh, Device*);
 }

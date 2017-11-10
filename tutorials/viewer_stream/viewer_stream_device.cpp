@@ -124,7 +124,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  RTCScene scene_out = ConvertScene(g_device, scene_in,RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, scene_in,RTC_BUILD_QUALITY_MEDIUM);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
@@ -179,6 +179,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
   }
 
   RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
@@ -334,6 +335,7 @@ void renderTileStandard(int taskIndex,
   }
 
   RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */

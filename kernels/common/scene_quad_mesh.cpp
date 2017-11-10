@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  QuadMesh::QuadMesh (Device* device, RTCGeometryFlags flags)
-    : Geometry(device,QUAD_MESH,0,1,flags)
+  QuadMesh::QuadMesh (Device* device)
+    : Geometry(device,QUAD_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
   }
@@ -228,8 +228,8 @@ namespace embree
 
   namespace isa
   {
-    QuadMesh* createQuadMesh(Device* device, RTCGeometryFlags flags) {
-      return new QuadMeshISA(device,flags);
+    QuadMesh* createQuadMesh(Device* device) {
+      return new QuadMeshISA(device);
     }
   }
 }

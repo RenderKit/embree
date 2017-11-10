@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  LineSegments::LineSegments (Device* device, RTCGeometryFlags flags)
-    : Geometry(device,LINE_SEGMENTS,0,1,flags)
+  LineSegments::LineSegments (Device* device)
+    : Geometry(device,LINE_SEGMENTS,0,1)
   {
     vertices.resize(numTimeSteps);
   }
@@ -185,8 +185,8 @@ namespace embree
 
   namespace isa
   {
-    LineSegments* createLineSegments(Device* device, RTCGeometryFlags flags) {
-      return new LineSegmentsISA(device,flags);
+    LineSegments* createLineSegments(Device* device) {
+      return new LineSegmentsISA(device);
     }
   }
 }
