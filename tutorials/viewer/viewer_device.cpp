@@ -262,7 +262,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.5f);
-
+  const Vec3fa Ng(ray.Ng);
   /* compute differential geometry */
   DifferentialGeometry dg;
   dg.geomID = ray.geomID;
@@ -270,8 +270,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   dg.u = ray.u;
   dg.v = ray.v;
   dg.P  = ray.org+ray.tfar()*ray.dir;
-  dg.Ng = ray.Ng;
-  dg.Ns = ray.Ng;
+  dg.Ng = Ng;
+  dg.Ns = Ng;
 
   if (g_use_smooth_normals)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
