@@ -77,9 +77,10 @@ namespace embree {
   void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
-    RTCBuildQuality object_flags = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+    RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
     /* create object */
-    RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags);
+    RTCGeometry geom = rtcNewTriangleMesh (g_device);
+    rtcSetGeometryBuildQuality(geom, quality);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -94,9 +95,10 @@ namespace embree {
   void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
-    RTCBuildQuality object_flags = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+    RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
     /* create object */
-    RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags);
+    RTCGeometry geom = rtcNewQuadMesh (g_device);
+    rtcSetGeometryBuildQuality(geom, quality);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -110,9 +112,10 @@ namespace embree {
   void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
-    RTCBuildQuality object_flags = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+    RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
     /* create object */
-    RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags);
+    RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+    rtcSetGeometryBuildQuality(geom, quality);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
@@ -136,9 +139,10 @@ namespace embree {
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
-    RTCBuildQuality object_flags = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+    RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
     /* create object */
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis);
+    RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->type, hair->basis);
+    rtcSetGeometryBuildQuality(geom, quality);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];

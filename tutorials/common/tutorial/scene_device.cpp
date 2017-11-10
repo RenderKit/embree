@@ -305,7 +305,8 @@ namespace embree
 
   unsigned int ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewTriangleMesh (device, quality);
+    RTCGeometry geom = rtcNewTriangleMesh (device);
+    rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
@@ -320,7 +321,8 @@ namespace embree
   
   unsigned int ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewQuadMesh (device, quality);
+    RTCGeometry geom = rtcNewQuadMesh (device);
+    rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
@@ -335,7 +337,8 @@ namespace embree
   
   unsigned int ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewSubdivisionMesh(device, quality);
+    RTCGeometry geom = rtcNewSubdivisionMesh(device);
+    rtcSetGeometryBuildQuality(geom, quality);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -383,7 +386,8 @@ namespace embree
   
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewCurveGeometry  (device, quality, mesh->type, mesh->basis);
+    RTCGeometry geom = rtcNewCurveGeometry  (device, mesh->type, mesh->basis);
+    rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
@@ -426,8 +430,9 @@ namespace embree
       assert(geometries[i] != -1);
     }
     DISABLE_DEPRECATED_WARNING;
-    RTCGeometry geom = rtcNewGeometryGroup (device, scene_out, quality, geometries.data(), geometries.size());
+    RTCGeometry geom = rtcNewGeometryGroup (device, scene_out, geometries.data(), geometries.size());
     ENABLE_DEPRECATED_WARNING;
+    rtcSetGeometryBuildQuality(geom, quality);
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);

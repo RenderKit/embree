@@ -62,7 +62,7 @@ unmasked void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* unifor
 uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_BUILD_QUALITY_MEDIUM);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* map triangle and vertex buffers */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
@@ -214,7 +214,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   instance->userID = userID;
   instance->center = center;
   instance->radius = radius;
-  instance->geometry = rtcNewUserGeometry(g_device,RTC_BUILD_QUALITY_MEDIUM,1,1);
+  instance->geometry = rtcNewUserGeometry(g_device,1,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
@@ -235,7 +235,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
 uniform unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_BUILD_QUALITY_MEDIUM);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);

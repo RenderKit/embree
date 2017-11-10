@@ -56,7 +56,7 @@ namespace embree
   unsigned int addCube (RTCDevice device_i, RTCScene scene_i, const Vec3fa& pos)
   {
     /* create a triangulated cube with 12 triangles and 8 vertices */
-    RTCGeometry mesh = rtcNewTriangleMesh (device_i, RTC_BUILD_QUALITY_MEDIUM);
+    RTCGeometry mesh = rtcNewTriangleMesh (device_i);
     
     /* set vertices */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),8); 
@@ -107,7 +107,7 @@ namespace embree
   unsigned int addGroundPlane (RTCDevice device_i, RTCScene scene_i)
   {
     /* create a triangulated plane with 2 triangles and 4 vertices */
-    RTCGeometry mesh = rtcNewTriangleMesh (device_i, RTC_BUILD_QUALITY_MEDIUM);
+    RTCGeometry mesh = rtcNewTriangleMesh (device_i);
     
     /* set vertices */
     Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),4); 
@@ -130,7 +130,7 @@ namespace embree
   /* adds a hair to the scene */
   unsigned int addHair(RTCDevice device_i, RTCScene scene_i)
   {
-    RTCGeometry geom = rtcNewCurveGeometry (device_i, RTC_BUILD_QUALITY_MEDIUM, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER);
+    RTCGeometry geom = rtcNewCurveGeometry (device_i, RTC_CURVE_RIBBON, RTC_BASIS_BEZIER);
 
     vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(vfloat4),4);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);

@@ -178,7 +178,6 @@ typedef uniform struct __RTCGeometry* uniform RTCGeometry;
  *  that points to a user specified representation of the geometry, is
  *  passed to each intersect and occluded function invokation. */
 RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           uniform RTCBuildQuality quality,  //!< build quality
                                            uniform unsigned int numGeometries,    /*!< the number of geometries contained in the set */
                                            uniform unsigned int numTimeSteps  /*!< number of motion blur time steps */
   );
@@ -248,9 +247,7 @@ RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< I
   vertex. The vertex buffer stores single precision x,y,z floating
   point coordinates aligned to 16 bytes. The value of the 4th float
   used for alignment can be arbitrary. */
-RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
-                                           uniform RTCBuildQuality quality  //!< build quality
-  );
+RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device);
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
   number of vertices (numVertices), and number of time steps (1 for
@@ -265,9 +262,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
   index points to the ith vertex. The vertex buffer stores single
   precision x,y,z floating point coordinates aligned to 16 bytes. The
   value of the 4th float used for alignment can be arbitrary. */
-RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
-                                       uniform RTCBuildQuality quality  //!< build quality
-  );
+RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device);
 
 /*! \brief Creates a new subdivision mesh. The number of faces
  (numFaces), edges/indices (numEdges), vertices (numVertices), edge
@@ -326,9 +321,7 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
 
 */
 
-RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
-                                              uniform RTCBuildQuality quality        //!< build quality
-  );
+RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bezier curves with varying radii. The number of
@@ -350,7 +343,6 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
   that zooming onto one hair might show geometric artefacts. */
 
 RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
-                                            uniform RTCBuildQuality quality,    //!< build quality
                                             uniform RTCCurveType type,
                                             uniform RTCCurveBasis basis
   );

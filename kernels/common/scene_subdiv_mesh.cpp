@@ -27,8 +27,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  SubdivMesh::SubdivMesh (Device* device, RTCBuildQuality quality)
-    : Geometry(device,SUBDIV_MESH,0,1,quality), 
+  SubdivMesh::SubdivMesh (Device* device)
+    : Geometry(device,SUBDIV_MESH,0,1), 
       displFunc(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
@@ -755,9 +755,8 @@ namespace embree
 
   namespace isa
   {
-    SubdivMesh* createSubdivMesh(Device* device, RTCBuildQuality quality) 
-    {
-      return new SubdivMeshISA(device,quality);
+    SubdivMesh* createSubdivMesh(Device* device) {
+      return new SubdivMeshISA(device);
     }
     
     void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 

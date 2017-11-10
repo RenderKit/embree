@@ -24,7 +24,7 @@ namespace embree
   struct UserGeometry : public AccelSet
   {
   public:
-    UserGeometry (Device* device, RTCBuildQuality quality, unsigned int items, unsigned int numTimeSteps); 
+    UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps); 
     virtual void setUserData (void* ptr);
     virtual void setMask (unsigned mask);
     virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr);

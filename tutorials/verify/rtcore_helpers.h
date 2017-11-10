@@ -613,6 +613,7 @@ namespace embree
 
   SceneFlags getSceneFlags(size_t i) 
   {
+    i = i%(3<<3);
     int accel_flags = 0;
     int hint_flags = 0;
     if (i & 1) hint_flags  |= RTC_BUILD_HINT_DYNAMIC;

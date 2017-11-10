@@ -43,8 +43,9 @@ uniform double animTime        = -1.0f; // global time counter
 void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
-  uniform RTCBuildQuality object_flags = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, object_flags);
+  uniform RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  rtcSetGeometryBuildQuality(geom, quality);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (uniform size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle), mesh->numTriangles);
@@ -56,8 +57,9 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
 void convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
-  uniform RTCBuildQuality object_flags = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewQuadMesh (g_device, object_flags);
+  uniform RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+  RTCGeometry geom = rtcNewQuadMesh (g_device);
+  rtcSetGeometryBuildQuality(geom, quality);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad), mesh->numQuads);
@@ -69,8 +71,9 @@ void convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
 void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
-  uniform RTCBuildQuality object_flags = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device, object_flags);
+  uniform RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  rtcSetGeometryBuildQuality(geom, quality);
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -91,9 +94,10 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
 void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
-  uniform RTCBuildQuality object_flags = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
+  uniform RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   /* create object */
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, object_flags, hair->type, hair->basis);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->type, hair->basis);
+  rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);
   for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];

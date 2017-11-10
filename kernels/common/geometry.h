@@ -68,7 +68,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCBuildQuality quality);
+    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -121,6 +121,11 @@ namespace embree
       numTimeSteps = numTimeSteps_in;
       fnumTimeSegments = float(numTimeSteps_in-1);
       if (isEnabled() && scene) enabling();
+    }
+
+    /*! sets the build quality */
+    void setBuildQuality(RTCBuildQuality quality_in) {
+      this->quality = quality_in;
     }
     
     /*! for all geometries */
@@ -281,9 +286,7 @@ namespace embree
     std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
-
     RTCFilterFunctionN intersectionFilterN;
     RTCFilterFunctionN occlusionFilterN;
-
   };
 }
