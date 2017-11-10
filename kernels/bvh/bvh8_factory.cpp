@@ -461,11 +461,12 @@ namespace embree
   {
     BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
     accel = new BVH8(Triangle4::type,mesh->scene);
-    switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    switch (mesh->quality) {
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_MEDIUM:
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
     }
   }
 
@@ -473,11 +474,12 @@ namespace embree
   {
     BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
     accel = new BVH8(Triangle4v::type,mesh->scene);
-    switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    switch (mesh->quality) {
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_MEDIUM:
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
     }
   }
 
@@ -485,11 +487,12 @@ namespace embree
   {
     BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
     accel = new BVH8(Triangle4i::type,mesh->scene);
-    switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    switch (mesh->quality) {
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_MEDIUM:
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
     }
   }
 
@@ -497,11 +500,12 @@ namespace embree
   {
     BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
     accel = new BVH8(Quad4v::type,mesh->scene);
-    switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    switch (mesh->quality) {
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_MEDIUM:
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
     }
   }
 
@@ -516,11 +520,12 @@ namespace embree
   {
     BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
     accel = new BVH8(Object::type,mesh->scene);
-    switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = factory->BVH8VirtualMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8VirtualMeshRefitSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    switch (mesh->quality) {
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_MEDIUM:
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8VirtualMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8VirtualMeshRefitSAH(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
     }
   }
 

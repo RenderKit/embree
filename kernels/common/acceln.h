@@ -49,7 +49,7 @@ namespace embree
     void print(size_t ident);
     void immutable();
     void build ();
-    void select(bool filter4, bool filter8, bool filter16, bool filterN);
+    void select(bool filter);
     void deleteGeometry(size_t geomID);
     void clear ();
 

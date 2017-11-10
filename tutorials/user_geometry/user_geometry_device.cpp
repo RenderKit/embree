@@ -250,7 +250,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.l.vy = Vec3fa(0,1,0);
   instance->local2world.l.vz = Vec3fa(0,0,1);
   instance->local2world.p    = Vec3fa(0,0,0);
-  instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1,1);
+  instance->geometry = rtcNewUserGeometry(g_device,1,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
   rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
@@ -479,7 +479,7 @@ void sphereOccludedFuncN(const RTCIntersectFunctionNArguments* const args)
 
 Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1,1);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,1,1);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
@@ -496,7 +496,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 
 Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,N,1);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,N,1);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (size_t i=0; i<N; i++) {
@@ -519,7 +519,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
@@ -576,7 +576,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
@@ -825,6 +825,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace rays */
   RTCIntersectContext primary_context;
+  rtcInitIntersectionContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
   primary_context.userRayExt = &primary_stream;
   rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(Ray));
@@ -877,6 +878,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace shadow rays */
   RTCIntersectContext shadow_context;
+  rtcInitIntersectionContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
   shadow_context.userRayExt = &shadow_stream;
   rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));

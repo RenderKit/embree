@@ -68,7 +68,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCGeometryFlags flags);
+    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -92,15 +92,6 @@ namespace embree
 
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return state != BUILD; }
-
-    /*! test if this is a static geometry */
-    __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
-
-    /*! test if this is a deformable geometry */
-    __forceinline bool isDeformable() const { return flags == RTC_GEOMETRY_DEFORMABLE; }
-
-    /*! test if this is a dynamic geometry */
-    __forceinline bool isDynamic() const { return flags == RTC_GEOMETRY_DYNAMIC; }
 
     /*! returns geometry type */
     __forceinline Type getType() const { return type; }
@@ -130,6 +121,11 @@ namespace embree
       numTimeSteps = numTimeSteps_in;
       fnumTimeSegments = float(numTimeSteps_in-1);
       if (isEnabled() && scene) enabling();
+    }
+
+    /*! sets the build quality */
+    void setBuildQuality(RTCBuildQuality quality_in) {
+      this->quality = quality_in;
     }
     
     /*! for all geometries */
@@ -282,7 +278,7 @@ namespace embree
     bool numPrimitivesChanged; //!< true if number of primitives changed
     unsigned int numTimeSteps;     //!< number of time steps
     float fnumTimeSegments;    //!< number of time segments (precalculation)
-    RTCGeometryFlags flags;    //!< flags of geometry
+    RTCBuildQuality quality;    //!< build quality for geometry
     bool enabled;              //!< true if geometry is enabled
     State state;
     void* userPtr;             //!< user pointer
@@ -290,9 +286,7 @@ namespace embree
     std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
-
     RTCFilterFunctionN intersectionFilterN;
     RTCFilterFunctionN occlusionFilterN;
-
   };
 }

@@ -191,13 +191,4 @@ RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMon
 #include "rtcore_geometry.h"
 #include "rtcore_builder.h"
 
-#if defined(__cplusplus)
-
-/*! \brief Helper to easily combing geometry flags */
-inline RTCGeometryFlags operator|(const RTCGeometryFlags a, const RTCGeometryFlags b) {
-  return (RTCGeometryFlags)((unsigned int)a | (unsigned int)b);
-}
-
-#endif
-
 /*! \} */

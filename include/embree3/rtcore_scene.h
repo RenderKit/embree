@@ -44,14 +44,16 @@ enum RTCBuildQuality
 {
   RTC_BUILD_QUALITY_LOW = 0,     //!< create lower quality data structures (for dynamic scenes)
   RTC_BUILD_QUALITY_MEDIUM = 1,  //!< default build quality for most usages
-  RTC_BUILD_QUALITY_HIGH = 2     //!< create higher quality data structures (longer build times)
+  RTC_BUILD_QUALITY_HIGH = 2,    //!< create higher quality data structures (longer build times)
+  RTC_BUILD_QUALITY_REFIT = 3,   //!< refits the BVH
 };
 
 /*! some additional flags to control the build */
 enum RTCBuildHints
 {
   RTC_BUILD_HINT_NONE = 0,
-  RTC_BUILD_HINT_DYNAMIC = (1 << 0)
+  RTC_BUILD_HINT_DYNAMIC = (1 << 0),                 //!< provides better build performance for dynamic scenes
+  RTC_BUILD_HINT_CONTEXT_FILTER_FUNCTION = (1 << 1)  //!< enables support for intersection filter function inside context
 };
 
 /*! intersection flags */
@@ -79,14 +81,14 @@ typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* con
 struct RTCIntersectContext
 {
   enum RTCIntersectFlags flags;   //!< intersection flags
-  //RTCFilterFunctionN filter;      //!< filter function to execute
+  RTCFilterFunctionN filter;      //!< filter function to execute
   void* userRayExt;               //!< can be used to pass extended ray data to callbacks
 };
 
 RTCORE_FORCEINLINE void rtcInitIntersectionContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_INCOHERENT;
-  //context->filter = NULL;
+  context->filter = NULL;
   context->userRayExt = NULL;
 }
 
