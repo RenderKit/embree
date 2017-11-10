@@ -197,6 +197,11 @@ namespace embree
     __forceinline bool isStaticAccel()  { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }
     __forceinline bool isDynamicAccel() { return hint_flags & RTC_BUILD_HINT_DYNAMIC; }
 
+
+    __forceinline bool hasFilterFunction() {
+      return numIntersectionFiltersN != 0;
+    }
+    
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
 
@@ -285,10 +290,6 @@ namespace embree
       return iter.maxTimeStepsPerGeometry();
     }
    
-    std::atomic<size_t> numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
-    std::atomic<size_t> numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
-    std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
-    std::atomic<size_t> numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 

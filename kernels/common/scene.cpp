@@ -38,7 +38,7 @@ namespace embree
       hint_flags(RTC_BUILD_HINT_NONE),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
-      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
+      numIntersectionFiltersN(0)
   {
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
@@ -654,11 +654,8 @@ namespace embree
       flags_modified = false;
     }
     
-    /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFiltersN+numIntersectionFilters4,
-                  numIntersectionFiltersN+numIntersectionFilters8,
-                  numIntersectionFiltersN+numIntersectionFilters16,
-                  numIntersectionFiltersN);
+    /* select fast code path if no filter function is present */
+    accels.select(hasFilterFunction());
   
     /* build all hierarchies of this scene */
     accels.build();
