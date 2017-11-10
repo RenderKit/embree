@@ -76,7 +76,6 @@ void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 
 void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
 {
-  
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   const RTCIntersectContext* context = args->context;
@@ -91,12 +90,12 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   const Vec3fa ray_org = ray->org;
   const Vec3fa ray_dir = ray->dir;
   const int geomID = ray->geomID;
-  ray->org = xfmPoint (instance->world2local,ray_org);
-  ray->dir = xfmVector(instance->world2local,ray_dir);
+  ray->org = Vec3fa(xfmPoint (instance->world2local,ray_org),ray->tnear());
+  ray->dir = Vec3fa(xfmVector(instance->world2local,ray_dir),ray->tfar());
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
   rtcIntersect1(instance->object,context,RTCRay_(*ray));
-  ray->org = ray_org;
-  ray->dir = ray_dir;
+  ray->org = Vec3fa(ray_org,ray->tnear());
+  ray->dir = Vec3fa(ray_dir,ray->tfar());
   if (ray->geomID == RTC_INVALID_GEOMETRY_ID) 
     ray->geomID = geomID;
   else {
@@ -120,8 +119,8 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   const Instance* instance = (const Instance*)ptr;
   const Vec3fa ray_org = ray->org;
   const Vec3fa ray_dir = ray->dir;
-  ray->org = xfmPoint (instance->world2local,ray_org);
-  ray->dir = xfmVector(instance->world2local,ray_dir);
+  ray->org = Vec3fa(xfmPoint (instance->world2local,ray_org),ray->tnear());
+  ray->dir = Vec3fa(xfmVector(instance->world2local,ray_dir),ray->tfar());
   rtcOccluded1(instance->object,context,RTCRay_(*ray));
   ray->org = ray_org;
   ray->dir = ray_dir;
@@ -160,8 +159,8 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     Ray ray;
     const Vec3fa ray_org = Vec3fa(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
-    ray.org = xfmPoint (instance->world2local,ray_org);
-    ray.dir = xfmVector(instance->world2local,ray_dir);
+    ray.org = Vec3fa(xfmPoint (instance->world2local,ray_org));
+    ray.dir = Vec3fa(xfmVector(instance->world2local,ray_dir));
     bool mask = 1; {
       ray.tnear() = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
       ray.tfar()  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
