@@ -37,10 +37,10 @@ float radius[numSpheres];
 int disabledID = -1;
 
 /* adds a sphere to the scene */
-unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
+unsigned int createSphere (RTCBuildQuality quality, const Vec3fa& pos, const float r)
 {
   /* create a triangulated sphere */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, quality);
 
   /* map triangle and vertex buffer */
   Vertex*   vertices  = (Vertex*  ) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
@@ -96,7 +96,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_BUILD_QUALITY_MEDIUM);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
@@ -138,10 +138,10 @@ extern "C" void device_init (char* cfg)
     const float phi = i*2.0f*float(pi)/numSpheres;
     const float r = 2.0f*float(pi)/numSpheres;
     const Vec3fa p = 2.0f*Vec3fa(sin(phi),0.0f,-cos(phi));
-    //RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
-    int id = createSphere(flags,p,r);
+    //RTCBuildQuality quality = i%3 == 0 ? RTC_BUILD_QUALITY_MEDIUM : i%3 == 1 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
+    RTCBuildQuality quality = i%2 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
+    //RTCBuildQuality quality = RTC_BUILD_QUALITY_REFIT;
+    int id = createSphere(quality,p,r);
     position[id] = p;
     radius[id] = r;
     colors[id].x = (i%16+1)/17.0f;

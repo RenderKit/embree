@@ -973,7 +973,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
   }
 
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
 
   /* assign shaders */
   for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {

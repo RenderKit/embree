@@ -65,7 +65,7 @@ unsigned int hair_indices[6] = {
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_STATIC, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BUILD_QUALITY_MEDIUM, RTC_CURVE_SURFACE, RTC_BASIS_BSPLINE);
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair_indices,0,sizeof(unsigned int),NUM_CURVES);
   rtcSetBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa),NUM_VERTICES);
   rtcSetBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa),NUM_VERTICES);
@@ -79,7 +79,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_BUILD_QUALITY_MEDIUM);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

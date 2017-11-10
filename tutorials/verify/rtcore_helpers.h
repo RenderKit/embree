@@ -578,9 +578,10 @@ namespace embree
 
   inline std::string to_string(RTCBuildQuality quality_flags)
   {
-    if      (quality_flags == RTC_BUILD_QUALITY_LOW   ) return "LowBuildQuality";
-    else if (quality_flags == RTC_BUILD_QUALITY_MEDIUM) return "MediumBuildQuality";
-    else if (quality_flags == RTC_BUILD_QUALITY_HIGH  ) return "HighBuildQuality";
+    if      (quality_flags == RTC_BUILD_QUALITY_LOW   ) return "LowQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_MEDIUM) return "MediumQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_HIGH  ) return "HighQuality";
+    else if (quality_flags == RTC_BUILD_QUALITY_REFIT ) return "RefitQuality";
     else { assert(false); return ""; }
   }
 
@@ -604,18 +605,8 @@ namespace embree
     return to_string(sflags.aflags) + "." + to_string(sflags.qflags) + "." + to_string(sflags.hflags);
   }
 
-  inline std::string to_string(RTCGeometryFlags gflags)
-  {
-    switch (gflags) {
-    case RTC_GEOMETRY_STATIC: return "Static";
-    case RTC_GEOMETRY_DEFORMABLE: return "Deformable";
-    case RTC_GEOMETRY_DYNAMIC: return "Dynamic";
-    default: return "UnknownGeometryFlags";
-    }
-  }
-
-  inline std::string to_string(SceneFlags sflags, RTCGeometryFlags gflags) {
-    return to_string(sflags)+to_string(gflags);
+  inline std::string to_string(SceneFlags sflags, RTCBuildQuality quality) {
+    return to_string(sflags)+to_string(quality);
   }
 
   static const size_t numSceneFlags = 32-8;

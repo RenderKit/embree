@@ -52,7 +52,7 @@ namespace embree
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::GROUP;
 
-    GeometryGroup (Device* device, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries); 
+    GeometryGroup (Device* device, RTCBuildQuality quality, const std::vector<Ref<Geometry>>& geometries); 
     virtual void build() {}
     virtual void enabling ();
     virtual void disabling();

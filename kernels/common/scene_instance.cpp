@@ -29,7 +29,7 @@ namespace embree
   }
 
   Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
-    : AccelSet(device,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
+    : AccelSet(device,RTC_BUILD_QUALITY_MEDIUM,1,numTimeSteps), object(object)
   {
     object->refInc();
     world2local0 = one;

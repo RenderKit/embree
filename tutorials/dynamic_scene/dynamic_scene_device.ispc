@@ -35,10 +35,10 @@ uniform float radius[numSpheres];
 uniform int disabledID = -1;
 
 /* adds a sphere to the scene */
-uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform Vec3f& pos, const uniform float r)
+uniform unsigned int createSphere (uniform RTCBuildQuality quality, const uniform Vec3f& pos, const uniform float r)
 {
   /* create a triangulated sphere */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, quality);
 
   /* map triangle and vertex buffer */
   uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
@@ -94,7 +94,7 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_BUILD_QUALITY_MEDIUM);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
@@ -136,10 +136,10 @@ export void device_init (uniform int8* uniform cfg)
     const uniform float phi = i*2.0f*pi/numSpheres;
     const uniform float r = 2.0f*pi/numSpheres;
     const uniform Vec3f p = 2.0f*make_Vec3f(sin(phi),0.0f,-cos(phi));
-    //uniform RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    uniform RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    //uniform RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
-    uniform int id = createSphere(flags,p,r);
+    //uniform RTCBuildQuality quality = i%3 == 0 ? RTC_BUILD_QUALITY_MEDIUM : i%3 == 1 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
+    uniform RTCBuildQuality quality = i%2 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
+    //uniform RTCBuildQuality quality = RTC_BUILD_QUALITY_REFIT;
+    uniform int id = createSphere(quality,p,r);
     position[id] = p;
     radius[id] = r;
     colors[id].x = (i%16+1)/17.0f;

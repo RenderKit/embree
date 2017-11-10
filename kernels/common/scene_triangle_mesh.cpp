@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  TriangleMesh::TriangleMesh (Device* device, RTCGeometryFlags flags)
-    : Geometry(device,TRIANGLE_MESH,0,1,flags)
+  TriangleMesh::TriangleMesh (Device* device, RTCBuildQuality quality)
+    : Geometry(device,TRIANGLE_MESH,0,1,quality)
   {
     vertices.resize(numTimeSteps);
   }
@@ -223,8 +223,8 @@ namespace embree
   
   namespace isa
   {
-    TriangleMesh* createTriangleMesh(Device* device, RTCGeometryFlags flags) {
-      return new TriangleMeshISA(device,flags);
+    TriangleMesh* createTriangleMesh(Device* device, RTCBuildQuality quality) {
+      return new TriangleMeshISA(device,quality);
     }
   }
 }

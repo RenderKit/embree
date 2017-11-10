@@ -31,7 +31,7 @@ namespace embree
   public:
 
     /*! line segments construction */
-    LineSegments (Device* device, RTCGeometryFlags flags);
+    LineSegments (Device* device, RTCBuildQuality quality);
 
   public:
     void enabling();
@@ -180,10 +180,10 @@ namespace embree
   {
     struct LineSegmentsISA : public LineSegments
     {
-      LineSegmentsISA (Device* device, RTCGeometryFlags flags)
-        : LineSegments(device,flags) {}
+      LineSegmentsISA (Device* device, RTCBuildQuality quality)
+        : LineSegments(device,quality) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device* COMMA RTCGeometryFlags);
+  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device* COMMA RTCBuildQuality);
 }
