@@ -142,6 +142,10 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetBuildQuality);
     RTCORE_VERIFY_HANDLE(hscene);
+    if (quality != RTC_BUILD_QUALITY_LOW &&
+        quality != RTC_BUILD_QUALITY_MEDIUM &&
+        quality != RTC_BUILD_QUALITY_HIGH)
+      throw std::runtime_error("invalid build quality");
     scene->setBuildQuality(quality);
     RTCORE_CATCH_END2(scene);
   }
@@ -895,6 +899,23 @@ namespace embree
     return nullptr;
   }
 
+  /*! sets the build quality of the geometry */
+  RTCORE_API void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetGeometryBuildQuality);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    if (quality != RTC_BUILD_QUALITY_LOW &&
+        quality != RTC_BUILD_QUALITY_MEDIUM &&
+        quality != RTC_BUILD_QUALITY_HIGH &&
+        quality != RTC_BUILD_QUALITY_REFIT)
+      throw std::runtime_error("invalid build quality");
+    geometry->quality = quality;
+    RTCORE_CATCH_END2(geometry);
+  }
+
+  
   RTCORE_API void rtcSetMask (RTCGeometry hgeometry, int mask) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

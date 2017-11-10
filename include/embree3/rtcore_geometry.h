@@ -363,6 +363,9 @@ RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
  *  optionally to set a different tessellation rate per edge.*/
 RTCORE_API void rtcSetTessellationRate (RTCGeometry geometry, float tessellationRate);
 
+/*! sets the build quality of the geometry */
+RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuality quality);
+
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCGeometry geometry, int mask);
 
