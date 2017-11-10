@@ -80,9 +80,11 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   primary.ray.time = 0;
   primary.transparency = 0.0f;
 
+
   while (true)
   {
     context.userRayExt = &primary;
+
     /* intersect ray with scene */
     rtcIntersect(g_scene,&context,RTCRay_(primary));
     RayStats_addRay(stats);
@@ -200,16 +202,19 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
   if (context == NULL)
     return;
 
-  /* fast path for SIMD width == N */
-  if (programCount == N)
+  /* fast path for SIMD width == N and only a single input packet */
+  unsigned mask = RTCRayN_mask(ray,N,0);
+  if (programCount == N & all((mask & 0x80000000) == 0))
   {
     /* ignore inactive rays */
     if (valid[programIndex] != -1) return;
   
     const uniform unsigned int rayID = 0;
     const float tfar   = RTCHitN_t(potentialHit,N,rayID);
-    varying Ray2 *uniform ray2 = (varying Ray2* uniform)ray;
+    varying Ray2 *uniform ray2 = (varying Ray2* uniform) context->userRayExt;
+
     Vec3f h = ray2->ray.org + ray2->ray.dir*tfar;
+
     float T = transparencyFunction(h);
     if (T < 1.0f) 
     {
@@ -295,8 +300,9 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
   if (context == NULL)
     return;
 
-  /* fast path for SIMD width == N */
-  if (programCount == N)
+  /* fast path for SIMD width == N and only a single input packet */
+  unsigned mask = RTCRayN_mask(ray,N,0);
+  if (programCount == N & all((mask & 0x80000000) == 0))
   {
     /* ignore inactive rays */
     if (valid[programIndex] != -1) return;
@@ -305,7 +311,8 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
     const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
     const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);
     const float tfar          = RTCHitN_t(potentialHit,N,rayID);
-    varying Ray2 *uniform ray2 = (varying Ray2* uniform)ray;
+    varying Ray2 *uniform ray2 = (varying Ray2* uniform) context->userRayExt;
+    assert(ray2);
 
     for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
       unsigned slot= i%HIT_LIST_LENGTH;

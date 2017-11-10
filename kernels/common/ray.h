@@ -474,10 +474,10 @@ namespace embree
       ray.org.x = vfloat<K>::loadu(orgx(offset));
       ray.org.y = vfloat<K>::loadu(orgy(offset));
       ray.org.z = vfloat<K>::loadu(orgz(offset));
+      ray.tnear = vfloat<K>::loadu(tnear(offset));
       ray.dir.x = vfloat<K>::loadu(dirx(offset));
       ray.dir.y = vfloat<K>::loadu(diry(offset));
       ray.dir.z = vfloat<K>::loadu(dirz(offset));
-      ray.tnear = vfloat<K>::loadu(tnear(offset));
       ray.tfar  = vfloat<K>::loadu(tfar(offset));
       ray.time  = vfloat<K>::loadu(time(offset));
       ray.mask  = vint<K>::loadu(mask(offset));

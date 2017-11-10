@@ -438,7 +438,6 @@ namespace embree
               const vintx offset = *(vintx*)&rayOffsets[j];
               rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);
             }
-
             raysInOctant[curOctant] = 0;
           }
         }

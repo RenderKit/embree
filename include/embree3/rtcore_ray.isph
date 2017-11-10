@@ -83,12 +83,11 @@ struct RTCRayN;
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
 inline varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[1*N+i]); }  //!< y coordinate of ray origin
 inline varying float& RTCRayN_org_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[2*N+i]); }; //!< z coordinate of ray origin
+inline varying float& RTCRayN_tnear(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[3*N+i]); }; //!< Start of ray segment 
 
-inline varying float& RTCRayN_dir_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[3*N+i]); }; //!< x coordinate of ray direction
-inline varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[4*N+i]); }; //!< y coordinate of ray direction
-inline varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[5*N+i]); }; //!< z coordinate of ray direction
-
-inline varying float& RTCRayN_tnear(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[6*N+i]); }; //!< Start of ray segment 
+inline varying float& RTCRayN_dir_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[4*N+i]); }; //!< x coordinate of ray direction
+inline varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[5*N+i]); }; //!< y coordinate of ray direction
+inline varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[6*N+i]); }; //!< z coordinate of ray direction
 inline varying float& RTCRayN_tfar (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[7*N+i]); }; //!< End of ray segment (set to hit distance)
 
 inline varying float& RTCRayN_time(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[8*N+i]); };  //!< Time of this ray for motion blur 
