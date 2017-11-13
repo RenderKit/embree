@@ -293,15 +293,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = time;
+  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   Vec3f color = make_Vec3f(0.0f);
   Vec3f weight = make_Vec3f(1.0f);
@@ -355,12 +347,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* sample directional light */
-    Ray shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(make_Vec3f(g_dirlight_direction));
-    shadow.tnear = tnear_eps;
-    shadow.tfar = inf;
-    shadow.time = time;
+    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(make_Vec3f(g_dirlight_direction)), tnear_eps, inf, time);
     Vec3f T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(g_dirlight_direction)));
