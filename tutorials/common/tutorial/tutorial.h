@@ -125,7 +125,6 @@ namespace embree
     /* benchmark mode settings */
     size_t skipBenchmarkFrames;
     size_t numBenchmarkFrames;
-    size_t numBenchmarkRepetitions;
 
     /* window settings */
     bool interactive;

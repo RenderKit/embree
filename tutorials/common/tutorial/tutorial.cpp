@@ -82,7 +82,6 @@ namespace embree
 
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
-      numBenchmarkRepetitions(1),
 
       interactive(true),
       fullscreen(false),
@@ -171,11 +170,9 @@ namespace embree
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
-        if (cin->peek() != "" && cin->peek()[0] != '-')
-          numBenchmarkRepetitions = cin->getInt();
         interactive = false;
         rtcore += ",benchmark=1,start_threads=1";
-      }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
+      }, "--benchmark <N> <M>: enabled benchmark mode, builds scene, skips N frames, renders M frames");
 
     registerOption("nodisplay", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = 0;
@@ -517,7 +514,6 @@ namespace embree
     //Statistics stat;
     FilteredStatistics fpsStat(0.5f,0.0f);
     FilteredStatistics mraypsStat(0.5f,0.0f);
-    for (size_t j=0; j<numBenchmarkRepetitions; j++)
     {
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
       for (size_t i=0; i<skipBenchmarkFrames; i++)
@@ -551,14 +547,6 @@ namespace embree
                     << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
                     << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << 100.0f*fpsStat.getSigma()/fpsStat.getAvg() << "%)" << std::endl << std::flush;
         }
-      }
-
-      /* rebuild scene between repetitions */
-      if (numBenchmarkRepetitions)
-      {
-        device_cleanup();
-        device_init(rtcore.c_str());
-        resize(width,height);
       }
 
       std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: "
