@@ -78,6 +78,21 @@
 
   };
 
+
+__forceinline void init_Ray(Ray &ray,
+                            const embree::Vec3fa& org, 
+                            const embree::Vec3fa& dir, 
+                            float tnear = embree::zero, 
+                            float tfar = embree::inf, 
+                            float time = embree::zero, 
+                            int mask = -1,
+                            unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
+                            unsigned int primID = RTC_INVALID_GEOMETRY_ID, 
+                            unsigned int instID = RTC_INVALID_GEOMETRY_ID)
+{
+  ray = Ray(org,dir,tnear,tfar,time,mask,geomID,primID,instID);
+}
+
 typedef Ray Ray1;
 
 __forceinline RTCRay* RTCRay_(Ray& ray) {

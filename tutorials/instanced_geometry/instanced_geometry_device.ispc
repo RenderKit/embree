@@ -196,16 +196,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = (float)(inf);
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.instID = -1;
-  ray.mask = -1;
-  ray.time = 0;
+  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,&context,RTCRay_(ray));
@@ -229,15 +220,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* initialize shadow ray */
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    Ray shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = (float)(inf);
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
     rtcOccluded(g_scene,&context,RTCRay_(shadow));
@@ -319,17 +302,12 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* initialize ray */
     Ray& primary = primary_stream[N];
-    primary.org = make_Vec3f(camera.xfm.p);
-    primary.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = __mask; unmasked { // invalidates inactive rays
       primary.tnear = mask ? 0.0f         : (float)(pos_inf);
       primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    primary.instID = RTC_INVALID_GEOMETRY_ID;
-    primary.geomID = RTC_INVALID_GEOMETRY_ID;
-    primary.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.mask = -1;
-    primary.time = 0.0f;
+    init_Ray(primary, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.tnear, primary.tfar);
+
     N++;
     RayStats_addRay(stats);
   }
@@ -380,17 +358,13 @@ void renderTileStandardStream(uniform int taskIndex,
       diffuse = colors[primary.instID][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
-    /* initialize shadow ray */
-    shadow.org = primary.org + primary.tfar*primary.dir;
-    shadow.dir = neg(lightDir);
+    /* initialize shadow ray tnear/tfar */
     bool mask = __mask; unmasked {
       shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
       shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
+    init_Ray(shadow, primary.org + primary.tfar*primary.dir, neg(lightDir), shadow.tnear, shadow.tfar);
+
     RayStats_addShadowRay(stats);
   }
   N++;
