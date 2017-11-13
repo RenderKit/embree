@@ -1,6 +1,24 @@
 Version History
 ---------------
 
+### New Features in Embree 2.17.1
+-   Improved performance of occlusion ray packets by up to 50%.
+-   Fixed detection of Clang for CMake 3 under MacOSX
+-   Fixed AVX code compilation issue with GCC 7 compiler caused by
+    explicit use of vzeroupper intrinsics.
+-   Fixed an issue where Clang address sanitizer reported an error in
+    the internal tasking system.
+-   Added fix to compile on 32 bit Linux distribution.
+-   Fixed some wrong relative include paths in Embree.
+-   Improved performance of robust single ray mode by 5%.
+-   Added EMBREE_INSTALL_DEPENDENCIES option (default OFF) to enable
+    installing of Embree dependencies.
+-   Fixed performance regression for occlusion ray streams.
+-   Reduced temporary memory requirements of BVH builder for curves and
+    line segments.
+-   Fixed performance regression for user geometries and packet ray tracing.
+-   Fixed bug where wrong closest hit was reported for very curvy hair segment.
+
 ### New Features in Embree 2.17.0
 -   Improved packet ray tracing performance for coherent rays by 10-60%
     (requires RTC_INTERSECT_COHERENT flag).
@@ -22,6 +40,7 @@ Version History
     performance by using an 8-wide BVH.
 -   Fixed rtcOccluded1 and rtcOccluded1Ex API functions which were
     broken in ISPC.
+-   Providing MSI installer for Windows.
 
 ### New Features in Embree 2.16.5
 -   Bugfix in the robust triangle intersector that rarely caused NaNs.
