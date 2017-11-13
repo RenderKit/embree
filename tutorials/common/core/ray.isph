@@ -68,72 +68,48 @@ inline varying RTCRay* uniform RTCRay_(varying Ray& ray)
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
 inline Ray make_Ray(const Vec3f org, 
-                       const Vec3f dir, 
-                       const float tnear, 
-                       const float tfar,
-                       const float time = 0.0f)
+                    const Vec3f dir, 
+                    const float tnear = 0.0f, 
+                    const float tfar = inf,
+                    const float time = 0.0f,
+                    const int mask   = -1,
+                    const int geomID = -1,
+                    const int primID = -1,
+                    const int instID = -1)
 {
   Ray ray;
-  ray.org = org;
-  ray.dir = dir;
+  ray.org   = org;
+  ray.dir   = dir;
   ray.tnear = tnear;
-  ray.tfar = tfar;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = time;
-  ray.instID = -1;
-  return ray;
-}
-
-/*! Constructs a ray from origin, direction, and ray segment. Near
- *  has to be smaller than far. */
-inline Ray make_Ray(const Vec3f org, 
-                       const Vec3f dir)
-{
-  Ray ray;
-  ray.org  = org;
-  ray.dir  = dir;
-  ray.tnear = 0.0f;
-  ray.tfar  = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.instID = -1;
+  ray.tfar  = tfar;
+  ray.time  = time;
+  ray.mask  = -1;
+  ray.geomID = geomID;
+  ray.primID = primID;
+  ray.instID = instID;
   return ray;
 }
 
 inline void init_Ray(Ray &ray,
                      const Vec3f org, 
-                     const Vec3f dir, 
-                     const float tnear, 
-                     const float tfar)
+                     const Vec3f dir,                      
+                     const float tnear = 0.0f, 
+                     const float tfar = inf,
+                     const float time = 0.0f,
+                     const int mask   = -1,
+                     const int geomID = -1,
+                     const int primID = -1,
+                     const int instID = -1)
 {
-  ray.org = org;
-  ray.dir = dir;
+  ray.org   = org;
+  ray.dir   = dir;
   ray.tnear = tnear;
-  ray.tfar = tfar;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.instID = -1;
-}
-
-inline void init_Ray(Ray &ray,
-                     const Vec3f org, 
-                     const Vec3f dir)
-{
-  ray.org = org;
-  ray.dir = dir;
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.instID = -1;
+  ray.tfar  = tfar;
+  ray.time  = time;
+  ray.mask  = -1;
+  ray.geomID = geomID;
+  ray.primID = primID;
+  ray.instID = instID;
 }
 
 inline bool noHit(const Ray& r) { return r.geomID < 0; }
