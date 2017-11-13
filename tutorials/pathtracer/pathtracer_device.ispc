@@ -1145,9 +1145,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
-    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
-    dg.u = st.x;
-    dg.v = st.y;
 
     if (g_use_smooth_normals)
     {
@@ -1155,6 +1152,10 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
       rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
+    
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
+    dg.u = st.x;
+    dg.v = st.y;
   }
   else if (geometry->type == CURVES)
   {
@@ -1644,7 +1645,6 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    uniform unsigned int geomID = mesh->geom.geomID;
 #if defined(ISPC)
     launch[ (mesh->numFaces+4095)/4096 ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;
 #else

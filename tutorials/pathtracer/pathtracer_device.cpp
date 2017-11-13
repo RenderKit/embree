@@ -1147,9 +1147,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
     materialID = mesh->geom.materialID;
-    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
-    dg.u = st.x;
-    dg.v = st.y;
 
     if (g_use_smooth_normals)
     {
@@ -1157,6 +1154,10 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
+     
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
+    dg.u = st.x;
+    dg.v = st.y;
   }
   else if (geometry->type == CURVES)
   {
@@ -1646,7 +1647,6 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    unsigned int geomID = mesh->geom.geomID;
 #if defined(ISPC)
     parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
