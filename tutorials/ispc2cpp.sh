@@ -57,8 +57,8 @@ sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*;/(\1\*) alignedMalloc(sizeof(\1))
 sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_]*\)[ ]*;/alignedFree(\1);/g' $2
 
 # embree ray layout
-sed -i.backup  's/.tnear/.tnear()/g' $2
-sed -i.backup  's/.tfar/.tfar()/g' $2
+sed -i.backup  's/tnear/tnear()/g' $2
+sed -i.backup  's/tfar/tfar()/g' $2
 
 
 # system library
