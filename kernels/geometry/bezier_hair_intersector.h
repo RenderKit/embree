@@ -177,8 +177,6 @@ namespace embree
       {
         /* load ray */
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-        const float ray_tnear = ray.tnear[k];
-        const float ray_tfar  = ray.tfar [k];
         
         /* transform control points into ray space */
         Vec3fa w0 = xfmVector(ray_space[k],v0-ray_org); w0.w = v0.w;
@@ -207,7 +205,7 @@ namespace embree
           const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
           const vfloatx r = p.w;
           const vfloatx r2 = r*r;
-          valid &= (d2 <= r2) & (vfloatx(ray_tnear) < t) & (t <= vfloatx(ray_tfar));
+          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar [k]));
           if (likely(none(valid))) continue;
         
           /* update hit information */
