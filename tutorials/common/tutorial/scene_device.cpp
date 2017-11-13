@@ -313,9 +313,9 @@ namespace embree
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+    mesh->geom.geometry = geom;
     mesh->geom.scene = scene_out;
     mesh->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
     return geomID;
   }
   
@@ -329,9 +329,9 @@ namespace embree
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+    mesh->geom.geometry = geom;
     mesh->geom.scene = scene_out;
     mesh->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
     return geomID;
   }
   
@@ -378,9 +378,9 @@ namespace embree
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+    mesh->geom.geometry = geom;
     mesh->geom.scene = scene_out;
     mesh->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
     return geomID;
   }
   
@@ -398,9 +398,9 @@ namespace embree
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+    mesh->geom.geometry = geom;
     mesh->geom.scene = scene_out;
     mesh->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
     return geomID;
   }
   
@@ -436,9 +436,9 @@ namespace embree
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+    group->geom.geometry = geom;
     group->geom.scene = scene_out;
     group->geom.geomID = geomID;
-    rtcReleaseGeometry(geom);
     return geomID;
   }
   

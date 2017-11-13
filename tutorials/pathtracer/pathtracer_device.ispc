@@ -899,16 +899,15 @@ void device_key_pressed_handler(uniform int key)
 
 void assignShaders(ISPCGeometry* uniform geometry)
 {
+  RTCGeometry geom = geometry->geometry;
   if (geometry->type == SUBDIV_MESH)
   {
-    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH)
   {
-    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
@@ -930,7 +929,6 @@ void assignShaders(ISPCGeometry* uniform geometry)
 #if ENABLE_FILTER_FUNCTION == 1
   else if (geometry->type == QUAD_MESH)
   {
-    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
     rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
 
@@ -949,7 +947,6 @@ void assignShaders(ISPCGeometry* uniform geometry)
   }
   else if (geometry->type == CURVES)
   {
-    RTCGeometry geom = rtcGetGeometry(geometry->scene,geometry->geomID);
     rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
   }
 #endif
@@ -1151,6 +1148,13 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
+
+    if (g_use_smooth_normals)
+    {
+      Vec3f dPdu,dPdv;
+      rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      dg.Ns = normalize(cross(dPdv,dPdu));
+    }
   }
   else if (geometry->type == CURVES)
   {
@@ -1470,16 +1474,6 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
     Vec3f Ns = normalize(ray.Ng);
 
-    if (g_use_smooth_normals)
-      if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-    {
-      Vec3f dPdu,dPdv;
-      foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
-      }
-      Ns = normalize(cross(dPdv,dPdu));
-    }
-
     /* compute differential geometry */
     dg.instID = ray.instID;
     dg.geomID = ray.geomID;
@@ -1656,8 +1650,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(rtcGetGeometry(g_scene,geomID),RTC_LEVEL_BUFFER);
-    rtcCommitGeometry(rtcGetGeometry(g_scene,geomID));
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcCommitGeometry(geometry->geometry);
   }
 }
 

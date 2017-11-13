@@ -80,9 +80,9 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
   uniform unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(rtcGetGeometry(g_scene,mesh->geom.geomID),RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
   }
-  rtcCommitGeometry(rtcGetGeometry(g_scene,mesh->geom.geomID));
+  rtcCommitGeometry(geometry->geometry);
 }
 #endif
 
@@ -105,8 +105,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(rtcGetGeometry(g_scene,mesh->geom.geomID),RTC_LEVEL_BUFFER);
-    rtcCommitGeometry(rtcGetGeometry(g_scene,mesh->geom.geomID));
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcCommitGeometry(geometry->geometry);
   }
 }
 
@@ -158,6 +158,13 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
+
+    if (g_use_smooth_normals)
+    {
+      Vec3f dPdu,dPdv;
+      rtcInterpolate(geometry->geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      dg.Ns = normalize(cross(dPdv,dPdu));
+    }
   }
   else if (geometry->type == CURVES)
   {
@@ -267,16 +274,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   dg.P  = ray.org+ray.tfar*ray.dir;
   dg.Ng = ray.Ng;
   dg.Ns = ray.Ng;
-
-  if (g_use_smooth_normals)
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-  {
-    Vec3f dPdu,dPdv;
-    foreach_unique (geomID in ray.geomID) {
-      rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
-    }
-    dg.Ns = cross(dPdv,dPdu);
-  }
 
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
