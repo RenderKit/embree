@@ -87,10 +87,9 @@ namespace embree {
     /* set index buffer */
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     rtcCommitGeometry(geom);
+    mesh->geom.geometry = geom;
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
-    rtcReleaseGeometry(geom);
   }
-
 
   void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   {
@@ -105,8 +104,8 @@ namespace embree {
     /* set index buffer */
     rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     rtcCommitGeometry(geom);
+    mesh->geom.geometry = geom;
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
-    rtcReleaseGeometry(geom);
   }
 
   void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
@@ -132,8 +131,8 @@ namespace embree {
     rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
 
     rtcCommitGeometry(geom);
+    mesh->geom.geometry = geom;
     mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
-    rtcReleaseGeometry(geom);
   }
 
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
@@ -151,8 +150,8 @@ namespace embree {
     if (hair->basis != RTC_BASIS_LINEAR)
       rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
     rtcCommitGeometry(geom);
+    hair->geom.geometry = geom;
     hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
-    rtcReleaseGeometry(geom);
   }
 
   size_t getNumObjects(ISPCScene* scene_in) {
@@ -212,10 +211,9 @@ namespace embree {
     ISPCGeometry* geometry = scene_in->geometries[ID];
 
     if (geometry->type == SUBDIV_MESH) {
-      unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCSubdivMesh*)geometry)->numTimeSteps <= 1) return;
-      rtcCommitGeometry(rtcGetGeometry(scene_out,geomID));
+      rtcCommitGeometry(geometry->geometry);
     }
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
@@ -226,7 +224,7 @@ namespace embree {
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
-      interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
+      interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
       ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
@@ -237,13 +235,12 @@ namespace embree {
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
-      interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
+      interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == CURVES) {
-      unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
-      rtcCommitGeometry(rtcGetGeometry(scene_out,geomID));
+      rtcCommitGeometry(geometry->geometry);
     }
     else
       assert(false);
