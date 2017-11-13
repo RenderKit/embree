@@ -1209,9 +1209,9 @@ namespace embree
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_RIBBON);
       else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_RIBBON,RTC_BASIS_LINEAR);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_RIBBON,RTC_BASIS_BEZIER);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_RIBBON);
       else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_RIBBON,RTC_BASIS_BSPLINE);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_SURFACE,RTC_BASIS_BEZIER);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_CURVE_SURFACE);
       else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_CURVE_SURFACE,RTC_BASIS_BSPLINE);
       
       else if (xml->name == "Curves")
