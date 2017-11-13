@@ -233,15 +233,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = RandomSampler_get1D(sampler);
+  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, RandomSampler_get1D(sampler));
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;

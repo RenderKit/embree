@@ -254,17 +254,12 @@ void renderTileStandard(uniform int taskIndex,
 
     /* initialize ray */
     Ray& ray = rays[N++];
-
-    ray.org = make_Vec3f(camera.xfm.p);
-    ray.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = __mask; unmasked { // invalidates inactive rays
       ray.tnear = mask ? 0.0f         : (float)(pos_inf);
       ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = 0.0f;
+    init_Ray(ray, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear, ray.tfar);
+
     RayStats_addRay(stats);
   }
 
@@ -326,14 +321,8 @@ void renderTileStandard(uniform int taskIndex,
           Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
           const Vec3f hitpos = ray.org + ray.dir * ray.tfar;
-          ray.org = ls_positions[i];
-          ray.dir = hitpos - ray.org;
-          ray.tnear = 1E-4f;
-          ray.tfar  = valid ? 0.99f : -1.0f;
-          ray.geomID = RTC_INVALID_GEOMETRY_ID;
-          ray.primID = RTC_INVALID_GEOMETRY_ID;
-          ray.mask = 0;
-          ray.time = 0.0f;
+          const Vec3f shadow_org = hitpos - ray.org;
+          init_Ray(ray, ls_positions[i], shadow_org, 1E-4f, valid ? 0.99f : -1.0f);
           RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
@@ -403,7 +392,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create objects */
   uniform size_t numObjects = getNumObjects(g_ispc_scene);
-  print("numObjects %\n",numObjects);
+
   for (uniform size_t i=0;i<numObjects;i++)
     createObject(i,g_ispc_scene,g_scene);
 
@@ -416,7 +405,7 @@ export void device_init (uniform int8* uniform cfg)
 
 #define TICKS_PER_SECOND 2000000000
 
-uniform double getSeconds() { return (double)clock() / TICKS_PER_SECOND; }
+inline uniform double getSeconds() { return (double)clock() / TICKS_PER_SECOND; }
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -463,8 +452,6 @@ export void device_render (uniform int* uniform pixels,
   /* =============== */
 
 #if ENABLE_ANIM == 1
-
-  uniform double vertexUpdateTime0 = getSeconds();
 
   if (animTime < 0.0f) animTime = getSeconds();
   const uniform double atime = (getSeconds() - animTime) * ANIM_FPS;

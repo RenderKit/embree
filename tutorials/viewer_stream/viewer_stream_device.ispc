@@ -155,16 +155,12 @@ Vec3f ambientOcclusionShading(int x, int y, Ray& ray, uniform RayStats& stats)
 
     /* initialize shadow ray */
     Ray& shadow = rays[i];
-    shadow.org = hitPos;
-    shadow.dir = dir.v;
     bool mask = __mask; unmasked { // invalidate inactive rays
       shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
       shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
+    init_Ray(shadow, hitPos, dir.v, shadow.tnear, shadow.tfar);
+
     RayStats_addShadowRay(stats);
   }
 
@@ -306,21 +302,14 @@ void renderTileStandard(uniform int taskIndex,
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
 
-    RandomSampler sampler;
-    RandomSampler_init(sampler, x, y, 0);
-
     /* initialize ray */
     Ray& ray = rays[N++];
-    ray.org = make_Vec3f(camera.xfm.p);
-    ray.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = __mask; unmasked { // invalidates inactive rays
       ray.tnear = mask ? 0.0f         : (float)(pos_inf);
       ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = RandomSampler_get1D(sampler);
+    init_Ray(ray, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear, ray.tfar);
+
     RayStats_addRay(stats);
   }
 
