@@ -204,10 +204,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  Ray ray(camera.xfm.p,
-          normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz),
-          0.0f,
-          inf);
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene,&context,RTCRay_(ray));
@@ -223,7 +220,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     Vec3fa Ng = normalize(ray.Ng);
 #if ENABLE_SMOOTH_NORMALS
-    Vec3fa P = ray.org + ray.tfar*ray.dir;
+    Vec3fa P = ray.org + ray.tfar()*ray.dir;
     if (ray.geomID > 0) {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
@@ -237,7 +234,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 #endif
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar() * ray.dir, neg(lightDir), 0.001f, inf);
+    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
