@@ -315,7 +315,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
-    float tnear_eps = 0.0001f;
+    float eps = 0.0001f;
 
     uniform ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
     if (geometry->type == CURVES)
@@ -329,7 +329,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr;
       Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
-      tnear_eps = 1.1f*p.w;
+      eps = 1.1f*p.w;
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
@@ -347,7 +347,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* sample directional light */
-    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(make_Vec3f(g_dirlight_direction)), tnear_eps, inf, time);
+    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(make_Vec3f(g_dirlight_direction)), eps, inf, time);
     Vec3f T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(g_dirlight_direction)));
@@ -364,7 +364,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* calculate secondary ray and offset it out of the hair */
     float sign = dot(make_Vec3f(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
-    ray.org = ray.org + ray.tfar*ray.dir + sign*tnear_eps*brdf.dz;
+    ray.org = ray.org + ray.tfar*ray.dir + sign*eps*brdf.dz;
     ray.dir = make_Vec3f(wi);
     ray.tnear = 0.001f;
     ray.tfar = inf;

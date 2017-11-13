@@ -295,11 +295,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  Ray ray(camera.xfm.p,
-          normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz),
-          0.0f,
-          inf,
-          time);
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa weight = Vec3fa(1.0f);
@@ -321,7 +317,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
-    float tnear_eps = 0.0001f;
+    float eps = 0.0001f;
 
     ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
     if (geometry->type == CURVES)
@@ -335,7 +331,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr;
       Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
-      tnear_eps = 1.1f*p.w;
+      eps = 1.1f*p.w;
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
@@ -353,12 +349,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* sample directional light */
-    Ray shadow(ray.org + ray.tfar()*ray.dir,
-               neg(Vec3fa(g_dirlight_direction)),
-               tnear_eps,
-               inf,
-               time);
-
+    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(Vec3fa(g_dirlight_direction)), eps, inf, time);
     Vec3fa T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
@@ -375,20 +366,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate secondary ray and offset it out of the hair */
     float sign = dot(Vec3fa(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
-    ray = Ray(ray.org + ray.tfar() * ray.dir + sign*tnear_eps*brdf.dz,
-              Vec3fa(wi),
-              0.001f,
-              inf,
-              time);
-
+    ray.org = ray.org + ray.tfar()*ray.dir + sign*eps*brdf.dz;
+    ray.dir = Vec3fa(wi);
+    ray.tnear() = 0.001f;
+    ray.tfar() = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = time;
     weight = weight * c/wi.w;
 
 #else
 
     /* continue with transparency ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.tnear = 1.001f*ray.tfar;
-    ray.tfar = inf;
+    ray.tnear() = 1.001f*ray.tfar();
+    ray.tfar() = inf;
     weight *= brdf.Kt;
 
 #endif
