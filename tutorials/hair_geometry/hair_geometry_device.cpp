@@ -80,7 +80,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   rtcSetOcclusionFilterFunction(geom,occlusionFilter);
-  rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);

@@ -111,7 +111,7 @@ namespace embree
         
         /* lambda function that allocates BVH nodes */
         [&] ( const FastAllocator::CachedAllocator& alloc, size_t N ) -> void* {
-          return createNode((RTCThreadLocalAllocator)&alloc,N,userPtr);
+          return createNode((RTCThreadLocalAllocator)&alloc, (unsigned int)N,userPtr);
         },
         
         /* lambda function that sets bounds */
@@ -125,8 +125,8 @@ namespace embree
             childptrs[i] = children[i].first;
             cbounds[i] = (const RTCBounds*)&children[i].second;
           }
-          setNodeBounds(node,cbounds,N,userPtr);
-          setNodeChildren(node,childptrs,N,userPtr);
+          setNodeBounds(node,cbounds,(unsigned int)N,userPtr);
+          setNodeChildren(node,childptrs, (unsigned int)N,userPtr);
           return std::make_pair(node,bounds);
         },
         
@@ -196,16 +196,16 @@ namespace embree
         /* lambda function that creates BVH nodes */
         [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, const FastAllocator::CachedAllocator& alloc) -> void*
         {
-          void* node = createNode((RTCThreadLocalAllocator)&alloc,N,userPtr);
+          void* node = createNode((RTCThreadLocalAllocator)&alloc, (unsigned int)N,userPtr);
           const RTCBounds* cbounds[GeneralBVHBuilder::MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<N; i++) cbounds[i] = (const RTCBounds*) &children[i].prims.geomBounds;
-          setNodeBounds(node,cbounds,N,userPtr);
+          setNodeBounds(node,cbounds, (unsigned int)N,userPtr);
           return node;
         },
 
         /* lambda function that updates BVH nodes */
         [&](const BVHBuilderBinnedSAH::BuildRecord& precord, const BVHBuilderBinnedSAH::BuildRecord* crecords, void* node, void** children, const size_t N) -> void* {
-          setNodeChildren(node,children,N,userPtr);
+          setNodeChildren(node,children, (unsigned int)N,userPtr);
           return node;
         },
         
@@ -292,16 +292,16 @@ namespace embree
         /* lambda function that creates BVH nodes */
         [&] (BVHBuilderBinnedFastSpatialSAH::BuildRecord* children, const size_t N, const FastAllocator::CachedAllocator& alloc) -> void*
         {
-          void* node = createNode((RTCThreadLocalAllocator)&alloc,N,userPtr);
+          void* node = createNode((RTCThreadLocalAllocator)&alloc, (unsigned int)N,userPtr);
           const RTCBounds* cbounds[GeneralBVHBuilder::MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<N; i++) cbounds[i] = (const RTCBounds*) &children[i].prims.geomBounds;
-          setNodeBounds(node,cbounds,N,userPtr);
+          setNodeBounds(node,cbounds, (unsigned int)N,userPtr);
           return node;
         },
 
         /* lambda function that updates BVH nodes */
         [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& precord, const BVHBuilderBinnedFastSpatialSAH::BuildRecord* crecords, void* node, void** children, const size_t N) -> void* {
-          setNodeChildren(node,children,N,userPtr);
+          setNodeChildren(node,children, (unsigned int)N,userPtr);
           return node;
         },
         

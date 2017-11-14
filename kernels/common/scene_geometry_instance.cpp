@@ -89,7 +89,7 @@ namespace embree
   }
 
   GeometryGroup::GeometryGroup (Device* device, const std::vector<Ref<Geometry>>& geometries) 
-    : Geometry(device,GROUP, geometries.size(), 1), geometries(geometries)
+    : Geometry(device,GROUP, (unsigned int)geometries.size(), 1), geometries(geometries)
   {
   }
 

@@ -430,7 +430,7 @@ namespace embree
       assert(geometries[i] != -1);
     }
     DISABLE_DEPRECATED_WARNING;
-    RTCGeometry geom = rtcNewGeometryGroup (device, scene_out, geometries.data(), geometries.size());
+    RTCGeometry geom = rtcNewGeometryGroup (device, scene_out, geometries.data(), (unsigned int)geometries.size());
     ENABLE_DEPRECATED_WARNING;
     rtcSetGeometryBuildQuality(geom, quality);
     rtcCommitGeometry(geom);
@@ -474,7 +474,7 @@ namespace embree
       else {
         RTCGeometry geom = rtcNewInstance(device, scene_inst, instance->numTimeSteps);
         for (size_t t=0; t<instance->numTimeSteps; t++)
-          rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
+          rtcSetTransform(geom,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x, (unsigned int)t);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);
         rtcReleaseGeometry(geom);

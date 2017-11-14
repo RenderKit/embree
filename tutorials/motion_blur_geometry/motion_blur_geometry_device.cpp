@@ -285,7 +285,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
 
   RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
   
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
@@ -328,7 +328,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
 
   RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);

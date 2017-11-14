@@ -78,8 +78,8 @@ namespace embree
         RTCBoundsFunctionArguments args;
         args.userPtr = boundsFuncUserPtr;
         args.geomUserPtr = intersectors.ptr;
-        args.item = i;
-        args.time = itime;
+        args.item = (unsigned int)i;
+        args.time = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
         boundsFunc(&args);
         return box;
@@ -93,11 +93,11 @@ namespace embree
         RTCBoundsFunctionArguments args;
         args.userPtr = boundsFuncUserPtr;
         args.geomUserPtr = intersectors.ptr;
-        args.item = i;
-        args.time = itime+0;
+        args.item = (unsigned int)i;
+        args.time = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
         boundsFunc(&args);
-        args.time = itime+1;
+        args.time = (unsigned int)(itime+1);
         args.bounds_o = (RTCBounds*)&box[1];
         boundsFunc(&args);
         return LBBox3fa(box[0],box[1]);
@@ -149,7 +149,7 @@ namespace embree
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
         args.N = 1;
-        args.item = item;
+        args.item = (unsigned int)item;
         
         intersectors.intersectorN.intersect(&args);
       }
@@ -167,7 +167,7 @@ namespace embree
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
         args.N = 1;
-        args.item = item;
+        args.item = (unsigned int)item;
         
         intersectors.intersectorN.occluded(&args);
       }
@@ -186,7 +186,7 @@ namespace embree
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
         args.N = K;
-        args.item = item; 
+        args.item = (unsigned int)item; 
          
         intersectors.intersectorN.intersect(&args);
       }
@@ -205,7 +205,7 @@ namespace embree
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
         args.N = K;
-        args.item = item; 
+        args.item = (unsigned int)item; 
              
         intersectors.intersectorN.occluded(&args);
       }

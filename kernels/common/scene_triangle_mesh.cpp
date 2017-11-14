@@ -61,7 +61,7 @@ namespace embree
       if (bid >= vertices.size()) vertices.resize(bid+1);
       vertices[bid].newBuffer(device,size,stride);
       vertices0 = vertices[0];
-      setNumTimeSteps(vertices.size());
+      setNumTimeSteps((unsigned int)vertices.size());
       return vertices[bid].get();
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
@@ -102,7 +102,7 @@ namespace embree
       vertices0 = vertices[0];
       //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
       //  vertices.pop_back();
-      setNumTimeSteps(vertices.size());
+      setNumTimeSteps((unsigned int)vertices.size());
     }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
