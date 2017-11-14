@@ -80,7 +80,7 @@ namespace embree
     }
 
     template<typename NativeCurve3fa, typename Epilog>
-      __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float ray_tfar,
+      __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float& ray_tfar,
                                           const LinearSpace3fa& ray_space,
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                           const Epilog& epilog)
@@ -130,7 +130,7 @@ namespace embree
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
           const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(i,N);
-           const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
+          const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
           valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
           if (none(valid)) continue;
           
@@ -210,9 +210,7 @@ namespace embree
       {
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        const float ray_tnear = ray.tnear()[k];
-        const float ray_tfar  = ray.tfar()[k];
-        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray_tnear,ray_tfar,
+        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar()[k],
                                                 ray_space[k],
                                                 v0,v1,v2,v3,N,
                                                 epilog);

@@ -142,25 +142,6 @@ uniform unsigned int addCube (RTCScene scene_i)
   return geomID;
 }
 
-/*! updates the tessellation level for each edge */
-void updateEdgeLevelBuffer( RTCGeometry geom, const uniform Vec3f& cam_pos )
-{
-  uniform float*  uniform level    = (uniform float*  uniform) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
-  uniform int*    uniform faces    = (uniform int*    uniform) rtcGetBuffer(geom, RTC_INDEX_BUFFER);
-  uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
-
-  for (uniform size_t f=0; f<NUM_FACES; f++)
-  {
-    for (uniform size_t i=0; i<FACE_SIZE; i++) {
-      const uniform Vec3f v0 = make_Vec3f(vertices[faces[FACE_SIZE*f+(i+0)%FACE_SIZE]]);
-      const uniform Vec3f v1 = make_Vec3f(vertices[faces[FACE_SIZE*f+(i+1)%FACE_SIZE]]);
-      const uniform float l  = LEVEL_FACTOR*length(v1-v0)/length(cam_pos-0.5f*(v1+v0));
-      level[FACE_SIZE*f+i] = max(min(l,MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-    }
-  }
-  rtcUpdateBuffer(geom,RTC_LEVEL_BUFFER);
-}
-
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
@@ -310,12 +291,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
-  /* recompute levels */
-  //updateEdgeLevelBuffer(rtcGetGeometry(g_scene,1),p);
-
-  /* rebuild scene */
-  rtcCommit (g_scene);
-
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;

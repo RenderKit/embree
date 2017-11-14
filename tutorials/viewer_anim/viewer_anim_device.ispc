@@ -50,8 +50,8 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
   for (uniform size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle), mesh->numTriangles);
   rtcCommitGeometry(geom);
+  mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
-  rtcReleaseGeometry(geom);
 }
 
 void convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
@@ -64,8 +64,8 @@ void convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad), mesh->numQuads);
   rtcCommitGeometry(geom);
+  mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
-  rtcReleaseGeometry(geom);
 }
 
 void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
@@ -87,8 +87,8 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
   rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float), mesh->numVertexCreases);
   rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
   rtcCommitGeometry(geom);
+  mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
-  rtcReleaseGeometry(geom);
 }
 
 void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
@@ -105,8 +105,8 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   if (hair->basis != RTC_BASIS_LINEAR)
     rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
+  hair->geom.geometry = geom;
   hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
-  rtcReleaseGeometry(geom);
 }
 
 uniform size_t getNumObjects(uniform ISPCScene* uniform scene_in) {
@@ -186,10 +186,9 @@ void interpolateVertices(RTCGeometry geom,
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[ID];
 
     if (geometry->type == SUBDIV_MESH) {
-      uniform unsigned int geomID = ((uniform ISPCSubdivMesh* uniform)geometry)->geom.geomID;
       /* if static do nothing */
       if (((uniform ISPCSubdivMesh* uniform)geometry)->numTimeSteps <= 1) return;
-      rtcCommitGeometry(rtcGetGeometry(scene_out,geomID));
+      rtcCommitGeometry(geometry->geometry);
     }
     else if (geometry->type == TRIANGLE_MESH) {
       uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform)geometry;
@@ -200,7 +199,7 @@ void interpolateVertices(RTCGeometry geom,
       const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
-      interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
+      interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
       uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform)geometry;
@@ -211,13 +210,12 @@ void interpolateVertices(RTCGeometry geom,
       const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
-      interpolateVertices(rtcGetGeometry(scene_out, mesh->geom.geomID), mesh->numVertices, input0, input1, tt);
+      interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == CURVES) {
-      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geom.geomID;
       /* if static do nothing */
       if (((uniform ISPCHairSet* uniform)geometry)->numTimeSteps <= 1) return;
-      rtcCommitGeometry(rtcGetGeometry(scene_out,geomID));
+      rtcCommitGeometry(geometry->geometry);
     }
     else
       assert(false);
