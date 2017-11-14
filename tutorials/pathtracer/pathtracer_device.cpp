@@ -1150,11 +1150,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
 
     if (g_use_smooth_normals)
     {
-      Vec3f dPdu,dPdv;
-      rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      Vec3fa dPdu,dPdv;
+      rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,nullptr,nullptr,nullptr,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
-     
+    
     const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
@@ -1173,7 +1173,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
       int vtx = mesh->hairs[dg.primID].vertex;
-      dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
+      dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
     else if (mesh->basis == RTC_BASIS_BEZIER || mesh->basis == RTC_BASIS_BSPLINE)
     {
@@ -1193,7 +1193,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.tnear_eps = 1.1f*p.w;
+        dg.eps = 1.1f*p.w;
       }
       else if (mesh->type == RTC_CURVE_SURFACE)
       {
@@ -1203,7 +1203,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
+        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
       }
     }
   }
@@ -1234,7 +1234,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
-  dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
+  dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
 
   int materialID = 0;
   unsigned int instID = dg.instID; {
@@ -1439,8 +1439,8 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
   float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
-  Ray ray = Ray(Vec3fa(camera.xfm.p),
-                        Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
+  Ray ray(Vec3fa(camera.xfm.p),
+                     Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
   DifferentialGeometry dg;
  
@@ -1514,10 +1514,10 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
       Vec3fa transparency = Vec3fa(1.0f);
-      Ray shadow = Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time);
+      Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
       rtcOccluded1(g_scene,&context,RTCRay_(shadow));
-      RayStats_addShadowRay(stats);
+      RayStats_addShadowRay(stats); 
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1528,8 +1528,8 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 
     /* setup secondary ray */
     float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
-    dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
-    ray = Ray(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
+    dg.P = dg.P + sign*dg.eps*dg.Ng;
+    init_Ray(ray, dg.P,normalize(wi1.v),dg.eps,inf,time);
   }
   return L;
 }
@@ -1550,7 +1550,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     float fy = y + RandomSampler_get1D(sampler);
     L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
-  L = L/(float)g_spp;
+  L = L/g_spp;
   return L;
 }
 

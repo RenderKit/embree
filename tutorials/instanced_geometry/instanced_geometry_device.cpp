@@ -360,7 +360,7 @@ void renderTileStandardStream(int taskIndex,
       diffuse = colors[primary.instID][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
-    /* initialize shadow ray.tnear().tfar() */
+    /* initialize shadow ray tnear/tfar */
     bool mask = 1; {
       shadow.tnear() = mask ? 0.001f       : (float)(pos_inf);
       shadow.tfar()  = mask ? (float)(inf) : (float)(neg_inf);

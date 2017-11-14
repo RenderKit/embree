@@ -1171,7 +1171,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
       int vtx = mesh->hairs[dg.primID].vertex;
-      dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
+      dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
     else if (mesh->basis == RTC_BASIS_BEZIER || mesh->basis == RTC_BASIS_BSPLINE)
     {
@@ -1191,7 +1191,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.tnear_eps = 1.1f*p.w;
+        dg.eps = 1.1f*p.w;
       }
       else if (mesh->type == RTC_CURVE_SURFACE)
       {
@@ -1201,7 +1201,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
       }
     }
   }
@@ -1232,7 +1232,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
 
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
-  dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+  dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
 
   int materialID = 0;
   foreach_unique (instID in dg.instID) {
@@ -1512,10 +1512,10 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
       Vec3f transparency = make_Vec3f(1.0f);
-      Ray shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time);
+      Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
       rtcOccluded(g_scene,&context,RTCRay_(shadow));
-      RayStats_addShadowRay(stats);
+      RayStats_addShadowRay(stats); 
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1526,8 +1526,8 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
     /* setup secondary ray */
     float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
-    dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
-    ray = make_Ray(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
+    dg.P = dg.P + sign*dg.eps*dg.Ng;
+    init_Ray(ray, dg.P,normalize(wi1.v),dg.eps,inf,time);
   }
   return L;
 }

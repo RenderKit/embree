@@ -171,8 +171,8 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
 
     if (g_use_smooth_normals)
     {
-      Vec3f dPdu,dPdv;
-      rtcInterpolate(geometry->geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      Vec3fa dPdu,dPdv;
+      rtcInterpolate(geometry->geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,nullptr,nullptr,nullptr,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
   }
