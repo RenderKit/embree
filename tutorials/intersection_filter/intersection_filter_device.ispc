@@ -70,7 +70,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   
   /* initialize ray */
   Ray2 primary;
-  primary.ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  init_Ray(primary.ray,make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
   primary.ray.mask = programIndex; // needs to encode rayID for filter
   primary.transparency = 0.0f;
 
@@ -95,7 +95,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* initialize shadow ray */
     Ray2 shadow;
-    shadow.ray = make_Ray(primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), 0.001f, inf);
+    init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), 0.001f, inf);
     shadow.ray.mask = programIndex; // needs to encode rayID for filter
     shadow.transparency = 1.0f;
     shadow.firstHit = 0;
@@ -193,7 +193,7 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
 
   /* fast path for SIMD width == N and only a single input packet */
   unsigned mask = RTCRayN_mask(ray,N,0);
-  if (programCount == N & all((mask & 0x80000000) == 0))
+  if (programCount == N && all((mask & 0x80000000) == 0))
   {
     /* ignore inactive rays */
     if (valid[programIndex] != -1) return;
@@ -291,7 +291,7 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
 
   /* fast path for SIMD width == N and only a single input packet */
   unsigned mask = RTCRayN_mask(ray,N,0);
-  if (programCount == N & all((mask & 0x80000000) == 0))
+  if (programCount == N && all((mask & 0x80000000) == 0))
   {
     /* ignore inactive rays */
     if (valid[programIndex] != -1) return;
