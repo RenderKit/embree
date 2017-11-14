@@ -120,7 +120,7 @@ struct RTCIntersectFunctionNArguments
 {
   const int* valid;                          /*!< pointer to valid mask */
   void* geomUserPtr;                                 /*!< pointer to geometry user data */
-  const struct RTCIntersectContext* context; /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  struct RTCIntersectContext* context;       /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   struct RTCRayN* rays;                      /*!< ray packet to intersect */
   unsigned int N;                            /*!< number of rays in packet */
   unsigned int item;                          /*!< item to intersect */
@@ -134,7 +134,7 @@ struct RTCOccludedFunctionNArguments
 {
   const int* valid;                          /*!< pointer to valid mask */
   void* geomUserPtr;                                 /*!< pointer to geometry user data */
-  const struct RTCIntersectContext* context; /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  struct RTCIntersectContext* context;       /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   struct RTCRayN* rays;                      /*!< ray packet to intersect */
   unsigned int N;                            /*!< number of rays in packet */
   unsigned int item;                          /*!< item to intersect */
