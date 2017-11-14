@@ -1438,7 +1438,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p),
-                        make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
+                     make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
   DifferentialGeometry dg;
  
