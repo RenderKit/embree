@@ -403,7 +403,7 @@ export void device_init (uniform int8* uniform cfg)
 
 #define TICKS_PER_SECOND 2000000000
 
-inline uniform double getSeconds() { return (double)clock() / TICKS_PER_SECOND; }
+inline uniform double getTime() { return (double)clock() / TICKS_PER_SECOND; }
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -451,8 +451,8 @@ export void device_render (uniform int* uniform pixels,
 
 #if ENABLE_ANIM == 1
 
-  if (animTime < 0.0f) animTime = getSeconds();
-  const uniform double atime = (getSeconds() - animTime) * ANIM_FPS;
+  if (animTime < 0.0f) animTime = getTime();
+  const uniform double atime = (getTime() - animTime) * ANIM_FPS;
   const uniform size_t intpart = (size_t)floor(atime);
   const uniform double fracpart = atime - (double)intpart;
   const uniform size_t keyFrameID = intpart;
