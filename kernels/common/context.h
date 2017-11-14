@@ -27,7 +27,7 @@ namespace embree
   {
   public:
     __forceinline IntersectContext(Scene* scene, const RTCIntersectContext* user_context)
-      : scene(scene), user(user_context), flags(0), geomID_to_instID(nullptr) {}
+      : scene(scene), user(user_context), geomID_to_instID(nullptr) {}
 
     __forceinline bool hasContextFilter() const {
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
@@ -40,7 +40,6 @@ namespace embree
   public:
     Scene* scene;
     const RTCIntersectContext* user;
-    size_t flags;
     const unsigned* geomID_to_instID; // required for xfm node handling
     unsigned instID; // required for xfm node handling
     unsigned geomID; // required for xfm node handling
