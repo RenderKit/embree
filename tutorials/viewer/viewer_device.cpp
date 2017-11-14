@@ -168,13 +168,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
     materialID = mesh->geom.materialID;
-
-    if (g_use_smooth_normals)
-    {
-      Vec3f dPdu,dPdv;
-      rtcInterpolate(geometry->geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
-      dg.Ns = normalize(cross(dPdv,dPdu));
-    }
   }
   else if (geometry->type == CURVES)
   {
@@ -280,6 +273,16 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   dg.P  = ray.org+ray.tfar()*ray.dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
+
+  if (g_use_smooth_normals)
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    {
+      Vec3fa dPdu,dPdv;
+      unsigned int geomID = ray.geomID; {
+        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,nullptr,nullptr,nullptr,3);
+      }
+      dg.Ns = cross(dPdv,dPdu);
+    }
 
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
