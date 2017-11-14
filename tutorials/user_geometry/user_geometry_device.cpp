@@ -648,11 +648,11 @@ extern "C" void device_init (char* cfg)
   rtcCommit(g_scene2);
 
   /* instantiate geometry */
-  createGroundPlane(g_scene);
   g_instance[0] = createInstance(g_scene,g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   g_instance[1] = createInstance(g_scene,g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   g_instance[2] = createInstance(g_scene,g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   g_instance[3] = createInstance(g_scene,g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  createGroundPlane(g_scene);
   rtcCommit(g_scene);
 
   /* set all colors */
@@ -718,8 +718,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
-    if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
-    else                 diffuse = colors[ray.instID][ray.geomID];
+    if (ray.instID == 0 || ray.instID == 4)
+      diffuse = colors[ray.instID][ray.primID];
+    else
+      diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -856,8 +858,10 @@ void renderTileStandardStream(int taskIndex,
     /* calculate diffuse color of geometries */
     Ray& primary = primary_stream[N];
     Vec3fa diffuse = Vec3fa(0.0f);
-    if (primary.instID == 0) diffuse = colors[primary.instID][primary.primID];
-    else                     diffuse = colors[primary.instID][primary.geomID];
+    if (primary.instID == 0 || primary.instID == 4)
+      diffuse = colors[primary.instID][primary.primID];
+    else
+      diffuse = colors[primary.instID][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -896,8 +900,10 @@ void renderTileStandardStream(int taskIndex,
     Ray& primary = primary_stream[N];
     Vec3fa Ns = normalize(primary.Ng);
     Vec3fa diffuse = Vec3fa(0.0f);
-    if (primary.instID == 0) diffuse = colors[primary.instID][primary.primID];
-    else                     diffuse = colors[primary.instID][primary.geomID];
+    if (primary.instID == 0 || primary.instID == 4)
+      diffuse = colors[primary.instID][primary.primID];
+    else
+      diffuse = colors[primary.instID][primary.geomID];
     Ray& shadow = shadow_stream[N];
     if (shadow.geomID) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
