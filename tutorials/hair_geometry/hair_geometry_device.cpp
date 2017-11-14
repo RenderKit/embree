@@ -243,7 +243,7 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 void occlusionFilter(const RTCFilterFunctionNArguments* const args)
 
 {
-  IntersectContext* context = (IntersectContext*)args->context;
+  IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
     

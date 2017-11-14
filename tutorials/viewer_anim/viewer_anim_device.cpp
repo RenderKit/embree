@@ -409,7 +409,7 @@ extern "C" void device_init (char* cfg)
 
 #define TICKS_PER_SECOND 2000000000
 
-inline double getSeconds() { return (double)clock() / TICKS_PER_SECOND; }
+inline double getTime() { return (double)clock() / TICKS_PER_SECOND; }
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -461,8 +461,8 @@ extern "C" void device_render (int* pixels,
 
 #if ENABLE_ANIM == 1
 
-  if (animTime < 0.0f) animTime = getSeconds();
-  const double atime = (getSeconds() - animTime) * ANIM_FPS;
+  if (animTime < 0.0f) animTime = getTime();
+  const double atime = (getTime() - animTime) * ANIM_FPS;
   const size_t intpart = (size_t)floor(atime);
   const double fracpart = atime - (double)intpart;
   const size_t keyFrameID = intpart;

@@ -716,12 +716,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     /* calculate shading normal in world space */
-    Vec3f Ns = ray.Ng;
+    Vec3fa Ns = ray.Ng;
     if (ray.instID != RTC_INVALID_GEOMETRY_ID && ray.instID != 4) {
       Ns = xfmVector(g_instance[ray.instID]->normal2world,Vec3fa(Ns));
     }
     Ns = normalize(Ns);
-
+    
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
     if (ray.instID == 0 || ray.instID == 4)
@@ -894,7 +894,7 @@ void renderTileStandardStream(int taskIndex,
 
     /* calculate shading normal in world space */
     Ray& primary = primary_stream[N];
-    Vec3f Ns = primary.Ng;
+    Vec3fa Ns = primary.Ng;
     if (primary.instID != RTC_INVALID_GEOMETRY_ID && primary.instID != 4) {
       Ns = xfmVector(g_instance[primary.instID]->normal2world,Vec3fa(Ns));
     }
