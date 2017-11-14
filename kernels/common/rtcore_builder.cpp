@@ -400,7 +400,7 @@ namespace embree
       RTCORE_CATCH_END(bvh->device);
     }
 
-    RTCORE_API void rtcDeleteBVH(RTCBVH hbvh)
+    RTCORE_API void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;

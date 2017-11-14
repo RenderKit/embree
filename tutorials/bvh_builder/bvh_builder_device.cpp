@@ -141,7 +141,7 @@ namespace embree
     }
 
     rtcMakeStaticBVH(bvh);
-    rtcDeleteBVH(bvh);
+    rtcReleaseBVH(bvh);
   }
 
   /* called by the C++ code for initialization */
