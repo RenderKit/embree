@@ -99,7 +99,6 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
     ray->geomID = geomID;
   else {
     ray->instID = instance->userID;
-    ray->Ng = xfmVector(instance->normal2world,make_Vec3f(ray->Ng));
   }
 }
 
@@ -179,10 +178,9 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
     RTCRayN_instID(rays,N,ui) = instance->userID;
     RTCRayN_geomID(rays,N,ui) = ray.geomID;
     RTCRayN_primID(rays,N,ui) = ray.primID;
-    Vec3f Ng = xfmVector(instance->normal2world,make_Vec3f(ray.Ng));
-    RTCRayN_Ng_x(rays,N,ui) = Ng.x;
-    RTCRayN_Ng_y(rays,N,ui) = Ng.y;
-    RTCRayN_Ng_z(rays,N,ui) = Ng.z;
+    RTCRayN_Ng_x(rays,N,ui) = ray.Ng.x;
+    RTCRayN_Ng_y(rays,N,ui) = ray.Ng.y;
+    RTCRayN_Ng_z(rays,N,ui) = ray.Ng.z;
   }
 }
 
@@ -712,9 +710,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
-    /* calculate shading normal */
-    Vec3f Ns = normalize(ray.Ng);
-
+    /* calculate shading normal in world space */
+    Vec3f Ns = ray.Ng;
+    if (ray.instID != RTC_INVALID_GEOMETRY_ID && ray.instID != 4) {
+      Ns = xfmVector(g_instance[ray.instID]->normal2world,make_Vec3f(Ns));
+    }
+    Ns = normalize(Ns);
+    
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(0.0f);
     if (ray.instID == 0 || ray.instID == 4)
@@ -903,9 +905,15 @@ void renderTileStandardStream(uniform int taskIndex,
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
 
-    /* add light contrinution */
+    /* calculate shading normal in world space */
     Ray& primary = primary_stream[N];
-    Vec3f Ns = normalize(primary.Ng);
+    Vec3f Ns = primary.Ng;
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID && primary.instID != 4) {
+      Ns = xfmVector(g_instance[primary.instID]->normal2world,make_Vec3f(Ns));
+    }
+    Ns = normalize(Ns);
+    
+    /* add light contrinution */
     Vec3f diffuse = make_Vec3f(0.0f);
     if (primary.instID == 0 || primary.instID == 4)
       diffuse = colors[primary.instID][primary.primID];

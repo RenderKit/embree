@@ -100,7 +100,6 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     ray->geomID = geomID;
   else {
     ray->instID = instance->userID;
-    ray->Ng = xfmVector(instance->normal2world,Vec3fa(ray->Ng));
   }
 }
 
@@ -180,10 +179,9 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     RTCRayN_instID(rays,N,ui) = instance->userID;
     RTCRayN_geomID(rays,N,ui) = ray.geomID;
     RTCRayN_primID(rays,N,ui) = ray.primID;
-    Vec3fa Ng = xfmVector(instance->normal2world,Vec3fa(ray.Ng));
-    RTCRayN_Ng_x(rays,N,ui) = Ng.x;
-    RTCRayN_Ng_y(rays,N,ui) = Ng.y;
-    RTCRayN_Ng_z(rays,N,ui) = Ng.z;
+    RTCRayN_Ng_x(rays,N,ui) = ray.Ng.x;
+    RTCRayN_Ng_y(rays,N,ui) = ray.Ng.y;
+    RTCRayN_Ng_z(rays,N,ui) = ray.Ng.z;
   }
 }
 
@@ -713,8 +711,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
-    /* calculate shading normal */
-    Vec3fa Ns = normalize(ray.Ng);
+    /* calculate shading normal in world space */
+    Vec3f Ns = ray.Ng;
+    if (ray.instID != RTC_INVALID_GEOMETRY_ID && ray.instID != 4) {
+      Ns = xfmVector(g_instance[ray.instID]->normal2world,Vec3fa(Ns));
+    }
+    Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
@@ -896,9 +898,15 @@ void renderTileStandardStream(int taskIndex,
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
 
-    /* add light contrinution */
+    /* calculate shading normal in world space */
     Ray& primary = primary_stream[N];
-    Vec3fa Ns = normalize(primary.Ng);
+    Vec3f Ns = primary.Ng;
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID && primary.instID != 4) {
+      Ns = xfmVector(g_instance[primary.instID]->normal2world,Vec3fa(Ns));
+    }
+    Ns = normalize(Ns);
+    
+    /* add light contrinution */
     Vec3fa diffuse = Vec3fa(0.0f);
     if (primary.instID == 0 || primary.instID == 4)
       diffuse = colors[primary.instID][primary.primID];
