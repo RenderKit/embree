@@ -82,14 +82,12 @@ struct RTCIntersectContext
 {
   enum RTCIntersectFlags flags;   //!< intersection flags
   RTCFilterFunctionN filter;      //!< filter function to execute
-  void* userRayExt;               //!< can be used to pass extended ray data to callbacks
 };
 
 RTCORE_FORCEINLINE void rtcInitIntersectionContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_INCOHERENT;
   context->filter = NULL;
-  context->userRayExt = NULL;
 }
 
 /*! \brief Defines an opaque scene type */

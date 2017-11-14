@@ -3606,7 +3606,6 @@ namespace embree
       RTCIntersectContext context;
       rtcInitIntersectionContext(&context);
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
 
       switch (imode) 
       {
@@ -3770,7 +3769,6 @@ namespace embree
       RTCIntersectContext context;
       rtcInitIntersectionContext(&context);
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
 
       RandomSampler sampler;
       RandomSampler_init(sampler, (int)i);

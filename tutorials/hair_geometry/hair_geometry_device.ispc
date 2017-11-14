@@ -241,7 +241,8 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args)
 
 {
-  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
     
   uniform int* uniform valid_i = args->valid;
@@ -267,7 +268,7 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
     valid_i[programIndex] = 0;
 }
 
-Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, Ray& ray)
+Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& ray)
 {
   Vec3f transparency = make_Vec3f(1.0f);
   context->userRayExt = &transparency;
@@ -275,7 +276,7 @@ Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, Ray
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccluded(scene,context,RTCRay_(ray));
+  rtcOccluded(scene,&context->context,RTCRay_(ray));
 
   return transparency;
 }
@@ -289,8 +290,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
-  uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  uniform IntersectContext context;
+  InitIntersectionContext(&context);
   
   /* initialize ray */
   Ray ray;
@@ -314,7 +315,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,&context,RTCRay_(ray));
+    rtcIntersect(g_scene,&context.context,RTCRay_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */

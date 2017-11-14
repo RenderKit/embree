@@ -65,8 +65,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   float weight = 1.0f;
   Vec3f color = make_Vec3f(0.0f);
 
-  uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  uniform IntersectContext context;
+  InitIntersectionContext(&context);
   
   /* initialize ray */
   Ray2 primary;
@@ -86,7 +86,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-    rtcIntersect(g_scene,&context,RTCRay_(primary));
+    rtcIntersect(g_scene,&context.context,RTCRay_(primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -114,7 +114,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.lastHit = 0;
     context.userRayExt = &shadow;
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -193,7 +193,7 @@ inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, c
 unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
   uniform int* uniform valid = args->valid;
-  const uniform RTCIntersectContext* uniform context =  args->context;
+  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayN* uniform ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
@@ -291,7 +291,7 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
 unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
   uniform int* uniform valid = args->valid;
-  const uniform RTCIntersectContext* uniform context =  args->context;
+  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayN* uniform ray = args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
@@ -470,11 +470,11 @@ void renderTileStandardStream(uniform int taskIndex,
   while (numActive)
   {
     /* trace rays */
-    uniform RTCIntersectContext primary_context;
-    rtcInitIntersectionContext(&primary_context);
-    primary_context.flags = g_iflags_coherent;
+    uniform IntersectContext primary_context;
+    InitIntersectionContext(&primary_context);
+    primary_context.context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray2));
+    rtcIntersectVM(g_scene,&primary_context.context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray2));
 
     /* terminate rays and update color */
     N = -1;
@@ -526,11 +526,11 @@ void renderTileStandardStream(uniform int taskIndex,
     N++;
 
     /* trace shadow rays */
-    uniform RTCIntersectContext shadow_context;
-    rtcInitIntersectionContext(&shadow_context);
-    shadow_context.flags = g_iflags_coherent;
+    uniform IntersectContext shadow_context;
+    InitIntersectionContext(&shadow_context);
+    shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2));
+    rtcOccludedVM(g_scene,&shadow_context.context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2));
 
     /* add light contribution and generate transmission ray */
     N = -1;
