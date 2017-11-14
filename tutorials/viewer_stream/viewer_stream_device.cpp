@@ -312,13 +312,16 @@ void renderTileStandard(int taskIndex,
     /* ISPC workaround for mask == 0 */
     
 
+    RandomSampler sampler;
+    RandomSampler_init(sampler, x, y, 0);
+
     /* initialize ray */
     Ray& ray = rays[N++];
     bool mask = 1; { // invalidates inactive rays
       ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
       ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar());
+    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar(), RandomSampler_get1D(sampler));
 
     RayStats_addRay(stats);
   }
