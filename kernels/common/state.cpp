@@ -412,7 +412,7 @@ namespace embree
         if (cin->trySymbol("=")) {
           do {
             Token flag = cin->get();
-            if (flag == Token::Id("dynamic") ) hint_flags |= RTC_BUILD_HINT_DYNAMIC;
+            if (flag == Token::Id("dynamic") ) hint_flags |= RTC_SCENE_FLAG_DYNAMIC;
           } while (cin->trySymbol("|"));
         }
       }

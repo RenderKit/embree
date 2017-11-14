@@ -35,7 +35,7 @@ namespace embree
       flags_modified(true),
       accel_flags(RTC_ACCEL_FAST),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
-      hint_flags(RTC_BUILD_HINT_NONE),
+      hint_flags(RTC_SCENE_FLAG_NONE),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFiltersN(0)
@@ -56,7 +56,7 @@ namespace embree
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
     if (device->hint_flags != -1)
-      hint_flags = (RTCBuildHints) device->hint_flags;
+      hint_flags = (RTCSceneFlags) device->hint_flags;
   }
   
   void Scene::printStatistics()
@@ -697,7 +697,7 @@ namespace embree
     flags_modified = true;
   }
 
-  void Scene::setBuildHints(RTCBuildHints hint_flags_i)
+  void Scene::setBuildHints(RTCSceneFlags hint_flags_i)
   {
     if (hint_flags == hint_flags_i) return;
     hint_flags = hint_flags_i;

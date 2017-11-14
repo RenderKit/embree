@@ -49,11 +49,11 @@ enum RTCBuildQuality
 };
 
 /*! some additional flags to control the build */
-enum RTCBuildHints
+enum RTCSceneFlags
 {
-  RTC_BUILD_HINT_NONE = 0,
-  RTC_BUILD_HINT_DYNAMIC = (1 << 0),                 //!< provides better build performance for dynamic scenes
-  RTC_BUILD_HINT_CONTEXT_FILTER_FUNCTION = (1 << 1)  //!< enables support for intersection filter function inside context
+  RTC_SCENE_FLAG_NONE = 0,
+  RTC_SCENE_FLAG_DYNAMIC = (1 << 0),                 //!< provides better build performance for dynamic scenes
+  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 1)  //!< enables support for intersection filter function inside context
 };
 
 /*! intersection flags */
@@ -111,7 +111,7 @@ RTCORE_API void rtcSetAccelFlags(RTCScene scene, enum RTCAccelFlags accel);
 RTCORE_API void rtcSetBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
 
 /*! sets the build hints of a scene */
-RTCORE_API void rtcSetBuildHints(RTCScene scene, enum RTCBuildHints hints);
+RTCORE_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags hints);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing

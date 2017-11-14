@@ -137,7 +137,7 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
   rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcDeviceNewScene(g_device);

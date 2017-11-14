@@ -117,7 +117,7 @@ uniform RTCScene createScene(uniform ISPCScene* uniform scene_in)
 {
   RTCScene scene = rtcDeviceNewScene(g_device);
   rtcSetBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(scene, RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(scene, RTC_SCENE_FLAG_DYNAMIC);
   return scene;
 }
 
