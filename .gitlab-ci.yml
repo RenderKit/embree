@@ -495,7 +495,7 @@ release-linux-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
   only:   [web]
   artifacts:
     name: "$CI_JOB_NAME"
-    paths: [build/*.rpm.tar.gz]
+    paths: [build/*.tar.gz]
     when:  always
     expire_in: 2 mos
 
@@ -506,6 +506,6 @@ release-linux-x64-Release-ICC17-ISPC1.9.1-TBB-PACKAGE-RPM:
   only:   [web]
   artifacts:
     name: "$CI_JOB_NAME"
-    paths: [build/*.rpm.tar.gz]
+    paths: [build/*.tar.gz]
     when:  always
     expire_in: 2 mos
