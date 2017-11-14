@@ -350,6 +350,10 @@ RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
                                             enum RTCCurveBasis basis
   );
 
+
+/*! Sets the type of the curve geometry */
+RTCORE_API void rtcSetCurveType(RTCGeometry geometry, enum RTCCurveType type);
+
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
  *  optionally to set a different tessellation rate per edge.*/

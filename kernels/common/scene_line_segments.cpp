@@ -45,6 +45,14 @@ namespace embree
     Geometry::update();
   }
 
+  void LineSegments::setCurveType(RTCCurveType type)
+  {
+    if (type != RTC_CURVE_RIBBON)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
+    
+    Geometry::update();
+  }
+
   void* LineSegments::newBuffer(RTCBufferType type, size_t stride, unsigned int size)
   {
     /* verify that all accesses are 4 bytes aligned */

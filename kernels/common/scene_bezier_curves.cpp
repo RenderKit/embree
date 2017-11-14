@@ -45,6 +45,12 @@ namespace embree
     Geometry::update();
   }
 
+  void NativeCurves::setCurveType(RTCCurveType type_in)
+  {
+    this->subtype = type_in;
+    Geometry::update();
+  }
+  
   void* NativeCurves::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
     /* verify that all accesses are 4 bytes aligned */

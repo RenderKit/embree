@@ -880,6 +880,18 @@ namespace embree
     RTCORE_CATCH_END(device);
     return nullptr;
   }
+
+  RTCORE_API void rtcSetCurveType(RTCGeometry hgeometry, RTCCurveType type)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetCurveType);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    if (type != RTC_CURVE_RIBBON && type != RTC_CURVE_SURFACE)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
+    geometry->setCurveType(type);
+    RTCORE_CATCH_END2(geometry);
+  }
     
   RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice) 
   {

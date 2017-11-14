@@ -39,6 +39,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
+    void setCurveType(RTCCurveType type);
     void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
     void* getBuffer(RTCBufferType type);
