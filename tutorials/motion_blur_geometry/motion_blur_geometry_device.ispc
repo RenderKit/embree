@@ -735,7 +735,7 @@ export void device_cleanup ()
   rtcReleaseScene(scene2); scene2 = NULL;
   rtcReleaseScene(scene3); scene3 = NULL;
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;
   g_accu_height = 0;

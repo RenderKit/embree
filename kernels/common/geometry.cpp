@@ -24,9 +24,14 @@ namespace embree
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), quality(RTC_BUILD_QUALITY_MEDIUM),
       enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1), used(1),
-      intersectionFilterN(nullptr), occlusionFilterN(nullptr) {}
+      intersectionFilterN(nullptr), occlusionFilterN(nullptr)
+  {
+    device->refInc();
+  }
 
-  Geometry::~Geometry() {
+  Geometry::~Geometry()
+  {
+    device->refDec();
   }
 
   void Geometry::update() 

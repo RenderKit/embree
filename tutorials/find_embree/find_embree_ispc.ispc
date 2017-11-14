@@ -22,5 +22,5 @@ export void ispcEntry()
   RTCDevice device = rtcNewDevice();
 
   /* delete Embree device again */
-  rtcDeleteDevice(device);
+  rtcReleaseDevice(device);
 }

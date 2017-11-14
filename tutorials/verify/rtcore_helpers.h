@@ -58,7 +58,7 @@ namespace embree
     ~RTCDeviceRef ()
     {
       if (device == nullptr) return;
-      rtcDeleteDevice(device);
+      rtcReleaseDevice(device);
     }
     
     operator RTCDevice () const { return device; }
@@ -72,7 +72,7 @@ namespace embree
     RTCDeviceRef& operator= (const RTCDeviceRef& in) 
     {
       if (in.device != device && device) 
-        rtcDeleteDevice(device);
+        rtcReleaseDevice(device);
       device = in.device;
       in.device = nullptr;
       return *this;
@@ -80,7 +80,7 @@ namespace embree
       
     RTCDeviceRef& operator= (nullptr_t) 
     {
-      if (device) rtcDeleteDevice(device);
+      if (device) rtcReleaseDevice(device);
       device = nullptr;
       return *this;
     }

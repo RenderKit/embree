@@ -509,5 +509,5 @@ export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
   rtcReleaseScene (g_scene1); g_scene1 = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

@@ -630,7 +630,7 @@ namespace embree
     {
       RTCDevice device = rtcNewDevice("verbose=1");
       errorHandler(nullptr,rtcDeviceGetError(device));
-      rtcDeleteDevice(device);
+      rtcReleaseDevice(device);
       return VerifyApplication::PASSED;
     }
   };
@@ -712,9 +712,9 @@ namespace embree
       AssertNoError(device2);
       RTCDevice device3 = rtcNewDevice(cfg.c_str());
       AssertNoError(device3);
-      rtcDeleteDevice(device1);
-      rtcDeleteDevice(device3);
-      rtcDeleteDevice(device2);
+      rtcReleaseDevice(device1);
+      rtcReleaseDevice(device3);
+      rtcReleaseDevice(device2);
       return VerifyApplication::PASSED;
     }
   };

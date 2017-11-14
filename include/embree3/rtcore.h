@@ -105,7 +105,7 @@ RTCORE_API RTCDevice rtcNewDevice(const char* cfg);
 
   Deletes the Embree device again. After deletion, all scene handles
   are invalid. */
-RTCORE_API void rtcDeleteDevice(RTCDevice device);
+RTCORE_API void rtcReleaseDevice(RTCDevice device);
 
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */
 enum RTCParameter {

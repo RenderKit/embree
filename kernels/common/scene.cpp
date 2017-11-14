@@ -40,6 +40,8 @@ namespace embree
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFiltersN(0)
   {
+    device->refInc();
+    
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
 #elif defined(TASKING_TBB)
@@ -57,6 +59,20 @@ namespace embree
       quality_flags = (RTCBuildQuality) device->quality_flags;
     if (device->hint_flags != -1)
       hint_flags = (RTCSceneFlags) device->hint_flags;
+  }
+
+  Scene::~Scene () 
+  {
+#if defined(TASKING_TBB) || defined(TASKING_PPL)
+    delete group; group = nullptr;
+#endif
+
+    /* detach all geometries */
+    for (auto& geometry : geometries)
+      if (geometry)
+        geometry->detach();
+
+    device->refDec();
   }
   
   void Scene::printStatistics()
@@ -558,18 +574,6 @@ namespace embree
 #endif
   }
   
-  Scene::~Scene () 
-  {
-#if defined(TASKING_TBB) || defined(TASKING_PPL)
-    delete group; group = nullptr;
-#endif
-
-    /* detach all geometries */
-    for (auto& geometry : geometries)
-      if (geometry)
-        geometry->detach();
-  }
-
   void Scene::clear() {
   }
 

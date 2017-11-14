@@ -587,7 +587,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   extern "C" void device_cleanup ()
   {
     rtcReleaseScene (g_scene); g_scene = nullptr;
-    rtcDeleteDevice(g_device); g_device = nullptr;
+    rtcReleaseDevice(g_device); g_device = nullptr;
 #if DUMP_PROFILE_DATA == 1
     /* dump data at the end of profiling */
     std::cout << "dumping build and render times per frame [" << numProfileFrames << " frames]..." << std::flush;

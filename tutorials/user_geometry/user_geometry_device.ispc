@@ -982,7 +982,7 @@ export void device_cleanup ()
   rtcReleaseScene (g_scene0); g_scene0 = NULL;
   rtcReleaseScene (g_scene1); g_scene1 = NULL;
   rtcReleaseScene (g_scene2); g_scene2 = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_spheres; g_spheres = NULL;
   delete g_sphere0; g_sphere0 = NULL;
   delete g_sphere1; g_sphere1 = NULL;

@@ -400,5 +400,5 @@ export void device_cleanup ()
     delete g_objects[i];
   }
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

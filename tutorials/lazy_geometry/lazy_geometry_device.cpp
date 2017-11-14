@@ -399,7 +399,7 @@ extern "C" void device_cleanup ()
     delete g_objects[i];
   }
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

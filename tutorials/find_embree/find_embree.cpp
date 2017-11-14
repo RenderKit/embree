@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
   RTCDevice device = rtcNewDevice("verbose=1");
 
   /* ddelete device again */
-  rtcDeleteDevice(device);
+  rtcReleaseDevice(device);
   
   return 0;
 }

@@ -361,7 +361,7 @@ namespace embree {
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
     Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
-    rtcDeleteDevice(g_device); g_device = nullptr;
+    rtcReleaseDevice(g_device); g_device = nullptr;
   }
 
 /* called by the C++ code to render */

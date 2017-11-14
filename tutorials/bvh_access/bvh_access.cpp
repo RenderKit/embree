@@ -250,7 +250,7 @@ namespace embree
 
     /* cleanup */
     rtcReleaseScene (scene);
-    rtcDeleteDevice(device);
+    rtcReleaseDevice(device);
     return 0;
   }
 }

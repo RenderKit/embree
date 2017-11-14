@@ -979,7 +979,7 @@ extern "C" void device_cleanup ()
   rtcReleaseScene (g_scene0); g_scene0 = nullptr;
   rtcReleaseScene (g_scene1); g_scene1 = nullptr;
   rtcReleaseScene (g_scene2); g_scene2 = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
   alignedFree(g_spheres); g_spheres = nullptr;
   alignedFree(g_sphere0); g_sphere0 = nullptr;
   alignedFree(g_sphere1); g_sphere1 = nullptr;

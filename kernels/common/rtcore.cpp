@@ -36,21 +36,23 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
-    return (RTCDevice) new Device(cfg,false);
+    Device* device = new Device(cfg,false);
+    return (RTCDevice) device->refInc();
     RTCORE_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
   }
 
-  RTCORE_API void rtcDeleteDevice(RTCDevice device) 
+  RTCORE_API void rtcReleaseDevice(RTCDevice hdevice) 
   {
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeleteDevice);
-    RTCORE_VERIFY_HANDLE(device);
+    RTCORE_TRACE(rtcReleaseDevice);
+    RTCORE_VERIFY_HANDLE(hdevice);
     Lock<MutexSys> lock(g_mutex);
-    delete (Device*) device;
+    device->refDec();
     RTCORE_CATCH_END(nullptr);
   }
-
+  
   RTCORE_API void rtcDeviceSetParameter1i(RTCDevice hdevice, const RTCParameter parm, ssize_t val)
   {
     Device* device = (Device*) hdevice;

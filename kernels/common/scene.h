@@ -103,6 +103,9 @@ namespace embree
     /*! Scene construction */
     Scene (Device* device);
 
+    /*! Scene destruction */
+    ~Scene ();
+
   private:
     /*! class is non-copyable */
     Scene (const Scene& other) DELETED; // do not implement
@@ -121,9 +124,6 @@ namespace embree
     void createSubdivMBAccel();
     void createUserGeometryAccel();
     void createUserGeometryMBAccel();
-
-    /*! Scene destruction */
-    ~Scene ();
 
     /*! prints statistics about the scene */
     void printStatistics();
