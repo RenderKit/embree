@@ -137,7 +137,7 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
   rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcDeviceNewScene(g_device);
@@ -318,7 +318,6 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext primary_context;
   rtcInitIntersectionContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
-  primary_context.userRayExt = &primary_stream;
   rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray));
 
   /* terminate rays and update color */
@@ -373,7 +372,6 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext shadow_context;
   rtcInitIntersectionContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
-  shadow_context.userRayExt = &shadow_stream;
   rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
 
   /* add light contribution */
@@ -485,5 +483,5 @@ export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
   rtcReleaseScene (g_scene1); g_scene1 = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

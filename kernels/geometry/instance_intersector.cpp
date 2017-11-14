@@ -45,7 +45,7 @@ namespace embree
     __forceinline void FastInstanceIntersectorN::intersect1(const struct RTCIntersectFunctionNArguments* const args)
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
-      const RTCIntersectContext* user_context = args->context;
+      RTCIntersectContext* user_context = args->context;
       Ray& ray = *(Ray*)args->rays;
       
       const AffineSpace3fa world2local = 
@@ -71,7 +71,7 @@ namespace embree
   __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
-      const RTCIntersectContext* user_context = args->context;
+      RTCIntersectContext* user_context = args->context;
       Ray& ray = *(Ray*)args->rays;
       
       const AffineSpace3fa world2local = 
@@ -110,7 +110,7 @@ namespace embree
     {
       const vint<N>* validi = (const vint<N>*) args->valid;
       const Instance* instance = (const Instance*) args->geomUserPtr;
-      const RTCIntersectContext* user_context = args->context;
+      RTCIntersectContext* user_context = args->context;
       RayK<N>& ray = *(RayK<N>*)args->rays;
       
       AffineSpace3vf<N> world2local;
@@ -140,7 +140,7 @@ namespace embree
     {
       const vint<N>* validi = (const vint<N>*) args->valid;
       const Instance* instance = (const Instance*) args->geomUserPtr;
-      const RTCIntersectContext* user_context = args->context;
+      RTCIntersectContext* user_context = args->context;
       RayK<N>& ray = *(RayK<N>*)args->rays;
       
       AffineSpace3vf<N> world2local;

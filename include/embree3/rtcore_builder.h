@@ -108,7 +108,7 @@ RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t b
 RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
 
 /*! Deletes the BVH including all allocated nodes. */
-RTCORE_API void rtcDeleteBVH(RTCBVH bvh);
+RTCORE_API void rtcReleaseBVH(RTCBVH bvh);
 
 #if defined(__cplusplus)
 }

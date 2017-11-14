@@ -261,7 +261,7 @@ namespace embree
   TutorialApplication::~TutorialApplication()
   {
     g_ispc_scene = nullptr;
-    ispc_scene = nullptr; // scene has to get deleted before device
+    ispc_scene = nullptr;
     device_cleanup();
     alignedFree(pixels);
     pixels = nullptr;

@@ -117,7 +117,7 @@ struct RTCIntersectFunctionNArguments
 {
   const uniform int* uniform valid; /*! pointer to valid mask */
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
-  const uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform rays;               /*!< ray packet of size N */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
@@ -131,7 +131,7 @@ struct RTCOccludedFunctionNArguments
 {
   const uniform int* uniform valid; /*! pointer to valid mask */
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
-  const uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
+  uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform rays;               /*!< ray packet of size N */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
@@ -346,6 +346,9 @@ RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
                                             uniform RTCCurveType type,
                                             uniform RTCCurveBasis basis
   );
+
+/*! Sets the type of the curve geometry */
+RTCORE_API void rtcSetCurveType(RTCGeometry geometry, uniform RTCCurveType type);
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used

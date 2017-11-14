@@ -139,7 +139,7 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device);
   rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcDeviceNewScene(g_device);
@@ -320,7 +320,6 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext primary_context;
   rtcInitIntersectionContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
-  primary_context.userRayExt = &primary_stream;
   rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(Ray));
 
   /* terminate rays and update color */
@@ -375,7 +374,6 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext shadow_context;
   rtcInitIntersectionContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
-  shadow_context.userRayExt = &shadow_stream;
   rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));
 
   /* add light contribution */
@@ -491,7 +489,7 @@ extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
   rtcReleaseScene (g_scene1); g_scene1 = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

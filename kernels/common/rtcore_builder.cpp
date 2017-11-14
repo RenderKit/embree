@@ -36,7 +36,14 @@ namespace embree
     struct BVH
     {
       BVH (Device* device)
-        : device(device), isStatic(false), allocator(device,true), morton_src(device,0), morton_tmp(device,0) {}
+        : device(device), isStatic(false), allocator(device,true), morton_src(device,0), morton_tmp(device,0)
+      {
+        device->refInc();
+      }
+
+      ~BVH() {
+        device->refDec();
+      }
 
     public:
       Device* device;
@@ -393,7 +400,7 @@ namespace embree
       RTCORE_CATCH_END(bvh->device);
     }
 
-    RTCORE_API void rtcDeleteBVH(RTCBVH hbvh)
+    RTCORE_API void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;

@@ -131,7 +131,7 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcDeviceNewScene(g_device);
   rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
   rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create some triangulated spheres */
   for (int i=0; i<numSpheres; i++)
@@ -322,7 +322,7 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

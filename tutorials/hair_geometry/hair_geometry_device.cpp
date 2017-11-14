@@ -243,7 +243,8 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 void occlusionFilter(const RTCFilterFunctionNArguments* const args)
 
 {
-  Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
+  IntersectContext* context = (IntersectContext*)args->context;
+  Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
     
   int* valid_i = args->valid;
@@ -269,7 +270,7 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
     valid_i[0] = 0;
 }
 
-Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, Ray& ray)
+Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
 {
   Vec3fa transparency = Vec3fa(1.0f);
   context->userRayExt = &transparency;
@@ -277,7 +278,7 @@ Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, Ray& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccluded1(scene,context,RTCRay_(ray));
+  rtcOccluded1(scene,&context->context,RTCRay_(ray));
 
   return transparency;
 }
@@ -291,8 +292,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
-  RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  IntersectContext context;
+  InitIntersectionContext(&context);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -308,7 +309,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect1(g_scene,&context,RTCRay_(ray));
+    rtcIntersect1(g_scene,&context.context,RTCRay_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -510,7 +511,7 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
   alignedFree(g_accu); g_accu = nullptr;
   g_accu_width = 0;
   g_accu_height = 0;

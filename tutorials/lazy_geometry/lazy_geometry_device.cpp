@@ -165,7 +165,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  const RTCIntersectContext* context = args->context;
+  RTCIntersectContext* context = args->context;
   RTCRayN* rays = args->rays;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
@@ -191,7 +191,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  const RTCIntersectContext* context = args->context;
+  RTCIntersectContext* context = args->context;
   RTCRayN* rays = args->rays;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
@@ -389,7 +389,7 @@ extern "C" void device_cleanup ()
     delete g_objects[i];
   }
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

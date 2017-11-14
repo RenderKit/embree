@@ -91,12 +91,12 @@ namespace embree {
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHints hflags)
+  RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCSceneFlags hflags)
   {
     RTCScene scene_out = rtcDeviceNewScene(g_device);
     rtcSetAccelFlags(scene_out,aflags);
     rtcSetBuildQuality(scene_out,qflags);
-    rtcSetBuildHints(scene_out,hflags);
+    rtcSetSceneFlags(scene_out,hflags);
     return scene_out;
   }
 
@@ -203,7 +203,7 @@ namespace embree {
   void Benchmark_Dynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality = RTC_BUILD_QUALITY_LOW)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_SCENE_FLAG_DYNAMIC);
     convertScene(g_scene, scene_in, quality);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -242,7 +242,7 @@ namespace embree {
   void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality = RTC_BUILD_QUALITY_MEDIUM)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_BUILD_HINT_DYNAMIC);
+    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_SCENE_FLAG_DYNAMIC);
     convertScene(g_scene, scene_in,quality);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -288,7 +288,7 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = createScene(RTC_ACCEL_FAST,qflags,RTC_BUILD_HINT_NONE);
+      g_scene = createScene(RTC_ACCEL_FAST,qflags,RTC_SCENE_FLAG_NONE);
       convertScene(g_scene,scene_in,quality);
 
       double t0 = getSeconds();
@@ -361,7 +361,7 @@ namespace embree {
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
     Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
-    rtcDeleteDevice(g_device); g_device = nullptr;
+    rtcReleaseDevice(g_device); g_device = nullptr;
   }
 
 /* called by the C++ code to render */

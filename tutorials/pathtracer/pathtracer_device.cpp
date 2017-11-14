@@ -1331,7 +1331,8 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 
 void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
 {
-  Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
+  IntersectContext* context = (IntersectContext*) args->context;
+  Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
   int* valid_i = args->valid;
@@ -1345,7 +1346,8 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
 
 void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 {
-  Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
+  IntersectContext* context = (IntersectContext*) args->context;
+  Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
   int* valid_i = args->valid;
@@ -1395,7 +1397,8 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 /* occlusion filter function */
 void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
 {
-  Vec3fa* transparency = (Vec3fa*) args->context->userRayExt;
+  IntersectContext* context = (IntersectContext*) args->context;
+  Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
   int* valid_i = args->valid;
@@ -1452,10 +1455,10 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       break;
 
     /* intersect ray with scene */
-    RTCIntersectContext context;
-    rtcInitIntersectionContext(&context);
-    context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect1(g_scene,&context,RTCRay_(ray));
+    IntersectContext context;
+    InitIntersectionContext(&context);
+    context.context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
+    rtcIntersect1(g_scene,&context.context,RTCRay_(ray));
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1507,7 +1510,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    context.flags = g_iflags_incoherent;
+    context.context.flags = g_iflags_incoherent;
     for (size_t i=0; i<g_ispc_scene->numLights; i++)
     {
       const Light* l = g_ispc_scene->lights[i];
@@ -1516,8 +1519,8 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded1(g_scene,&context,RTCRay_(shadow));
-      RayStats_addShadowRay(stats); 
+      rtcOccluded1(g_scene,&context.context,RTCRay_(shadow));
+      RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1747,7 +1750,7 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
   alignedFree(g_accu); g_accu = nullptr;
   g_accu_width = 0;
   g_accu_height = 0;

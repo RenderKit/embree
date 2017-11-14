@@ -103,6 +103,9 @@ namespace embree
     /*! Scene construction */
     Scene (Device* device);
 
+    /*! Scene destruction */
+    ~Scene ();
+
   private:
     /*! class is non-copyable */
     Scene (const Scene& other) DELETED; // do not implement
@@ -122,9 +125,6 @@ namespace embree
     void createUserGeometryAccel();
     void createUserGeometryMBAccel();
 
-    /*! Scene destruction */
-    ~Scene ();
-
     /*! prints statistics about the scene */
     void printStatistics();
 
@@ -137,7 +137,7 @@ namespace embree
     /*! Builds acceleration structure for the scene. */
     void setAccelFlags(RTCAccelFlags accel_flags);
     void setBuildQuality(RTCBuildQuality quality_flags);
-    void setBuildHints(RTCBuildHints hint_flags);
+    void setBuildHints(RTCSceneFlags hint_flags);
     
     void commit (bool join);
     void commit_task ();
@@ -194,12 +194,12 @@ namespace embree
     __forceinline bool isFastAccel() const { return accel_flags == RTC_ACCEL_FAST; }
     __forceinline bool isCompactAccel() const { return accel_flags & RTC_ACCEL_COMPACT; }
     __forceinline bool isRobustAccel()  const { return accel_flags & RTC_ACCEL_ROBUST; }
-    __forceinline bool isStaticAccel()  const { return !(hint_flags & RTC_BUILD_HINT_DYNAMIC); }
-    __forceinline bool isDynamicAccel() const { return hint_flags & RTC_BUILD_HINT_DYNAMIC; }
+    __forceinline bool isStaticAccel()  const { return !(hint_flags & RTC_SCENE_FLAG_DYNAMIC); }
+    __forceinline bool isDynamicAccel() const { return hint_flags & RTC_SCENE_FLAG_DYNAMIC; }
     
     __forceinline bool hasContextFilterFunction() const {
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      return hint_flags & RTC_BUILD_HINT_CONTEXT_FILTER_FUNCTION;
+      return hint_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
 #else
       return false;
 #endif
@@ -224,7 +224,7 @@ namespace embree
     bool flags_modified;
     RTCAccelFlags accel_flags;
     RTCBuildQuality quality_flags;
-    RTCBuildHints hint_flags;
+    RTCSceneFlags hint_flags;
     AccelN accels;
     MutexSys buildMutex;
     SpinLock geometriesMutex;

@@ -201,6 +201,12 @@ namespace embree
     /*! for triangle meshes and bezier curves only */
   public:
 
+
+    /*! sets type of curve */
+    virtual void setCurveType(RTCCurveType type) {
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+    
     /*! Sets ray mask. */
     virtual void setMask (unsigned mask) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 

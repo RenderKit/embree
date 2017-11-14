@@ -23,7 +23,7 @@ namespace embree
   /* mutex to make printing to cout thread safe */
   extern MutexSys g_printMutex;
 
-  struct State
+  struct State : public RefCount
   {
   public:
     /*! state construction */

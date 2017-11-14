@@ -129,7 +129,7 @@ export void device_init (uniform int8* uniform cfg)
   g_scene = rtcDeviceNewScene(g_device);
   rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
   rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(g_scene,RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create some triangulated spheres */
   for (uniform int i=0; i<numSpheres; i++)
@@ -312,5 +312,5 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

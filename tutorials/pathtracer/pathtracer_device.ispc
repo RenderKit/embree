@@ -1329,7 +1329,8 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
 
 unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args)
 {
-  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
@@ -1343,7 +1344,8 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
 
 unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
 {
-  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
@@ -1393,7 +1395,8 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
 /* occlusion filter function */
 unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args)
 {
-  varying Vec3f* uniform transparency = (varying Vec3f* uniform) args->context->userRayExt;
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
@@ -1450,10 +1453,10 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       break;
 
     /* intersect ray with scene */
-    uniform RTCIntersectContext context;
-    rtcInitIntersectionContext(&context);
-    context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect(g_scene,&context,RTCRay_(ray));
+    uniform IntersectContext context;
+    InitIntersectionContext(&context);
+    context.context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
+    rtcIntersect(g_scene,&context.context,RTCRay_(ray));
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1505,7 +1508,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    context.flags = g_iflags_incoherent;
+    context.context.flags = g_iflags_incoherent;
     for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = g_ispc_scene->lights[i];
@@ -1514,8 +1517,8 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded(g_scene,&context,RTCRay_(shadow));
-      RayStats_addShadowRay(stats); 
+      rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
+      RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1737,7 +1740,7 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;
   g_accu_height = 0;

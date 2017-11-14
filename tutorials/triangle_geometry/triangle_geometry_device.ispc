@@ -220,7 +220,7 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] face_colors; face_colors = NULL;
   delete[] vertex_colors; vertex_colors = NULL;
 }

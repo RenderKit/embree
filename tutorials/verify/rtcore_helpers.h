@@ -58,7 +58,7 @@ namespace embree
     ~RTCDeviceRef ()
     {
       if (device == nullptr) return;
-      rtcDeleteDevice(device);
+      rtcReleaseDevice(device);
     }
     
     operator RTCDevice () const { return device; }
@@ -72,7 +72,7 @@ namespace embree
     RTCDeviceRef& operator= (const RTCDeviceRef& in) 
     {
       if (in.device != device && device) 
-        rtcDeleteDevice(device);
+        rtcReleaseDevice(device);
       device = in.device;
       in.device = nullptr;
       return *this;
@@ -80,7 +80,7 @@ namespace embree
       
     RTCDeviceRef& operator= (nullptr_t) 
     {
-      if (device) rtcDeleteDevice(device);
+      if (device) rtcReleaseDevice(device);
       device = nullptr;
       return *this;
     }
@@ -585,20 +585,20 @@ namespace embree
     else { assert(false); return ""; }
   }
 
-  inline std::string to_string(RTCBuildHints hint_flags)
+  inline std::string to_string(RTCSceneFlags hint_flags)
   {
-    if  (hint_flags & RTC_BUILD_HINT_DYNAMIC) return "DynamicAccel";
+    if  (hint_flags & RTC_SCENE_FLAG_DYNAMIC) return "DynamicAccel";
     else return "StaticAccel";
   }
 
   struct SceneFlags
   {
-    SceneFlags (RTCAccelFlags aflags, RTCBuildQuality qflags, RTCBuildHints hflags)
+    SceneFlags (RTCAccelFlags aflags, RTCBuildQuality qflags, RTCSceneFlags hflags)
     : aflags(aflags), qflags(qflags), hflags(hflags) {}
 
     RTCAccelFlags aflags;
     RTCBuildQuality qflags;
-    RTCBuildHints hflags;
+    RTCSceneFlags hflags;
   };
   
   inline std::string to_string(SceneFlags sflags) {
@@ -616,11 +616,11 @@ namespace embree
     i = i%(3<<3);
     int accel_flags = 0;
     int hint_flags = 0;
-    if (i & 1) hint_flags  |= RTC_BUILD_HINT_DYNAMIC;
+    if (i & 1) hint_flags  |= RTC_SCENE_FLAG_DYNAMIC;
     if (i & 2) accel_flags |= RTC_ACCEL_COMPACT;
     if (i & 4) accel_flags |= RTC_ACCEL_ROBUST;
     int quality_flags = (i>>3)&3;
-    return SceneFlags((RTCAccelFlags)accel_flags,(RTCBuildQuality)quality_flags,(RTCBuildHints)hint_flags);
+    return SceneFlags((RTCAccelFlags)accel_flags,(RTCBuildQuality)quality_flags,(RTCSceneFlags)hint_flags);
   }
 
   static const size_t numSceneGeomFlags = 32;
@@ -718,7 +718,6 @@ namespace embree
     RTCIntersectContext context;
     rtcInitIntersectionContext(&context);
     context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
-    context.userRayExt = nullptr;
 
     switch (mode) 
     {

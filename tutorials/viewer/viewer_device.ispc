@@ -158,13 +158,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
-
-    if (g_use_smooth_normals)
-    {
-      Vec3f dPdu,dPdv;
-      rtcInterpolate(geometry->geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
-      dg.Ns = normalize(cross(dPdv,dPdu));
-    }
   }
   else if (geometry->type == CURVES)
   {
@@ -266,6 +259,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   dg.P  = ray.org+ray.tfar*ray.dir;
   dg.Ng = ray.Ng;
   dg.Ns = ray.Ng;
+
+  if (g_use_smooth_normals)
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    {
+      Vec3f dPdu,dPdv;
+      foreach_unique (geomID in ray.geomID) {
+        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      }
+      dg.Ns = cross(dPdv,dPdu);
+    }
 
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
@@ -384,5 +387,5 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

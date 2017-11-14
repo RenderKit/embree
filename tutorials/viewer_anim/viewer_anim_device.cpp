@@ -119,7 +119,7 @@ RTCScene createScene(ISPCScene* scene_in)
 {
   RTCScene scene = rtcDeviceNewScene(g_device);
   rtcSetBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetBuildHints(scene, RTC_BUILD_HINT_DYNAMIC);
+  rtcSetSceneFlags(scene, RTC_SCENE_FLAG_DYNAMIC);
   return scene;
 }
 
@@ -484,7 +484,7 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

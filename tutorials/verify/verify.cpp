@@ -164,7 +164,7 @@ namespace embree
     {
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHints(scene,sflags.hflags);
+      rtcSetSceneFlags(scene,sflags.hflags);
     }
 
     operator RTCScene() const {
@@ -630,7 +630,7 @@ namespace embree
     {
       RTCDevice device = rtcNewDevice("verbose=1");
       errorHandler(nullptr,rtcDeviceGetError(device));
-      rtcDeleteDevice(device);
+      rtcReleaseDevice(device);
       return VerifyApplication::PASSED;
     }
   };
@@ -712,9 +712,9 @@ namespace embree
       AssertNoError(device2);
       RTCDevice device3 = rtcNewDevice(cfg.c_str());
       AssertNoError(device3);
-      rtcDeleteDevice(device1);
-      rtcDeleteDevice(device3);
-      rtcDeleteDevice(device2);
+      rtcReleaseDevice(device1);
+      rtcReleaseDevice(device3);
+      rtcReleaseDevice(device2);
       return VerifyApplication::PASSED;
     }
   };
@@ -731,7 +731,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
-      VerifyScene scene(device,SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
+      VerifyScene scene(device,SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
       AssertNoError(device);
 
       Ref<SceneGraph::Node> node = nullptr;
@@ -769,7 +769,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
-      VerifyScene scene(device,SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
+      VerifyScene scene(device,SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
       AssertNoError(device);
 
       Ref<SceneGraph::Node> node = nullptr;
@@ -918,7 +918,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHints(scene,sflags.hflags);
+      rtcSetSceneFlags(scene,sflags.hflags);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
@@ -953,7 +953,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHints(scene,sflags.hflags);
+      rtcSetSceneFlags(scene,sflags.hflags);
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,quality,2));
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device),quality);
@@ -1009,7 +1009,7 @@ namespace embree
         RTCScene scene = rtcDeviceNewScene(device);
         rtcSetAccelFlags(scene,sflags.aflags);
         rtcSetBuildQuality(scene,sflags.qflags);
-        rtcSetBuildHints(scene,sflags.hflags);
+        rtcSetSceneFlags(scene,sflags.hflags);
         
         RTCGeometry geom = rtcNewTriangleMesh(device);
         rtcSetGeometryBuildQuality(geom,quality);
@@ -2101,7 +2101,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHints(scene,sflags.hflags);
+      rtcSetSceneFlags(scene,sflags.hflags);
       RTCGeometry geom = rtcNewTriangleMesh (device);
       rtcSetGeometryBuildQuality(geom,quality);
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
@@ -2176,7 +2176,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device);
       rtcSetAccelFlags(scene,sflags.aflags);
       rtcSetBuildQuality(scene,sflags.qflags);
-      rtcSetBuildHints(scene,sflags.hflags);
+      rtcSetSceneFlags(scene,sflags.hflags);
       RTCGeometry geom = rtcNewQuadMesh (device);
       rtcSetGeometryBuildQuality(geom, quality);
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
@@ -3129,7 +3129,7 @@ namespace embree
       delete thread; thread = nullptr;
       return;
     }
-    task->scene = new VerifyScene(thread->device,SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC));
+    task->scene = new VerifyScene(thread->device,SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_SCENE_FLAG_DYNAMIC));
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
     const size_t numSlots = 20;
@@ -3606,7 +3606,6 @@ namespace embree
       RTCIntersectContext context;
       rtcInitIntersectionContext(&context);
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
 
       switch (imode) 
       {
@@ -3770,7 +3769,6 @@ namespace embree
       RTCIntersectContext context;
       rtcInitIntersectionContext(&context);
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
 
       RandomSampler sampler;
       RandomSampler_init(sampler, (int)i);
@@ -4064,25 +4062,25 @@ namespace embree
     intersectVariants.push_back(VARIANT_INTERSECT_OCCLUDED_COHERENT);
 
     /* create list of all scene flags to test */
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_HIGH,  RTC_BUILD_HINT_NONE));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_HIGH,  RTC_SCENE_FLAG_NONE));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlags.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
 
-    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
-    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE));
-    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
+    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
+    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE));
+    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlagsRobust.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
 
-    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
-    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC));
+    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
+    sceneFlagsDynamic.push_back(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC));
 
     /**************************************************************************/
     /*                      Smaller API Tests                                 */
@@ -4189,10 +4187,10 @@ namespace embree
 
       GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> sflags_quality_memory;
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_ROBUST,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC),RTC_BUILD_QUALITY_LOW));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE),   RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE),   RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_ROBUST,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE),   RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC),RTC_BUILD_QUALITY_LOW));
 
       push(new TestGroup("memory_consumption",false,false));
 
@@ -4404,11 +4402,11 @@ namespace embree
       push(new TestGroup("benchmarks",false,false));
 
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> benchmark_sflags_quality;
-      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
-      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
-      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
-      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
-      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_LOW,   RTC_BUILD_HINT_DYNAMIC),RTC_BUILD_QUALITY_LOW));
+      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
+      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_ROBUST,        RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
+      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_COMPACT,       RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
+      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_ROBUST_COMPACT,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE   ),RTC_BUILD_QUALITY_MEDIUM));
+      benchmark_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,       RTC_BUILD_QUALITY_LOW,   RTC_SCENE_FLAG_DYNAMIC),RTC_BUILD_QUALITY_LOW));
 
       std::vector<std::pair<IntersectMode,IntersectVariant>> benchmark_imodes_ivariants;
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1,VARIANT_INTERSECT));
@@ -4447,8 +4445,8 @@ namespace embree
                                                           isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
 
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> benchmark_create_sflags_quality;
-      benchmark_create_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_HINT_NONE),RTC_BUILD_QUALITY_MEDIUM));
-      benchmark_create_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC),RTC_BUILD_QUALITY_LOW));
+      benchmark_create_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_MEDIUM,RTC_SCENE_FLAG_NONE),RTC_BUILD_QUALITY_MEDIUM));
+      benchmark_create_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_SCENE_FLAG_DYNAMIC),RTC_BUILD_QUALITY_LOW));
 
       GeometryType benchmark_create_gtypes[] = { 
         TRIANGLE_MESH, 
@@ -4479,9 +4477,9 @@ namespace embree
                                                           isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false,true));
 
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> benchmark_update_sflags_quality;
-      benchmark_update_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC),RTC_BUILD_QUALITY_MEDIUM));
-      benchmark_update_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC),RTC_BUILD_QUALITY_REFIT));
-      benchmark_update_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_BUILD_HINT_DYNAMIC),RTC_BUILD_QUALITY_LOW));
+      benchmark_update_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_SCENE_FLAG_DYNAMIC),RTC_BUILD_QUALITY_MEDIUM));
+      benchmark_update_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_SCENE_FLAG_DYNAMIC),RTC_BUILD_QUALITY_REFIT));
+      benchmark_update_sflags_quality.push_back(std::make_pair(SceneFlags(RTC_ACCEL_FAST,RTC_BUILD_QUALITY_LOW,RTC_SCENE_FLAG_DYNAMIC),RTC_BUILD_QUALITY_LOW));
 
       for (auto gtype : benchmark_create_gtypes)
         for (auto sflags : benchmark_update_sflags_quality)
