@@ -64,14 +64,12 @@ namespace embree
       return runIntersectionFilter1Helper(&args,geometry,context);
     }
 
-#if 0
     __forceinline void reportIntersection1(IntersectFunctionNArguments* args)
     {
       const Geometry* const geometry = args->geometry;
-      IntersectContext* context = args->context;
+      IntersectContext* context = args->internal_context;
       runIntersectionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
     }
-#endif
     
     __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
     {
@@ -108,14 +106,12 @@ namespace embree
       return runOcclusionFilter1Helper(&args,geometry,context);
     }
 
-#if 0
-    __forceinline void reportOcclusion1(OcclusionFunctionNArguments* args)
+    __forceinline void reportOcclusion1(OccludedFunctionNArguments* args)
     {
       const Geometry* const geometry = args->geometry;
-      IntersectContext* context = args->context;
+      IntersectContext* context = args->internal_context;
       runOcclusionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
     }
-#endif   
 
     template<int K>
       __forceinline vbool<K> runIntersectionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
@@ -160,15 +156,13 @@ namespace embree
       return runIntersectionFilterHelper<K>(&args,geometry,context);
     }
 
-#if 0
     template<int K>
       __forceinline void reportIntersectionK(IntersectFunctionNArguments* args)
     {
       const Geometry* const geometry = args->geometry;
-      IntersectContext* context = args->context;
+      IntersectContext* context = args->internal_context;
       runIntersectionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
     }
-#endif
 
     template<int K>
       __forceinline vbool<K> runOcclusionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
@@ -214,14 +208,12 @@ namespace embree
       return runOcclusionFilterHelper<K>(&args,geometry,context);
     }
 
-#if 0
     template<int K>
-      __forceinline void reportOcclusionK(OcclusionFunctionNArguments* args)
+      __forceinline void reportOcclusionK(OccludedFunctionNArguments* args)
     {
       const Geometry* const geometry = args->geometry;
-      IntersectContext* context = args->context;
+      IntersectContext* context = args->internal_context;
       runOcclusionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
     }
-#endif
   }
 }

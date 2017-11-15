@@ -812,6 +812,18 @@ namespace embree
     return nullptr;
   }
 
+  RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args_i)
+  {
+    IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
+    args->report(args);
+  }
+
+  RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args_i)
+  {
+    OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
+    args->report(args);
+  }
+  
   RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;

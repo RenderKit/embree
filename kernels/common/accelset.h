@@ -20,9 +20,30 @@
 #include "builder.h"
 #include "geometry.h"
 #include "ray.h"
+#include "hit.h"
 
 namespace embree
 {
+  struct IntersectFunctionNArguments;
+  struct OccludedFunctionNArguments;
+  
+  typedef void (*ReportIntersectionFunc) (IntersectFunctionNArguments* args);
+  typedef void (*ReportOcclusionFunc) (OccludedFunctionNArguments* args);
+  
+  struct IntersectFunctionNArguments : public RTCIntersectFunctionNArguments
+  {
+    IntersectContext* internal_context;
+    Geometry* geometry;
+    ReportIntersectionFunc report;
+  };
+
+  struct OccludedFunctionNArguments : public RTCOccludedFunctionNArguments
+  {
+    IntersectContext* internal_context;
+    Geometry* geometry;
+    ReportOcclusionFunc report;
+  };
+
   /*! Base class for set of acceleration structures. */
   class AccelSet : public Geometry
   {
@@ -137,75 +158,95 @@ namespace embree
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (Ray& ray, size_t item, IntersectContext* context) 
+      __forceinline void intersect (Ray& ray, size_t item, IntersectContext* context, ReportIntersectionFunc report) 
       {
         assert(item < size());
         assert(intersectors.intersectorN.intersect);
         
         int mask = -1;
-        RTCIntersectFunctionNArguments args;
+        Hit hit;
+        IntersectFunctionNArguments args;
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
+        args.potentialHit = (RTCHitN*)&hit;
         args.N = 1;
         args.item = (unsigned int)item;
+        args.internal_context = context;
+        args.geometry = this;
+        args.report = report;
         
         intersectors.intersectorN.intersect(&args);
       }
 
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (Ray& ray, size_t item, IntersectContext* context) 
+      __forceinline void occluded (Ray& ray, size_t item, IntersectContext* context, ReportOcclusionFunc report) 
       {
         assert(item < size());
         assert(intersectors.intersectorN.occluded);
         
         int mask = -1;
-        RTCOccludedFunctionNArguments args;
+        Hit hit;
+        OccludedFunctionNArguments args;
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
+        args.potentialHit = (RTCHitN*)&hit;
         args.N = 1;
         args.item = (unsigned int)item;
+        args.internal_context = context;
+        args.geometry = this;
+        args.report = report;
         
         intersectors.intersectorN.occluded(&args);
       }
    
       /*! Intersects a packet of K rays with the scene. */
       template<int K>
-        __forceinline void intersect (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context) 
+        __forceinline void intersect (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context, ReportIntersectionFunc report) 
       {
         assert(item < size());
         assert(intersectors.intersectorN.intersect);
         
         vint<K> mask = valid.mask32();
-        RTCIntersectFunctionNArguments args;
+        HitK<K> hit;
+        IntersectFunctionNArguments args;
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
+        args.potentialHit = (RTCHitN*)&hit;
         args.N = K;
-        args.item = (unsigned int)item; 
+        args.item = (unsigned int)item;
+        args.internal_context = context;
+        args.geometry = this;
+        args.report = report;
          
         intersectors.intersectorN.intersect(&args);
       }
 
       /*! Tests if a packet of K rays is occluded by the scene. */
       template<int K>
-        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context) 
+        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context, ReportOcclusionFunc report) 
       {
         assert(item < size());
         assert(intersectors.intersectorN.occluded);
         
         vint<K> mask = valid.mask32();
-        RTCOccludedFunctionNArguments args;
+        HitK<K> hit;
+        OccludedFunctionNArguments args;
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.rays = (RTCRayN*)&ray;
+        args.potentialHit = (RTCHitN*)&hit;
         args.N = K;
-        args.item = (unsigned int)item; 
+        args.item = (unsigned int)item;
+        args.internal_context = context;
+        args.geometry = this;
+        args.report = report;
              
         intersectors.intersectorN.occluded(&args);
       }

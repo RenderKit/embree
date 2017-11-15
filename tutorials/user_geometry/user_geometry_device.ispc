@@ -109,7 +109,6 @@ unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform 
   void* uniform ptr  = args->geomUserPtr;
   uniform RTCIntersectContext* uniform context = args->context;
   RTCRayN* uniform rays = args->rays;
-  
   assert(args->N == programCount);
   if (!valid[programIndex])
     return;
@@ -200,7 +199,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
   /* avoid crashing when debug visualizations are used */
   if (args->context == NULL)
     return;
-
+  
   /* fast path */
   if (args->N == programCount) {
     instanceOccludedFunc(args);

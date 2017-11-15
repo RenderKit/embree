@@ -119,6 +119,7 @@ struct RTCIntersectFunctionNArguments
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform rays;               /*!< ray packet of size N */
+  struct RTCHitN* potentialHit;              /*!< potential new hit */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
 };
@@ -133,12 +134,19 @@ struct RTCOccludedFunctionNArguments
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform rays;               /*!< ray packet of size N */
+  struct RTCHitN* potentialHit;              /*!< potential new hit */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
 };
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef unmasked void (*RTCOccludedFunctionN) (const struct RTCOccludedFunctionNArguments* uniform const args);
+
+/*! report intersection from intersect function */
+void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args);
+
+/*! report intersection from occluded function */
+void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
