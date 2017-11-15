@@ -52,23 +52,17 @@ namespace embree
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
-      const int ray_geomID = ray.geomID;
-      const int ray_instID = ray.instID;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = instance->geomID;
+      user_context->instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.intersect((RTCRay&)ray,&context);
+      user_context->instID = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
-      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-        ray.geomID = ray_geomID;
-        ray.instID = ray_instID;
-      }
     }
     
-  __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
+    __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
@@ -80,9 +74,10 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
-      ray.instID = instance->geomID;
+      user_context->instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
+      user_context->instID = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
@@ -120,19 +115,14 @@ namespace embree
 
       const Vec3vf<N> ray_org = ray.org;
       const Vec3vf<N> ray_dir = ray.dir;
-      const vint<N> ray_geomID = ray.geomID;
-      const vint<N> ray_instID = ray.instID;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = instance->geomID;
+      user_context->instID = instance->geomID;
       IntersectContext context(instance->object,user_context); 
       intersectObject((vint<N>*)validi,instance->object,&context,ray);
+      user_context->instID = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
-      vbool<N> nohit = ray.geomID == vint<N>(RTC_INVALID_GEOMETRY_ID);
-      ray.geomID = select(nohit,ray_geomID,ray.geomID);
-      ray.instID = select(nohit,ray_instID,ray.instID);
     }
 
     template<int N>
@@ -152,9 +142,10 @@ namespace embree
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.instID = instance->geomID;
+      user_context->instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
       occludedObject((vint<N>*)validi,instance->object,&context,ray);
+      user_context->instID = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }

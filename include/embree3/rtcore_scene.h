@@ -82,12 +82,14 @@ struct RTCIntersectContext
 {
   enum RTCIntersectFlags flags;   //!< intersection flags
   RTCFilterFunctionN filter;      //!< filter function to execute
+  unsigned int instID;            //!< will be set to geomID of instance when instance is entered
 };
 
 RTCORE_FORCEINLINE void rtcInitIntersectionContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_INCOHERENT;
   context->filter = NULL;
+  context->instID = -1;
 }
 
 /*! \brief Defines an opaque scene type */

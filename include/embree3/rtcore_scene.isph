@@ -63,6 +63,7 @@ struct RTCIntersectContext
 {
   RTCIntersectFlags flags;   //!< intersection flags
   void* filter;              //!< filter function to execute
+  unsigned int instID;       //!< will be set to geomID of instance when instance is entered
 };
 
 /*! Arguments for RTCFilterFunctionN callback */
@@ -83,6 +84,7 @@ RTCORE_FORCEINLINE void rtcInitIntersectionContext(uniform RTCIntersectContext* 
 {
   context->flags = RTC_INTERSECT_INCOHERENT;
   context->filter = NULL;
+  context->instID = -1;
 }
 
 /*! \brief Defines an opaque scene type */
