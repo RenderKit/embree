@@ -185,42 +185,42 @@ struct RTCHitN;
 #if defined(__cplusplus)
 
 /* Helper functions to access ray packets of runtime size N */
-RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }  //!< Start of ray segment 
+RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[3*N+i]; }  //!< Start of ray segment 
 
-RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }  //!< x coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }  //!< y coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[6*N+i]; }  //!< z coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[7*N+i]; }  //!< End of ray segment (set to hit distance)
+RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[4*N+i]; }  //!< x coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[5*N+i]; }  //!< y coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[6*N+i]; }  //!< z coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[7*N+i]; }  //!< End of ray segment (set to hit distance)
 
-RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)   ptr)[8*N+i]; }   //!< Time of this ray for motion blur 
-RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[9*N+i]; }   //!< Used to mask out objects during traversal
+RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)   ptr)[8*N+i]; }   //!< Time of this ray for motion blur 
+RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[9*N+i]; }   //!< Used to mask out objects during traversal
 
-RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[10*N+i]; }  //!< x coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[11*N+i]; }  //!< y coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[12*N+i]; }  //!< z coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[10*N+i]; }  //!< x coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[11*N+i]; }  //!< y coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[12*N+i]; }  //!< z coordinate of geometry normal
 
-RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[13*N+i]; }  //!< Barycentric u coordinate of hit
-RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[14*N+i]; }  //!< Barycentric v coordinate of hit
+RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[13*N+i]; }  //!< Barycentric u coordinate of hit
+RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[14*N+i]; }  //!< Barycentric v coordinate of hit
 
-RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[15*N+i]; }  //!< geometry ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[16*N+i]; }  //!< primitive ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }  //!< instance ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[15*N+i]; }  //!< geometry ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[16*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[17*N+i]; }  //!< instance ID
 
 /* Helper functions to access hit packets of size N */
-RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of geometry normal
 
-RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[3*N+i]; }  //!< instance ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[4*N+i]; }  //!< geometry ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[5*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[3*N+i]; }  //!< instance ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[4*N+i]; }  //!< geometry ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((unsigned*)ptr)[5*N+i]; }  //!< primitive ID
 
-RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[6*N+i]; } //!< Barycentric u coordinate of hit
-RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[7*N+i]; } //!< Barycentric v coordinate of hit
-RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[8*N+i]; } //!< hit distance
+RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[6*N+i]; } //!< Barycentric u coordinate of hit
+RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[7*N+i]; } //!< Barycentric v coordinate of hit
+RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, unsigned int N = 1, unsigned int i = 0) { return ((float*)ptr)[8*N+i]; } //!< hit distance
 
 /* Helper structure to create a ray packet of compile time size N */
 template<int N>

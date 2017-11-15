@@ -192,32 +192,20 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     return;
 
   /* fast path for SIMD width == N and only a single input packet */
-  unsigned mask = RTCRayN_mask(ray,N,0);
+  unsigned mask = RTCRayN_mask(ray,N);
   if (programCount == N && all((mask & 0x80000000) == 0))
   {
     /* ignore inactive rays */
     if (valid[programIndex] != -1) return;
   
-    const uniform unsigned int rayID = 0;
-    const float tfar   = RTCHitN_t(potentialHit,N,rayID);
+    const float tfar   = RTCHitN_t(potentialHit,N);
     varying Ray2 *uniform ray2 = (varying Ray2* uniform) context->userRayExt;
 
     Vec3f h = ray2->ray.org + ray2->ray.dir*tfar;
 
     float T = transparencyFunction(h);
     if (T < 1.0f) 
-    {
       ray2->transparency = T;
-      // ray2->ray.instID = RTCHitN_instID(potentialHit,N,rayID);
-      // ray2->ray.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-      // ray2->ray.primID = RTCHitN_primID(potentialHit,N,rayID);
-      // ray2->ray.u      = RTCHitN_u(potentialHit,N,rayID);
-      // ray2->ray.v      = RTCHitN_v(potentialHit,N,rayID);
-      // ray2->ray.tfar   = tfar;
-      // ray2->ray.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
-      // ray2->ray.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
-      // ray2->ray.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
-    }
     else
       valid[programIndex] = 0;
 
@@ -251,22 +239,9 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     /* ignore hit if completely transparent */
     if (T >= 1.0f) 
       valid[vi] = 0;
-
     /* otherwise accept hit and remember transparency */
     else
     {
-      // RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
-      // RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
-      // RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
-
-      // RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
-      // RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
-      // RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
-
-      // RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
-      // RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
-      // RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
-
       if (context) {
         varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
         assert(eray);
@@ -290,16 +265,15 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
     return;
 
   /* fast path for SIMD width == N and only a single input packet */
-  unsigned mask = RTCRayN_mask(ray,N,0);
+  unsigned mask = RTCRayN_mask(ray,N);
   if (programCount == N && all((mask & 0x80000000) == 0))
   {
     /* ignore inactive rays */
     if (valid[programIndex] != -1) return;
   
-    const uniform unsigned int rayID = 0;
-    const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
-    const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);
-    const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+    const unsigned int geomID = RTCHitN_geomID(potentialHit,N);
+    const unsigned int primID = RTCHitN_primID(potentialHit,N);
+    const float tfar          = RTCHitN_t(potentialHit,N);
     varying Ray2 *uniform ray2 = (varying Ray2* uniform) context->userRayExt;
     assert(ray2);
 
