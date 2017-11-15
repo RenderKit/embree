@@ -823,6 +823,7 @@ namespace embree
           /* update hit information */
 #if defined(__AVX512F__)
           ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<Mx>(hit.vNg.x),vfloat<Mx>(hit.vNg.y),vfloat<Mx>(hit.vNg.z),geomID,vint<Mx>(primIDs));
+          ray.instID[k] = context->instID;
 #else
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
@@ -962,6 +963,7 @@ namespace embree
 #if defined(__AVX512F__)
           const Vec3fa Ng = hit.Ng(i);
           ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<M>(Ng.x),vfloat<M>(Ng.y),vfloat<M>(Ng.z),geomID,vint<M>(primID));
+          ray.instID[k] = context->instID;
 #else
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
