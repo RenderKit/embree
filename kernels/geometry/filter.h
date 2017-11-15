@@ -25,6 +25,32 @@ namespace embree
 {
   namespace isa
   {
+    __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+    {
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      if (geometry->intersectionFilterN)
+#endif
+      {
+        assert(context->scene->hasGeometryFilterFunction());
+        geometry->intersectionFilterN(args);
+      }
+      
+      if (args->valid[0] == 0)
+        return false;
+      
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      if (context->user->filter) {
+        assert(context->scene->hasContextFilterFunction());
+        context->user->filter(args);
+      }
+
+      if (args->valid[0] == 0)
+        return false;
+#endif
+      copyHitToRay(*(Ray*)args->ray,*(Hit*)args->potentialHit);
+      return true;
+    }
+    
     __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
     {
       RTCFilterFunctionNArguments args;
@@ -35,30 +61,40 @@ namespace embree
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = 1;
+      return runIntersectionFilter1Helper(&args,geometry,context);
+    }
 
+#if 0
+    __forceinline void reportIntersection1(IntersectFunctionNArguments* args)
+    {
+      const Geometry* const geometry = args->geometry;
+      IntersectContext* context = args->context;
+      runIntersectionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
+    }
+#endif
+    
+    __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+    {
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      if (geometry->intersectionFilterN)
+      if (geometry->occlusionFilterN)
 #endif
       {
         assert(context->scene->hasGeometryFilterFunction());
-        geometry->intersectionFilterN(&args);
+        geometry->occlusionFilterN(args);
       }
       
-      if (mask == 0)
-        return false;
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      if (args->valid[0] == 0)
+        return false;
+      
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
-        context->user->filter(&args);
+        context->user->filter(args);
       }
-
-      if (mask == 0)
-        return false;
 #endif
-      copyHitToRay(ray,hit);
-      return true;
+      return args->valid[0] != 0;
     }
-    
+
     __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
     {
       RTCFilterFunctionNArguments args;
@@ -69,26 +105,47 @@ namespace embree
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = 1;
+      return runOcclusionFilter1Helper(&args,geometry,context);
+    }
 
+#if 0
+    __forceinline void reportOcclusion1(OcclusionFunctionNArguments* args)
+    {
+      const Geometry* const geometry = args->geometry;
+      IntersectContext* context = args->context;
+      runOcclusionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
+    }
+#endif   
+
+    template<int K>
+      __forceinline vbool<K> runIntersectionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+    {
+      vint<K>* mask = (vint<K>*) args->valid;
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      if (geometry->occlusionFilterN)
+      if (geometry->intersectionFilterN)
 #endif
       {
         assert(context->scene->hasGeometryFilterFunction());
-        geometry->occlusionFilterN(&args);
+        geometry->intersectionFilterN(args);
       }
-      
-#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      if (mask == 0)
-        return false;
+
+      vbool<K> valid_o = *mask != vint<K>(zero);
+      if (none(valid_o)) return valid_o;
+
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)      
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
-        context->user->filter(&args);
+        context->user->filter(args);
       }
-#endif
-      return mask != 0;
-    }
 
+      valid_o = *mask != vint<K>(zero);
+      if (none(valid_o)) return valid_o;
+#endif
+      
+      copyHitToRay(valid_o,*(RayK<K>*)args->ray,*(HitK<K>*)args->potentialHit);
+      return valid_o;
+    }
+    
     template<int K>
     __forceinline vbool<K> runIntersectionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, IntersectContext* context, HitK<K>& hit)
     {
@@ -100,31 +157,46 @@ namespace embree
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = K;
+      return runIntersectionFilterHelper<K>(&args,geometry,context);
+    }
 
+#if 0
+    template<int K>
+      __forceinline void reportIntersectionK(IntersectFunctionNArguments* args)
+    {
+      const Geometry* const geometry = args->geometry;
+      IntersectContext* context = args->context;
+      runIntersectionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
+    }
+#endif
+
+    template<int K>
+      __forceinline vbool<K> runOcclusionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+    {
+      vint<K>* mask = (vint<K>*) args->valid;
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      if (geometry->intersectionFilterN)
+      if (geometry->occlusionFilterN)
 #endif
       {
         assert(context->scene->hasGeometryFilterFunction());
-        geometry->intersectionFilterN(&args);
+        geometry->occlusionFilterN(args);
       }
 
-      vbool<K> valid_o = mask != vint<K>(zero);
-      assert(none(!valid & valid_o));
+      vbool<K> valid_o = *mask != vint<K>(zero);
+      
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
       if (none(valid_o)) return valid_o;
 
-#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)      
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
-        context->user->filter(&args);
+        context->user->filter(args);
       }
 
-      valid_o = mask != vint<K>(zero);
-      assert(none(!valid & valid_o));
-      if (none(valid_o)) return valid_o;
+      valid_o = *mask != vint<K>(zero);
 #endif
-      
-      copyHitToRay(valid_o,ray,hit);
+
+      RayK<K>* ray = (RayK<K>*) args->ray;
+      ray->geomID = select(valid_o, vint<K>(zero), ray->geomID);
       return valid_o;
     }
 
@@ -139,32 +211,17 @@ namespace embree
       args.ray = (RTCRayN*)&ray;
       args.potentialHit = (RTCHitN*)&hit;
       args.N = K;
-
-#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      if (geometry->occlusionFilterN)
-#endif
-      {
-        assert(context->scene->hasGeometryFilterFunction());
-        geometry->occlusionFilterN(&args);
-      }
-
-      vbool<K> valid_o = mask != vint<K>(zero);
-      assert(none(!valid & valid_o));
-      
-#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      if (none(valid_o)) return valid_o;
-
-      if (context->user->filter) {
-        assert(context->scene->hasContextFilterFunction());
-        context->user->filter(&args);
-      }
-
-      valid_o = mask != vint<K>(zero);
-      assert(none(!valid & valid_o));
-#endif
-      
-      ray.geomID = select(valid_o, vint<K>(zero), ray.geomID);
-      return valid_o;
+      return runOcclusionFilterHelper<K>(&args,geometry,context);
     }
+
+#if 0
+    template<int K>
+      __forceinline void reportOcclusionK(OcclusionFunctionNArguments* args)
+    {
+      const Geometry* const geometry = args->geometry;
+      IntersectContext* context = args->context;
+      runOcclusionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
+    }
+#endif
   }
 }
