@@ -35,7 +35,7 @@ namespace embree
       flags_modified(true),
       accel_flags(RTC_ACCEL_FAST),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
-      hint_flags(RTC_SCENE_FLAG_NONE),
+      scene_flags(RTC_SCENE_FLAG_NONE),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFiltersN(0)
@@ -57,8 +57,8 @@ namespace embree
       accel_flags = (RTCAccelFlags) device->accel_flags;
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
-    if (device->hint_flags != -1)
-      hint_flags = (RTCSceneFlags) device->hint_flags;
+    if (device->scene_flags != -1)
+      scene_flags = (RTCSceneFlags) device->scene_flags;
   }
 
   Scene::~Scene () 
@@ -694,6 +694,10 @@ namespace embree
     flags_modified = true;
   }
 
+  RTCAccelFlags Scene::getAccelFlags() const {
+    return accel_flags;
+  }
+
   void Scene::setBuildQuality(RTCBuildQuality quality_flags_i)
   {
     if (quality_flags == quality_flags_i) return;
@@ -701,11 +705,19 @@ namespace embree
     flags_modified = true;
   }
 
-  void Scene::setBuildHints(RTCSceneFlags hint_flags_i)
+  RTCBuildQuality Scene::getBuildQuality() const {
+    return quality_flags;
+  }
+
+  void Scene::setSceneFlags(RTCSceneFlags scene_flags_i)
   {
-    if (hint_flags == hint_flags_i) return;
-    hint_flags = hint_flags_i;
+    if (scene_flags == scene_flags_i) return;
+    scene_flags = scene_flags_i;
     flags_modified = true;
+  }
+
+  RTCSceneFlags Scene::getSceneFlags() const {
+    return scene_flags;
   }
                    
 #if defined(TASKING_INTERNAL)
