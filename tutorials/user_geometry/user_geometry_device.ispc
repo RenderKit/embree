@@ -418,7 +418,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-#if 1
+#if 0
     RTCHitN_u(potentialhit,N,ui) = 0.0f;
     RTCHitN_v(potentialhit,N,ui) = 0.0f;
     RTCHitN_instID(potentialhit,N,ui) = args->context->instID;
@@ -522,7 +522,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-#if 1
+#if 0
 
     RTCHitN_u(potentialhit,N,ui) = 0.0f;
     RTCHitN_v(potentialhit,N,ui) = 0.0f;
