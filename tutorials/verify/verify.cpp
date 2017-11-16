@@ -2308,11 +2308,11 @@ namespace embree
       const Vec3fa dy = Vec3fa(0.0f,1.0f,0.0f);
       switch (gtype) {
       case TRIANGLE_MESH:    scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)); break;
-      case TRIANGLE_MESH_MB: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f))); break;
+      case TRIANGLE_MESH_MB: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(zero)); break;
       case QUAD_MESH:        scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane(p0,dx,dy,1,1)); break;
-      case QUAD_MESH_MB:     scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f))); break;
+      case QUAD_MESH_MB:     scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(zero)); break;
       case SUBDIV_MESH:      scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)); break;
-      case SUBDIV_MESH_MB:   scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(random_motion_vector(1.0f))); break;
+      case SUBDIV_MESH_MB:   scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(zero)); break;
       default:               throw std::runtime_error("unsupported geometry type: "+to_string(gtype)); 
       }
       
