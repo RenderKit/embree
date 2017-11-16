@@ -38,9 +38,9 @@ struct Ray2
   float transparency; //!< accumulated transparency value
 
   // we remember up to 16 hits to ignore duplicate hits
+  unsigned int firstHit, lastHit;
   unsigned int hit_geomIDs[HIT_LIST_LENGTH];
   unsigned int hit_primIDs[HIT_LIST_LENGTH];
-  unsigned int firstHit, lastHit;
 };
 
 inline varying RTCRay* uniform RTCRay_(varying Ray2& ray)
@@ -164,6 +164,12 @@ inline float gather(varying float& ptr, const uniform size_t stride, const size_
   return uptr[rid];
 }
 
+inline unsigned int gather(varying unsigned int& ptr, const uniform size_t stride, const size_t pid, const size_t rid)
+{
+  uniform unsigned int* uptr = (uniform unsigned int*) (((uniform int8* uniform)&ptr) + pid*stride);
+  return uptr[rid];
+}
+
 inline unsigned int gather(varying unsigned int& ptr, const varying unsigned int idx, const uniform size_t stride, const size_t pid, const size_t rid)
 {
   uniform unsigned int* uptr = (uniform unsigned int*) (((uniform int8* uniform)&ptr) + pid*stride);
@@ -172,6 +178,10 @@ inline unsigned int gather(varying unsigned int& ptr, const varying unsigned int
 
 inline void scatter(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid, float v) {
   ((uniform float*)(((uniform int8* uniform)&ptr) + pid*stride))[rid] = v;
+}
+
+inline void scatter(varying unsigned int& ptr, const uniform size_t stride, const size_t pid, const size_t rid, unsigned int v) {
+  ((uniform unsigned int*)(((uniform int8* uniform)&ptr) + pid*stride))[rid] = v;
 }
 
 inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, const uniform size_t stride, const size_t pid, const size_t rid, unsigned int v) {
@@ -205,12 +215,8 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     /* read ray/hit from ray structure */
     RTCRay ray = RTCRayNtoRTCRay(rayN,N,ui);
     RTCHit hit = RTCHitNtoRTCHit(hitN,N,ui);
-    Vec3f ray_org = make_Vec3f(ray.orgx,ray.orgy,ray.orgz);
-    Vec3f ray_dir = make_Vec3f(ray.dirx,ray.diry,ray.dirz);
-
-    /* decode ray IDs */
-    int pid = (ray.mask & 0xFFFF) / programCount;
-    int rid = (ray.mask & 0xFFFF) % programCount;
+    const Vec3f ray_org = make_Vec3f(ray.orgx,ray.orgy,ray.orgz);
+    const Vec3f ray_dir = make_Vec3f(ray.dirx,ray.diry,ray.dirz);
 
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir  * hit.t;
@@ -222,11 +228,12 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     /* otherwise accept hit and remember transparency */
     else
     {
-      if (context) {
-        varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
-        assert(eray);
-        scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
-      }
+    /* decode ray IDs */
+      const unsigned int pid = (ray.mask & 0xFFFF) / programCount;
+      const unsigned int rid = (ray.mask & 0xFFFF) % programCount;
+      varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
+      assert(eray);
+      scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
     }
   }
 }
@@ -241,8 +248,7 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
-  if (context == NULL)
-    return;
+  if (context == NULL) return;
 
   /* iterate over all rays in ray packet */
   for (uniform unsigned int ui=0; ui<N; ui+=programCount)
@@ -257,24 +263,22 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
     /* read ray/hit from ray structure */
     RTCRay ray = RTCRayNtoRTCRay(rayN,N,ui);
     RTCHit hit = RTCHitNtoRTCHit(hitN,N,ui);
-    Vec3f ray_org = make_Vec3f(ray.orgx,ray.orgy,ray.orgz);
-    Vec3f ray_dir = make_Vec3f(ray.dirx,ray.diry,ray.dirz);
-    const unsigned int ray_mask   = ray.mask;
+    const Vec3f ray_org = make_Vec3f(ray.orgx,ray.orgy,ray.orgz);
+    const Vec3f ray_dir = make_Vec3f(ray.dirx,ray.diry,ray.dirz);
     const unsigned int hit_geomID = hit.geomID;
     const unsigned int hit_primID = hit.primID;
-    const float hit_t             = hit.t;
 
     /* decode ray IDs */
-    int pid = (ray_mask & 0xFFFF) / programCount;
-    int rid = (ray_mask & 0xFFFF) % programCount;
+    const unsigned int pid = (ray.mask & 0xFFFF) / programCount;
+    const unsigned int rid = (ray.mask & 0xFFFF) % programCount;
     varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
     assert(eray);
 
     /* The occlusion filter function may be called multiple times with
      * the same hit. We remember the last N hits, and skip duplicates. */
     bool already_hit = false;
-    unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(Ray2),pid,rid);
-    unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(Ray2),pid,rid);
+    unsigned int eray_firstHit = gather(eray->firstHit,sizeof(Ray2),pid,rid);
+    unsigned int eray_lastHit =  gather(eray->lastHit ,sizeof(Ray2),pid,rid);
     for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
@@ -295,12 +299,12 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
     scatter(eray->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid,hit_geomID);
     scatter(eray->hit_primIDs[0],slot,sizeof(Ray2),pid,rid,hit_primID);
     eray_lastHit++;
-    scatter(eray->lastHit,0,sizeof(Ray2),pid,rid,eray_lastHit);
+    scatter(eray->lastHit,sizeof(Ray2),pid,rid,eray_lastHit);
     if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
-      scatter(eray->firstHit,0,sizeof(Ray2),pid,rid,eray_firstHit+1);
+      scatter(eray->firstHit,sizeof(Ray2),pid,rid,eray_firstHit+1);
 
     /* calculate transparency */
-    Vec3f h = ray_org + ray_dir*hit_t;
+    Vec3f h = ray_org + ray_dir * hit.t;
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */
