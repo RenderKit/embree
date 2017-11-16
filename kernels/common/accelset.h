@@ -27,8 +27,8 @@ namespace embree
   struct IntersectFunctionNArguments;
   struct OccludedFunctionNArguments;
   
-  typedef void (*ReportIntersectionFunc) (IntersectFunctionNArguments* args);
-  typedef void (*ReportOcclusionFunc) (OccludedFunctionNArguments* args);
+  typedef void (*ReportIntersectionFunc) (IntersectFunctionNArguments* args, unsigned int begin, unsigned int end);
+  typedef void (*ReportOcclusionFunc) (OccludedFunctionNArguments* args, unsigned int begin, unsigned int end);
   
   struct IntersectFunctionNArguments : public RTCIntersectFunctionNArguments
   {

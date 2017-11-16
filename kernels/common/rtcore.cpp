@@ -138,6 +138,17 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
+  RTCORE_API RTCAccelFlags rtcGetAccelFlags(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetAccelFlags);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->getAccelFlags();
+    RTCORE_CATCH_END2(scene);
+    return RTC_ACCEL_FAST;
+  }
+  
   RTCORE_API void rtcSetBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
   {
     Scene* scene = (Scene*) hscene;
@@ -152,14 +163,36 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags hint) 
+  RTCORE_API RTCBuildQuality rtcGetBuildQuality(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetBuildQuality);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->getBuildQuality();
+    RTCORE_CATCH_END2(scene);
+    return RTC_BUILD_QUALITY_MEDIUM;
+  }
+
+  RTCORE_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags sflags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetSceneFlags);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->setBuildHints(hint);
+    scene->setSceneFlags(sflags);
     RTCORE_CATCH_END2(scene);
+  }
+
+  RTCORE_API RTCSceneFlags rtcGetSceneFlags(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetSceneFlags);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->getSceneFlags();
+    RTCORE_CATCH_END2(scene);
+    return RTC_SCENE_FLAG_NONE;
   }
   
   RTCORE_API void rtcCommit (RTCScene hscene) 
@@ -812,16 +845,16 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args_i)
+  RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args_i, unsigned int begin, unsigned int end)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
-    args->report(args);
+    args->report(args,begin,end);
   }
 
-  RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args_i)
+  RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, unsigned int begin, unsigned int end)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
-    args->report(args);
+    args->report(args,begin,end);
   }
   
   RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice)

@@ -64,11 +64,17 @@ namespace embree
       return runIntersectionFilter1Helper(&args,geometry,context);
     }
 
-    __forceinline void reportIntersection1(IntersectFunctionNArguments* args)
+    __forceinline void reportIntersection1(IntersectFunctionNArguments* args, unsigned int begin, unsigned int end)
     {
+      assert(begin == 0 && end == 1);
       const Geometry* const geometry = args->geometry;
       IntersectContext* context = args->internal_context;
-      runIntersectionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
+      if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
+        runIntersectionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
+        *(int*)args->valid = -1; // we do not change valid mask
+      } else {
+        copyHitToRay(*(Ray*)args->rays,*(Hit*)args->potentialHit);
+      }
     }
     
     __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
@@ -106,11 +112,18 @@ namespace embree
       return runOcclusionFilter1Helper(&args,geometry,context);
     }
 
-    __forceinline void reportOcclusion1(OccludedFunctionNArguments* args)
+    __forceinline void reportOcclusion1(OccludedFunctionNArguments* args, unsigned int begin, unsigned int end)
     {
+      assert(begin == 0 && end == 1);
       const Geometry* const geometry = args->geometry;
       IntersectContext* context = args->internal_context;
-      runOcclusionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
+      if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
+        if (runOcclusionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context))
+          ((RTCRay*)args->rays)->geomID = 0;
+        *(int*)args->valid = -1;  // we do not change valid mask
+      } else {
+        ((RTCRay*)args->rays)->geomID = 0;
+      }
     }
 
     template<int K>
@@ -157,11 +170,25 @@ namespace embree
     }
 
     template<int K>
-      __forceinline void reportIntersectionK(IntersectFunctionNArguments* args)
+      __forceinline void reportIntersectionK(IntersectFunctionNArguments* args, unsigned int begin, unsigned int end)
     {
       const Geometry* const geometry = args->geometry;
       IntersectContext* context = args->internal_context;
-      runIntersectionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
+
+      /* only enable i,i+N range of rays*/
+      vint<K>* mask = (vint<K>*)args->valid;
+      vbool<K> valid = (1<<end) - (1<<begin);
+      vint<K> old_mask = *mask;
+      valid &= old_mask != vint<K>(zero);
+      
+      if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter()))
+      {
+        *mask = valid.mask32();
+        runIntersectionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
+        *mask = old_mask;  // we do not change valid mask
+      } else {
+        copyHitToRay(valid,*(RayK<K>*)args->rays,*(HitK<K>*)args->potentialHit);
+      }
     }
 
     template<int K>
@@ -209,11 +236,28 @@ namespace embree
     }
 
     template<int K>
-      __forceinline void reportOcclusionK(OccludedFunctionNArguments* args)
+      __forceinline void reportOcclusionK(OccludedFunctionNArguments* args, unsigned int begin, unsigned int end)
     {
       const Geometry* const geometry = args->geometry;
       IntersectContext* context = args->internal_context;
-      runOcclusionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
+
+      /* only enable i,i+N range of rays*/
+      vint<K>* mask = (vint<K>*)args->valid;
+      vbool<K> valid = (1<<end) - (1<<begin);
+      vint<K> old_mask = *mask;
+      valid &= old_mask != vint<K>(zero);
+        
+      if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
+      {
+        *mask = valid.mask32();
+        runOcclusionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
+        *mask = old_mask;  // we do not change valid mask
+      }
+      else
+      {
+        RayK<K>* ray = (RayK<K>*) args->rays;
+        ray->geomID = select(valid, vint<K>(zero), ray->geomID);
+      }
     }
   }
 }

@@ -125,7 +125,7 @@ namespace embree
     bool float_exceptions;                 //!< enable floating point exceptions
     int accel_flags;
     int quality_flags;
-    int hint_flags;
+    int scene_flags;
     size_t verbose;                        //!< verbosity of output
     size_t benchmark;                      //!< true
     

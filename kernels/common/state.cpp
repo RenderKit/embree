@@ -117,7 +117,7 @@ namespace embree
     float_exceptions = false;
     accel_flags = -1;
     quality_flags = -1;
-    hint_flags = -1;
+    scene_flags = -1;
     verbose = 0;
     benchmark = 0;
 
@@ -407,12 +407,12 @@ namespace embree
         }
       }
 
-      else if (tok == Token::Id("hints")) {
-        hint_flags = 0;
+      else if (tok == Token::Id("scene_flags")) {
+        scene_flags = 0;
         if (cin->trySymbol("=")) {
           do {
             Token flag = cin->get();
-            if (flag == Token::Id("dynamic") ) hint_flags |= RTC_SCENE_FLAG_DYNAMIC;
+            if (flag == Token::Id("dynamic") ) scene_flags |= RTC_SCENE_FLAG_DYNAMIC;
           } while (cin->trySymbol("|"));
         }
       }

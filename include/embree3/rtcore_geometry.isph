@@ -115,7 +115,7 @@ typedef unmasked void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArgumen
 /*! Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments
 {
-  const uniform int* uniform valid; /*! pointer to valid mask */
+  uniform int* uniform valid; /*! pointer to valid mask */
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform rays;               /*!< ray packet of size N */
@@ -130,7 +130,7 @@ typedef unmasked void (*RTCIntersectFunctionN)(const struct RTCIntersectFunction
 /*! Arguments for RTCOccludedFunctionN */
 struct RTCOccludedFunctionNArguments
 {
-  const uniform int* uniform valid; /*! pointer to valid mask */
+  uniform int* uniform valid; /*! pointer to valid mask */
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform rays;               /*!< ray packet of size N */
@@ -143,10 +143,10 @@ struct RTCOccludedFunctionNArguments
 typedef unmasked void (*RTCOccludedFunctionN) (const struct RTCOccludedFunctionNArguments* uniform const args);
 
 /*! report intersection from intersect function */
-void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args);
+RTCORE_API void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, uniform unsigned int begin, uniform unsigned int end);
 
 /*! report intersection from occluded function */
-void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args);
+RTCORE_API void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, uniform unsigned int begin, uniform unsigned int end);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments

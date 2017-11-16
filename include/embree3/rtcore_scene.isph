@@ -102,12 +102,21 @@ RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitor
 /*! sets the build mode of a scene */
 RTCORE_API void rtcSetAccelFlags(RTCScene scene, uniform RTCAccelFlags accel);
 
+/*! returns the accel flags */
+RTCORE_API uniform RTCAccelFlags rtcGetAccelFlags(RTCScene scene);
+ 
 /*! sets the build quality of a scene */
 RTCORE_API void rtcSetBuildQuality(RTCScene scene, uniform RTCBuildQuality quality);
+
+/*! returns the build quality */
+RTCORE_API uniform RTCBuildQuality rtcGetBuildQuality(RTCScene scene);
 
 /*! sets the build hints of a scene */
 RTCORE_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags hints);
 
+/*! returns the scene flags */
+RTCORE_API uniform RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
+ 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing
  *  rays. */

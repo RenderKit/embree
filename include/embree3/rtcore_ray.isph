@@ -78,8 +78,6 @@ struct RTCRay
   unsigned int instID;     //!< instance ID
 };
 
-
-/*! Ray structure for packets of 4 rays. */
 struct RTCHit
 {
   /* hit data */

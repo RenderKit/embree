@@ -134,10 +134,14 @@ namespace embree
     /*! detaches some geometry */
     void detachGeometry(size_t geomID);
 
-    /*! Builds acceleration structure for the scene. */
     void setAccelFlags(RTCAccelFlags accel_flags);
+    RTCAccelFlags getAccelFlags() const;
+    
     void setBuildQuality(RTCBuildQuality quality_flags);
-    void setBuildHints(RTCSceneFlags hint_flags);
+    RTCBuildQuality getBuildQuality() const;
+    
+    void setSceneFlags(RTCSceneFlags scene_flags);
+    RTCSceneFlags getSceneFlags() const;
     
     void commit (bool join);
     void commit_task ();
@@ -194,12 +198,12 @@ namespace embree
     __forceinline bool isFastAccel() const { return accel_flags == RTC_ACCEL_FAST; }
     __forceinline bool isCompactAccel() const { return accel_flags & RTC_ACCEL_COMPACT; }
     __forceinline bool isRobustAccel()  const { return accel_flags & RTC_ACCEL_ROBUST; }
-    __forceinline bool isStaticAccel()  const { return !(hint_flags & RTC_SCENE_FLAG_DYNAMIC); }
-    __forceinline bool isDynamicAccel() const { return hint_flags & RTC_SCENE_FLAG_DYNAMIC; }
+    __forceinline bool isStaticAccel()  const { return !(scene_flags & RTC_SCENE_FLAG_DYNAMIC); }
+    __forceinline bool isDynamicAccel() const { return scene_flags & RTC_SCENE_FLAG_DYNAMIC; }
     
     __forceinline bool hasContextFilterFunction() const {
 #if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
-      return hint_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
+      return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
 #else
       return false;
 #endif
@@ -224,7 +228,7 @@ namespace embree
     bool flags_modified;
     RTCAccelFlags accel_flags;
     RTCBuildQuality quality_flags;
-    RTCSceneFlags hint_flags;
+    RTCSceneFlags scene_flags;
     AccelN accels;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
