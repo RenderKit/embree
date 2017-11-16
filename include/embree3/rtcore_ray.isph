@@ -78,6 +78,24 @@ struct RTCRay
   unsigned int instID;     //!< instance ID
 };
 
+
+/*! Ray structure for packets of 4 rays. */
+struct RTCHit
+{
+  /* hit data */
+  float Ngx;   //!< x coordinate of geometry normal
+  float Ngy;   //!< y coordinate of geometry normal
+  float Ngz;   //!< z coordinate of geometry normal
+
+  unsigned int instID;     //!< instance ID  
+  unsigned int geomID;     //!< geometry ID
+  unsigned int primID;     //!< primitive ID
+
+  float u;     //!< Barycentric u coordinate of hit
+  float v;     //!< Barycentric v coordinate of hit
+  float t;     //!< intersection distance
+};
+
 /* Helper functions to access ray packets of runtime size N */
 struct RTCRayN;
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
@@ -134,6 +152,7 @@ struct RTCRayNp
   uniform unsigned int* uniform instID;  //!< instance ID (optional)
 };
 
+
 /* Helper functions to access hit packets of size N */
 struct RTCHitN;
 inline varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }; //!< x coordinate of geometry normal
@@ -147,6 +166,46 @@ inline varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform 
 inline varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0) { return *((varying float* uniform) &((float* uniform)ptr)[6*N+i]); }; //!< Barycentric u coordinate of hit
 inline varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0) { return *((varying float* uniform) &((float* uniform)ptr)[7*N+i]); }; //!< Barycentric v coordinate of hit
 inline varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0) { return *((varying float* uniform) &((float* uniform)ptr)[8*N+i]); }; //!< hit distance
+
+
+inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0)
+{
+  RTCRay ray;
+  ray.orgx   = RTCRayN_org_x(ptr,N,i);
+  ray.orgy   = RTCRayN_org_y(ptr,N,i);
+  ray.orgz   = RTCRayN_org_z(ptr,N,i);
+  ray.tnear  = RTCRayN_tnear(ptr,N,i);
+  ray.dirx   = RTCRayN_dir_x(ptr,N,i);
+  ray.diry   = RTCRayN_dir_y(ptr,N,i);
+  ray.dirz   = RTCRayN_dir_z(ptr,N,i);
+  ray.tfar   = RTCRayN_tfar(ptr,N,i);
+  ray.time   = RTCRayN_time(ptr,N,i);
+  ray.mask   = RTCRayN_mask(ptr,N,i);
+  ray.Ngx    = RTCRayN_Ng_x(ptr,N,i);
+  ray.Ngy    = RTCRayN_Ng_y(ptr,N,i);
+  ray.Ngz    = RTCRayN_Ng_z(ptr,N,i);
+  ray.u      = RTCRayN_u(ptr,N,i);
+  ray.v      = RTCRayN_v(ptr,N,i);
+  ray.geomID = RTCRayN_geomID(ptr,N,i);
+  ray.primID = RTCRayN_primID(ptr,N,i);
+  ray.instID = RTCRayN_instID(ptr,N,i);
+  return ray;
+};
+
+inline RTCHit RTCHitNtoRTCHit(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0)
+{
+  RTCHit hit;
+  hit.Ngx    = RTCHitN_Ng_x(ptr,N,i);
+  hit.Ngy    = RTCHitN_Ng_y(ptr,N,i);
+  hit.Ngz    = RTCHitN_Ng_z(ptr,N,i);
+  hit.geomID = RTCHitN_geomID(ptr,N,i);
+  hit.primID = RTCHitN_primID(ptr,N,i);
+  hit.instID = RTCHitN_instID(ptr,N,i);
+  hit.u      = RTCHitN_u(ptr,N,i);
+  hit.v      = RTCHitN_v(ptr,N,i);
+  hit.t      = RTCHitN_t(ptr,N,i);
+  return hit;
+};
 
 /*! @} */
 

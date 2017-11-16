@@ -272,6 +272,61 @@ struct RTCHitNt
   float t[N];          //!< hit distance
 };
 
+struct RTCHit
+{
+  float Ngx;        //!< x coordinate of geometry normal
+  float Ngy;        //!< y coordinate of geometry normal
+  float Ngz;        //!< z coordinate of geometry normal
+
+  unsigned instID;  //!< instance ID
+  unsigned geomID;  //!< geometry ID
+  unsigned primID;  //!< primitive ID
+
+  float u;          //!< Barycentric u coordinate of hit
+  float v;          //!< Barycentric v coordinate of hit
+  float t;          //!< hit distance
+};
+
+
+RTCORE_FORCEINLINE RTCRay RTCRayNtoRTCRay(RTCRayN* ptr, unsigned int N, unsigned int i = 0)
+{
+  RTCRay ray;
+  ray.orgx   = RTCRayN_org_x(ptr,N,i);
+  ray.orgy   = RTCRayN_org_y(ptr,N,i);
+  ray.orgz   = RTCRayN_org_z(ptr,N,i);
+  ray.tnear  = RTCRayN_tnear(ptr,N,i);
+  ray.dirx   = RTCRayN_dir_x(ptr,N,i);
+  ray.diry   = RTCRayN_dir_y(ptr,N,i);
+  ray.dirz   = RTCRayN_dir_z(ptr,N,i);
+  ray.tfar   = RTCRayN_tfar(ptr,N,i);
+  ray.time   = RTCRayN_time(ptr,N,i);
+  ray.mask   = RTCRayN_mask(ptr,N,i);
+  ray.Ngx    = RTCRayN_Ng_x(ptr,N,i);
+  ray.Ngy    = RTCRayN_Ng_y(ptr,N,i);
+  ray.Ngz    = RTCRayN_Ng_z(ptr,N,i);
+  ray.u      = RTCRayN_u(ptr,N,i);
+  ray.v      = RTCRayN_v(ptr,N,i);
+  ray.geomID = RTCRayN_geomID(ptr,N,i);
+  ray.primID = RTCRayN_primID(ptr,N,i);
+  ray.instID = RTCRayN_instID(ptr,N,i);
+  return ray;
+};
+
+RTCORE_FORCEINLINE RTCHit RTCHitNtoRTCHit(const RTCHitN* ptr, unsigned int N, unsigned int i = 0)
+{
+  RTCHit hit;
+  hit.Ngx    = RTCHitN_Ng_x(ptr,N,i);
+  hit.Ngy    = RTCHitN_Ng_y(ptr,N,i);
+  hit.Ngz    = RTCHitN_Ng_z(ptr,N,i);
+  hit.geomID = RTCHitN_geomID(ptr,N,i);
+  hit.primID = RTCHitN_primID(ptr,N,i);
+  hit.instID = RTCHitN_instID(ptr,N,i);
+  hit.u      = RTCHitN_u(ptr,N,i);
+  hit.v      = RTCHitN_v(ptr,N,i);
+  hit.t      = RTCHitN_t(ptr,N,i);
+  return hit;
+};
+
 #endif
 
 /*! @} */
