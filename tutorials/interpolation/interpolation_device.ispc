@@ -80,12 +80,12 @@ __aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
 #define NUM_QUAD_FACES 6
 
 uniform unsigned int cube_quad_indices[24] = {
-  0, 1, 5, 4,
-  1, 2, 6, 5,
-  2, 3, 7, 6,
-  0, 4, 7, 3,
-  4, 5, 6, 7,
-  0, 3, 2, 1,
+  0, 4, 5, 1,
+  1, 5, 6, 2,
+  2, 6, 7, 3,
+  0, 3, 7, 4,
+  4, 7, 6, 5,
+  0, 1, 2, 3,
 };
 
 uniform unsigned int cube_quad_faces[6] = {
@@ -96,12 +96,12 @@ uniform unsigned int cube_quad_faces[6] = {
 #define NUM_TRI_FACES 12
 
 uniform unsigned int cube_tri_indices[36] = {
-  1, 5, 4,  0, 1, 4,
-  2, 6, 5,  1, 2, 5,
-  3, 7, 6,  2, 3, 6,
-  4, 7, 3,  0, 4, 3,
-  5, 6, 7,  4, 5, 7,
-  3, 2, 1,  0, 3, 1
+  1, 4, 5,  0, 4, 1,
+  2, 5, 6,  1, 5, 2,
+  3, 6, 7,  2, 6, 3,
+  4, 3, 7,  0, 3, 4,
+  5, 7, 6,  4, 7, 5,
+  3, 1, 2,  0, 1, 3
 };
 
 uniform unsigned int cube_tri_faces[12] = {
@@ -306,8 +306,8 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
+  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i, geom);
@@ -377,13 +377,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* calculate smooth shading normal */
     Vec3f Ng = ray.Ng;
-    if (ray.geomID >= 3) {
+    if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
         rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
       }
       //return dPdu;
-      Ng = cross(dPdv,dPdu);
+      Ng = cross(dPdu,dPdv);
     }
     Ng = normalize(Ng);
     color = color + diffuse*0.5f;

@@ -181,14 +181,14 @@ namespace embree
     {
       const Vertex_t dPdu = eval_du(matrix,uu,vv);
       const Vertex_t dPdv = eval_dv(matrix,uu,vv);
-      return cross(dPdv,dPdu);
+      return cross(dPdu,dPdv);
     }
 
     __forceinline Vertex_t normal(const float uu, const float vv) 
     {
       const Vertex_t dPdu = eval_du(matrix,uu,vv);
       const Vertex_t dPdv = eval_dv(matrix,uu,vv);
-      return cross(dPdv,dPdu);
+      return cross(dPdu,dPdv);
     }
 
     __forceinline Vertex_t eval(const float uu, const float vv) const {
@@ -371,7 +371,7 @@ namespace embree
       const Vec3<T> tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
-      const Vec3<T> n = cross(tangentV,tangentU);
+      const Vec3<T> n = cross(tangentU,tangentV);
       return n;
     }
 

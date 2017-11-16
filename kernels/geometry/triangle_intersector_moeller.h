@@ -85,7 +85,7 @@ namespace embree
         const Vec3vf<M> O = Vec3vf<M>(ray.org);
         const Vec3vf<M> D = Vec3vf<M>(ray.dir);
         const Vec3vf<M> C = Vec3vf<M>(tri_v0) - O;
-        const Vec3vf<M> R = cross(D,C);
+        const Vec3vf<M> R = cross(C,D);
         const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
@@ -119,7 +119,7 @@ namespace embree
                                        MoellerTrumboreHitM<M>& hit) const
       {
         vbool<M> valid = true;
-        const Vec3<vfloat<M>> tri_Ng = cross(tri_e1,tri_e2);
+        const Vec3<vfloat<M>> tri_Ng = cross(tri_e2,tri_e1);
         return intersect(valid,ray,tri_v0,tri_e1,tri_e2,tri_Ng,hit);
       }
       
@@ -182,65 +182,6 @@ namespace embree
         if (likely(intersect(valid,ray,v0,v1,v2,hit))) return epilog(hit.valid,hit);
         return false;
       }
-
-      // ==== new interface for ray streams ====
-
-      __forceinline bool intersectN(const Vec3vf<M>& ray_org,
-                                    const Vec3vf<M>& ray_dir,
-                                    const vfloat<M>& ray_tnear,
-                                    const vfloat<M>& ray_tfar,
-                                    const Vec3vf<M>& tri_v0, 
-                                    const Vec3vf<M>& tri_e1, 
-                                    const Vec3vf<M>& tri_e2, 
-                                    MoellerTrumboreHitM<M>& hit) const
-      {
-        const Vec3vf<M> tri_Ng = cross(tri_e1,tri_e2);
-        /* calculate denominator */
-        const Vec3vf<M> &O = ray_org;
-        const Vec3vf<M> &D = ray_dir;
-        const Vec3vf<M> C = Vec3vf<M>(tri_v0) - O;
-        const Vec3vf<M> R = cross(D,C);
-        const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);
-        const vfloat<M> absDen = abs(den);
-        const vfloat<M> sgnDen = signmsk(den);
-        
-        /* perform edge tests */
-        const vfloat<M> U = dot(R,Vec3vf<M>(tri_e2)) ^ sgnDen;
-        const vfloat<M> V = dot(R,Vec3vf<M>(tri_e1)) ^ sgnDen;
-        
-        /* perform backface culling */        
-#if defined(EMBREE_BACKFACE_CULLING)
-        vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
-#else
-        vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
-#endif
-        if (likely(none(valid))) return false;
-        
-        /* perform depth test */
-        const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
-        valid &= (absDen*ray_tnear < T) & (T <= absDen*ray_tfar);
-        if (likely(none(valid))) return false;
-        
-        /* update hit information */
-        new (&hit) MoellerTrumboreHitM<M>(valid,U,V,T,absDen,tri_Ng);
-        return true;
-      }
-
-      template<typename Epilog>
-        __forceinline bool intersectN(const Vec3vf<M>& ray_org,
-                                      const Vec3vf<M>& ray_dir,
-                                      const vfloat<M>& ray_tnear,
-                                      const vfloat<M>& ray_tfar,
-                                      const Vec3vf<M>& v0, 
-                                      const Vec3vf<M>& e1, 
-                                      const Vec3vf<M>& e2, 
-                                      const Epilog& epilog) const
-      {
-        MoellerTrumboreHitM<M> hit;
-        if (likely(intersectN(ray_org,ray_dir,ray_tnear,ray_tfar,v0,e1,e2,hit))) return epilog(hit.valid,hit);
-        return false;
-      }
-
     };
     
     template<int K>
@@ -288,18 +229,18 @@ namespace embree
         /* calculate denominator */
         vbool<K> valid = valid0;
         const Vec3vf<K> C = tri_v0 - ray_org;
-        const Vec3vf<K> R = cross(ray_dir,C);
+        const Vec3vf<K> R = cross(C,ray_dir);
         const vfloat<K> den = dot(tri_Ng,ray_dir);
         const vfloat<K> absDen = abs(den);
         const vfloat<K> sgnDen = signmsk(den);
         
         /* test against edge p2 p0 */
-        const vfloat<K> U = dot(R,tri_e2) ^ sgnDen;
+        const vfloat<K> U = dot(tri_e2,R) ^ sgnDen;
         valid &= U >= 0.0f;
         if (likely(none(valid))) return false;
         
         /* test against edge p0 p1 */
-        const vfloat<K> V = dot(R,tri_e1) ^ sgnDen;
+        const vfloat<K> V = dot(tri_e1,R) ^ sgnDen;
         valid &= V >= 0.0f;
         if (likely(none(valid))) return false;
         
@@ -338,7 +279,7 @@ namespace embree
       {
         const Vec3vf<K> e1 = tri_v0-tri_v1;
         const Vec3vf<K> e2 = tri_v2-tri_v0;
-        const Vec3vf<K> Ng = cross(e1,e2);
+        const Vec3vf<K> Ng = cross(e2,e1);
         return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar(),tri_v0,e1,e2,Ng,epilog);
       }
 
@@ -351,7 +292,7 @@ namespace embree
                                             const Vec3vf<K>& tri_e2, 
                                             const Epilog& epilog) const
       {
-        const Vec3vf<K> tri_Ng = cross(tri_e1,tri_e2);
+        const Vec3vf<K> tri_Ng = cross(tri_e2,tri_e1);
         return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar(),tri_v0,tri_e1,tri_e2,tri_Ng,epilog);
       }
       
@@ -365,19 +306,19 @@ namespace embree
       {
         /* calculate denominator */
         typedef Vec3vf<M> Vec3vfM;
-        const Vec3vf<M> tri_Ng = cross(tri_e1,tri_e2);
+        const Vec3vf<M> tri_Ng = cross(tri_e2,tri_e1);
 
         const Vec3vfM O = broadcast<vfloat<M>>(ray.org,k);
         const Vec3vfM D = broadcast<vfloat<M>>(ray.dir,k);
         const Vec3vfM C = Vec3vfM(tri_v0) - O;
-        const Vec3vfM R = cross(D,C);
+        const Vec3vfM R = cross(C,D);
         const vfloat<M> den = dot(Vec3vfM(tri_Ng),D);
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
         
         /* perform edge tests */
-        const vfloat<M> U = dot(R,Vec3vf<M>(tri_e2)) ^ sgnDen;
-        const vfloat<M> V = dot(R,Vec3vf<M>(tri_e1)) ^ sgnDen;
+        const vfloat<M> U = dot(Vec3vf<M>(tri_e2),R) ^ sgnDen;
+        const vfloat<M> V = dot(Vec3vf<M>(tri_e1),R) ^ sgnDen;
         
         /* perform backface culling */
 #if defined(EMBREE_BACKFACE_CULLING)

@@ -598,21 +598,21 @@ __aligned(16) uniform float cube_vertices[NUM_VERTICES][4] =
 };
 
 uniform unsigned int cube_quad_indices[NUM_QUAD_INDICES] = {
-  0, 2, 3, 1,
-  5, 7, 6, 4,
-  0, 1, 5, 4,
-  6, 7, 3, 2,
-  0, 4, 6, 2,
-  3, 7, 5, 1
+  0, 1, 3, 2,
+  5, 4, 6, 7,
+  0, 4, 5, 1,
+  6, 2, 3, 7,
+  0, 2, 6, 4,
+  3, 1, 5, 7
 };
 
 uniform unsigned int cube_tri_indices[NUM_TRI_INDICES] = {
-  0, 2, 1,  2, 3, 1,
-  5, 7, 4,  7, 6, 4,
-  0, 1, 4,  1, 5, 4,
-  6, 7, 2,  7, 3, 2,
-  0, 4, 2,  4, 6, 2,
-  3, 7, 1,  7, 5, 1
+  0, 1, 2,  2, 1, 3,
+  5, 4, 7,  7, 4, 6,
+  0, 4, 1,  1, 4, 5,
+  6, 2, 7,  7, 2, 3,
+  0, 2, 4,  4, 2, 6,
+  3, 1, 7,  7, 1, 5
 };
 
 uniform unsigned int cube_quad_faces[NUM_QUAD_FACES] = {
@@ -705,8 +705,8 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
+  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);

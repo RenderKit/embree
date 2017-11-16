@@ -2139,7 +2139,7 @@ namespace embree
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[2]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         const Vec3fa Ng = Vec3fa(rays[i].Ngx,rays[i].Ngy,rays[i].Ngz);
-        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
 
@@ -2214,7 +2214,7 @@ namespace embree
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[3]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         const Vec3fa Ng = Vec3fa(rays[i].Ngx,rays[i].Ngy,rays[i].Ngz);
-        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
       
@@ -2304,8 +2304,8 @@ namespace embree
       VerifyScene scene(device,sflags);
       AssertNoError(device);
       const Vec3fa p0 = Vec3fa(0.0f);
-      const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
-      const Vec3fa dy = Vec3fa(0.0f,1.0f,0.0f);
+      const Vec3fa dx = Vec3fa(0.0f,1.0f,0.0f);
+      const Vec3fa dy = Vec3fa(1.0f,0.0f,0.0f);
       switch (gtype) {
       case TRIANGLE_MESH:    scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)); break;
       case TRIANGLE_MESH_MB: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(zero)); break;

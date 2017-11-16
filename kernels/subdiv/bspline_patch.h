@@ -331,7 +331,7 @@ namespace embree
       {
         const Vertex tu = eval_du(uu,vv);
         const Vertex tv = eval_dv(uu,vv);
-        return cross(tv,tu);
+        return cross(tu,tv);
       }   
 
       template<typename T>
@@ -408,7 +408,7 @@ namespace embree
       
       template<typename T>
       __forceinline Vec3<T> normal(const T& uu, const T& vv) const {
-        return cross(eval_dv(uu,vv),eval_du(uu,vv));
+        return cross(eval_du(uu,vv),eval_dv(uu,vv));
       }
 
       void eval(const float u, const float v, 
