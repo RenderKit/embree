@@ -145,6 +145,21 @@ struct RTCORE_ALIGN(64) RTCRay16
   unsigned instID[16];  //!< instance ID
 };
 
+struct RTCHit
+{
+  float Ngx;        //!< x coordinate of geometry normal
+  float Ngy;        //!< y coordinate of geometry normal
+  float Ngz;        //!< z coordinate of geometry normal
+
+  unsigned instID;  //!< instance ID
+  unsigned geomID;  //!< geometry ID
+  unsigned primID;  //!< primitive ID
+
+  float u;          //!< Barycentric u coordinate of hit
+  float v;          //!< Barycentric v coordinate of hit
+  float t;          //!< hit distance
+};
+
 /*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
 struct RTCRayNp
 {

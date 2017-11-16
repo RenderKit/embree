@@ -118,7 +118,7 @@ typedef void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* const
 /*! Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments
 {
-  const int* valid;                          /*!< pointer to valid mask */
+  int* valid;                          /*!< pointer to valid mask */
   void* geomUserPtr;                                 /*!< pointer to geometry user data */
   struct RTCIntersectContext* context;       /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   struct RTCRayN* rays;                      /*!< ray packet to intersect */
@@ -133,7 +133,7 @@ typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArgument
 /*! Arguments for RTCOccludedFunctionN */
 struct RTCOccludedFunctionNArguments
 {
-  const int* valid;                          /*!< pointer to valid mask */
+  int* valid;                          /*!< pointer to valid mask */
   void* geomUserPtr;                                 /*!< pointer to geometry user data */
   struct RTCIntersectContext* context;       /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   struct RTCRayN* rays;                      /*!< ray packet to intersect */
@@ -146,10 +146,10 @@ struct RTCOccludedFunctionNArguments
 typedef void (*RTCOccludedFunctionN) (const struct RTCOccludedFunctionNArguments* const args);
 
 /*! report intersection from intersect function */
-void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args);
+void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args, unsigned int begin, unsigned int end);
 
 /*! report intersection from occluded function */
-void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args);
+void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args, unsigned int begin, unsigned int end);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments

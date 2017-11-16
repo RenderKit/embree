@@ -383,9 +383,10 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
 
 unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
 {
-  const uniform int* uniform valid = args->valid;
+  uniform int* uniform valid = (uniform int*) args->valid;
   void* uniform ptr  = args->geomUserPtr;
   RTCRayN* uniform rays = args->rays;
+  RTCHitN* uniform potentialhit = args->potentialHit;
   uniform unsigned int N = args->N;
   uniform unsigned int item = args->item;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
@@ -417,6 +418,42 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
+#if 1
+    RTCHitN_u(potentialhit,N,ui) = 0.0f;
+    RTCHitN_v(potentialhit,N,ui) = 0.0f;
+    RTCHitN_instID(potentialhit,N,ui) = args->context->instID;
+    RTCHitN_geomID(potentialhit,N,ui) = sphere.geomID;
+    RTCHitN_primID(potentialhit,N,ui) = item;
+    if ((ray_tnear < t0) & (t0 < ray_tfar))
+    {
+      varying bool mask = __mask;
+      unmasked {
+        valid[vi] = mask ? -1 : 0;
+      }
+      const Vec3f Ng = ray_org+t0*ray_dir-sphere.p;
+      RTCHitN_t(potentialhit,N,ui) = t0;
+      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
+      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
+      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
+      rtcReportIntersection(args,ui,ui+programCount);
+    }
+
+    if ((ray_tnear < t1) & (t1 < ray_tfar))
+    {
+      varying bool mask = __mask;
+      unmasked {
+        valid[vi] = mask ? -1 : 0;
+      }
+      const Vec3f Ng = ray_org+t1*ray_dir-sphere.p;
+      RTCHitN_t(potentialhit,N,ui) = t1;
+      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
+      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
+      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
+      rtcReportIntersection(args,ui,ui+programCount);
+    }
+    
+#else
+    
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       RTCRayN_u(rays,N,ui) = 0.0f;
@@ -443,14 +480,17 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       RTCRayN_Ng_y(rays,N,ui) = Ng.y;
       RTCRayN_Ng_z(rays,N,ui) = Ng.z;
     }
+    
+#endif
   }
 }
 
-unmasked void sphereOccludedFuncN(const RTCIntersectFunctionNArguments* uniform const args)
+unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
 {
-  const uniform int* uniform valid = args->valid;
+  uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   RTCRayN* uniform rays = args->rays;
+  RTCHitN* uniform potentialhit = args->potentialHit;
   uniform unsigned int N = args->N;
   uniform unsigned int item = args->item;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
@@ -481,12 +521,93 @@ unmasked void sphereOccludedFuncN(const RTCIntersectFunctionNArguments* uniform 
     const float rcpA = rcp(A);
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
+
+#if 1
+
+    RTCHitN_u(potentialhit,N,ui) = 0.0f;
+    RTCHitN_v(potentialhit,N,ui) = 0.0f;
+    RTCHitN_instID(potentialhit,N,ui) = args->context->instID;
+    RTCHitN_geomID(potentialhit,N,ui) = sphere.geomID;
+    RTCHitN_primID(potentialhit,N,ui) = item;
+    if ((ray_tnear < t0) & (t0 < ray_tfar))
+    {
+      varying bool mask = __mask;
+      unmasked {
+        valid[vi] = mask ? -1 : 0;
+      }
+      const Vec3f Ng = ray_org+t0*ray_dir-sphere.p;
+      RTCHitN_t(potentialhit,N,ui) = t0;
+      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
+      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
+      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
+      rtcReportOcclusion(args,ui,ui+programCount);
+    }
+
+    /* ignore rays that have just found a hit */
+    if (RTCRayN_geomID(rays,N,ui) == 0)
+      continue;
+    
+    if ((ray_tnear < t1) & (t1 < ray_tfar))
+    {
+      varying bool mask = __mask;
+      unmasked {
+        valid[vi] = mask ? -1 : 0;
+      }
+      const Vec3f Ng = ray_org+t1*ray_dir-sphere.p;
+      RTCHitN_t(potentialhit,N,ui) = t1;
+      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
+      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
+      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
+      rtcReportOcclusion(args,ui,ui+programCount);
+    }
+    
+#else
+    
     if ((ray_tnear < t0) & (t0 < ray_tfar)) {
       RTCRayN_geomID(rays,N,ui) = 0;
     }
     if ((ray_tnear < t1) & (t1 < ray_tfar)) {
       RTCRayN_geomID(rays,N,ui) = 0;
     }
+#endif
+  }
+}
+
+/* intersection filter function */
+unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform const args)
+{
+  uniform int* uniform valid = args->valid;
+  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  struct RTCRayN* uniform ray = args->ray;
+  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  const uniform unsigned int N = args->N;
+                                  
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return;
+
+  /* iterate over all rays in ray packet */
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
+  {
+    /* calculate varying loop and execution mask */
+    unsigned int vi = ui+programIndex;
+    if (vi>=N) continue;
+
+    /* ignore inactive rays */
+    if (valid[vi] != -1) continue;
+    
+    /* calculate hit point */
+    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
+    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
+    float hit_t = RTCHitN_t(potentialHit,N,ui);
+
+    /* carve out parts of the sphere */
+    const Vec3f h = ray_org+hit_t*ray_dir;
+    float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
+    float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
+
+    /* reject some hits */
+    if (T < 0.5f) valid[vi] = 0;
   }
 }
 
@@ -518,8 +639,10 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   }
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  rtcSetIntersectFunction(geom,sphereIntersectFunc);
-  rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
+  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
+  rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
+  rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return spheres;
@@ -700,6 +823,11 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
+inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
+  const Vec3f Ng = _Ng;
+  return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
+}
+
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
@@ -723,7 +851,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.instID != RTC_INVALID_GEOMETRY_ID) {
       Ns = xfmVector(g_instance[ray.instID]->normal2world,make_Vec3f(Ns));
     }
-    Ns = normalize(Ns);
+    Ns = face_forward(ray.dir,normalize(Ns));
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(0.0f);
@@ -734,7 +862,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* initialize shadow ray */
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
+    Ray shadow = make_Ray(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
     rtcOccluded(g_scene,&context,RTCRay_(shadow));
@@ -901,7 +1029,7 @@ void renderTileStandardStream(uniform int taskIndex,
     if (primary.instID != RTC_INVALID_GEOMETRY_ID && primary.instID != 4) {
       Ns = xfmVector(g_instance[primary.instID]->normal2world,make_Vec3f(Ns));
     }
-    Ns = normalize(Ns);
+    Ns = face_forward(primary.dir,normalize(Ns));
     
     /* add light contrinution */
     Vec3f diffuse = make_Vec3f(0.0f);

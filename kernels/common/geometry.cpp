@@ -135,7 +135,7 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
@@ -143,12 +143,11 @@ namespace embree
       scene->numIntersectionFiltersN += filter != nullptr;
     }
     intersectionFilterN = filter;
-    //if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
   }
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
@@ -156,7 +155,6 @@ namespace embree
       scene->numIntersectionFiltersN += filter != nullptr;
     }
     occlusionFilterN = filter;
-    //if (filter) hasOcclusionFilterMask  |= HAS_FILTERN; else hasOcclusionFilterMask  &= ~HAS_FILTERN;
   }
 
   void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 

@@ -272,8 +272,8 @@ namespace embree
     }
 
   public:
-    __forceinline bool hasIntersectionFilter() { return intersectionFilterN != nullptr; }
-    __forceinline bool hasOcclusionFilter() { return occlusionFilterN != nullptr; }
+    __forceinline bool hasIntersectionFilter() const { return intersectionFilterN != nullptr; }
+    __forceinline bool hasOcclusionFilter() const { return occlusionFilterN != nullptr; }
 
   public:
     Device* device;            //!< device this geometry belongs to

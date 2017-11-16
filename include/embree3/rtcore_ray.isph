@@ -78,6 +78,21 @@ struct RTCRay
   unsigned int instID;     //!< instance ID
 };
 
+struct RTCHit
+{
+  float Ngx;        //!< x coordinate of geometry normal
+  float Ngy;        //!< y coordinate of geometry normal
+  float Ngz;        //!< z coordinate of geometry normal
+
+  unsigned int instID;  //!< instance ID
+  unsigned int geomID;  //!< geometry ID
+  unsigned int primID;  //!< primitive ID
+
+  float u;          //!< Barycentric u coordinate of hit
+  float v;          //!< Barycentric v coordinate of hit
+  float t;          //!< hit distance
+};
+
 /* Helper functions to access ray packets of runtime size N */
 struct RTCRayN;
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
