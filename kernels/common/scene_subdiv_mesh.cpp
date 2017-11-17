@@ -64,6 +64,14 @@ namespace embree
     Geometry::update();
   }
 
+  void SubdivMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  {
+    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry intersector");
+    
+    Geometry::update();
+  }
+  
   void SubdivMesh::setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)
   {
     if (topologyID >= topology.size())

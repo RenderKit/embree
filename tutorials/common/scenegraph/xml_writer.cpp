@@ -451,8 +451,8 @@ namespace embree
   {
     std::string str_type = "";
     switch (mesh->type) {
-    case RTC_CURVE_RIBBON: str_type = "ribbon"; break;
-    case RTC_CURVE_SURFACE: str_type = "surface"; break;
+    case RTC_GEOMETRY_INTERSECTOR_RIBBON: str_type = "ribbon"; break;
+    case RTC_GEOMETRY_INTERSECTOR_SURFACE: str_type = "surface"; break;
     default: throw std::runtime_error("invalid curve type");
     }
 

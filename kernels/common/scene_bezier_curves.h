@@ -33,13 +33,13 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, RTCCurveType subtype, RTCCurveBasis basis); 
+    NativeCurves (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis); 
     
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setCurveType(RTCCurveType type);
+    void setGeometryIntersector(RTCGeometryIntersector type);
     void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
     void* getBuffer(RTCBufferType type);
@@ -141,7 +141,7 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == RTC_CURVE_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      if (likely(subtype == RTC_GEOMETRY_INTERSECTOR_RIBBON)) return curve.tessellatedBounds(tessellationRate);
       else                                     return curve.accurateBounds();
     }
     
@@ -158,7 +158,7 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == RTC_CURVE_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      if (likely(subtype == RTC_GEOMETRY_INTERSECTOR_RIBBON)) return curve.tessellatedBounds(tessellationRate);
       else                                     return curve.accurateBounds();
     }
 
@@ -277,7 +277,7 @@ namespace embree
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
-    RTCCurveType subtype;                                //!< hair or surface geometry
+    RTCGeometryIntersector subtype;                                //!< hair or surface geometry
     RTCCurveBasis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
   public:
@@ -290,7 +290,7 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, RTCCurveType subtype, RTCCurveBasis basis)
+      NativeCurvesISA (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
         : NativeCurves(device,subtype,basis) {}
 
       template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
@@ -300,7 +300,7 @@ namespace embree
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, RTCCurveType subtype, RTCCurveBasis basis)
+      CurvesBezier (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
          : NativeCurvesISA(device,subtype,basis) {}
 
       void preCommit();
@@ -309,7 +309,7 @@ namespace embree
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, RTCCurveType subtype, RTCCurveBasis basis)
+      CurvesBSpline (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
          : NativeCurvesISA(device,subtype,basis) {}
 
       void preCommit();
@@ -317,6 +317,6 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCCurveType COMMA RTCCurveBasis);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCCurveType COMMA RTCCurveBasis);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCGeometryIntersector COMMA RTCCurveBasis);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCGeometryIntersector COMMA RTCCurveBasis);
 }

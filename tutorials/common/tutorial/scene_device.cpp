@@ -232,7 +232,7 @@ namespace embree
     if (face_offsets) delete[] face_offsets;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCCurveType type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryIntersector type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
     : geom(CURVES), type(type), basis(basis)
   {
     positions = new Vec3fa*[in->numTimeSteps()];

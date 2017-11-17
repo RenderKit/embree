@@ -45,6 +45,14 @@ namespace embree
     Geometry::update();
   }
 
+  void QuadMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  {
+    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry intersector");
+    
+    Geometry::update();
+  }
+  
   void* QuadMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
     /* verify that all accesses are 4 bytes aligned */

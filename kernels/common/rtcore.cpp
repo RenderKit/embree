@@ -893,7 +893,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCCurveType type, RTCCurveBasis basis)
+  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryIntersector type, RTCCurveBasis basis)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -907,10 +907,10 @@ namespace embree
     createCurvesBSplineTy createCurvesBSpline = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
 
-    if (type != RTC_CURVE_RIBBON && type != RTC_CURVE_SURFACE)
+    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON && type != RTC_GEOMETRY_INTERSECTOR_SURFACE)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
       
-    if (basis == RTC_BASIS_LINEAR && type != RTC_CURVE_RIBBON)
+    if (basis == RTC_BASIS_LINEAR && type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type for linear curves");
 
     Geometry* geom = nullptr;
@@ -928,15 +928,15 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetCurveType(RTCGeometry hgeometry, RTCCurveType type)
+  RTCORE_API void rtcSetGeometryIntersector(RTCGeometry hgeometry, RTCGeometryIntersector type)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetCurveType);
+    RTCORE_TRACE(rtcSetGeometryIntersector);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    if (type != RTC_CURVE_RIBBON && type != RTC_CURVE_SURFACE)
+    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON && type != RTC_GEOMETRY_INTERSECTOR_SURFACE)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
-    geometry->setCurveType(type);
+    geometry->setGeometryIntersector(type);
     RTCORE_CATCH_END2(geometry);
   }
     

@@ -203,7 +203,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 }
 
 /* add hair geometry */
-unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCCurveType type, unsigned int num_time_steps)
+unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector type, unsigned int num_time_steps)
 {
   RTCGeometry geom = rtcNewCurveGeometry(g_device, type, RTC_BASIS_BSPLINE);
   rtcSetTessellationRate (geom,16.0f);
@@ -240,7 +240,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCCurveType type, uns
 /* add line geometry */
 unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_CURVE_RIBBON, RTC_BASIS_LINEAR);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_INTERSECTOR_RIBBON, RTC_BASIS_LINEAR);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {
@@ -546,11 +546,11 @@ extern "C" void device_init (char* cfg)
   addLines       (g_scene,Vec3fa(-5,1, 0),g_num_time_steps);
   addLines       (g_scene,Vec3fa(-5,5, 0),g_num_time_steps2);
 
-  addCurve (g_scene,Vec3fa( 0,1, 0),RTC_CURVE_RIBBON,g_num_time_steps);
-  addCurve (g_scene,Vec3fa( 0,5, 0),RTC_CURVE_RIBBON,g_num_time_steps2);
+  addCurve (g_scene,Vec3fa( 0,1, 0),RTC_GEOMETRY_INTERSECTOR_RIBBON,g_num_time_steps);
+  addCurve (g_scene,Vec3fa( 0,5, 0),RTC_GEOMETRY_INTERSECTOR_RIBBON,g_num_time_steps2);
 
-  addCurve (g_scene,Vec3fa(+5,1, 0),RTC_CURVE_SURFACE,g_num_time_steps);
-  addCurve (g_scene,Vec3fa(+5,5, 0),RTC_CURVE_SURFACE,g_num_time_steps2);
+  addCurve (g_scene,Vec3fa(+5,1, 0),RTC_GEOMETRY_INTERSECTOR_SURFACE,g_num_time_steps);
+  addCurve (g_scene,Vec3fa(+5,5, 0),RTC_GEOMETRY_INTERSECTOR_SURFACE,g_num_time_steps2);
 
   scene0 = addInstancedTriangleCube(g_scene,Vec3fa(-5,1,+5),g_num_time_steps);
   scene1 = addInstancedTriangleCube(g_scene,Vec3fa(-5,5,+5),g_num_time_steps2);

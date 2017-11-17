@@ -45,9 +45,9 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setCurveType(RTCCurveType type)
+  void LineSegments::setGeometryIntersector(RTCGeometryIntersector type)
   {
-    if (type != RTC_CURVE_RIBBON)
+    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
     
     Geometry::update();

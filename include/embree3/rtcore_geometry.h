@@ -96,10 +96,10 @@ enum RTCCurveBasis
 };
 
 /*! Curve type */
-enum RTCCurveType
+enum RTCGeometryIntersector
 {
-  RTC_CURVE_RIBBON,    //!< render curves as ray facing ribbons
-  RTC_CURVE_SURFACE    //!< render curves as real geometric surface
+  RTC_GEOMETRY_INTERSECTOR_RIBBON,    //!< render curves as ray facing ribbons
+  RTC_GEOMETRY_INTERSECTOR_SURFACE    //!< render curves as real geometric surface
 };
 
 /*! Arguments for RTCBoundsFunction */
@@ -354,13 +354,13 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
   that zooming onto one hair might show geometric artefacts. */
 
 RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
-                                            enum RTCCurveType type,
+                                            enum RTCGeometryIntersector type,
                                             enum RTCCurveBasis basis
   );
 
 
 /*! Sets the type of the curve geometry */
-RTCORE_API void rtcSetCurveType(RTCGeometry geometry, enum RTCCurveType type);
+RTCORE_API void rtcSetGeometryIntersector(RTCGeometry geometry, enum RTCGeometryIntersector type);
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
