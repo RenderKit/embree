@@ -77,8 +77,12 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, un
   RayStats_addRay(stats);
 
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+    return make_Vec3f(0.0f);
+  else if (dot(ray.dir,ray.Ng) < 0.0f)
+    return make_Vec3f(0.0f,abs(dot(ray.dir,normalize(ray.Ng))),0.0f);
+  else
+    return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))),0.0f,0.0f);
 }
 
 void renderTileEyeLight(uniform int taskIndex,
