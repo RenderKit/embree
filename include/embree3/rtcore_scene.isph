@@ -154,7 +154,7 @@ RTCORE_API void rtcIntersect16 (const int* uniform valid, RTCScene scene, const 
 
 inline void rtcIntersect (RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray) 
 {
-  varying bool mask = __mask & (ray->tnear <= ray->tfar); // FIXME: why do we test tnear<=tfar here?
+  varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
@@ -215,7 +215,7 @@ RTCORE_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, 
 
 inline void rtcOccluded (RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray)
 {
-  varying bool mask = __mask & (ray->tnear <= ray->tfar); // FIXME: why do we test tnear<=tfar here?
+  varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
