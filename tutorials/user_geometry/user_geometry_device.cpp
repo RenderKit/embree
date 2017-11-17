@@ -452,7 +452,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       rtcReportIntersection(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
       {
         RTCRayN_u(rays,N,ui) = potentialhit.u;
         RTCRayN_v(rays,N,ui) = potentialhit.v;
@@ -490,7 +490,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       rtcReportIntersection(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
       {
         RTCRayN_u(rays,N,ui) = potentialhit.u;
         RTCRayN_v(rays,N,ui) = potentialhit.v;
@@ -606,7 +606,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       rtcReportOcclusion(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
         RTCRayN_geomID(rays,N,ui) = 0;
     }
 
@@ -638,7 +638,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       rtcReportOcclusion(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
         RTCRayN_geomID(rays,N,ui) = 0;
     }
  
@@ -662,7 +662,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
   struct RTCRayN* ray = args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
-                                  
+               
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
@@ -687,8 +687,8 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
     float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
     float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
 
-    /* accept some hits */
-    if (T >= 0.5f) valid[vi] = 0;
+    /* reject some hits */
+    if (T < 0.5f) valid[vi] = 0;
   }
 }
 

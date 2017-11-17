@@ -450,7 +450,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       rtcReportIntersection(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
       {
         RTCRayN_u(rays,N,ui) = potentialhit.u;
         RTCRayN_v(rays,N,ui) = potentialhit.v;
@@ -488,7 +488,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       rtcReportIntersection(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
       {
         RTCRayN_u(rays,N,ui) = potentialhit.u;
         RTCRayN_v(rays,N,ui) = potentialhit.v;
@@ -604,7 +604,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       rtcReportOcclusion(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
         RTCRayN_geomID(rays,N,ui) = 0;
     }
 
@@ -636,7 +636,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       rtcReportOcclusion(args,&fargs);
 
       /* update for all accepted hits */
-      if (imask == 0)
+      if (imask == -1)
         RTCRayN_geomID(rays,N,ui) = 0;
     }
  
@@ -685,8 +685,8 @@ unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform c
     float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
     float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
 
-    /* accept some hits */
-    if (T >= 0.5f) valid[vi] = 0;
+    /* reject some hits */
+    if (T < 0.5f) valid[vi] = 0;
   }
 }
 
