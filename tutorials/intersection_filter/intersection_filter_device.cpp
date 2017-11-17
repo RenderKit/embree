@@ -190,10 +190,13 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stri
   ((unsigned int*)(((char*)&ptr) + pid*stride))[rid+1*idx] = v;
 }
 
-
 /* intersection filter function */
 void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (args->context == NULL)
+    return;
+
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct RTCRayN* rayN = args->ray;

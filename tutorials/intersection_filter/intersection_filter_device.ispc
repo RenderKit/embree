@@ -189,7 +189,43 @@ inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, c
 }
 
 
-/* intersection filter function */
+/* intersection filter function for single rays and packets */
+
+unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform const args)
+{
+  /* avoid crashing when debug visualizations are used */
+  if (args->context == NULL) return;
+
+  assert(args->N == programCount);
+  uniform int* uniform valid = args->valid;
+  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  varying RTCRay* uniform ray = (varying RTCRay* uniform)args->ray;
+  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
+
+  /* ignore inactive rays */
+  if (valid[programIndex] != -1) return;
+
+  /* read ray/hit from ray structure */
+  const Vec3f ray_org = make_Vec3f(ray->orgx,ray->orgy,ray->orgz);
+  const Vec3f ray_dir = make_Vec3f(ray->dirx,ray->diry,ray->dirz);
+
+  /* calculate transparency */
+  Vec3f h = ray_org + ray_dir  * hit->t;
+  float T = transparencyFunction(h);
+
+  /* ignore hit if completely transparent */
+  if (T >= 1.0f) 
+    valid[programIndex] = 0;
+  /* otherwise accept hit and remember transparency */
+  else
+  {
+    varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
+    eray->transparency = T;
+  }
+}
+
+/* intersection filter function for streams of general packets */
+
 unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform const args)
 {
   uniform int* uniform valid = args->valid;
@@ -199,8 +235,7 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
-  if (context == NULL)
-    return;
+  if (context == NULL) return;
 
   /* iterate over all rays in ray packet */
   for (uniform unsigned int ui=0; ui<N; ui+=programCount)
@@ -571,7 +606,11 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+  if (g_mode == MODE_NORMAL)
+    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
+  else
+    rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
   rtcCommitGeometry(geom);
@@ -601,7 +640,11 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = make_Vec3f(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+  if (g_mode == MODE_NORMAL)
+    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
+  else
+    rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+
   rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
   rtcCommitGeometry(geom);
