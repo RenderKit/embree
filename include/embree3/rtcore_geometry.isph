@@ -119,7 +119,6 @@ struct RTCIntersectFunctionNArguments
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform ray;               /*!< ray packet of size N */
-  struct RTCHitN* potentialHit;              /*!< potential new hit */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
 };
@@ -134,7 +133,6 @@ struct RTCOccludedFunctionNArguments
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
   RTCRayN* uniform ray;               /*!< ray packet of size N */
-  struct RTCHitN* potentialHit;              /*!< potential new hit */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
 };
@@ -143,10 +141,10 @@ struct RTCOccludedFunctionNArguments
 typedef unmasked void (*RTCOccludedFunctionN) (const struct RTCOccludedFunctionNArguments* uniform const args);
 
 /*! report intersection from intersect function */
-RTCORE_API void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, uniform unsigned int begin, uniform unsigned int end);
+RTCORE_API void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filter_args);
 
 /*! report intersection from occluded function */
-RTCORE_API void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, uniform unsigned int begin, uniform unsigned int end);
+RTCORE_API void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filter_args);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments

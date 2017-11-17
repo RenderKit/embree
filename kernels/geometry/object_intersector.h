@@ -95,7 +95,7 @@ namespace embree
         valid &= (ray.mask & accel->mask) != 0;
         if (none(valid)) return;
 #endif
-        accel->intersect(valid,ray,prim.primID(),context,&reportIntersectionK<K>);
+        accel->intersect(valid,ray,prim.primID(),context,&reportIntersection1);
       }
 
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
@@ -108,7 +108,7 @@ namespace embree
         valid &= (ray.mask & accel->mask) != 0;
         if (none(valid)) return false;
 #endif
-        accel->occluded(valid,ray,prim.primID(),context,&reportOcclusionK<K>);
+        accel->occluded(valid,ray,prim.primID(),context,&reportOcclusion1);
         return ray.geomID == 0;
       }
 

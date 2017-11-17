@@ -388,7 +388,6 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   int* valid = (int*) args->valid;
   void* ptr  = args->geomUserPtr;
   RTCRayN* rays = args->ray;
-  RTCHitN* potentialhit = args->potentialHit;
   unsigned int N = args->N;
   unsigned int item = args->item;
   const Sphere* spheres = (const Sphere*) ptr;
@@ -421,37 +420,88 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t1 = 0.5f*rcpA*(-B+Q);
 
 #if 1
-    RTCHitN_u(potentialhit,N,ui) = 0.0f;
-    RTCHitN_v(potentialhit,N,ui) = 0.0f;
-    RTCHitN_instID(potentialhit,N,ui) = args->context->instID;
-    RTCHitN_geomID(potentialhit,N,ui) = sphere.geomID;
-    RTCHitN_primID(potentialhit,N,ui) = item;
+    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);
+    
+    RTCHit potentialhit;
+    potentialhit.u = 0.0f;
+    potentialhit.v = 0.0f;
+    potentialhit.instID = args->context->instID;
+    potentialhit.geomID = sphere.geomID;
+    potentialhit.primID = item;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
+      int imask;
       bool mask = 1;
       {
-        valid[vi] = mask ? -1 : 0;
+        imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
-      RTCHitN_t(potentialhit,N,ui) = t0;
-      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
-      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
-      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
-      rtcReportIntersection(args,ui,ui+1);
+      potentialhit.t = t0;
+      potentialhit.Ngx = Ng.x;
+      potentialhit.Ngy = Ng.y;
+      potentialhit.Ngz = Ng.z;
+
+      RTCFilterFunctionNArguments fargs;
+      fargs.valid = (int*)&imask;
+      fargs.geomUserPtr = ptr;
+      fargs.context = args->context;
+      fargs.ray = (RTCRayN*)&ray;
+      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.N = 1;
+  
+      rtcReportIntersection(args,&fargs);
+
+      /* update for all accepted hits */
+      if (imask == 0)
+      {
+        RTCRayN_u(rays,N,ui) = potentialhit.u;
+        RTCRayN_v(rays,N,ui) = potentialhit.v;
+        RTCRayN_tfar(rays,N,ui) = potentialhit.t;
+        RTCRayN_instID(rays,N,ui) = potentialhit.instID;
+        RTCRayN_geomID(rays,N,ui) = potentialhit.geomID;
+        RTCRayN_primID(rays,N,ui) = potentialhit.primID;
+        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ngx;
+        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ngy;
+        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ngz;
+      }
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
     {
+      int imask;
       bool mask = 1;
       {
-        valid[vi] = mask ? -1 : 0;
+        imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t1*ray_dir-sphere.p;
-      RTCHitN_t(potentialhit,N,ui) = t1;
-      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
-      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
-      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
-      rtcReportIntersection(args,ui,ui+1);
+      potentialhit.t = t1;
+      potentialhit.Ngx = Ng.x;
+      potentialhit.Ngy = Ng.y;
+      potentialhit.Ngz = Ng.z;
+
+      RTCFilterFunctionNArguments fargs;
+      fargs.valid = (int*)&imask;
+      fargs.geomUserPtr = ptr;
+      fargs.context = args->context;
+      fargs.ray = (RTCRayN*)&ray;
+      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.N = 1;
+  
+      rtcReportIntersection(args,&fargs);
+
+      /* update for all accepted hits */
+      if (imask == 0)
+      {
+        RTCRayN_u(rays,N,ui) = potentialhit.u;
+        RTCRayN_v(rays,N,ui) = potentialhit.v;
+        RTCRayN_tfar(rays,N,ui) = potentialhit.t;
+        RTCRayN_instID(rays,N,ui) = potentialhit.instID;
+        RTCRayN_geomID(rays,N,ui) = potentialhit.geomID;
+        RTCRayN_primID(rays,N,ui) = potentialhit.primID;
+        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ngx;
+        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ngy;
+        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ngz;
+      }
     }
     
 #else
@@ -492,7 +542,6 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCRayN* rays = args->ray;
-  RTCHitN* potentialhit = args->potentialHit;
   unsigned int N = args->N;
   unsigned int item = args->item;
   const Sphere* spheres = (const Sphere*) ptr;
@@ -525,44 +574,74 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     const float t1 = 0.5f*rcpA*(-B+Q);
 
 #if 1
+    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);
 
-    RTCHitN_u(potentialhit,N,ui) = 0.0f;
-    RTCHitN_v(potentialhit,N,ui) = 0.0f;
-    RTCHitN_instID(potentialhit,N,ui) = args->context->instID;
-    RTCHitN_geomID(potentialhit,N,ui) = sphere.geomID;
-    RTCHitN_primID(potentialhit,N,ui) = item;
+    RTCHit potentialhit;
+    potentialhit.u = 0.0f;
+    potentialhit.v = 0.0f;
+    potentialhit.instID = args->context->instID;
+    potentialhit.geomID = sphere.geomID;
+    potentialhit.primID = item;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
+      int imask;
       bool mask = 1;
       {
-        valid[vi] = mask ? -1 : 0;
+        imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
-      RTCHitN_t(potentialhit,N,ui) = t0;
-      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
-      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
-      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
-      rtcReportOcclusion(args,ui,ui+1);
+      potentialhit.t = t0;
+      potentialhit.Ngx = Ng.x;
+      potentialhit.Ngy = Ng.y;
+      potentialhit.Ngz = Ng.z;
+
+      RTCFilterFunctionNArguments fargs;
+      fargs.valid = (int*)&imask;
+      fargs.geomUserPtr = ptr;
+      fargs.context = args->context;
+      fargs.ray = (RTCRayN*)&ray;
+      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.N = 1;
+  
+      rtcReportOcclusion(args,&fargs);
+
+      /* update for all accepted hits */
+      if (imask == 0)
+        RTCRayN_geomID(rays,N,ui) = 0;
     }
 
     /* ignore rays that have just found a hit */
     if (RTCRayN_geomID(rays,N,ui) == 0)
       continue;
-    
+ 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
     {
+      int imask;
       bool mask = 1;
       {
-        valid[vi] = mask ? -1 : 0;
+        imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t1*ray_dir-sphere.p;
-      RTCHitN_t(potentialhit,N,ui) = t1;
-      RTCHitN_Ng_x(potentialhit,N,ui) = Ng.x;
-      RTCHitN_Ng_y(potentialhit,N,ui) = Ng.y;
-      RTCHitN_Ng_z(potentialhit,N,ui) = Ng.z;
-      rtcReportOcclusion(args,ui,ui+1);
+      potentialhit.t = t1;
+      potentialhit.Ngx = Ng.x;
+      potentialhit.Ngy = Ng.y;
+      potentialhit.Ngz = Ng.z;
+
+      RTCFilterFunctionNArguments fargs;
+      fargs.valid = (int*)&imask;
+      fargs.geomUserPtr = ptr;
+      fargs.context = args->context;
+      fargs.ray = (RTCRayN*)&ray;
+      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.N = 1;
+  
+      rtcReportOcclusion(args,&fargs);
+
+      /* update for all accepted hits */
+      if (imask == 0)
+        RTCRayN_geomID(rays,N,ui) = 0;
     }
-    
+ 
 #else
     
     if ((ray_tnear < t0) & (t0 < ray_tfar)) {
@@ -608,8 +687,8 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
     float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
     float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
 
-    /* reject some hits */
-    if (T < 0.5f) valid[vi] = 0;
+    /* accept some hits */
+    if (T >= 0.5f) valid[vi] = 0;
   }
 }
 

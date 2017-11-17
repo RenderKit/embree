@@ -27,8 +27,8 @@ namespace embree
   struct IntersectFunctionNArguments;
   struct OccludedFunctionNArguments;
   
-  typedef void (*ReportIntersectionFunc) (IntersectFunctionNArguments* args, unsigned int begin, unsigned int end);
-  typedef void (*ReportOcclusionFunc) (OccludedFunctionNArguments* args, unsigned int begin, unsigned int end);
+  typedef void (*ReportIntersectionFunc) (IntersectFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args);
+  typedef void (*ReportOcclusionFunc) (OccludedFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args);
   
   struct IntersectFunctionNArguments : public RTCIntersectFunctionNArguments
   {
@@ -164,13 +164,11 @@ namespace embree
         assert(intersectors.intersectorN.intersect);
         
         int mask = -1;
-        Hit hit;
         IntersectFunctionNArguments args;
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
-        args.potentialHit = (RTCHitN*)&hit;
         args.N = 1;
         args.item = (unsigned int)item;
         args.internal_context = context;
@@ -187,13 +185,11 @@ namespace embree
         assert(intersectors.intersectorN.occluded);
         
         int mask = -1;
-        Hit hit;
         OccludedFunctionNArguments args;
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
-        args.potentialHit = (RTCHitN*)&hit;
         args.N = 1;
         args.item = (unsigned int)item;
         args.internal_context = context;
@@ -211,13 +207,11 @@ namespace embree
         assert(intersectors.intersectorN.intersect);
         
         vint<K> mask = valid.mask32();
-        HitK<K> hit;
         IntersectFunctionNArguments args;
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
-        args.potentialHit = (RTCHitN*)&hit;
         args.N = K;
         args.item = (unsigned int)item;
         args.internal_context = context;
@@ -235,13 +229,11 @@ namespace embree
         assert(intersectors.intersectorN.occluded);
         
         vint<K> mask = valid.mask32();
-        HitK<K> hit;
         OccludedFunctionNArguments args;
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
-        args.potentialHit = (RTCHitN*)&hit;
         args.N = K;
         args.item = (unsigned int)item;
         args.internal_context = context;
