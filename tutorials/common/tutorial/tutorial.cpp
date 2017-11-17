@@ -157,6 +157,14 @@ namespace embree
         command_line_camera = true;
       }, "--fov <float>: vertical field of view");
 
+    registerOption("lefthanded", [this] (Ref<ParseStream> cin, const FileName& path) {
+        camera.handedness = Camera::LEFT_HANDED;
+      }, "--lefthanded: use left handed coordinates");
+
+    registerOption("righthanded", [this] (Ref<ParseStream> cin, const FileName& path) {
+        camera.handedness = Camera::RIGHT_HANDED;
+      }, "--righthanded: use right handed coordinates");
+
     /* framebuffer settings */
     registerOption("size", [this] (Ref<ParseStream> cin, const FileName& path) {
         width = cin->getInt();
@@ -989,13 +997,13 @@ namespace embree
     /* use specified camera */
     if (camera_name != "") {
       Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getCamera(camera_name);
-      camera = Camera(c->from,c->to,c->up,c->fov);
+      camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
     }
 
     /* otherwise use default camera */
     else if (!command_line_camera) {
       Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getDefaultCamera();
-      if (c) camera = Camera(c->from,c->to,c->up,c->fov);
+      if (c) camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
     }
 
     /* send model */
