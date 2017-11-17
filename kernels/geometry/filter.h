@@ -73,7 +73,7 @@ namespace embree
         runIntersectionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context);
         *(int*)args->valid = -1; // we do not change valid mask
       } else {
-        copyHitToRay(*(Ray*)args->rays,*(Hit*)args->potentialHit);
+        copyHitToRay(*(Ray*)args->ray,*(Hit*)args->potentialHit);
       }
     }
     
@@ -119,10 +119,10 @@ namespace embree
       IntersectContext* context = args->internal_context;
       if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
         if (runOcclusionFilter1Helper((RTCFilterFunctionNArguments*)args,geometry,context))
-          ((RTCRay*)args->rays)->geomID = 0;
+          ((RTCRay*)args->ray)->geomID = 0;
         *(int*)args->valid = -1;  // we do not change valid mask
       } else {
-        ((RTCRay*)args->rays)->geomID = 0;
+        ((RTCRay*)args->ray)->geomID = 0;
       }
     }
 
@@ -187,7 +187,7 @@ namespace embree
         runIntersectionFilterHelper<K>((RTCFilterFunctionNArguments*)args,geometry,context);
         *mask = old_mask;  // we do not change valid mask
       } else {
-        copyHitToRay(valid,*(RayK<K>*)args->rays,*(HitK<K>*)args->potentialHit);
+        copyHitToRay(valid,*(RayK<K>*)args->ray,*(HitK<K>*)args->potentialHit);
       }
     }
 
@@ -255,7 +255,7 @@ namespace embree
       }
       else
       {
-        RayK<K>* ray = (RayK<K>*) args->rays;
+        RayK<K>* ray = (RayK<K>*) args->ray;
         ray->geomID = select(valid, vint<K>(zero), ray->geomID);
       }
     }

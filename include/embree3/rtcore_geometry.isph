@@ -118,7 +118,7 @@ struct RTCIntersectFunctionNArguments
   uniform int* uniform valid; /*! pointer to valid mask */
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-  RTCRayN* uniform rays;               /*!< ray packet of size N */
+  RTCRayN* uniform ray;               /*!< ray packet of size N */
   struct RTCHitN* potentialHit;              /*!< potential new hit */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */
@@ -133,7 +133,7 @@ struct RTCOccludedFunctionNArguments
   uniform int* uniform valid; /*! pointer to valid mask */
   void* uniform geomUserPtr;                /*!< pointer to geometry user data */
   uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-  RTCRayN* uniform rays;               /*!< ray packet of size N */
+  RTCRayN* uniform ray;               /*!< ray packet of size N */
   struct RTCHitN* potentialHit;              /*!< potential new hit */
   uniform unsigned int N;                 /*< number of rays in ray packet */
   uniform unsigned int item;              /*< item to intersect */

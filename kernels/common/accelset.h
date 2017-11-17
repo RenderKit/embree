@@ -169,7 +169,7 @@ namespace embree
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.rays = (RTCRayN*)&ray;
+        args.ray = (RTCRayN*)&ray;
         args.potentialHit = (RTCHitN*)&hit;
         args.N = 1;
         args.item = (unsigned int)item;
@@ -192,7 +192,7 @@ namespace embree
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.rays = (RTCRayN*)&ray;
+        args.ray = (RTCRayN*)&ray;
         args.potentialHit = (RTCHitN*)&hit;
         args.N = 1;
         args.item = (unsigned int)item;
@@ -216,7 +216,7 @@ namespace embree
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.rays = (RTCRayN*)&ray;
+        args.ray = (RTCRayN*)&ray;
         args.potentialHit = (RTCHitN*)&hit;
         args.N = K;
         args.item = (unsigned int)item;
@@ -240,7 +240,7 @@ namespace embree
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.rays = (RTCRayN*)&ray;
+        args.ray = (RTCRayN*)&ray;
         args.potentialHit = (RTCHitN*)&hit;
         args.N = K;
         args.item = (unsigned int)item;
