@@ -207,8 +207,8 @@ void intersectionFilter(const RTCFilterFunctionNArguments* const args)
   if (valid[0] != -1) return;
 
   /* read ray/hit from ray structure */
-  const Vec3fa ray_org = Vec3fa(ray->orgx,ray->orgy,ray->orgz);
-  const Vec3fa ray_dir = Vec3fa(ray->dirx,ray->diry,ray->dirz);
+  const Vec3fa ray_org = Vec3fa(ray->org_x,ray->org_y,ray->org_z);
+  const Vec3fa ray_dir = Vec3fa(ray->dir_x,ray->dir_y,ray->dir_z);
 
   /* calculate transparency */
   Vec3fa h = ray_org + ray_dir  * hit->t;
@@ -289,8 +289,8 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   if (valid[0] != -1) return;
 
   /* read ray/hit from ray structure */
-  const Vec3fa ray_org = Vec3fa(ray->orgx,ray->orgy,ray->orgz);
-  const Vec3fa ray_dir = Vec3fa(ray->dirx,ray->diry,ray->dirz);
+  const Vec3fa ray_org = Vec3fa(ray->org_x,ray->org_y,ray->org_z);
+  const Vec3fa ray_dir = Vec3fa(ray->dir_x,ray->dir_y,ray->dir_z);
 
   Ray2* ray2 = (Ray2*) context->userRayExt;
   assert(ray2);
@@ -301,7 +301,6 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
       return;
     }
   }
-  printf("dfsdf");
   /* store hit in hit list */
   unsigned int slot = ray2->lastHit%HIT_LIST_LENGTH;
   ray2->hit_geomIDs[slot] = hit->geomID;

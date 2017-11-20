@@ -347,9 +347,9 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
     hit.t = t0;
-    hit.Ngx = Ng.x;
-    hit.Ngy = Ng.y;
-    hit.Ngz = Ng.z;
+    hit.Ng_x = Ng.x;
+    hit.Ng_y = Ng.y;
+    hit.Ng_z = Ng.z;
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
@@ -368,9 +368,9 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
       ray->instID = hit.instID;
       ray->geomID = hit.geomID;
       ray->primID = hit.primID;
-      ray->Ng.x = hit.Ngx;
-      ray->Ng.y = hit.Ngy;
-      ray->Ng.z = hit.Ngz;
+      ray->Ng.x = hit.Ng_x;
+      ray->Ng.y = hit.Ng_y;
+      ray->Ng.z = hit.Ng_z;
     }
   }
 
@@ -384,9 +384,9 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
     hit.t = t1;
-    hit.Ngx = Ng.x;
-    hit.Ngy = Ng.y;
-    hit.Ngz = Ng.z;
+    hit.Ng_x = Ng.x;
+    hit.Ng_y = Ng.y;
+    hit.Ng_z = Ng.z;
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
@@ -405,9 +405,9 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
       ray->instID = hit.instID;
       ray->geomID = hit.geomID;
       ray->primID = hit.primID;
-      ray->Ng.x = hit.Ngx;
-      ray->Ng.y = hit.Ngy;
-      ray->Ng.z = hit.Ngz;
+      ray->Ng.x = hit.Ng_x;
+      ray->Ng.y = hit.Ng_y;
+      ray->Ng.z = hit.Ng_z;
     }
   }
 
@@ -474,9 +474,9 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
     hit.t = t0;
-    hit.Ngx = Ng.x;
-    hit.Ngy = Ng.y;
-    hit.Ngz = Ng.z;
+    hit.Ng_x = Ng.x;
+    hit.Ng_y = Ng.y;
+    hit.Ng_z = Ng.z;
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
@@ -503,9 +503,9 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
     hit.t = t1;
-    hit.Ngx = Ng.x;
-    hit.Ngy = Ng.y;
-    hit.Ngz = Ng.z;
+    hit.Ng_x = Ng.x;
+    hit.Ng_y = Ng.y;
+    hit.Ng_z = Ng.z;
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
