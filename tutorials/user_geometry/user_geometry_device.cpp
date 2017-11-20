@@ -307,9 +307,11 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 
 void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
 {
-  const int* valid = args->valid;
+  int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayN* rays = args->rays;
+  Ray *ray = (Ray*)args->rays;
+  RTCHit* hit = (RTCHit*)args->potentialHit;
+
   unsigned int item = args->item;
   
   assert(args->N == 1);
@@ -318,7 +320,6 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   
   if (valid[0])
   {
-    Ray *ray = (Ray*)rays;
     const Vec3fa v = ray->org-sphere.p;
     const float A = dot(ray->dir,ray->dir);
     const float B = 2.0f*dot(v,ray->dir);
@@ -329,6 +330,45 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     const float rcpA = rcp(A);
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
+
+#if 1
+    
+    hit->u = 0.0f;
+    hit->v = 0.0f;
+    hit->instID = args->context->instID;
+    hit->geomID = sphere.geomID;
+    hit->primID = item;
+    if ((ray->tnear() < t0) & (t0 < ray->tfar()))
+    {
+      const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
+      hit->t = t0;
+      hit->Ngx = Ng.x;
+      hit->Ngy = Ng.y;
+      hit->Ngz = Ng.z;
+      bool mask = 1;
+      {
+        valid[0] = mask ? -1 : 0;
+      }
+      rtcReportIntersection(args,0,1);
+    }
+
+    if ((ray->tnear() < t1) & (t1 < ray->tfar()))
+    {
+      const Vec3fa Ng = ray->org+t1*ray->dir-sphere.p;
+      hit->t = t1;
+      hit->Ngx = Ng.x;
+      hit->Ngy = Ng.y;
+      hit->Ngz = Ng.z;
+      bool mask = 1;
+      {
+        valid[0] = mask ? -1 : 0;
+      }
+
+      rtcReportIntersection(args,0,1);
+    }
+
+
+#else
     if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
       ray->u = 0.0f;
       ray->v = 0.0f;
@@ -347,6 +387,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
       ray->primID = (unsigned int) item;
       ray->Ng = ray->org+t1*ray->dir-sphere.p;
     }
+#endif
   }
 }
 
@@ -576,6 +617,31 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 }
 
 /* intersection filter function */
+
+void sphereFilterFunction(const RTCFilterFunctionNArguments* const args)
+{
+  int* valid = args->valid;
+  const IntersectContext* context = (const IntersectContext*) args->context;
+  struct Ray* ray = (struct Ray*)args->ray;
+  struct RTCHit* hit = (struct RTCHit*)args->potentialHit;
+  const unsigned int N = args->N;
+                                  
+  /* avoid crashing when debug visualizations are used */
+  if (context == nullptr)
+    return;
+
+  /* ignore inactive rays */
+  if (valid[0] != -1) return;
+  
+  /* carve out parts of the sphere */
+  const Vec3fa h = ray->org+hit->t*ray->dir;
+  float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
+  float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
+
+  /* reject some hits */
+  if (T < 0.5f) valid[0] = 0;
+}
+
 void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
@@ -641,10 +707,20 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
   }
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
-  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
-  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
-  rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
-  rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
+  if (g_mode == MODE_NORMAL)
+  {
+    rtcSetIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetOccludedFunction (geom,sphereOccludedFunc);
+    rtcSetIntersectionFilterFunction(geom,sphereFilterFunction);
+    rtcSetOcclusionFilterFunction(geom,sphereFilterFunction);
+  }
+  else
+  {
+    rtcSetIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetOccludedFunction (geom,sphereOccludedFuncN);
+    rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
+  }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return spheres;
@@ -850,6 +926,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   {
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
+
     if (ray.instID != RTC_INVALID_GEOMETRY_ID) {
       Ns = xfmVector(g_instance[ray.instID]->normal2world,Vec3fa(Ns));
     }
