@@ -316,94 +316,8 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[item];
   
-  if (valid[programIndex])
-  {
-    const Vec3f v = ray->org-sphere.p;
-    const float A = dot(ray->dir,ray->dir);
-    const float B = 2.0f*dot(v,ray->dir);
-    const float C = dot(v,v) - sqr(sphere.r);
-    const float D = B*B - 4.0f*A*C;
-    if (D < 0.0f) return;
-    const float Q = sqrt(D);
-    const float rcpA = rcp(A);
-    const float t0 = 0.5f*rcpA*(-B-Q);
-    const float t1 = 0.5f*rcpA*(-B+Q);
+  if (!valid[programIndex]) return;
 
-#if 1
-    
-    hit->u = 0.0f;
-    hit->v = 0.0f;
-    hit->instID = args->context->instID;
-    hit->geomID = sphere.geomID;
-    hit->primID = item;
-    if ((ray->tnear < t0) & (t0 < ray->tfar))
-    {
-      const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
-      hit->t = t0;
-      hit->Ngx = Ng.x;
-      hit->Ngy = Ng.y;
-      hit->Ngz = Ng.z;
-      varying bool mask = __mask;
-      unmasked {
-        valid[programIndex] = mask ? -1 : 0;
-      }
-      rtcReportIntersection(args,0,programCount);
-    }
-
-    if ((ray->tnear < t1) & (t1 < ray->tfar))
-    {
-      const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
-      hit->t = t1;
-      hit->Ngx = Ng.x;
-      hit->Ngy = Ng.y;
-      hit->Ngz = Ng.z;
-      varying bool mask = __mask;
-      unmasked {
-        valid[programIndex] = mask ? -1 : 0;
-      }
-
-      rtcReportIntersection(args,0,programCount);
-    }
-
-
-#else
-    if ((ray->tnear < t0) & (t0 < ray->tfar)) {
-      ray->u = 0.0f;
-      ray->v = 0.0f;
-      ray->tfar = t0;
-      ray->instID = args->context->instID;
-      ray->geomID = sphere.geomID;
-      ray->primID = (unsigned int) item;
-      ray->Ng = ray->org+t0*ray->dir-sphere.p;
-    }
-    if ((ray->tnear < t1) & (t1 < ray->tfar)) {
-      ray->u = 0.0f;
-      ray->v = 0.0f;
-      ray->tfar = t1;
-      ray->instID = args->context->instID;
-      ray->geomID = sphere.geomID;
-      ray->primID = (unsigned int) item;
-      ray->Ng = ray->org+t1*ray->dir-sphere.p;
-    }
-#endif
-  }
-}
-
-unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
-{
-  const uniform int* uniform valid = args->valid;
-  void* uniform ptr  = args->geomUserPtr;
-  RTCRayN* uniform rays = args->rays;
-  uniform unsigned int item = args->item;
-  
-  assert(args->N == programCount);
-  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
-  const uniform Sphere& sphere = spheres[item];
-  
-  if (!valid[programIndex])
-    return;
-  
-  varying Ray *uniform ray = (varying Ray*uniform)rays;
   const Vec3f v = ray->org-sphere.p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -414,12 +328,134 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
+
+#if 1
+    
+  hit->u = 0.0f;
+  hit->v = 0.0f;
+  hit->instID = args->context->instID;
+  hit->geomID = sphere.geomID;
+  hit->primID = item;
+  if ((ray->tnear < t0) & (t0 < ray->tfar))
+  {
+    const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
+    hit->t = t0;
+    hit->Ngx = Ng.x;
+    hit->Ngy = Ng.y;
+    hit->Ngz = Ng.z;
+    varying bool mask = __mask;
+    unmasked {
+      valid[programIndex] = mask ? -1 : 0;
+    }
+    rtcReportIntersection(args,0,programCount);
+  }
+
+  if ((ray->tnear < t1) & (t1 < ray->tfar))
+  {
+    const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
+    hit->t = t1;
+    hit->Ngx = Ng.x;
+    hit->Ngy = Ng.y;
+    hit->Ngz = Ng.z;
+    varying bool mask = __mask;
+    unmasked {
+      valid[programIndex] = mask ? -1 : 0;
+    }
+
+    rtcReportIntersection(args,0,programCount);
+  }
+
+
+#else
+  if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+    ray->u = 0.0f;
+    ray->v = 0.0f;
+    ray->tfar = t0;
+    ray->instID = args->context->instID;
+    ray->geomID = sphere.geomID;
+    ray->primID = (unsigned int) item;
+    ray->Ng = ray->org+t0*ray->dir-sphere.p;
+  }
+  if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+    ray->u = 0.0f;
+    ray->v = 0.0f;
+    ray->tfar = t1;
+    ray->instID = args->context->instID;
+    ray->geomID = sphere.geomID;
+    ray->primID = (unsigned int) item;
+    ray->Ng = ray->org+t1*ray->dir-sphere.p;
+  }
+#endif
+}
+
+unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
+{
+  uniform int* uniform valid = args->valid;
+  void* uniform ptr  = args->geomUserPtr;
+  varying Ray *uniform ray = (varying Ray*uniform)args->rays;
+  varying RTCHit* uniform hit = (varying RTCHit*uniform)args->potentialHit;
+  uniform unsigned int item = args->item;
+  
+  assert(args->N == programCount);
+  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
+  const uniform Sphere& sphere = spheres[item];
+  
+  if (!valid[programIndex])
+    return;
+  
+  const Vec3f v = ray->org-sphere.p;
+  const float A = dot(ray->dir,ray->dir);
+  const float B = 2.0f*dot(v,ray->dir);
+  const float C = dot(v,v) - sqr(sphere.r);
+  const float D = B*B - 4.0f*A*C;
+  if (D < 0.0f) return;
+  const float Q = sqrt(D);
+  const float rcpA = rcp(A);
+  const float t0 = 0.5f*rcpA*(-B-Q);
+  const float t1 = 0.5f*rcpA*(-B+Q);
+#if 1
+  hit->u = 0.0f;
+  hit->v = 0.0f;
+  hit->instID = args->context->instID;
+  hit->geomID = sphere.geomID;
+  hit->primID = item;
+  if ((ray->tnear < t0) & (t0 < ray->tfar))
+  {
+    const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
+    hit->t = t0;
+    hit->Ngx = Ng.x;
+    hit->Ngy = Ng.y;
+    hit->Ngz = Ng.z;
+    varying bool mask = __mask;
+    unmasked {
+      valid[programIndex] = mask ? -1 : 0;
+    }
+    rtcReportOcclusion(args,0,programCount);
+  }
+
+  if ((ray->tnear < t1) & (t1 < ray->tfar))
+  {
+    const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
+    hit->t = t1;
+    hit->Ngx = Ng.x;
+    hit->Ngy = Ng.y;
+    hit->Ngz = Ng.z;
+    varying bool mask = __mask;
+    unmasked {
+      valid[programIndex] = mask ? -1 : 0;
+    }
+
+    rtcReportOcclusion(args,0,programCount);
+  }
+
+#else
   if ((ray->tnear < t0) & (t0 < ray->tfar)) {
     ray->geomID = 0;
   }
   if ((ray->tnear < t1) & (t1 < ray->tfar)) {
     ray->geomID = 0;
   }
+#endif
 }
 
 unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
@@ -620,10 +656,12 @@ unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform co
 {
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
-  struct Ray* uniform ray = (struct Ray* uniform)args->ray;
-  struct RTCHit* uniform hit = (struct RTCHit* uniform)args->potentialHit;
+  varying struct Ray* uniform ray    = (varying struct Ray* uniform)args->ray;
+  varying struct RTCHit* uniform hit = (varying struct RTCHit* uniform)args->potentialHit;
   const uniform unsigned int N = args->N;
-                                  
+  assert(N == programCount);
+
+
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;
@@ -705,7 +743,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   }
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL && 0)
+  if (g_mode == MODE_NORMAL)
   {
     rtcSetIntersectFunction(geom,sphereIntersectFunc);
     rtcSetOccludedFunction (geom,sphereOccludedFunc);
@@ -911,7 +949,9 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   rtcInitIntersectionContext(&context);
   
   /* initialize ray */
-  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1,
+  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 
+                     make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 
+                     0.0f, inf, 0.0f, -1,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
