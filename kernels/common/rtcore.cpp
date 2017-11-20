@@ -938,6 +938,16 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
+  RTCORE_API void rtcSetNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetNumTimeSteps);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setNumTimeSteps(N);
+    RTCORE_CATCH_END2(geometry);
+  }
+
   RTCORE_API void rtcSetGeometryIntersector(RTCGeometry hgeometry, RTCGeometryIntersector type)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

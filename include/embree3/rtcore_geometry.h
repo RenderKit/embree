@@ -358,7 +358,10 @@ RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
 
 /*! Sets the number of primitives. */
 RTCORE_API void rtcSetNumPrimitives(RTCGeometry geometry, unsigned int N);
-  
+
+/*! Sets the number of time steps. */
+RTCORE_API void rtcSetNumTimeSteps(RTCGeometry geometry, unsigned int N);
+ 
 /*! Sets the type of the curve geometry */
 RTCORE_API void rtcSetGeometryIntersector(RTCGeometry geometry, enum RTCGeometryIntersector type);
 
