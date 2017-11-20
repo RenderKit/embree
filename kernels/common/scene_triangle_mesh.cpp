@@ -172,7 +172,7 @@ namespace embree
         return false;
 
     /*! verify triangle indices */
-    for (size_t i=0; i<triangles.size(); i++) {     
+    for (size_t i=0; i<size(); i++) {     
       if (triangles[i].v[0] >= numVertices()) return false; 
       if (triangles[i].v[1] >= numVertices()) return false; 
       if (triangles[i].v[2] >= numVertices()) return false; 

@@ -79,10 +79,6 @@ namespace embree
       segments.newBuffer(device,size,stride); 
       setNumPrimitives(size);
       return segments.get();
-      // if (isEnabled() && size != (size_t)-1) disabling();
-      // segments.set(ptr,offset,stride,size); 
-      // setNumPrimitives(size);
-      // if (isEnabled() && size != (size_t)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -146,7 +142,7 @@ namespace embree
         return false;
 
     /*! verify segment indices */
-    for (unsigned int i=0; i<numPrimitives; i++) {
+    for (unsigned int i=0; i<size(); i++) {
       if (segments[i]+1 >= numVertices()) return false;
     }
 

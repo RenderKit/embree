@@ -386,7 +386,7 @@ namespace embree
   bool SubdivMesh::Topology::verify (size_t numVertices) 
   {
     size_t ofs = 0;
-    for (size_t i=0; i<mesh->faceVertices.size(); i++) 
+    for (size_t i=0; i<mesh->size(); i++) 
     {
       int valence = mesh->faceVertices[i];
       for (size_t j=ofs; j<ofs+valence; j++) 

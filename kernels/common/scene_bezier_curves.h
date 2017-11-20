@@ -50,11 +50,6 @@ namespace embree
 
   public:
     
-    /*! returns number of bezier curves */
-    __forceinline size_t size() const {
-      return curves.size();
-    }
-    
     /*! returns the number of vertices */
     __forceinline size_t numVertices() const {
       return vertices[0].size();

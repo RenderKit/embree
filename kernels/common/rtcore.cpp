@@ -928,6 +928,16 @@ namespace embree
     return nullptr;
   }
 
+  RTCORE_API void rtcSetNumPrimitives(RTCGeometry hgeometry, unsigned int N)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetNumPrimitives);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setNumPrimitives(N);
+    RTCORE_CATCH_END2(geometry);
+  }
+
   RTCORE_API void rtcSetGeometryIntersector(RTCGeometry hgeometry, RTCGeometryIntersector type)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
