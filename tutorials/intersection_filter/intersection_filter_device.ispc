@@ -215,8 +215,8 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     /* read ray/hit from ray structure */
     RTCRay ray = RTCRayNtoRTCRay(rayN,N,ui);
     RTCHit hit = RTCHitNtoRTCHit(hitN,N,ui);
-    const Vec3f ray_org = make_Vec3f(ray.orgx,ray.orgy,ray.orgz);
-    const Vec3f ray_dir = make_Vec3f(ray.dirx,ray.diry,ray.dirz);
+    const Vec3f ray_org = make_Vec3f(ray.org_x,ray.org_y,ray.org_z);
+    const Vec3f ray_dir = make_Vec3f(ray.dir_x,ray.dir_y,ray.dir_z);
 
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir  * hit.t;
@@ -263,8 +263,8 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
     /* read ray/hit from ray structure */
     RTCRay ray = RTCRayNtoRTCRay(rayN,N,ui);
     RTCHit hit = RTCHitNtoRTCHit(hitN,N,ui);
-    const Vec3f ray_org = make_Vec3f(ray.orgx,ray.orgy,ray.orgz);
-    const Vec3f ray_dir = make_Vec3f(ray.dirx,ray.diry,ray.dirz);
+    const Vec3f ray_org = make_Vec3f(ray.org_x,ray.org_y,ray.org_z);
+    const Vec3f ray_dir = make_Vec3f(ray.dir_x,ray.dir_y,ray.dir_z);
     const unsigned int hit_geomID = hit.geomID;
     const unsigned int hit_primID = hit.primID;
 

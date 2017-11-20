@@ -217,8 +217,8 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     /* read ray/hit from ray structure */
     RTCRay ray = RTCRayNtoRTCRay(rayN,N,ui);
     RTCHit hit = RTCHitNtoRTCHit(hitN,N,ui);
-    const Vec3fa ray_org = Vec3fa(ray.orgx,ray.orgy,ray.orgz);
-    const Vec3fa ray_dir = Vec3fa(ray.dirx,ray.diry,ray.dirz);
+    const Vec3fa ray_org = Vec3fa(ray.org_x,ray.org_y,ray.org_z);
+    const Vec3fa ray_dir = Vec3fa(ray.dir_x,ray.dir_y,ray.dir_z);
 
     /* calculate transparency */
     Vec3fa h = ray_org + ray_dir  * hit.t;
@@ -265,8 +265,8 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
     /* read ray/hit from ray structure */
     RTCRay ray = RTCRayNtoRTCRay(rayN,N,ui);
     RTCHit hit = RTCHitNtoRTCHit(hitN,N,ui);
-    const Vec3fa ray_org = Vec3fa(ray.orgx,ray.orgy,ray.orgz);
-    const Vec3fa ray_dir = Vec3fa(ray.dirx,ray.diry,ray.dirz);
+    const Vec3fa ray_org = Vec3fa(ray.org_x,ray.org_y,ray.org_z);
+    const Vec3fa ray_dir = Vec3fa(ray.dir_x,ray.dir_y,ray.dir_z);
     const unsigned int hit_geomID = hit.geomID;
     const unsigned int hit_primID = hit.primID;
 

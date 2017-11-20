@@ -52,23 +52,23 @@ struct RTCRay1
 struct RTCRay
 {
   /* ray data */
-  float orgx;  //!< x coordinate of ray origin
-  float orgy;  //!< y coordinate of ray origin
-  float orgz;  //!< z coordinate of ray origin
+  float org_x;  //!< x coordinate of ray origin
+  float org_y;  //!< y coordinate of ray origin
+  float org_z;  //!< z coordinate of ray origin
   float tnear; //!< Start of ray segment 
   
-  float dirx;  //!< x coordinate of ray direction
-  float diry;  //!< y coordinate of ray direction
-  float dirz;  //!< z coordinate of ray direction
+  float dir_x;  //!< x coordinate of ray direction
+  float dir_y;  //!< y coordinate of ray direction
+  float dir_z;  //!< z coordinate of ray direction
   
   float tfar;  //!< End of ray segment   
   float time;  //!< Time of this ray for motion blur
   unsigned int mask;  //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ngx;   //!< x coordinate of geometry normal
-  float Ngy;   //!< y coordinate of geometry normal
-  float Ngz;   //!< z coordinate of geometry normal
+  float Ng_x;   //!< x coordinate of geometry normal
+  float Ng_y;   //!< y coordinate of geometry normal
+  float Ng_z;   //!< z coordinate of geometry normal
   
   float u;     //!< Barycentric u coordinate of hit
   float v;     //!< Barycentric v coordinate of hit
@@ -81,9 +81,9 @@ struct RTCRay
 struct RTCHit
 {
   /* hit data */
-  float Ngx;   //!< x coordinate of geometry normal
-  float Ngy;   //!< y coordinate of geometry normal
-  float Ngz;   //!< z coordinate of geometry normal
+  float Ng_x;   //!< x coordinate of geometry normal
+  float Ng_y;   //!< y coordinate of geometry normal
+  float Ng_z;   //!< z coordinate of geometry normal
 
   unsigned int instID;     //!< instance ID  
   unsigned int geomID;     //!< geometry ID
@@ -124,23 +124,23 @@ inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsign
 struct RTCRayNp
 {
   /* ray data */
-  uniform float* uniform orgx;  //!< x coordinate of ray origin
-  uniform float* uniform orgy;  //!< y coordinate of ray origin
-  uniform float* uniform orgz;  //!< z coordinate of ray origin
+  uniform float* uniform org_x;  //!< x coordinate of ray origin
+  uniform float* uniform org_y;  //!< y coordinate of ray origin
+  uniform float* uniform org_z;  //!< z coordinate of ray origin
   uniform float* uniform tnear; //!< Start of ray segment (optional)
 
-  uniform float* uniform dirx;  //!< x coordinate of ray direction
-  uniform float* uniform diry;  //!< y coordinate of ray direction
-  uniform float* uniform dirz;  //!< z coordinate of ray direction
+  uniform float* uniform dir_x;  //!< x coordinate of ray direction
+  uniform float* uniform dir_y;  //!< y coordinate of ray direction
+  uniform float* uniform dir_z;  //!< z coordinate of ray direction
   uniform float* uniform tfar;  //!< End of ray segment (set to hit distance)
  
   uniform float* uniform time;  //!< Time of this ray for motion blur (optional)
   uniform unsigned int* uniform mask;  //!< Used to mask out objects during traversal (optional)
 
   /* hit data */
-  uniform float* uniform Ngx;   //!< x coordinate of geometry normal (optional)
-  uniform float* uniform Ngy;   //!< y coordinate of geometry normal (optional)
-  uniform float* uniform Ngz;   //!< z coordinate of geometry normal (optional)
+  uniform float* uniform Ng_x;   //!< x coordinate of geometry normal (optional)
+  uniform float* uniform Ng_y;   //!< y coordinate of geometry normal (optional)
+  uniform float* uniform Ng_z;   //!< z coordinate of geometry normal (optional)
 
   uniform float* uniform u;     //!< Barycentric u coordinate of hit
   uniform float* uniform v;     //!< Barycentric v coordinate of hit
@@ -169,19 +169,19 @@ inline varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned 
 inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0)
 {
   RTCRay ray;
-  ray.orgx   = RTCRayN_org_x(ptr,N,i);
-  ray.orgy   = RTCRayN_org_y(ptr,N,i);
-  ray.orgz   = RTCRayN_org_z(ptr,N,i);
+  ray.org_x   = RTCRayN_org_x(ptr,N,i);
+  ray.org_y   = RTCRayN_org_y(ptr,N,i);
+  ray.org_z   = RTCRayN_org_z(ptr,N,i);
   ray.tnear  = RTCRayN_tnear(ptr,N,i);
-  ray.dirx   = RTCRayN_dir_x(ptr,N,i);
-  ray.diry   = RTCRayN_dir_y(ptr,N,i);
-  ray.dirz   = RTCRayN_dir_z(ptr,N,i);
+  ray.dir_x   = RTCRayN_dir_x(ptr,N,i);
+  ray.dir_y   = RTCRayN_dir_y(ptr,N,i);
+  ray.dir_z   = RTCRayN_dir_z(ptr,N,i);
   ray.tfar   = RTCRayN_tfar(ptr,N,i);
   ray.time   = RTCRayN_time(ptr,N,i);
   ray.mask   = RTCRayN_mask(ptr,N,i);
-  ray.Ngx    = RTCRayN_Ng_x(ptr,N,i);
-  ray.Ngy    = RTCRayN_Ng_y(ptr,N,i);
-  ray.Ngz    = RTCRayN_Ng_z(ptr,N,i);
+  ray.Ng_x    = RTCRayN_Ng_x(ptr,N,i);
+  ray.Ng_y    = RTCRayN_Ng_y(ptr,N,i);
+  ray.Ng_z    = RTCRayN_Ng_z(ptr,N,i);
   ray.u      = RTCRayN_u(ptr,N,i);
   ray.v      = RTCRayN_v(ptr,N,i);
   ray.geomID = RTCRayN_geomID(ptr,N,i);
@@ -193,9 +193,9 @@ inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, unif
 inline RTCHit RTCHitNtoRTCHit(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i = 0)
 {
   RTCHit hit;
-  hit.Ngx    = RTCHitN_Ng_x(ptr,N,i);
-  hit.Ngy    = RTCHitN_Ng_y(ptr,N,i);
-  hit.Ngz    = RTCHitN_Ng_z(ptr,N,i);
+  hit.Ng_x    = RTCHitN_Ng_x(ptr,N,i);
+  hit.Ng_y    = RTCHitN_Ng_y(ptr,N,i);
+  hit.Ng_z    = RTCHitN_Ng_z(ptr,N,i);
   hit.geomID = RTCHitN_geomID(ptr,N,i);
   hit.primID = RTCHitN_primID(ptr,N,i);
   hit.instID = RTCHitN_instID(ptr,N,i);
