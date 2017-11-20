@@ -574,6 +574,31 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
 }
 
 /* intersection filter function */
+
+unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform const args)
+{
+  uniform int* uniform valid = args->valid;
+  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  struct Ray* uniform ray = (struct Ray* uniform)args->ray;
+  struct RTCHit* uniform hit = (struct RTCHit* uniform)args->potentialHit;
+  const uniform unsigned int N = args->N;
+                                  
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return;
+
+  /* ignore inactive rays */
+  if (valid[programIndex] != -1) return;
+  
+  /* carve out parts of the sphere */
+  const Vec3f h = ray->org+hit->t*ray->dir;
+  float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
+  float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
+
+  /* reject some hits */
+  if (T < 0.5f) valid[programIndex] = 0;
+}
+
 unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform const args)
 {
   uniform int* uniform valid = args->valid;
@@ -639,10 +664,20 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   }
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
-  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
-  rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
-  rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
+  if (g_mode == MODE_NORMAL)
+  {
+    rtcSetIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetOccludedFunction (geom,sphereOccludedFunc);
+    rtcSetIntersectionFilterFunction(geom,sphereFilterFunction);
+    rtcSetOcclusionFilterFunction(geom,sphereFilterFunction);
+  }
+  else
+  {
+    rtcSetIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetOccludedFunction (geom,sphereOccludedFuncN);
+    rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
+  }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return spheres;
