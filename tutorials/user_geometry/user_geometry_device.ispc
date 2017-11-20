@@ -664,7 +664,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   }
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL)
+  if (g_mode == MODE_NORMAL && 0)
   {
     rtcSetIntersectFunction(geom,sphereIntersectFunc);
     rtcSetOccludedFunction (geom,sphereOccludedFunc);
