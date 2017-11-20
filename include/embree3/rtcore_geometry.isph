@@ -183,9 +183,7 @@ typedef uniform struct __RTCGeometry* uniform RTCGeometry;
  *  provided have to intersect the same geometry. A user data pointer,
  *  that points to a user specified representation of the geometry, is
  *  passed to each intersect and occluded function invokation. */
-RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           uniform unsigned int numTimeSteps  /*!< number of motion blur time steps */
-  );
+RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The

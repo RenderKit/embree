@@ -186,9 +186,7 @@ typedef struct __RTCGeometry* RTCGeometry;
  *  representation of the geometry, is passed to each intersect and
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
-RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           unsigned int numTimeSteps  /*!< number of motion blur time steps */
-  );
+RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
