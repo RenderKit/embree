@@ -302,7 +302,8 @@ namespace embree
 
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCBuildQuality quality, Sphere* sphere)
     {
-      RTCGeometry geom = rtcNewUserGeometry (device,1,1);
+      RTCGeometry geom = rtcNewUserGeometry (device,1);
+      rtcSetNumPrimitives(geom,1);
       rtcSetGeometryBuildQuality(geom,quality);
       AssertNoError(device);
       rtcSetBoundsFunction(geom,BoundsFunc,nullptr);
@@ -819,7 +820,7 @@ namespace embree
       rtcSetUserData(geom4,(void*)5);
       RTCGeometry geom5 = rtcNewCurveGeometry (device, RTC_GEOMETRY_INTERSECTOR_RIBBON, RTC_BASIS_LINEAR);
       rtcSetUserData(geom5,(void*)6);
-      RTCGeometry geom6 = rtcNewUserGeometry(device,0,1);
+      RTCGeometry geom6 = rtcNewUserGeometry(device,1);
       rtcSetUserData(geom6,(void*)7);
       AssertNoError(device);
       
@@ -964,8 +965,8 @@ namespace embree
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BSPLINE,2),quality);
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_INTERSECTOR_SURFACE,RTC_BASIS_BEZIER),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_INTERSECTOR_SURFACE,RTC_BASIS_BEZIER,2),quality);
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,0,1),quality);
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,0,2),quality);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,1),quality);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,2),quality);
       rtcCommit (scene);
       AssertNoError(device);
       return VerifyApplication::PASSED;

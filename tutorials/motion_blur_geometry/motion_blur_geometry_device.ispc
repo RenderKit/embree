@@ -466,12 +466,13 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
 
 uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec3f& p, uniform float r, uniform unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,1,num_time_steps);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,num_time_steps);
   uniform Sphere* uniform sphere = uniform new uniform Sphere;
   sphere->p = p;
   sphere->r = r;
   sphere->geomID = rtcAttachGeometry(scene,geom);
   sphere->num_time_steps = num_time_steps;
+  rtcSetNumPrimitives(geom,1);
   rtcSetUserData(geom,sphere);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(geom,sphereIntersectFuncN);

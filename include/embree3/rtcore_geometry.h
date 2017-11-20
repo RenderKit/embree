@@ -187,7 +187,6 @@ typedef struct __RTCGeometry* RTCGeometry;
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
 RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           unsigned int numGeometries,    /*!< the number of geometries contained in the set */
                                            unsigned int numTimeSteps  /*!< number of motion blur time steps */
   );
 

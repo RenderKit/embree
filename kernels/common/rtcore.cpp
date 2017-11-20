@@ -829,14 +829,14 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, unsigned int numItems, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, unsigned int numTimeSteps)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry2);
     RTCORE_VERIFY_HANDLE(hdevice);
 #if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = new UserGeometry(device,numItems,numTimeSteps);
+    Geometry* geom = new UserGeometry(device,0,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry is not supported");

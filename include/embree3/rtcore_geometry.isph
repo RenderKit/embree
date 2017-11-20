@@ -184,7 +184,6 @@ typedef uniform struct __RTCGeometry* uniform RTCGeometry;
  *  that points to a user specified representation of the geometry, is
  *  passed to each intersect and occluded function invokation. */
 RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           uniform unsigned int numGeometries,    /*!< the number of geometries contained in the set */
                                            uniform unsigned int numTimeSteps  /*!< number of motion blur time steps */
   );
 

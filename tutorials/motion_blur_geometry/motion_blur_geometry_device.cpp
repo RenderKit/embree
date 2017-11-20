@@ -468,12 +468,13 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
 Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,1,num_time_steps);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,num_time_steps);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
   sphere->geomID = rtcAttachGeometry(scene,geom);
   sphere->num_time_steps = num_time_steps;
+  rtcSetNumPrimitives(geom,1);
   rtcSetUserData(geom,sphere);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
   rtcSetIntersectFunction(geom,sphereIntersectFuncN);
