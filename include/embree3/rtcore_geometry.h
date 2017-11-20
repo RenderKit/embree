@@ -348,10 +348,7 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
   approximate the intersection calculation. This in particular means
   that zooming onto one hair might show geometric artefacts. */
 
-RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
-                                            enum RTCGeometryIntersector type,
-                                            enum RTCCurveBasis basis
-  );
+RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device, enum RTCCurveBasis basis);
 
 
 /*! Sets the number of primitives. */

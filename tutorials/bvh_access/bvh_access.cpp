@@ -130,7 +130,7 @@ namespace embree
   /* adds a hair to the scene */
   unsigned int addHair(RTCDevice device_i, RTCScene scene_i)
   {
-    RTCGeometry geom = rtcNewCurveGeometry (device_i, RTC_GEOMETRY_INTERSECTOR_RIBBON, RTC_BASIS_BEZIER);
+    RTCGeometry geom = rtcNewCurveGeometry (device_i, RTC_BASIS_BEZIER);
 
     vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(vfloat4),4);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);

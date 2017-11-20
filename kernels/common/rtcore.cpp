@@ -893,7 +893,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryIntersector type, RTCCurveBasis basis)
+  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCCurveBasis basis)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -907,17 +907,11 @@ namespace embree
     createCurvesBSplineTy createCurvesBSpline = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
 
-    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON && type != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
-      
-    if (basis == RTC_BASIS_LINEAR && type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
-      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type for linear curves");
-
     Geometry* geom = nullptr;
     switch (basis) {
     case RTC_BASIS_LINEAR : geom = createLineSegments (device); break;
-    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis); break;
-    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis); break;
+    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,RTC_GEOMETRY_INTERSECTOR_SURFACE,basis); break;
+    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,RTC_GEOMETRY_INTERSECTOR_SURFACE,basis); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve basis");
     }
     return (RTCGeometry) geom->refInc();

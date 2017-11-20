@@ -205,7 +205,8 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector type, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry(g_device, type, RTC_BASIS_BSPLINE);
+  RTCGeometry geom = rtcNewCurveGeometry(g_device, RTC_BASIS_BSPLINE);
+  rtcSetGeometryIntersector(geom,type);
   rtcSetTessellationRate (geom,16.0f);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
@@ -240,7 +241,8 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector
 /* add line geometry */
 unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_INTERSECTOR_RIBBON, RTC_BASIS_LINEAR);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BASIS_LINEAR);
+  rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_RIBBON);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {

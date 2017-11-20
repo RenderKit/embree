@@ -98,7 +98,8 @@ void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   /* create object */
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->type, hair->basis);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
+  rtcSetGeometryIntersector(geom,hair->type);
   rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
   Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
