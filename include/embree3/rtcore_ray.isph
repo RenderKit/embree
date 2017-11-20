@@ -22,33 +22,7 @@
 /*! \ingroup embree_kernel_api_ispc */
 /*! \{ */
 
-/*! Ray structure for uniform (single) rays. */
-struct RTCRay1 
-{
-  /* ray data */
-  float org[3];      //!< Ray origin
-  float tnear;       //!< Start of ray segment
-  
-  float dir[3];      //!< Ray direction  
-  float tfar;        //!< End of ray segment (set to hit distance)
-
-  float time;        //!< Time of this ray for motion blur
-  unsigned int mask;        //!< Used to mask out objects during traversal
-  
-  /* hit data */
-  float Ng[3];       //!< Unnormalized geometry normal
-  float align2;
-  
-  float u;           //!< Barycentric u coordinate of hit
-  float v;           //!< Barycentric v coordinate of hit
-
-  unsigned int geomID;        //!< geometry ID
-  unsigned int primID;        //!< primitive ID
-  unsigned int instID;        //!< instance ID
-  varying unsigned int align[0];  //!< aligns ray on stack to at least 16 bytes
-};
-
-/*! Ray structure for packets of 4 rays. */
+/*! Ray structure for packets of rays. */
 struct RTCRay
 {
   /* ray data */
@@ -78,6 +52,7 @@ struct RTCRay
   unsigned int instID;     //!< instance ID
 };
 
+/*! Hit structure. */
 struct RTCHit
 {
   /* hit data */
