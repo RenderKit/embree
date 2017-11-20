@@ -259,7 +259,8 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.l.vy = make_Vec3f(0,1,0);
   instance->local2world.l.vz = make_Vec3f(0,0,1);
   instance->local2world.p    = make_Vec3f(0,0,0);
-  instance->geometry = rtcNewUserGeometry(g_device,1,1);
+  instance->geometry = rtcNewUserGeometry(g_device);
+  rtcSetNumPrimitives(instance->geometry,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
@@ -584,9 +585,9 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       }
       const Vec3f Ng = ray_org+t0*ray_dir-sphere.p;
       potentialhit.t = t0;
-      potentialhit.Ngx = Ng.x;
-      potentialhit.Ngy = Ng.y;
-      potentialhit.Ngz = Ng.z;
+      potentialhit.Ng_x = Ng.x;
+      potentialhit.Ng_y = Ng.y;
+      potentialhit.Ng_z = Ng.z;
 
       uniform RTCFilterFunctionNArguments fargs;
       fargs.valid = (int* uniform)&imask;
@@ -607,9 +608,9 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
         RTCRayN_instID(rays,N,ui) = potentialhit.instID;
         RTCRayN_geomID(rays,N,ui) = potentialhit.geomID;
         RTCRayN_primID(rays,N,ui) = potentialhit.primID;
-        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ngx;
-        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ngy;
-        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ngz;
+        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ng_x;
+        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ng_y;
+        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ng_z;
       }
     }
 
@@ -622,9 +623,9 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       }
       const Vec3f Ng = ray_org+t1*ray_dir-sphere.p;
       potentialhit.t = t1;
-      potentialhit.Ngx = Ng.x;
-      potentialhit.Ngy = Ng.y;
-      potentialhit.Ngz = Ng.z;
+      potentialhit.Ng_x = Ng.x;
+      potentialhit.Ng_y = Ng.y;
+      potentialhit.Ng_z = Ng.z;
 
       uniform RTCFilterFunctionNArguments fargs;
       fargs.valid = (int* uniform)&imask;
@@ -645,9 +646,9 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
         RTCRayN_instID(rays,N,ui) = potentialhit.instID;
         RTCRayN_geomID(rays,N,ui) = potentialhit.geomID;
         RTCRayN_primID(rays,N,ui) = potentialhit.primID;
-        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ngx;
-        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ngy;
-        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ngz;
+        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ng_x;
+        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ng_y;
+        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ng_z;
       }
     }
     
@@ -738,9 +739,9 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       }
       const Vec3f Ng = ray_org+t0*ray_dir-sphere.p;
       potentialhit.t = t0;
-      potentialhit.Ngx = Ng.x;
-      potentialhit.Ngy = Ng.y;
-      potentialhit.Ngz = Ng.z;
+      potentialhit.Ng_x = Ng.x;
+      potentialhit.Ng_y = Ng.y;
+      potentialhit.Ng_z = Ng.z;
 
       uniform RTCFilterFunctionNArguments fargs;
       fargs.valid = (int* uniform)&imask;
@@ -770,9 +771,9 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       }
       const Vec3f Ng = ray_org+t1*ray_dir-sphere.p;
       potentialhit.t = t1;
-      potentialhit.Ngx = Ng.x;
-      potentialhit.Ngy = Ng.y;
-      potentialhit.Ngz = Ng.z;
+      potentialhit.Ng_x = Ng.x;
+      potentialhit.Ng_y = Ng.y;
+      potentialhit.Ng_z = Ng.z;
 
       uniform RTCFilterFunctionNArguments fargs;
       fargs.valid = (int* uniform)&imask;
@@ -868,12 +869,13 @@ unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform c
 
 uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,1,1);
+  RTCGeometry geom = rtcNewUserGeometry(g_device);
   uniform Sphere* uniform sphere = uniform new uniform Sphere;
   sphere->p = p;
   sphere->r = r;
   sphere->geometry = geom;
   sphere->geomID = rtcAttachGeometry(scene,geom);
+  rtcSetNumPrimitives(geom,1);
   rtcSetUserData(geom,sphere);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(geom,sphereIntersectFunc);
@@ -885,13 +887,14 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
 
 uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t N)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,N,1);
+  RTCGeometry geom = rtcNewUserGeometry(g_device);
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (uniform size_t i=0; i<N; i++) {
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }
+  rtcSetNumPrimitives(geom,N);
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL)

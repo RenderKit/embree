@@ -386,7 +386,8 @@ namespace embree
   
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewCurveGeometry  (device, mesh->type, mesh->basis);
+    RTCGeometry geom = rtcNewCurveGeometry  (device, mesh->basis);
+    rtcSetGeometryIntersector(geom,mesh->type);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {

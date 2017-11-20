@@ -205,7 +205,8 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector type, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry(g_device, type, RTC_BASIS_BSPLINE);
+  RTCGeometry geom = rtcNewCurveGeometry(g_device, RTC_BASIS_BSPLINE);
+  rtcSetGeometryIntersector(geom,type);
   rtcSetTessellationRate (geom,16.0f);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
@@ -240,7 +241,8 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector
 /* add line geometry */
 unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_INTERSECTOR_RIBBON, RTC_BASIS_LINEAR);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BASIS_LINEAR);
+  rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_RIBBON);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {
@@ -468,12 +470,14 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
 Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device,1,num_time_steps);
+  RTCGeometry geom = rtcNewUserGeometry(g_device);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
   sphere->geomID = rtcAttachGeometry(scene,geom);
   sphere->num_time_steps = num_time_steps;
+  rtcSetNumPrimitives(geom,1);
+  rtcSetNumTimeSteps(geom,num_time_steps);
   rtcSetUserData(geom,sphere);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
   rtcSetIntersectFunction(geom,sphereIntersectFuncN);

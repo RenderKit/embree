@@ -213,10 +213,10 @@ namespace embree
     template<typename InputCurve3fa, typename OutputCurve3fa>
     void NativeCurvesISA::commit_helper()
     {
-      if (native_curves.size() != curves.size()) 
+      if (native_curves.size() != size()) 
       {
-        native_curves = APIBuffer<unsigned>(device,curves.size(),sizeof(unsigned int),true);
-        parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
+        native_curves = APIBuffer<unsigned>(device,size(),sizeof(unsigned int),true);
+        parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
               else                              native_curves[i] = unsigned(4*i);
@@ -229,10 +229,10 @@ namespace embree
       
       parallel_for(vertices.size(), [&] ( const size_t i ) {
           
-          if (native_vertices[i].size() != 4*curves.size())
-            native_vertices[i] = APIBuffer<Vec3fa>(device,4*curves.size(),sizeof(Vec3fa),true);
+          if (native_vertices[i].size() != 4*size())
+            native_vertices[i] = APIBuffer<Vec3fa>(device,4*size(),sizeof(Vec3fa),true);
           
-          parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
+          parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
               
               for (size_t j=rj.begin(); j<rj.end(); j++)
               {
