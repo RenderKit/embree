@@ -191,7 +191,41 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stri
 }
 
 
-/* intersection filter function */
+/* intersection filter function for single rays and packets */
+void intersectionFilter(const RTCFilterFunctionNArguments* const args)
+{
+  /* avoid crashing when debug visualizations are used */
+  if (args->context == nullptr) return;
+
+  assert(args->N == 1);
+  int* valid = args->valid;
+  const IntersectContext* context = (const IntersectContext*) args->context;
+  RTCRay* ray = (RTCRay*)args->ray;
+  RTCHit* hit = (RTCHit*)args->potentialHit;
+
+  /* ignore inactive rays */
+  if (valid[0] != -1) return;
+
+  /* read ray/hit from ray structure */
+  const Vec3fa ray_org = Vec3fa(ray->orgx,ray->orgy,ray->orgz);
+  const Vec3fa ray_dir = Vec3fa(ray->dirx,ray->diry,ray->dirz);
+
+  /* calculate transparency */
+  Vec3fa h = ray_org + ray_dir  * hit->t;
+  float T = transparencyFunction(h);
+
+  /* ignore hit if completely transparent */
+  if (T >= 1.0f) 
+    valid[0] = 0;
+  /* otherwise accept hit and remember transparency */
+  else
+  {
+    Ray2* eray = (Ray2*) context->userRayExt;
+    eray->transparency = T;
+  }
+}
+
+/* intersection filter function for streams of general packets */
 void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
@@ -201,8 +235,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
   const unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
-  if (context == nullptr)
-    return;
+  if (context == nullptr) return;
 
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)
@@ -233,14 +266,61 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     /* decode ray IDs */
       const unsigned int pid = (ray.mask & 0xFFFF) / 1;
       const unsigned int rid = (ray.mask & 0xFFFF) % 1;
-      Ray2* eray = (Ray2*) context->userRayExt;
-      assert(eray);
-      scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
+      Ray2* ray2 = (Ray2*) context->userRayExt;
+      assert(ray2);
+      scatter(ray2->transparency,sizeof(Ray2),pid,rid,T);
     }
   }
 }
 
-/* occlusion filter function */
+/* occlusion filter function for single rays and packets */
+void occlusionFilter(const RTCFilterFunctionNArguments* const args)
+{
+  /* avoid crashing when debug visualizations are used */
+  if (args->context == nullptr) return;
+
+  assert(args->N == 1);
+  int* valid = args->valid;
+  const IntersectContext* context = (const IntersectContext*) args->context;
+  RTCRay* ray = (RTCRay*)args->ray;
+  RTCHit* hit = (RTCHit*)args->potentialHit;
+
+  /* ignore inactive rays */
+  if (valid[0] != -1) return;
+
+  /* read ray/hit from ray structure */
+  const Vec3fa ray_org = Vec3fa(ray->orgx,ray->orgy,ray->orgz);
+  const Vec3fa ray_dir = Vec3fa(ray->dirx,ray->diry,ray->dirz);
+
+  Ray2* ray2 = (Ray2*) context->userRayExt;
+  assert(ray2);
+
+  for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
+    unsigned slot= i%HIT_LIST_LENGTH;
+    if (ray2->hit_geomIDs[slot] == hit->geomID && ray2->hit_primIDs[slot] == hit->primID) {
+      return;
+    }
+  }
+  printf("dfsdf");
+  /* store hit in hit list */
+  unsigned int slot = ray2->lastHit%HIT_LIST_LENGTH;
+  ray2->hit_geomIDs[slot] = hit->geomID;
+  ray2->hit_primIDs[slot] = hit->primID;
+  ray2->lastHit++;
+  if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
+    ray2->firstHit++;
+
+  Vec3fa h = ray_org + ray_dir * hit->t;
+
+  /* calculate and accumulate transparency */
+  float T = transparencyFunction(h);
+  T *= ray2->transparency;
+  ray2->transparency = T;
+  if (T != 0.0f) 
+    valid[0] = 0;
+}
+
+/* intersection filter function for streams of general packets */
 void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
@@ -273,19 +353,19 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
     /* decode ray IDs */
     const unsigned int pid = (ray.mask & 0xFFFF) / 1;
     const unsigned int rid = (ray.mask & 0xFFFF) % 1;
-    Ray2* eray = (Ray2*) context->userRayExt;
-    assert(eray);
+    Ray2* ray2 = (Ray2*) context->userRayExt;
+    assert(ray2);
 
     /* The occlusion filter function may be called multiple times with
      * the same hit. We remember the last N hits, and skip duplicates. */
     bool already_hit = false;
-    unsigned int eray_firstHit = gather(eray->firstHit,sizeof(Ray2),pid,rid);
-    unsigned int eray_lastHit =  gather(eray->lastHit ,sizeof(Ray2),pid,rid);
-    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
+    unsigned int ray2_firstHit = gather(ray2->firstHit,sizeof(Ray2),pid,rid);
+    unsigned int ray2_lastHit =  gather(ray2->lastHit ,sizeof(Ray2),pid,rid);
+    for (unsigned int i=ray2_firstHit; i<ray2_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
-      unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid);
-      unsigned int last_primID = gather(eray->hit_primIDs[0],slot,sizeof(Ray2),pid,rid);
+      unsigned int last_geomID = gather(ray2->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid);
+      unsigned int last_primID = gather(ray2->hit_primIDs[0],slot,sizeof(Ray2),pid,rid);
       if (last_geomID == hit_geomID && last_primID == hit_primID) {
         already_hit = true;
         break;
@@ -297,21 +377,21 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
     }
 
     /* store hit in hit list */
-    unsigned int slot = eray_lastHit%HIT_LIST_LENGTH;
-    scatter(eray->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid,hit_geomID);
-    scatter(eray->hit_primIDs[0],slot,sizeof(Ray2),pid,rid,hit_primID);
-    eray_lastHit++;
-    scatter(eray->lastHit,sizeof(Ray2),pid,rid,eray_lastHit);
-    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
-      scatter(eray->firstHit,sizeof(Ray2),pid,rid,eray_firstHit+1);
+    unsigned int slot = ray2_lastHit%HIT_LIST_LENGTH;
+    scatter(ray2->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid,hit_geomID);
+    scatter(ray2->hit_primIDs[0],slot,sizeof(Ray2),pid,rid,hit_primID);
+    ray2_lastHit++;
+    scatter(ray2->lastHit,sizeof(Ray2),pid,rid,ray2_lastHit);
+    if (ray2_lastHit - ray2_firstHit >= HIT_LIST_LENGTH)
+      scatter(ray2->firstHit,sizeof(Ray2),pid,rid,ray2_firstHit+1);
 
     /* calculate transparency */
     Vec3fa h = ray_org + ray_dir * hit.t;
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */
-    T *= gather(eray->transparency,sizeof(Ray2),pid,rid);
-    scatter(eray->transparency,sizeof(Ray2),pid,rid,T);
+    T *= gather(ray2->transparency,sizeof(Ray2),pid,rid);
+    scatter(ray2->transparency,sizeof(Ray2),pid,rid,T);
 
     /* reject a hit if not fully opqaue */
     if (T != 0.0f) 
@@ -573,8 +653,16 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
-  rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
+  if (g_mode == MODE_NORMAL)
+  {
+    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
+    rtcSetOcclusionFilterFunction   (geom,occlusionFilter);
+  }
+  else
+  {
+    rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+    rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
+  }
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
@@ -603,8 +691,16 @@ unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
-  rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
+  if (g_mode == MODE_NORMAL)
+  {
+    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
+    rtcSetOcclusionFilterFunction   (geom,occlusionFilter);
+  }
+  else
+  {
+    rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+    rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
+  }
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
