@@ -17,7 +17,7 @@
 #ifndef __RTCORE_RAY_ISPH__
 #define __RTCORE_RAY_ISPH__
 
-#include "rtcore.isph"
+#include "rtcore_common.isph"
 
 /*! \ingroup embree_kernel_api_ispc */
 /*! \{ */

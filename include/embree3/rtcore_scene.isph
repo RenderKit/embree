@@ -17,6 +17,8 @@
 #ifndef __RTCORE_SCENE_ISPH__
 #define __RTCORE_SCENE_ISPH__
 
+#include "rtcore_device.isph"
+
 /*! \ingroup embree_kernel_api */
 /*! \{ */
 
