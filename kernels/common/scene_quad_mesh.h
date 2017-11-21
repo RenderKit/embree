@@ -60,11 +60,6 @@ namespace embree
 
   public:
 
-    /*! returns number of quads */
-    __forceinline size_t size() const {
-      return quads.size();
-    }
-
     /*! returns number of vertices */
     __forceinline size_t numVertices() const {
       return vertices[0].size();

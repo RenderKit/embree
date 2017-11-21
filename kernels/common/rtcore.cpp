@@ -464,19 +464,19 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rays->orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->orgx not aligned to 4 bytes");   
-    if (((size_t)rays->orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->orgy not aligned to 4 bytes");   
-    if (((size_t)rays->orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->orgz not aligned to 4 bytes");   
-    if (((size_t)rays->dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dirx not aligned to 4 bytes");   
-    if (((size_t)rays->diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->diry not aligned to 4 bytes");   
-    if (((size_t)rays->dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dirz not aligned to 4 bytes");   
-    if (((size_t)rays->tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dirx not aligned to 4 bytes");   
+    if (((size_t)rays->org_x   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->org_x not aligned to 4 bytes");   
+    if (((size_t)rays->org_y   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->org_y not aligned to 4 bytes");   
+    if (((size_t)rays->org_z   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->org_z not aligned to 4 bytes");   
+    if (((size_t)rays->dir_x   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_x not aligned to 4 bytes");   
+    if (((size_t)rays->dir_y   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_y not aligned to 4 bytes");   
+    if (((size_t)rays->dir_z   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_z not aligned to 4 bytes");   
+    if (((size_t)rays->tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_x not aligned to 4 bytes");   
     if (((size_t)rays->tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->tnear not aligned to 4 bytes");   
     if (((size_t)rays->time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->time not aligned to 4 bytes");   
     if (((size_t)rays->mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->mask not aligned to 4 bytes");   
-    if (((size_t)rays->Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ngx not aligned to 4 bytes");   
-    if (((size_t)rays->Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ngy not aligned to 4 bytes");   
-    if (((size_t)rays->Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ngz not aligned to 4 bytes");   
+    if (((size_t)rays->Ng_x    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ng_x not aligned to 4 bytes");   
+    if (((size_t)rays->Ng_y    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ng_y not aligned to 4 bytes");   
+    if (((size_t)rays->Ng_z    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ng_z not aligned to 4 bytes");   
     if (((size_t)rays->u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->u not aligned to 4 bytes");   
     if (((size_t)rays->v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->v not aligned to 4 bytes");   
     if (((size_t)rays->geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->geomID not aligned to 4 bytes");   
@@ -688,19 +688,19 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rays->orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->orgx not aligned to 4 bytes");   
-    if (((size_t)rays->orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->orgy not aligned to 4 bytes");   
-    if (((size_t)rays->orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->orgz not aligned to 4 bytes");   
-    if (((size_t)rays->dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dirx not aligned to 4 bytes");   
-    if (((size_t)rays->diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->diry not aligned to 4 bytes");   
-    if (((size_t)rays->dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dirz not aligned to 4 bytes");   
-    if (((size_t)rays->tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dirx not aligned to 4 bytes");   
+    if (((size_t)rays->org_x   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->org_x not aligned to 4 bytes");   
+    if (((size_t)rays->org_y   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->org_y not aligned to 4 bytes");   
+    if (((size_t)rays->org_z   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->org_z not aligned to 4 bytes");   
+    if (((size_t)rays->dir_x   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_x not aligned to 4 bytes");   
+    if (((size_t)rays->dir_y   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_y not aligned to 4 bytes");   
+    if (((size_t)rays->dir_z   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_z not aligned to 4 bytes");   
+    if (((size_t)rays->tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->dir_x not aligned to 4 bytes");   
     if (((size_t)rays->tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->tnear not aligned to 4 bytes");   
     if (((size_t)rays->time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->time not aligned to 4 bytes");   
     if (((size_t)rays->mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->mask not aligned to 4 bytes");   
-    if (((size_t)rays->Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ngx not aligned to 4 bytes");   
-    if (((size_t)rays->Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ngy not aligned to 4 bytes");   
-    if (((size_t)rays->Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ngz not aligned to 4 bytes");   
+    if (((size_t)rays->Ng_x    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ng_x not aligned to 4 bytes");   
+    if (((size_t)rays->Ng_y    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ng_y not aligned to 4 bytes");   
+    if (((size_t)rays->Ng_z    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->Ng_z not aligned to 4 bytes");   
     if (((size_t)rays->u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->u not aligned to 4 bytes");   
     if (((size_t)rays->v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->v not aligned to 4 bytes");   
     if (((size_t)rays->geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays->geomID not aligned to 4 bytes");   
@@ -829,14 +829,14 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, unsigned int numItems, unsigned int numTimeSteps)
+  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewUserGeometry2);
+    RTCORE_TRACE(rtcNewUserGeometry);
     RTCORE_VERIFY_HANDLE(hdevice);
 #if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = new UserGeometry(device,numItems,numTimeSteps);
+    Geometry* geom = new UserGeometry(device,0,1);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry is not supported");
@@ -893,7 +893,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCGeometryIntersector type, RTCCurveBasis basis)
+  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCCurveBasis basis)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
@@ -907,17 +907,11 @@ namespace embree
     createCurvesBSplineTy createCurvesBSpline = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
 
-    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON && type != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
-      
-    if (basis == RTC_BASIS_LINEAR && type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
-      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type for linear curves");
-
     Geometry* geom = nullptr;
     switch (basis) {
     case RTC_BASIS_LINEAR : geom = createLineSegments (device); break;
-    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,type,basis); break;
-    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,type,basis); break;
+    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,RTC_GEOMETRY_INTERSECTOR_SURFACE,basis); break;
+    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,RTC_GEOMETRY_INTERSECTOR_SURFACE,basis); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve basis");
     }
     return (RTCGeometry) geom->refInc();
@@ -926,6 +920,26 @@ namespace embree
 #endif
     RTCORE_CATCH_END(device);
     return nullptr;
+  }
+
+  RTCORE_API void rtcSetNumPrimitives(RTCGeometry hgeometry, unsigned int N)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetNumPrimitives);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setNumPrimitives(N);
+    RTCORE_CATCH_END2(geometry);
+  }
+
+  RTCORE_API void rtcSetNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetNumTimeSteps);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setNumTimeSteps(N);
+    RTCORE_CATCH_END2(geometry);
   }
 
   RTCORE_API void rtcSetGeometryIntersector(RTCGeometry hgeometry, RTCGeometryIntersector type)

@@ -29,23 +29,23 @@ extern "C" {
 struct RTCORE_ALIGN(16) RTCRay
 {
   /* ray data */
-  float orgx;        //!< x coordinate of ray origin
-  float orgy;        //!< y coordinate of ray origin
-  float orgz;        //!< z coordinate of ray origin
+  float org_x;        //!< x coordinate of ray origin
+  float org_y;        //!< y coordinate of ray origin
+  float org_z;        //!< z coordinate of ray origin
   float tnear;       //!< Start of ray segment
 
-  float dirx;        //!< x coordinate of ray direction
-  float diry;        //!< y coordinate of ray direction
-  float dirz;        //!< z coordinate of ray direction
+  float dir_x;        //!< x coordinate of ray direction
+  float dir_y;        //!< y coordinate of ray direction
+  float dir_z;        //!< z coordinate of ray direction
   float tfar;        //!< End of ray segment (set to hit distance)
 
   float time;        //!< Time of this ray for motion blur
   unsigned mask;     //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ngx;         //!< x coordinate of geometry normal
-  float Ngy;         //!< y coordinate of geometry normal
-  float Ngz;         //!< z coordinate of geometry normal
+  float Ng_x;         //!< x coordinate of geometry normal
+  float Ng_y;         //!< y coordinate of geometry normal
+  float Ng_z;         //!< z coordinate of geometry normal
    
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit
@@ -59,23 +59,23 @@ struct RTCORE_ALIGN(16) RTCRay
 struct RTCORE_ALIGN(16) RTCRay4
 {
   /* ray data */
-  float orgx[4];  //!< x coordinate of ray origin
-  float orgy[4];  //!< y coordinate of ray origin
-  float orgz[4];  //!< z coordinate of ray origin
+  float org_x[4];  //!< x coordinate of ray origin
+  float org_y[4];  //!< y coordinate of ray origin
+  float org_z[4];  //!< z coordinate of ray origin
   float tnear[4]; //!< Start of ray segment 
   
-  float dirx[4];  //!< x coordinate of ray direction
-  float diry[4];  //!< y coordinate of ray direction
-  float dirz[4];  //!< z coordinate of ray direction
+  float dir_x[4];  //!< x coordinate of ray direction
+  float dir_y[4];  //!< y coordinate of ray direction
+  float dir_z[4];  //!< z coordinate of ray direction
   float tfar[4];  //!< End of ray segment (set to hit distance)
 
   float time[4];  //!< Time of this ray for motion blur
   unsigned mask[4];  //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ngx[4];   //!< x coordinate of geometry normal
-  float Ngy[4];   //!< y coordinate of geometry normal
-  float Ngz[4];   //!< z coordinate of geometry normal
+  float Ng_x[4];   //!< x coordinate of geometry normal
+  float Ng_y[4];   //!< y coordinate of geometry normal
+  float Ng_z[4];   //!< z coordinate of geometry normal
   
   float u[4];     //!< Barycentric u coordinate of hit
   float v[4];     //!< Barycentric v coordinate of hit
@@ -89,23 +89,23 @@ struct RTCORE_ALIGN(16) RTCRay4
 struct RTCORE_ALIGN(32) RTCRay8
 {
   /* ray data */
-  float orgx[8];  //!< x coordinate of ray origin
-  float orgy[8];  //!< y coordinate of ray origin
-  float orgz[8];  //!< z coordinate of ray origin
+  float org_x[8];  //!< x coordinate of ray origin
+  float org_y[8];  //!< y coordinate of ray origin
+  float org_z[8];  //!< z coordinate of ray origin
   float tnear[8]; //!< Start of ray segment 
   
-  float dirx[8];  //!< x coordinate of ray direction
-  float diry[8];  //!< y coordinate of ray direction
-  float dirz[8];  //!< z coordinate of ray direction  
+  float dir_x[8];  //!< x coordinate of ray direction
+  float dir_y[8];  //!< y coordinate of ray direction
+  float dir_z[8];  //!< z coordinate of ray direction  
   float tfar[8];  //!< End of ray segment (set to hit distance)
 
   float time[8];  //!< Time of this ray for motion blur
   unsigned mask[8];  //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ngx[8];   //!< x coordinate of geometry normal
-  float Ngy[8];   //!< y coordinate of geometry normal
-  float Ngz[8];   //!< z coordinate of geometry normal
+  float Ng_x[8];   //!< x coordinate of geometry normal
+  float Ng_y[8];   //!< y coordinate of geometry normal
+  float Ng_z[8];   //!< z coordinate of geometry normal
   
   float u[8];     //!< Barycentric u coordinate of hit
   float v[8];     //!< Barycentric v coordinate of hit
@@ -119,23 +119,23 @@ struct RTCORE_ALIGN(32) RTCRay8
 struct RTCORE_ALIGN(64) RTCRay16
 {
   /* ray data */
-  float orgx[16];  //!< x coordinate of ray origin
-  float orgy[16];  //!< y coordinate of ray origin
-  float orgz[16];  //!< z coordinate of ray origin
+  float org_x[16];  //!< x coordinate of ray origin
+  float org_y[16];  //!< y coordinate of ray origin
+  float org_z[16];  //!< z coordinate of ray origin
   float tnear[16]; //!< Start of ray segment 
   
-  float dirx[16];  //!< x coordinate of ray direction
-  float diry[16];  //!< y coordinate of ray direction
-  float dirz[16];  //!< z coordinate of ray direction  
+  float dir_x[16];  //!< x coordinate of ray direction
+  float dir_y[16];  //!< y coordinate of ray direction
+  float dir_z[16];  //!< z coordinate of ray direction  
   float tfar[16];  //!< End of ray segment (set to hit distance)
 
   float time[16];  //!< Time of this ray for motion blur
   unsigned mask[16];  //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ngx[16];   //!< x coordinate of geometry normal
-  float Ngy[16];   //!< y coordinate of geometry normal
-  float Ngz[16];   //!< z coordinate of geometry normal
+  float Ng_x[16];   //!< x coordinate of geometry normal
+  float Ng_y[16];   //!< y coordinate of geometry normal
+  float Ng_z[16];   //!< z coordinate of geometry normal
   
   float u[16];     //!< Barycentric u coordinate of hit
   float v[16];     //!< Barycentric v coordinate of hit
@@ -149,23 +149,23 @@ struct RTCORE_ALIGN(64) RTCRay16
 struct RTCRayNp
 {
   /* ray data */
-  float* orgx;  //!< x coordinate of ray origin
-  float* orgy;  //!< y coordinate of ray origin
-  float* orgz;  //!< z coordinate of ray origin
+  float* org_x;  //!< x coordinate of ray origin
+  float* org_y;  //!< y coordinate of ray origin
+  float* org_z;  //!< z coordinate of ray origin
   float* tnear; //!< Start of ray segment (optional)
 
-  float* dirx;  //!< x coordinate of ray direction
-  float* diry;  //!< y coordinate of ray direction
-  float* dirz;  //!< z coordinate of ray direction  
+  float* dir_x;  //!< x coordinate of ray direction
+  float* dir_y;  //!< y coordinate of ray direction
+  float* dir_z;  //!< z coordinate of ray direction  
   float* tfar;  //!< End of ray segment (set to hit distance)
  
   float* time;  //!< Time of this ray for motion blur (optional)
   unsigned* mask;  //!< Used to mask out objects during traversal (optional)
 
   /* hit data */
-  float* Ngx;   //!< x coordinate of geometry normal (optional)
-  float* Ngy;   //!< y coordinate of geometry normal (optional)
-  float* Ngz;   //!< z coordinate of geometry normal (optional)
+  float* Ng_x;   //!< x coordinate of geometry normal (optional)
+  float* Ng_y;   //!< y coordinate of geometry normal (optional)
+  float* Ng_z;   //!< z coordinate of geometry normal (optional)
 
   float* u;     //!< Barycentric u coordinate of hit
   float* v;     //!< Barycentric v coordinate of hit
@@ -228,14 +228,14 @@ struct RTCRayNt
 {
   /* ray data */
 public:
-  float orgx[N];  //!< x coordinate of ray origin
-  float orgy[N];  //!< y coordinate of ray origin
-  float orgz[N];  //!< z coordinate of ray origin
+  float org_x[N];  //!< x coordinate of ray origin
+  float org_y[N];  //!< y coordinate of ray origin
+  float org_z[N];  //!< z coordinate of ray origin
   float tnear[N]; //!< Start of ray segment 
   
-  float dirx[N];  //!< x coordinate of ray direction
-  float diry[N];  //!< y coordinate of ray direction
-  float dirz[N];  //!< z coordinate of ray direction  
+  float dir_x[N];  //!< x coordinate of ray direction
+  float dir_y[N];  //!< y coordinate of ray direction
+  float dir_z[N];  //!< z coordinate of ray direction  
   float tfar[N];  //!< End of ray segment (set to hit distance)
 
   float time[N];  //!< Time of this ray for motion blur
@@ -243,9 +243,9 @@ public:
   
   /* hit data */
 public:
-  float Ngx[N];   //!< x coordinate of geometry normal
-  float Ngy[N];   //!< y coordinate of geometry normal
-  float Ngz[N];   //!< z coordinate of geometry normal
+  float Ng_x[N];   //!< x coordinate of geometry normal
+  float Ng_y[N];   //!< y coordinate of geometry normal
+  float Ng_z[N];   //!< z coordinate of geometry normal
   
   float u[N];     //!< Barycentric u coordinate of hit
   float v[N];     //!< Barycentric v coordinate of hit
@@ -259,9 +259,9 @@ public:
 template<int N>
 struct RTCHitNt
 {
-  float Ngx[N];        //!< x coordinate of geometry normal
-  float Ngy[N];        //!< y coordinate of geometry normal
-  float Ngz[N];        //!< z coordinate of geometry normal
+  float Ng_x[N];        //!< x coordinate of geometry normal
+  float Ng_y[N];        //!< y coordinate of geometry normal
+  float Ng_z[N];        //!< z coordinate of geometry normal
 
   unsigned instID[N];  //!< instance ID
   unsigned geomID[N];  //!< geometry ID
@@ -274,9 +274,9 @@ struct RTCHitNt
 
 struct RTCHit
 {
-  float Ngx;        //!< x coordinate of geometry normal
-  float Ngy;        //!< y coordinate of geometry normal
-  float Ngz;        //!< z coordinate of geometry normal
+  float Ng_x;        //!< x coordinate of geometry normal
+  float Ng_y;        //!< y coordinate of geometry normal
+  float Ng_z;        //!< z coordinate of geometry normal
 
   unsigned instID;  //!< instance ID
   unsigned geomID;  //!< geometry ID
@@ -291,19 +291,19 @@ struct RTCHit
 RTCORE_FORCEINLINE RTCRay RTCRayNtoRTCRay(RTCRayN* ptr, unsigned int N, unsigned int i = 0)
 {
   RTCRay ray;
-  ray.orgx   = RTCRayN_org_x(ptr,N,i);
-  ray.orgy   = RTCRayN_org_y(ptr,N,i);
-  ray.orgz   = RTCRayN_org_z(ptr,N,i);
+  ray.org_x   = RTCRayN_org_x(ptr,N,i);
+  ray.org_y   = RTCRayN_org_y(ptr,N,i);
+  ray.org_z   = RTCRayN_org_z(ptr,N,i);
   ray.tnear  = RTCRayN_tnear(ptr,N,i);
-  ray.dirx   = RTCRayN_dir_x(ptr,N,i);
-  ray.diry   = RTCRayN_dir_y(ptr,N,i);
-  ray.dirz   = RTCRayN_dir_z(ptr,N,i);
+  ray.dir_x   = RTCRayN_dir_x(ptr,N,i);
+  ray.dir_y   = RTCRayN_dir_y(ptr,N,i);
+  ray.dir_z   = RTCRayN_dir_z(ptr,N,i);
   ray.tfar   = RTCRayN_tfar(ptr,N,i);
   ray.time   = RTCRayN_time(ptr,N,i);
   ray.mask   = RTCRayN_mask(ptr,N,i);
-  ray.Ngx    = RTCRayN_Ng_x(ptr,N,i);
-  ray.Ngy    = RTCRayN_Ng_y(ptr,N,i);
-  ray.Ngz    = RTCRayN_Ng_z(ptr,N,i);
+  ray.Ng_x    = RTCRayN_Ng_x(ptr,N,i);
+  ray.Ng_y    = RTCRayN_Ng_y(ptr,N,i);
+  ray.Ng_z    = RTCRayN_Ng_z(ptr,N,i);
   ray.u      = RTCRayN_u(ptr,N,i);
   ray.v      = RTCRayN_v(ptr,N,i);
   ray.geomID = RTCRayN_geomID(ptr,N,i);
@@ -315,9 +315,9 @@ RTCORE_FORCEINLINE RTCRay RTCRayNtoRTCRay(RTCRayN* ptr, unsigned int N, unsigned
 RTCORE_FORCEINLINE RTCHit RTCHitNtoRTCHit(const RTCHitN* ptr, unsigned int N, unsigned int i = 0)
 {
   RTCHit hit;
-  hit.Ngx    = RTCHitN_Ng_x(ptr,N,i);
-  hit.Ngy    = RTCHitN_Ng_y(ptr,N,i);
-  hit.Ngz    = RTCHitN_Ng_z(ptr,N,i);
+  hit.Ng_x    = RTCHitN_Ng_x(ptr,N,i);
+  hit.Ng_y    = RTCHitN_Ng_y(ptr,N,i);
+  hit.Ng_z    = RTCHitN_Ng_z(ptr,N,i);
   hit.geomID = RTCHitN_geomID(ptr,N,i);
   hit.primID = RTCHitN_primID(ptr,N,i);
   hit.instID = RTCHitN_instID(ptr,N,i);

@@ -60,11 +60,6 @@ namespace embree
 
   public:
 
-    /*! returns number of triangles */
-    __forceinline size_t size() const {
-      return triangles.size();
-    }
-
     /*! returns number of vertices */
     __forceinline size_t numVertices() const {
       return vertices[0].size();

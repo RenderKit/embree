@@ -188,10 +188,7 @@ typedef struct __RTCGeometry* RTCGeometry;
  *  representation of the geometry, is passed to each intersect and
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
-RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
-                                           unsigned int numGeometries,    /*!< the number of geometries contained in the set */
-                                           unsigned int numTimeSteps  /*!< number of motion blur time steps */
-  );
+RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
@@ -353,12 +350,15 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
   approximate the intersection calculation. This in particular means
   that zooming onto one hair might show geometric artefacts. */
 
-RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device,
-                                            enum RTCGeometryIntersector type,
-                                            enum RTCCurveBasis basis
-  );
+RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device, enum RTCCurveBasis basis);
 
 
+/*! Sets the number of primitives. */
+RTCORE_API void rtcSetNumPrimitives(RTCGeometry geometry, unsigned int N);
+
+/*! Sets the number of time steps. */
+RTCORE_API void rtcSetNumTimeSteps(RTCGeometry geometry, unsigned int N);
+ 
 /*! Sets the type of the curve geometry */
 RTCORE_API void rtcSetGeometryIntersector(RTCGeometry geometry, enum RTCGeometryIntersector type);
 
