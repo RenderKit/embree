@@ -39,7 +39,7 @@ ENDIF()
 ##############################################################
 # Install Headers
 ##############################################################
-INSTALL(DIRECTORY include/embree2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
+INSTALL(DIRECTORY include/embree3 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
 
 ##############################################################
 # Install Models
@@ -195,7 +195,7 @@ ELSEIF(APPLE)
     #SET(CPACK_COMPONENTS_ALL lib devel examples)
     SET(CPACK_MONOLITHIC_INSTALL 1)
     SET(CPACK_PACKAGE_NAME embree-${EMBREE_VERSION})
-    SET(CPACK_PACKAGE_VENDOR "intel") # creates short name com.intel.embree2.xxx in pkgutil
+    SET(CPACK_PACKAGE_VENDOR "intel") # creates short name com.intel.embree3.xxx in pkgutil
     SET(CPACK_OSX_PACKAGE_VERSION 10.7)
     IF (EMBREE_TESTING_PACKAGE)
       ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/package_macosx.sh ${CMAKE_BUILD_TYPE} ${CPACK_PACKAGE_FILE_NAME}.dmg)
@@ -215,7 +215,7 @@ ELSE()
   IF (NOT EMBREE_ZIP_MODE)
 
     SET(CPACK_GENERATOR RPM)
-    SET(CPACK_RPM_PACKAGE_NAME "embree")
+    SET(CPACK_RPM_PACKAGE_NAME "embree${EMBREE_VERSION_MAJOR}")
     SET(CPACK_COMPONENTS_ALL devel lib examples)
     SET(CPACK_RPM_COMPONENT_INSTALL ON)
     SET(CPACK_RPM_FILE_NAME RPM-DEFAULT)

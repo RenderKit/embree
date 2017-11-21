@@ -27,7 +27,7 @@ namespace embree
   {
     /* delete all instanced sub-scenes */
     for (RTCScene s : geomID_to_scene) {
-      if (s) rtcDeleteScene(s);
+      if (s) rtcReleaseScene(s);
     }
   }
   

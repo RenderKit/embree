@@ -17,7 +17,7 @@
 #pragma once
 
 #include "lights.h"
-#include "../../../include/embree2/rtcore.h"
+#include "../../../include/embree3/rtcore.h"
 #include "../math/random_sampler.h"
 
 namespace embree
@@ -739,74 +739,10 @@ namespace embree
       float tessellationRate;
     };
 
-    /*! Line Segments */
-    struct LineSegmentsNode : public Node
-    {
-      typedef Vec3fa Vertex;
-
-    public:
-      LineSegmentsNode (Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), material(material) 
-      {
-        for (size_t i=0; i<numTimeSteps; i++)
-          positions.push_back(avector<Vertex>());
-      }
-
-      LineSegmentsNode (Ref<SceneGraph::LineSegmentsNode> imesh, const Transformations& spaces)
-        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)), indices(imesh->indices), material(imesh->material) {}
-      
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
-      }
-
-      virtual BBox3fa bounds() const
-      {
-        BBox3fa b = empty;
-        for (const auto& p : positions)
-          for (auto x : p)
-            b.extend(x);
-        return b;
-      }
-
-      virtual LBBox3fa lbounds() const
-      {
-        avector<BBox3fa> bboxes(positions.size());
-        for (size_t t=0; t<positions.size(); t++) {
-          BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
-          bboxes[t] = b;
-        }
-        return LBBox3fa(bboxes);
-      }
-
-      virtual size_t numPrimitives() const {
-        return indices.size();
-      }
-
-      size_t numVertices() const {
-        assert(positions.size());
-        return positions[0].size();
-      }
-
-      size_t numTimeSteps() const {
-        return positions.size();
-      }
-
-      void verify() const;
-
-    public:
-      std::vector<avector<Vertex>> positions; //!< line control points (x,y,z,r) for multiple timesteps
-      std::vector<unsigned> indices; //!< list of line segments
-      Ref<MaterialNode> material;
-    };
-
     /*! Hair Set. */
     struct HairSetNode : public Node
     {
       typedef Vec3fa Vertex;
-
-      enum Type { HAIR, CURVE };
-      enum Basis { BEZIER, BSPLINE };
 
       struct Hair
       {
@@ -820,14 +756,14 @@ namespace embree
       };
       
     public:
-      HairSetNode (Type type, Basis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
+      HairSetNode (RTCGeometryIntersector type, RTCCurveBasis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
         : Node(true), type(type), basis(basis), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, Type type, Basis basis)
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometryIntersector type, RTCCurveBasis basis)
         : Node(true), type(type), basis(basis), hairs(hairs), material(material), tessellation_rate(4) 
       {
         positions.push_back(positions_in);
@@ -881,8 +817,8 @@ namespace embree
       void verify() const;
 
     public:
-      Type type;                //!< type of geometry (hair or curve)
-      Basis basis;              //!< basis function of curve (bezier or bspline)
+      RTCGeometryIntersector type;                //!< type of geometry (hair or curve)
+      RTCCurveBasis basis;              //!< basis function of curve (bezier or bspline)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;

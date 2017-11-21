@@ -51,7 +51,7 @@ namespace embree
       
       __forceinline Ty* at(const size_t i)
       {
-        Geometry* geom = scene->geometries[i];
+        Geometry* geom = scene->geometries[i].ptr;
         if (geom == nullptr) return nullptr;
         if (!all && !geom->isEnabled()) return nullptr;
         if (geom->getType() != Ty::geom_type) return nullptr;
@@ -101,7 +101,10 @@ namespace embree
   public:
     
     /*! Scene construction */
-    Scene (Device* device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
+    Scene (Device* device);
+
+    /*! Scene destruction */
+    ~Scene ();
 
   private:
     /*! class is non-copyable */
@@ -122,47 +125,25 @@ namespace embree
     void createUserGeometryAccel();
     void createUserGeometryMBAccel();
 
-    /*! Scene destruction */
-    ~Scene ();
-
     /*! prints statistics about the scene */
     void printStatistics();
 
     /*! clears the scene */
     void clear();
 
-    /*! Creates new user geometry. */
-    unsigned int newUserGeometry (unsigned int geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
+    /*! detaches some geometry */
+    void detachGeometry(size_t geomID);
 
-    /*! Creates a new scene instance. */
-    unsigned int newInstance (unsigned int geomID, Scene* scene, size_t numTimeSteps);
-
-    /*! Creates a new geometry instance. */
-    unsigned int newGeometryInstance (unsigned int geomID, Geometry* geom);
-
-    /*! Creates a new geometry group. */
-    unsigned int newGeometryGroup (unsigned int geomID, RTCGeometryFlags gflags, const std::vector<Geometry*> geometries);
-
-    /*! Creates a new triangle mesh. */
-    unsigned int newTriangleMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new quad mesh. */
-    unsigned int newQuadMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newCurves (unsigned int geomID, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new collection of line segments. */
-    unsigned int newLineSegments (unsigned int geomID, RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new subdivision mesh. */
-    unsigned int newSubdivisionMesh (unsigned int geomID, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
-
-    /*! deletes some geometry */
-    void deleteGeometry(size_t geomID);
-
-    /*! Builds acceleration structure for the scene. */
-    void commit (size_t threadIndex, size_t threadCount, bool useThreadPool);
+    void setAccelFlags(RTCAccelFlags accel_flags);
+    RTCAccelFlags getAccelFlags() const;
+    
+    void setBuildQuality(RTCBuildQuality quality_flags);
+    RTCBuildQuality getBuildQuality() const;
+    
+    void setSceneFlags(RTCSceneFlags scene_flags);
+    RTCSceneFlags getSceneFlags() const;
+    
+    void commit (bool join);
     void commit_task ();
     void build () {}
 
@@ -172,11 +153,8 @@ namespace embree
     __forceinline size_t size() const { return geometries.size(); }
     
     /* bind geometry to the scene */
-    unsigned int bind (unsigned geomID, Geometry* geometry);
+    unsigned int bind (unsigned geomID, Ref<Geometry> geometry);
     
-    /* determines of the scene is ready to get build */
-    bool ready() { return numMappedBuffers == 0; }
-
     /* determines if scene is modified */
     __forceinline bool isModified() const { return modified; }
 
@@ -186,83 +164,72 @@ namespace embree
     }
 
     /* get mesh by ID */
-    __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
-    __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
+    __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
+    __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i].ptr; }
 
     template<typename Mesh>
       __forceinline       Mesh* get(size_t i)       { 
       assert(i < geometries.size()); 
       assert(geometries[i]->getType() == Mesh::geom_type);
-      return (Mesh*)geometries[i]; 
+      return (Mesh*)geometries[i].ptr; 
     }
     template<typename Mesh>
       __forceinline const Mesh* get(size_t i) const { 
       assert(i < geometries.size()); 
       assert(geometries[i]->getType() == Mesh::geom_type);
-      return (Mesh*)geometries[i]; 
+      return (Mesh*)geometries[i].ptr; 
     }
 
     template<typename Mesh>
     __forceinline Mesh* getSafe(size_t i) {
       assert(i < geometries.size());
-      if (geometries[i] == nullptr) return nullptr;
+      if (geometries[i] == null) return nullptr;
       if (geometries[i]->getType() != Mesh::geom_type) return nullptr;
-      else return (Mesh*) geometries[i];
+      else return (Mesh*) geometries[i].ptr;
     }
 
-    __forceinline Geometry* get_locked(size_t i)  {
+    __forceinline Ref<Geometry> get_locked(size_t i)  {
       Lock<SpinLock> lock(geometriesMutex);
-      Geometry *g = geometries[i]; 
       assert(i < geometries.size()); 
-      return g; 
+      return geometries[i]; 
     }
 
-    /* test if this is a static scene */
-    __forceinline bool isStatic() const { return embree::isStatic(flags); }
-
-    /* test if this is a dynamic scene */
-    __forceinline bool isDynamic() const { return embree::isDynamic(flags); }
-
-    __forceinline bool isCompact() const { return embree::isCompact(flags); }
-    __forceinline bool isCoherent() const { return embree::isCoherent(flags); }
-    __forceinline bool isRobust() const { return embree::isRobust(flags); }
-    __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
-    __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
-    __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
-
-    __forceinline bool isExclusiveIntersect1Mode() const { 
-      if (!embree::isIntersect1Mode(aflags)) return false;
-      if (embree::isIntersect4Mode(aflags))  return false;
-      if (embree::isIntersect8Mode(aflags))  return false;
-      if (embree::isIntersect16Mode(aflags)) return false;
-      return true;
+    /* flag decoding */
+    __forceinline bool isFastAccel() const { return accel_flags == RTC_ACCEL_FAST; }
+    __forceinline bool isCompactAccel() const { return accel_flags & RTC_ACCEL_COMPACT; }
+    __forceinline bool isRobustAccel()  const { return accel_flags & RTC_ACCEL_ROBUST; }
+    __forceinline bool isStaticAccel()  const { return !(scene_flags & RTC_SCENE_FLAG_DYNAMIC); }
+    __forceinline bool isDynamicAccel() const { return scene_flags & RTC_SCENE_FLAG_DYNAMIC; }
+    
+    __forceinline bool hasContextFilterFunction() const {
+#if defined(EMBREE_INTERSECTION_FILTER_CONTEXT)
+      return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
+#else
+      return false;
+#endif
     }
-
+    __forceinline bool hasGeometryFilterFunction() {
+      return numIntersectionFiltersN != 0;
+    }
+    __forceinline bool hasFilterFunction() {
+      return hasContextFilterFunction() || hasGeometryFilterFunction();
+    }
+    
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
 
   public:
     IDPool<unsigned> id_pool;
-    std::vector<Geometry*> geometries; //!< list of all user geometries
+    std::vector<Ref<Geometry>> geometries; //!< list of all user geometries
     vector<int*> vertices;
     
   public:
     Device* device;
+    bool flags_modified;
+    RTCAccelFlags accel_flags;
+    RTCBuildQuality quality_flags;
+    RTCSceneFlags scene_flags;
     AccelN accels;
-    std::atomic<size_t> commitCounterSubdiv;
-    std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
-    RTCSceneFlags flags;
-    RTCAlgorithmFlags aflags;
-    bool needTriangleIndices; 
-    bool needTriangleVertices; 
-    bool needQuadIndices; 
-    bool needQuadVertices; 
-    bool needBezierIndices;
-    bool needBezierVertices;
-    bool needLineIndices;
-    bool needLineVertices;
-    bool needSubdivIndices;
-    bool needSubdivVertices;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;
@@ -289,11 +256,11 @@ namespace embree
       Scene* scene;
     };
     BuildProgressMonitorInterface progressInterface;
-    RTCProgressMonitorFunc progress_monitor_function;
+    RTCProgressMonitorFunction progress_monitor_function;
     void* progress_monitor_ptr;
     std::atomic<size_t> progress_monitor_counter;
     void progressMonitor(double nprims);
-    void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr);
+    void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
 
   public:
     struct GeometryCounts 
@@ -336,10 +303,6 @@ namespace embree
       return iter.maxTimeStepsPerGeometry();
     }
    
-    std::atomic<size_t> numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
-    std::atomic<size_t> numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
-    std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
-    std::atomic<size_t> numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 

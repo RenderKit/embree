@@ -27,17 +27,18 @@ namespace embree
     return true;
   }
 
-  void buildProgress (size_t dn, void* userPtr) {
+  bool buildProgress (void* userPtr, double f) {
+    return true;
   }
 
-  void splitPrimitive (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lprim, RTCBounds& rprim, void* userPtr)
+  void splitPrimitive (const RTCBuildPrimitive* prim, unsigned int dim, float pos, RTCBounds* lprim, RTCBounds* rprim, void* userPtr)
   {
     assert(dim < 3);
-    assert(prim.geomID == 0);
-    (BBox3fa&) lprim = (BBox3fa&) prim;
-    (BBox3fa&) rprim = (BBox3fa&) prim;
-    (&lprim.upper_x)[dim] = pos;
-    (&rprim.lower_x)[dim] = pos;
+    assert(prim->geomID == 0);
+    *(BBox3fa*) lprim = *(BBox3fa*) prim;
+    *(BBox3fa*) rprim = *(BBox3fa*) prim;
+    (&lprim->upper_x)[dim] = pos;
+    (&rprim->lower_x)[dim] = pos;
   }
 
   struct Node
@@ -59,21 +60,21 @@ namespace embree
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
 
-    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr)
+    static void* create (RTCThreadLocalAllocator alloc, unsigned int numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
 
-    static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
+    static void  setChildren (void* nodePtr, void** childPtr, unsigned int numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
         ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
     }
 
-    static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
+    static void  setBounds (void* nodePtr, const RTCBounds** bounds, unsigned int numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
@@ -104,7 +105,7 @@ namespace embree
   void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
     RTCDevice device = rtcNewDevice(cfg);
-    rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
+    rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor,nullptr);
 
     RTCBVH bvh = rtcNewBVH(device);
 
@@ -132,7 +133,7 @@ namespace embree
 
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims.data(),prims.size(),
+      Node* root = (Node*) rtcBuildBVH(bvh,&settings,prims.data(),prims.size(),
                                        InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,splitPrimitive,buildProgress,nullptr);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;
@@ -140,7 +141,7 @@ namespace embree
     }
 
     rtcMakeStaticBVH(bvh);
-    rtcDeleteBVH(bvh);
+    rtcReleaseBVH(bvh);
   }
 
   /* called by the C++ code for initialization */
@@ -151,7 +152,7 @@ namespace embree
     error_handler(nullptr,rtcDeviceGetError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+    rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
     /* set start render mode */
     renderTile = renderTileStandard;
@@ -185,7 +186,7 @@ namespace embree
     build(RTC_BUILD_QUALITY_LOW,prims,cfg);
 
     std::cout << "Normal quality BVH build:" << std::endl;
-    build(RTC_BUILD_QUALITY_NORMAL,prims,cfg);
+    build(RTC_BUILD_QUALITY_MEDIUM,prims,cfg);
 
     std::cout << "High quality BVH build:" << std::endl;
     build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
@@ -224,6 +225,6 @@ namespace embree
 
   /* called by the C++ code for cleanup */
   extern "C" void device_cleanup () {
-    rtcDeleteDevice(g_device);
+    rtcReleaseDevice(g_device);
   }
 }

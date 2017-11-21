@@ -60,7 +60,8 @@ namespace embree
 #if defined (__SSE4_1__)
       m128 = _mm_insert_ps(other.m128, _mm_set_ss(w1),3 << 4);
 #else
-      m128 = other.m128; w = w1;
+      const vint4 mask(-1,-1,-1,0);
+      m128 = select(vboolf4(_mm_castsi128_ps(mask)),vfloat4(other.m128),vfloat4(w1));
 #endif
     }
     //__forceinline Vec3fa( const float x, const float y, const float z, const int      a) : x(x), y(y), z(z), a(a) {} // not working properly!

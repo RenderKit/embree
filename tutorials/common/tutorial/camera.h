@@ -28,6 +28,11 @@ namespace embree
   /* camera settings */
   struct Camera
   {
+    enum Handedness {
+      LEFT_HANDED,
+      RIGHT_HANDED
+    };
+    
     struct ISPCCamera
     {
     public:
@@ -41,31 +46,36 @@ namespace embree
   public:
 
     Camera ()
-    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90) {}
+    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), handedness(LEFT_HANDED) {}
 
-    Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov)
-    : from(from), to(to), up(up), fov(fov) {}
+    Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov, Handedness handedness)
+    : from(from), to(to), up(up), fov(fov), handedness(handedness) {}
 
     std::string str() const 
     {
       std::stringstream stream;
       stream.precision(10);
-      stream << "-vp " << from.x    << " " << from.y    << " " << from.z    << " " 
-             << "-vi " << to.x << " " << to.y << " " << to.z << " " 
-             << "-vu " << up.x     << " " << up.y     << " " << up.z     << " " 
-             << "-fov " << fov;
+      stream << "--vp " << from.x    << " " << from.y    << " " << from.z    << " " 
+             << "--vi " << to.x << " " << to.y << " " << to.z << " " 
+             << "--vu " << up.x     << " " << up.y     << " " << up.z     << " " 
+             << "--fov " << fov << " "
+             << (handedness == LEFT_HANDED ? "--lefthanded" : "--righthanded");
       return stream.str();
     }
     
-    AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
-    AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
+    AffineSpace3fa camera2world () {
+      AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
+      if (handedness == RIGHT_HANDED) local2world.l.vx = -local2world.l.vx;
+      return local2world;
+    }
+    AffineSpace3fa world2camera () { return rcp(camera2world()); }
     Vec3fa world2camera(const Vec3fa& p) { return xfmPoint(world2camera(),p); }
     Vec3fa camera2world(const Vec3fa& p) { return xfmPoint(camera2world(),p); }
 
     ISPCCamera getISPCCamera (size_t width, size_t height, bool flip_y = false)
     {
       const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
-      const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
+      const AffineSpace3fa local2world = camera2world();
       Vec3fa vx = local2world.l.vx;
       Vec3fa vy = -local2world.l.vy;
       Vec3fa vz = -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz;
@@ -87,6 +97,7 @@ namespace embree
 
     void rotate (float dtheta, float dphi)
     {
+      if (handedness == RIGHT_HANDED) dtheta *= -1.0f;
       const Vec3fa up1 = normalize(up);
       Vec3fa view1 = normalize(to-from);
       view1 = xfmVector(AffineSpace3fa::rotate(up1, dtheta), view1);
@@ -98,6 +109,7 @@ namespace embree
 
     void rotateOrbit (float dtheta, float dphi)
     {
+      if (handedness == RIGHT_HANDED) dtheta *= -1.0f;
       const Vec3fa up1 = normalize(up);
       Vec3fa view1 = normalize(to-from);
       view1 = xfmVector(AffineSpace3fa::rotate(up1, dtheta), view1);
@@ -119,6 +131,7 @@ namespace embree
     Vec3fa to;     //!< look at point
     Vec3fa up;     //!< up vector
     float fov;     //!< field of view
+    Handedness handedness;
   };
 
   typedef Camera::ISPCCamera ISPCCamera;

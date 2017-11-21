@@ -26,9 +26,9 @@ namespace embree
 
   public:
     void tab();
-    void open(const char* str);
-    void open(const char* str, size_t id);
-    void close(const char* str);
+    void open(std::string str);
+    void open(std::string str, size_t id);
+    void close(std::string str);
     
     void store(const char* name, const char* str);
     void store(const char* name, const float& v);
@@ -64,7 +64,6 @@ namespace embree
     void store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::QuadMeshNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::SubdivMeshNode> mesh, ssize_t id);
-    void store(Ref<SceneGraph::LineSegmentsNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::HairSetNode> hair, ssize_t id);
 
     void store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id);
@@ -95,19 +94,19 @@ namespace embree
       xml << " ";
   }
 
-  void XMLWriter::open(const char* str)
+  void XMLWriter::open(std::string str)
   {
     tab(); xml << "<" << str << ">" << std::endl;
     ident+=2;
   }
 
-  void XMLWriter::open(const char* str, size_t id)
+  void XMLWriter::open(std::string str, size_t id)
   {
     tab(); xml << "<" << str << " id=\"" << id << "\">" << std::endl;
     ident+=2;
   }
 
-  void XMLWriter::close(const char* str)
+  void XMLWriter::close(std::string str)
   {
     assert(ident>=2);
     ident-=2;
@@ -448,26 +447,38 @@ namespace embree
     close("SubdivisionMesh");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LineSegmentsNode> mesh, ssize_t id)
-  {
-    open("LineSegments",id);
-    store(mesh->material);
-    if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store4f("positions",p);
-    if (mesh->numTimeSteps() != 1) close("animated_positions");
-    store("indices",mesh->indices);
-    close("LineSegments");
-  }
-
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> mesh, ssize_t id)
   {
-    open("Hair",id);
+    std::string str_type = "";
+    switch (mesh->type) {
+    case RTC_GEOMETRY_INTERSECTOR_RIBBON: str_type = "ribbon"; break;
+    case RTC_GEOMETRY_INTERSECTOR_SURFACE: str_type = "surface"; break;
+    default: throw std::runtime_error("invalid curve type");
+    }
+
+    std::string str_basis = "";
+    switch (mesh->basis) {
+    case RTC_BASIS_LINEAR: str_basis = "linear"; break;
+    case RTC_BASIS_BEZIER: str_basis = "bezier"; break;
+    case RTC_BASIS_BSPLINE: str_basis = "bspline"; break;
+    default: throw std::runtime_error("invalid basis");
+    }
+
+    std::vector<int> indices(mesh->hairs.size());
+    std::vector<int> hairid(mesh->hairs.size());
+    for (size_t i=0; i<mesh->hairs.size(); i++) {
+      indices[i] = mesh->hairs[i].vertex;
+      hairid[i] = mesh->hairs[i].id;
+    }
+    
+    open("Curve type=\""+str_type+"\" basis=\""+str_basis+"\"",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store4f("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
-    store("indices",mesh->hairs);
-    close("Hair");
+    store("indices",indices);
+    store("hairid",hairid);
+    close("Curve");
   }
 
   void XMLWriter::store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id)
@@ -573,7 +584,6 @@ namespace embree
     else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::QuadMeshNode> cnode = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::LineSegmentsNode> cnode = node.dynamicCast<SceneGraph::LineSegmentsNode>()) store(cnode,id);
     else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
     else if (Ref<SceneGraph::PerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TransformNode> cnode = node.dynamicCast<SceneGraph::TransformNode>()) store(cnode,id);

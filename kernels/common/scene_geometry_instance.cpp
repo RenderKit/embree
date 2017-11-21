@@ -19,13 +19,10 @@
 
 namespace embree
 {
-  GeometryInstance::GeometryInstance (Scene* scene, Geometry* geom) 
-    : Geometry(scene,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
-  {
-    enabling();
-  }
+  GeometryInstance::GeometryInstance (Device* device, Ref<Geometry> geom)
+    : Geometry(device,Type(geom->type | INSTANCE), 1, geom->numTimeSteps), local2world(one), world2local(one), geom(geom) {}
 
-  void GeometryInstance::count(Geometry* geom, ssize_t f)
+  void GeometryInstance::count(const Ref<Geometry>& geom, ssize_t f)
   {
     if (geom->numTimeSteps == 1)
     {
@@ -53,7 +50,7 @@ namespace embree
   {
     geom->used++;
     if (geom->getType() == Geometry::GROUP) {
-      GeometryGroup* group = (GeometryGroup*) geom;
+      Ref<GeometryGroup> group = geom.dynamicCast<GeometryGroup>();
       for (size_t i=0; i<group->size(); i++)
         count((*group)[i],+1);
     }
@@ -67,7 +64,7 @@ namespace embree
     geom->used--;
      geom->used++;
     if (geom->getType() == Geometry::GROUP) {
-      GeometryGroup* group = (GeometryGroup*) geom;
+      Ref<GeometryGroup> group = geom.dynamicCast<GeometryGroup>();
       for (size_t i=0; i<group->size(); i++)
         count((*group)[i],-1);
     }
@@ -78,18 +75,12 @@ namespace embree
   
   void GeometryInstance::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   } 
 
-  void GeometryInstance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
+  void GeometryInstance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (timeStep != 0)
       throw_RTCError(RTC_INVALID_OPERATION,"geometry instances only support a single timestep");
 
@@ -97,10 +88,9 @@ namespace embree
     world2local = rcp(xfm);
   }
 
-  GeometryGroup::GeometryGroup (Scene* scene, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
-    : Geometry(scene,GROUP, geometries.size(), 1, gflags), geometries(geometries)
+  GeometryGroup::GeometryGroup (Device* device, const std::vector<Ref<Geometry>>& geometries) 
+    : Geometry(device,GROUP, (unsigned int)geometries.size(), 1), geometries(geometries)
   {
-    enabling();
   }
 
   void GeometryGroup::enabling () 
@@ -113,9 +103,6 @@ namespace embree
   
   void GeometryGroup::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   } 

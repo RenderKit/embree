@@ -14,13 +14,17 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_H__
-#define __RTCORE_H__
+#pragma once
 
 #include <stddef.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include "rtcore_version.h"
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #if defined(_WIN32)
 #if defined(_M_X64)
@@ -32,9 +36,9 @@ typedef int ssize_t;
 
 #ifndef RTCORE_API
 #if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
-#  define RTCORE_API extern "C" __declspec(dllimport) 
+#  define RTCORE_API __declspec(dllimport) 
 #else
-#  define RTCORE_API extern "C"
+#  define RTCORE_API 
 #endif
 #endif
 
@@ -77,7 +81,7 @@ struct RTCORE_ALIGN(16) RTCBounds
 };
 
 /*! \brief Defines an opaque device type */
-typedef struct __RTCDevice {}* RTCDevice;
+typedef struct __RTCDevice* RTCDevice;
 
 /*! \brief Creates a new Embree device.
 
@@ -95,42 +99,13 @@ typedef struct __RTCDevice {}* RTCDevice;
   set the RTC_UNSUPPORTED_CPU error code.
   
 */
-RTCORE_API RTCDevice rtcNewDevice(const char* cfg = NULL);
+RTCORE_API RTCDevice rtcNewDevice(const char* cfg);
 
 /*! \brief Deletes an Embree device.
 
   Deletes the Embree device again. After deletion, all scene handles
   are invalid. */
-RTCORE_API void rtcDeleteDevice(RTCDevice device);
-
-/*! \brief Initializes the Embree ray tracing core
-
-  WARNING: This function is deprecated, use rtcNewDevice instead.
-
-  Initializes the ray tracing core and passes some configuration
-  string. The configuration string allows to configure implementation
-  specific parameters. If this string is NULL, a default configuration
-  is used. The following configuration flags are supported by the
-  Embree implementation of the API:
-  
-  verbose = num,       // sets verbosity level (default is 0)
-
-  If Embree is started on an unsupported CPU, rtcInit will fail and
-  set the RTC_UNSUPPORTED_CPU error code.
-  
-*/
-RTCORE_API RTCORE_DEPRECATED void rtcInit(const char* cfg = NULL);
-
-/*! \brief Shuts down Embree
-
-  WARNING: This function is deprecated, use rtcDeleteDevice instead.
-
-  Shuts down the ray tracing core. After shutdown, all scene handles
-  are invalid, and invoking any API call except rtcInit is not
-  allowed. The application should invoke this call before
-  terminating. It is safe to call rtcInit again after an rtcExit
-  call. */
-RTCORE_API RTCORE_DEPRECATED void rtcExit();
+RTCORE_API void rtcReleaseDevice(RTCDevice device);
 
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */
 enum RTCParameter {
@@ -150,7 +125,6 @@ enum RTCParameter {
   RTC_CONFIG_RAY_MASK = 6,                    //!< checks if ray masks are supported (read only)
   RTC_CONFIG_BACKFACE_CULLING = 7,            //!< checks if backface culling is supported (read only)
   RTC_CONFIG_INTERSECTION_FILTER = 8,         //!< checks if intersection filters are enabled (read only)
-  RTC_CONFIG_INTERSECTION_FILTER_RESTORE = 9, //!< checks if intersection filters restores previous hit (read only)
   RTC_CONFIG_IGNORE_INVALID_RAYS = 11,        //!< checks if invalid rays are ignored (read only)
   RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB, 2 = PPL) (read only)
 
@@ -167,24 +141,13 @@ enum RTCParameter {
   RTC_CONFIG_USER_GEOMETRY = 22,             //!< checks if user geometries are supported
 
   RTC_CONFIG_COMMIT_JOIN = 23,               //!< checks if rtcCommitJoin can be used to join build operation (not supported when compiled with some older TBB versions)
-  RTC_CONFIG_COMMIT_THREAD = 24,             //!< checks if rtcCommitThread is available (not supported when compiled with some older TBB versions)
 };
 
-/*! \brief Configures some parameters. 
-    WARNING: This function is deprecated, use rtcDeviceSetParameter1i instead.
-*/
-RTCORE_API RTCORE_DEPRECATED void rtcSetParameter1i(const RTCParameter parm, ssize_t val);
-
-/*! \brief Reads some device parameter. 
-    WARNING: This function is deprecated, use rtcDeviceGetParameter1i instead.
-*/
-RTCORE_API RTCORE_DEPRECATED ssize_t rtcGetParameter1i(const RTCParameter parm);
-
 /*! \brief Configures some device parameters. */
-RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val);
+RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const enum RTCParameter parm, ssize_t val);
 
 /*! \brief Reads some device parameter. */
-RTCORE_API ssize_t rtcDeviceGetParameter1i(RTCDevice device, const RTCParameter parm);
+RTCORE_API ssize_t rtcDeviceGetParameter1i(RTCDevice device, const enum RTCParameter parm);
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
@@ -199,98 +162,33 @@ enum RTCError {
 
 /*! \brief Returns the value of the per-thread error flag. 
 
-  WARNING: This function is deprecated, use rtcDeviceGetError instead.
-
   If an error occurs this flag is set to an error code if it stores no
   previous error. The rtcGetError function reads and returns the
   currently stored error and clears the error flag again. */
-RTCORE_API RTCORE_DEPRECATED RTCError rtcGetError();
-
-/*! \brief Returns the value of the per-thread error flag. 
-
-  If an error occurs this flag is set to an error code if it stores no
-  previous error. The rtcGetError function reads and returns the
-  currently stored error and clears the error flag again. */
-RTCORE_API RTCError rtcDeviceGetError(RTCDevice device);
-
-/*! \brief Type of error callback function. 
-  WARNING: This callback function is deprecated, use RTCErrorFunc2 instead.
-*/
-/*RTCORE_DEPRECATED*/ typedef void (*RTCErrorFunc)(const RTCError code, const char* str);
-RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
+RTCORE_API enum RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError code, const char* str);
-
-/*! \brief Sets a callback function that is called whenever an error occurs. 
-   WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
-   */
-RTCORE_API RTCORE_DEPRECATED void rtcSetErrorFunction(RTCErrorFunc func);
-
-/*! \brief Sets a callback function that is called whenever an error occurs.
-  WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
- */
-RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunc func);
+typedef void (*RTCErrorFunction)(void* userPtr, const enum RTCError code, const char* str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice device, RTCErrorFunc2 func, void* userPtr);
-
-/*! \brief Type of memory consumption callback function.
-   WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc2 instead.
- */
-/*RTCORE_DEPRECATED*/ typedef bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
-RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
+RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunction func, void* userPtr);
 
 /*! \brief Type of memory consumption callback function. */
-typedef bool (*RTCMemoryMonitorFunc2)(void* ptr, const ssize_t bytes, const bool post);
-
-/*! \brief Sets the memory consumption callback function which is
- *  called before or after the library allocates or frees memory. 
-   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
-*/
-RTCORE_API RTCORE_DEPRECATED void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
-
-/*! \brief Sets the memory consumption callback function which is
- *  called before or after the library allocates or frees memory. 
-   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
-*/
-RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
+typedef bool (*RTCMemoryMonitorFunction)(void* ptr, const ssize_t bytes, const bool post);
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The
  *  userPtr pointer is passed to each invokation of the callback
  *  function. */
-RTCORE_API void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* userPtr);
+RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* userPtr);
 
-/*! \brief Implementation specific.
+#if defined(__cplusplus)
+}
+#endif
 
-  This function is implementation specific and only for debugging
-  purposes.
-
-  WARNING: This function is deprecated do not use it.
-*/
-RTCORE_API RTCORE_DEPRECATED void rtcDebug(); // FIXME: remove
-
+#include "rtcore_ray.h"
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
-#include "rtcore_geometry_user.h"
 #include "rtcore_builder.h"
 
-/*! \brief Helper to easily combing scene flags */
-inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {
-  return (RTCSceneFlags)((size_t)a | (size_t)b);
-}
-
-/*! \brief Helper to easily combing algorithm flags */
-inline RTCAlgorithmFlags operator|(const RTCAlgorithmFlags a, const RTCAlgorithmFlags b) {
-  return (RTCAlgorithmFlags)((size_t)a | (size_t)b);
-}
-
-/*! \brief Helper to easily combing geometry flags */
-inline RTCGeometryFlags operator|(const RTCGeometryFlags a, const RTCGeometryFlags b) {
-  return (RTCGeometryFlags)((size_t)a | (size_t)b);
-}
-
 /*! \} */
-
-#endif

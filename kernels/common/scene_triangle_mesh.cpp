@@ -21,89 +21,120 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  TriangleMesh::TriangleMesh (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(scene,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
+  TriangleMesh::TriangleMesh (Device* device)
+    : Geometry(device,TRIANGLE_MESH,0,1)
   {
-    triangles.init(scene->device,numTriangles,sizeof(Triangle));
     vertices.resize(numTimeSteps);
-    for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
-    }
-    enabling();
   }
 
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) scene->world.numTriangles += triangles.size();
-    else                   scene->worldMB.numTriangles += triangles.size();
+    if (numTimeSteps == 1) scene->world.numTriangles += numPrimitives;
+    else                   scene->worldMB.numTriangles += numPrimitives;
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) scene->world.numTriangles -= triangles.size();
-    else                   scene->worldMB.numTriangles -= triangles.size();
+    if (numTimeSteps == 1) scene->world.numTriangles -= numPrimitives;
+    else                   scene->worldMB.numTriangles -= numPrimitives;
   }
 
   void TriangleMesh::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   }
 
-  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
+  void TriangleMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  {
+    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry intersector");
+    
+    Geometry::update();
+  }
+  
+  void* TriangleMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
-    if (scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+    /* verify that all accesses are 4 bytes aligned */
+    if (stride & 0x3) 
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
+    unsigned bid = type & 0xFFFF;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
+    {
+       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*size > 16ll*1024ll*1024ll*1024ll)
+       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].newBuffer(device,size,stride);
+      vertices0 = vertices[0];
+      setNumTimeSteps((unsigned int)vertices.size());
+      return vertices[bid].get();
+    } 
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    {
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      return userbuffers[bid].get();
+    }
+    else if (type == RTC_INDEX_BUFFER) 
+    {
+      triangles.newBuffer(device,size,stride); 
+      setNumPrimitives(size);
+      return triangles.get();
+    }
+    else 
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+
+    return nullptr;
+  }
+
+  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
+  {
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-       size_t t = type - RTC_VERTEX_BUFFER0;
-       if (size == -1) size = vertices[t].size();
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*size > 16ll*1024ll*1024ll*1024ll) {
+        throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+      }
 
-       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
-      if (stride*size > 16ll*1024ll*1024ll*1024ll)
-       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
-
-      vertices[t].set(ptr,offset,stride,size);
-      vertices[t].checkPadding16();
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].set(device,ptr,offset,stride,size);
+      vertices[bid].checkPadding16();
       vertices0 = vertices[0];
-    } 
+      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
+      //  vertices.pop_back();
+      setNumTimeSteps((unsigned int)vertices.size());
+    }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride,size);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid].set(device,ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && size != (size_t)-1) disabling();
-      triangles.set(ptr,offset,stride,size); 
+      triangles.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (isEnabled() && size != (size_t)-1) enabling();
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
 
-  void* TriangleMesh::map(RTCBufferType type) 
+  void* TriangleMesh::getBuffer(RTCBufferType type) 
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-    
     if (type == RTC_INDEX_BUFFER) {
-      return triangles.map(scene->numMappedBuffers);
+      return triangles.get();
     }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps)) {
+      return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -111,45 +142,20 @@ namespace embree
     }
   }
 
-  void TriangleMesh::unmap(RTCBufferType type) 
-  {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    if (type == RTC_INDEX_BUFFER) {
-      triangles.unmap(scene->numMappedBuffers);
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
-      vertices0 = vertices[0];
-    }
-    else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
-    }
-  }
-
   void TriangleMesh::preCommit () 
   {
     /* verify that stride of all time steps are identical */
-    for (size_t t=0; t<numTimeSteps; t++)
+    for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+
+    Geometry::preCommit();
   }
 
   void TriangleMesh::postCommit () 
   {
     scene->vertices[geomID] = (int*) vertices0.getPtr();
     Geometry::postCommit();
-  }
-
-  void TriangleMesh::immutable () 
-  {
-    const bool freeTriangles = !scene->needTriangleIndices;
-    const bool freeVertices  = !scene->needTriangleVertices;
-    if (freeTriangles) triangles.free(); 
-    if (freeVertices )
-      for (auto& buffer : vertices)
-        buffer.free();
   }
 
   bool TriangleMesh::verify () 
@@ -181,16 +187,10 @@ namespace embree
     return true;
   }
   
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
   {
-    /* test if interpolation is enabled */
-#if defined(DEBUG)
-    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-    
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -202,7 +202,7 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
     
-    for (size_t i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
     {
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
@@ -231,8 +231,8 @@ namespace embree
   
   namespace isa
   {
-    TriangleMesh* createTriangleMesh(Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
-      return new TriangleMeshISA(scene,flags,numTriangles,numVertices,numTimeSteps);
+    TriangleMesh* createTriangleMesh(Device* device) {
+      return new TriangleMeshISA(device);
     }
   }
 }

@@ -62,23 +62,29 @@ void error_handler(void* userPtr, const RTCError code, const char* str)
 Vec3fa renderPixelEyeLight(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+    return Vec3fa(0.0f);
+  else if (dot(ray.dir,ray.Ng) < 0.0f)
+    return Vec3fa(0.0f,abs(dot(ray.dir,normalize(ray.Ng))),0.0f);
+  else
+    return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))),0.0f,0.0f);
 }
 
 void renderTileEyeLight(int taskIndex,
@@ -115,18 +121,20 @@ void renderTileEyeLight(int taskIndex,
 Vec3fa renderPixelOcclusion(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcOccluded(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcOccluded1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
@@ -170,18 +178,20 @@ void renderTileOcclusion(int taskIndex,
 Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -225,18 +235,20 @@ unsigned int render_texcoords_mode = 0;
 Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -247,7 +259,8 @@ Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera, RayStats
   {
     Vec2f st = Vec2f(0,0);
     unsigned int geomID = ray.geomID; {
-      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,nullptr,nullptr,2);
+      RTCGeometry geometry = rtcGetGeometry(g_scene,geomID);
+      rtcInterpolate(geometry,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER_(2),&st.x,nullptr,nullptr,nullptr,nullptr,nullptr,2);
     }
     if (render_texcoords_mode%2 == 0)
       return Vec3fa(st.x,st.y,0.0f);
@@ -292,18 +305,20 @@ void renderTileTexCoords(int taskIndex,
 Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -355,18 +370,20 @@ Vec3fa randomColor(const int ID)
 Vec3fa renderPixelGeomID(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -408,18 +425,20 @@ void renderTileGeomID(int taskIndex,
 Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -461,11 +480,11 @@ void renderTileGeomIDPrimID(int taskIndex,
 Vec3fa renderPixelCycles(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
@@ -473,7 +492,9 @@ Vec3fa renderPixelCycles(float x, float y, const ISPCCamera& camera, RayStats& s
 
   /* intersect ray with scene */
   int64_t c0 = get_tsc();
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   int64_t c1 = get_tsc();
   RayStats_addRay(stats);
 
@@ -515,18 +536,20 @@ void renderTileCycles(int taskIndex,
 Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -537,7 +560,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, R
 
   /* calculate hit point */
   float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
+  Vec3fa hitPos = ray.org + ray.tfar() * ray.dir;
 
 #define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
@@ -548,19 +571,21 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, R
     Vec3fa dir = cosineSampleHemisphere(RandomSampler_get2D(sampler));
 
     /* initialize shadow ray */
-    RTCRay shadow;
+    Ray shadow;
     shadow.org = hitPos;
     shadow.dir = dir;
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
+    shadow.tnear() = 0.001f;
+    shadow.tfar() = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = g_debug;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
-    //rtcIntersect(g_scene,shadow);
+    RTCIntersectContext context;
+    rtcInitIntersectionContext(&context);
+    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    //rtcIntersect1(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -608,18 +633,20 @@ static int differentialMode = 0;
 Vec3fa renderPixelDifferentials(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -632,11 +659,12 @@ Vec3fa renderPixelDifferentials(float x, float y, const ISPCCamera& camera, RayS
   Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
   Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
   unsigned int geomID = ray.geomID; {
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
-    rtcInterpolate2(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
+    RTCGeometry geometry = rtcGetGeometry(g_scene,geomID);
+    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,nullptr,nullptr,nullptr,3);
+    rtcInterpolate(geometry,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
   }
   Vec3fa dPdu0 = (P10-P00)/eps;
   Vec3fa dPdv0 = (P01-P00)/eps;
@@ -720,18 +748,20 @@ extern "C" bool device_pick(const float x,
                                 Vec3fa& hitPos)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray1 ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tnear() = 0.0f;
+  ray.tfar() = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -739,7 +769,7 @@ extern "C" bool device_pick(const float x,
     return false;
   }
   else {
-    hitPos = ray.org + ray.tfar*ray.dir;
+    hitPos = ray.org + ray.tfar()*ray.dir;
     return true;
   }
 }

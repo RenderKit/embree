@@ -30,25 +30,19 @@ namespace embree
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
 
-    /*! this geometry represents approximate hair geometry and real bezier surface geometry */
-    enum SubType { HAIR = 1, SURFACE = 0 };
-
-    /*! specified the basis the user specified vertices are stored in */
-    enum Basis { BEZIER = 0, BSPLINE = 1 };
-
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    NativeCurves (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis); 
     
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
-    void* map(RTCBufferType type);
-    void unmap(RTCBufferType type);
-    void immutable ();
+    void setGeometryIntersector(RTCGeometryIntersector type);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
+    void* getBuffer(RTCBufferType type);
     bool verify ();
     void setTessellationRate(float N);
     // FIXME: implement interpolateN
@@ -147,8 +141,8 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
-      else                         return curve.accurateBounds();
+      if (likely(subtype == RTC_GEOMETRY_INTERSECTOR_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      else                                     return curve.accurateBounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
@@ -164,8 +158,8 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
-      else                         return curve.accurateBounds();
+      if (likely(subtype == RTC_GEOMETRY_INTERSECTOR_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      else                                     return curve.accurateBounds();
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -283,8 +277,8 @@ namespace embree
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
-    SubType subtype;                                //!< hair or surface geometry
-    Basis basis;                                    //!< basis of user provided vertices
+    RTCGeometryIntersector subtype;                                //!< hair or surface geometry
+    RTCCurveBasis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
   public:
     BufferRefT<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
@@ -296,33 +290,33 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-        : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+      NativeCurvesISA (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
+        : NativeCurves(device,subtype,basis) {}
 
-      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
     };
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-         : NativeCurvesISA(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+      CurvesBezier (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
+         : NativeCurvesISA(device,subtype,basis) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     };
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-         : NativeCurvesISA(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+      CurvesBSpline (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
+         : NativeCurvesISA(device,subtype,basis) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Scene* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Scene* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCGeometryIntersector COMMA RTCCurveBasis);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCGeometryIntersector COMMA RTCCurveBasis);
 }

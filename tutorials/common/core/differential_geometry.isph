@@ -20,6 +20,7 @@
 
 struct DifferentialGeometry
 {
+  int instID;
   int geomID;
   int primID;
   float u,v;
@@ -28,5 +29,5 @@ struct DifferentialGeometry
   Vec3f Ns;
   Vec3f Tx; //direction along hair
   Vec3f Ty;
-  float tnear_eps;
+  float eps;
 };

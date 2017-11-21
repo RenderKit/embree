@@ -63,15 +63,16 @@ namespace embree
     unsigned int id;
   };
 
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
-  enum ISPCBasis { BEZIER_BASIS, BSPLINE_BASIS };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH };
   
   struct ISPCGeometry
   {
 #if !defined(ISPC)
-    ISPCGeometry (ISPCType type) : type(type), scene(nullptr), geomID(-1), materialID(-1) {}
+    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), scene(nullptr), geomID(-1), materialID(-1) {}
+    ~ISPCGeometry () { if (geometry) rtcReleaseGeometry(geometry); }
 #endif
     ISPCType type;
+    RTCGeometry geometry;
     RTCScene scene;
     unsigned int geomID;
     unsigned int materialID;
@@ -164,33 +165,18 @@ namespace embree
     unsigned int numTexCoords;
   };
   
-  struct ISPCLineSegments
-  {
-#if !defined(ISPC)
-    ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in);
-    ~ISPCLineSegments();
-#endif
-
-    ISPCGeometry geom;
-    Vec3fa** positions;        //!< control points (x,y,z,r)
-    unsigned int* indices;        //!< for each segment, index to first control point
-    
-    unsigned int numTimeSteps;
-    unsigned int numVertices;
-    unsigned int numSegments;
-  };
-  
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, SceneGraph::HairSetNode::Basis basis, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (TutorialScene* scene_in, RTCGeometryIntersector type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 #endif
 
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;         //!< for each hair, index to first control point
-    ISPCBasis basis;
+    RTCGeometryIntersector type;
+    RTCCurveBasis basis;
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;
@@ -254,9 +240,9 @@ namespace embree
   };
 
 #if !defined(ISPC)  
-  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags);
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality);
 #else
-  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCSceneFlags sflags, uniform RTCAlgorithmFlags aflags, uniform RTCGeometryFlags gflags);
+  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality);
 #endif
 
 #if !defined(ISPC)                    

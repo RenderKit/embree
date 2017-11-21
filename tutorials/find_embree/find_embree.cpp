@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <embree2/rtcore.h>
+#include <embree3/rtcore.h>
 
 #include <xmmintrin.h>
 //#include <pmmintrin.h> // use this to get _MM_SET_DENORMALS_ZERO_MODE when compiling for SSE3 or higher
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
   RTCDevice device = rtcNewDevice("verbose=1");
 
   /* ddelete device again */
-  rtcDeleteDevice(device);
+  rtcReleaseDevice(device);
   
   return 0;
 }

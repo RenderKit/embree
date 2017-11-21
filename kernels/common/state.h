@@ -23,7 +23,7 @@ namespace embree
   /* mutex to make printing to cout thread safe */
   extern MutexSys g_printMutex;
 
-  struct State
+  struct State : public RefCount
   {
   public:
     /*! state construction */
@@ -123,7 +123,9 @@ namespace embree
   public:
     bool ignore_config_files;              //!< if true no more config files get parse
     bool float_exceptions;                 //!< enable floating point exceptions
-    int scene_flags;                       //!< scene flags to use
+    int accel_flags;
+    int quality_flags;
+    int scene_flags;
     size_t verbose;                        //!< verbosity of output
     size_t benchmark;                      //!< true
     
@@ -160,41 +162,23 @@ namespace embree
     static ErrorHandler g_errorHandler;
 
   public:
-    void setErrorFunction(RTCErrorFunc fptr) 
+    void setErrorFunction(RTCErrorFunction fptr, void* uptr) 
     {
       error_function = fptr;
-      error_function2 = nullptr;
-      error_function_userptr = nullptr;
-    }
-    
-    void setErrorFunction(RTCErrorFunc2 fptr, void* uptr) 
-    {
-      error_function = nullptr;
-      error_function2 = fptr;
       error_function_userptr = uptr;
     }
 
-    RTCErrorFunc error_function;
-    RTCErrorFunc2 error_function2;
+    RTCErrorFunction error_function;
     void* error_function_userptr;
 
   public:
-    void setMemoryMonitorFunction(RTCMemoryMonitorFunc fptr) 
+    void setMemoryMonitorFunction(RTCMemoryMonitorFunction fptr, void* uptr) 
     {
       memory_monitor_function = fptr;
-      memory_monitor_function2 = nullptr;
-      memory_monitor_userptr = nullptr;
-    }
-    
-    void setMemoryMonitorFunction(RTCMemoryMonitorFunc2 fptr, void* uptr) 
-    {
-      memory_monitor_function = nullptr;
-      memory_monitor_function2 = fptr;
       memory_monitor_userptr = uptr;
     }
       
-    RTCMemoryMonitorFunc memory_monitor_function;
-    RTCMemoryMonitorFunc2 memory_monitor_function2;
+    RTCMemoryMonitorFunction memory_monitor_function;
     void* memory_monitor_userptr;
   };
 }

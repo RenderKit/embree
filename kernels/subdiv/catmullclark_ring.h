@@ -483,7 +483,7 @@ namespace embree
 
     /* gets surface normal */
     const Vertex getNormal() const  {
-      return cross(getSecondLimitTangent(),getLimitTangent());
+      return cross(getLimitTangent(),getSecondLimitTangent());
     }
     
     /* returns center of the n-th quad in the 1-ring */

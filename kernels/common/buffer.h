@@ -120,14 +120,14 @@ namespace embree
 
     /*! Buffer construction */
     APIBuffer () 
-      : device(nullptr), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) {}
+      : device(nullptr), ptr(nullptr), shared(false), modified(true), userdata(0) {}
     
     APIBuffer (const BufferRefT<T>& other) 
-      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), allocated(false), shared(true), mapped(false), modified(true), userdata(0) {}
+      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), shared(true), modified(true), userdata(0) {}
 
     /*! Buffer construction */
     APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in, bool allocate = false) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) 
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), shared(false), modified(true), userdata(0) 
     {
       if (allocate) alloc();
     }
@@ -148,9 +148,7 @@ namespace embree
     {
       device = other.device;       other.device = nullptr;
       ptr = other.ptr;             other.ptr = nullptr;
-      allocated = other.allocated; other.allocated = false;
       shared = other.shared;       other.shared = false;
-      mapped = other.mapped;       other.mapped = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
     }
@@ -159,9 +157,7 @@ namespace embree
     {
       device = other.device;       other.device = nullptr;
       ptr = other.ptr;             other.ptr = nullptr;
-      allocated = other.allocated; other.allocated = false;
       shared = other.shared;       other.shared = false;
-      mapped = other.mapped;       other.mapped = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
       BufferRefT<T>::operator=(std::move(other));
@@ -171,25 +167,30 @@ namespace embree
   public:
 
     /* inits the buffer */
+    void newBuffer(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
+    {
+      init(device_in,num_in,stride_in);
+      alloc();
+    }
+    
+    /* inits the buffer */
     void init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
     {
+      free();
       device = device_in;
       ptr = nullptr;
       this->ptr_ofs = nullptr;
       this->num = num_in;
       this->stride = stride_in;
       shared = false;
-      mapped = false;
       modified = true;
     }
 
     /*! sets shared buffer */
-    void set(void* ptr_in, size_t ofs_in, size_t stride_in, size_t num_in)
+    void set(MemoryMonitorInterface* device_in, void* ptr_in, size_t ofs_in, size_t stride_in, size_t num_in)
     {
-      /* report error if buffer is not existing */
-      if (!device)
-        throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
-      
+      free();
+      device = device_in;
       ptr = (char*) ptr_in;
       if (num_in != (size_t)-1) this->num = num_in;
       shared = true;
@@ -200,55 +201,28 @@ namespace embree
     /*! allocated buffer */
     void alloc() {
       if (device) device->memoryMonitor(this->bytes(),false);
-      ptr = this->ptr_ofs = (char*) alignedMalloc(this->bytes());
-      allocated = true; // this flag is sticky, such that we do never allocated a buffer again after it was freed
+      size_t b = (this->bytes()+15)&ssize_t(-16);
+      ptr = this->ptr_ofs = (char*) alignedMalloc(b);
     }
     
     /*! frees the buffer */
     void free()
     {
-      if (shared || !ptr) return;
+      if (shared) return;
       alignedFree(ptr); 
       if (device) device->memoryMonitor(-ssize_t(this->bytes()),true);
       ptr = nullptr; this->ptr_ofs = nullptr;
     }
     
-    /*! maps the buffer */
-    void* map(std::atomic<size_t>& cntr)
+    /*! gets buffer pointer */
+    void* get()
     {
       /* report error if buffer is not existing */
       if (!device)
         throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
       
-      /* report error if buffer is already mapped */
-      if (mapped)
-        throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
-      
-      /* allocate buffer */
-      if (!ptr && !shared && !allocated)
-        alloc();
-      
-      /* return mapped buffer */
-      cntr++;
-      mapped = true;
+      /* return buffer */
       return ptr;
-    }
-    
-    /*! unmaps the buffer */
-    void unmap(std::atomic<size_t>& cntr)
-    {
-      /* report error if buffer not mapped */
-      if (!mapped)
-        throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
-      
-      /* unmap buffer */
-      cntr--;
-      mapped = false;
-    }
-    
-    /*! checks if the buffer is mapped */
-    __forceinline bool isMapped() const {
-      return mapped; 
     }
     
     /*! mark buffer as modified or unmodified */
@@ -269,16 +243,14 @@ namespace embree
     /*! checks padding to 16 byte check, fails hard */
     __forceinline void checkPadding16() const 
     {
-      if (BufferRef::size()) 
+      if (ptr && BufferRef::size()) 
         volatile int MAYBE_UNUSED w = *((int*)BufferRef::getPtr(BufferRef::size()-1)+3); // FIXME: is failing hard avoidable?
     }
 
   protected:
     MemoryMonitorInterface* device; //!< device to report memory usage to 
     char* ptr;       //!< pointer to buffer data
-    bool allocated;  //!< set if buffer got allocated by us
     bool shared;     //!< set if memory is shared with application
-    bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified
   public:
     int userdata;    //!< special data

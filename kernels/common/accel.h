@@ -240,23 +240,23 @@ namespace embree
         }        
       }
 
-      void select(bool filter4, bool filter8, bool filter16, bool filterN)
+      void select(bool filter)
       {
 	if (intersector4_filter) {
-	  if (filter4) intersector4 = intersector4_filter;
-	  else         intersector4 = intersector4_nofilter;
+	  if (filter) intersector4 = intersector4_filter;
+	  else        intersector4 = intersector4_nofilter;
 	}
 	if (intersector8_filter) {
-	  if (filter8) intersector8 = intersector8_filter;
-	  else         intersector8 = intersector8_nofilter;
+	  if (filter) intersector8 = intersector8_filter;
+	  else        intersector8 = intersector8_nofilter;
 	}
 	if (intersector16_filter) {
-	  if (filter16) intersector16 = intersector16_filter;
-	  else          intersector16 = intersector16_nofilter;
+	  if (filter) intersector16 = intersector16_filter;
+	  else         intersector16 = intersector16_nofilter;
 	}
 	if (intersectorN_filter) {
-	  if (filterN) intersectorN = intersectorN_filter;
-	  else         intersectorN = intersectorN_nofilter;
+	  if (filter) intersectorN = intersectorN_filter;
+	  else        intersectorN = intersectorN_nofilter;
 	}        
       }
 
@@ -347,7 +347,7 @@ namespace embree
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *rayN[i];
-            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear() <= ray.tfar();
             occluded(valid,ray,context);
           }      
         }

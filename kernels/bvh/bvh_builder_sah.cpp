@@ -160,10 +160,8 @@ namespace embree
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
 	/* clear temporary data for static geometry */
-	if (group->isStatic()) {
-          prims.clear();
-          bvh->shrink();
-        }
+        prims.clear();
+        bvh->shrink();
 	bvh->cleanup();
       }
 
@@ -205,8 +203,8 @@ namespace embree
                 settings.primrefarrayalloc = inf;
             }
 
-            /* enable os_malloc for static scenes or dynamic scenes with static geometry */
-            if (mesh == NULL || mesh->isStatic())
+            /* enable os_malloc for two level build */
+            if (mesh)
               bvh->alloc.setOSallocation(true);
 
             /* initialize allocator */
@@ -237,15 +235,12 @@ namespace embree
           });
 #endif
 
-	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-
         /* if we allocated using the primrefarray we have to keep it alive */
         if (settings.primrefarrayalloc != size_t(inf))
           bvh->alloc.share(prims);
 
         /* for static geometries we can do some cleanups */
-        else if (staticGeom) {
+        else if (scene && scene->isStaticAccel()) {
           bvh->shrink();
           prims.clear();
         }
@@ -310,8 +305,8 @@ namespace embree
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) :
               createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
 
-            /* enable os_malloc for static scenes or dynamic scenes with static geometry */
-            if (mesh == NULL || mesh->isStatic())
+            /* enable os_malloc for two level build */
+            if (mesh)
               bvh->alloc.setOSallocation(true);
 
             /* call BVH builder */
@@ -327,8 +322,7 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
+	if (scene && scene->isStaticAccel()) {
           prims.clear();
           bvh->shrink();
         }
@@ -443,7 +437,7 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-        if (scene->isStatic()) bvh->shrink();
+        if (scene->isStaticAccel()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
@@ -574,8 +568,8 @@ namespace embree
 
         Splitter splitter(scene);
 
-        /* enable os_malloc for static scenes or dynamic scenes with static geometry */
-        if (mesh == NULL || mesh->isStatic())
+        /* enable os_malloc for two level build */
+        if (mesh)
           bvh->alloc.setOSallocation(true);
 
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
@@ -601,8 +595,7 @@ namespace embree
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
 	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
+	if (scene && scene->isStaticAccel()) {
           prims0.clear();
           bvh->shrink();
         }

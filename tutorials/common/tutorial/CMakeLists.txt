@@ -36,7 +36,7 @@ ADD_LIBRARY(noise STATIC noise.cpp)
 SET_PROPERTY(TARGET noise PROPERTY FOLDER tutorials/common)
 
 IF (EMBREE_ISPC_SUPPORT)
-  ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc scene_device.cpp)
+  ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc scene_device.cpp tasksys.cpp)
   TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial lights_ispc embree)
   SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE CXX)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)

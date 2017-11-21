@@ -21,84 +21,107 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(scene,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) 
+    : Geometry(device,BEZIER_CURVES,0,1), subtype(subtype), basis(basis), tessellationRate(4)
   {
-    curves.init(scene->device,numPrimitives,sizeof(int));
     vertices.resize(numTimeSteps);
-    for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
-    }
-    enabling();
   }
 
   void NativeCurves::enabling() 
-  { 
+  {
     if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
     else                   scene->worldMB.numBezierCurves += numPrimitives; 
   }
   
   void NativeCurves::disabling() 
-  { 
+  {
     if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
     else                   scene->worldMB.numBezierCurves -= numPrimitives;
   }
   
   void NativeCurves::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   }
 
-  void NativeCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
+  void NativeCurves::setGeometryIntersector(RTCGeometryIntersector type_in)
+  {
+    this->subtype = type_in;
+    Geometry::update();
+  }
+  
+  void* NativeCurves::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
   { 
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+    /* verify that all accesses are 4 bytes aligned */
+    if (stride & 0x3) 
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
+    unsigned bid = type & 0xFFFF;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
+    {
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].newBuffer(device,size,stride);
+      setNumTimeSteps((unsigned int)vertices.size());
+      return vertices[bid].get();
+    }
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
+    {
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      return userbuffers[bid].get();
+    }
+    else if (type == RTC_INDEX_BUFFER) 
+    {
+      curves.newBuffer(device,size,stride); 
+      setNumPrimitives(size);
+      return curves.get();
+    }
+    else 
+        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+
+    return nullptr;
+  }
+  
+  void NativeCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
+  { 
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-      size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(ptr,offset,stride,size); 
-      vertices[t].checkPadding16();
-    } 
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].set(device,ptr,offset,stride,size); 
+      vertices[bid].checkPadding16();
+      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
+      //  vertices.pop_back();
+      setNumTimeSteps((unsigned int)vertices.size());
+    }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride,size);  
+      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid].set(device,ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && size != (size_t)-1) disabling();
-      curves.set(ptr,offset,stride,size); 
+      curves.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (isEnabled() && size != (size_t)-1) enabling();
     }
     else 
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
   }
 
-  void* NativeCurves::map(RTCBufferType type) 
+  void* NativeCurves::getBuffer(RTCBufferType type) 
   {
-    if (scene->isStatic() && scene->isBuild()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return nullptr;
-    }
-
     if (type == RTC_INDEX_BUFFER) {
-      return curves.map(scene->numMappedBuffers);
+      return curves.get();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -106,38 +129,9 @@ namespace embree
     }
   }
 
-  void NativeCurves::unmap(RTCBufferType type) 
-  {
-    if (scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
-    if (type == RTC_INDEX_BUFFER) {
-      curves.unmap(scene->numMappedBuffers);
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
-    }
-    else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
-    }
-  }
-  
   void NativeCurves::setTessellationRate(float N)
   {
-    if (scene->isStatic() && scene->isBuild()) 
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     tessellationRate = clamp((int)N,1,16);
-  }
-
-  void NativeCurves::immutable () 
-  {
-    const bool freeIndices = !scene->needBezierIndices;
-    const bool freeVertices  = !scene->needBezierVertices;
-    if (freeIndices) curves.free();
-    if (freeVertices )
-      for (auto& buffer : vertices)
-        buffer.free();
   }
 
   bool NativeCurves::verify () 
@@ -149,7 +143,7 @@ namespace embree
         return false;
 
     /*! verify indices */
-    for (size_t i=0; i<numPrimitives; i++) {
+    for (unsigned int i=0; i<numPrimitives; i++) {
       if (curves[i]+3 >= numVertices()) return false;
     }
     
@@ -184,14 +178,8 @@ namespace embree
   {
     template<typename Curve>
     __forceinline void NativeCurvesISA::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                                           float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+                                                           float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
     {
-      /* test if interpolation is enabled */
-#if defined(DEBUG) 
-      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-      
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -205,7 +193,7 @@ namespace embree
         stride = vertices[buffer&0xFFFF].getStride();
       }
       
-      for (size_t i=0; i<numFloats; i+=VSIZEX)
+      for (unsigned int i=0; i<numFloats; i+=VSIZEX)
       {
         size_t ofs = i*sizeof(float);
         const size_t curve = curves[primID];
@@ -227,7 +215,7 @@ namespace embree
     {
       if (native_curves.size() != curves.size()) 
       {
-        native_curves = APIBuffer<unsigned>(scene->device,curves.size(),sizeof(unsigned int),true);
+        native_curves = APIBuffer<unsigned>(device,curves.size(),sizeof(unsigned int),true);
         parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
@@ -242,7 +230,7 @@ namespace embree
       parallel_for(vertices.size(), [&] ( const size_t i ) {
           
           if (native_vertices[i].size() != 4*curves.size())
-            native_vertices[i] = APIBuffer<Vec3fa>(scene->device,4*curves.size(),sizeof(Vec3fa),true);
+            native_vertices[i] = APIBuffer<Vec3fa>(device,4*curves.size(),sizeof(Vec3fa),true);
           
           parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
               
@@ -266,8 +254,8 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
-      return new CurvesBezier(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
+    NativeCurves* createCurvesBezier(Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) {
+      return new CurvesBezier(device,subtype,basis);
     }
     
     void CurvesBezier::preCommit() {
@@ -276,16 +264,17 @@ namespace embree
 #else
       NativeCurves::preCommit();
 #endif
+      Geometry::preCommit();
     }
     
     void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                   float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+                                   float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
     {
       interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
     }
     
-    NativeCurves* createCurvesBSpline(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
-      return new CurvesBSpline(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
+    NativeCurves* createCurvesBSpline(Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) {
+      return new CurvesBSpline(device,subtype,basis);
     }
     
     void CurvesBSpline::preCommit() {
@@ -294,10 +283,11 @@ namespace embree
 #else
       if (isEnabled()) commit_helper<BSplineCurve3fa,BezierCurve3fa>();
 #endif
+      Geometry::preCommit();
     }
     
     void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                    float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+                                    float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
     {
       interpolate_helper<BSplineCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
     }

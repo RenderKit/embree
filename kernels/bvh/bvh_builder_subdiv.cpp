@@ -90,27 +90,18 @@ namespace embree
 
       void build() 
       {
-        /* initialize all half edge structures */
-        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) {
-          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-          parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
-              for (size_t i=range.begin(); i<range.end(); i++)
-                if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-            });
-        }
-
         /* skip build for empty scene */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
+ 
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
+
         //bvh->alloc.reset();
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
-
-
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -191,7 +182,7 @@ namespace embree
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
         
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
+	if (scene->isStaticAccel()) {
           prims.clear();
           bvh->shrink();
         }
@@ -237,42 +228,6 @@ namespace embree
         size_t num; SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
         const size_t index = ((size_t)sptr - (size_t)bvh->subdiv_patches.data()) / sizeof(SubdivPatch1Cached);
         return prims[index].bounds(); 
-      }
-
-      bool initializeHalfEdges(size_t& numPrimitives)
-      {
-        /* initialize all half edge structures */
-        bool fastUpdateMode = true;
-        numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) 
-        {
-          Scene::Iterator<SubdivMesh,false> iter(scene,scene->isInterpolatable());
-          fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
-          {
-            bool fastUpdate = true;
-            for (size_t i=range.begin(); i<range.end(); i++)
-            {
-              if (!iter[i]) continue;
-              fastUpdate &= !iter[i]->faceVertices.isModified();
-              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
-              fastUpdate &= !iter[i]->holes.isModified();
-              fastUpdate &= iter[i]->levels.isModified();
-              fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
-              fastUpdate &= !iter[i]->edge_creases.isModified();
-              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
-              fastUpdate &= !iter[i]->vertex_creases.isModified();
-              fastUpdate &= !iter[i]->vertex_crease_weights.isModified();               
-              iter[i]->initializeHalfEdgeStructures();
-            }
-            return fastUpdate;
-          }, [](const bool a, const bool b) { return a && b; });
-        }
-
-        /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
-        fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
-        numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
-
-        return fastUpdateMode;
       }
 
       void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
@@ -441,9 +396,7 @@ namespace embree
       void build() 
       {
         /* initialize all half edge structures */
-        size_t numPatches;
-        bool fastUpdateMode = initializeHalfEdges(numPatches);
-        //static size_t counter = 0; if ((++counter) % 16 == 0) fastUpdateMode = false;
+        size_t numPatches = scene->getNumPrimitives<SubdivMesh,false>();
 
         /* skip build for empty scene */
         if (numPatches == 0) {
@@ -472,11 +425,10 @@ namespace embree
         bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatchesMB);
 
         /* switch between fast and slow mode */
-        if (cached && fastUpdateMode) cachedUpdate(numSubPatches);
-        else rebuild(numSubPatches,numSubPatchesMB);
+        rebuild(numSubPatches,numSubPatchesMB);
         
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
+	if (scene->isStaticAccel()) {
           prims.clear();
           bvh->shrink();
         }
@@ -536,46 +488,10 @@ namespace embree
       mvector<PrimRefMB> primsMB;
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
-      size_t numSubdivEnableDisableEvents;
       bool cached;
 
       BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0), numSubdivEnableDisableEvents(0), cached(cached) {}
-
-      bool initializeHalfEdges(size_t& numPrimitives)
-      {
-        /* initialize all half edge structures */
-        bool fastUpdateMode = true;
-        numPrimitives = scene->getNumPrimitives<SubdivMesh,true>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) 
-        {
-          Scene::Iterator<SubdivMesh,true> iter(scene,scene->isInterpolatable());
-          fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
-          {
-            bool fastUpdate = true;
-            for (size_t i=range.begin(); i<range.end(); i++)
-            {
-              if (!iter[i]) continue;
-              fastUpdate &= !iter[i]->faceVertices.isModified();
-              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
-              fastUpdate &= !iter[i]->holes.isModified();
-              fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
-              fastUpdate &= !iter[i]->edge_creases.isModified();
-              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
-              fastUpdate &= !iter[i]->vertex_creases.isModified();
-              fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
-              fastUpdate &= iter[i]->levels.isModified() == true;
-              iter[i]->initializeHalfEdgeStructures();
-            }
-            return fastUpdate;
-          }, [](const bool a, const bool b) { return a && b; });
-        }
-
-        /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
-        fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
-        numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
-        return fastUpdateMode;
-      }
+        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0), cached(cached) {}
 
       void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
       {
@@ -628,7 +544,6 @@ namespace embree
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
                 new (&patch) SubdivPatch1Cached(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
-
               if (cached)
               {
                 for (size_t t=0; t<mesh->numTimeSteps; t++)
@@ -696,8 +611,7 @@ namespace embree
       void build() 
       {
         /* initialize all half edge structures */
-        size_t numPatches;
-        initializeHalfEdges(numPatches);
+        size_t numPatches = scene->getNumPrimitives<SubdivMesh,true>();
 
         /* skip build for empty scene */
         if (numPatches == 0) {
@@ -729,7 +643,7 @@ namespace embree
         rebuild(numSubPatches);
         
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
+	if (scene->isStaticAccel()) {
           primsMB.clear();
           bvh->shrink();
         }

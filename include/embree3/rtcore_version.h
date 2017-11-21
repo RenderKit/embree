@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTCORE_VERSION_MAJOR 2
-#define RTCORE_VERSION_MINOR 17
-#define RTCORE_VERSION_PATCH 1
-#define RTCORE_VERSION 21701
-#define RTCORE_VERSION_STRING "2.17.1"
+#define RTCORE_VERSION_MAJOR 3
+#define RTCORE_VERSION_MINOR 0
+#define RTCORE_VERSION_PATCH 0
+#define RTCORE_VERSION 30000
+#define RTCORE_VERSION_STRING "3.0.0-alpha.0"

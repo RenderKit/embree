@@ -46,12 +46,12 @@ __aligned(16) uniform float cube_vertices[8][4] =
 #define FACE_SIZE 4
 
 uniform unsigned int cube_indices[24] = {
-  0, 1, 5, 4,
-  1, 2, 6, 5,
-  2, 3, 7, 6,
-  0, 4, 7, 3,
-  4, 5, 6, 7,
-  0, 3, 2, 1,
+  0, 4, 5, 1,
+  1, 5, 6, 2,
+  2, 6, 7, 3,
+  0, 3, 7, 4,
+  4, 7, 6, 5,
+  0, 1, 2, 3,
 };
 
 uniform unsigned int cube_faces[6] = {
@@ -65,12 +65,12 @@ uniform unsigned int cube_faces[6] = {
 #define FACE_SIZE 3
 
 uniform unsigned int cube_indices[36] = {
-  1, 5, 4,  0, 1, 4,
-  2, 6, 5,  1, 2, 5,
-  3, 7, 6,  2, 3, 6,
-  4, 7, 3,  0, 4, 3,
-  5, 6, 7,  4, 5, 7,
-  3, 2, 1,  0, 3, 1
+  1, 4, 5,  0, 4, 1,
+  2, 5, 6,  1, 5, 2,
+  3, 6, 7,  2, 6, 3,
+  4, 3, 7,  0, 3, 4,
+  5, 7, 6,  4, 7, 5,
+  3, 1, 2,  0, 1, 3
 };
 
 uniform unsigned int cube_faces[12] = {
@@ -101,20 +101,16 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-unmasked void displacementFunction(void* uniform ptr,
-                                   uniform unsigned int geomID,
-                                   uniform unsigned int primID,
-                                   uniform unsigned int time,
-                                   const uniform float* uniform u,      /*!< u coordinates (source) */
-                                   const uniform float* uniform v,      /*!< v coordinates (source) */
-                                   const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
-                                   const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
-                                   const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
-                                   uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
-                                   uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
-                                   uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
-                                   uniform uintptr_t N)
+unmasked void displacementFunction(const struct RTCDisplacementFunctionArguments* uniform const args)
 {
+  const uniform float* uniform nx = args->nx;
+  const uniform float* uniform ny = args->ny;
+  const uniform float* uniform nz = args->nz;
+  uniform float* uniform px = args->px;
+  uniform float* uniform py = args->py;
+  uniform float* uniform pz = args->pz;
+  uniform unsigned int N = args->N;
+                                   
   foreach (i=0 ... N) {
     const Vec3f P = make_Vec3f(px[i],py[i],pz[i]);
     const Vec3f Ng = make_Vec3f(nx[i],ny[i],nz[i]);
@@ -127,18 +123,20 @@ unmasked void displacementFunction(void* uniform ptr,
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
-  uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0);
+  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
 
-  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
-  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int));
+  rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
+  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
+  rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
-  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(uniform float), NUM_INDICES);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
-  rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcSetDisplacementFunction2(scene_i,geomID,displacementFunction,NULL);
+  rtcSetDisplacementFunction(geom,displacementFunction,NULL);
 
+  rtcCommitGeometry(geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
   return geomID;
 }
 
@@ -146,23 +144,24 @@ uniform unsigned int addCube (RTCScene scene_i)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
+  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
-  return mesh;
+  rtcCommitGeometry(geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* called by the C++ code for initialization */
@@ -176,10 +175,11 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetParameter1i(g_device,RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
 
   /* set error handler */
-  rtcDeviceSetErrorFunction2(g_device,error_handler,NULL);
+  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
+  g_scene = rtcDeviceNewScene(g_device);
+  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -198,19 +198,14 @@ export void device_init (uniform int8* uniform cfg)
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   /* initialize ray */
-  RTCRay ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
+  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -227,7 +222,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.geomID > 0) {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,NULL,&dPdu.x,&dPdv.x,3);
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
       }
       Ng = normalize(cross(dPdv,dPdu));
       dPdu = dPdu + Ng*displacement_du(P,dPdu);
@@ -237,18 +232,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 #endif
 
     /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -317,6 +304,6 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseScene (g_scene); g_scene = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

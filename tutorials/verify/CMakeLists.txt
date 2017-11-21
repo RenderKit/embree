@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
+ADD_EXECUTABLE(verify verify.cpp api_c99.c ../common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)

@@ -279,9 +279,7 @@ namespace embree
 
     /* call user specified error callback */
     if (device->error_function) 
-      device->error_function(error,str); 
-    if (device->error_function2) 
-      device->error_function2(device->error_function_userptr,error,str); 
+      device->error_function(device->error_function_userptr,error,str); 
 
     /* record error code */
     device->setDeviceErrorCode(error);
@@ -290,15 +288,7 @@ namespace embree
   void Device::memoryMonitor(ssize_t bytes, bool post)
   {
     if (State::memory_monitor_function && bytes != 0) {
-      if (!State::memory_monitor_function(bytes,post)) {
-        if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
-          throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
-        }
-      }
-    }
-
-    if (State::memory_monitor_function2 && bytes != 0) {
-      if (!State::memory_monitor_function2(State::memory_monitor_userptr,bytes,post)) {
+      if (!State::memory_monitor_function(State::memory_monitor_userptr,bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }
@@ -460,12 +450,6 @@ namespace embree
     case RTC_CONFIG_INTERSECTION_FILTER: return 0;
 #endif
 
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
-    case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 1;
-#else
-    case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
-#endif
-
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
 #else
@@ -522,10 +506,8 @@ namespace embree
 
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     case RTC_CONFIG_COMMIT_JOIN: return 0;
-    case RTC_CONFIG_COMMIT_THREAD: return 0;
 #else
     case RTC_CONFIG_COMMIT_JOIN: return 1;
-    case RTC_CONFIG_COMMIT_THREAD: return 1;
 #endif
 
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;

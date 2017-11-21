@@ -31,18 +31,18 @@ namespace embree
   public:
 
     /*! line segments construction */
-    LineSegments (Scene* scene, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps);
+    LineSegments (Device* device);
 
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
-    void* map(RTCBufferType type);
-    void unmap(RTCBufferType type);
-    void immutable ();
+    void setGeometryIntersector(RTCGeometryIntersector type);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
+    void* getBuffer(RTCBufferType type);
     bool verify ();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     // FIXME: implement interpolateN
 
   public:
@@ -181,10 +181,10 @@ namespace embree
   {
     struct LineSegmentsISA : public LineSegments
     {
-      LineSegmentsISA (Scene* scene, RTCGeometryFlags flags, size_t numLineSegments, size_t numVertices, size_t numTimeSteps)
-        : LineSegments(scene,flags,numLineSegments,numVertices,numTimeSteps) {}
+      LineSegmentsISA (Device* device)
+        : LineSegments(device) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device*);
 }

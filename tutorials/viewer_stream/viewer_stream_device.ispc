@@ -82,7 +82,8 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
   uniform unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcCommitGeometry(geometry->geometry);
   }
 }
 #endif
@@ -106,15 +107,14 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcCommitGeometry(geometry->geometry);
   }
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
-  RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, scene_in,RTC_BUILD_QUALITY_MEDIUM);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
@@ -127,9 +127,9 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 }
 
 /* renders a single pixel casting with ambient occlusion */
-Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray, uniform RayStats& stats)
+Vec3f ambientOcclusionShading(int x, int y, Ray& ray, uniform RayStats& stats)
 {
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+  Ray rays[AMBIENT_OCCLUSION_SAMPLES];
 
   Vec3f Ng = normalize(ray.Ng);
   if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
@@ -154,32 +154,29 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray, uniform RayStats& stats
     dir.v = frame(Ng) * dir.v;
 
     /* initialize shadow ray */
-    RTCRay& shadow = rays[i];
-    shadow.org = hitPos;
-    shadow.dir = dir.v;
+    Ray& shadow = rays[i];
     bool mask = __mask; unmasked { // invalidate inactive rays
       shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
       shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
+    init_Ray(shadow, hitPos, dir.v, shadow.tnear, shadow.tfar);
+
     RayStats_addShadowRay(stats);
   }
 
   uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccludedVM(g_scene,&context,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
+  rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (uniform size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded(g_scene,rays[i]);
+    rtcOccluded(g_scene,RTCRay_(rays[i]));
 #else
   for (uniform size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccludedVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+    rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays[i],1,sizeof(Ray));
 #endif
 
   /* accumulate illumination */
@@ -193,7 +190,7 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray, uniform RayStats& stats
 }
 
 
-void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
+void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
   {
@@ -208,16 +205,6 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   else if (geometry->type == SUBDIV_MESH)
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == LINE_SEGMENTS)
-  {
-    uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == HAIR_SET)
-  {
-    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     materialID = mesh->geom.materialID;
   }
   else if (geometry->type == CURVES)
@@ -247,7 +234,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
   return (1.0f-ftime)*make_AffineSpace3f(instance->spaces[itime+0]) + ftime*make_AffineSpace3f(instance->spaces[itime+1]);
 }
 
-inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   foreach_unique (instID in ray.instID) {
@@ -306,7 +293,7 @@ void renderTileStandard(uniform int taskIndex,
 
   uniform RayStats& stats = g_stats[threadIndex];
 
-  RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+  Ray rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
   uniform int N = 0;
@@ -319,32 +306,29 @@ void renderTileStandard(uniform int taskIndex,
     RandomSampler_init(sampler, x, y, 0);
 
     /* initialize ray */
-    RTCRay& ray = rays[N++];
-    ray.org = make_Vec3f(camera.xfm.p);
-    ray.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
+    Ray& ray = rays[N++];
     bool mask = __mask; unmasked { // invalidates inactive rays
       ray.tnear = mask ? 0.0f         : (float)(pos_inf);
       ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = RandomSampler_get1D(sampler);
+    init_Ray(ray, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear, ray.tfar, RandomSampler_get1D(sampler));
+
     RayStats_addRay(stats);
   }
 
   uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
+  rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&rays[0],N,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (uniform size_t i=0; i<N; i++)
-    rtcIntersectEx(g_scene,&context,rays[i]);
+    rtcIntersect(g_scene,&context,RTCRay_(rays[i]));
 #else
   for (uniform size_t i=0; i<N; i++)
-    rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+    rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&rays[i],1,sizeof(Ray));
 #endif
 
   /* shade stream of rays */
@@ -353,7 +337,7 @@ void renderTileStandard(uniform int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    RTCRay& ray = rays[N++];
+    Ray& ray = rays[N++];
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
@@ -417,7 +401,7 @@ export void device_init (uniform int8* uniform cfg)
   error_handler(NULL,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction2(g_device,error_handler,NULL);
+  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
@@ -447,6 +431,6 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseScene (g_scene); g_scene = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

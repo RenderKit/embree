@@ -29,7 +29,6 @@
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
-#include "../geometry/subdivpatch1cached_intersector.h"
 #include "../geometry/object_intersector.h"
 
 namespace embree
@@ -52,17 +51,18 @@ namespace embree
       stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
       /* filter out invalid rays */
+
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
 #endif
       /* verify correct input */
       assert(ray.valid());
-      assert(ray.tnear >= 0.0f);
+      assert(ray.tnear() >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar(), 0.0f));
 
       /* initialize the node traverser */
       BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
@@ -81,7 +81,7 @@ namespace embree
         if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray.tfar)))
           continue;
 #else
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar()))
           continue;
 #endif
 
@@ -112,7 +112,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
         PrimitiveIntersector1::intersect(pre, ray, context, prim, num, lazy_node);
-        tray.tfar = ray.tfar;
+        tray.tfar = ray.tfar();
 
         /* push lazy node onto stack */
         if (unlikely(lazy_node)) {
@@ -149,12 +149,12 @@ namespace embree
 
       /* verify correct input */
       assert(ray.valid());
-      assert(ray.tnear >= 0.0f);
+      assert(ray.tnear() >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar(), 0.0f));
 
       /* initialize the node traverser */
       BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);

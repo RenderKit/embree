@@ -97,9 +97,9 @@ namespace embree
           const Vec3vf<M> e2 = v1-v2;
           
           /* perform edge tests */
-          const vfloat<M> U = dot(cross(v2+v0,e0),D);
-          const vfloat<M> V = dot(cross(v0+v1,e1),D);
-          const vfloat<M> W = dot(cross(v1+v2,e2),D);
+          const vfloat<M> U = dot(cross(e0,v2+v0),D);
+          const vfloat<M> V = dot(cross(e1,v0+v1),D);
+          const vfloat<M> W = dot(cross(e2,v1+v2),D);
 #if defined(EMBREE_BACKFACE_CULLING)
           const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = maxUVW <= 0.0f;
@@ -111,15 +111,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vf<M> Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
           
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= absDen*vfloat<M>(ray.tnear) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
+          valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
+          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar());
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -190,9 +190,9 @@ namespace embree
           const Vec3vf<K> e2 = v1-v2;
            
           /* perform edge tests */
-          const vfloat<K> U = dot(Vec3vf<K>(cross(v2+v0,e0)),D);
-          const vfloat<K> V = dot(Vec3vf<K>(cross(v0+v1,e1)),D);
-          const vfloat<K> W = dot(Vec3vf<K>(cross(v1+v2,e2)),D);
+          const vfloat<K> U = dot(Vec3vf<K>(cross(e0,v2+v0)),D);
+          const vfloat<K> V = dot(Vec3vf<K>(cross(e1,v0+v1)),D);
+          const vfloat<K> W = dot(Vec3vf<K>(cross(e2,v1+v2)),D);
 #if defined(EMBREE_BACKFACE_CULLING)
           const vfloat<K> maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
@@ -204,15 +204,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
            /* calculate geometry normal and denominator */
-          const Vec3vf<K> Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
           const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
           const vfloat<K> absDen = abs(den);
           const vfloat<K> sgnDen = signmsk(den);
 
           /* perform depth test */
           const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
-          valid &= absDen*ray.tnear < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*ray.tfar;
+          valid &= absDen*ray.tnear() < (T^sgnDen);
+          valid &= (T^sgnDen) <= absDen*ray.tfar();
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -246,9 +246,9 @@ namespace embree
           const Vec3vf<M> e2 = v1-v2;
           
           /* perform edge tests */
-          const vfloat<M> U = dot(cross(v2+v0,e0),D);
-          const vfloat<M> V = dot(cross(v0+v1,e1),D);
-          const vfloat<M> W = dot(cross(v1+v2,e2),D);
+          const vfloat<M> U = dot(cross(e0,v2+v0),D);
+          const vfloat<M> V = dot(cross(e1,v0+v1),D);
+          const vfloat<M> W = dot(cross(e2,v1+v2),D);
 #if defined(EMBREE_BACKFACE_CULLING)
           const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = maxUVW <= 0.0f;
@@ -260,15 +260,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vf<M> Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
 
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= absDen*vfloat<M>(ray.tnear[k]) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
+          valid &= absDen*vfloat<M>(ray.tnear()[k]) < (T^sgnDen);
+          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar()[k]);
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */

@@ -14,10 +14,11 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(EMBREE_VERSION_MAJOR 2)
-SET(EMBREE_VERSION_MINOR 17)
-SET(EMBREE_VERSION_PATCH 1)
-SET(EMBREE_VERSION_NOTE "")
+SET(EMBREE_VERSION_MAJOR 3)
+SET(EMBREE_VERSION_MINOR 0)
+SET(EMBREE_VERSION_PATCH 0)
+SET(EMBREE_VERSION_NOTE "-alpha.0")
+
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
@@ -43,7 +44,7 @@ ENDIF()
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/rtcore_version.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree2/rtcore_version.h"
+  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_version.h"
 )
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
@@ -107,7 +108,7 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(EMBREE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
-OPTION(EMBREE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
+OPTION(EMBREE_INTERSECTION_FILTER_CONTEXT "Enables filter function inside context." OFF)
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
 OPTION(EMBREE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)

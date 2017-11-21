@@ -24,22 +24,12 @@ namespace embree
   struct UserGeometry : public AccelSet
   {
   public:
-    UserGeometry (Scene* scene, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps); 
+    UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps); 
     virtual void setUserData (void* ptr);
     virtual void setMask (unsigned mask);
-    virtual void setBoundsFunction (RTCBoundsFunc bounds);
-    virtual void setBoundsFunction2 (RTCBoundsFunc2 bounds, void* userPtr);
-    virtual void setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr);
-    virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc);
-    virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);
-    virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc);
-    virtual void setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc);
-    virtual void setIntersectFunctionN (RTCIntersectFuncN intersect);
-    virtual void setOccludedFunction (RTCOccludedFunc occluded, bool ispc);
-    virtual void setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc);
-    virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
-    virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
-    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded);
+    virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr);
+    virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect);
+    virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded);
     virtual void build() {}
   };
 }

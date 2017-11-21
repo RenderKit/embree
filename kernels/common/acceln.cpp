@@ -16,7 +16,7 @@
 
 #include "acceln.h"
 #include "ray.h"
-#include "../../include/embree2/rtcore_ray.h"
+#include "../../include/embree3/rtcore_ray.h"
 #include "../../common/algorithms/parallel_for.h"
 
 namespace embree
@@ -37,6 +37,15 @@ namespace embree
       throw_RTCError(RTC_UNKNOWN_ERROR,"internal error: AccelN too small");
     
     accels.push_back(accel);
+  }
+
+  void AccelN::init() 
+  {
+    for (size_t i=0; i<accels.size(); i++)
+      delete accels[i];
+    
+    accels.clear();
+    validAccels.clear();
   }
   
   void AccelN::intersect (Accel::Intersectors* This_in, RTCRay& ray, IntersectContext* context) 
@@ -187,10 +196,10 @@ namespace embree
       bounds.extend(validAccels[i]->bounds);
   }
 
-  void AccelN::select(bool filter4, bool filter8, bool filter16, bool filterN)
+  void AccelN::select(bool filter)
   {
     for (size_t i=0; i<accels.size(); i++) 
-      accels[i]->intersectors.select(filter4,filter8,filter16,filterN);
+      accels[i]->intersectors.select(filter);
   }
 
   void AccelN::deleteGeometry(size_t geomID) 
@@ -201,8 +210,9 @@ namespace embree
 
   void AccelN::clear()
   {
-    for (size_t i=0; i<accels.size(); i++) 
+    for (size_t i=0; i<accels.size(); i++) {
       accels[i]->clear();
+    }
   }
 }
 

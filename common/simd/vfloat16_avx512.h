@@ -89,8 +89,12 @@ namespace embree
       v = _mm512_castpd_ps(aa);
     }
     
-    __forceinline explicit vfloat(const __m512i& a) {
+    __forceinline explicit vfloat(const vint16& a) {
       v = _mm512_cvtepi32_ps(a);
+    }
+
+    __forceinline explicit vfloat(const vuint16& a) {
+      v = _mm512_cvtepu32_ps(a);
     }
 
     ////////////////////////////////////////////////////////////////////////////////

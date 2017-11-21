@@ -348,8 +348,8 @@ namespace embree
       {
         /* sweep from right to left and compute parallel prefix of merged bounds */
         vfloat4 rAreas[BINS];
-        vint4 rCounts[BINS];
-        vint4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+        vuint4 rCounts[BINS];
+        vuint4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
         for (size_t i=BINS-1; i>0; i--)
         {
           count += numEnd[i];
@@ -361,8 +361,8 @@ namespace embree
         }
         
         /* sweep from left to right and compute SAH */
-        vint4 blocks_add = (1 << blocks_shift)-1;
-        vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0; vint4 vbestlCount = 0; vint4 vbestrCount = 0;
+        vuint4 blocks_add = (1 << blocks_shift)-1;
+        vuint4 ii = 1; vfloat4 vbestSAH = pos_inf; vuint4 vbestPos = 0; vuint4 vbestlCount = 0; vuint4 vbestrCount = 0;
         count = 0; bx = empty; by = empty; bz = empty;
         for (size_t i=1; i<BINS; i++, ii+=1)
         {
@@ -372,9 +372,10 @@ namespace embree
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
-          const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
+          const vuint4 lCount = (count     +blocks_add) >> (unsigned int)(blocks_shift);
+          const vuint4 rCount = (rCounts[i]+blocks_add) >> (unsigned int)(blocks_shift);
           const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
+          // const vfloat4 sah = madd(lArea,vfloat4(vint4(lCount)),rArea*vfloat4(vint4(rCount)));
           const vbool4 mask = sah < vbestSAH;
           vbestPos      = select(mask,ii ,vbestPos);
           vbestSAH      = select(mask,sah,vbestSAH);
@@ -386,8 +387,8 @@ namespace embree
         float bestSAH = inf;
         int   bestDim = -1;
         int   bestPos = 0;
-        int   bestlCount = 0;
-        int   bestrCount = 0;
+        unsigned int   bestlCount = 0;
+        unsigned int   bestrCount = 0;
         for (int dim=0; dim<3; dim++) 
         {
           /* ignore zero sized dimensions */
@@ -415,8 +416,8 @@ namespace embree
       
     private:
       BBox3fa bounds[BINS][3];  //!< geometry bounds for each bin in each dimension
-      vint4    numBegin[BINS];   //!< number of primitives starting in bin
-      vint4    numEnd[BINS];     //!< number of primitives ending in bin
+      vuint4    numBegin[BINS];   //!< number of primitives starting in bin
+      vuint4    numEnd[BINS];     //!< number of primitives ending in bin
     };
   }
 }

@@ -47,7 +47,10 @@ namespace embree
     __forceinline vuint(unsigned int a) : v(_mm_set1_epi32(a)) {}
     __forceinline vuint(unsigned int a, unsigned int b, unsigned int c, unsigned int d) : v(_mm_set_epi32(d, c, b, a)) {}
 
-    //__forceinline explicit vuint(__m128 a) : v(_mm_cvtps_epu32(a)) {}
+#if defined(__AVX512VL__)
+    __forceinline explicit vuint(__m128 a) : v(_mm_cvtps_epu32(a)) {}
+#endif
+
 #if defined(__AVX512VL__)
     __forceinline explicit vuint(const vboolf4& a) : v(_mm_movm_epi32(a)) {}
 #else

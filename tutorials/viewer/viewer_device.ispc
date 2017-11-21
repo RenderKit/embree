@@ -80,8 +80,9 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
   uniform unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
   }
+  rtcCommitGeometry(geometry->geometry);
 }
 #endif
 
@@ -104,7 +105,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcCommitGeometry(geometry->geometry);
   }
 }
 
@@ -125,12 +127,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
   }
 
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE;
-  if (g_subdiv_mode)
-    scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
-
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
@@ -145,7 +142,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 }
 
 
-void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
+void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
   {
@@ -160,16 +157,6 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   else if (geometry->type == SUBDIV_MESH)
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == LINE_SEGMENTS)
-  {
-    uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == HAIR_SET)
-  {
-    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     materialID = mesh->geom.materialID;
   }
   else if (geometry->type == CURVES)
@@ -199,7 +186,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
   return (1.0f-ftime)*make_AffineSpace3f(instance->spaces[itime+0]) + ftime*make_AffineSpace3f(instance->spaces[itime+1]);
 }
 
-inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
+inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   foreach_unique (instID in ray.instID) {
@@ -246,20 +233,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
-  RTCRay ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = RandomSampler_get1D(sampler);
+  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, RandomSampler_get1D(sampler));
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
   context.flags = g_iflags_coherent;
-  rtcIntersectEx(g_scene,&context,ray);
+  rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade background black */
@@ -282,13 +262,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   if (g_use_smooth_normals)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-  {
-    Vec3f dPdu,dPdv;
-    foreach_unique (geomID in ray.geomID) {
-      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+    {
+      Vec3f dPdu,dPdv;
+      foreach_unique (geomID in ray.geomID) {
+        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      }
+      dg.Ns = cross(dPdv,dPdu);
     }
-    dg.Ns = cross(dPdv,dPdu);
-  }
 
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
@@ -356,7 +336,7 @@ export void device_init (uniform int8* uniform cfg)
   error_handler(NULL,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction2(g_device,error_handler,NULL);
+  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -406,6 +386,6 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = NULL;
-  rtcDeleteDevice(g_device); g_device = NULL;
+  rtcReleaseScene (g_scene); g_scene = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
 }

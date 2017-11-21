@@ -45,7 +45,6 @@ SET(EMBREE_LIBRARY_FILES
   common/scene.cpp
   common/alloc.cpp
   common/geometry.cpp
-  common/tasksys.cpp
   common/scene_user_geometry.cpp
   common/scene_instance.cpp
   common/scene_geometry_instance.cpp
@@ -92,9 +91,6 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-
-  common/rtcore_ispc.cpp
-  common/rtcore_ispc.ispc
 
   bvh/bvh_intersector_hybrid4_bvh4.cpp
   bvh/bvh_intersector_stream_bvh4.cpp
@@ -219,7 +215,7 @@ MACRO (CheckGlobals library)
 ENDMACRO()
 
 DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
-ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
+ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_DEFINITIONS "EMBREE_LOWEST_ISA")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
@@ -282,6 +278,7 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "") # no RPATH for installed libembree
+SET_TARGET_PROPERTIES(embree PROPERTIES OUTPUT_NAME embree${EMBREE_VERSION_MAJOR})
 
 IF (WIN32)
 ELSEIF (APPLE)
@@ -299,9 +296,13 @@ ELSE()
 ENDIF()
 
 INSTALL(TARGETS embree
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib
+  LIBRARY NAMELINK_SKIP DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib
   # on Windows put the dlls into bin
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+)
+
+INSTALL(TARGETS embree
+  LIBRARY NAMELINK_ONLY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
 )

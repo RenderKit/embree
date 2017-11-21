@@ -82,7 +82,6 @@ namespace embree
 
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
-      numBenchmarkRepetitions(1),
 
       interactive(true),
       fullscreen(false),
@@ -158,6 +157,14 @@ namespace embree
         command_line_camera = true;
       }, "--fov <float>: vertical field of view");
 
+    registerOption("lefthanded", [this] (Ref<ParseStream> cin, const FileName& path) {
+        camera.handedness = Camera::LEFT_HANDED;
+      }, "--lefthanded: use left handed coordinates");
+
+    registerOption("righthanded", [this] (Ref<ParseStream> cin, const FileName& path) {
+        camera.handedness = Camera::RIGHT_HANDED;
+      }, "--righthanded: use right handed coordinates");
+
     /* framebuffer settings */
     registerOption("size", [this] (Ref<ParseStream> cin, const FileName& path) {
         width = cin->getInt();
@@ -171,11 +178,9 @@ namespace embree
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
-        if (cin->peek() != "" && cin->peek()[0] != '-')
-          numBenchmarkRepetitions = cin->getInt();
         interactive = false;
         rtcore += ",benchmark=1,start_threads=1";
-      }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
+      }, "--benchmark <N> <M>: enabled benchmark mode, builds scene, skips N frames, renders M frames");
 
     registerOption("nodisplay", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = 0;
@@ -264,6 +269,7 @@ namespace embree
   TutorialApplication::~TutorialApplication()
   {
     g_ispc_scene = nullptr;
+    ispc_scene = nullptr;
     device_cleanup();
     alignedFree(pixels);
     pixels = nullptr;
@@ -424,7 +430,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::HAIR,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,RTC_GEOMETRY_INTERSECTOR_RIBBON,new OBJMaterial));
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");
 
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -434,7 +440,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::CURVE,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,RTC_GEOMETRY_INTERSECTOR_SURFACE,new OBJMaterial));
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");
 
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -517,7 +523,6 @@ namespace embree
     //Statistics stat;
     FilteredStatistics fpsStat(0.5f,0.0f);
     FilteredStatistics mraypsStat(0.5f,0.0f);
-    for (size_t j=0; j<numBenchmarkRepetitions; j++)
     {
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
       for (size_t i=0; i<skipBenchmarkFrames; i++)
@@ -551,14 +556,6 @@ namespace embree
                     << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
                     << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << 100.0f*fpsStat.getSigma()/fpsStat.getAvg() << "%)" << std::endl << std::flush;
         }
-      }
-
-      /* rebuild scene between repetitions */
-      if (numBenchmarkRepetitions)
-      {
-        device_cleanup();
-        device_init(rtcore.c_str());
-        resize(width,height);
       }
 
       std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: "
@@ -1000,13 +997,13 @@ namespace embree
     /* use specified camera */
     if (camera_name != "") {
       Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getCamera(camera_name);
-      camera = Camera(c->from,c->to,c->up,c->fov);
+      camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
     }
 
     /* otherwise use default camera */
     else if (!command_line_camera) {
       Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getDefaultCamera();
-      if (c) camera = Camera(c->from,c->to,c->up,c->fov);
+      if (c) camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
     }
 
     /* send model */

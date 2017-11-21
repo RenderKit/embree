@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(RTCBoundsFunction,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
 
   InstanceFactory::InstanceFactory(int features)
@@ -28,22 +28,24 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersectorN);
   }
 
-  Instance::Instance (Scene* scene, Scene* object, size_t numTimeSteps) 
-    : AccelSet(scene,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
+  Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
+    : AccelSet(device,1,numTimeSteps), object(object)
   {
+    object->refInc();
     world2local0 = one;
-    for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
+    for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
-    boundsFunc3 = scene->device->instance_factory->InstanceBoundsFunc();
+    boundsFunc = device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
-    intersectors.intersectorN = scene->device->instance_factory->InstanceIntersectorN();
+    intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
+  }
+
+  Instance::~Instance() {
+    object->refDec();
   }
   
-  void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
+  void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     if (timeStep >= numTimeSteps)
       throw_RTCError(RTC_INVALID_OPERATION,"invalid timestep");
 
@@ -53,9 +55,6 @@ namespace embree
 
   void Instance::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
     this->mask = mask; 
     Geometry::update();
   }

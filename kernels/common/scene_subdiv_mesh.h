@@ -61,25 +61,24 @@ namespace embree
   public:
 
     /*! subdiv mesh construction */
-    SubdivMesh(Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-               size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    SubdivMesh(Device* device);
 
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
+    void setGeometryIntersector(RTCGeometryIntersector type);
     void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
-    void* map(RTCBufferType type);
-    void unmap(RTCBufferType type);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
+    void* getBuffer(RTCBufferType type);
     void update ();
     void updateBuffer (RTCBufferType type);
     void setTessellationRate(float N);
-    void immutable ();
     bool verify ();
-    void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
-    void setDisplacementFunction2 (RTCDisplacementFunc2 func, RTCBounds* bounds);
+    void commit();
+    void setDisplacementFunction (RTCDisplacementFunction func, RTCBounds* bounds);
 
   public:
 
@@ -139,8 +138,7 @@ namespace embree
     }
 
   public:
-    RTCDisplacementFunc displFunc;    //!< displacement function
-    RTCDisplacementFunc2 displFunc2;    //!< displacement function
+    RTCDisplacementFunction displFunc;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for maximal displacement 
 
     /*! all buffers in this section are provided by the application */
@@ -156,7 +154,7 @@ namespace embree
       Topology () : halfEdges(nullptr,0) {}
 
       /*! Topology initialization */
-      Topology (SubdivMesh* mesh, size_t numEdges);
+      Topology (SubdivMesh* mesh);
 
       /*! make the class movable */
     public: 
@@ -194,9 +192,6 @@ namespace embree
 
       /*! marks all buffers as modified */
       void update ();
-
-      /*! frees unused buffers */
-      void immutable();
 
       /*! verifies index array */
       bool verify (size_t numVertices);
@@ -314,31 +309,36 @@ namespace embree
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */
   private:
-    
+
     /*! map with all vertex creases */
     parallel_map<uint32_t,float> vertexCreaseMap;
     
     /*! map with all edge creases */
     parallel_map<uint64_t,float> edgeCreaseMap;
+
+  protected:
+    
+    /*! counts number of geometry commits */
+    size_t commitCounter;
   };
 
   namespace isa
   {
     struct SubdivMeshISA : public SubdivMesh
     {
-      SubdivMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
-        : SubdivMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
+      SubdivMeshISA (Device* device)
+        : SubdivMesh(device) {}
 
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
+                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
       template<typename vbool, typename vint, typename vfloat>
-        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
-                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, unsigned int numUVs, 
+                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
     };
   }
 
-  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device*);
 };

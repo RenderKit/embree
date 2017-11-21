@@ -325,7 +325,7 @@ namespace embree
         const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
         const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
         const Vec3vf<M> C = Vec3vf<M>(tri_v0) - O;
-        const Vec3vf<M> R = cross(D,C);
+        const Vec3vf<M> R = cross(C,D);
         const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
@@ -344,7 +344,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
-        valid &= (absDen*vfloat<M>(ray.tnear[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar[k]));
+        valid &= (absDen*vfloat<M>(ray.tnear()[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar()[k]));
         if (likely(none(valid))) return false;
         
         /* calculate hit information */
@@ -363,7 +363,7 @@ namespace embree
       {
         const Vec3vf<M> e1 = v0-v1;
         const Vec3vf<M> e2 = v2-v0;
-        const Vec3vf<M> Ng = cross(e1,e2);
+        const Vec3vf<M> Ng = cross(e2,e1);
         return intersect(ray,k,v0,e1,e2,Ng,flags,epilog);
       }
     };
@@ -387,7 +387,7 @@ namespace embree
         /* calculate denominator */
         vbool<K> valid = valid0;
         const Vec3vf<K> C = tri_v0 - ray.org;
-        const Vec3vf<K> R = cross(ray.dir,C);
+        const Vec3vf<K> R = cross(C,ray.dir);
         const vfloat<K> den = dot(tri_Ng,ray.dir);
         const vfloat<K> absDen = abs(den);
         const vfloat<K> sgnDen = signmsk(den);
@@ -409,7 +409,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<K> T = dot(tri_Ng,C) ^ sgnDen;
-        valid &= (absDen*ray.tnear < T) & (T <= absDen*ray.tfar);
+        valid &= (absDen*ray.tnear() < T) & (T <= absDen*ray.tfar());
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
@@ -438,7 +438,7 @@ namespace embree
       {
         const Vec3vf<K> e1 = tri_v0-tri_v1;
         const Vec3vf<K> e2 = tri_v2-tri_v0;
-        const Vec3vf<K> Ng = cross(e1,e2);
+        const Vec3vf<K> Ng = cross(e2,e1);
         return intersectK(valid0,ray,tri_v0,e1,e2,Ng,flags,epilog);
       }
 

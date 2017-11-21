@@ -258,7 +258,7 @@ float Noise(float x, float y, float z)
           hairs.push_back(SceneGraph::HairSetNode::Hair(unsigned(v_index),0) );
         }
       }
-      scene->add(new SceneGraph::HairSetNode(positions,hairs,material,SceneGraph::HairSetNode::HAIR,SceneGraph::HairSetNode::BEZIER));
+      scene->add(new SceneGraph::HairSetNode(positions,hairs,material,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER));
     }
   }
 

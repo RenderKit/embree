@@ -444,7 +444,7 @@ namespace embree
 #endif
 
         /* clear temporary data for static geometry */
-        if (mesh->isStatic()) 
+        if (bvh->scene->isStaticAccel()) 
         {
           morton.clear();
           bvh->shrink();

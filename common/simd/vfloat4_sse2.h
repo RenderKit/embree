@@ -44,7 +44,14 @@ namespace embree
     __forceinline vfloat(float a) : v(_mm_set1_ps(a)) {}
     __forceinline vfloat(float a, float b, float c, float d) : v(_mm_set_ps(d, c, b, a)) {}
 
-    __forceinline explicit vfloat(__m128i a) : v(_mm_cvtepi32_ps(a)) {}
+    __forceinline explicit vfloat(const vint4& a) : v(_mm_cvtepi32_ps(a)) {}
+    __forceinline explicit vfloat(const vuint4& x) {
+      const __m128i a   = _mm_and_si128(x,_mm_set1_epi32(0x7FFFFFFF));
+      const __m128i b   = _mm_and_si128(_mm_srai_epi32(x,31),_mm_set1_epi32(0x4F000000)); //0x4F000000 = 2^31 
+      const __m128  af  = _mm_cvtepi32_ps(a);
+      const __m128  bf  = _mm_castsi128_ps(b);  
+      v  = _mm_add_ps(af,bf);
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

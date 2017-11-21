@@ -56,6 +56,13 @@ sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*;/(\1\*) alignedMalloc(sizeof(\1));/g' $2
 sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_]*\)[ ]*;/alignedFree(\1);/g' $2
 
+# embree ray layout
+sed -i.backup  's/[.]tnear/.tnear()/g' $2
+sed -i.backup  's/[.]tfar/.tfar()/g' $2
+sed -i.backup  's/[>]tnear/>tnear()/g' $2
+sed -i.backup  's/[>]tfar/>tfar()/g' $2
+
+
 # system library
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/print(/printf(/g' $2
@@ -68,7 +75,7 @@ sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
 sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
 
-sed -i.backup  's/make_Ray/RTCRay/g' $2
+sed -i.backup  's/ = make_Ray//g' $2
 sed -i.backup 's/make_LinearSpace3fa_scale/LinearSpace3fa::scale/g' $2
 sed -i.backup 's/make_LinearSpace3fa_rotate/LinearSpace3fa::rotate/g' $2
 sed -i.backup 's/make_AffineSpace3fa_scale/AffineSpace3fa::scale/g' $2
@@ -107,12 +114,15 @@ sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
 sed -i.backup  's/RTCRay1/RTCRay/g' $2
-sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
-sed -i.backup  's/rtcIntersectEx/rtcIntersect1Ex/g' $2
 
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
-sed -i.backup  's/rtcOccludedEx/rtcOccluded1Ex/g' $2
+
+sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
+sed -i.backup  's/rtcOccluded1/rtcOccluded/g' $2
+
+sed -i.backup  's/rtcIntersect/rtcIntersect1/g' $2
+sed -i.backup  's/rtcOccluded/rtcOccluded1/g' $2
 
 sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
 sed -i.backup  's/Texture_RGBA8/Texture::RGBA8/g' $2

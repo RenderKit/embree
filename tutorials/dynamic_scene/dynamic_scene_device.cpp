@@ -37,14 +37,15 @@ float radius[numSpheres];
 int disabledID = -1;
 
 /* adds a sphere to the scene */
-unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
+unsigned int createSphere (RTCBuildQuality quality, const Vec3fa& pos, const float r)
 {
   /* create a triangulated sphere */
-  unsigned int mesh = rtcNewTriangleMesh (g_scene, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  rtcSetGeometryBuildQuality(geom, quality);
 
   /* map triangle and vertex buffer */
-  Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
-  Triangle* triangles = (Triangle*) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
+  Vertex*   vertices  = (Vertex*  ) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere geometry */
   int tri = 0;
@@ -72,46 +73,48 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 
       if (phi > 1) {
         triangles[tri].v0 = p10;
-        triangles[tri].v1 = p00;
-        triangles[tri].v2 = p01;
+        triangles[tri].v1 = p01;
+        triangles[tri].v2 = p00;
         tri++;
       }
 
       if (phi < numPhi) {
         triangles[tri].v0 = p11;
-        triangles[tri].v1 = p10;
-        triangles[tri].v2 = p01;
+        triangles[tri].v1 = p01;
+        triangles[tri].v2 = p10;
         tri++;
       }
     }
   }
-  rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
 
-  return mesh;
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(g_scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
-  return mesh;
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* called by the C++ code for initialization */
@@ -122,10 +125,13 @@ extern "C" void device_init (char* cfg)
   error_handler(nullptr,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST, RTC_INTERSECT1);
+  g_scene = rtcDeviceNewScene(g_device);
+  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
+  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create some triangulated spheres */
   for (int i=0; i<numSpheres; i++)
@@ -133,10 +139,10 @@ extern "C" void device_init (char* cfg)
     const float phi = i*2.0f*float(pi)/numSpheres;
     const float r = 2.0f*float(pi)/numSpheres;
     const Vec3fa p = 2.0f*Vec3fa(sin(phi),0.0f,-cos(phi));
-    //RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
-    int id = createSphere(flags,p,r);
+    //RTCBuildQuality quality = i%3 == 0 ? RTC_BUILD_QUALITY_MEDIUM : i%3 == 1 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
+    RTCBuildQuality quality = i%2 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
+    //RTCBuildQuality quality = RTC_BUILD_QUALITY_REFIT;
+    int id = createSphere(quality,p,r);
     position[id] = p;
     radius[id] = r;
     colors[id].x = (i%16+1)/17.0f;
@@ -180,18 +186,12 @@ void animateSphere (int taskIndex, int threadIndex, Vertex* vertices,
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  RTCRay ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -203,18 +203,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -271,7 +263,8 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 void animateSphere (int id, float time)
 {
   /* animate vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(g_scene,id,RTC_VERTEX_BUFFER);
+  RTCGeometry geom = rtcGetGeometry(g_scene,id);
+  Vertex* vertices = (Vertex*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
   const Vec3fa pos = position[id];
@@ -297,10 +290,8 @@ void animateSphere (int id, float time)
   }
 #endif
 
-  rtcUnmapBuffer(g_scene,id,RTC_VERTEX_BUFFER);
-
-  /* update mesh */
-  rtcUpdate (g_scene,id);
+  /* commit mesh */
+  rtcCommitGeometry(geom);
 }
 
 /* called by the C++ code to render */
@@ -330,8 +321,8 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseScene (g_scene); g_scene = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

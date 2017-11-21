@@ -41,21 +41,21 @@ namespace embree
   public:
 
     /*! triangle mesh construction */
-    TriangleMesh (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
+    TriangleMesh (Device* device); 
 
     /* geometry interface */
   public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
-    void* map(RTCBufferType type);
-    void unmap(RTCBufferType type);
+    void setGeometryIntersector(RTCGeometryIntersector type);
+    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
+    void* getBuffer(RTCBufferType type);
     void preCommit();
     void postCommit();
-    void immutable ();
     bool verify ();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     // FIXME: implement interpolateN
 
   public:
@@ -219,10 +219,10 @@ namespace embree
   {
     struct TriangleMeshISA : public TriangleMesh
     {
-      TriangleMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-        : TriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps) {}
+      TriangleMeshISA (Device* device)
+        : TriangleMesh(device) {}
     };
   }
 
-  DECLARE_ISA_FUNCTION(TriangleMesh*, createTriangleMesh, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(TriangleMesh*, createTriangleMesh, Device*);
 }

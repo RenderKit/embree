@@ -54,8 +54,8 @@ namespace embree
         size_t m_active = 0;
         for (size_t i = 0; i < numPackets; i++)
         {
-          const vfloat<K> tnear = inputPackets[i]->tnear;
-          const vfloat<K> tfar  = inputPackets[i]->tfar;
+          const vfloat<K> tnear = inputPackets[i]->tnear();
+          const vfloat<K> tfar  = inputPackets[i]->tfar();
           vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
           if (occluded) m_valid &= inputPackets[i]->geomID != 0;
 

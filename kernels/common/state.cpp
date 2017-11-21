@@ -115,6 +115,8 @@ namespace embree
 
     ignore_config_files = false;
     float_exceptions = false;
+    accel_flags = -1;
+    quality_flags = -1;
     scene_flags = -1;
     verbose = 0;
     benchmark = 0;
@@ -143,11 +145,9 @@ namespace embree
     alloc_single_thread_alloc = -1;
 
     error_function = nullptr;
-    error_function2 = nullptr;
     error_function_userptr = nullptr;
 
     memory_monitor_function = nullptr;
-    memory_monitor_function2 = nullptr;
     memory_monitor_userptr = nullptr;
   }
 
@@ -386,22 +386,37 @@ namespace embree
       else if (tok == Token::Id("benchmark") && cin->trySymbol("="))
         benchmark = cin->get().Int();
       
-      else if (tok == Token::Id("flags")) {
-        scene_flags = 0;
+      else if (tok == Token::Id("accel_flags")) {
+        accel_flags = 0;
         if (cin->trySymbol("=")) {
           do {
             Token flag = cin->get();
-            if      (flag == Token::Id("static") ) scene_flags |= RTC_SCENE_STATIC;
-            else if (flag == Token::Id("dynamic")) scene_flags |= RTC_SCENE_DYNAMIC;
-            else if (flag == Token::Id("compact")) scene_flags |= RTC_SCENE_COMPACT;
-            else if (flag == Token::Id("coherent")) scene_flags |= RTC_SCENE_COHERENT;
-            else if (flag == Token::Id("incoherent")) scene_flags |= RTC_SCENE_INCOHERENT;
-            else if (flag == Token::Id("high_quality")) scene_flags |= RTC_SCENE_HIGH_QUALITY;
-            else if (flag == Token::Id("robust")) scene_flags |= RTC_SCENE_ROBUST;
+            if      (flag == Token::Id("default") ) accel_flags |= RTC_ACCEL_FAST;
+            else if (flag == Token::Id("compact")) accel_flags |= RTC_ACCEL_COMPACT;
+            else if (flag == Token::Id("robust")) accel_flags |= RTC_ACCEL_ROBUST;
           } while (cin->trySymbol("|"));
         }
       }
 
+      else if (tok == Token::Id("quality")) {
+        if (cin->trySymbol("=")) {
+          Token flag = cin->get();
+          if      (flag == Token::Id("low"))    quality_flags = RTC_BUILD_QUALITY_LOW;
+          else if (flag == Token::Id("medium")) quality_flags = RTC_BUILD_QUALITY_MEDIUM;
+          else if (flag == Token::Id("high"))   quality_flags = RTC_BUILD_QUALITY_HIGH;
+        }
+      }
+
+      else if (tok == Token::Id("scene_flags")) {
+        scene_flags = 0;
+        if (cin->trySymbol("=")) {
+          do {
+            Token flag = cin->get();
+            if (flag == Token::Id("dynamic") ) scene_flags |= RTC_SCENE_FLAG_DYNAMIC;
+          } while (cin->trySymbol("|"));
+        }
+      }
+      
       else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
         max_spatial_split_replications = cin->get().Float();
 

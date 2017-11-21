@@ -114,7 +114,8 @@ namespace embree
           bvh->alloc.share(prims);
         
         /* clear temporary data for static geometry */
-        if (scene->isStatic()) {
+        if (scene->isStaticAccel()) {
+          prims.clear();
           bvh->shrink();
         }
         bvh->cleanup();

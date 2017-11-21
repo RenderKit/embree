@@ -22,6 +22,7 @@ namespace embree {
 
 struct DifferentialGeometry
 {
+  int instID;
   int geomID;
   int primID;
   float u,v;
@@ -30,7 +31,7 @@ struct DifferentialGeometry
   Vec3fa Ns;
   Vec3fa Tx; //direction along hair
   Vec3fa Ty;
-  float tnear_eps;
+  float eps;
 };
 
 } // namespace embree

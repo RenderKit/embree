@@ -93,7 +93,7 @@ namespace embree
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-        const bool displ = geom->displFunc || geom->displFunc2;
+        const bool displ = geom->displFunc;
         const unsigned N = displ ? M : 0;
         dynamic_large_stack_array(float,grid_Ng_x,N,32*32*sizeof(float));
         dynamic_large_stack_array(float,grid_Ng_y,N,32*32*sizeof(float));
@@ -136,10 +136,23 @@ namespace embree
         }
 
         /* call displacement shader */
-        if (unlikely(geom->displFunc))
-          geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
-        else if (unlikely(geom->displFunc2))
-          geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+        if (unlikely(geom->displFunc)) {
+          RTCDisplacementFunctionArguments args;
+          args.geomUserPtr = geom->userPtr;
+          args.geomID = patch.geomID();
+          args.primID = patch.primID();
+          args.time = patch.time();
+          args.u = grid_u;
+          args.v = grid_v;
+          args.nx = grid_Ng_x;
+          args.ny = grid_Ng_y;
+          args.nz = grid_Ng_z;
+          args.px = grid_x;
+          args.py = grid_y;
+          args.pz = grid_z;
+          args.N = dwidth*dheight;
+          geom->displFunc(&args);
+        }
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -184,17 +197,21 @@ namespace embree
           if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
-            geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),
-                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
-                            &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
-          
-          } 
-          else if (unlikely(geom->displFunc2 != nullptr))
-          {
-            const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
-            geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
-                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
-                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
+            RTCDisplacementFunctionArguments args;
+            args.geomUserPtr = geom->userPtr;
+            args.geomID = patch.geomID();
+            args.primID = patch.primID();
+            args.time = patch.time();
+            args.u = &u[0];
+            args.v = &v[0];
+            args.nx = &normal.x[0];
+            args.ny = &normal.y[0];
+            args.nz = &normal.z[0];
+            args.px = &vtx.x[0];
+            args.py = &vtx.y[0];
+            args.pz = &vtx.z[0];
+            args.N = VSIZEX;
+            geom->displFunc(&args);
           }
 
           vfloatx::store(&grid_x[i*VSIZEX],vtx.x);
@@ -222,7 +239,7 @@ namespace embree
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-        const bool displ = geom->displFunc || geom->displFunc2;
+        const bool displ = geom->displFunc;
         dynamic_large_stack_array(float,grid_x,M,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_y,M,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_z,M,64*64*sizeof(float));
@@ -253,9 +270,23 @@ namespace embree
 
         /* call displacement shader */
         if (unlikely(geom->displFunc))
-          geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
-        else if (unlikely(geom->displFunc2))
-          geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+        {
+          RTCDisplacementFunctionArguments args;
+          args.geomUserPtr = geom->userPtr;
+          args.geomID = patch.geomID();
+          args.primID = patch.primID();
+          args.time = patch.time();
+          args.u = grid_u;
+          args.v = grid_v;
+          args.nx = grid_Ng_x;
+          args.ny = grid_Ng_y;
+          args.nz = grid_Ng_z;
+          args.px = grid_x;
+          args.py = grid_y;
+          args.pz = grid_z;
+          args.N = dwidth*dheight;
+          geom->displFunc(&args);
+        }
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -340,17 +371,21 @@ namespace embree
           if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
-            geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),
-                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
-                            &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
-          
-          }
-          else if (unlikely(geom->displFunc2 != nullptr))
-          {
-            const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
-            geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
-                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
-                            &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
+            RTCDisplacementFunctionArguments args;
+            args.geomUserPtr = geom->userPtr;
+            args.geomID = patch.geomID();
+            args.primID = patch.primID();
+            args.time = patch.time();
+            args.u = &u[0];
+            args.v = &v[0];
+            args.nx = &normal.x[0];
+            args.ny = &normal.y[0];
+            args.nz = &normal.z[0];
+            args.px = &vtx.x[0];
+            args.py = &vtx.y[0];
+            args.pz = &vtx.z[0];
+            args.N = VSIZEX;
+            geom->displFunc(&args);
           }
 
           bounds_min[0] = min(bounds_min[0],vtx.x);

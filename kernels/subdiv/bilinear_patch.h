@@ -93,7 +93,7 @@ namespace embree
       }
 
       __forceinline Vertex normal(const float uu, const float vv) const {
-        return cross(eval_dv(uu,vv),eval_du(uu,vv));
+        return cross(eval_du(uu,vv),eval_dv(uu,vv));
       }
       
       __forceinline void eval(const float u, const float v, 
@@ -143,7 +143,7 @@ namespace embree
 
       template<typename vfloat>
       __forceinline Vec3<vfloat> normal(const vfloat& uu, const vfloat& vv) const {
-        return cross(eval_dv(uu,vv),eval_du(uu,vv));
+        return cross(eval_du(uu,vv),eval_dv(uu,vv));
       }
 
        template<class vfloat>

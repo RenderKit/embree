@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "subdivpatch1cached.h"
 #include "grid_soa.h"
 #include "grid_soa_intersector1.h"
 #include "grid_soa_intersector_packet.h"
@@ -78,14 +79,17 @@ namespace embree
     class SubdivPatch1EagerMBIntersector1
     {
     public:
-      typedef GridSOA Primitive;
-      typedef SubdivPatch1EagerPrecalculations<GridSOAMBIntersector1::Precalculations> Precalculations;
+      typedef SubdivPatch1Cached Primitive;
+      typedef GridSOAMBIntersector1::Precalculations Precalculations;
       
-      static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim_i, size_t& lazy_node)
       {
-        pre.grid = (Primitive*)prim;
-        pre.itime = getTimeSegment(ray.time, float(pre.grid->time_steps-1), pre.ftime);
-        lazy_node = prim->root(pre.itime);
+        Primitive* prim = (Primitive*) prim_i;
+        GridSOA* grid = nullptr;
+        grid = (GridSOA*) prim->root_ref.get();
+        pre.itime = getTimeSegment(ray.time, float(grid->time_steps-1), pre.ftime);
+        lazy_node = grid->root(pre.itime);
+        pre.grid = grid;
         return false;
       }
 
@@ -155,13 +159,16 @@ namespace embree
     template <int K>
       struct SubdivPatch1EagerMBIntersectorK
     {
-      typedef GridSOA Primitive;
+      typedef SubdivPatch1Cached Primitive;
+      //typedef GridSOAMBIntersectorK<K>::Precalculations Precalculations;
       typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAMBIntersectorK<K>::Precalculations> Precalculations;
       
-      static __forceinline bool processLazyNode(Precalculations& pre, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline bool processLazyNode(Precalculations& pre, IntersectContext* context, const Primitive* prim_i, size_t& lazy_node)
       {
-        pre.grid = (Primitive*)prim;
-        lazy_node = prim->troot;
+        Primitive* prim = (Primitive*) prim_i;
+        GridSOA* grid = (GridSOA*) prim->root_ref.get();
+        lazy_node = grid->troot;
+        pre.grid = grid;
         return false;
       }
 

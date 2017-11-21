@@ -21,15 +21,10 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  LineSegments::LineSegments (Scene* scene, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : Geometry(scene,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
+  LineSegments::LineSegments (Device* device)
+    : Geometry(device,LINE_SEGMENTS,0,1)
   {
-    segments.init(scene->device,numPrimitives,sizeof(int));
     vertices.resize(numTimeSteps);
-    for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
-    }
-    enabling();
   }
 
   void LineSegments::enabling()
@@ -46,92 +41,100 @@ namespace embree
 
   void LineSegments::setMask (unsigned mask)
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
     this->mask = mask;
     Geometry::update();
   }
 
-  void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size)
+  void LineSegments::setGeometryIntersector(RTCGeometryIntersector type)
   {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
+    
+    Geometry::update();
+  }
 
+  void* LineSegments::newBuffer(RTCBufferType type, size_t stride, unsigned int size)
+  {
+    /* verify that all accesses are 4 bytes aligned */
+    if (stride & 0x3) 
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+
+    unsigned bid = type & 0xFFFF;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
+    {
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].newBuffer(device,size,stride);
+      vertices0 = vertices[0];
+      setNumTimeSteps((unsigned int)vertices.size());
+      return vertices[bid].get();
+    } 
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    {
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      return userbuffers[bid].get();
+    }
+    else if (type == RTC_INDEX_BUFFER) 
+    {
+      segments.newBuffer(device,size,stride); 
+      setNumPrimitives(size);
+      return segments.get();
+      // if (isEnabled() && size != (size_t)-1) disabling();
+      // segments.set(ptr,offset,stride,size); 
+      // setNumPrimitives(size);
+      // if (isEnabled() && size != (size_t)-1) enabling();
+    }
+    else
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+
+    return nullptr;
+  }
+
+  void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size)
+  {
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
-      size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(ptr,offset,stride,size);
-      vertices[t].checkPadding16();
+      if (bid >= vertices.size()) vertices.resize(bid+1);
+      vertices[bid].set(device,ptr,offset,stride,size);
+      vertices[bid].checkPadding16();
       vertices0 = vertices[0];
+      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
+      // vertices.pop_back();
+      setNumTimeSteps((unsigned int)vertices.size());
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride,size);
+      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid].set(device,ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (isEnabled() && size != (size_t)-1) disabling();
-      segments.set(ptr,offset,stride,size); 
+      segments.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (isEnabled() && size != (size_t)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
 
-  void* LineSegments::map(RTCBufferType type)
+  void* LineSegments::getBuffer(RTCBufferType type)
   {
-    if (scene->isStatic() && scene->isBuild()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return nullptr;
-    }
-
     if (type == RTC_INDEX_BUFFER) {
-      return segments.map(scene->numMappedBuffers);
+      return segments.get();
     }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps)) {
+      return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
       return nullptr;
     }
-  }
-
-  void LineSegments::unmap(RTCBufferType type)
-  {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-
-    if (type == RTC_INDEX_BUFFER) {
-      segments.unmap(scene->numMappedBuffers);
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
-      vertices0 = vertices[0];
-    }
-    else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
-    }
-  }
-
-  void LineSegments::immutable ()
-  {
-    const bool freeIndices  = !scene->needLineIndices;
-    const bool freeVertices = !scene->needLineVertices;
-    if (freeIndices) segments.free();
-    if (freeVertices )
-      for (auto& buffer : vertices)
-        buffer.free();
   }
 
   bool LineSegments::verify ()
@@ -143,7 +146,7 @@ namespace embree
         return false;
 
     /*! verify segment indices */
-    for (size_t i=0; i<numPrimitives; i++) {
+    for (unsigned int i=0; i<numPrimitives; i++) {
       if (segments[i]+1 >= numVertices()) return false;
     }
 
@@ -159,17 +162,10 @@ namespace embree
     return true;
   }
 
-  void LineSegments::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
+  void LineSegments::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
   {
-    /* test if interpolation is enabled */
-#if defined(DEBUG)
-    if ((scene->aflags & RTC_INTERPOLATE) == 0)
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-
-
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr;
     size_t stride = 0;
@@ -181,7 +177,7 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
     
-    for (size_t i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
     {
       const size_t ofs = i*sizeof(float);
       const size_t segment = segments[primID];
@@ -197,8 +193,8 @@ namespace embree
 
   namespace isa
   {
-    LineSegments* createLineSegments(Scene* scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-      return new LineSegmentsISA(scene,flags,numSegments,numVertices,numTimeSteps);
+    LineSegments* createLineSegments(Device* device) {
+      return new LineSegmentsISA(device);
     }
   }
 }

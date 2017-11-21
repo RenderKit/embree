@@ -37,7 +37,7 @@ enum LazyState
 struct LazyGeometry
 {
   ALIGNED_STRUCT
-  unsigned int geometry;
+  RTCGeometry geometry;
   LazyState state;
   RTCScene object;
   int userID;
@@ -47,27 +47,28 @@ struct LazyGeometry
 
 LazyGeometry* g_objects[numSpheres];
 
-void instanceBoundsFunc(void* instance_i, size_t item, RTCBounds& bounds_o)
+void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 {
-  const LazyGeometry* instance = (const LazyGeometry*) instance_i;
+  const LazyGeometry* instance = (const LazyGeometry*) args->geomUserPtr;
+  RTCBounds* bounds_o = args->bounds_o;
   Vec3fa lower = instance->center-Vec3fa(instance->radius);
   Vec3fa upper = instance->center+Vec3fa(instance->radius);
-  bounds_o.lower_x = lower.x;
-  bounds_o.lower_y = lower.y;
-  bounds_o.lower_z = lower.z;
-  bounds_o.upper_x = upper.x;
-  bounds_o.upper_y = upper.y;
-  bounds_o.upper_z = upper.z;
+  bounds_o->lower_x = lower.x;
+  bounds_o->lower_y = lower.y;
+  bounds_o->lower_z = lower.z;
+  bounds_o->upper_x = upper.x;
+  bounds_o->upper_y = upper.y;
+  bounds_o->upper_z = upper.z;
 }
 
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere */
   int tri = 0;
@@ -96,22 +97,24 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 
       if (phi > 1) {
         triangles[tri].v0 = p10;
-        triangles[tri].v1 = p00;
-        triangles[tri].v2 = p01;
+        triangles[tri].v1 = p01;
+        triangles[tri].v2 = p00;
         tri++;
       }
 
       if (phi < numPhi) {
         triangles[tri].v0 = p11;
-        triangles[tri].v1 = p10;
-        triangles[tri].v2 = p01;
+        triangles[tri].v1 = p01;
+        triangles[tri].v2 = p10;
         tri++;
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-  return mesh;
+
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 void lazyCreate(LazyGeometry* instance)
@@ -121,7 +124,7 @@ void lazyCreate(LazyGeometry* instance)
   {
     /* create the geometry */
     printf("creating sphere %i (lazy)\n",instance->userID);
-    instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+    instance->object = rtcDeviceNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* when join mode is not supported we let only a single thread build */
@@ -152,38 +155,57 @@ void lazyCreate(LazyGeometry* instance)
 void eagerCreate(LazyGeometry* instance)
 {
   printf("creating sphere %i (eager)\n",instance->userID);
-  instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+  instance->object = rtcDeviceNewScene(g_device);
   createTriangulatedSphere(instance->object,instance->center,instance->radius);
   rtcCommit(instance->object);
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
+void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
-  LazyGeometry* instance = (LazyGeometry*) instance_i;
+  const int* valid = args->valid;
+  void* ptr  = args->geomUserPtr;
+  RTCIntersectContext* context = args->context;
+  RTCRayN* rays = args->ray;
+  assert(args->N == 1);
+  LazyGeometry* instance = (LazyGeometry*)ptr;
 
+  if (!valid[0])
+    return;
+  
+  Ray *ray = (Ray *)rays;
+  
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
-
+  
   /* trace ray inside object */
-  const int geomID = ray.geomID;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersect(instance->object,ray);
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
-  else ray.instID = instance->userID;
+  const int geomID = ray->geomID;
+  ray->geomID = RTC_INVALID_GEOMETRY_ID;
+  rtcIntersect1(instance->object,context,RTCRay_(*ray));
+  if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
+  else ray->instID = instance->userID;
 }
 
-void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
+void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 {
-  LazyGeometry* instance = (LazyGeometry*) instance_i;
+  const int* valid = args->valid;
+  void* ptr  = args->geomUserPtr;
+   RTCIntersectContext* context = args->context;
+  RTCRayN* rays = args->ray;
+  assert(args->N == 1);
+  LazyGeometry* instance = (LazyGeometry*)ptr;
 
+  if (!valid[0])
+    return;
+  
+  Ray *ray = (Ray *)rays;
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
-
+  
   /* trace ray inside object */
-  rtcOccluded(instance->object,ray);
+  rtcOccluded1(instance->object,context,RTCRay_(*ray));
 }
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
@@ -194,11 +216,14 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   instance->userID = userID;
   instance->center = center;
   instance->radius = radius;
-  instance->geometry = rtcNewUserGeometry(scene,1);
-  rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
-  rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
-  rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
+  instance->geometry = rtcNewUserGeometry(g_device,1,1);
+  rtcSetUserData(instance->geometry,instance);
+  rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
+  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  rtcCommitGeometry(instance->geometry);
+  rtcAttachGeometry(scene,instance->geometry);
+  rtcReleaseGeometry(instance->geometry);
 
   /* if we do not support the join mode then Embree also does not
    * support lazy build */
@@ -212,23 +237,24 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
-  return mesh;
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* scene data */
@@ -242,11 +268,11 @@ extern "C" void device_init (char* cfg)
   error_handler(nullptr,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
-
+  g_scene = rtcDeviceNewScene(g_device);
+  
   /* instantiate geometry */
   createGroundPlane(g_scene);
   for (int i=0; i<numSpheres; i++) {
@@ -263,20 +289,14 @@ extern "C" void device_init (char* cfg)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   /* initialize ray */
-  RTCRay ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.instID = 4; // set default instance ID
-  ray.mask = -1;
-  ray.time = 0;
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, 4);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -288,18 +308,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -373,11 +385,11 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   for (int i=0; i<numSpheres; i++) {
-    if (g_objects[i]->object) rtcDeleteScene(g_objects[i]->object);
+    if (g_objects[i]->object) rtcReleaseScene(g_objects[i]->object);
     delete g_objects[i];
   }
-  rtcDeleteScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseScene (g_scene); g_scene = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree
