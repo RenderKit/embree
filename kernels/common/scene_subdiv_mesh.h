@@ -83,11 +83,6 @@ namespace embree
   public:
 
     /*! return the number of faces */
-    size_t size() const { 
-      return faceVertices.size(); 
-    }
-
-    /*! return the number of faces */
     size_t numFaces() const { 
       return faceVertices.size(); 
     }

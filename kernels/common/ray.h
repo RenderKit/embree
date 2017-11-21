@@ -382,23 +382,23 @@ namespace embree
       : ptr((char*)rays), N(N) {}
 
     /* ray data access functions */
-    __forceinline float* orgx(size_t offset = 0) { return (float*)&ptr[0*4*N+offset]; }  //!< x coordinate of ray origin
-    __forceinline float* orgy(size_t offset = 0) { return (float*)&ptr[1*4*N+offset]; }  //!< y coordinate of ray origin
-    __forceinline float* orgz(size_t offset = 0) { return (float*)&ptr[2*4*N+offset]; };  //!< z coordinate of ray origin
+    __forceinline float* org_x(size_t offset = 0) { return (float*)&ptr[0*4*N+offset]; }  //!< x coordinate of ray origin
+    __forceinline float* org_y(size_t offset = 0) { return (float*)&ptr[1*4*N+offset]; }  //!< y coordinate of ray origin
+    __forceinline float* org_z(size_t offset = 0) { return (float*)&ptr[2*4*N+offset]; };  //!< z coordinate of ray origin
     __forceinline float* tnear(size_t offset = 0) { return (float*)&ptr[3*4*N+offset]; }; //!< Start of ray segment
 
-    __forceinline float* dirx(size_t offset = 0) { return (float*)&ptr[4*4*N+offset]; };  //!< x coordinate of ray direction
-    __forceinline float* diry(size_t offset = 0) { return (float*)&ptr[5*4*N+offset]; };  //!< y coordinate of ray direction
-    __forceinline float* dirz(size_t offset = 0) { return (float*)&ptr[6*4*N+offset]; };  //!< z coordinate of ray direction
+    __forceinline float* dir_x(size_t offset = 0) { return (float*)&ptr[4*4*N+offset]; };  //!< x coordinate of ray direction
+    __forceinline float* dir_y(size_t offset = 0) { return (float*)&ptr[5*4*N+offset]; };  //!< y coordinate of ray direction
+    __forceinline float* dir_z(size_t offset = 0) { return (float*)&ptr[6*4*N+offset]; };  //!< z coordinate of ray direction
     __forceinline float* tfar (size_t offset = 0) { return (float*)&ptr[7*4*N+offset]; }; //!< End of ray segment (set to hit distance)
 
     __forceinline float* time(size_t offset = 0) { return (float*)&ptr[8*4*N+offset]; };  //!< Time of this ray for motion blur
     __forceinline int*   mask(size_t offset = 0) { return (int*)  &ptr[9*4*N+offset]; };  //!< Used to mask out objects during traversal (optional)
 
     /* hit data access functions */
-    __forceinline float* Ngx(size_t offset = 0) { return (float*)&ptr[10*4*N+offset]; };   //!< x coordinate of geometry normal
-    __forceinline float* Ngy(size_t offset = 0) { return (float*)&ptr[11*4*N+offset]; };   //!< y coordinate of geometry normal
-    __forceinline float* Ngz(size_t offset = 0) { return (float*)&ptr[12*4*N+offset]; };   //!< z coordinate of geometry normal
+    __forceinline float* Ng_x(size_t offset = 0) { return (float*)&ptr[10*4*N+offset]; };   //!< x coordinate of geometry normal
+    __forceinline float* Ng_y(size_t offset = 0) { return (float*)&ptr[11*4*N+offset]; };   //!< y coordinate of geometry normal
+    __forceinline float* Ng_z(size_t offset = 0) { return (float*)&ptr[12*4*N+offset]; };   //!< z coordinate of geometry normal
 
     __forceinline float* u(size_t offset = 0) { return (float*)&ptr[13*4*N+offset]; };     //!< Barycentric u coordinate of hit
     __forceinline float* v(size_t offset = 0) { return (float*)&ptr[14*4*N+offset]; };     //!< Barycentric v coordinate of hit
@@ -412,12 +412,12 @@ namespace embree
     {
       const size_t offset = 4*index;
       valid[index] = -1;
-      orgx(offset)[0] = ray.org.x;
-      orgy(offset)[0] = ray.org.y;
-      orgz(offset)[0] = ray.org.z;
-      dirx(offset)[0] = ray.dir.x;
-      diry(offset)[0] = ray.dir.y;
-      dirz(offset)[0] = ray.dir.z;
+      org_x(offset)[0] = ray.org.x;
+      org_y(offset)[0] = ray.org.y;
+      org_z(offset)[0] = ray.org.z;
+      dir_x(offset)[0] = ray.dir.x;
+      dir_y(offset)[0] = ray.dir.y;
+      dir_z(offset)[0] = ray.dir.z;
       tnear(offset)[0] = ray.tnear();
       tfar(offset)[0] = ray.tfar();
       time(offset)[0] = ray.time;
@@ -435,9 +435,9 @@ namespace embree
         ray.tfar() = tfar(offset)[0];
         ray.u = u(offset)[0];
         ray.v = v(offset)[0];
-        ray.Ng.x = Ngx(offset)[0];
-        ray.Ng.y = Ngy(offset)[0];
-        ray.Ng.z = Ngz(offset)[0];
+        ray.Ng.x = Ng_x(offset)[0];
+        ray.Ng.y = Ng_y(offset)[0];
+        ray.Ng.z = Ng_z(offset)[0];
         ray.instID = instID(offset)[0];
         ray.geomID = geometryID;
         ray.primID = primID(offset)[0];
@@ -452,12 +452,12 @@ namespace embree
     __forceinline Ray getRayByOffset(size_t offset)
     {
       Ray ray;
-      ray.org.x = orgx(offset)[0];
-      ray.org.y = orgy(offset)[0];
-      ray.org.z = orgz(offset)[0];
-      ray.dir.x = dirx(offset)[0];
-      ray.dir.y = diry(offset)[0];
-      ray.dir.z = dirz(offset)[0];
+      ray.org.x = org_x(offset)[0];
+      ray.org.y = org_y(offset)[0];
+      ray.org.z = org_z(offset)[0];
+      ray.dir.x = dir_x(offset)[0];
+      ray.dir.y = dir_y(offset)[0];
+      ray.dir.z = dir_z(offset)[0];
       ray.tnear() = tnear(offset)[0];
       ray.tfar()  = tfar(offset)[0];
       ray.time  = time(offset)[0];
@@ -471,13 +471,13 @@ namespace embree
     __forceinline RayK<K> getRayByOffset(size_t offset)
     {
       RayK<K> ray;
-      ray.org.x = vfloat<K>::loadu(orgx(offset));
-      ray.org.y = vfloat<K>::loadu(orgy(offset));
-      ray.org.z = vfloat<K>::loadu(orgz(offset));
+      ray.org.x = vfloat<K>::loadu(org_x(offset));
+      ray.org.y = vfloat<K>::loadu(org_y(offset));
+      ray.org.z = vfloat<K>::loadu(org_z(offset));
       ray.tnear = vfloat<K>::loadu(tnear(offset));
-      ray.dir.x = vfloat<K>::loadu(dirx(offset));
-      ray.dir.y = vfloat<K>::loadu(diry(offset));
-      ray.dir.z = vfloat<K>::loadu(dirz(offset));
+      ray.dir.x = vfloat<K>::loadu(dir_x(offset));
+      ray.dir.y = vfloat<K>::loadu(dir_y(offset));
+      ray.dir.z = vfloat<K>::loadu(dir_z(offset));
       ray.tfar  = vfloat<K>::loadu(tfar(offset));
       ray.time  = vfloat<K>::loadu(time(offset));
       ray.mask  = vint<K>::loadu(mask(offset));
@@ -490,12 +490,12 @@ namespace embree
     __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, size_t offset)
     {
       RayK<K> ray;
-      ray.org.x = vfloat<K>::loadu(valid, orgx(offset));
-      ray.org.y = vfloat<K>::loadu(valid, orgy(offset));
-      ray.org.z = vfloat<K>::loadu(valid, orgz(offset));
-      ray.dir.x = vfloat<K>::loadu(valid, dirx(offset));
-      ray.dir.y = vfloat<K>::loadu(valid, diry(offset));
-      ray.dir.z = vfloat<K>::loadu(valid, dirz(offset));
+      ray.org.x = vfloat<K>::loadu(valid, org_x(offset));
+      ray.org.y = vfloat<K>::loadu(valid, org_y(offset));
+      ray.org.z = vfloat<K>::loadu(valid, org_z(offset));
+      ray.dir.x = vfloat<K>::loadu(valid, dir_x(offset));
+      ray.dir.y = vfloat<K>::loadu(valid, dir_y(offset));
+      ray.dir.z = vfloat<K>::loadu(valid, dir_z(offset));
       ray.tnear() = vfloat<K>::loadu(valid, tnear(offset));
       ray.tfar()  = vfloat<K>::loadu(valid, tfar(offset));
       ray.time  = vfloat<K>::loadu(valid, time(offset));
@@ -527,12 +527,12 @@ namespace embree
     __forceinline void getRayByIndex(size_t index, RayK<K>& ray, size_t index_dest)
     {
       const size_t offset = index * sizeof(float);
-      ray.org.x[index_dest] = orgx(offset)[0];
-      ray.org.y[index_dest] = orgy(offset)[0];
-      ray.org.z[index_dest] = orgz(offset)[0];
-      ray.dir.x[index_dest] = dirx(offset)[0];
-      ray.dir.y[index_dest] = diry(offset)[0];
-      ray.dir.z[index_dest] = dirz(offset)[0];
+      ray.org.x[index_dest] = org_x(offset)[0];
+      ray.org.y[index_dest] = org_y(offset)[0];
+      ray.org.z[index_dest] = org_z(offset)[0];
+      ray.dir.x[index_dest] = dir_x(offset)[0];
+      ray.dir.y[index_dest] = dir_y(offset)[0];
+      ray.dir.z[index_dest] = dir_z(offset)[0];
       ray.tnear[index_dest] = tnear(offset)[0];
       ray.tfar[index_dest]  = tfar(offset)[0];
       ray.time[index_dest]  = time(offset)[0];
@@ -554,9 +554,9 @@ namespace embree
           u(offset)[0] = ray.u[index_source];
           v(offset)[0] = ray.v[index_source];
           primID(offset)[0] = ray.primID[index_source];
-          Ngx(offset)[0] = ray.Ng.x[index_source];
-          Ngy(offset)[0] = ray.Ng.y[index_source];
-          Ngz(offset)[0] = ray.Ng.z[index_source];
+          Ng_x(offset)[0] = ray.Ng.x[index_source];
+          Ng_y(offset)[0] = ray.Ng.y[index_source];
+          Ng_z(offset)[0] = ray.Ng.z[index_source];
           instID(offset)[0] = ray.instID[index_source];
         }
       }
@@ -573,9 +573,9 @@ namespace embree
           u(offset)[0] = ray.u;
           v(offset)[0] = ray.v;
           primID(offset)[0] = ray.primID;
-          Ngx(offset)[0] = ray.Ng.x;
-          Ngy(offset)[0] = ray.Ng.y;
-          Ngz(offset)[0] = ray.Ng.z;
+          Ng_x(offset)[0] = ray.Ng.x;
+          Ng_y(offset)[0] = ray.Ng.y;
+          Ng_z(offset)[0] = ray.Ng.z;
           instID(offset)[0] = ray.instID;
         }
       }
@@ -621,9 +621,9 @@ namespace embree
         if (intersect)
         {
           vfloat<K>::storeu(valid, tfar(offset), ray.tfar());
-          vfloat<K>::storeu(valid, Ngx(offset), ray.Ng.x);
-          vfloat<K>::storeu(valid, Ngy(offset), ray.Ng.y);
-          vfloat<K>::storeu(valid, Ngz(offset), ray.Ng.z);
+          vfloat<K>::storeu(valid, Ng_x(offset), ray.Ng.x);
+          vfloat<K>::storeu(valid, Ng_y(offset), ray.Ng.y);
+          vfloat<K>::storeu(valid, Ng_z(offset), ray.Ng.z);
           vfloat<K>::storeu(valid, u(offset), ray.u);
           vfloat<K>::storeu(valid, v(offset), ray.v);
         }
@@ -632,9 +632,9 @@ namespace embree
 
     __forceinline size_t getOctantByOffset(size_t offset)
     {
-      const float dx = dirx(offset)[0];
-      const float dy = diry(offset)[0];
-      const float dz = dirz(offset)[0];
+      const float dx = dir_x(offset)[0];
+      const float dy = dir_y(offset)[0];
+      const float dz = dir_z(offset)[0];
       const size_t octantID = (dx < 0.0f ? 1 : 0) + (dy < 0.0f ? 2 : 0) + (dz < 0.0f ? 4 : 0);
       return octantID;
     }
@@ -652,12 +652,12 @@ namespace embree
       RayK<K> ray;
 
 #if defined(__AVX2__)
-      ray.org.x  = vfloat<K>::template gather<1>(valid, orgx(), offset);
-      ray.org.y  = vfloat<K>::template gather<1>(valid, orgy(), offset);
-      ray.org.z  = vfloat<K>::template gather<1>(valid, orgz(), offset);
-      ray.dir.x  = vfloat<K>::template gather<1>(valid, dirx(), offset);
-      ray.dir.y  = vfloat<K>::template gather<1>(valid, diry(), offset);
-      ray.dir.z  = vfloat<K>::template gather<1>(valid, dirz(), offset);
+      ray.org.x  = vfloat<K>::template gather<1>(valid, org_x(), offset);
+      ray.org.y  = vfloat<K>::template gather<1>(valid, org_y(), offset);
+      ray.org.z  = vfloat<K>::template gather<1>(valid, org_z(), offset);
+      ray.dir.x  = vfloat<K>::template gather<1>(valid, dir_x(), offset);
+      ray.dir.y  = vfloat<K>::template gather<1>(valid, dir_y(), offset);
+      ray.dir.z  = vfloat<K>::template gather<1>(valid, dir_z(), offset);
       ray.tnear()= vfloat<K>::template gather<1>(valid, tnear(), offset);
       ray.tfar() = vfloat<K>::template gather<1>(valid, tfar(), offset);
       ray.time   = vfloat<K>::template gather<1>(valid, time(), offset);
@@ -678,12 +678,12 @@ namespace embree
         {
           const size_t ofs = offset[k];
 
-          ray.org.x[k]  = *orgx(ofs);
-          ray.org.y[k]  = *orgy(ofs);
-          ray.org.z[k]  = *orgz(ofs);
-          ray.dir.x[k]  = *dirx(ofs);
-          ray.dir.y[k]  = *diry(ofs);
-          ray.dir.z[k]  = *dirz(ofs);
+          ray.org.x[k]  = *org_x(ofs);
+          ray.org.y[k]  = *org_y(ofs);
+          ray.org.z[k]  = *org_z(ofs);
+          ray.dir.x[k]  = *dir_x(ofs);
+          ray.dir.y[k]  = *dir_y(ofs);
+          ray.dir.z[k]  = *dir_z(ofs);
           ray.tnear()[k]  = *tnear(ofs);
           ray.tfar()[k]   = *tfar(ofs);
           ray.time[k]   = *time(ofs);
@@ -714,9 +714,9 @@ namespace embree
           vfloat<K>::template scatter<1>(valid, u(), offset, ray.u);
           vfloat<K>::template scatter<1>(valid, v(), offset, ray.v);
           vint<K>::template scatter<1>(valid, primID(), offset, ray.primID);
-          vfloat<K>::template scatter<1>(valid, Ngx(), offset, ray.Ng.x);
-          vfloat<K>::template scatter<1>(valid, Ngy(), offset, ray.Ng.y);
-          vfloat<K>::template scatter<1>(valid, Ngz(), offset, ray.Ng.z);
+          vfloat<K>::template scatter<1>(valid, Ng_x(), offset, ray.Ng.x);
+          vfloat<K>::template scatter<1>(valid, Ng_y(), offset, ray.Ng.y);
+          vfloat<K>::template scatter<1>(valid, Ng_z(), offset, ray.Ng.z);
           vint<K>::template scatter<1>(valid, instID(), offset, ray.instID);
         }
 #else
@@ -733,9 +733,9 @@ namespace embree
             *u(ofs) = ray.u[k];
             *v(ofs) = ray.v[k];
             *primID(ofs) = ray.primID[k];
-            *Ngx(ofs) = ray.Ng.x[k];
-            *Ngy(ofs) = ray.Ng.y[k];
-            *Ngz(ofs) = ray.Ng.z[k];
+            *Ng_x(ofs) = ray.Ng.x[k];
+            *Ng_y(ofs) = ray.Ng.y[k];
+            *Ng_z(ofs) = ray.Ng.z[k];
             *instID(ofs) = ray.instID[k];
           }
         }
@@ -762,19 +762,19 @@ namespace embree
     template<class T>
     __forceinline void init(T& t)
     {
-      orgx   = (float*)&t.org.x;
-      orgy   = (float*)&t.org.y;
-      orgz   = (float*)&t.org.z;
-      dirx   = (float*)&t.dir.x;
-      diry   = (float*)&t.dir.y;
-      dirz   = (float*)&t.dir.z;
+      org_x   = (float*)&t.org.x;
+      org_y   = (float*)&t.org.y;
+      org_z   = (float*)&t.org.z;
+      dir_x   = (float*)&t.dir.x;
+      dir_y   = (float*)&t.dir.y;
+      dir_z   = (float*)&t.dir.z;
       tnear  = (float*)&t.tnear;
       tfar   = (float*)&t.tfar;
       time   = (float*)&t.time;
       mask   = (unsigned*)&t.mask;
-      Ngx    = (float*)&t.Ng.x;
-      Ngy    = (float*)&t.Ng.y;
-      Ngz    = (float*)&t.Ng.z;
+      Ng_x    = (float*)&t.Ng.x;
+      Ng_y    = (float*)&t.Ng.y;
+      Ng_z    = (float*)&t.Ng.z;
       u      = (float*)&t.u;
       v      = (float*)&t.v;
       geomID = (unsigned*)&t.geomID;
@@ -785,12 +785,12 @@ namespace embree
     __forceinline Ray getRayByOffset(size_t offset)
     {
       Ray ray;
-      ray.org.x = *(float* __restrict__)((char*)orgx + offset);
-      ray.org.y = *(float* __restrict__)((char*)orgy + offset);
-      ray.org.z = *(float* __restrict__)((char*)orgz + offset);
-      ray.dir.x = *(float* __restrict__)((char*)dirx + offset);
-      ray.dir.y = *(float* __restrict__)((char*)diry + offset);
-      ray.dir.z = *(float* __restrict__)((char*)dirz + offset);
+      ray.org.x = *(float* __restrict__)((char*)org_x + offset);
+      ray.org.y = *(float* __restrict__)((char*)org_y + offset);
+      ray.org.z = *(float* __restrict__)((char*)org_z + offset);
+      ray.dir.x = *(float* __restrict__)((char*)dir_x + offset);
+      ray.dir.y = *(float* __restrict__)((char*)dir_y + offset);
+      ray.dir.z = *(float* __restrict__)((char*)dir_z + offset);
       ray.tfar() = *(float* __restrict__)((char*)tfar + offset);
       ray.tnear() = tnear ? *(float* __restrict__)((char*)tnear + offset) : 0.0f;
       ray.time  = time ? *(float* __restrict__)((char*)time + offset) : 0.0f;
@@ -804,12 +804,12 @@ namespace embree
     __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, size_t offset)
     {
       RayK<K> ray;
-      ray.org.x = vfloat<K>::loadu(valid, (float* __restrict__)((char*)orgx + offset));
-      ray.org.y = vfloat<K>::loadu(valid, (float* __restrict__)((char*)orgy + offset));
-      ray.org.z = vfloat<K>::loadu(valid, (float* __restrict__)((char*)orgz + offset));
-      ray.dir.x = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dirx + offset));
-      ray.dir.y = vfloat<K>::loadu(valid, (float* __restrict__)((char*)diry + offset));
-      ray.dir.z = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dirz + offset));
+      ray.org.x = vfloat<K>::loadu(valid, (float* __restrict__)((char*)org_x + offset));
+      ray.org.y = vfloat<K>::loadu(valid, (float* __restrict__)((char*)org_y + offset));
+      ray.org.z = vfloat<K>::loadu(valid, (float* __restrict__)((char*)org_z + offset));
+      ray.dir.x = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_x + offset));
+      ray.dir.y = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_y + offset));
+      ray.dir.z = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_z + offset));
       ray.tfar()  = vfloat<K>::loadu(valid, (float* __restrict__)((char*)tfar + offset));
       ray.tnear() = tnear ? vfloat<K>::loadu(valid, (float* __restrict__)((char*)tnear + offset)) : 0.0f;
       ray.time  = time ? vfloat<K>::loadu(valid, (float* __restrict__)((char*)time + offset)) : 0.0f;
@@ -823,9 +823,9 @@ namespace embree
     __forceinline Vec3vf<K> getDirByOffset(const vbool<K>& valid, size_t offset)
     {
       Vec3vf<K> dir;
-      dir.x = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dirx + offset));
-      dir.y = vfloat<K>::loadu(valid, (float* __restrict__)((char*)diry + offset));
-      dir.z = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dirz + offset));
+      dir.x = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_x + offset));
+      dir.y = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_y + offset));
+      dir.z = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_z + offset));
       return dir;
     }
 
@@ -840,9 +840,9 @@ namespace embree
           *(float* __restrict__)((char*)u + offset) = ray.u;
           *(float* __restrict__)((char*)v + offset) = ray.v;
           *(unsigned* __restrict__)((char*)primID + offset) = ray.primID;
-          if (likely(Ngx)) *(float* __restrict__)((char*)Ngx + offset) = ray.Ng.x;
-          if (likely(Ngy)) *(float* __restrict__)((char*)Ngy + offset) = ray.Ng.y;
-          if (likely(Ngz)) *(float* __restrict__)((char*)Ngz + offset) = ray.Ng.z;
+          if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + offset) = ray.Ng.x;
+          if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + offset) = ray.Ng.y;
+          if (likely(Ng_z)) *(float* __restrict__)((char*)Ng_z + offset) = ray.Ng.z;
           if (likely(instID)) *(unsigned* __restrict__)((char*)instID + offset) = ray.instID;
         }
       }
@@ -863,9 +863,9 @@ namespace embree
           vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
           vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
           vint<K>::storeu(valid, (int* __restrict__)((char*)primID + offset), ray.primID);
-          if (likely(Ngx)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngx + offset), ray.Ng.x);
-          if (likely(Ngy)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngy + offset), ray.Ng.y);
-          if (likely(Ngz)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngz + offset), ray.Ng.z);
+          if (likely(Ng_x)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_x + offset), ray.Ng.x);
+          if (likely(Ng_y)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_y + offset), ray.Ng.y);
+          if (likely(Ng_z)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_z + offset), ray.Ng.z);
           if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
         }
       }
@@ -873,9 +873,9 @@ namespace embree
 
     __forceinline size_t getOctantByOffset(size_t offset)
     {
-      const float dx = *(float* __restrict__)((char*)dirx + offset);
-      const float dy = *(float* __restrict__)((char*)diry + offset);
-      const float dz = *(float* __restrict__)((char*)dirz + offset);
+      const float dx = *(float* __restrict__)((char*)dir_x + offset);
+      const float dy = *(float* __restrict__)((char*)dir_y + offset);
+      const float dz = *(float* __restrict__)((char*)dir_z + offset);
       const size_t octantID = (dx < 0.0f ? 1 : 0) + (dy < 0.0f ? 2 : 0) + (dz < 0.0f ? 4 : 0);
       return octantID;
     }
@@ -901,12 +901,12 @@ namespace embree
       RayK<K> ray;
 
 #if defined(__AVX2__)
-      ray.org.x  = vfloat<K>::template gather<1>(valid, orgx, offset);
-      ray.org.y  = vfloat<K>::template gather<1>(valid, orgy, offset);
-      ray.org.z  = vfloat<K>::template gather<1>(valid, orgz, offset);
-      ray.dir.x  = vfloat<K>::template gather<1>(valid, dirx, offset);
-      ray.dir.y  = vfloat<K>::template gather<1>(valid, diry, offset);
-      ray.dir.z  = vfloat<K>::template gather<1>(valid, dirz, offset);
+      ray.org.x  = vfloat<K>::template gather<1>(valid, org_x, offset);
+      ray.org.y  = vfloat<K>::template gather<1>(valid, org_y, offset);
+      ray.org.z  = vfloat<K>::template gather<1>(valid, org_z, offset);
+      ray.dir.x  = vfloat<K>::template gather<1>(valid, dir_x, offset);
+      ray.dir.y  = vfloat<K>::template gather<1>(valid, dir_y, offset);
+      ray.dir.z  = vfloat<K>::template gather<1>(valid, dir_z, offset);
       ray.tfar() = vfloat<K>::template gather<1>(valid, tfar, offset);
       ray.tnear()= tnear ? vfloat<K>::template gather<1>(valid, tnear, offset) : vfloat<K>(zero);
       ray.time   = time ? vfloat<K>::template gather<1>(valid, time, offset) : vfloat<K>(zero);
@@ -927,12 +927,12 @@ namespace embree
         {
           const size_t ofs = offset[k];
 
-          ray.org.x[k]  = *(float* __restrict__)((char*)orgx + ofs);
-          ray.org.y[k]  = *(float* __restrict__)((char*)orgy + ofs);
-          ray.org.z[k]  = *(float* __restrict__)((char*)orgz + ofs);
-          ray.dir.x[k]  = *(float* __restrict__)((char*)dirx + ofs);
-          ray.dir.y[k]  = *(float* __restrict__)((char*)diry + ofs);
-          ray.dir.z[k]  = *(float* __restrict__)((char*)dirz + ofs);
+          ray.org.x[k]  = *(float* __restrict__)((char*)org_x + ofs);
+          ray.org.y[k]  = *(float* __restrict__)((char*)org_y + ofs);
+          ray.org.z[k]  = *(float* __restrict__)((char*)org_z + ofs);
+          ray.dir.x[k]  = *(float* __restrict__)((char*)dir_x + ofs);
+          ray.dir.y[k]  = *(float* __restrict__)((char*)dir_y + ofs);
+          ray.dir.z[k]  = *(float* __restrict__)((char*)dir_z + ofs);
           ray.tfar()[k] = *(float* __restrict__)((char*)tfar + ofs);
           ray.tnear()[k]= tnear ? *(float* __restrict__)((char*)tnear + ofs) : 0.0f;
           ray.time[k]   = time ? *(float* __restrict__)((char*)time + ofs) : 0.0f;
@@ -963,9 +963,9 @@ namespace embree
           vfloat<K>::template scatter<1>(valid, u, offset, ray.u);
           vfloat<K>::template scatter<1>(valid, v, offset, ray.v);
           vint<K>::template scatter<1>(valid, (int*)primID, offset, ray.primID);
-          if (likely(Ngx)) vfloat<K>::template scatter<1>(valid, Ngx, offset, ray.Ng.x);
-          if (likely(Ngy)) vfloat<K>::template scatter<1>(valid, Ngy, offset, ray.Ng.y);
-          if (likely(Ngz)) vfloat<K>::template scatter<1>(valid, Ngz, offset, ray.Ng.z);
+          if (likely(Ng_x)) vfloat<K>::template scatter<1>(valid, Ng_x, offset, ray.Ng.x);
+          if (likely(Ng_y)) vfloat<K>::template scatter<1>(valid, Ng_y, offset, ray.Ng.y);
+          if (likely(Ng_z)) vfloat<K>::template scatter<1>(valid, Ng_z, offset, ray.Ng.z);
           if (likely(instID)) vint<K>::template scatter<1>(valid, (int*)instID, offset, ray.instID);
         }
 #else
@@ -982,9 +982,9 @@ namespace embree
             *(float* __restrict__)((char*)u + ofs) = ray.u[k];
             *(float* __restrict__)((char*)v + ofs) = ray.v[k];
             *(unsigned* __restrict__)((char*)primID + ofs) = ray.primID[k];
-            if (likely(Ngx)) *(float* __restrict__)((char*)Ngx + ofs) = ray.Ng.x[k];
-            if (likely(Ngy)) *(float* __restrict__)((char*)Ngy + ofs) = ray.Ng.y[k];
-            if (likely(Ngz)) *(float* __restrict__)((char*)Ngz + ofs) = ray.Ng.z[k];
+            if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + ofs) = ray.Ng.x[k];
+            if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + ofs) = ray.Ng.y[k];
+            if (likely(Ng_z)) *(float* __restrict__)((char*)Ng_z + ofs) = ray.Ng.z[k];
             if (likely(instID)) *(unsigned* __restrict__)((char*)instID + ofs) = ray.instID[k];
           }
         }
@@ -993,23 +993,23 @@ namespace embree
     }
 
     /* ray data */
-    float* __restrict__ orgx;  //!< x coordinate of ray origin
-    float* __restrict__ orgy;  //!< y coordinate of ray origin
-    float* __restrict__ orgz;  //!< z coordinate of ray origin
+    float* __restrict__ org_x;  //!< x coordinate of ray origin
+    float* __restrict__ org_y;  //!< y coordinate of ray origin
+    float* __restrict__ org_z;  //!< z coordinate of ray origin
     float* __restrict__ tnear; //!< Start of ray segment (optional)
 
-    float* __restrict__ dirx;  //!< x coordinate of ray direction
-    float* __restrict__ diry;  //!< y coordinate of ray direction
-    float* __restrict__ dirz;  //!< z coordinate of ray direction
+    float* __restrict__ dir_x;  //!< x coordinate of ray direction
+    float* __restrict__ dir_y;  //!< y coordinate of ray direction
+    float* __restrict__ dir_z;  //!< z coordinate of ray direction
     float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
 
     float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
     unsigned* __restrict__ mask;  //!< Used to mask out objects during traversal (optional)
 
     /* hit data */
-    float* __restrict__ Ngx;   //!< x coordinate of geometry normal (optional)
-    float* __restrict__ Ngy;   //!<y coordinate of geometry normal (optional)
-    float* __restrict__ Ngz;   //!< z coordinate of geometry normal (optional)
+    float* __restrict__ Ng_x;   //!< x coordinate of geometry normal (optional)
+    float* __restrict__ Ng_y;   //!<y coordinate of geometry normal (optional)
+    float* __restrict__ Ng_z;   //!< z coordinate of geometry normal (optional)
 
     float* __restrict__ u;     //!< Barycentric u coordinate of hit
     float* __restrict__ v;     //!< Barycentric v coordinate of hit

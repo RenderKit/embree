@@ -72,10 +72,11 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
 
 void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->type, hair->basis);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
   for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
   }
+  rtcSetGeometryIntersector(geom,hair->type);
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
   rtcSetOcclusionFilterFunction(geom,occlusionFilter);
   rtcSetTessellationRate(geom,hair->tessellation_rate);

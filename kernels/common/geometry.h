@@ -109,6 +109,8 @@ namespace embree
       numPrimitives = numPrimitives_in;
       numPrimitivesChanged = true;
       if (isEnabled() && scene) enabling();
+      
+      Geometry::update();
     }
 
     /*! sets number of time steps */
@@ -121,6 +123,8 @@ namespace embree
       numTimeSteps = numTimeSteps_in;
       fnumTimeSegments = float(numTimeSteps_in-1);
       if (isEnabled() && scene) enabling();
+      
+      Geometry::update();
     }
 
     /*! sets the build quality */

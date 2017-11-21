@@ -83,10 +83,6 @@ namespace embree
       quads.newBuffer(device,size,stride);
       setNumPrimitives(size);
       return quads.get();
-      // if (isEnabled() && size != (size_t)-1) disabling();
-      // quads.set(ptr,offset,stride,size);
-      // setNumPrimitives(size);
-      // if (isEnabled() && size != (size_t)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -170,7 +166,7 @@ namespace embree
         return false;
 
     /*! verify quad indices */
-    for (size_t i=0; i<quads.size(); i++) {     
+    for (size_t i=0; i<size(); i++) {     
       if (quads[i].v[0] >= numVertices()) return false; 
       if (quads[i].v[1] >= numVertices()) return false; 
       if (quads[i].v[2] >= numVertices()) return false; 
