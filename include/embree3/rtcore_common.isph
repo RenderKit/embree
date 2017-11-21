@@ -14,23 +14,38 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#ifndef __RTCORE_COMMON_ISPH__
+#define __RTCORE_COMMON_ISPH__
 
-/*! \file rtcore.h Defines the Embree Ray Tracing Kernel API for C and C++ 
+/* This is necessary as the size_t type under ISPC may be 32 or 64 bits wide depending on the ISPC addressing mode used. */
+#if !defined(size_t) // FIXME: have to undefine these again
+#define size_t uintptr_t
+#define ssize_t intptr_t
+#endif
 
-   This file defines the Embree ray tracing kernel API for C and
-   C++. The user is supposed to include this file, and alternatively
-   the rtcore_ray.h file, but none of the other .h files in this
-   folder. */
+#if !defined(RTCORE_API)
+#define RTCORE_API extern "C" unmasked
+#endif
 
-/*! \{ */
+#ifdef _WIN32
+#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
+#else
+#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
+#endif
 
-#include "rtcore_version.h"
-#include "rtcore_common.h"
-#include "rtcore_device.h"
-#include "rtcore_ray.h"
-#include "rtcore_scene.h"
-#include "rtcore_geometry.h"
-#include "rtcore_builder.h"
+#if !defined(RTCORE_DEPRECATED)
+#define RTCORE_DEPRECATED // FIXME: deprecation not supported by ISPC
+#endif
 
-/*! \} */
+#if !defined(RTCORE_FORCEINLINE)
+#define RTCORE_FORCEINLINE inline
+#endif
+
+/*! Axis aligned bounding box representation */
+RTCORE_ALIGN(16) struct RTCBounds
+{
+  float lower_x, lower_y, lower_z, align0;
+  float upper_x, upper_y, upper_z, align1;
+};
+
+#endif

@@ -16,21 +16,60 @@
 
 #pragma once
 
-/*! \file rtcore.h Defines the Embree Ray Tracing Kernel API for C and C++ 
+#include <stddef.h>
+#include <sys/types.h>
+#include <stdbool.h>
 
-   This file defines the Embree ray tracing kernel API for C and
-   C++. The user is supposed to include this file, and alternatively
-   the rtcore_ray.h file, but none of the other .h files in this
-   folder. */
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-/*! \{ */
+#if defined(_WIN32)
+#if defined(_M_X64)
+typedef long long ssize_t;
+#else
+typedef int ssize_t;
+#endif
+#endif
 
-#include "rtcore_version.h"
-#include "rtcore_common.h"
-#include "rtcore_device.h"
-#include "rtcore_ray.h"
-#include "rtcore_scene.h"
-#include "rtcore_geometry.h"
-#include "rtcore_builder.h"
+#ifndef RTCORE_API
+#if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
+#  define RTCORE_API __declspec(dllimport) 
+#else
+#  define RTCORE_API 
+#endif
+#endif
 
-/*! \} */
+#ifdef _WIN32
+#  define RTCORE_ALIGN(...) __declspec(align(__VA_ARGS__))
+#else
+#  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
+#endif
+
+#if !defined (RTCORE_DEPRECATED)
+#ifdef __GNUC__
+  #define RTCORE_DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER)
+  #define RTCORE_DEPRECATED __declspec(deprecated)
+#else
+  #define RTCORE_DEPRECATED
+#endif
+#endif
+
+#if defined(_WIN32) 
+#  define RTCORE_FORCEINLINE __forceinline
+#else
+#  define RTCORE_FORCEINLINE inline __attribute__((always_inline))
+#endif
+
+/*! Axis aligned bounding box representation */
+struct RTCORE_ALIGN(16) RTCBounds
+{
+  float lower_x, lower_y, lower_z, align0;
+  float upper_x, upper_y, upper_z, align1;
+};
+
+#if defined(__cplusplus)
+}
+#endif
+

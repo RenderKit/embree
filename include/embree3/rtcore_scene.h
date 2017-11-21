@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "rtcore_device.h"
+
 /*! \ingroup embree_kernel_api */
 /*! \{ */
 

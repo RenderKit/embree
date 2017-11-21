@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rtcore.h"
+#include "rtcore_scene.h"
 
 #if defined(__cplusplus)
 extern "C" {
