@@ -508,10 +508,10 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel == "default") 
     {
-      if (isStatic())
+      // if (isStatic())
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
-      else
-        accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
+      // else
+      //   accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     }
     else if (device->subdiv_accel == "bvh4.grid.eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
     else if (device->subdiv_accel == "bvh4.subdivpatch1eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
@@ -526,10 +526,10 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel_mb == "default") 
     {
-      if (isStatic())
+      // if (isStatic())
         accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
-      else
-        accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
+      // else
+      //   accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
     }
     else if (device->subdiv_accel_mb == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
     else if (device->subdiv_accel_mb == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
