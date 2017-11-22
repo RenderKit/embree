@@ -140,12 +140,6 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   if (args->context == nullptr)
     return;
 
-  /* fast path */
-  if (args->N == 1) {
-    instanceIntersectFunc(args);
-    return;
-  }
-
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
@@ -184,15 +178,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    RTCRayN_u(rays,N,ui) = ray.u;
-    RTCRayN_v(rays,N,ui) = ray.v;
-    RTCRayN_tfar(rays,N,ui) = ray.tfar();
-    RTCRayN_instID(rays,N,ui) = instance->userID;
-    RTCRayN_geomID(rays,N,ui) = ray.geomID;
-    RTCRayN_primID(rays,N,ui) = ray.primID;
-    RTCRayN_Ng_x(rays,N,ui) = ray.Ng.x;
-    RTCRayN_Ng_y(rays,N,ui) = ray.Ng.y;
-    RTCRayN_Ng_z(rays,N,ui) = ray.Ng.z;
+    copyHitFromRTCRayToRTCRayN(rays,RTCRay_(ray),N,ui);
   }
 }
 
@@ -202,12 +188,6 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   if (args->context == nullptr)
     return;
   
-  /* fast path */
-  if (args->N == 1) {
-    instanceOccludedFunc(args);
-    return;
-  }
-
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;

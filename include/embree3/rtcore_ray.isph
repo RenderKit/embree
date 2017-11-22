@@ -206,6 +206,19 @@ inline void copyRTCHitToRTCRayN(RTCRayN *uniform rays, varying RTCHit *uniform h
   RTCRayN_tfar(rays,N,ui)   = hit->t;
 }
 
+inline void copyHitFromRTCRayToRTCRayN(RTCRayN *uniform rays, varying RTCRay *uniform ray, uniform unsigned int N, uniform unsigned int ui)
+{
+  RTCRayN_Ng_x(rays,N,ui)   = ray->Ng_x;
+  RTCRayN_Ng_y(rays,N,ui)   = ray->Ng_y;
+  RTCRayN_Ng_z(rays,N,ui)   = ray->Ng_z;
+  RTCRayN_instID(rays,N,ui) = ray->instID;
+  RTCRayN_geomID(rays,N,ui) = ray->geomID;
+  RTCRayN_primID(rays,N,ui) = ray->primID;
+  RTCRayN_u(rays,N,ui)      = ray->u;
+  RTCRayN_v(rays,N,ui)      = ray->v;
+  RTCRayN_tfar(rays,N,ui)   = ray->tfar;
+}
+
 /*! @} */
 
 #endif
