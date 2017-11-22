@@ -4,17 +4,6 @@ import sys
 import os
 import copy
 
-#@@
-#ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );
-#=>
-#RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);
-#geomID = rtcAttachGeometry(e0,geom);
-#@@
-#rtcMapBuffer(EXPR e0,ID geomID)
-#=>
-#rtcNewBuffer(geom,e4)
-#@@
-
 rule0 = (
   "ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );",
   "RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);\ngeomID = rtcAttachGeometry(e0,geom);",
@@ -88,6 +77,9 @@ def tokenize(chars):
     else: tokens.append(chars.pop(0))
   return tokens
 
+def is_delimiter (c):
+  return c in delimiter_chars
+  
 def is_delimiter_token (token):
   return token[0] in delimiter_chars or token[0].startswith("/*") or token[0].startswith("//")
 
@@ -168,9 +160,9 @@ def substitute (env,tokens,ident):
       result = result + [" "*ident]
   return result
 
-def print_token_list(list):
+def print_token_list(list,f):
   for c in list:
-    sys.stdout.write(c)
+    f.write(c)
       
 def match_rule (pattern_in, tokens_in, env):
   pattern = copy.deepcopy(pattern_in)
@@ -219,8 +211,8 @@ def tokenize_rule (rule):
   (pattern_str, subst_str, next_rule) = rule
   pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
   subst = tokenize(list(subst_str))
-  return [pattern,subst,map (tokenize_rule,next_rule)]
-  
+  return (pattern,subst,map (tokenize_rule,next_rule))
+
 with open("test.cpp") as f:
   fstr = f.read()
   content = list(fstr)
@@ -238,10 +230,111 @@ with open("test.cpp") as f:
 #  sys.stdout.write("\n\n")
 
   sys.stdout.write("Result:\n")
-  print_token_list(result)
+  print_token_list(result,sys.stdout)
   sys.stdout.write("\n\n")
 
+rule_file = ""
+cpp_file_in = ""
+cpp_file_out = ""
+
+def printUsage():
+  sys.stdout.write("Usage: embree2_to_embree3.py --rules embree2_to_embree3.rules --in infile.cpp --out outfile.cpp\n")
+
+def parseCommandLine(argv):
+  global rule_file
+  global cpp_file_in
+  global cpp_file_out
+  if len(argv) == 0:
+    return;
+  elif len(argv)>=2 and argv[0] == "--rules":
+    rule_file = argv[1]
+    parseCommandLine(argv[2:len(argv)])
+  elif len(argv)>=2 and argv[0] == "--in":
+    cpp_file_in = argv[1]
+    parseCommandLine(argv[2:len(argv)])
+  elif len(argv)>=2 and argv[0] == "--out":
+    cpp_file_out = argv[1]
+    parseCommandLine(argv[2:len(argv)])
+  elif len(argv)>=1 and argv[0] == "--help":
+    printUsage()
+    sys.exit(1)
+  else:
+    sys.stderr.write("unknown command line option: "+argv[0])
+    printUsage()
+    sys.exit(1)
+    
+parseCommandLine(sys.argv[1:len(sys.argv)])
+if (rule_file == ""):
+  raise Exception("no rule file specified");
+if (cpp_file_in == ""):
+  raise Exception("no input file specified");
+
+def parse_rules_file(rule_file):
+
+  def empty_line(str):
+    return all(map(is_delimiter,str))
   
+  def parse_rule(lines):
+    pattern_str = ""
+    subst_str = ""
+    next_rules = []
+    
+    while lines and not lines[0].startswith("=>") and not lines[0].startswith("}@@") and not lines[0].startswith("@@{"):
+      pattern_str += lines.pop(0)
+      
+    if lines[0].startswith("=>"):
+      lines.pop(0)
+      while lines and not lines[0].startswith("=>") and not lines[0].startswith("}@@") and not lines[0].startswith("@@{"):
+        subst_str += lines.pop(0)
+
+    pattern_str = pattern_str.strip('\n')
+    subst_str = subst_str.strip('\n')
+    
+    while lines[0].startswith("@@{"):
+      lines.pop(0)
+      next_rules.append(parse_rule(lines))
+    if lines[0].startswith("}@@"):
+      lines.pop(0)
+      pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
+      subst = tokenize(list(subst_str))
+      return (pattern,subst,next_rules)
+    print(lines[0])
+    raise Exception("parse error in rules file")
+  
+  with open(rule_file,"r") as f:
+    lines = f.readlines()
+  
+  rules = []
+  while lines:
+    if (lines[0].startswith("@@{")):
+      lines.pop(0)
+      rules.append(parse_rule(lines))
+    elif (lines[0].startswith("//")):
+      lines.pop(0)
+    elif empty_line(lines[0]):
+      lines.pop(0)
+    else:
+      raise Exception("parse error in rules file")
+    
+  return rules
 
 
+rules = parse_rules_file(rule_file)
+print(rules)
+#rules = [tokenize_rule(rule0)]
+#print(rules)
+with open(cpp_file_in,"r") as f:
+  tokens = tokenize(list(f.read()))
+print(tokens)
 
+for rule in rules:
+  env = {}
+  tokens = apply_rule(rule,env,tokens)
+
+if (cpp_file_out == ""):
+  print_token_list(tokens,sys.stdout)
+else:
+  with open(cpp_file_out,"w") as f:
+    print_token_list(tokens,f)
+
+  
