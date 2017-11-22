@@ -30,19 +30,19 @@ namespace embree
 
     /* Constructs a hit */
     __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const vfloat<K>& t, const Vec3vf<K>& Ng)
-      : Ng(Ng), instID(instID), geomID(geomID), primID(primID), u(u), v(v), t(t) {}
+      : Ng(Ng), t(t), u(u), v(v), geomID(geomID), primID(primID), instID(instID) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return K; }
 
   public:
     Vec3vf<K> Ng;  // geometry normal
-    vint<K> instID;      // instance ID
-    vint<K> geomID;      // geometry ID
-    vint<K> primID;      // primitive ID
+    vfloat<K> t;         // hit distance
     vfloat<K> u;         // barycentric u coordinate of hit
     vfloat<K> v;         // barycentric v coordinate of hit
-    vfloat<K> t;         // hit distance
+    vint<K> geomID;      // geometry ID
+    vint<K> primID;      // primitive ID
+    vint<K> instID;      // instance ID
   };
 
   /* Specialization for a single hit */
@@ -54,19 +54,19 @@ namespace embree
 
     /* Constructs a hit */
     __forceinline HitK(int instID, int geomID, int primID, float u, float v, float t, const Vec3fa& Ng)
-      : Ng(Ng.x,Ng.y,Ng.z), instID(instID), geomID(geomID), primID(primID), u(u), v(v), t(t) {}
+      : Ng(Ng.x,Ng.y,Ng.z), t(t), u(u), v(v), geomID(geomID), primID(primID), instID(instID) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return 1; }
 
   public:
     Vec3<float> Ng;  // geometry normal
-    int instID;      // instance ID
-    int geomID;      // geometry ID
-    int primID;      // primitive ID
+    float t;         // hit distance
     float u;         // barycentric u coordinate of hit
     float v;         // barycentric v coordinate of hit
-    float t;         // hit distance
+    int geomID;      // geometry ID
+    int primID;      // primitive ID
+    int instID;      // instance ID
   };
 
   /* Shortcuts */
