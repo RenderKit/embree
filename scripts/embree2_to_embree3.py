@@ -4,24 +4,13 @@ import sys
 import os
 import copy
 
-rule0 = [
+rule0 = (
   "ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );",
   "RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);\ngeomID = rtcAttachGeometry(e0,geom);",
-  ["rtcMapBuffer(EXPR e0,ID geomID)",
+  ("rtcMapBuffer(EXPR e0,ID geomID)",
    "rtcNewBuffer(geom,e4)",
-   []]
-]
-
-#[
-#  [["ID","geomID"], "=", "rtcNewTriangleMesh", "(", ["EXPR","e0"], ["EXPR", "e1"], ",", ["EXPR", "e2"], ",", ["EXPR","e3"], ",", ["EXPR","e4"], ")"],
-#  ["RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);",
-#   "geomID = rtcAttachGeometry(e0,geom);"]
-#]
-
-#[RTCGeometry geom = rtcNewTriangleMesh(EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4);
-# ,KEEP,
-# [rtcMapBuffer(geom,RTC_INDEX_BUFFER),
-#  rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(int),numTriangles)]
+   ())
+)
 
 identifier_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 number_chars = "0123456789";
@@ -191,15 +180,13 @@ def update_delimiter_ident(token,ident):
   return ident
 
 def apply_rule (rule,env_in,tokens):
-  [pattern,subst,follow_rule] = rule
+  (pattern,subst,follow_rule) = rule
   result = []
   depth = 0
   ident = 0
   while tokens:
-    print(tokens[0]);
     if is_delimiter_token(tokens[0]):
       ident = update_delimiter_ident(tokens[0],ident);
-      print("ident1",ident)
       result = result + [tokens.pop(0)]
     else:
       env = env_in
@@ -219,8 +206,8 @@ def apply_rule (rule,env_in,tokens):
   return result
 
 def tokenize_rule (rule):
-  if rule == []: return rule
-  [pattern_str, subst_str, next_rule] = rule
+  if rule == (): return rule
+  (pattern_str, subst_str, next_rule) = rule
   pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
   subst = tokenize(list(subst_str))
   return [pattern,subst,tokenize_rule(next_rule)]
@@ -237,9 +224,9 @@ with open("test.cpp") as f:
   env = {}
   result = apply_rule(rule,env,tokens)
 
-  sys.stdout.write("Source:\n")
-  sys.stdout.write(fstr)
-  sys.stdout.write("\n\n")
+#  sys.stdout.write("Source:\n")
+#  sys.stdout.write(fstr)
+#  sys.stdout.write("\n\n")
 
   sys.stdout.write("Result:\n")
   print_token_list(result)
