@@ -4,12 +4,21 @@ import sys
 import os
 import copy
 
+#@@
+#ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );
+#=>
+#RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);
+#geomID = rtcAttachGeometry(e0,geom);
+#@@
+#rtcMapBuffer(EXPR e0,ID geomID)
+#=>
+#rtcNewBuffer(geom,e4)
+#@@
+
 rule0 = (
   "ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );",
   "RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);\ngeomID = rtcAttachGeometry(e0,geom);",
-  ("rtcMapBuffer(EXPR e0,ID geomID)",
-   "rtcNewBuffer(geom,e4)",
-   ())
+  [("rtcMapBuffer(EXPR e0,ID geomID)","rtcNewBuffer(geom,e4)",())]
 )
 
 identifier_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
@@ -180,7 +189,7 @@ def update_delimiter_ident(token,ident):
   return ident
 
 def apply_rule (rule,env_in,tokens):
-  (pattern,subst,follow_rule) = rule
+  (pattern,subst,follow_rules) = rule
   result = []
   depth = 0
   ident = 0
@@ -194,7 +203,7 @@ def apply_rule (rule,env_in,tokens):
       tokens = next_tokens
       if (b):
         result = result + substitute (env,subst,ident)
-        if follow_rule != []:
+        for follow_rule in follow_rules:
           tokens = apply_rule(follow_rule,env,tokens)
       else:
         if tokens[0] == "{": depth = depth+1
@@ -210,7 +219,7 @@ def tokenize_rule (rule):
   (pattern_str, subst_str, next_rule) = rule
   pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
   subst = tokenize(list(subst_str))
-  return [pattern,subst,tokenize_rule(next_rule)]
+  return [pattern,subst,map (tokenize_rule,next_rule)]
   
 with open("test.cpp") as f:
   fstr = f.read()
