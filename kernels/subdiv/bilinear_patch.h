@@ -34,7 +34,7 @@ namespace embree
       
       __forceinline BilinearPatchT () {}
 
-      __forceinline BilinearPatchT (const HalfEdge* edge, const BufferRefT<Vertex>& vertices) {
+      __forceinline BilinearPatchT (const HalfEdge* edge, const BufferView<Vertex>& vertices) {
         init(edge,vertices.getPtr(),vertices.getStride());
       }
       

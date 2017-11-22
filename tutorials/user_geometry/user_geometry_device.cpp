@@ -140,12 +140,6 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   if (args->context == nullptr)
     return;
 
-  /* fast path */
-  if (args->N == 1) {
-    instanceIntersectFunc(args);
-    return;
-  }
-
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
@@ -184,15 +178,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    RTCRayN_u(rays,N,ui) = ray.u;
-    RTCRayN_v(rays,N,ui) = ray.v;
-    RTCRayN_tfar(rays,N,ui) = ray.tfar();
-    RTCRayN_instID(rays,N,ui) = instance->userID;
-    RTCRayN_geomID(rays,N,ui) = ray.geomID;
-    RTCRayN_primID(rays,N,ui) = ray.primID;
-    RTCRayN_Ng_x(rays,N,ui) = ray.Ng.x;
-    RTCRayN_Ng_y(rays,N,ui) = ray.Ng.y;
-    RTCRayN_Ng_z(rays,N,ui) = ray.Ng.z;
+    copyHitFromRTCRayToRTCRayN(rays,RTCRay_(ray),N,ui);
   }
 }
 
@@ -202,12 +188,6 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   if (args->context == nullptr)
     return;
   
-  /* fast path */
-  if (args->N == 1) {
-    instanceOccludedFunc(args);
-    return;
-  }
-
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
@@ -330,7 +310,6 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
 
-#if 1
   RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
@@ -361,17 +340,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcReportIntersection(args,&fargs);
 
     if (imask == -1)
-    {
-      ray->u = hit.u;
-      ray->v = hit.v;
-      ray->tfar() = hit.t;
-      ray->instID = hit.instID;
-      ray->geomID = hit.geomID;
-      ray->primID = hit.primID;
-      ray->Ng.x = hit.Ng_x;
-      ray->Ng.y = hit.Ng_y;
-      ray->Ng.z = hit.Ng_z;
-    }
+      copyRTCHitToRTCRay((RTCRay *)ray,&hit);
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -398,39 +367,8 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcReportIntersection(args,&fargs);
 
     if (imask == -1)
-    {
-      ray->u = hit.u;
-      ray->v = hit.v;
-      ray->tfar() = hit.t;
-      ray->instID = hit.instID;
-      ray->geomID = hit.geomID;
-      ray->primID = hit.primID;
-      ray->Ng.x = hit.Ng_x;
-      ray->Ng.y = hit.Ng_y;
-      ray->Ng.z = hit.Ng_z;
-    }
+      copyRTCHitToRTCRay((RTCRay *)ray,&hit);
   }
-
-#else
-  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
-    ray->u = 0.0f;
-    ray->v = 0.0f;
-    ray->tfar() = t0;
-    ray->instID = args->context->instID;
-    ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
-    ray->Ng = ray->org+t0*ray->dir-sphere.p;
-  }
-  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
-    ray->u = 0.0f;
-    ray->v = 0.0f;
-    ray->tfar() = t1;
-    ray->instID = args->context->instID;
-    ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
-    ray->Ng = ray->org+t1*ray->dir-sphere.p;
-  }
-#endif
 }
 
 void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
@@ -457,7 +395,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-#if 1
+
   RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
@@ -488,9 +426,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     rtcReportOcclusion(args,&fargs);
 
     if (imask == -1)
-    {
       ray->geomID = 0;
-    }
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -517,20 +453,9 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     rtcReportOcclusion(args,&fargs);
 
     if (imask == -1)
-    {
       ray->geomID = 0;
-    }
 
   }
-
-#else
-  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
-    ray->geomID = 0;
-  }
-  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
-    ray->geomID = 0;
-  }
-#endif
 }
 
 void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
@@ -569,10 +494,9 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-#if 1
-    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);
-    
+    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);    
     RTCHit potentialhit;
+
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
     potentialhit.instID = args->context->instID;
@@ -600,20 +524,9 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.N = 1;
   
       rtcReportIntersection(args,&fargs);
-
       /* update for all accepted hits */
       if (imask == -1)
-      {
-        RTCRayN_u(rays,N,ui) = potentialhit.u;
-        RTCRayN_v(rays,N,ui) = potentialhit.v;
-        RTCRayN_tfar(rays,N,ui) = potentialhit.t;
-        RTCRayN_instID(rays,N,ui) = potentialhit.instID;
-        RTCRayN_geomID(rays,N,ui) = potentialhit.geomID;
-        RTCRayN_primID(rays,N,ui) = potentialhit.primID;
-        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ng_x;
-        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ng_y;
-        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ng_z;
-      }
+        copyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -641,49 +554,8 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 
       /* update for all accepted hits */
       if (imask == -1)
-      {
-        RTCRayN_u(rays,N,ui) = potentialhit.u;
-        RTCRayN_v(rays,N,ui) = potentialhit.v;
-        RTCRayN_tfar(rays,N,ui) = potentialhit.t;
-        RTCRayN_instID(rays,N,ui) = potentialhit.instID;
-        RTCRayN_geomID(rays,N,ui) = potentialhit.geomID;
-        RTCRayN_primID(rays,N,ui) = potentialhit.primID;
-        RTCRayN_Ng_x(rays,N,ui) = potentialhit.Ng_x;
-        RTCRayN_Ng_y(rays,N,ui) = potentialhit.Ng_y;
-        RTCRayN_Ng_z(rays,N,ui) = potentialhit.Ng_z;
-      }
+        copyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
     }
-    
-#else
-    
-    if ((ray_tnear < t0) & (t0 < ray_tfar))
-    {
-      RTCRayN_u(rays,N,ui) = 0.0f;
-      RTCRayN_v(rays,N,ui) = 0.0f;
-      RTCRayN_tfar(rays,N,ui) = t0;
-      RTCRayN_instID(rays,N,ui) = args->context->instID;
-      RTCRayN_geomID(rays,N,ui) = sphere.geomID;
-      RTCRayN_primID(rays,N,ui) = (unsigned int)item;
-      const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
-      RTCRayN_Ng_x(rays,N,ui) = Ng.x;
-      RTCRayN_Ng_y(rays,N,ui) = Ng.y;
-      RTCRayN_Ng_z(rays,N,ui) = Ng.z;
-    }
-    if ((ray_tnear < t1) & (t1 < ray_tfar))
-    {
-      RTCRayN_u(rays,N,ui) = 0.0f;
-      RTCRayN_v(rays,N,ui) = 0.0f;
-      RTCRayN_tfar(rays,N,ui) = t1;
-      RTCRayN_instID(rays,N,ui) = args->context->instID;
-      RTCRayN_geomID(rays,N,ui) = sphere.geomID;
-      RTCRayN_primID(rays,N,ui) = (unsigned int)item;
-      const Vec3fa Ng = ray_org+t1*ray_dir-sphere.p;
-      RTCRayN_Ng_x(rays,N,ui) = Ng.x;
-      RTCRayN_Ng_y(rays,N,ui) = Ng.y;
-      RTCRayN_Ng_z(rays,N,ui) = Ng.z;
-    }
-    
-#endif
   }
 }
 
@@ -723,10 +595,9 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-#if 1
     RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);
-
     RTCHit potentialhit;
+
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
     potentialhit.instID = args->context->instID;
@@ -791,16 +662,6 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       if (imask == -1)
         RTCRayN_geomID(rays,N,ui) = 0;
     }
- 
-#else
-    
-    if ((ray_tnear < t0) & (t0 < ray_tfar)) {
-      RTCRayN_geomID(rays,N,ui) = 0;
-    }
-    if ((ray_tnear < t1) & (t1 < ray_tfar)) {
-      RTCRayN_geomID(rays,N,ui) = 0;
-    }
-#endif
   }
 }
 

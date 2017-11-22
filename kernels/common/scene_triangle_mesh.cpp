@@ -75,7 +75,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      userbuffers[bid] = Buffer<char>(device,size,stride,true);
       return userbuffers[bid].get();
     }
     else if (type == RTC_INDEX_BUFFER) 
@@ -115,7 +115,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid] = Buffer<char>(device,size,stride);
       userbuffers[bid].set(device,ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }

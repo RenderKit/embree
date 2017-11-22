@@ -166,10 +166,10 @@ namespace embree
     }
 
   public:
-    APIBuffer<unsigned int> segments;                 //!< array of line segment indices
-    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
-    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<APIBuffer<char>> userbuffers;              //!< user buffers
+    Buffer<unsigned int> segments;                 //!< array of line segment indices
+    BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
+    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    vector<Buffer<char>> userbuffers;              //!< user buffers
   };
 
   namespace isa

@@ -204,10 +204,10 @@ namespace embree
     }
 
   public:
-    APIBuffer<Triangle> triangles;                    //!< array of triangles
-    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
-    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<APIBuffer<char>> userbuffers;         //!< user buffers
+    Buffer<Triangle> triangles;                    //!< array of triangles
+    BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
+    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    vector<Buffer<char>> userbuffers;         //!< user buffers
   };
 
   namespace isa

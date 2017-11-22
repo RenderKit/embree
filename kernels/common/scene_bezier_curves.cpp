@@ -68,7 +68,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      userbuffers[bid] = Buffer<char>(device,size,stride,true);
       return userbuffers[bid].get();
     }
     else if (type == RTC_INDEX_BUFFER) 
@@ -102,7 +102,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid] = Buffer<char>(device,size,stride);
       userbuffers[bid].set(device,ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -163,13 +163,13 @@ namespace embree
   {
     if (!isEnabled()) return;
 
-    native_curves = (BufferRefT<unsigned>) curves;
+    native_curves = (BufferView<unsigned>) curves;
     if (native_vertices.size() != vertices.size())
       native_vertices.resize(vertices.size());
 
     native_vertices0 = vertices[0];
     for (size_t i=0; i<vertices.size(); i++)
-      native_vertices[i] = (BufferRefT<Vec3fa>) vertices[i];
+      native_vertices[i] = (BufferView<Vec3fa>) vertices[i];
   }
 
 #endif
@@ -215,7 +215,7 @@ namespace embree
     {
       if (native_curves.size() != size()) 
       {
-        native_curves = APIBuffer<unsigned>(device,size(),sizeof(unsigned int),true);
+        native_curves = Buffer<unsigned>(device,size(),sizeof(unsigned int),true);
         parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
@@ -230,7 +230,7 @@ namespace embree
       parallel_for(vertices.size(), [&] ( const size_t i ) {
           
           if (native_vertices[i].size() != 4*size())
-            native_vertices[i] = APIBuffer<Vec3fa>(device,4*size(),sizeof(Vec3fa),true);
+            native_vertices[i] = Buffer<Vec3fa>(device,4*size(),sizeof(Vec3fa),true);
           
           parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
               

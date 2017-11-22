@@ -269,16 +269,16 @@ namespace embree
     }
 
   public:
-    APIBuffer<unsigned int> curves;                   //!< array of curve indices
-    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<APIBuffer<char>> userbuffers;            //!< user buffers
+    Buffer<unsigned int> curves;                   //!< array of curve indices
+    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    vector<Buffer<char>> userbuffers;            //!< user buffers
     RTCGeometryIntersector subtype;                                //!< hair or surface geometry
     RTCCurveBasis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
   public:
-    BufferRefT<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
-    APIBuffer<unsigned int> native_curves;                   //!< array of curve indices
-    vector<APIBuffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
+    BufferView<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
+    Buffer<unsigned int> native_curves;                   //!< array of curve indices
+    vector<Buffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
   };
 
   namespace isa
