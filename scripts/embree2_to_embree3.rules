@@ -1,0 +1,14 @@
+
+
+@@{
+ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );
+=>
+RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);
+geomID = rtcAttachGeometry(e0,geom);
+@@{
+rtcMapBuffer(EXPR e0,ID geomID)
+=>
+rtcNewBuffer(geom,e4)
+}@@
+}@@
+

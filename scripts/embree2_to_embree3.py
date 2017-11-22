@@ -4,12 +4,6 @@ import sys
 import os
 import copy
 
-rule0 = (
-  "ID geomID = rtcNewTriangleMesh ( EXPR e0, EXPR e1, EXPR e2, EXPR e3, EXPR e4 );",
-  "RTCGeometry geom = rtcNewTriangleMesh (e0,e1,e2,e3,e4);\ngeomID = rtcAttachGeometry(e0,geom);",
-  [("rtcMapBuffer(EXPR e0,ID geomID)","rtcNewBuffer(geom,e4)",())]
-)
-
 identifier_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 number_chars = "0123456789";
 delimiter_chars = " \t\n\r"
@@ -81,7 +75,7 @@ def is_delimiter (c):
   return c in delimiter_chars
   
 def is_delimiter_token (token):
-  return token[0] in delimiter_chars or token[0].startswith("/*") or token[0].startswith("//")
+  return token[0] in delimiter_chars or token.startswith("/*") or token.startswith("//")
 
 def no_delimiter_token (token):
   return not is_delimiter_token (token)
@@ -136,7 +130,7 @@ def match(pattern,tokens,env):
     try: expr = parse_expr(tokens,next)
     except ValueError: return False
     if var in env:
-      return env[var] == expr
+      return filter(no_delimiter_token,env[var]) == filter(no_delimiter_token,expr)
     else:
       env[var] = expr
       return True
@@ -213,26 +207,6 @@ def tokenize_rule (rule):
   subst = tokenize(list(subst_str))
   return (pattern,subst,map (tokenize_rule,next_rule))
 
-with open("test.cpp") as f:
-  fstr = f.read()
-  content = list(fstr)
-  tokens = tokenize(content)
-  rule = tokenize_rule(rule0)
-#  print('tokens = {}'.format(tokens))
-#  print('pattern = {}'.format(pattern))
-#  print ('subst = {}'.format(subst))
-
-  env = {}
-  result = apply_rule(rule,env,tokens)
-
-#  sys.stdout.write("Source:\n")
-#  sys.stdout.write(fstr)
-#  sys.stdout.write("\n\n")
-
-  sys.stdout.write("Result:\n")
-  print_token_list(result,sys.stdout)
-  sys.stdout.write("\n\n")
-
 rule_file = ""
 cpp_file_in = ""
 cpp_file_out = ""
@@ -298,7 +272,7 @@ def parse_rules_file(rule_file):
       pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
       subst = tokenize(list(subst_str))
       return (pattern,subst,next_rules)
-    print(lines[0])
+
     raise Exception("parse error in rules file")
   
   with open(rule_file,"r") as f:
@@ -318,14 +292,9 @@ def parse_rules_file(rule_file):
     
   return rules
 
-
 rules = parse_rules_file(rule_file)
-print(rules)
-#rules = [tokenize_rule(rule0)]
-#print(rules)
 with open(cpp_file_in,"r") as f:
   tokens = tokenize(list(f.read()))
-print(tokens)
 
 for rule in rules:
   env = {}
