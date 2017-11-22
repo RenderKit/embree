@@ -123,7 +123,7 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
+      userbuffers[bid] = Buffer<char>(device,size,stride,true);
       return userbuffers[bid].get();
     }
     else if (type == RTC_FACE_BUFFER) 
@@ -214,7 +214,7 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      userbuffers[bid] = APIBuffer<char>(device,size,stride);
+      userbuffers[bid] = Buffer<char>(device,size,stride);
       userbuffers[bid].set(device,ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }

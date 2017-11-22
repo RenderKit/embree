@@ -206,10 +206,10 @@ namespace embree
     }
 
   public:
-    APIBuffer<Quad> quads;                            //!< array of quads
-    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
-    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<APIBuffer<char>> userbuffers;              //!< user buffers
+    Buffer<Quad> quads;                            //!< array of quads
+    BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
+    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    vector<Buffer<char>> userbuffers;              //!< user buffers
   };
 
   namespace isa

@@ -20,32 +20,32 @@
 
 namespace embree
 {
-  /*! Implements a reference to a data buffer, this class does not own the buffer content. */
-  class BufferRef
+  /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
+  class RawBufferView
   {
   public:
-
     /*! Buffer construction */
-    BufferRef (size_t num = 0, size_t stride = 0)
-      : ptr_ofs(nullptr), stride(stride), num(num) {}
+    RawBufferView(size_t num = 0, size_t stride = 0)
+      : ptr(nullptr), stride(stride), num(num) {}
 
   public:
-    
     /*! sets shared buffer */
-    void set(char* ptr_ofs_in, size_t stride_in) {
-      ptr_ofs = ptr_ofs_in;
+    void set(char* ptr_in, size_t stride_in)
+    {
+      ptr = ptr_in;
       stride = stride_in;
     }
 
     /*! returns pointer to first element */
     __forceinline const char* getPtr() const {
-      return ptr_ofs;
+      return ptr;
     }
 
     /*! returns pointer to first element */
-    __forceinline const char* getPtr( size_t i ) const {
+    __forceinline const char* getPtr(size_t i) const
+    {
       assert(i<num);
-      return ptr_ofs + i*stride;
+      return ptr + i*stride;
     }
 
     /*! returns the number of elements of the buffer */
@@ -59,92 +59,89 @@ namespace embree
     }
     
     /*! returns buffer stride */
-    __forceinline unsigned getStride() const {
+    __forceinline unsigned getStride() const
+    {
       assert(stride <= unsigned(inf));
       return unsigned(stride);
     }
 
   protected:
-    char* ptr_ofs;   //!< base pointer plus offset
-    size_t stride;   //!< stride of the stream in bytes
-    size_t num;      //!< number of elements in the stream
+    char* ptr;       //!< base pointer plus offset
+    size_t stride;   //!< stride of the buffer in bytes
+    size_t num;      //!< number of elements in the buffer
   };
 
-  /*! Implements a typed data stream from a data buffer reference. */
+  /*! A typed contiguous range of a buffer. This class does not own the buffer content. */
   template<typename T>
-    class BufferRefT : public BufferRef
+  class BufferView : public RawBufferView
   {
   public:
-
     typedef T value_type;
 
-    BufferRefT (size_t num = 0, size_t stride = 0) 
-      : BufferRef(num,stride) {}
+    BufferView(size_t num = 0, size_t stride = 0) 
+      : RawBufferView(num, stride) {}
 
-    /*! access to the ith element of the buffer stream */
-    __forceinline       T& operator[](size_t i)       { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
-    __forceinline const T& operator[](size_t i) const { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
+    /*! access to the ith element of the buffer */
+    __forceinline       T& operator[](size_t i)       { assert(i<num); return *(T*)(ptr + i*stride); }
+    __forceinline const T& operator[](size_t i) const { assert(i<num); return *(T*)(ptr + i*stride); }
   };
 
-  /*! Implements a typed data stream from a data buffer reference. */
   template<>
-    class BufferRefT<Vec3fa> : public BufferRef
+  class BufferView<Vec3fa> : public RawBufferView
   {
   public:
-
     typedef Vec3fa value_type;
 
-    BufferRefT (size_t num = 0, size_t stride = 0) 
-      : BufferRef(num,stride) {}
+    BufferView(size_t num = 0, size_t stride = 0) 
+      : RawBufferView(num, stride) {}
 
-    /*! access to the ith element of the buffer stream */
+    /*! access to the ith element of the buffer */
     __forceinline const Vec3fa operator[](size_t i) const
     {
       assert(i<num);
-      return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
+      return Vec3fa(vfloat4::loadu((float*)(ptr + i*stride)));
     }
     
     /*! writes the i'th element */
     __forceinline void store(size_t i, const Vec3fa& v)
     {
       assert(i<num);
-      vfloat4::storeu((float*)(ptr_ofs + i*stride),(vfloat4)v);
+      vfloat4::storeu((float*)(ptr + i*stride), (vfloat4)v);
     }
   };
 
   /*! Implements an API data buffer object. This class may or may not own the data. */
   template<typename T>
-    class APIBuffer : public BufferRefT<T>
+  class Buffer : public BufferView<T>
   {
   public:
-
     /*! Buffer construction */
-    APIBuffer () 
+    Buffer() 
       : device(nullptr), ptr(nullptr), shared(false), modified(true), userdata(0) {}
     
-    APIBuffer (const BufferRefT<T>& other) 
-      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), shared(true), modified(true), userdata(0) {}
+    Buffer(const BufferView<T>& other) 
+      : BufferView<T>(other), device(nullptr), ptr(nullptr), shared(true), modified(true), userdata(0) {}
 
     /*! Buffer construction */
-    APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in, bool allocate = false) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), shared(false), modified(true), userdata(0) 
+    Buffer(MemoryMonitorInterface* device, size_t num_in, size_t stride_in, bool allocate = false) 
+      : BufferView<T>(num_in, stride_in), device(device), ptr(nullptr), shared(false), modified(true), userdata(0) 
     {
       if (allocate) alloc();
     }
     
     /*! Buffer destruction */
-    ~APIBuffer () {
+    ~Buffer() {
       free();
     }
     
     /*! this class is not copyable */
   private:
-    APIBuffer (const APIBuffer& other) DELETED; // do not implement
-    APIBuffer& operator= (const APIBuffer& other) DELETED; // do not implement
+    Buffer(const Buffer& other) DELETED; // do not implement
+    Buffer& operator=(const Buffer& other) DELETED; // do not implement
     
     /*! make the class movable */
   public:
-    APIBuffer (APIBuffer&& other) : BufferRefT<T>(std::move(other))
+    Buffer(Buffer&& other) : BufferView<T>(std::move(other))
     {
       device = other.device;       other.device = nullptr;
       ptr = other.ptr;             other.ptr = nullptr;
@@ -153,23 +150,22 @@ namespace embree
       userdata = other.userdata;   other.userdata = 0;
     }
     
-    APIBuffer& operator= (APIBuffer&& other)
+    Buffer& operator=(Buffer&& other)
     {
       device = other.device;       other.device = nullptr;
       ptr = other.ptr;             other.ptr = nullptr;
       shared = other.shared;       other.shared = false;
       modified = other.modified;   other.modified = false;
       userdata = other.userdata;   other.userdata = 0;
-      BufferRefT<T>::operator=(std::move(other));
+      BufferView<T>::operator=(std::move(other));
       return *this;
     }
     
   public:
-
     /* inits the buffer */
     void newBuffer(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
     {
-      init(device_in,num_in,stride_in);
+      init(device_in, num_in, stride_in);
       alloc();
     }
     
@@ -179,7 +175,7 @@ namespace embree
       free();
       device = device_in;
       ptr = nullptr;
-      this->ptr_ofs = nullptr;
+      this->ptr = nullptr;
       this->num = num_in;
       this->stride = stride_in;
       shared = false;
@@ -191,18 +187,19 @@ namespace embree
     {
       free();
       device = device_in;
-      ptr = (char*) ptr_in;
+      ptr = (char*)ptr_in;
       if (num_in != (size_t)-1) this->num = num_in;
       shared = true;
 
-      BufferRefT<T>::set(ptr+ofs_in,stride_in);
+      BufferView<T>::set(ptr+ofs_in, stride_in);
     }
     
     /*! allocated buffer */
-    void alloc() {
+    void alloc()
+    {
       if (device) device->memoryMonitor(this->bytes(),false);
       size_t b = (this->bytes()+15)&ssize_t(-16);
-      ptr = this->ptr_ofs = (char*) alignedMalloc(b);
+      ptr = this->ptr = (char*)alignedMalloc(b);
     }
     
     /*! frees the buffer */
@@ -211,7 +208,7 @@ namespace embree
       if (shared) return;
       alignedFree(ptr); 
       if (device) device->memoryMonitor(-ssize_t(this->bytes()),true);
-      ptr = nullptr; this->ptr_ofs = nullptr;
+      ptr = nullptr; this->ptr = nullptr;
     }
     
     /*! gets buffer pointer */
@@ -243,8 +240,8 @@ namespace embree
     /*! checks padding to 16 byte check, fails hard */
     __forceinline void checkPadding16() const 
     {
-      if (ptr && BufferRef::size()) 
-        volatile int MAYBE_UNUSED w = *((int*)BufferRef::getPtr(BufferRef::size()-1)+3); // FIXME: is failing hard avoidable?
+      if (ptr && RawBufferView::size()) 
+        volatile int MAYBE_UNUSED w = *((int*)RawBufferView::getPtr(RawBufferView::size()-1)+3); // FIXME: is failing hard avoidable?
     }
 
   protected:
