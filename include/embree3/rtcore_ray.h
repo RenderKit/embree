@@ -327,6 +327,20 @@ RTCORE_FORCEINLINE RTCHit RTCHitNtoRTCHit(const RTCHitN* ptr, unsigned int N, un
   return hit;
 };
 
+
+RTCORE_FORCEINLINE void copyRTCHitToRTCRay(RTCRay *ray, RTCHit *hit)
+{
+  ray->Ng_x = hit->Ng_x;
+  ray->Ng_y = hit->Ng_y;
+  ray->Ng_z = hit->Ng_z;  
+  ray->instID = hit->instID;
+  ray->geomID = hit->geomID;
+  ray->primID = hit->primID;
+  ray->u = hit->u;
+  ray->v = hit->v;
+  ray->tfar = hit->t;
+}
+
 #endif
 
 /*! @} */

@@ -328,7 +328,6 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
 
-#if 1
   varying RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
@@ -359,17 +358,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     rtcReportIntersection(args,&fargs);
 
     if (imask == -1)
-    {
-      ray->u = hit.u;
-      ray->v = hit.v;
-      ray->tfar = hit.t;
-      ray->instID = hit.instID;
-      ray->geomID = hit.geomID;
-      ray->primID = hit.primID;
-      ray->Ng.x = hit.Ng_x;
-      ray->Ng.y = hit.Ng_y;
-      ray->Ng.z = hit.Ng_z;
-    }
+      copyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -396,39 +385,8 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     rtcReportIntersection(args,&fargs);
 
     if (imask == -1)
-    {
-      ray->u = hit.u;
-      ray->v = hit.v;
-      ray->tfar = hit.t;
-      ray->instID = hit.instID;
-      ray->geomID = hit.geomID;
-      ray->primID = hit.primID;
-      ray->Ng.x = hit.Ng_x;
-      ray->Ng.y = hit.Ng_y;
-      ray->Ng.z = hit.Ng_z;
-    }
+      copyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
   }
-
-#else
-  if ((ray->tnear < t0) & (t0 < ray->tfar)) {
-    ray->u = 0.0f;
-    ray->v = 0.0f;
-    ray->tfar = t0;
-    ray->instID = args->context->instID;
-    ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
-    ray->Ng = ray->org+t0*ray->dir-sphere.p;
-  }
-  if ((ray->tnear < t1) & (t1 < ray->tfar)) {
-    ray->u = 0.0f;
-    ray->v = 0.0f;
-    ray->tfar = t1;
-    ray->instID = args->context->instID;
-    ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
-    ray->Ng = ray->org+t1*ray->dir-sphere.p;
-  }
-#endif
 }
 
 unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
@@ -455,7 +413,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-#if 1
+
   varying RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
@@ -486,9 +444,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     rtcReportOcclusion(args,&fargs);
 
     if (imask == -1)
-    {
       ray->geomID = 0;
-    }
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -515,20 +471,9 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     rtcReportOcclusion(args,&fargs);
 
     if (imask == -1)
-    {
       ray->geomID = 0;
-    }
 
   }
-
-#else
-  if ((ray->tnear < t0) & (t0 < ray->tfar)) {
-    ray->geomID = 0;
-  }
-  if ((ray->tnear < t1) & (t1 < ray->tfar)) {
-    ray->geomID = 0;
-  }
-#endif
 }
 
 unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)

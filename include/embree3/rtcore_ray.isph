@@ -69,6 +69,19 @@ struct RTCHit
   float t;     //!< intersection distance
 };
 
+inline void copyRTCHitToRTCRay(varying RTCRay *uniform ray, varying RTCHit *uniform hit)
+{
+  ray->Ng_x = hit->Ng_x;
+  ray->Ng_y = hit->Ng_y;
+  ray->Ng_z = hit->Ng_z;  
+  ray->instID = hit->instID;
+  ray->geomID = hit->geomID;
+  ray->primID = hit->primID;
+  ray->u = hit->u;
+  ray->v = hit->v;
+  ray->tfar = hit->t;
+}
+
 /* Helper functions to access ray packets of runtime size N */
 struct RTCRayN;
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
