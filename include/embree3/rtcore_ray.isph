@@ -69,19 +69,6 @@ struct RTCHit
   float t;     //!< intersection distance
 };
 
-inline void copyRTCHitToRTCRay(varying RTCRay *uniform ray, varying RTCHit *uniform hit)
-{
-  ray->Ng_x = hit->Ng_x;
-  ray->Ng_y = hit->Ng_y;
-  ray->Ng_z = hit->Ng_z;  
-  ray->instID = hit->instID;
-  ray->geomID = hit->geomID;
-  ray->primID = hit->primID;
-  ray->u = hit->u;
-  ray->v = hit->v;
-  ray->tfar = hit->t;
-}
-
 /* Helper functions to access ray packets of runtime size N */
 struct RTCRayN;
 inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
@@ -160,21 +147,21 @@ inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, unif
   ray.org_x   = RTCRayN_org_x(ptr,N,i);
   ray.org_y   = RTCRayN_org_y(ptr,N,i);
   ray.org_z   = RTCRayN_org_z(ptr,N,i);
-  ray.tnear  = RTCRayN_tnear(ptr,N,i);
+  ray.tnear   = RTCRayN_tnear(ptr,N,i);
   ray.dir_x   = RTCRayN_dir_x(ptr,N,i);
   ray.dir_y   = RTCRayN_dir_y(ptr,N,i);
   ray.dir_z   = RTCRayN_dir_z(ptr,N,i);
-  ray.tfar   = RTCRayN_tfar(ptr,N,i);
-  ray.time   = RTCRayN_time(ptr,N,i);
-  ray.mask   = RTCRayN_mask(ptr,N,i);
+  ray.tfar    = RTCRayN_tfar(ptr,N,i);
+  ray.time    = RTCRayN_time(ptr,N,i);
+  ray.mask    = RTCRayN_mask(ptr,N,i);
   ray.Ng_x    = RTCRayN_Ng_x(ptr,N,i);
   ray.Ng_y    = RTCRayN_Ng_y(ptr,N,i);
   ray.Ng_z    = RTCRayN_Ng_z(ptr,N,i);
-  ray.u      = RTCRayN_u(ptr,N,i);
-  ray.v      = RTCRayN_v(ptr,N,i);
-  ray.geomID = RTCRayN_geomID(ptr,N,i);
-  ray.primID = RTCRayN_primID(ptr,N,i);
-  ray.instID = RTCRayN_instID(ptr,N,i);
+  ray.u       = RTCRayN_u(ptr,N,i);
+  ray.v       = RTCRayN_v(ptr,N,i);
+  ray.geomID  = RTCRayN_geomID(ptr,N,i);
+  ray.primID  = RTCRayN_primID(ptr,N,i);
+  ray.instID  = RTCRayN_instID(ptr,N,i);
   return ray;
 };
 
@@ -184,14 +171,40 @@ inline RTCHit RTCHitNtoRTCHit(const RTCHitN* uniform ptr, uniform unsigned int N
   hit.Ng_x    = RTCHitN_Ng_x(ptr,N,i);
   hit.Ng_y    = RTCHitN_Ng_y(ptr,N,i);
   hit.Ng_z    = RTCHitN_Ng_z(ptr,N,i);
-  hit.geomID = RTCHitN_geomID(ptr,N,i);
-  hit.primID = RTCHitN_primID(ptr,N,i);
-  hit.instID = RTCHitN_instID(ptr,N,i);
-  hit.u      = RTCHitN_u(ptr,N,i);
-  hit.v      = RTCHitN_v(ptr,N,i);
-  hit.t      = RTCHitN_t(ptr,N,i);
+  hit.geomID  = RTCHitN_geomID(ptr,N,i);
+  hit.primID  = RTCHitN_primID(ptr,N,i);
+  hit.instID  = RTCHitN_instID(ptr,N,i);
+  hit.u       = RTCHitN_u(ptr,N,i);
+  hit.v       = RTCHitN_v(ptr,N,i);
+  hit.t       = RTCHitN_t(ptr,N,i);
   return hit;
 };
+
+inline void copyRTCHitToRTCRay(varying RTCRay *uniform ray, varying RTCHit *uniform hit)
+{
+  ray->Ng_x   = hit->Ng_x;
+  ray->Ng_y   = hit->Ng_y;
+  ray->Ng_z   = hit->Ng_z;  
+  ray->instID = hit->instID;
+  ray->geomID = hit->geomID;
+  ray->primID = hit->primID;
+  ray->u      = hit->u;
+  ray->v      = hit->v;
+  ray->tfar   = hit->t;
+}
+
+inline void copyRTCHitToRTCRayN(RTCRayN *uniform rays, varying RTCHit *uniform hit, uniform unsigned int N, uniform unsigned int ui)
+{
+  RTCRayN_Ng_x(rays,N,ui)   = hit->Ng_x;
+  RTCRayN_Ng_y(rays,N,ui)   = hit->Ng_y;
+  RTCRayN_Ng_z(rays,N,ui)   = hit->Ng_z;
+  RTCRayN_instID(rays,N,ui) = hit->instID;
+  RTCRayN_geomID(rays,N,ui) = hit->geomID;
+  RTCRayN_primID(rays,N,ui) = hit->primID;
+  RTCRayN_u(rays,N,ui)      = hit->u;
+  RTCRayN_v(rays,N,ui)      = hit->v;
+  RTCRayN_tfar(rays,N,ui)   = hit->t;
+}
 
 /*! @} */
 
