@@ -94,9 +94,9 @@ namespace embree {
 
   RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCSceneFlags hflags)
   {
-    RTCScene scene_out = rtcDeviceNewScene(g_device);
-    rtcSetAccelFlags(scene_out,aflags);
-    rtcSetBuildQuality(scene_out,qflags);
+    RTCScene scene_out = rtcNewScene(g_device);
+    rtcSetSceneAccelFlags(scene_out,aflags);
+    rtcSetSceneBuildQuality(scene_out,qflags);
     rtcSetSceneFlags(scene_out,hflags);
     return scene_out;
   }
@@ -214,7 +214,7 @@ namespace embree {
     {
       updateObjects(scene_in,g_scene);
       double t0 = getSeconds();
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
       double t1 = getSeconds();
       if (i >= skip_iterations)
       {
@@ -254,7 +254,7 @@ namespace embree {
       deleteObjects(scene_in,g_scene);
       convertScene(g_scene, scene_in,quality);
       double t0 = getSeconds();
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
       double t1 = getSeconds();
       if (i >= skip_iterations)
       {
@@ -293,7 +293,7 @@ namespace embree {
       convertScene(g_scene,scene_in,quality);
 
       double t0 = getSeconds();
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
       double t1 = getSeconds();
       if (i >= skip_iterations)
       {

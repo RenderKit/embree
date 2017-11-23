@@ -135,17 +135,17 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
+  g_scene = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcDeviceNewScene(g_device);
+  g_scene1 = rtcNewScene(g_device);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5f);
   createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5f);
   createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5f);
-  rtcCommit (g_scene1);
+  rtcCommitScene (g_scene1);
 
   /* instantiate geometry */
   g_instance0 = rtcNewInstance(g_device,g_scene1,1);
@@ -193,7 +193,7 @@ export void device_init (uniform int8* uniform cfg)
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -316,7 +316,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
   /* trace rays */
   uniform RTCIntersectContext primary_context;
-  rtcInitIntersectionContext(&primary_context);
+  rtcInitIntersectContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
   rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(Ray));
 
@@ -370,7 +370,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
   /* trace shadow rays */
   uniform RTCIntersectContext shadow_context;
-  rtcInitIntersectionContext(&shadow_context);
+  rtcInitIntersectContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
   rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
 
@@ -470,7 +470,7 @@ export void device_render (uniform int* uniform pixels,
   rtcCommitGeometry(g_instance1);
   rtcCommitGeometry(g_instance2);
   rtcCommitGeometry(g_instance3);
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

@@ -82,7 +82,7 @@ enum RTCDeviceProperty {
   RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED = 21, //!< flag whether subdivision geometries are supported (read only)
   RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED = 22,        //!< flag whether user geometries are supported (read only)
 
-  RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED = 23,          //!< flag whether rtcCommitJoin can be used to join build operation (not supported when compiled with some older TBB versions) (read only)
+  RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED = 23,          //!< flag whether rtcCommitJoinScene can be used to join build operation (not supported when compiled with some older TBB versions) (read only)
 };
 
 /*! \brief Sets a device property value. */

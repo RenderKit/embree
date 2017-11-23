@@ -741,7 +741,7 @@ namespace embree
     if (!buildLock.isLocked())
     {
       if (!join) 
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoin to join a build operation");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoinScene to join a build operation");
       
       scheduler->join();
       return;
@@ -779,7 +779,7 @@ namespace embree
     if (!lock.isLocked())
     {
       if (!join) 
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoin to join a build operation");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoinScene to join a build operation");
       
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"join not supported");

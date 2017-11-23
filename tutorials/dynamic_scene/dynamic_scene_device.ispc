@@ -126,9 +126,9 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
-  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
-  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
+  g_scene = rtcNewScene(g_device);
+  rtcSetSceneAccelFlags(g_scene,RTC_ACCEL_ROBUST);
+  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create some triangulated spheres */
@@ -153,7 +153,7 @@ export void device_init (uniform int8* uniform cfg)
   colors[id] = make_Vec3f(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -188,7 +188,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -300,7 +300,7 @@ export void device_render (uniform int* uniform pixels,
     animateSphere(i,time+i);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

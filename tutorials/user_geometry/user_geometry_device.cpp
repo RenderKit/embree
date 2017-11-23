@@ -887,32 +887,32 @@ extern "C" void device_init (char* cfg)
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
+  g_scene = rtcNewScene(g_device);
 
   /* create scene with 4 analytical spheres */
-  g_scene0 = rtcDeviceNewScene(g_device);
+  g_scene0 = rtcNewScene(g_device);
   g_spheres = createAnalyticalSpheres(g_scene0,4);
   g_spheres[0].p = Vec3fa( 0, 0,+1); g_spheres[0].r = 0.5f;
   g_spheres[1].p = Vec3fa(+1, 0, 0); g_spheres[1].r = 0.5f;
   g_spheres[2].p = Vec3fa( 0, 0,-1); g_spheres[2].r = 0.5f;
   g_spheres[3].p = Vec3fa(-1, 0, 0); g_spheres[3].r = 0.5f;
-  rtcCommit(g_scene0);
+  rtcCommitScene(g_scene0);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcDeviceNewScene(g_device);
+  g_scene1 = rtcNewScene(g_device);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommit(g_scene1);
+  rtcCommitScene(g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
-  g_scene2 = rtcDeviceNewScene(g_device);
+  g_scene2 = rtcNewScene(g_device);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,+1),0.5f);
   g_sphere0 = createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5f);
   g_sphere1 = createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommit(g_scene2);
+  rtcCommitScene(g_scene2);
 
   /* instantiate geometry */
   g_instance[0] = createInstance(g_scene,g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
@@ -920,7 +920,7 @@ extern "C" void device_init (char* cfg)
   g_instance[2] = createInstance(g_scene,g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   g_instance[3] = createInstance(g_scene,g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   createGroundPlane(g_scene);
-  rtcCommit(g_scene);
+  rtcCommitScene(g_scene);
 
   /* set all colors */
   colors[0][0] = Vec3fa(0.25f, 0.00f, 0.00f);
@@ -963,7 +963,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), 
@@ -1093,7 +1093,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace rays */
   RTCIntersectContext primary_context;
-  rtcInitIntersectionContext(&primary_context);
+  rtcInitIntersectContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
   rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(Ray));
 
@@ -1142,7 +1142,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace shadow rays */
   RTCIntersectContext shadow_context;
-  rtcInitIntersectionContext(&shadow_context);
+  rtcInitIntersectContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
   rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));
 
@@ -1232,7 +1232,7 @@ extern "C" void device_render (int* pixels,
   updateInstance(g_scene,g_instance[1]);
   updateInstance(g_scene,g_instance[2]);
   updateInstance(g_scene,g_instance[3]);
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

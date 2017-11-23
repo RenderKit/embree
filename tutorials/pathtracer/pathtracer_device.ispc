@@ -981,15 +981,15 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
 
   /* commit changes to scene */
   //progressStart();
-  //rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
-  rtcCommit (scene_out);
-  //rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
+  //rtcSetSceneProgressMonitorFunction(scene_out,progressMonitor,NULL);
+  rtcCommitScene (scene_out);
+  //rtcSetSceneProgressMonitorFunction(scene_out,NULL,NULL);
   //progressEnd();
 
   return scene_out;
@@ -1695,7 +1695,7 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
 
   /* create accumulator */
@@ -1723,7 +1723,7 @@ export void device_render (uniform int* uniform pixels,
 
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
     }
   }
   else

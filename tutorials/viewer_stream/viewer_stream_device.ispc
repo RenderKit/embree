@@ -120,7 +120,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
   return scene_out;
@@ -165,7 +165,7 @@ Vec3f ambientOcclusionShading(int x, int y, Ray& ray, uniform RayStats& stats)
   }
 
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
@@ -317,7 +317,7 @@ void renderTileStandard(uniform int taskIndex,
   }
 
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
@@ -419,7 +419,7 @@ export void device_render (uniform int* uniform pixels,
   if (!g_scene) {
     g_scene = convertScene(g_ispc_scene);
     updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
   
   /* render image */

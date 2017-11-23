@@ -107,10 +107,10 @@ namespace embree
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device) 
+  RTCORE_API RTCScene rtcNewScene (RTCDevice device) 
   {
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeviceNewScene);
+    RTCORE_TRACE(rtcNewScene);
     RTCORE_VERIFY_HANDLE(device);
     Scene* scene = new Scene((Device*)device);
     return (RTCScene) scene->refInc();
@@ -118,42 +118,42 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction func, void* ptr) 
+  RTCORE_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction func, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetProgressMonitorFunction);
+    RTCORE_TRACE(rtcSetSceneProgressMonitorFunction);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->setProgressMonitorFunction(func,ptr);
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetAccelFlags (RTCScene hscene, RTCAccelFlags accel) 
+  RTCORE_API void rtcSetSceneAccelFlags (RTCScene hscene, RTCAccelFlags accel) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetAccelFlags);
+    RTCORE_TRACE(rtcSetSceneAccelFlags);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->setAccelFlags(accel);
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API RTCAccelFlags rtcGetAccelFlags(RTCScene hscene)
+  RTCORE_API RTCAccelFlags rtcGetSceneAccelFlags(RTCScene hscene)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetAccelFlags);
+    RTCORE_TRACE(rtcGetSceneAccelFlags);
     RTCORE_VERIFY_HANDLE(hscene);
     return scene->getAccelFlags();
     RTCORE_CATCH_END2(scene);
     return RTC_ACCEL_FAST;
   }
   
-  RTCORE_API void rtcSetBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
+  RTCORE_API void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBuildQuality);
+    RTCORE_TRACE(rtcSetSceneBuildQuality);
     RTCORE_VERIFY_HANDLE(hscene);
     if (quality != RTC_BUILD_QUALITY_LOW &&
         quality != RTC_BUILD_QUALITY_MEDIUM &&
@@ -163,11 +163,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API RTCBuildQuality rtcGetBuildQuality(RTCScene hscene)
+  RTCORE_API RTCBuildQuality rtcGetSceneBuildQuality(RTCScene hscene)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetBuildQuality);
+    RTCORE_TRACE(rtcGetSceneBuildQuality);
     RTCORE_VERIFY_HANDLE(hscene);
     return scene->getBuildQuality();
     RTCORE_CATCH_END2(scene);
@@ -195,31 +195,31 @@ namespace embree
     return RTC_SCENE_FLAG_NONE;
   }
   
-  RTCORE_API void rtcCommit (RTCScene hscene) 
+  RTCORE_API void rtcCommitScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcCommit);
+    RTCORE_TRACE(rtcCommitScene);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->commit(false);
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcCommitJoin (RTCScene hscene) 
+  RTCORE_API void rtcCommitJoinScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcCommitJoin);
+    RTCORE_TRACE(rtcCommitJoinScene);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->commit(true);
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcGetBounds(RTCScene hscene, RTCBounds* bounds_o)
+  RTCORE_API void rtcGetSceneBounds(RTCScene hscene, RTCBounds* bounds_o)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetBounds);
+    RTCORE_TRACE(rtcGetSceneBounds);
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     BBox3fa bounds = scene->bounds.bounds();
@@ -234,11 +234,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcGetLinearBounds(RTCScene hscene, RTCBounds* bounds_o)
+  RTCORE_API void rtcGetSceneLinearBounds(RTCScene hscene, RTCBounds* bounds_o)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetBounds);
+    RTCORE_TRACE(rtcGetSceneBounds);
     RTCORE_VERIFY_HANDLE(hscene);
     if (bounds_o == nullptr)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid destination pointer");

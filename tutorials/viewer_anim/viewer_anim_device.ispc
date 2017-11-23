@@ -116,8 +116,8 @@ uniform size_t getNumObjects(uniform ISPCScene* uniform scene_in) {
 
 uniform RTCScene createScene(uniform ISPCScene* uniform scene_in)
 {
-  RTCScene scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
+  RTCScene scene = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_DYNAMIC);
   return scene;
 }
@@ -263,7 +263,7 @@ void renderTileStandard(uniform int taskIndex,
   }
 
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
@@ -395,7 +395,7 @@ export void device_init (uniform int8* uniform cfg)
   for (uniform size_t i=0;i<numObjects;i++)
     createObject(i,g_ispc_scene,g_scene);
 
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
@@ -466,7 +466,7 @@ export void device_render (uniform int* uniform pixels,
   /* rebuild bvh */
   /* =========== */
 
-  rtcCommit(g_scene);
+  rtcCommitScene(g_scene);
 
 #endif
 }

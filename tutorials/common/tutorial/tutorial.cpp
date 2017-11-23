@@ -57,8 +57,8 @@ namespace embree
 
     unsigned int g_numThreads = 0;
 
-    RTCIntersectFlags g_iflags_coherent = RTC_INTERSECT_COHERENT;
-    RTCIntersectFlags g_iflags_incoherent = RTC_INTERSECT_INCOHERENT;
+    RTCIntersectContextFlags g_iflags_coherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+    RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
     RayStats* g_stats = nullptr;
   }
@@ -110,8 +110,8 @@ namespace embree
       debug2(0),
       debug3(0),
 
-      iflags_coherent(RTC_INTERSECT_COHERENT),
-      iflags_incoherent(RTC_INTERSECT_INCOHERENT)
+      iflags_coherent(RTC_INTERSECT_CONTEXT_FLAG_COHERENT),
+      iflags_incoherent(RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -256,14 +256,14 @@ namespace embree
     }
 
     registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_COHERENT;
-        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_COHERENT;
-      }, "--coherent: force using RTC_INTERSECT_COHERENT hint when tracing rays");
+        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+      }, "--coherent: force using RTC_INTERSECT_CONTEXT_FLAG_COHERENT hint when tracing rays");
 
     registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_INCOHERENT;
-        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_INCOHERENT;
-      }, "--incoherent: force using RTC_INTERSECT_INCOHERENT hint when tracing rays");
+        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+      }, "--incoherent: force using RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT hint when tracing rays");
   }
 
   TutorialApplication::~TutorialApplication()

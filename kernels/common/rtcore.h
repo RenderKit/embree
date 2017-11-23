@@ -21,8 +21,8 @@
 namespace embree
 {
    /*! decoding of intersection flags */
-  __forceinline bool isCoherent  (RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) == 0; }
-  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) != 0; }
+  __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT) == 0; }
+  __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT) != 0; }
 
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR >= 8)
 #  define USE_TASK_ARENA 1

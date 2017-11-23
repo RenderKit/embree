@@ -276,14 +276,14 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
 /* adds an instanced triangle cube to the scene, rotate instance */
 RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCScene scene = rtcDeviceNewScene(g_device);
+  RTCScene scene = rtcNewScene(g_device);
   RTCGeometry geom = rtcNewTriangleMesh (g_device);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int), 12);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(float), 8);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
-  rtcCommit(scene);
+  rtcCommitScene(scene);
 
   RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
   
@@ -305,7 +305,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
 /* adds an instanced quad cube to the scene, rotate instance and geometry */
 RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCScene scene = rtcDeviceNewScene(g_device);
+  RTCScene scene = rtcNewScene(g_device);
   RTCGeometry geom = rtcNewQuadMesh (g_device);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int), 6);
 
@@ -326,7 +326,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);  
-  rtcCommit(scene);
+  rtcCommitScene(scene);
 
   RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
 
@@ -535,7 +535,7 @@ extern "C" void device_init (char* cfg)
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
+  g_scene = rtcNewScene(g_device);
 
   /* add geometry to the scene */
   addTriangleCube(g_scene,Vec3fa(-5,1,-5),g_num_time_steps);
@@ -568,7 +568,7 @@ extern "C" void device_init (char* cfg)
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -581,7 +581,7 @@ int frameID = 50;
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
   if (g_time != -1) time = g_time;

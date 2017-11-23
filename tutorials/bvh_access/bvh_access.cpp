@@ -237,14 +237,14 @@ namespace embree
     rtcSetDeviceErrorFunction(device,error_handler,nullptr);
     
     /* create scene */
-    RTCScene scene = rtcDeviceNewScene(device);
+    RTCScene scene = rtcNewScene(device);
     addCube(device,scene,Vec3fa(-1,0,0));
     addCube(device,scene,Vec3fa(1,0,0));
     addCube(device,scene,Vec3fa(0,0,-1));
     addCube(device,scene,Vec3fa(0,0,1));
     addHair(device,scene);
     addGroundPlane(device,scene);
-    rtcCommit (scene);
+    rtcCommitScene (scene);
     /* print triangle BVH */
     print_bvh(scene);
 
