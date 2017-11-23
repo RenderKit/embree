@@ -158,14 +158,15 @@ def match(pattern,ppos,tokens,tpos,env):
     except ValueError: return (ppos,tpos,False)
     if (tokens[tpos] != next):
       return (ppos,tpos,False)
-    tpos+=1
-    ppos+=1
+
     if var in env:
       b = filter(no_delimiter_token,env[var]) == filter(no_delimiter_token,expr)
       return (ppos,tpos,b)
-    else:
-      env[var] = expr
-      return (ppos,tpos,True)
+    
+    tpos+=1
+    ppos+=1
+    env[var] = expr
+    return (ppos,tpos,True)
     
   elif pattern[ppos] == tokens[tpos]:
     ppos+=1
@@ -219,7 +220,7 @@ def apply_rule (rule,env_in,tokens):
       result.append(tokens[tpos])
       tpos+=1
     else:
-      env = env_in
+      env = dict(env_in)
       (b,tpos) = match_rule (pattern,tokens,tpos,env)
       if (b):
         result = result + substitute (env,subst,ident)
