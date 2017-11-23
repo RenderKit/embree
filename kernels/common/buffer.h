@@ -26,26 +26,26 @@ namespace embree
   public:
     /*! Buffer construction */
     RawBufferView(size_t num = 0, size_t stride = 0)
-      : ptr(nullptr), stride(stride), num(num) {}
+      : ptr_ofs(nullptr), stride(stride), num(num) {}
 
   public:
     /*! sets shared buffer */
-    void set(char* ptr_in, size_t stride_in)
+    void set(char* ptr_ofs_in, size_t stride_in)
     {
-      ptr = ptr_in;
+      ptr_ofs = ptr_ofs_in;
       stride = stride_in;
     }
 
     /*! returns pointer to first element */
     __forceinline const char* getPtr() const {
-      return ptr;
+      return ptr_ofs;
     }
 
     /*! returns pointer to first element */
     __forceinline const char* getPtr(size_t i) const
     {
       assert(i<num);
-      return ptr + i*stride;
+      return ptr_ofs + i*stride;
     }
 
     /*! returns the number of elements of the buffer */
@@ -66,7 +66,7 @@ namespace embree
     }
 
   protected:
-    char* ptr;       //!< base pointer plus offset
+    char* ptr_ofs;   //!< base pointer plus offset
     size_t stride;   //!< stride of the buffer in bytes
     size_t num;      //!< number of elements in the buffer
   };
@@ -82,8 +82,8 @@ namespace embree
       : RawBufferView(num, stride) {}
 
     /*! access to the ith element of the buffer */
-    __forceinline       T& operator[](size_t i)       { assert(i<num); return *(T*)(ptr + i*stride); }
-    __forceinline const T& operator[](size_t i) const { assert(i<num); return *(T*)(ptr + i*stride); }
+    __forceinline       T& operator[](size_t i)       { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
+    __forceinline const T& operator[](size_t i) const { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
   };
 
   template<>
@@ -99,14 +99,14 @@ namespace embree
     __forceinline const Vec3fa operator[](size_t i) const
     {
       assert(i<num);
-      return Vec3fa(vfloat4::loadu((float*)(ptr + i*stride)));
+      return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
     }
     
     /*! writes the i'th element */
     __forceinline void store(size_t i, const Vec3fa& v)
     {
       assert(i<num);
-      vfloat4::storeu((float*)(ptr + i*stride), (vfloat4)v);
+      vfloat4::storeu((float*)(ptr_ofs + i*stride), (vfloat4)v);
     }
   };
 
@@ -175,7 +175,7 @@ namespace embree
       free();
       device = device_in;
       ptr = nullptr;
-      this->ptr = nullptr;
+      this->ptr_ofs = nullptr;
       this->num = num_in;
       this->stride = stride_in;
       shared = false;
@@ -199,7 +199,7 @@ namespace embree
     {
       if (device) device->memoryMonitor(this->bytes(),false);
       size_t b = (this->bytes()+15)&ssize_t(-16);
-      ptr = this->ptr = (char*)alignedMalloc(b);
+      ptr = this->ptr_ofs = (char*)alignedMalloc(b);
     }
     
     /*! frees the buffer */
@@ -208,7 +208,7 @@ namespace embree
       if (shared) return;
       alignedFree(ptr); 
       if (device) device->memoryMonitor(-ssize_t(this->bytes()),true);
-      ptr = nullptr; this->ptr = nullptr;
+      ptr = nullptr; this->ptr_ofs = nullptr;
     }
     
     /*! gets buffer pointer */
