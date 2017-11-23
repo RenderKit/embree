@@ -12,3 +12,9 @@ rtcNewBuffer(geom,e4)
 }@@
 }@@
 
+@@{
+rtcTest(EXPR a)
+=>
+rtcNewTest(a)
+}@@
+

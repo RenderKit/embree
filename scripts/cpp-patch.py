@@ -83,28 +83,44 @@ def no_delimiter_token (token):
 def is_identifier_token (token):
   return token[0] in identifier_chars
 
-def parse_expr(tokens,next):
+def parse_expr_list(tokens,term_token):
   expr = []
   while (tokens):
     
-    if tokens[0] == next:
-      tokens.pop(0)
+    if tokens[0] == term_token:
       return expr
     
     elif tokens[0] == "(":
-      expr = expr + [tokens.pop(0)] + parse_expr(tokens,")") + [")"]
-      
-    elif tokens[0] == "[":
-      expr = expr + [tokens.pop(0)] + parse_expr(tokens,"]") + ["]"]
+      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,")") + [")"]
+      tokens.pop(0)
       
     elif tokens[0] == "{":
-      expr = expr + [tokens.pop(0)] + parse_expr(tokens,"}") + ["}"]
+      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,"}") + ["}"]
+      tokens.pop(0)
+  
+    else:
+      expr = expr + [tokens.pop(0)]
+      
+def parse_expr(tokens,term_token):
+  expr = []
+  while (tokens):
+    
+    if tokens[0] == term_token or tokens[0] == ",":
+      return expr
+    
+    elif tokens[0] == "(":
+      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,")") + [")"]
+      tokens.pop(0)
+      
+    elif tokens[0] == "{":
+      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,"}") + ["}"]
+      tokens.pop(0)
   
     else:
       expr = expr + [tokens.pop(0)]
 
   raise ValueError()
-
+     
 def match(pattern,tokens,env):
 
   if is_delimiter_token(tokens[0]):
@@ -126,9 +142,12 @@ def match(pattern,tokens,env):
     var = pattern[0]
     pattern.pop(0)
     next = pattern[0]
-    pattern.pop(0)
     try: expr = parse_expr(tokens,next)
     except ValueError: return False
+    if (tokens[0] != next):
+      return False
+    tokens.pop(0)
+    pattern.pop(0)
     if var in env:
       return filter(no_delimiter_token,env[var]) == filter(no_delimiter_token,expr)
     else:
@@ -212,7 +231,7 @@ cpp_file_in = ""
 cpp_file_out = ""
 
 def printUsage():
-  sys.stdout.write("Usage: embree2_to_embree3.py --rules embree2_to_embree3.rules --in infile.cpp --out outfile.cpp\n")
+  sys.stdout.write("Usage: cpp-patch.py --patch embree2_to_embree3.patch --in infile.cpp --out outfile.cpp\n")
 
 def parseCommandLine(argv):
   global rule_file
@@ -220,7 +239,7 @@ def parseCommandLine(argv):
   global cpp_file_out
   if len(argv) == 0:
     return;
-  elif len(argv)>=2 and argv[0] == "--rules":
+  elif len(argv)>=2 and argv[0] == "--patch":
     rule_file = argv[1]
     parseCommandLine(argv[2:len(argv)])
   elif len(argv)>=2 and argv[0] == "--in":
@@ -239,9 +258,9 @@ def parseCommandLine(argv):
     
 parseCommandLine(sys.argv[1:len(sys.argv)])
 if (rule_file == ""):
-  raise Exception("no rule file specified");
+  raise ValueError("no rule file specified");
 if (cpp_file_in == ""):
-  raise Exception("no input file specified");
+  raise ValueError("no input file specified");
 
 def parse_rules_file(rule_file):
 
@@ -273,7 +292,7 @@ def parse_rules_file(rule_file):
       subst = tokenize(list(subst_str))
       return (pattern,subst,next_rules)
 
-    raise Exception("parse error in rules file")
+    raise ValueError("parse error in rules file")
   
   with open(rule_file,"r") as f:
     lines = f.readlines()
@@ -288,7 +307,7 @@ def parse_rules_file(rule_file):
     elif empty_line(lines[0]):
       lines.pop(0)
     else:
-      raise Exception("parse error in rules file")
+      raise ValueError("parse error in rules file")
     
   return rules
 
