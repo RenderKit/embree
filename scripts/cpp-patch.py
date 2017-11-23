@@ -262,7 +262,13 @@ if (rule_file == ""):
 if (cpp_file_in == ""):
   raise ValueError("no input file specified");
 
+line = 1
 def parse_rules_file(rule_file):
+
+  def pop_line(lines):
+    global line
+    line+=1
+    return lines.pop(0)
 
   def empty_line(str):
     return all(map(is_delimiter,str))
@@ -271,28 +277,29 @@ def parse_rules_file(rule_file):
     pattern_str = ""
     subst_str = ""
     next_rules = []
-    
+
     while lines and not lines[0].startswith("=>") and not lines[0].startswith("}@@") and not lines[0].startswith("@@{"):
-      pattern_str += lines.pop(0)
+      pattern_str += pop_line(lines)
       
     if lines[0].startswith("=>"):
-      lines.pop(0)
+      pop_line(lines)
       while lines and not lines[0].startswith("=>") and not lines[0].startswith("}@@") and not lines[0].startswith("@@{"):
-        subst_str += lines.pop(0)
+        subst_str += pop_line(lines)
 
     pattern_str = pattern_str.strip('\n')
     subst_str = subst_str.strip('\n')
     
     while lines[0].startswith("@@{"):
-      lines.pop(0)
+      pop_line(lines)
       next_rules.append(parse_rule(lines))
+
     if lines[0].startswith("}@@"):
-      lines.pop(0)
+      pop_line(lines)
       pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
       subst = tokenize(list(subst_str))
       return (pattern,subst,next_rules)
 
-    raise ValueError("parse error in rules file")
+    raise ValueError(rule_file+" line " + str(line) + ": parse error")
   
   with open(rule_file,"r") as f:
     lines = f.readlines()
@@ -300,14 +307,14 @@ def parse_rules_file(rule_file):
   rules = []
   while lines:
     if (lines[0].startswith("@@{")):
-      lines.pop(0)
+      pop_line(lines)
       rules.append(parse_rule(lines))
     elif (lines[0].startswith("//")):
-      lines.pop(0)
+      pop_line(lines)
     elif empty_line(lines[0]):
-      lines.pop(0)
+      pop_line(lines)
     else:
-      raise ValueError("parse error in rules file")
+      raise ValueError(rule_file+" line " + str(line) + ": parse error")
     
   return rules
 
@@ -315,9 +322,12 @@ rules = parse_rules_file(rule_file)
 with open(cpp_file_in,"r") as f:
   tokens = tokenize(list(f.read()))
 
+rule_id = 0
 for rule in rules:
+  print("applying rule "+str(rule_id)+" of "+str(len(rules))+" rules")
   env = {}
   tokens = apply_rule(rule,env,tokens)
+  rule_id+=1
 
 if (cpp_file_out == ""):
   print_token_list(tokens,sys.stdout)
