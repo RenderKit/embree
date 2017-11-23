@@ -34,7 +34,7 @@ namespace embree
   {
     assert(accel);
     if (accels.size() == accels.max_size())
-      throw_RTCError(RTC_UNKNOWN_ERROR,"internal error: AccelN too small");
+      throw_RTCError(RTC_ERROR_UNKNOWN,"internal error: AccelN too small");
     
     accels.push_back(accel);
   }

@@ -25,13 +25,13 @@ namespace embree
   inline std::string string_of(RTCError code)
   {
     switch (code) {
-    case RTC_UNKNOWN_ERROR    : return "RTC_UNKNOWN_ERROR";
-    case RTC_INVALID_ARGUMENT : return "RTC_INVALID_ARGUMENT";
-    case RTC_INVALID_OPERATION: return "RTC_INVALID_OPERATION";
-    case RTC_OUT_OF_MEMORY    : return "RTC_OUT_OF_MEMORY";
-    case RTC_UNSUPPORTED_CPU  : return "RTC_UNSUPPORTED_CPU";
-    case RTC_CANCELLED        : return "RTC_CANCELLED";
-    default                   : return "invalid error code";
+    case RTC_ERROR_UNKNOWN          : return "RTC_ERROR_UNKNOWN";
+    case RTC_ERROR_INVALID_ARGUMENT : return "RTC_ERROR_INVALID_ARGUMENT";
+    case RTC_ERROR_INVALID_OPERATION: return "RTC_ERROR_INVALID_OPERATION";
+    case RTC_ERROR_OUT_OF_MEMORY    : return "RTC_ERROR_OUT_OF_MEMORY";
+    case RTC_ERROR_UNSUPPORTED_CPU  : return "RTC_ERROR_UNSUPPORTED_CPU";
+    case RTC_ERROR_CANCELLED        : return "RTC_ERROR_CANCELLED";
+    default                         : return "invalid error code";
     }
   }
 
@@ -629,18 +629,18 @@ namespace embree
   { 
     switch (imode) {
     case MODE_INTERSECT_NONE: return true;
-    case MODE_INTERSECT1:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
-    case MODE_INTERSECT4:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
-    case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
-    case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
-    case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECT1Mp: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECTNM8: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECTNM16:return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-    case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECT1:   return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED);
+    case MODE_INTERSECT4:   return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED);
+    case MODE_INTERSECT8:   return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED);
+    case MODE_INTERSECT16:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED);
+    case MODE_INTERSECT1M:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECT1Mp: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM1: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM3: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM4: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM8: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM16:return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECTNp:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
     }
     assert(false);
     return false;
@@ -905,7 +905,7 @@ namespace embree
   /* error reporting function */
   void error_handler(void* userPtr, const RTCError code, const char* str = nullptr)
   {
-    if (code == RTC_NO_ERROR) 
+    if (code == RTC_ERROR_NONE) 
       return;
     
     std::string errorStr;

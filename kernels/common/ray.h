@@ -65,12 +65,12 @@ namespace embree
       const vbool<K> vnx = abs(Ng.x) <= vfloat<K>(FLT_LARGE);
       const vbool<K> vny = abs(Ng.y) <= vfloat<K>(FLT_LARGE);
       const vbool<K> vnz = abs(Ng.z) <= vfloat<K>(FLT_LARGE);
-      if (any(valid & !vt)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid t");
-      if (any(valid & !vu)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid u");
-      if (any(valid & !vv)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid v");
-      if (any(valid & !vnx)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.x");
-      if (any(valid & !vny)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.y");
-      if (any(valid & !vnz)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.z");
+      if (any(valid & !vt)) throw_RTCError(RTC_ERROR_UNKNOWN,"invalid t");
+      if (any(valid & !vu)) throw_RTCError(RTC_ERROR_UNKNOWN,"invalid u");
+      if (any(valid & !vv)) throw_RTCError(RTC_ERROR_UNKNOWN,"invalid v");
+      if (any(valid & !vnx)) throw_RTCError(RTC_ERROR_UNKNOWN,"invalid Ng.x");
+      if (any(valid & !vny)) throw_RTCError(RTC_ERROR_UNKNOWN,"invalid Ng.y");
+      if (any(valid & !vnz)) throw_RTCError(RTC_ERROR_UNKNOWN,"invalid Ng.z");
     }
 
     __forceinline void get(RayK<1>* ray) const;
@@ -208,12 +208,12 @@ namespace embree
       const bool vnx = abs(Ng.x) <= FLT_LARGE;
       const bool vny = abs(Ng.y) <= FLT_LARGE;
       const bool vnz = abs(Ng.z) <= FLT_LARGE;
-      if (!vt) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid t");
-      if (!vu) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid u");
-      if (!vv) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid v");
-      if (!vnx) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.x");
-      if (!vny) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.y");
-      if (!vnz) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.z");
+      if (!vt) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid t");
+      if (!vu) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid u");
+      if (!vv) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid v");
+      if (!vnx) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid Ng.x");
+      if (!vny) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid Ng.y");
+      if (!vnz) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid Ng.z");
     }
 
     /* Ray data */

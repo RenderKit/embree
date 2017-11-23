@@ -502,7 +502,7 @@ namespace embree
 
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
-          throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
+          throw_RTCError(RTC_ERROR_UNKNOWN,"allocation is too large");
 
         /* parallel block creation in case of no freeBlocks, avoids single global mutex */
         if (likely(freeBlocks.load() == nullptr))

@@ -594,7 +594,7 @@ namespace embree
   }
 
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
+    rtcSetDeviceProperty(nullptr,(RTCDeviceProperty)parm,val);
   }
 
   void TutorialApplication::resize(unsigned width, unsigned height)
@@ -860,10 +860,10 @@ namespace embree
   void TutorialApplication::run(int argc, char** argv)
   {
     /* set debug values */
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, debug0);
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000001, debug1);
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000002, debug2);
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000003, debug3);
+    rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000000, debug0);
+    rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000001, debug1);
+    rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000002, debug2);
+    rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000003, debug3);
 
     /* initialize ray tracing core */
     device_init(rtcore.c_str());

@@ -343,10 +343,10 @@ namespace embree {
     }
     /* create new Embree device */
     g_device = rtcNewDevice(init.c_str());
-    error_handler(nullptr,rtcDeviceGetError(g_device));
+    error_handler(nullptr,rtcGetDeviceError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
     Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);

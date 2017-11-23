@@ -41,7 +41,7 @@ namespace embree
     if (stored_error) return stored_error;
 
     Lock<MutexSys> lock(errors_mutex);
-    stored_error = new RTCError(RTC_NO_ERROR);
+    stored_error = new RTCError(RTC_ERROR_NONE);
     thread_errors.push_back(stored_error);
     setTls(thread_error,stored_error);
     return stored_error;

@@ -288,7 +288,7 @@ namespace embree
    __forceinline size_t alloc(const size_t blocks)
    {
      if (unlikely(blocks >= switch_block_threshold))
-       throw_RTCError(RTC_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
+       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
 
      assert(blocks < switch_block_threshold);
      size_t index = next_block.fetch_add(blocks);

@@ -253,7 +253,7 @@ namespace embree
             progressMonitor(progressMonitor)
           {
             if (cfg.branchingFactor > MAX_BRANCHING_FACTOR)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
           }
 
           /*! finds the best split */
@@ -354,7 +354,7 @@ namespace embree
           {
             /* this should never occur but is a fatal error */
             if (in.depth > cfg.maxDepth)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
             /* replace already found split by fallback split */
             const BuildRecordSplit current(BuildRecord(in.prims,in.depth),findFallback(in.prims));

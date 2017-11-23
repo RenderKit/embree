@@ -37,18 +37,18 @@ renderTileFunc renderTile;
 /* error reporting function */
 void error_handler(void* userPtr, const RTCError code, const char* str)
 {
-  if (code == RTC_NO_ERROR)
+  if (code == RTC_ERROR_NONE)
     return;
 
   printf("Embree: ");
   switch (code) {
-  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-  default                   : printf("invalid error code"); break;
+  case RTC_ERROR_UNKNOWN          : printf("RTC_ERROR_UNKNOWN"); break;
+  case RTC_ERROR_INVALID_ARGUMENT : printf("RTC_ERROR_INVALID_ARGUMENT"); break;
+  case RTC_ERROR_INVALID_OPERATION: printf("RTC_ERROR_INVALID_OPERATION"); break;
+  case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
+  case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
+  case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
+  default                         : printf("invalid error code"); break;
   }
   if (str) {
     printf(" (");

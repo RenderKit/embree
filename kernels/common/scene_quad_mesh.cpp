@@ -48,7 +48,7 @@ namespace embree
   void QuadMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
   {
     if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry intersector");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry intersector");
     
     Geometry::update();
   }
@@ -57,14 +57,14 @@ namespace embree
   { 
     /* verify that all accesses are 4 bytes aligned */
     if (stride & 0x3) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
       if (stride*size > 16ll*1024ll*1024ll*1024ll) 
-       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
 
       if (bid >= vertices.size()) vertices.resize(bid+1);
       vertices[bid].newBuffer(device,size,stride); 
@@ -85,7 +85,7 @@ namespace embree
       return quads.get();
     }
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
 
     return nullptr;
   }
@@ -94,14 +94,14 @@ namespace embree
   { 
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
     {
       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
       if (stride*size > 16ll*1024ll*1024ll*1024ll) 
-       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
 
       if (bid >= vertices.size()) vertices.resize(bid+1);
       vertices[bid].set(device,ptr,offset,stride,size); 
@@ -124,7 +124,7 @@ namespace embree
       setNumPrimitives(size);
     }
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
   }
 
   void* QuadMesh::getBuffer(RTCBufferType type) 
@@ -136,7 +136,7 @@ namespace embree
       return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type"); 
       return nullptr;
     }
   }
@@ -146,7 +146,7 @@ namespace embree
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
-        throw_RTCError(RTC_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     Geometry::preCommit();
   }

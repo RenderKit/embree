@@ -133,14 +133,14 @@ namespace embree
             progressMonitor(progressMonitor)
           {
             if (cfg.branchingFactor > MAX_BRANCHING_FACTOR)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
           }
 
           const ReductionTy createLargeLeaf(const BuildRecord& current, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
             if (current.depth > cfg.maxDepth)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
             /* create leaf for few primitives */
             if (current.prims.size() <= cfg.maxLeafSize)

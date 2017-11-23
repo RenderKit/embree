@@ -35,19 +35,19 @@ rtcReleaseDevice (device)
 @@{
 rtcSetParameter1i (EXPR e0,EXPR e1)
 =>
-rtcDeviceSetParameter1i (g_device,e0,e1)
+rtcSetDeviceProperty (g_device,e0,e1)
 }@@
 
 @@{
 rtcGetParameter1i (EXPR e0)
 =>
-rtcDeviceGetParameter1i (g_device,e0)
+rtcGetDeviceProperty (g_device,e0)
 }@@
 
 @@{
 rtcGetError ()
 =>
-rtcDeviceGetError (device)
+rtcGetDeviceError (device)
 }@@
 
 @@{
@@ -65,13 +65,13 @@ RTCErrorFunc
 @@{
 rtcSetErrorFunction(EXPR e0)
 =>
-rtcDeviceSetErrorFunction(g_device,e0,NULL)
+rtcSetDeviceErrorFunction(g_device,e0,NULL)
 }@@
 
 @@{
-rtcDeviceSetErrorFunction2(EXPR e0,EXPR e1,EXPR e2)
+rtcSetDeviceErrorFunction2(EXPR e0,EXPR e1,EXPR e2)
 =>
-rtcDeviceSetErrorFunction(e0,e1,e2)
+rtcSetDeviceErrorFunction(e0,e1,e2)
 }@@
 
 @@{
@@ -89,13 +89,13 @@ RTCMemoryMonitorFunc
 @@{
 rtcSetMemoryMonitorFunction(EXPR e0)
 =>
-rtcDeviceSetMemoryMonitorFunction(g_device,e0,nullptr)
+rtcSetDeviceMemoryMonitorFunction(g_device,e0,nullptr)
 }@@
 
 @@{
-rtcDeviceSetMemoryMonitorFunction2(EXPR e0,EXPR e1,EXPR e2)
+rtcSetDeviceMemoryMonitorFunction2(EXPR e0,EXPR e1,EXPR e2)
 =>
-rtcDeviceSetMemoryMonitorFunction(e0,e1,e2)
+rtcSetDeviceMemoryMonitorFunction(e0,e1,e2)
 }@@
 
 @@{
