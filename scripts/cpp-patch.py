@@ -224,8 +224,7 @@ def apply_rule (rule,env_in,tokens):
       if (b):
         result = result + substitute (env,subst,ident)
         for follow_rule in follow_rules:
-          new_tail = apply_rule(follow_rule,env,tokens[tpos:])
-          tokens = tokens[0:tpos] + new_tail         
+          tokens = tokens[0:tpos] + apply_rule(follow_rule,env,tokens[tpos:])
       else:
         if tokens[tpos] == "{": depth = depth+1
         if tokens[tpos] == "}": depth = depth-1
@@ -341,7 +340,7 @@ with open(cpp_file_in,"r") as f:
 
 rule_id = 0
 for rule in rules:
-  print("applying rule "+str(rule_id)+" of "+str(len(rules))+" rules")
+#  print("applying rule "+str(rule_id)+" of "+str(len(rules))+" rules")
   env = {}
   tokens = apply_rule(rule,env,tokens)
   rule_id+=1
