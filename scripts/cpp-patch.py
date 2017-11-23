@@ -3,8 +3,10 @@
 import sys
 import os
 import copy
+import re
 
-identifier_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+identifier_begin_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+identifier_cont_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
 number_chars = "0123456789";
 delimiter_chars = " \t\n\r"
 
@@ -17,9 +19,9 @@ def parse_delimiter(chars,tokens):
   return True
   
 def parse_identifier(chars,tokens):
-  if (not chars[0] in identifier_chars): return False;
+  if (not chars[0] in identifier_begin_chars): return False;
   id = ""
-  while chars and (chars[0] in identifier_chars or chars[0] in number_chars):
+  while chars and (chars[0] in identifier_cont_chars):
     id = id + chars.pop(0)
   tokens.append(id)
   return True
@@ -43,7 +45,20 @@ def parse_comment(chars,tokens):
     id = id + chars.pop(0)
     id = id + chars.pop(0)
   tokens.append(id)
-  return True   
+  return True
+
+def parse_regexpr(chars,tokens):
+  if chars[0] != "(": return False
+  chars.pop(0)
+  parse_identifier(chars,tokens)
+  if chars.pop(0) != ",":
+    return False
+  id = ""
+  while chars and chars[0] != ")":
+    id = id + chars.pop(0)
+  if chars: chars.pop(0)
+  tokens.append(id)
+  return True
 
 def parse_number(chars,tokens):
   if (not chars[0] in number_chars): return False;
@@ -53,7 +68,7 @@ def parse_number(chars,tokens):
   tokens.append(id)
   return True
 
-def tokenize(chars):
+def tokenize(chars,regex):
   tokens = []
   while chars:
     if chars[0] == "\n": tokens.append(chars.pop(0)); continue;
@@ -62,6 +77,7 @@ def tokenize(chars):
     elif parse_number(chars,tokens): continue;
     elif parse_line_comment(chars,tokens): continue;
     elif parse_comment(chars,tokens): continue;
+    elif tokens and regex and tokens[-1] == "REGEXPR": parse_regexpr(chars,tokens); continue;
     elif chars[0] == "(": tokens.append(chars.pop(0)); continue;
     elif chars[0] == ")": tokens.append(chars.pop(0)); continue;
     elif chars[0] == "[": tokens.append(chars.pop(0)); continue;
@@ -81,7 +97,7 @@ def no_delimiter_token (token):
   return not is_delimiter_token (token)
 
 def is_identifier_token (token):
-  return token[0] in identifier_chars
+  return token[0] in identifier_begin_chars
 
 def parse_expr_list(tokens,tpos,term_token):
   expr = []
@@ -146,6 +162,18 @@ def match(pattern,ppos,tokens,tpos,env):
     if (not is_identifier_token(tokens[tpos])):
       return (ppos,tpos,False)
     env[var] = [tokens[tpos]]
+    tpos+=1
+    return (ppos,tpos,True)
+
+  elif pattern[ppos] == "REGEXPR":
+    ppos+=1
+    name = pattern[ppos]
+    ppos+=1
+    pat = pattern[ppos]
+    if (re.match(pat,tokens[tpos]) == None):
+      return (ppos,tpos,False)
+    ppos+=1
+    env[name] = [tokens[tpos]]
     tpos+=1
     return (ppos,tpos,True)
     
@@ -236,13 +264,6 @@ def apply_rule (rule,env_in,tokens):
         tpos+=1
   return result
 
-def tokenize_rule (rule):
-  if rule == (): return rule
-  (pattern_str, subst_str, next_rule) = rule
-  pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
-  subst = tokenize(list(subst_str))
-  return (pattern,subst,map (tokenize_rule,next_rule))
-
 rule_file = ""
 cpp_file_in = ""
 cpp_file_out = ""
@@ -312,8 +333,8 @@ def parse_rules_file(rule_file):
 
     if lines[0].startswith("}@@"):
       pop_line(lines)
-      pattern = filter(no_delimiter_token,tokenize(list(pattern_str)))
-      subst = tokenize(list(subst_str))
+      pattern = filter(no_delimiter_token,tokenize(list(pattern_str),True))
+      subst = tokenize(list(subst_str),False)
       return (pattern,subst,next_rules)
 
     raise ValueError(rule_file+" line " + str(line) + ": parse error")
@@ -338,7 +359,7 @@ def parse_rules_file(rule_file):
 rules = parse_rules_file(rule_file)
 #rules = [rules[65]]
 with open(cpp_file_in,"r") as f:
-  tokens = tokenize(list(f.read()))
+  tokens = tokenize(list(f.read()),False)
 
 rule_id = 0
 for rule in rules:
