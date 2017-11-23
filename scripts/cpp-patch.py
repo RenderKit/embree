@@ -103,7 +103,7 @@ def parse_expr_list(tokens,tpos,term_token):
       tpos+=1
   
     else:
-      expr = expr + [tokens[tpos]]
+      expr.append(tokens[tpos])
       tpos+=1
 
   raise ValueError()
@@ -128,7 +128,7 @@ def parse_expr(tokens,tpos,term_token):
       tpos+=1
   
     else:
-      expr = expr + [tokens[tpos]]
+      expr.append(tokens[tpos])
       tpos+=1
 
   raise ValueError()
@@ -181,9 +181,9 @@ def substitute (env,tokens,ident):
     if token in env:
       result = result + env[token]
     else:
-      result = result + [token]
+      result.append(token)
     if token == "\n" and ident != 0:
-      result = result + [" "*ident]
+      result.append(" "*ident)
   return result
 
 def print_token_list(list,f):
@@ -216,7 +216,7 @@ def apply_rule (rule,env_in,tokens):
   while tpos < len(tokens):
     if is_delimiter_token(tokens[tpos]):
       ident = update_delimiter_ident(tokens[tpos],ident);
-      result = result + [tokens[tpos]]
+      result.append(tokens[tpos])
       tpos+=1
     else:
       env = env_in
@@ -232,7 +232,7 @@ def apply_rule (rule,env_in,tokens):
         if (depth < 0):
           result = result + tokens[tpos:]
           return result
-        result = result + [tokens[tpos]]
+        result.append(tokens[tpos])
         tpos+=1
   return result
 
