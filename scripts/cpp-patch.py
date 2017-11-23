@@ -83,84 +83,97 @@ def no_delimiter_token (token):
 def is_identifier_token (token):
   return token[0] in identifier_chars
 
-def parse_expr_list(tokens,term_token):
+def parse_expr_list(tokens,tpos,term_token):
   expr = []
-  while (tokens):
+  while (tpos < len(tokens)):
     
-    if tokens[0] == term_token:
+    if tokens[tpos] == term_token:
       return expr
     
-    elif tokens[0] == "(":
-      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,")") + [")"]
-      tokens.pop(0)
+    elif tokens[tpos] == "(":
+      tpos+=1
+      (e,tpos) = parse_expr_list(tokens,tpos,")")
+      expr = expr + ["("] + e + [")"]
+      tpos+=1
       
-    elif tokens[0] == "{":
-      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,"}") + ["}"]
-      tokens.pop(0)
+    elif tokens[tpos] == "{":
+      tpos+=1
+      (e,tpos) = parse_expr_list(tokens,tpos,"}")
+      expr = expr + ["{"] + e + ["}"]
+      tpos+=1
   
     else:
-      expr = expr + [tokens.pop(0)]
+      expr = expr + [tokens[tpos]]
+      tpos+=1
+
+  raise ValueError()
       
-def parse_expr(tokens,term_token):
+def parse_expr(tokens,tpos,term_token):
   expr = []
-  while (tokens):
+  while (tpos < len(tokens)):
     
-    if tokens[0] == term_token or tokens[0] == ",":
-      return expr
+    if tokens[tpos] == term_token or tokens[tpos] == ",":
+      return (expr,tpos)
     
-    elif tokens[0] == "(":
-      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,")") + [")"]
-      tokens.pop(0)
+    elif tokens[tpos] == "(":
+      tpos+=1
+      (e,tpos) = parse_expr_list(tokens,tpos,")")
+      expr = expr + ["("] + e + [")"]
+      tpos+=1
       
-    elif tokens[0] == "{":
-      expr = expr + [tokens.pop(0)] + parse_expr_list(tokens,"}") + ["}"]
-      tokens.pop(0)
+    elif tokens[tpos] == "{":
+      tpos+=1
+      (e,tpos) = parse_expr_list(tokens,tpos,"}")
+      expr = expr + ["{"] + e + ["}"]
+      tpos+=1
   
     else:
-      expr = expr + [tokens.pop(0)]
+      expr = expr + [tokens[tpos]]
+      tpos+=1
 
   raise ValueError()
      
-def match(pattern,tokens,env):
+def match(pattern,ppos,tokens,tpos,env):
 
-  if is_delimiter_token(tokens[0]):
-    tokens.pop(0)
-    return True
+  if is_delimiter_token(tokens[tpos]):
+    tpos+=1
+    return (ppos,tpos,True)
     
-  elif pattern[0] == "ID":
-    pattern.pop(0)
-    var = pattern[0]
-    pattern.pop(0)
-    if (not is_identifier_token(tokens[0])):
-      return False
-    env[var] = [tokens[0]]
-    tokens.pop(0)
-    return True
+  elif pattern[ppos] == "ID":
+    ppos+=1
+    var = pattern[ppos]
+    ppos+=1
+    if (not is_identifier_token(tokens[tpos])):
+      return (ppos,tpos,False)
+    env[var] = [tokens[tpos]]
+    tpos+=1
+    return (ppos,tpos,True)
     
-  elif pattern[0] == "EXPR":
-    pattern.pop(0)
-    var = pattern[0]
-    pattern.pop(0)
-    next = pattern[0]
-    try: expr = parse_expr(tokens,next)
-    except ValueError: return False
-    if (tokens[0] != next):
-      return False
-    tokens.pop(0)
-    pattern.pop(0)
+  elif pattern[ppos] == "EXPR":
+    ppos+=1
+    var = pattern[ppos]
+    ppos+=1
+    next = pattern[ppos]
+    try: (expr,tpos) = parse_expr(tokens,tpos,next)
+    except ValueError: return (ppos,tpos,False)
+    if (tokens[tpos] != next):
+      return (ppos,tpos,False)
+    tpos+=1
+    ppos+=1
     if var in env:
-      return filter(no_delimiter_token,env[var]) == filter(no_delimiter_token,expr)
+      b = filter(no_delimiter_token,env[var]) == filter(no_delimiter_token,expr)
+      return (ppos,tpos,b)
     else:
       env[var] = expr
-      return True
+      return (ppos,tpos,True)
     
-  elif pattern[0] == tokens[0]:
-    pattern.pop(0)
-    tokens.pop(0)
-    return True
+  elif pattern[ppos] == tokens[tpos]:
+    ppos+=1
+    tpos+=1
+    return (ppos,tpos,True)
 
   else:
-    return False
+    return (ppos,tpos,False)
 
 def substitute (env,tokens,ident):
   result = []
@@ -177,15 +190,16 @@ def print_token_list(list,f):
   for c in list:
     f.write(c)
       
-def match_rule (pattern_in, tokens_in, env):
-  pattern = copy.deepcopy(pattern_in)
-  tokens = copy.deepcopy(tokens_in)
-  while (tokens and pattern and match(pattern,tokens,env)):
-    continue;
-  if pattern:
-    return (False,tokens_in)
+def match_rule (pattern, tokens, tpos, env):
+  tpos_in = tpos
+  ppos = 0
+  while (tpos < len(tokens) and ppos < len(pattern)):
+    (ppos,tpos,m) = match(pattern,ppos,tokens,tpos,env)
+    if (not m): break
+  if ppos < len(pattern):
+    return (False,tpos_in)
   else:
-    return (True,tokens)
+    return (True,tpos)
 
 def update_delimiter_ident(token,ident):
   for x in token:
@@ -198,25 +212,28 @@ def apply_rule (rule,env_in,tokens):
   result = []
   depth = 0
   ident = 0
-  while tokens:
-    if is_delimiter_token(tokens[0]):
-      ident = update_delimiter_ident(tokens[0],ident);
-      result = result + [tokens.pop(0)]
+  tpos = 0
+  while tpos < len(tokens):
+    if is_delimiter_token(tokens[tpos]):
+      ident = update_delimiter_ident(tokens[tpos],ident);
+      result = result + [tokens[tpos]]
+      tpos+=1
     else:
       env = env_in
-      (b,next_tokens) = match_rule (pattern,tokens,env)
-      tokens = next_tokens
+      (b,tpos) = match_rule (pattern,tokens,tpos,env)
       if (b):
         result = result + substitute (env,subst,ident)
         for follow_rule in follow_rules:
-          tokens = apply_rule(follow_rule,env,tokens)
+          new_tail = apply_rule(follow_rule,env,tokens[tpos:])
+          tokens = tokens[0:tpos] + new_tail         
       else:
-        if tokens[0] == "{": depth = depth+1
-        if tokens[0] == "}": depth = depth-1
+        if tokens[tpos] == "{": depth = depth+1
+        if tokens[tpos] == "}": depth = depth-1
         if (depth < 0):
-          result = result + tokens
+          result = result + tokens[tpos:]
           return result
-        result = result + [tokens.pop(0)]
+        result = result + [tokens[tpos]]
+        tpos+=1
   return result
 
 def tokenize_rule (rule):
@@ -328,6 +345,8 @@ for rule in rules:
   env = {}
   tokens = apply_rule(rule,env,tokens)
   rule_id+=1
+#  print rule
+#  print_token_list(tokens,sys.stdout)
 
 if (cpp_file_out == ""):
   print_token_list(tokens,sys.stdout)
