@@ -88,7 +88,7 @@ def parse_expr_list(tokens,tpos,term_token):
   while (tpos < len(tokens)):
     
     if tokens[tpos] == term_token:
-      return expr
+      return (expr,tpos)
     
     elif tokens[tpos] == "(":
       tpos+=1
@@ -336,6 +336,7 @@ def parse_rules_file(rule_file):
   return rules
 
 rules = parse_rules_file(rule_file)
+#rules = [rules[65]]
 with open(cpp_file_in,"r") as f:
   tokens = tokenize(list(f.read()))
 

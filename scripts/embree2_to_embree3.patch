@@ -694,6 +694,7 @@ unsigned int ID geomID = rtcNewInstance3(EXPR target,EXPR source,EXPR numTimeSte
 =>
 RTCGeometry geom = rtcNewInstance (device,source,numTimeSteps);
 geomID = rtcAttachGeometry(target,geom);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -701,6 +702,7 @@ rtcNewInstance3(EXPR target,EXPR source,EXPR numTimeSteps,EXPR geomID);
 =>
 RTCGeometry geom = rtcNewInstance (device,source,numTimeSteps);
 rtcAttachGeometryById(target,geom,geomID);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -736,6 +738,7 @@ unsigned int ID geomID = rtcNewTriangleMesh2 (EXPR scene,EXPR flags,EXPR numTria
 =>
 RTCGeometry geom = rtcNewTriangleMesh (device,flags,numTriangles,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -743,6 +746,7 @@ unsigned int ID = rtcNewTriangleMesh2 (EXPR scene,EXPR flags,EXPR numTriangles,E
 =>
 RTCGeometry geom = rtcNewTriangleMesh (device,flags,numTriangles,numVertices,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -774,6 +778,7 @@ unsigned int ID geomID = rtcNewQuadMesh2(EXPR scene,EXPR flags,EXPR numQuads,EXP
 =>
 RTCGeometry geom = rtcNewQuadMesh (device,flags,numQuads,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -781,6 +786,7 @@ rtcNewQuadMesh2(EXPR scene,EXPR flags,EXPR numQuads,EXPR numVertices,EXPR numTim
 =>
 RTCGeometry geom = rtcNewQuadMesh (device,flags,numQuads,numVertices,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -812,6 +818,7 @@ unsigned int ID geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numFa
 =>
 RTCGeometry geom = rtcNewSubdivisionMesh (device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles);
 geomID = rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -819,6 +826,7 @@ rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numFaces,EXPR numEdges,EXPR nu
 =>
 RTCGeometry geom = rtcNewSubdivisionMesh (device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles);
 rtcAttachGeometryById(scene,geom,geomID);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -979,6 +987,7 @@ unsigned int ID geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR inters
 =>
 RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numCurves,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -986,6 +995,7 @@ rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR num
 =>
 RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numCurves,numVertices,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
+rtcReleaseGeometry(geom);
 }@@
 
 @@{
@@ -1035,6 +1045,11 @@ rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
 rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(int),numTriangles)
 }@@
+@@{
+rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numTriangles)
+}@@
 }@@
 
 @@{
@@ -1045,6 +1060,11 @@ RTCGeometry geom = rtcNewTriangleMesh(device,flags,numTriangles,numVertices,numT
 rtcMapBuffer(EXPR geom,RTC_VERTEX_BUFFER)
 =>
 rtcNewBuffer(geom,RTC_VERTEX_BUFFER,4*sizeof(float),numVertices)
+}@@
+@@{
+rtcSetBuffer(EXPR geom,RTC_VERTEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetBuffer(geom,RTC_VERTEX_BUFFER,ptr,offset,stride,numVertices)
 }@@
 }@@
 
@@ -1191,6 +1211,11 @@ rtcNewBuffer(geom,RTC_VERTEX_BUFFER,4*sizeof(float),numVertices)
 }@@
 }@@
 
+@@{
+rtcSetBuffer(EXPR geom,EXPR type,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetBuffer(geom,type,ptr,offset,stride,/* put buffer size here */)
+}@@
 
 @@{
 rtcUnmapBuffer(EXPR geom, EXPR type);
