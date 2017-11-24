@@ -203,9 +203,11 @@ rtcGetBounds(scene,&bounds)
 @@{
 rtcIntersect(EXPR scene, EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcIntersect1(scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1(scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -217,9 +219,11 @@ rtcIntersect1(scene,context,&ray);
 @@{
 rtcIntersect4(EXPR valid,EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcIntersect4(valid,scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect4(valid,scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -231,9 +235,11 @@ rtcIntersect4(valid,scene,context,&ray);
 @@{
 rtcIntersect8(EXPR valid,EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcIntersect8(valid,scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect8(valid,scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -245,9 +251,11 @@ rtcIntersect8(valid,scene,context,&ray);
 @@{
 rtcIntersect16(EXPR valid,EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcIntersect16(valid,scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect16(valid,scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -266,9 +274,11 @@ rtcIntersectNp(scene,context,&ray,N);
 @@{
 rtcOccluded(EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcOccluded1(scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcOccluded1(scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -280,9 +290,11 @@ rtcOccluded1(scene,context,&ray);
 @@{
 rtcOccluded4(EXPR valid,EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcOccluded4(valid,scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcOccluded4(valid,scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -294,9 +306,11 @@ rtcOccluded4(valid,scene,context,&ray);
 @@{
 rtcOccluded8(EXPR valid,EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcOccluded8(valid,scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcOccluded8(valid,scene,&context,&ray);
+}
 }@@
 
 @@{
@@ -308,9 +322,11 @@ rtcOccluded8(valid,scene,context,&ray);
 @@{
 rtcOccluded16(EXPR valid,EXPR scene,EXPR ray);
 =>
-RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
-rtcOccluded16(valid,scene,&context,&ray);
+{
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcOccluded16(valid,scene,&context,&ray);
+}
 }@@
 
 @@{
