@@ -231,8 +231,8 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stri
 void intersectionFilterN(int* valid,
                                   void* ptr,
                                   const RTCIntersectContext* context,
-                                  struct RTCRayN* ray,
-                                  const struct RTCHitN* potentialHit,
+                                  RTCRayN* ray,
+                                  const RTCHitN* potentialHit,
                                   const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
@@ -293,8 +293,8 @@ void intersectionFilterN(int* valid,
 void occlusionFilterN(int* valid,
                                void* ptr,
                                const RTCIntersectContext* context,
-                               struct RTCRayN* ray,
-                               const struct RTCHitN* potentialHit,
+                               RTCRayN* ray,
+                               const RTCHitN* potentialHit,
                                const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
