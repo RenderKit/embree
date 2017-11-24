@@ -158,9 +158,9 @@ def match(pattern,ppos,tokens,tpos,env):
   elif pattern[ppos] == "ID":
     ppos+=1
     var = pattern[ppos]
-    ppos+=1
     if (not is_identifier_token(tokens[tpos])):
       return (ppos,tpos,False)
+    ppos+=1
     env[var] = [tokens[tpos]]
     tpos+=1
     return (ppos,tpos,True)
