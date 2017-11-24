@@ -407,9 +407,11 @@ namespace embree
   
   unsigned int ConvertHairSet(ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    unsigned int geomID = mesh->basis == BEZIER_BASIS ?
-      rtcNewBezierHairGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
-      rtcNewBSplineHairGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+    unsigned int geomID;
+    if (mesh->basis == BEZIER_BASIS)
+      geomID = rtcNewBezierHairGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+    else
+      geomID = rtcNewBSplineHairGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t],0,sizeof(Vec3fa));
@@ -423,9 +425,11 @@ namespace embree
   
   unsigned int ConvertCurveGeometry(ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    unsigned int geomID = mesh->basis == BEZIER_BASIS ?
-      rtcNewBezierCurveGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
-      rtcNewBSplineCurveGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+    unsigned int geomID;
+    if (mesh->basis == BEZIER_BASIS)
+      geomID = rtcNewBezierCurveGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+    else
+      geomID = rtcNewBSplineCurveGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t],0,sizeof(Vec3fa));
