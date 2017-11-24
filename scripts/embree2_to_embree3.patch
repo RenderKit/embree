@@ -3,6 +3,12 @@
 // rtcore.h
 
 @@{
+embree2
+=>
+embree3
+}@@
+
+@@{
 rtcNewDevice ()
 =>
 rtcNewDevice (NULL)
@@ -1377,6 +1383,83 @@ rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR intersector,EXPR flags,EXPR num
 rtcNewCurveGeometry (device,basis)
 }@@
 
+
+////////////////////////////////////////////////
+// BVH build API
+
+@@{
+RTC_BUILD_QUALITY_NORMAL
+=>
+RTC_BUILD_QUALITY_MEDIUM
+}@@
+
+@@{
+rtcBuildBVH(EXPR bvh, EXPR settings, EXPR primitives, EXPR numPrimitives, EXPR createNode, EXPR setNodeChildren, EXPR setNodeBounds, EXPR createLeaf, EXPR splitPrimitive, EXPR buildProgress, EXPR userPtr);
+=>
+rtcBuildBVH(bvh, &settings, primitives, numPrimitives, createNode, setNodeChildren, setNodeBounds, createLeaf, splitPrimitive, buildProgress, userPtr);
+}@@
+
+@@{
+void* EXPR RTCCreateNodeFunc (RTCThreadLocalAllocator ID allocator, size_t ID numChildren, void* ID userPtr)
+=>
+void* RTCCreateNodeFunc (RTCThreadLocalAllocator allocator, unsigned int numChildren, void* userPtr)
+}@@
+
+@@{
+void EXPR RTCSetNodeChildrenFunc (void* ID nodePtr, void** ID children, size_t ID numChildren, void* ID userPtr)
+=>
+void RTCSetNodeChildrenFunc (void* nodePtr, void** children, unsigned int numChildren, void* userPtr)
+}@@
+
+@@{
+void EXPR RTCSetNodeBoundsFunc (void* ID nodePtr, const RTCBounds** ID bounds, size_t ID numChildren, void* ID userPtr)
+=>
+void RTCSetNodeBoundsFunc (void* nodePtr, const RTCBounds** bounds, unsigned int numChildren, void* userPtr)
+}@@
+
+//@@{
+//void* EXPR RTCCreateLeafFunc (RTCThreadLocalAllocator ID allocator, const RTCBuildPrimitive* ID prims, size_t ID numPrims, void* ID userPtr)
+//=>
+//void* RTCCreateLeafFunc (RTCThreadLocalAllocator allocator, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
+//}@@
+
+@@{
+void EXPR RTCSplitPrimitiveFunc (const RTCBuildPrimitive& ID prim, unsigned ID dim, float ID pos, RTCBounds& ID lbounds, RTCBounds& ID rbounds, void* ID userPtr)
+{
+=>
+void RTCSplitPrimitiveFunc (const RTCBuildPrimitive* _prim, unsigned int dim, float pos, RTCBounds* _lbounds, RTCBounds* _rbounds, void* userPtr)
+{
+  const RTCBuildPrimitive& prim = *_prim;
+  RTCBounds& lbounds = *_lbounds;
+  RTCBounds& rbounds = *_rbounds;
+}@@
+
+@@{
+void EXPR RTCSplitPrimitiveFunc (const RTCBuildPrimitive& ID prim, unsigned int ID dim, float ID pos, RTCBounds& ID lbounds, RTCBounds& ID rbounds, void* ID userPtr)
+{
+=>
+void RTCSplitPrimitiveFunc (const RTCBuildPrimitive* prim, unsigned int dim, float pos, RTCBounds* lbounds, RTCBounds* rbounds, void* userPtr)
+{
+  const RTCBuildPrimitive& prim = *_prim;
+  RTCBounds& lbounds = *_lbounds;
+  RTCBounds& rbounds = *_rbounds;
+}@@
+
+@@{
+void EXPR RTCBuildProgressFunc (size_t ID dn, void* ID userPtr)
+{
+=>
+bool RTCBuildProgressFunc (void* userPtr, double _dn)
+{
+size_t dn = _dn; // FIXME: multiply by number of primitives
+return true; // FIXME: you have to return true from this function
+}@@
+
+@@{
+rtcDeleteBVH(EXPR bvh)
+=>
+rtcReleaseBVH(bvh)
+}@@
 
 ////////////////////////////////////////////////
 // special rules for tutorials
