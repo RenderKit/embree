@@ -97,7 +97,7 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   uniform RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   /* create object */
   RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
-  rtcSetGeometryIntersectMode(geom,hair->type);
+  rtcSetGeometrySubtype(geom,hair->type);
   rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);

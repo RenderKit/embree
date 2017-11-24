@@ -756,14 +756,14 @@ namespace embree
       };
       
     public:
-      HairSetNode (RTCIntersectMode type, RTCCurveBasis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
+      HairSetNode (RTCGeometrySubtype type, RTCCurveBasis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
         : Node(true), type(type), basis(basis), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCIntersectMode type, RTCCurveBasis basis)
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometrySubtype type, RTCCurveBasis basis)
         : Node(true), type(type), basis(basis), hairs(hairs), material(material), tessellation_rate(4) 
       {
         positions.push_back(positions_in);
@@ -817,7 +817,7 @@ namespace embree
       void verify() const;
 
     public:
-      RTCIntersectMode type;                //!< type of geometry (hair or curve)
+      RTCGeometrySubtype type;                //!< type of geometry (hair or curve)
       RTCCurveBasis basis;              //!< basis function of curve (bezier or bspline)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;  //!< list of hairs

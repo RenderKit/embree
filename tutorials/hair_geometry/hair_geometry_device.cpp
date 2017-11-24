@@ -78,7 +78,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   for (size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
-  rtcSetGeometryIntersectMode(geom,hair->type);
+  rtcSetGeometrySubtype(geom,hair->type);
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcSetGeometryTessellationRate(geom,hair->tessellation_rate);

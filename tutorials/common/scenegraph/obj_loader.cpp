@@ -604,7 +604,7 @@ namespace embree
        }
      }
        
-     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(vertices,curves,curMaterial,RTC_INTERSECT_MODE_RIBBON,RTC_CURVE_BASIS_BEZIER);
+     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(vertices,curves,curMaterial,RTC_GEOMETRY_SUBTYPE_RIBBON,RTC_CURVE_BASIS_BEZIER);
      group->add(mesh.cast<SceneGraph::Node>());
      mesh->verify();
      curGroupHair.clear();

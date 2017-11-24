@@ -201,10 +201,10 @@ uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, un
 }
 
 /* add hair geometry */
-uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform RTCIntersectMode type, uniform unsigned int num_time_steps)
+uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform RTCGeometrySubtype type, uniform unsigned int num_time_steps)
 {
   RTCGeometry geom = rtcNewCurveGeometry(g_device, RTC_CURVE_BASIS_BSPLINE);
-  rtcSetGeometryIntersectMode(geom,type);
+  rtcSetGeometrySubtype(geom,type);
   rtcSetGeometryTessellationRate (geom,16.0f);
 
   uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
@@ -240,7 +240,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform
 uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
 {
   RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_CURVE_BASIS_LINEAR);
-  rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_RIBBON);
+  rtcSetGeometrySubtype(geom,RTC_GEOMETRY_SUBTYPE_RIBBON);
 
   uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
   for (uniform int i=0; i<16; i++) {
@@ -548,11 +548,11 @@ export void device_init (uniform int8* uniform cfg)
   addLines       (g_scene,make_Vec3f(-5,1, 0),g_num_time_steps);
   addLines       (g_scene,make_Vec3f(-5,5, 0),g_num_time_steps2);
 
-  addCurve (g_scene,make_Vec3f( 0,1, 0),RTC_INTERSECT_MODE_RIBBON,g_num_time_steps);
-  addCurve (g_scene,make_Vec3f( 0,5, 0),RTC_INTERSECT_MODE_RIBBON,g_num_time_steps2);
+  addCurve (g_scene,make_Vec3f( 0,1, 0),RTC_GEOMETRY_SUBTYPE_RIBBON,g_num_time_steps);
+  addCurve (g_scene,make_Vec3f( 0,5, 0),RTC_GEOMETRY_SUBTYPE_RIBBON,g_num_time_steps2);
 
-  addCurve (g_scene,make_Vec3f(+5,1, 0),RTC_INTERSECT_MODE_SURFACE,g_num_time_steps);
-  addCurve (g_scene,make_Vec3f(+5,5, 0),RTC_INTERSECT_MODE_SURFACE,g_num_time_steps2);
+  addCurve (g_scene,make_Vec3f(+5,1, 0),RTC_GEOMETRY_SUBTYPE_SURFACE,g_num_time_steps);
+  addCurve (g_scene,make_Vec3f(+5,5, 0),RTC_GEOMETRY_SUBTYPE_SURFACE,g_num_time_steps2);
 
   scene0 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,1,+5),g_num_time_steps);
   scene1 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,5,+5),g_num_time_steps2);

@@ -698,7 +698,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_INTERSECT_MODE_RIBBON, RTC_CURVE_BASIS_LINEAR, hmesh->material);
+      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_SUBTYPE_RIBBON, RTC_CURVE_BASIS_LINEAR, hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
@@ -725,7 +725,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      hmesh->type = RTC_INTERSECT_MODE_SURFACE;
+      hmesh->type = RTC_GEOMETRY_SUBTYPE_SURFACE;
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;

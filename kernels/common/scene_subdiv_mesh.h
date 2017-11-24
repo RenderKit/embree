@@ -67,7 +67,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setIntersectMode(RTCIntersectMode type);
+    void setSubtype(RTCGeometrySubtype type);
     void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
     void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);

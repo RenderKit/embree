@@ -21,7 +21,7 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, RTCIntersectMode subtype, RTCCurveBasis basis) 
+  NativeCurves::NativeCurves (Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis) 
     : Geometry(device,BEZIER_CURVES,0,1), subtype(subtype), basis(basis), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
@@ -45,7 +45,7 @@ namespace embree
     Geometry::update();
   }
 
-  void NativeCurves::setIntersectMode(RTCIntersectMode type_in)
+  void NativeCurves::setSubtype(RTCGeometrySubtype type_in)
   {
     this->subtype = type_in;
     Geometry::update();
@@ -254,7 +254,7 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Device* device, RTCIntersectMode subtype, RTCCurveBasis basis) {
+    NativeCurves* createCurvesBezier(Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis) {
       return new CurvesBezier(device,subtype,basis);
     }
     
@@ -273,7 +273,7 @@ namespace embree
       interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
     }
     
-    NativeCurves* createCurvesBSpline(Device* device, RTCIntersectMode subtype, RTCCurveBasis basis) {
+    NativeCurves* createCurvesBSpline(Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis) {
       return new CurvesBSpline(device,subtype,basis);
     }
     

@@ -207,7 +207,7 @@ namespace embree
 
 
     /*! sets type of curve */
-    virtual void setIntersectMode(RTCIntersectMode type) {
+    virtual void setSubtype(RTCGeometrySubtype type) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     

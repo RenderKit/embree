@@ -910,8 +910,8 @@ namespace embree
     Geometry* geom = nullptr;
     switch (basis) {
     case RTC_CURVE_BASIS_LINEAR : geom = createLineSegments (device); break;
-    case RTC_CURVE_BASIS_BEZIER : geom = createCurvesBezier (device,RTC_INTERSECT_MODE_SURFACE,basis); break;
-    case RTC_CURVE_BASIS_BSPLINE: geom = createCurvesBSpline(device,RTC_INTERSECT_MODE_SURFACE,basis); break;
+    case RTC_CURVE_BASIS_BEZIER : geom = createCurvesBezier (device,RTC_GEOMETRY_SUBTYPE_SURFACE,basis); break;
+    case RTC_CURVE_BASIS_BSPLINE: geom = createCurvesBSpline(device,RTC_GEOMETRY_SUBTYPE_SURFACE,basis); break;
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve basis");
     }
     return (RTCGeometry) geom->refInc();
@@ -942,15 +942,15 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryIntersectMode(RTCGeometry hgeometry, RTCIntersectMode type)
+  RTCORE_API void rtcSetGeometrySubtype(RTCGeometry hgeometry, RTCGeometrySubtype type)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetGeometryIntersectMode);
+    RTCORE_TRACE(rtcSetGeometrySubtype);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    if (type != RTC_INTERSECT_MODE_RIBBON && type != RTC_INTERSECT_MODE_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve type");
-    geometry->setIntersectMode(type);
+    if (type != RTC_GEOMETRY_SUBTYPE_RIBBON && type != RTC_GEOMETRY_SUBTYPE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+    geometry->setSubtype(type);
     RTCORE_CATCH_END2(geometry);
   }
     

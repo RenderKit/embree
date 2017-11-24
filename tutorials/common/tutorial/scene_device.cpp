@@ -232,7 +232,7 @@ namespace embree
     if (face_offsets) delete[] face_offsets;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCIntersectMode type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometrySubtype type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
     : geom(CURVES), type(type), basis(basis)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
@@ -387,7 +387,7 @@ namespace embree
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
     RTCGeometry geom = rtcNewCurveGeometry  (device, mesh->basis);
-    rtcSetGeometryIntersectMode(geom,mesh->type);
+    rtcSetGeometrySubtype(geom,mesh->type);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {

@@ -79,7 +79,7 @@ namespace embree {
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCBuildQuality quality)
   {
     RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
-    rtcSetGeometryIntersectMode(geom,hair->type);
+    rtcSetGeometrySubtype(geom,hair->type);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<hair->numTimeSteps; t++) {

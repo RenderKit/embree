@@ -45,10 +45,10 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setIntersectMode(RTCIntersectMode type)
+  void LineSegments::setSubtype(RTCGeometrySubtype type)
   {
-    if (type != RTC_INTERSECT_MODE_RIBBON)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve type");
+    if (type != RTC_GEOMETRY_SUBTYPE_RIBBON)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
     
     Geometry::update();
   }

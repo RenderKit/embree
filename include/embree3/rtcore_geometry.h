@@ -97,11 +97,11 @@ enum RTCCurveBasis
   RTC_CURVE_BASIS_BSPLINE = 2
 };
 
-/*! Intersection mode */
-enum RTCIntersectMode
+/*! Geometry subtype, which can be changed for already existing geometries */
+enum RTCGeometrySubtype
 {
-  RTC_INTERSECT_MODE_RIBBON, //!< render curves as ray facing ribbons
-  RTC_INTERSECT_MODE_SURFACE //!< render curves as real geometric surface
+  RTC_GEOMETRY_SUBTYPE_SURFACE, //!< render curves as real geometric surfaces
+  RTC_GEOMETRY_SUBTYPE_RIBBON   //!< render curves as ray facing ribbons
 };
 
 /*! Arguments for RTCBoundsFunction */
@@ -358,8 +358,8 @@ RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry geometry, unsigned int N
 /*! Sets the number of time steps. */
 RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, unsigned int N);
  
-/*! Sets the intersection mode of the geometry. */
-RTCORE_API void rtcSetGeometryIntersectMode(RTCGeometry geometry, enum RTCIntersectMode type);
+/*! Sets the subtype of the geometry. */
+RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, enum RTCGeometrySubtype type);
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used

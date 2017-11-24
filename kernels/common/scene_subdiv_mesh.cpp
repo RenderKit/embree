@@ -64,10 +64,10 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setIntersectMode(RTCIntersectMode type_in)
+  void SubdivMesh::setSubtype(RTCGeometrySubtype type_in)
   {
-    if (type_in != RTC_INTERSECT_MODE_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid intersect mode");
+    if (type_in != RTC_GEOMETRY_SUBTYPE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry subtype");
     
     Geometry::update();
   }
