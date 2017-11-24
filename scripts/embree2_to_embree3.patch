@@ -133,11 +133,13 @@ RTC_ACCEL_COMPACT
 @@{
 RTC_SCENE_COHERENT
 =>
+0
 }@@
 
 @@{
 RTC_SCENE_INCOHERENT
 =>
+0
 }@@
 
 @@{
@@ -160,6 +162,48 @@ ID id = EXPR e1;
 =>
 ;
 }@@
+}@@
+
+@@{
+RTCAlgorithmFlags
+=>
+int
+}@@
+
+@@{
+RTC_INTERSECT1
+=>
+0
+}@@
+
+@@{
+RTC_INTERSECT4
+=>
+0
+}@@
+
+@@{
+RTC_INTERSECT8
+=>
+0
+}@@
+
+@@{
+RTC_INTERSECT16
+=>
+0
+}@@
+
+@@{
+RTC_INTERPOLATE
+=>
+0
+}@@
+
+@@{
+RTC_INTERSECT_STREAM
+=>
+0
 }@@
 
 @@{
@@ -1493,21 +1537,20 @@ ID myray.tnear
 =>
 myray.tnear()
 }@@
-}@@
-
-@@{
-Ray ID myray
-=>
-Ray myray
 @@{
 ID myray.tfar
 =>
 myray.tfar()
 }@@
+@@{
+&ID myray
+=>
+RTCRay_(myray)
+}@@
 }@@
 
 @@{
-Ray& ID myray
+Ray& ID myray =
 =>
 Ray& myray
 @@{
@@ -1515,23 +1558,11 @@ ID myray.tnear
 =>
 myray.tnear()
 }@@
-}@@
-
-@@{
-Ray& ID myray
-=>
-Ray& myray
 @@{
 ID myray.tfar
 =>
 myray.tfar()
 }@@
-}@@
-
-@@{
-Ray ID myray
-=>
-Ray myray
 @@{
 &ID myray
 =>
