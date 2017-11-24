@@ -1166,9 +1166,9 @@ namespace embree
 
     /* load and transpose: tnear, tfar, time, mask */
     const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->time);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->mask);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->id);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->flags);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->time);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->time);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->time);
 
     vfloat4 maskf, idf, flagsf;
     transpose(c0,c1,c2,c3, ray.time, maskf, idf, flagsf);
@@ -1365,10 +1365,10 @@ namespace embree
     transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->tfar());
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->tfar());
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->tfar());
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->tfar());
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->time);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->time);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->time);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->time);
 
     vfloat4 maskf, idf, flagsf;
     transpose(c0,c1,c2,c3, ray.time, maskf, idf, flagsf);
