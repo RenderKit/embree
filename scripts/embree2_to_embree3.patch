@@ -863,9 +863,9 @@ rtcReleaseGeometry(geom);
 }@@
 
 @@{
-RTCGeometry ID geom = rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles);
+RTCGeometry ID geom = rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewSubdivisionMesh (device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles);
+RTCGeometry geom = rtcNewSubdivisionMesh (device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 rtcSetGeometryBuildQuality(geom,flags);
 rtcSetNumTimeSteps(geom,numTimeSteps);
 }@@
@@ -1349,7 +1349,7 @@ rtcNewQuadMesh (device)
 }@@
 
 @@{
-rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles)
+rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps)
 =>
 rtcNewSubdivisionMesh (device)
 }@@
