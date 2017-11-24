@@ -33,11 +33,13 @@ struct RTCRay
   
   float dir_x;  //!< x coordinate of ray direction
   float dir_y;  //!< y coordinate of ray direction
-  float dir_z;  //!< z coordinate of ray direction
-  
+  float dir_z;  //!< z coordinate of ray direction  
   float tfar;  //!< End of ray segment   
+
   float time;  //!< Time of this ray for motion blur
   unsigned int mask;  //!< Used to mask out objects during traversal
+  unsigned int id;    //!< ray ID
+  unsigned int flags; //!< per flags
   
   /* hit data */
   float Ng_x;   //!< x coordinate of geometry normal
@@ -81,19 +83,21 @@ inline varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform unsigned int N
 inline varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[6*N+i]); }; //!< z coordinate of ray direction
 inline varying float& RTCRayN_tfar (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[7*N+i]); }; //!< End of ray segment (set to hit distance)
 
-inline varying float& RTCRayN_time(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[8*N+i]); };  //!< Time of this ray for motion blur 
-inline varying unsigned int& RTCRayN_mask(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[9*N+i]); };  //!< Used to mask out objects during traversal
+inline varying float&        RTCRayN_time (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[8*N+i]); };  //!< Time of this ray for motion blur 
+inline varying unsigned int& RTCRayN_mask (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[9*N+i]); };  //!< Used to mask out objects during traversal
+inline varying unsigned int& RTCRayN_id   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[10*N+i]); };  //!< ray ID
+inline varying unsigned int& RTCRayN_flags(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[11*N+i]); };  //!< ray flags
 
-inline varying float& RTCRayN_Ng_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[10*N+i]); }; //!< x coordinate of geometry normal
-inline varying float& RTCRayN_Ng_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[11*N+i]); }; //!< y coordinate of geometry normal
-inline varying float& RTCRayN_Ng_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[12*N+i]); }; //!< z coordinate of geometry normal
+inline varying float& RTCRayN_Ng_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[12*N+i]); }; //!< x coordinate of geometry normal
+inline varying float& RTCRayN_Ng_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[13*N+i]); }; //!< y coordinate of geometry normal
+inline varying float& RTCRayN_Ng_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[14*N+i]); }; //!< z coordinate of geometry normal
 
-inline varying float& RTCRayN_u   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[13*N+i]); }; //!< Barycentric u coordinate of hit
-inline varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[14*N+i]); }; //!< Barycentric v coordinate of hit
+inline varying float& RTCRayN_u   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[15*N+i]); }; //!< Barycentric u coordinate of hit
+inline varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[16*N+i]); }; //!< Barycentric v coordinate of hit
 
-inline varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[15*N+i]); }; //!< geometry ID
-inline varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[16*N+i]); }; //!< primitive ID
-inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[17*N+i]); }; //!< instance ID
+inline varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[17*N+i]); }; //!< geometry ID
+inline varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[18*N+i]); }; //!< primitive ID
+inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[19*N+i]); }; //!< instance ID
 
 /*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
 struct RTCRayNp
@@ -111,6 +115,8 @@ struct RTCRayNp
  
   uniform float* uniform time;  //!< Time of this ray for motion blur (optional)
   uniform unsigned int* uniform mask;  //!< Used to mask out objects during traversal (optional)
+  uniform unsigned int* uniform id;    //!< ray ID (optional)
+  uniform unsigned int* uniform flags; //!< ray flags (optional)
 
   /* hit data */
   uniform float* uniform Ng_x;   //!< x coordinate of geometry normal (optional)
@@ -153,6 +159,8 @@ inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, unif
   ray.tfar    = RTCRayN_tfar(ptr,N,i);
   ray.time    = RTCRayN_time(ptr,N,i);
   ray.mask    = RTCRayN_mask(ptr,N,i);
+  ray.id      = RTCRayN_id(ptr,N,i);
+  ray.flags   = RTCRayN_flags(ptr,N,i);
   ray.Ng_x    = RTCRayN_Ng_x(ptr,N,i);
   ray.Ng_y    = RTCRayN_Ng_y(ptr,N,i);
   ray.Ng_z    = RTCRayN_Ng_z(ptr,N,i);
