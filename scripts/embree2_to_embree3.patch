@@ -1295,7 +1295,7 @@ Ray ID myray
 =>
 Ray myray
 @@{
-myray.tnear
+ID myray.tnear
 =>
 myray.tnear()
 }@@
@@ -1306,7 +1306,7 @@ Ray ID myray
 =>
 Ray myray
 @@{
-myray.tfar
+ID myray.tfar
 =>
 myray.tfar()
 }@@
@@ -1317,7 +1317,7 @@ Ray ID myray
 =>
 Ray myray
 @@{
-&myray
+&ID myray
 =>
 RTCRay_(myray)
 }@@
