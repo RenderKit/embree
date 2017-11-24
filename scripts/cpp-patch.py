@@ -5,6 +5,7 @@ import os
 import copy
 import re
 
+unique_id = 0
 identifier_begin_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 identifier_cont_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
 number_chars = "0123456789";
@@ -214,13 +215,18 @@ def match(pattern,ppos,tokens,tpos,env):
     return (ppos,tpos,False)
 
 def substitute (env,tokens,ident):
+  global unique_id
   result = []
-  for token in tokens:
-    if token in env:
-      result = result + env[token]
+  for i in range(0,len(tokens)):
+    if tokens[i] == "VAR":
+      var = tokens[i+2]
+      env[var] = [var+"_"+str(unique_id)]
+      unique_id+=1
+    elif tokens[i] in env:
+      result = result + env[tokens[i]]
     else:
-      result.append(token)
-    if token == "\n" and ident != 0:
+      result.append(tokens[i])
+    if tokens[i] == "\n" and ident != 0:
       result.append(" "*ident)
   return result
 
