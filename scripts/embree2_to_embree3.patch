@@ -561,49 +561,61 @@ rtcSetDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
 @@{
 rtcSetIntersectionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetIntersectionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetIntersectionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetIntersectionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetIntersectionFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetIntersectionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetIntersectionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetOcclusionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetOcclusionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetOcclusionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetOcclusionFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetOcclusionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetOcclusionFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 
@@ -752,6 +764,46 @@ rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 rtcDeleteGeometry(EXPR scene,EXPR geomID)
 =>
 rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
+}@@
+
+
+//////////////////////////////////////////////////////////////////////////
+// convert intersection filter functions
+
+@@{
+void EXPR intersectionFilter(void* ID geomUserPtr_in, RTCRay& ID ray_in)
+{
+=>
+void intersectionFilter(const RTCFilterFunctionNArguments* args)
+{
+  int* valid = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context = args->context;
+  COMMENT RTCRay* ray_in = (RTCRay*) args->ray;
+  RTCHit* potentialHit = (RTCHit*) args->potentialHit;
+  unsigned int N = args->N;
+  assert(N == 1);
+  if (!valid[0]) return; // function may get called with zero mask
+@@{
+ray_in.
+=>
+potentialHit->
+}@@
+}@@
+
+@@{
+void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in)
+{
+=>
+void intersectionFilterN(const RTCFilterFunctionNArguments* args)
+{
+  int* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  RTCIntersectContext* context_in = args->context;
+  RTCRayN* ray_in = args->ray;
+  RTCHitN* potentialHit_in = args->potentialHit;
+  unsigned int N_in = args->N;
+  // FIXME: function may get called with zero mask
 }@@
 
 
