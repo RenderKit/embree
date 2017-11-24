@@ -229,6 +229,18 @@ COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
 }@@
 
 @@{
+return rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
+=>
+{
+  RTCScene VAR scene = rtcDeviceNewScene(device);
+  COMMENT rtcSetAccelFlags(scene,sflags); // FIXME: set proper accel flags
+  COMMENT rtcSetBuildQuality(scene,sflags); // FIXME: set proper build quality
+  COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
+  return scene;
+}
+}@@
+
+@@{
 rtcDeleteScene(EXPR scene)
 =>
 rtcReleaseScene(scene)
@@ -1409,7 +1421,7 @@ rtcUnmapBuffer(EXPR geom, EXPR type);
 @@{
 rtcMapBuffer(EXPR geom,EXPR type)
 =>
-rtcGetBuffer(geom,type)
+rtcGetBuffer(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 }@@
 
 
@@ -1552,7 +1564,7 @@ RTCRay_(myray)
 @@{
 Ray& ID myray =
 =>
-Ray& myray
+Ray& myray =
 @@{
 ID myray.tnear
 =>
@@ -1590,4 +1602,22 @@ cont.context.flags
 =>
 &cont.context
 }@@
+}@@
+
+@@{
+LINEAR_BASIS
+=>
+RTC_BASIS_LINEAR
+}@@
+
+@@{
+BEZIER_BASIS
+=>
+RTC_BASIS_BEZIER
+}@@
+
+@@{
+BSPLINE_BASIS
+=>
+RTC_BASIS_BSPLINE
 }@@
