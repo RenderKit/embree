@@ -179,9 +179,9 @@ rtcDeviceNewScene(g_device,e0,e1)
 ID scene = rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 =>
 scene = rtcDeviceNewScene(device);
-rtcSetAccelFlags(scene,sflags);
-rtcSetBuildQuality(scene,sflags);
-rtcSetSceneFlags(scene,sflags);
+COMMENT rtcSetAccelFlags(scene,sflags); // FIXME: set proper accel flags
+COMMENT rtcSetBuildQuality(scene,sflags); // FIXME: set proper build quality
+COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
 }@@
 
 @@{

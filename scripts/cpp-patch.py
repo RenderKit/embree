@@ -222,6 +222,8 @@ def substitute (env,tokens,ident):
       var = tokens[i+2]
       env[var] = [var+"_"+str(unique_id)]
       unique_id+=1
+    elif tokens[i] == "COMMENT":
+      result.append("//")
     elif tokens[i] in env:
       result = result + env[tokens[i]]
     else:
