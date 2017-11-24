@@ -672,17 +672,17 @@ rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
 // geometries
 
 @@{
-unsigned int ID geomID = REGEXPR(name,rtcNew.*)
+unsigned int ID geomID = REGEXPR(name,rtcNew.*)(
 =>
 unsigned int geomID;
-geomID = name
+geomID = name(
 }@@
 
 @@{
-int ID geomID = REGEXPR(name,rtcNew.*)
+int ID geomID = REGEXPR(name,rtcNew.*)(
 =>
 int geomID;
-geomID = name
+geomID = name(
 }@@
 
 
@@ -1040,9 +1040,9 @@ geom
 // add rtcCommitGeometry before every return
 
 @@{
-RTCGeometry ID geom = REGEXPR(name,rtcNew.*)
+RTCGeometry ID geom = REGEXPR(name,rtcNew.*)(
 =>
-RTCGeometry geom = name
+RTCGeometry geom = name(
 @@{
 return EXPR e0;
 =>
@@ -1054,6 +1054,60 @@ return e0;
 
 /////////////////////////////////
 // buffers
+
+@@{
+RTC_INDEX_BUFFER0
+=>
+RTC_INDEX_BUFFER_(0)
+}@@
+
+@@{
+RTC_INDEX_BUFFER1
+=>
+RTC_INDEX_BUFFER_(1)
+}@@
+
+@@{
+(RTCBufferType)(RTC_INDEX_BUFFER+EXPR t)
+=>
+RTC_INDEX_BUFFER_(t)
+}@@
+
+@@{
+RTC_VERTEX_BUFFER0
+=>
+RTC_VERTEX_BUFFER_(0)
+}@@
+
+@@{
+RTC_VERTEX_BUFFER1
+=>
+RTC_VERTEX_BUFFER_(1)
+}@@
+
+@@{
+(RTCBufferType)(RTC_VERTEX_BUFFER+EXPR t)
+=>
+RTC_VERTEX_BUFFER_(t)
+}@@
+
+@@{
+RTC_USER_VERTEX_BUFFER0
+=>
+RTC_USER_VERTEX_BUFFER_(0)
+}@@
+
+@@{
+RTC_USER_VERTEX_BUFFER1
+=>
+RTC_USER_VERTEX_BUFFER_(1)
+}@@
+
+@@{
+(RTCBufferType)(RTC_USER_VERTEX_BUFFER+EXPR t)
+=>
+RTC_USER_VERTEX_BUFFER_(t)
+}@@
 
 @@{
 RTCGeometry ID geom = rtcNewTriangleMesh(EXPR device,EXPR flags,EXPR numTriangles,EXPR numVertices,EXPR numTimeSteps);
@@ -1081,9 +1135,9 @@ rtcMapBuffer(EXPR geom,RTC_VERTEX_BUFFER)
 rtcNewBuffer(geom,RTC_VERTEX_BUFFER,4*sizeof(float),numVertices)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_VERTEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,RTC_VERTEX_BUFFER,ptr,offset,stride,numVertices)
+rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_USER_VERTEX_BUFFER0,EXPR ptr,EXPR offset,EXPR stride)

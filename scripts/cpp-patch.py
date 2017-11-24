@@ -174,11 +174,14 @@ def match(pattern,ppos,tokens,tpos,env):
     name = pattern[ppos]
     ppos+=1
     pat = pattern[ppos]
-    if (re.match(pat,tokens[tpos]) == None):
-      return (ppos,tpos,False)
     ppos+=1
-    env[name] = [tokens[tpos]]
-    tpos+=1
+    next = pattern[ppos]
+    try: (expr,tpos) = parse_expr(tokens,tpos,next)
+    except ValueError: return (ppos,tpos,False)
+    m = "".join(filter(no_delimiter_token,expr))
+    if (re.match(pat,m) == None):
+      return (ppos,tpos,False)
+    env[name] = [m]
     return (ppos,tpos,True)
     
   elif pattern[ppos] == "EXPR":
