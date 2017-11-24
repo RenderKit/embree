@@ -486,7 +486,8 @@ rtcCommitGeometry(rtcGetGeometry(scene,geomID))
 @@{
 rtcUpdateBuffer(EXPR scene,EXPR geomID,EXPR type)
 =>
-rtcUpdateBuffer(rtcGetGeometry(scene,geomID),type)
+rtcUpdateBuffer(rtcGetGeometry(scene,geomID),type);
+rtcCommitGeometry(rtcGetGeometry(scene,geomID)) /* FIXME: do commit once after all updates */
 }@@
 
 @@{
@@ -1265,22 +1266,22 @@ rtcSetBuffer(geom,RTC_LEVEL_BUFFER,ptr,offset,stride,numEdges)
 @@{
 rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(int),numEdgesCreases)
+rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(int),numEdgeCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,ptr,offset,stride,numEdgesCreases)
+rtcSetBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,ptr,offset,stride,numEdgeCreases)
 }@@
 @@{
 rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(float),numEdgesCreases)
+rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(float),numEdgeCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numEdgesCreases)
+rtcSetBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numEdgeCreases)
 }@@
 @@{
 rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER)
@@ -1293,12 +1294,12 @@ rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR 
 rtcSetBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,ptr,offset,stride,numVertexCreases)
 }@@
 @@{
-rtcMapBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER)
 =>
 rtcNewBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,sizeof(float),numVertexCreases)
 }@@
 @@{
-rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
 =>
 rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numVertexCreases)
 }@@
@@ -1311,6 +1312,11 @@ rtcNewBuffer(geom,RTC_HOLE_BUFFER,sizeof(int),numPrimitives)
 rtcSetBuffer(EXPR geom,RTC_HOLE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
 =>
 rtcSetBuffer(geom,RTC_HOLE_BUFFER,ptr,offset,stride,numPrimitives)
+}@@
+@@{
+rtcSetBuffer(EXPR geom,REGEXPR(user_vertex_buffer,RTC_USER_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices) /* FIXME: verify size of this buffer! */
 }@@
 }@@
 
