@@ -165,6 +165,7 @@ ID id = EXPR e1;
 @@{
 RTCIntersectContext ID context;
 =>
+RTCIntersectContext context;
 rtcInitIntersectionContext(&context);
 }@@
 
@@ -1472,9 +1473,9 @@ rtcReleaseBVH(bvh)
 // special rules for tutorials
 
 @@{
-RTCRay ID myray
+RTCRay
 =>
-Ray myray
+Ray
 }@@
 
 @@{
@@ -1500,6 +1501,28 @@ myray.tfar()
 }@@
 
 @@{
+Ray& ID myray
+=>
+Ray& myray
+@@{
+ID myray.tnear
+=>
+myray.tnear()
+}@@
+}@@
+
+@@{
+Ray& ID myray
+=>
+Ray& myray
+@@{
+ID myray.tfar
+=>
+myray.tfar()
+}@@
+}@@
+
+@@{
 Ray ID myray
 =>
 Ray myray
@@ -1510,3 +1533,24 @@ RTCRay_(myray)
 }@@
 }@@
 
+@@{
+RTCIntersectContext
+=>
+IntersectContext
+}@@
+
+@@{
+IntersectContext ID cont;
+=>
+IntersectContext cont;
+@@{
+ID cont.flags
+=>
+cont.context.flags
+}@@
+@@{
+&ID cont
+=>
+&cont.context
+}@@
+}@@
