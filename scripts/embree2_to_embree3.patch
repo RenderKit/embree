@@ -153,11 +153,12 @@ RTC_ACCEL_ROBUST
 }@@
 
 @@{
-RTCAlgorithmFlags id = EXPR e0;
+RTCAlgorithmFlags ID id EXPR e0;
 =>
 @@{
-id = EXPR e1;
+ID id = EXPR e1;
 =>
+;
 }@@
 }@@
 
@@ -177,9 +178,9 @@ rtcDeviceNewScene(g_device,e0,e1)
 ID scene = rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 =>
 scene = rtcDeviceNewScene(device);
-//rtcSetAccelFlags(scene,sflags);
+rtcSetAccelFlags(scene,sflags);
 rtcSetBuildQuality(scene,sflags);
-//rtcSetSceneFlags(scene,sflags);
+rtcSetSceneFlags(scene,sflags);
 }@@
 
 @@{
@@ -350,6 +351,12 @@ rtcOccludedNp(scene,context,&ray,N);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // rtcore_geometry.h
+
+@@{
+RTCGeometryFlags
+=>
+RTCBuildQuality
+}@@
 
 @@{
 RTC_GEOMETRY_STATIC
@@ -1349,7 +1356,7 @@ rtcUnmapBuffer(EXPR geom, EXPR type);
 }@@
 
 @@{
-rtcMapBuffer(EXPR scene,EXPR geom,EXPR type)
+rtcMapBuffer(EXPR geom,EXPR type)
 =>
 rtcGetBuffer(geom,type)
 }@@
