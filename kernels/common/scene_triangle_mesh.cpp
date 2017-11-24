@@ -45,10 +45,10 @@ namespace embree
     Geometry::update();
   }
 
-  void TriangleMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  void TriangleMesh::setIntersectMode(RTCIntersectMode type_in)
   {
-    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry intersector");
+    if (type_in != RTC_INTERSECT_MODE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid intersect mode");
     
     Geometry::update();
   }

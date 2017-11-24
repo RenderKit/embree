@@ -217,11 +217,11 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   instance->center = center;
   instance->radius = radius;
   instance->geometry = rtcNewUserGeometry(g_device);
-  rtcSetNumPrimitives(instance->geometry,1);
-  rtcSetUserData(instance->geometry,instance);
-  rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
-  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  rtcSetGeometryNumPrimitives(instance->geometry,1);
+  rtcSetGeometryUserData(instance->geometry,instance);
+  rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
+  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);

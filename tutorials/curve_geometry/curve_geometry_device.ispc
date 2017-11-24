@@ -63,8 +63,8 @@ uniform unsigned int hair_indices[6] = {
 /* add hair geometry */
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BASIS_BSPLINE);
-  rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_SURFACE);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_CURVE_BASIS_BSPLINE);
+  rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_SURFACE);
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair_indices,0,sizeof(uniform unsigned int),NUM_CURVES);
   rtcSetBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(uniform Vec3fa),NUM_VERTICES);
   rtcSetBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(uniform Vec3fa),NUM_VERTICES);

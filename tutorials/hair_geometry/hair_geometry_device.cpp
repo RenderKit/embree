@@ -66,7 +66,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -78,10 +78,10 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   for (size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
-  rtcSetGeometryIntersector(geom,hair->type);
+  rtcSetGeometryIntersectMode(geom,hair->type);
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
-  rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryTessellationRate(geom,hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);

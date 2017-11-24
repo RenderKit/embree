@@ -273,8 +273,8 @@ unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
 /* add curve geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BASIS_BEZIER);
-  rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_SURFACE);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_CURVE_BASIS_BEZIER);
+  rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_SURFACE);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(Vec3fa), NUM_HAIR_VERTICES);
   Vec3fa* vtx = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(Vec3fa), NUM_HAIR_VERTICES);

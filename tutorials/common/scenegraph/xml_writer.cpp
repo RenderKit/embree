@@ -451,16 +451,16 @@ namespace embree
   {
     std::string str_type = "";
     switch (mesh->type) {
-    case RTC_GEOMETRY_INTERSECTOR_RIBBON: str_type = "ribbon"; break;
-    case RTC_GEOMETRY_INTERSECTOR_SURFACE: str_type = "surface"; break;
+    case RTC_INTERSECT_MODE_RIBBON: str_type = "ribbon"; break;
+    case RTC_INTERSECT_MODE_SURFACE: str_type = "surface"; break;
     default: throw std::runtime_error("invalid curve type");
     }
 
     std::string str_basis = "";
     switch (mesh->basis) {
-    case RTC_BASIS_LINEAR: str_basis = "linear"; break;
-    case RTC_BASIS_BEZIER: str_basis = "bezier"; break;
-    case RTC_BASIS_BSPLINE: str_basis = "bspline"; break;
+    case RTC_CURVE_BASIS_LINEAR: str_basis = "linear"; break;
+    case RTC_CURVE_BASIS_BEZIER: str_basis = "bezier"; break;
+    case RTC_CURVE_BASIS_BSPLINE: str_basis = "bspline"; break;
     default: throw std::runtime_error("invalid basis");
     }
 

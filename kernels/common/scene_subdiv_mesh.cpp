@@ -64,10 +64,10 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  void SubdivMesh::setIntersectMode(RTCIntersectMode type_in)
   {
-    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry intersector");
+    if (type_in != RTC_INTERSECT_MODE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid intersect mode");
     
     Geometry::update();
   }
@@ -368,7 +368,7 @@ namespace embree
   }
 
   SubdivMesh::Topology::Topology(SubdivMesh* mesh)
-    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
+    : mesh(mesh), subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
   {
   }
   
@@ -530,15 +530,15 @@ namespace embree
         for (size_t i=0; i<mesh->faceVertices[f]; i++) 
         {
           /* pin corner vertices when requested by user */
-          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge[i].isCorner())
+          if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge[i].isCorner())
             edge[i].vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
             edge[i].vertex_crease_weight = float(inf);
 
           /* pin all edges and vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_ALL) {
             edge[i].edge_crease_weight = float(inf);
             edge[i].vertex_crease_weight = float(inf);
           }
@@ -587,15 +587,15 @@ namespace embree
 	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
 
           /* pin corner vertices when requested by user */
-          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge.isCorner())
+          if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge.isCorner())
             edge.vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge.vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_BOUNDARY && edge.vertexHasBorder()) 
             edge.vertex_crease_weight = float(inf);
 
           /* pin every vertex when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_ALL) {
             edge.edge_crease_weight = float(inf);
             edge.vertex_crease_weight = float(inf);
           }

@@ -220,8 +220,8 @@ namespace embree
         if (mesh->vertex_creases.size()) rtcSetBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int), (unsigned int)mesh->vertex_creases.size());
         if (mesh->vertex_crease_weights.size()) rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float), (unsigned int)mesh->vertex_crease_weights.size());
         if (mesh->holes.size()) rtcSetBuffer(geom,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int), (unsigned int)mesh->holes.size());
-        rtcSetTessellationRate(geom,mesh->tessellationRate);
-        rtcSetSubdivisionMode(geom,0,mesh->position_subdiv_mode);
+        rtcSetGeometryTessellationRate(geom,mesh->tessellationRate);
+        rtcSetGeometrySubdivisionMode(geom,0,mesh->position_subdiv_mode);
         AssertNoError(device);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -232,7 +232,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewCurveGeometry (device, mesh->basis);
         AssertNoError(device);
-        rtcSetGeometryIntersector(geom,mesh->type);
+        rtcSetGeometryIntersectMode(geom,mesh->type);
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
@@ -296,7 +296,7 @@ namespace embree
     
     std::pair<unsigned,Ref<SceneGraph::Node>> addHair (RandomSampler& sampler, RTCBuildQuality quality, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,RTC_GEOMETRY_INTERSECTOR_RIBBON);
+      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,RTC_INTERSECT_MODE_RIBBON);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       return addGeometry2(quality,node);
     }
@@ -304,13 +304,13 @@ namespace embree
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCBuildQuality quality, Sphere* sphere)
     {
       RTCGeometry geom = rtcNewUserGeometry (device);
-      rtcSetNumPrimitives(geom,1);
+      rtcSetGeometryNumPrimitives(geom,1);
       rtcSetGeometryBuildQuality(geom,quality);
       AssertNoError(device);
-      rtcSetBoundsFunction(geom,BoundsFunc,nullptr);
-      rtcSetUserData(geom,sphere);
-      rtcSetIntersectFunction(geom,IntersectFuncN);
-      rtcSetOccludedFunction(geom,OccludedFuncN);
+      rtcSetGeometryBoundsFunction(geom,BoundsFunc,nullptr);
+      rtcSetGeometryUserData(geom,sphere);
+      rtcSetGeometryIntersectFunction(geom,IntersectFuncN);
+      rtcSetGeometryOccludedFunction(geom,OccludedFuncN);
       rtcCommitGeometry(geom);
       unsigned int geomID = rtcAttachGeometry(scene,geom);
       rtcReleaseGeometry(geom);
@@ -810,25 +810,25 @@ namespace embree
       errorHandler(nullptr,rtcGetDeviceError(device));
 
       RTCGeometry geom0 = rtcNewTriangleMesh (device);
-      rtcSetUserData(geom0,(void*)1);
+      rtcSetGeometryUserData(geom0,(void*)1);
       RTCGeometry geom1 = rtcNewQuadMesh (device);
-      rtcSetUserData(geom1,(void*)2);
+      rtcSetGeometryUserData(geom1,(void*)2);
       RTCGeometry geom2 = rtcNewSubdivisionMesh(device);
-      rtcSetUserData(geom2,(void*)3);
-      RTCGeometry geom3 = rtcNewCurveGeometry (device, RTC_BASIS_BEZIER);
-      rtcSetUserData(geom3,(void*)4);
-      RTCGeometry geom4 = rtcNewCurveGeometry (device, RTC_BASIS_BSPLINE);
-      rtcSetUserData(geom4,(void*)5);
+      rtcSetGeometryUserData(geom2,(void*)3);
+      RTCGeometry geom3 = rtcNewCurveGeometry (device, RTC_CURVE_BASIS_BEZIER);
+      rtcSetGeometryUserData(geom3,(void*)4);
+      RTCGeometry geom4 = rtcNewCurveGeometry (device, RTC_CURVE_BASIS_BSPLINE);
+      rtcSetGeometryUserData(geom4,(void*)5);
       RTCGeometry geom5 = rtcNewUserGeometry(device);
-      rtcSetUserData(geom5,(void*)6);
+      rtcSetGeometryUserData(geom5,(void*)6);
       AssertNoError(device);
       
-      if ((size_t)rtcGetUserData(geom0 ) !=  1) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom1 ) !=  2) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom2 ) !=  3) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom3 ) !=  4) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom4 ) !=  5) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(geom5 ) !=  6) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom0 ) !=  1) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom1 ) !=  2) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom2 ) !=  3) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom3 ) !=  4) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom4 ) !=  5) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom5 ) !=  6) return VerifyApplication::FAILED;
       AssertNoError(device);
 
       return VerifyApplication::PASSED;
@@ -858,10 +858,10 @@ namespace embree
       case QUAD_MESH_MB     : geom = rtcNewQuadMesh       (device); break;
       case SUBDIV_MESH      : geom = rtcNewSubdivisionMesh(device); break;
       case SUBDIV_MESH_MB   : geom = rtcNewSubdivisionMesh(device); break;
-      case HAIR_GEOMETRY    : geom = rtcNewCurveGeometry  (device, RTC_BASIS_BEZIER); rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_RIBBON); break;
-      case HAIR_GEOMETRY_MB : geom = rtcNewCurveGeometry  (device, RTC_BASIS_BSPLINE); rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_RIBBON); break;
-      case CURVE_GEOMETRY   : geom = rtcNewCurveGeometry  (device, RTC_BASIS_BEZIER); rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_SURFACE); break;
-      case CURVE_GEOMETRY_MB: geom = rtcNewCurveGeometry  (device, RTC_BASIS_BSPLINE); rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_SURFACE); break;
+      case HAIR_GEOMETRY    : geom = rtcNewCurveGeometry  (device, RTC_CURVE_BASIS_BEZIER); rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_RIBBON); break;
+      case HAIR_GEOMETRY_MB : geom = rtcNewCurveGeometry  (device, RTC_CURVE_BASIS_BSPLINE); rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_RIBBON); break;
+      case CURVE_GEOMETRY   : geom = rtcNewCurveGeometry  (device, RTC_CURVE_BASIS_BEZIER); rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_SURFACE); break;
+      case CURVE_GEOMETRY_MB: geom = rtcNewCurveGeometry  (device, RTC_CURVE_BASIS_BSPLINE); rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_SURFACE); break;
       default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
       }
       AssertNoError(device);
@@ -959,8 +959,8 @@ namespace embree
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,quality,2));
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,quality,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_BASIS_BEZIER),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BSPLINE,2),quality);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_CURVE_BASIS_BEZIER),quality);
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_INTERSECT_MODE_RIBBON,RTC_CURVE_BASIS_BSPLINE,2),quality);
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,2),quality);
       rtcCommitScene (scene);
@@ -1048,8 +1048,8 @@ namespace embree
       scene.addGeometry(quality,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(quality,SceneGraph::createSubdivSphere(center,radius,8,20));
       scene.addGeometry(quality,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(random_motion_vector(1.0f)));
-      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_GEOMETRY_INTERSECTOR_RIBBON));
-      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_GEOMETRY_INTERSECTOR_RIBBON)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_INTERSECT_MODE_RIBBON));
+      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_INTERSECT_MODE_RIBBON)->set_motion_vector(random_motion_vector(1.0f)));
       rtcCommitScene (scene);
       AssertNoError(device);
 
@@ -1123,11 +1123,11 @@ namespace embree
       subdivmesh2->set_motion_vector(random_motion_vector(1.0f));
       scene.addGeometry(quality,subdivmesh2.dynamicCast<SceneGraph::Node>());
       
-      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_GEOMETRY_INTERSECTOR_RIBBON).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_INTERSECT_MODE_RIBBON).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
       scene.addGeometry(quality,hairgeom.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_GEOMETRY_INTERSECTOR_RIBBON)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_INTERSECT_MODE_RIBBON)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
       scene.addGeometry(quality,hairgeom2.dynamicCast<SceneGraph::Node>());
 
@@ -1281,9 +1281,9 @@ namespace embree
       case SUBDIV_MESH:      
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,RTC_GEOMETRY_INTERSECTOR_RIBBON); break;
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,RTC_INTERSECT_MODE_RIBBON); break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,RTC_GEOMETRY_INTERSECTOR_RIBBON); break;
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,RTC_INTERSECT_MODE_RIBBON); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       
@@ -1501,10 +1501,10 @@ namespace embree
       for (size_t i=0; i<16; i++) 
       {
         bool enabled0 = i & 1, enabled1 = i & 2, enabled2 = i & 4, enabled3 = i & 8;
-        if (enabled0) rtcEnable(hgeom0); else rtcDisable(hgeom0); AssertNoError(device);
-        if (enabled1) rtcEnable(hgeom1); else rtcDisable(hgeom1); AssertNoError(device);
-        if (enabled2) rtcEnable(hgeom2); else rtcDisable(hgeom2); AssertNoError(device);
-        if (enabled3) rtcEnable(hgeom3); else rtcDisable(hgeom3); AssertNoError(device);
+        if (enabled0) rtcEnableGeometry(hgeom0); else rtcDisableGeometry(hgeom0); AssertNoError(device);
+        if (enabled1) rtcEnableGeometry(hgeom1); else rtcDisableGeometry(hgeom1); AssertNoError(device);
+        if (enabled2) rtcEnableGeometry(hgeom2); else rtcDisableGeometry(hgeom2); AssertNoError(device);
+        if (enabled3) rtcEnableGeometry(hgeom3); else rtcDisableGeometry(hgeom3); AssertNoError(device);
         rtcCommitScene (scene);
         AssertNoError(device);
         {
@@ -1778,7 +1778,7 @@ namespace embree
     
     bool checkSubdivInterpolation(const RTCDeviceRef& device, RTCGeometry geom, RTCBufferType buffer, float* vertices0, unsigned int N, unsigned int N_total)
     {
-      rtcSetSubdivisionMode(geom,0,RTC_SUBDIV_SMOOTH_BOUNDARY);
+      rtcSetGeometrySubdivisionMode(geom,0,RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY);
       AssertNoError(device);
       rtcCommitGeometry(geom);
       AssertNoError(device);
@@ -1795,7 +1795,7 @@ namespace embree
       passed &= checkInterpolationSharpVertex(geom,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
       passed &= checkInterpolationSharpVertex(geom,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
       
-      rtcSetSubdivisionMode(geom,0,RTC_SUBDIV_PIN_CORNERS);
+      rtcSetGeometrySubdivisionMode(geom,0,RTC_SUBDIVISION_MODE_PIN_CORNERS);
       rtcCommitGeometry(geom);
       AssertNoError(device);
       
@@ -1928,7 +1928,7 @@ namespace embree
       rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
-      rtcDisable(geom);
+      rtcDisableGeometry(geom);
       AssertNoError(device);
       rtcCommitGeometry(geom);
       AssertNoError(device);
@@ -2007,7 +2007,7 @@ namespace embree
 
       size_t M = num_interpolation_hair_vertices*N+16; // padds the arrays with some valid data
       
-      RTCGeometry geom = rtcNewCurveGeometry(device, RTC_BASIS_BEZIER);
+      RTCGeometry geom = rtcNewCurveGeometry(device, RTC_CURVE_BASIS_BEZIER);
       AssertNoError(device);
       
       rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
@@ -2033,7 +2033,7 @@ namespace embree
       rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
-      rtcDisable(geom);
+      rtcDisableGeometry(geom);
       AssertNoError(device);
       rtcCommitGeometry(geom);
       AssertNoError(device);
@@ -2250,10 +2250,10 @@ namespace embree
       RTCGeometry hgeom1 = rtcGetGeometry(scene,geom1);
       RTCGeometry hgeom2 = rtcGetGeometry(scene,geom2);
       RTCGeometry hgeom3 = rtcGetGeometry(scene,geom3);
-      rtcSetMask(hgeom0,1);
-      rtcSetMask(hgeom1,2);
-      rtcSetMask(hgeom2,4);
-      rtcSetMask(hgeom3,8);
+      rtcSetGeometryMask(hgeom0,1);
+      rtcSetGeometryMask(hgeom1,2);
+      rtcSetGeometryMask(hgeom2,4);
+      rtcSetGeometryMask(hgeom3,8);
       rtcCommitScene (scene);
       AssertNoError(device);
       
@@ -2448,11 +2448,11 @@ namespace embree
       if (subdiv) geomID0 = scene.addSubdivPlane (sampler,quality, 4, p0, dx, dy).first;
       else        geomID0 = scene.addPlane       (sampler,quality, 4, p0, dx, dy).first;
       RTCGeometry geom0 = rtcGetGeometry(scene,geomID0);
-      rtcSetUserData(geom0,(void*)123);
+      rtcSetGeometryUserData(geom0,(void*)123);
       
       // if (imode == MODE_INTERSECT1 ) {
-      //   rtcSetIntersectionFilterFunction(geom0,intersectionFilter1);
-      //   rtcSetOcclusionFilterFunction   (geom0,intersectionFilter1);
+      //   rtcSetGeometryIntersectFilterFunction(geom0,intersectionFilter1);
+      //   rtcSetGeometryOccludedFilterFunction   (geom0,intersectionFilter1);
       // }
       // else if (imode == MODE_INTERSECT4 ) {
       //   rtcSetIntersectionFilterFunction4(geom0,intersectionFilter4);
@@ -2467,8 +2467,8 @@ namespace embree
       //   rtcSetOcclusionFilterFunction16   (geom0,intersectionFilter16);
       // }
       // else {
-        rtcSetIntersectionFilterFunction (geom0,intersectionFilterN);
-        rtcSetOcclusionFilterFunction (geom0,intersectionFilterN);
+        rtcSetGeometryIntersectFilterFunction (geom0,intersectionFilterN);
+        rtcSetGeometryOccludedFilterFunction (geom0,intersectionFilterN);
         //}
       rtcCommitScene (scene);
       AssertNoError(device);
@@ -3933,9 +3933,9 @@ namespace embree
         case SUBDIV_MESH:      
         case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
         case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,RTC_GEOMETRY_INTERSECTOR_RIBBON)); break;
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,RTC_INTERSECT_MODE_RIBBON)); break;
         case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,RTC_GEOMETRY_INTERSECTOR_RIBBON)); break;
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,RTC_INTERSECT_MODE_RIBBON)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 

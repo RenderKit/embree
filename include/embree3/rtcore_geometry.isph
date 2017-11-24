@@ -79,36 +79,36 @@ enum RTCMatrixType {
  *  ordered to interpolate successively more linear. */
 enum RTCSubdivisionMode
 {
-  RTC_SUBDIV_NO_BOUNDARY = 0,          //!< ignores border patches
-  RTC_SUBDIV_SMOOTH_BOUNDARY = 1,      //!< smooth border (default)
-  RTC_SUBDIV_PIN_CORNERS = 2,          //!< smooth border with fixed corners
-  RTC_SUBDIV_PIN_BOUNDARY = 3,         //!< linearly interpolation along border
-  RTC_SUBDIV_PIN_ALL = 4,              //!< pin every vertex (interpolates every patch linearly)
+  RTC_SUBDIVISION_MODE_NO_BOUNDARY     = 0, //!< ignores border patches
+  RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY = 1, //!< smooth border (default)
+  RTC_SUBDIVISION_MODE_PIN_CORNERS     = 2, //!< smooth border with fixed corners
+  RTC_SUBDIVISION_MODE_PIN_BOUNDARY    = 3, //!< linearly interpolation along border
+  RTC_SUBDIVISION_MODE_PIN_ALL         = 4, //!< pin every vertex (interpolates every patch linearly)
 };
 
 /*! Curve Basis */
 enum RTCCurveBasis
 {
-  RTC_BASIS_LINEAR = 0,
-  RTC_BASIS_BEZIER = 1,
-  RTC_BASIS_BSPLINE = 2
+  RTC_CURVE_BASIS_LINEAR  = 0,
+  RTC_CURVE_BASIS_BEZIER  = 1,
+  RTC_CURVE_BASIS_BSPLINE = 2
 };
 
 /*! Curve type */
-enum RTCGeometryIntersector
+enum RTCIntersectMode
 {
-  RTC_GEOMETRY_INTERSECTOR_RIBBON,    //!< render curves as ray facing ribbons
-  RTC_GEOMETRY_INTERSECTOR_SURFACE    //!< render curves as real geometric surface
+  RTC_INTERSECT_MODE_RIBBON, //!< render curves as ray facing ribbons
+  RTC_INTERSECT_MODE_SURFACE //!< render curves as real geometric surface
 };
 
 /*! Arguments for RTCBoundsFunction */
 struct RTCBoundsFunctionArguments
 {
-  void* uniform userPtr;            /*!< pointer to user data */
-  void* uniform geomUserPtr;        /*!< pointer to geometry user data */
-  uniform unsigned int item;              /*!< item to calculate bounds for */
-  uniform unsigned int time;              /*!< time to calculate bounds for */
-  uniform RTCBounds* uniform bounds_o;       /*!< returns calculated bounds */
+  void* uniform userPtr;               //!< pointer to user data
+  void* uniform geomUserPtr;           //!< pointer to geometry user data
+  uniform unsigned int item;           //!< item to calculate bounds for
+  uniform unsigned int time;           //!< time to calculate bounds for
+  uniform RTCBounds* uniform bounds_o; //!< returns calculated bounds
 };
 
 /*! Type of bounding function. */
@@ -117,12 +117,12 @@ typedef unmasked void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArgumen
 /*! Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments
 {
-  uniform int* uniform valid; /*! pointer to valid mask */
-  void* uniform geomUserPtr;                /*!< pointer to geometry user data */
-  uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-  RTCRayN* uniform ray;               /*!< ray packet of size N */
-  uniform unsigned int N;                 /*< number of rays in ray packet */
-  uniform unsigned int item;              /*< item to intersect */
+  uniform int* uniform valid;                   //!< pointer to valid mask
+  void* uniform geomUserPtr;                    //!< pointer to geometry user data
+  uniform RTCIntersectContext* uniform context; //!< intersection context as passed to rtcIntersect/rtcOccluded
+  RTCRayN* uniform ray;                         //!< ray packet of size N
+  uniform unsigned int N;                       //!< number of rays in ray packet
+  uniform unsigned int item;                    //!< item to intersect
 };
 
 /*! Type of intersect function pointer for ray packets of size N. */
@@ -131,39 +131,39 @@ typedef unmasked void (*RTCIntersectFunctionN)(const struct RTCIntersectFunction
 /*! Arguments for RTCOccludedFunctionN */
 struct RTCOccludedFunctionNArguments
 {
-  uniform int* uniform valid; /*! pointer to valid mask */
-  void* uniform geomUserPtr;                /*!< pointer to geometry user data */
-  uniform RTCIntersectContext* uniform context;  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-  RTCRayN* uniform ray;               /*!< ray packet of size N */
-  uniform unsigned int N;                 /*< number of rays in ray packet */
-  uniform unsigned int item;              /*< item to intersect */
+  uniform int* uniform valid;                   //!< pointer to valid mask
+  void* uniform geomUserPtr;                    //!< pointer to geometry user data
+  uniform RTCIntersectContext* uniform context; //!< intersection context as passed to rtcIntersect/rtcOccluded
+  RTCRayN* uniform ray;                         //!< ray packet of size N
+  uniform unsigned int N;                       //!< number of rays in ray packet
+  uniform unsigned int item;                    //!< item to intersect
 };
 
 /*! Type of occlusion function pointer for ray packets of size N. */
-typedef unmasked void (*RTCOccludedFunctionN) (const struct RTCOccludedFunctionNArguments* uniform const args);
+typedef unmasked void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* uniform const args);
 
 /*! report intersection from intersect function */
-RTCORE_API void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filter_args);
+RTCORE_API void rtcReportIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 /*! report intersection from occluded function */
-RTCORE_API void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filter_args);
+RTCORE_API void rtcReportOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
 {
-  void* uniform geomUserPtr;       /*!< pointer to user data of geometry */
-  uniform unsigned int geomID;     /*!< ID of geometry to displace */
-  uniform unsigned int primID;     /*!< ID of primitive of geometry to displace */
-  uniform unsigned int time;       /*!< time step to calculate displacement for */
-  uniform const float* uniform u;  /*!< u coordinates (source) */
-  uniform const float* uniform v;  /*!< v coordinates (source) */
-  uniform const float* uniform nx; /*!< x coordinates of normal at point to displace (source) */
-  uniform const float* uniform ny; /*!< y coordinates of normal at point to displace (source) */
-  uniform const float* uniform nz; /*!< z coordinates of normal at point to displace (source) */
-  uniform float* uniform px;       /*!< x coordinates of points to displace (source and target) */
-  uniform float* uniform py;       /*!< y coordinates of points to displace (source and target) */
-  uniform float* uniform pz;       /*!< z coordinates of points to displace (source and target) */
-  uniform unsigned int N;          /*!< number of points to displace */
+  void* uniform geomUserPtr;       //!< pointer to user data of geometry
+  uniform unsigned int geomID;     //!< ID of geometry to displace
+  uniform unsigned int primID;     //!< ID of primitive of geometry to displace
+  uniform unsigned int time;       //!< time step to calculate displacement for
+  uniform const float* uniform u;  //!< u coordinates (source)
+  uniform const float* uniform v;  //!< v coordinates (source)
+  uniform const float* uniform nx; //!< x coordinates of normal at point to displace (source)
+  uniform const float* uniform ny; //!< y coordinates of normal at point to displace (source)
+  uniform const float* uniform nz; //!< z coordinates of normal at point to displace (source)
+  uniform float* uniform px;       //!< x coordinates of points to displace (source and target)
+  uniform float* uniform py;       //!< y coordinates of points to displace (source and target)
+  uniform float* uniform pz;       //!< z coordinates of points to displace (source and target)
+  uniform unsigned int N;          //!< number of points to displace
 };
 
 /*! Type of displacement callback functions */
@@ -185,23 +185,23 @@ typedef uniform struct __RTCGeometry* uniform RTCGeometry;
  *  provided have to intersect the same geometry. A user data pointer,
  *  that points to a user specified representation of the geometry, is
  *  passed to each intersect and occluded function invokation. */
-RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device);
+RTCORE_API RTCGeometry rtcNewUserGeometry(RTCDevice device);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
  *  calculated bounding box have to be conservative and should be
  *  tight.*/
-RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, uniform RTCBoundsFunction bounds, void* uniform userPtr);
+RTCORE_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, uniform RTCBoundsFunction bounds, void* uniform userPtr);
 
 /*! Set intersect function for ray packets of size N. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API  void rtcSetIntersectFunction (RTCGeometry hgeometry, uniform RTCIntersectFunctionN intersect);
+RTCORE_API  void rtcSetGeometryIntersectFunction(RTCGeometry geometry, uniform RTCIntersectFunctionN intersect);
 
 /*! Set occlusion function for a ray packets of size N. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOccludedFunctionN occluded);
+RTCORE_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTCOccludedFunctionN occluded);
 
 /*! \brief Creates a new scene instance. 
 
@@ -213,9 +213,9 @@ RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOcclud
   the provided scene. If any geometry is hit, the instance ID (instID)
   member of the ray will get set to the geometry ID of the
   instance. */
-RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
-                                       RTCScene source,                  //!< the scene to instantiate
-                                       uniform unsigned int numTimeSteps   //!< number of timesteps, one matrix per timestep
+RTCORE_API RTCGeometry rtcNewInstance(RTCDevice device,
+                                      RTCScene source,                  //!< the scene to instantiate
+                                      uniform unsigned int numTimeSteps //!< number of timesteps, one matrix per timestep
   );
 
 /*! \brief Creates a new geometry instance. 
@@ -232,10 +232,10 @@ RTCORE_API RTCGeometry rtcNewInstance (RTCDevice device,
 RTCORE_API RTCORE_DEPRECATED uniform unsigned int rtcNewGeometryInstance(RTCDevice device, uniform unsigned int geomID);
 
 /*! \brief Sets transformation of the instance for specified timestep */
-RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< ID of geometry 
-                                 uniform RTCMatrixType layout,                   //!< layout of transformation matrix
-                                 const uniform float* uniform xfm,               //!< pointer to transformation matrix
-                                 uniform unsigned int timeStep = 0                     //!< timestep to set the matrix for 
+RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                    //!< handle of geometry 
+                                        uniform RTCMatrixType layout,            //!< layout of transformation matrix
+                                        const uniform float* uniform xfm,        //!< pointer to transformation matrix
+                                        uniform unsigned int timeStep = 0        //!< timestep to set the matrix for 
   );
 
 /*! \brief Creates a new triangle mesh. The number of triangles
@@ -252,7 +252,7 @@ RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< I
   vertex. The vertex buffer stores single precision x,y,z floating
   point coordinates aligned to 16 bytes. The value of the 4th float
   used for alignment can be arbitrary. */
-RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device);
+RTCORE_API RTCGeometry rtcNewTriangleMesh(RTCDevice device);
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
   number of vertices (numVertices), and number of time steps (1 for
@@ -267,7 +267,7 @@ RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device);
   index points to the ith vertex. The vertex buffer stores single
   precision x,y,z floating point coordinates aligned to 16 bytes. The
   value of the 4th float used for alignment can be arbitrary. */
-RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device);
+RTCORE_API RTCGeometry rtcNewQuadMesh(RTCDevice device);
 
 /*! \brief Creates a new subdivision mesh. The number of faces
  (numFaces), edges/indices (numEdges), vertices (numVertices), edge
@@ -322,11 +322,8 @@ RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device);
  supported and makes the vertex infinitely sharp. Storing a vertex
  multiple times with the same crease weight is allowed, but has lower
  performance. Storing a vertex multiple times with different crease
- weights results in undefined behaviour.
-
-*/
-
-RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
+ weights results in undefined behaviour. */
+RTCORE_API RTCGeometry rtcNewSubdivisionMesh(RTCDevice device);
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bezier curves with varying radii. The number of
@@ -346,34 +343,33 @@ RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device);
   considered to be subpixel sized which allows the implementation to
   approximate the intersection calculation. This in particular means
   that zooming onto one hair might show geometric artefacts. */
-
-RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice device, uniform RTCCurveBasis basis);
+RTCORE_API RTCGeometry rtcNewCurveGeometry(RTCDevice device, uniform RTCCurveBasis basis);
 
 /*! Sets the number of primitives. */
-RTCORE_API void rtcSetNumPrimitives(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry geometry, uniform unsigned int N);
 
 /*! Sets the number of time steps. */
-RTCORE_API void rtcSetNumTimeSteps(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, uniform unsigned int N);
  
-/*! Sets the type of the curve geometry */
-RTCORE_API void rtcSetGeometryIntersector(RTCGeometry geometry, uniform RTCGeometryIntersector type);
+/*! Sets the intersection mode of the geometry. */
+RTCORE_API void rtcSetGeometryIntersectMode(RTCGeometry geometry, uniform RTCIntersectMode type);
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
  *  optionally to set a different tessellation rate per edge.*/
-RTCORE_API void rtcSetTessellationRate (RTCGeometry geometry, uniform float tessellationRate);
+RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, uniform float tessellationRate);
 
-/*! sets the build quality of the geometry */
+/*! Sets the build quality of the geometry. */
 RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, uniform RTCBuildQuality quality);
 
 /*! \brief Sets 32 bit ray mask. */
-RTCORE_API void rtcSetMask (RTCGeometry geometry, uniform int mask);
+RTCORE_API void rtcSetGeometryMask (RTCGeometry geometry, uniform int mask);
 
-/*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
-RTCORE_API void rtcSetSubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
+/*! \brief Sets boundary interpolation mode for specified subdivision surface topology. */
+RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetIndexBuffer(RTCGeometry geometry, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
+RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 
 RTCORE_API void* uniform rtcNewBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform size_t byteStride, uniform unsigned int numItems);
 
@@ -396,47 +392,39 @@ RTCORE_API void rtcSetBuffer(RTCGeometry geometry, uniform RTCBufferType type,
 RTCORE_API void* uniform rtcGetBuffer(RTCGeometry geometry, uniform RTCBufferType type);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
-RTCORE_API void rtcEnable (RTCGeometry geometry);
+RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);
 
 /*! \brief Update spefific geometry buffer. 
 
   Each time geometry buffers got modified, the user has to call some
   update function to tell the ray tracing engine which buffers got
-  modified. The rtcUpdateBuffer function taggs a specific buffer of
+  modified. The rtcUpdateBuffer function tags a specific buffer of
   some geometry as modified. */
-RTCORE_API void rtcUpdate (RTCGeometry geometry);
-
-/*! \brief Update spefific geometry buffer. 
-
-  Each time geometry buffers got modified, the user has to call some
-  update function to tell the ray tracing engine which buffers got
-  modified. The rtcUpdateBuffer function taggs a specific buffer of
-  some geometry as modified. */
-RTCORE_API void rtcUpdateBuffer (RTCGeometry geometry, uniform RTCBufferType type);
+RTCORE_API void rtcUpdateBuffer(RTCGeometry geometry, uniform RTCBufferType type);
 
 /*! \brief Disable geometry. 
 
   Disabled geometry is not hit by any ray. Disabling and enabling
   geometry gives higher performance than deleting and recreating
   geometry. */
-RTCORE_API void rtcDisable (RTCGeometry geometry);
+RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, uniform RTCDisplacementFunction func, uniform RTCBounds *uniform bounds);
+RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func, uniform RTCBounds *uniform bounds);
 
 /*! \brief Sets the intersection filter function for ray packets of size N. */
-RTCORE_API  void rtcSetIntersectionFilterFunction (RTCGeometry geometry, uniform RTCFilterFunctionN func);
+RTCORE_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
 
 /*! \brief Sets the occlusion filter function for ray packets of size N. */
-RTCORE_API  void rtcSetOcclusionFilterFunction (RTCGeometry geometry, uniform RTCFilterFunctionN func);
+RTCORE_API  void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed
  *  this data pointer when called. */
-RTCORE_API void rtcSetUserData (RTCGeometry geometry, void* uniform ptr);
+RTCORE_API void rtcSetGeometryUserData(RTCGeometry geometry, void* uniform ptr);
 
 /*! Get pointer for user defined data per geometry based on geomID. */
-RTCORE_API void* uniform rtcGetUserData (RTCGeometry geometry);
+RTCORE_API void* uniform rtcGetGeometryUserData(RTCGeometry geometry);
 
 
 /*! Interpolates user data to an array of u/v locations. The valid
@@ -498,28 +486,28 @@ inline void rtcInterpolate(RTCGeometry geometry, varying unsigned int primID, va
 }
 
 /*! Commits the geometry. */
-RTCORE_API void rtcCommitGeometry (RTCGeometry geom);
+RTCORE_API void rtcCommitGeometry(RTCGeometry geometry);
 
 /*! \brief Attaches the geometry to some scene. */
-RTCORE_API uniform unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);
+RTCORE_API uniform unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);
 
 /*! \brief Attaches the geometry to some scene and releases geometry handle afterwards. */
-RTCORE_API uniform unsigned int rtcAttachAndReleaseGeometry (RTCScene scene, RTCGeometry geometry);
+RTCORE_API uniform unsigned int rtcAttachAndReleaseGeometry(RTCScene scene, RTCGeometry geometry);
 
 /*! \brief Attaches the geometry to some scene using the specified geometry ID. */
-RTCORE_API uniform unsigned int rtcAttachGeometryByID (RTCScene scene, RTCGeometry geometry, uniform unsigned int geomID);
+RTCORE_API uniform unsigned int rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, uniform unsigned int geomID);
 
 /*! \brief Attaches the geometry to some scene using the specified geometry ID and releases the geometry handle afterwards. */
-RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID (RTCScene scene, RTCGeometry geometry, unsigned int geomID);
+RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
 
 /*! \brief Detaches the geometry from the scene. */
-RTCORE_API void rtcDetachGeometry (RTCScene scene, uniform unsigned int geomID);
+RTCORE_API void rtcDetachGeometry(RTCScene scene, uniform unsigned int geomID);
 
 /*! Releases the geometry handle. */
-RTCORE_API void rtcReleaseGeometry (RTCGeometry geometry);
+RTCORE_API void rtcReleaseGeometry(RTCGeometry geometry);
 
 /*! Returns RTCGeometry from scene and geomID. */
-RTCORE_API RTCGeometry rtcGetGeometry (RTCScene scene, uniform unsigned int geomID);
+RTCORE_API RTCGeometry rtcGetGeometry(RTCScene scene, uniform unsigned int geomID);
 
 /*! @} */
 

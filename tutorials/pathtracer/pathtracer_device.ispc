@@ -903,25 +903,25 @@ void assignShaders(ISPCGeometry* uniform geometry)
   if (geometry->type == SUBDIV_MESH)
   {
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(geom,intersectionFilterReject);
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(geom,intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
 #endif
@@ -930,24 +930,24 @@ void assignShaders(ISPCGeometry* uniform geometry)
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(geom,intersectionFilterReject);
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(geom,intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
   }
   else if (geometry->type == CURVES)
   {
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterHair);
   }
 #endif
   else if (geometry->type == GROUP) {
@@ -1161,7 +1161,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     
-    if (mesh->basis == RTC_BASIS_LINEAR)
+    if (mesh->basis == RTC_CURVE_BASIS_LINEAR)
     {
       materialID = mesh->geom.materialID;
       const Vec3f dx = normalize(dg.Ng);
@@ -1173,7 +1173,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
       int vtx = mesh->hairs[dg.primID].vertex;
       dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
-    else if (mesh->basis == RTC_BASIS_BEZIER || mesh->basis == RTC_BASIS_BSPLINE)
+    else if (mesh->basis == RTC_CURVE_BASIS_BEZIER || mesh->basis == RTC_CURVE_BASIS_BSPLINE)
     {
       uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
       materialID = mesh->geom.materialID;
@@ -1183,7 +1183,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
         dg.Ty = make_Vec3f(0,1,0);
         dg.Ng = dg.Ns = make_Vec3f(0,0,1);
       }
-      else if (mesh->type == RTC_GEOMETRY_INTERSECTOR_RIBBON)
+      else if (mesh->type == RTC_INTERSECT_MODE_RIBBON)
       {
         const Vec3f dx = normalize(dg.Ng);
         const Vec3f dy = normalize(cross(neg(ray.dir),dx));
@@ -1193,7 +1193,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
         dg.Ng = dg.Ns = dz;
         dg.eps = 1.1f*p.w;
       }
-      else if (mesh->type == RTC_GEOMETRY_INTERSECTOR_SURFACE)
+      else if (mesh->type == RTC_INTERSECT_MODE_SURFACE)
       {
         const Vec3f dx = normalize(make_Vec3f(dp));
         const Vec3f dy = normalize(cross(make_Vec3f(dp),dg.Ng));

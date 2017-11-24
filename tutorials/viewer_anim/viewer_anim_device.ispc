@@ -85,7 +85,7 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
   rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float), mesh->numEdgeCreases);
   rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int), mesh->numVertexCreases);
   rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float), mesh->numVertexCreases);
-  rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
+  rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -97,14 +97,14 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   uniform RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   /* create object */
   RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
-  rtcSetGeometryIntersector(geom,hair->type);
+  rtcSetGeometryIntersectMode(geom,hair->type);
   rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),hair->numVertices);
   for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
-  if (hair->basis != RTC_BASIS_LINEAR)
-    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+  if (hair->basis != RTC_CURVE_BASIS_LINEAR)
+    rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   hair->geom.geometry = geom;
   hair->geom.geomID = rtcAttachGeometry(scene_out,geom);

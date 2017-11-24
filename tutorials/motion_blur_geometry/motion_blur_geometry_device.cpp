@@ -203,11 +203,11 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 }
 
 /* add hair geometry */
-unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector type, unsigned int num_time_steps)
+unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCIntersectMode type, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry(g_device, RTC_BASIS_BSPLINE);
-  rtcSetGeometryIntersector(geom,type);
-  rtcSetTessellationRate (geom,16.0f);
+  RTCGeometry geom = rtcNewCurveGeometry(g_device, RTC_CURVE_BASIS_BSPLINE);
+  rtcSetGeometryIntersectMode(geom,type);
+  rtcSetGeometryTessellationRate (geom,16.0f);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {
@@ -241,8 +241,8 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryIntersector
 /* add line geometry */
 unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BASIS_LINEAR);
-  rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_RIBBON);
+  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_CURVE_BASIS_LINEAR);
+  rtcSetGeometryIntersectMode(geom,RTC_INTERSECT_MODE_RIBBON);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {
@@ -293,7 +293,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation*scale;
-    rtcSetTransform(inst,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
+    rtcSetGeometryTransform(inst,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
   }
 
   rtcCommitGeometry(inst);
@@ -335,7 +335,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation;
-    rtcSetTransform(inst,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
+    rtcSetGeometryTransform(inst,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
   }
 
   rtcCommitGeometry(inst);
@@ -476,12 +476,12 @@ Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigne
   sphere->r = r;
   sphere->geomID = rtcAttachGeometry(scene,geom);
   sphere->num_time_steps = num_time_steps;
-  rtcSetNumPrimitives(geom,1);
-  rtcSetNumTimeSteps(geom,num_time_steps);
-  rtcSetUserData(geom,sphere);
-  rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
-  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
-  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
+  rtcSetGeometryNumPrimitives(geom,1);
+  rtcSetGeometryNumTimeSteps(geom,num_time_steps);
+  rtcSetGeometryUserData(geom,sphere);
+  rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
+  rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+  rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
@@ -550,11 +550,11 @@ extern "C" void device_init (char* cfg)
   addLines       (g_scene,Vec3fa(-5,1, 0),g_num_time_steps);
   addLines       (g_scene,Vec3fa(-5,5, 0),g_num_time_steps2);
 
-  addCurve (g_scene,Vec3fa( 0,1, 0),RTC_GEOMETRY_INTERSECTOR_RIBBON,g_num_time_steps);
-  addCurve (g_scene,Vec3fa( 0,5, 0),RTC_GEOMETRY_INTERSECTOR_RIBBON,g_num_time_steps2);
+  addCurve (g_scene,Vec3fa( 0,1, 0),RTC_INTERSECT_MODE_RIBBON,g_num_time_steps);
+  addCurve (g_scene,Vec3fa( 0,5, 0),RTC_INTERSECT_MODE_RIBBON,g_num_time_steps2);
 
-  addCurve (g_scene,Vec3fa(+5,1, 0),RTC_GEOMETRY_INTERSECTOR_SURFACE,g_num_time_steps);
-  addCurve (g_scene,Vec3fa(+5,5, 0),RTC_GEOMETRY_INTERSECTOR_SURFACE,g_num_time_steps2);
+  addCurve (g_scene,Vec3fa(+5,1, 0),RTC_INTERSECT_MODE_SURFACE,g_num_time_steps);
+  addCurve (g_scene,Vec3fa(+5,5, 0),RTC_INTERSECT_MODE_SURFACE,g_num_time_steps2);
 
   scene0 = addInstancedTriangleCube(g_scene,Vec3fa(-5,1,+5),g_num_time_steps);
   scene1 = addInstancedTriangleCube(g_scene,Vec3fa(-5,5,+5),g_num_time_steps2);

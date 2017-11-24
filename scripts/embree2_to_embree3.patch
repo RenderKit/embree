@@ -350,25 +350,25 @@ RTC_BUILD_QUALITY_REFIT
 @@{
 RTC_BOUNDARY_NONE
 =>
-RTC_SUBDIV_NO_BOUNDARY
+RTC_SUBDIVISION_MODE_NO_BOUNDARY
 }@@
 
 @@{
 RTC_BOUNDARY_SMOOTH
 =>
-RTC_SUBDIV_SMOOTH_BOUNDARY
+RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY
 }@@
 
 @@{
 RTC_BOUNDARY_EDGE_ONLY
 =>
-RTC_SUBDIV_SMOOTH_BOUNDARY
+RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY
 }@@
 
 @@{
 RTC_BOUNDARY_EDGE_AND_CORNER
 =>
-RTC_SUBDIV_PIN_CORNERS
+RTC_SUBDIVISION_MODE_PIN_CORNERS
 }@@
 
 @@{
@@ -380,7 +380,7 @@ RTCSubdivisionMode
 @@{
 rtcSetBoundaryMode(EXPR scene,EXPR geomID,EXPR mode)
 =>
-rtcSetSubdivisionMode(scene,geomID,mode)
+rtcSetGeometrySubdivisionMode(scene,geomID,mode)
 }@@
 
 
@@ -390,25 +390,25 @@ rtcSetSubdivisionMode(scene,geomID,mode)
 @@{
 rtcSetTessellationRate(EXPR scene,EXPR geomID,EXPR rate)
 =>
-rtcSetTessellationRate(rtcGetGeometry(scene,geomID),rate)
+rtcSetGeometryTessellationRate(rtcGetGeometry(scene,geomID),rate)
 }@@
 
 @@{
 rtcSetMask(EXPR scene,EXPR geomID,EXPR mask)
 =>
-rtcSetMask(rtcGetGeometry(scene,geomID),mask)
+rtcSetGeometryMask(rtcGetGeometry(scene,geomID),mask)
 }@@
 
 @@{
 rtcSetSubdivisionMode(EXPR scene,EXPR geomID,EXPR topology,EXPR mode)
 =>
-rtcSetSubdivisionMode(rtcGetGeometry(scene,geomID),topology,mode)
+rtcSetGeometrySubdivisionMode(rtcGetGeometry(scene,geomID),topology,mode)
 }@@
 
 @@{
 rtcSetIndexBuffer(EXPR scene,EXPR geomID,EXPR buf0,EXPR buf1)
 =>
-rtcSetIndexBuffer(rtcGetGeometry(scene,geomID),buf0,buf1)
+rtcSetGeometryIndexBuffer(rtcGetGeometry(scene,geomID),buf0,buf1)
 }@@
 
 @@{
@@ -438,13 +438,13 @@ rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride,size)
 @@{
 rtcEnable(EXPR scene,EXPR geomID)
 =>
-rtcEnable(rtcGetGeometry(scene,geomID))
+rtcEnableGeometry(rtcGetGeometry(scene,geomID))
 }@@
 
 @@{
 rtcDisable(EXPR scene,EXPR geomID)
 =>
-rtcDisable(rtcGetGeometry(scene,geomID))
+rtcDisableGeometry(rtcGetGeometry(scene,geomID))
 }@@
 
 @@{
@@ -462,74 +462,74 @@ rtcUpdateBuffer(rtcGetGeometry(scene,geomID),type)
 @@{
 rtcSetDisplacementFunction(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
 =>
-rtcSetDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
+rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
 }@@
 
 @@{
 rtcSetDisplacementFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
 =>
-rtcSetDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
+rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOcclusionFilterFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFilterFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 
 @@{
 rtcSetUserData(EXPR scene,EXPR geomID,EXPR ptr)
 =>
-rtcSetUserData(rtcGetGeometry(scene,geomID),ptr)
+rtcSetGeometryUserData(rtcGetGeometry(scene,geomID),ptr)
 }@@
 
 @@{
 rtcGetUserData(EXPR scene,EXPR geomID)
 =>
-rtcGetUserData(rtcGetGeometry(scene,geomID))
+rtcGetGeometryUserData(rtcGetGeometry(scene,geomID))
 }@@
 
 
@@ -581,38 +581,38 @@ rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
 @@{
 rtcSetBoundsFunctionX(EXPR geom,EXPR func,EXPR userPtr)
 =>
-rtcSetBoundsFunction(geom,func,userPtr)
+rtcSetGeometryBoundsFunction(geom,func,userPtr)
 }@@
 
 
 @@{
 rtcSetIntersectFunction(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectFunction4(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectFunction8(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
@@ -624,37 +624,37 @@ rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
 @@{
 rtcSetOccludedFunction(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOccludedFunction4(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOccludedFunction8(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOccludedFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOccludedFunctionN(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
 }@@
 
 
@@ -732,7 +732,7 @@ rtcSetTransform2(scene,geomID,layout,xfm,0)
 @@{
 rtcSetTransform2(EXPR scene,EXPR geomID,EXPR layout,EXPR xfm,EXPR timeStep)
 =>
-rtcSetTransform(rtcGetGeometry(scene,geomID),layout,xfm,timeStep)
+rtcSetGeometryTransform(rtcGetGeometry(scene,geomID),layout,xfm,timeStep)
 }@@
 
 
@@ -772,7 +772,7 @@ RTCGeometry ID geom = rtcNewTriangleMesh (EXPR device,EXPR flags,EXPR numTriangl
 =>
 RTCGeometry geom = rtcNewTriangleMesh (device,flags,numTriangles,numVertices,numTimeSteps);
 rtcSetGeometryBuildQuality(geom,flags);
-rtcSetNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
 }@@
 
 
@@ -812,7 +812,7 @@ RTCGeometry ID geom = rtcNewQuadMesh (EXPR device,EXPR flags,EXPR numQuads,EXPR 
 =>
 RTCGeometry geom = rtcNewQuadMesh (device,flags,numQuads,numVertices,numTimeSteps);
 rtcSetGeometryBuildQuality(geom,flags);
-rtcSetNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
 }@@
 
 
@@ -852,7 +852,7 @@ RTCGeometry ID geom = rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numFace
 =>
 RTCGeometry geom = rtcNewSubdivisionMesh (device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles);
 rtcSetGeometryBuildQuality(geom,flags);
-rtcSetNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
 }@@
 
 ////////////////////////////
@@ -885,13 +885,13 @@ rtcNewBezierHairGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
 @@{
 rtcNewBezierHairGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numCurves,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BEZIER,RTC_INTERSECT_MODE_RIBBON,flags,numCurves,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBezierHairGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numCurves,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BEZIER,RTC_INTERSECT_MODE_RIBBON,flags,numCurves,numVertices,numTimeSteps,geomID)
 }@@
 
 @@{
@@ -909,13 +909,13 @@ rtcNewBSplineHairGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
 @@{
 rtcNewBSplineHairGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numCurves,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BSPLINE,RTC_INTERSECT_MODE_RIBBON,flags,numCurves,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBSplineHairGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numCurves,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BSPLINE,RTC_INTERSECT_MODE_RIBBON,flags,numCurves,numVertices,numTimeSteps,geomID)
 }@@
 
 
@@ -948,13 +948,13 @@ rtcNewBezierCurveGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
 @@{
 rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_SURFACE,flags,numCurves,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BEZIER,RTC_INTERSECT_MODE_SURFACE,flags,numCurves,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_SURFACE,flags,numCurves,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BEZIER,RTC_INTERSECT_MODE_SURFACE,flags,numCurves,numVertices,numTimeSteps,geomID)
 }@@
 
 @@{
@@ -972,13 +972,13 @@ rtcNewBSplineCurveGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
 @@{
 rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_SURFACE,flags,numCurves,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BSPLINE,RTC_INTERSECT_MODE_SURFACE,flags,numCurves,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_SURFACE,flags,numCurves,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BSPLINE,RTC_INTERSECT_MODE_SURFACE,flags,numCurves,numVertices,numTimeSteps,geomID)
 }@@
 
 
@@ -997,7 +997,7 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,numTimeSteps)
 @@{
 rtcNewLineSegments (EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcCurveGeometryX (scene,RTC_BASIS_LINEAR,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numSegments,numVertices,numTimeSteps)
+rtcCurveGeometryX (scene,RTC_CURVE_BASIS_LINEAR,RTC_INTERSECT_MODE_RIBBON,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1020,9 +1020,9 @@ rtcReleaseGeometry(geom);
 RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR intersector,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps);
 =>
 RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numCurves,numVertices,numTimeSteps);
-rtcSetGeometryIntersector(geom,intersector);
+rtcSetGeometryIntersectMode(geom,intersector);
 rtcSetGeometryBuildQuality(geom,flags);
-rtcSetNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
 }@@
 
 

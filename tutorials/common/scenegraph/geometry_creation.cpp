@@ -109,7 +109,7 @@ namespace embree
         mesh->verticesPerFace[i] = 4;
       }
     }
-    mesh->position_subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
+    mesh->position_subdiv_mode = RTC_SUBDIVISION_MODE_PIN_CORNERS;
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -301,7 +301,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_INTERSECT_MODE_RIBBON,RTC_CURVE_BASIS_BEZIER,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,radius,0),radius));
@@ -310,12 +310,12 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, RTCGeometryIntersector type, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, RTCIntersectMode type, Ref<MaterialNode> material)
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
 
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_BASIS_BEZIER,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_CURVE_BASIS_BEZIER,material,1);
 
     if (numHairs == 1) {
       const Vec3fa p0 = pos;
@@ -427,7 +427,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_LINEAR,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_INTERSECT_MODE_RIBBON,RTC_CURVE_BASIS_LINEAR,material,mblur?2:1);
 
     mesh->hairs.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
@@ -463,7 +463,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_INTERSECT_MODE_RIBBON,RTC_CURVE_BASIS_BEZIER,material,mblur?2:1);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {

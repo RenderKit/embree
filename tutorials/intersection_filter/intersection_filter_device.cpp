@@ -654,13 +654,13 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   /* set intersection filter for the cube */
   if (g_mode == MODE_NORMAL)
   {
-    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
-    rtcSetOcclusionFilterFunction   (geom,occlusionFilter);
+    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
+    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilter);
   }
   else
   {
-    rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
-    rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
+    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
+    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -692,13 +692,13 @@ unsigned int addSubdivCube (RTCScene scene_i)
   /* set intersection filter for the cube */
   if (g_mode == MODE_NORMAL)
   {
-    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
-    rtcSetOcclusionFilterFunction   (geom,occlusionFilter);
+    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
+    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilter);
   }
   else
   {
-    rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
-    rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
+    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
+    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);

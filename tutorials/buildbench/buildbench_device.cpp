@@ -71,7 +71,7 @@ namespace embree {
     rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
     rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
-    rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
+    rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
     rtcCommitGeometry(geom);
     mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
@@ -79,15 +79,15 @@ namespace embree {
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCBuildQuality quality)
   {
     RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
-    rtcSetGeometryIntersector(geom,hair->type);
+    rtcSetGeometryIntersectMode(geom,hair->type);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<hair->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-    if (hair->basis != RTC_BASIS_LINEAR)
-      rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+    if (hair->basis != RTC_CURVE_BASIS_LINEAR)
+      rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
     rtcCommitGeometry(geom);
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }

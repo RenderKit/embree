@@ -242,11 +242,11 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.l.vz = Vec3fa(0,0,1);
   instance->local2world.p    = Vec3fa(0,0,0);
   instance->geometry = rtcNewUserGeometry(g_device);
-  rtcSetNumPrimitives(instance->geometry,1);
-  rtcSetUserData(instance->geometry,instance);
-  rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
-  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  rtcSetGeometryNumPrimitives(instance->geometry,1);
+  rtcSetGeometryUserData(instance->geometry,instance);
+  rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
+  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
@@ -738,11 +738,11 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   sphere->r = r;
   sphere->geometry = geom;
   sphere->geomID = rtcAttachGeometry(scene,geom);
-  rtcSetNumPrimitives(geom,1);
-  rtcSetUserData(geom,sphere);
-  rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
-  rtcSetIntersectFunction(geom,sphereIntersectFunc);
-  rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  rtcSetGeometryNumPrimitives(geom,1);
+  rtcSetGeometryUserData(geom,sphere);
+  rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
+  rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
+  rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
@@ -757,22 +757,22 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }
-  rtcSetNumPrimitives(geom,N);
-  rtcSetUserData(geom,spheres);
-  rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
+  rtcSetGeometryNumPrimitives(geom,N);
+  rtcSetGeometryUserData(geom,spheres);
+  rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
   if (g_mode == MODE_NORMAL)
   {
-    rtcSetIntersectFunction(geom,sphereIntersectFunc);
-    rtcSetOccludedFunction (geom,sphereOccludedFunc);
-    rtcSetIntersectionFilterFunction(geom,sphereFilterFunction);
-    rtcSetOcclusionFilterFunction(geom,sphereFilterFunction);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);
+    rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFunction);
+    rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFunction);
   }
   else
   {
-    rtcSetIntersectFunction(geom,sphereIntersectFuncN);
-    rtcSetOccludedFunction (geom,sphereOccludedFuncN);
-    rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
-    rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
+    rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFunctionN);
   }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);

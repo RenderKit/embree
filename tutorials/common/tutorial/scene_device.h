@@ -168,14 +168,14 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, RTCGeometryIntersector type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (TutorialScene* scene_in, RTCIntersectMode type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 #endif
 
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;         //!< for each hair, index to first control point
-    RTCGeometryIntersector type;
+    RTCIntersectMode type;
     RTCCurveBasis basis;
     unsigned int numTimeSteps;
     unsigned int numVertices;
