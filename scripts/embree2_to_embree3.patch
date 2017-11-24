@@ -806,6 +806,122 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* args)
   // FIXME: function may get called with zero mask
 }@@
 
+///////////////////////////////////////////////////////////////////////
+// convert user geometry callbacks
+
+@@{
+void EXPR instanceBoundsFunc(void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+{
+=>
+void instanceBoundsFunc(const RTCBoundsFunctionArguments* args)
+{
+  COMMENT void* userPtr = args->userPtr;
+  void* geomUserPtr_in = args->geomUserPtr;
+  size_t item_in = args->item;
+  COMMENT unsigned int time = args->time;
+  RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+void EXPR instanceBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+{
+=>
+void instanceBoundsFunc2(const RTCBoundsFunctionArguments* args)
+{
+  void* userPtr_in = args->userPtr;
+  void* geomUserPtr_in = args->geomUserPtr;
+  size_t item_in = args->item;
+  COMMENT size_t time = args->time;
+  RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+void EXPR instanceBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, size_t ID time_in, RTCBounds& ID bounds_out)
+{
+=>
+void instanceBoundsFunc3(const RTCBoundsFunctionArguments* args)
+{
+  void* userPtr_in = args->userPtr;
+  void* geomUserPtr_in = args->geomUserPtr;
+  size_t item_in = args->item;
+  size_t time_in = args->time;
+  RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc(const RTCIntersectFunctionNArguments* args)
+{
+  COMMENT void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay& ray_in = *(RTCRay*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 1);
+}@@
+
+@@{
+void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc4(const RTCIntersectFunctionNArguments* args)
+{
+  void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay4& ray_in = *(RTCRay4*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 4);
+}@@
+
+@@{
+void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc8(const RTCIntersectFunctionNArguments* args)
+{
+  void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay8& ray_in = *(RTCRay8*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 8);
+}@@
+
+@@{
+void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc16(const RTCIntersectFunctionNArguments* args)
+{
+  void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay16& ray_in = *(RTCRay16*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 16);
+}@@
+
+@@{
+void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFuncN(const RTCIntersectFunctionNArguments* args)
+{
+  const int* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  RTCIntersectContext* context_in = args->context;
+  RTCRayN* ray_in = args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+}@@
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // geometries
@@ -822,6 +938,121 @@ int ID geomID = REGEXPR(name,rtcNew.*)(
 =>
 int geomID;
 geomID = name(
+}@@
+
+
+////////////////////////////////////////////////////////////////////////////////////////
+// user geometry
+
+@@{
+rtcNewUserGeometry
+=>
+rtcNewUserGeometry2
+}@@
+
+@@{
+rtcNewUserGeometry2 (EXPR scene, EXPR numPrimitives)
+=>
+rtcNewUserGeometry2 (scene, numPrimitives, 1)
+}@@
+
+@@{
+rtcNewUserGeometry2 (EXPR scene, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+rtcNewUserGeometry3 (scene, RTC_BUILD_QUALITY_MEDIUM, numPrimitives, numTimeSteps)
+}@@
+
+@@{
+rtcNewUserGeometry3 (EXPR scene, EXPR quality, EXPR numPrimitives)
+=>
+rtcNewUserGeometry3 (scene, quality, numPrimitives, 1)
+}@@
+
+@@{
+rtcNewUserGeometry3
+=>
+rtcNewUserGeometry4
+}@@
+
+@@{
+rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives)
+=>
+rtcNewUserGeometry4 (scene, quality, numPrimitives, 1)
+}@@
+
+@@{
+ID geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
+geomID = rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
+}@@
+
+@@{
+rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
+rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
+}@@
+
+@@{
+rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps, EXPR geomID)
+=>
+RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
+rtcAttachGeometryById(scene,geom,geomID);
+rtcReleaseGeometry(geom);
+}@@
+
+@@{
+RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps);
+rtcSetGeometryBuildQuality(geom,quality);
+rtcSetNumPrimitives(geom,numPrimitives);
+rtcSetNumTimeSteps(geom,numTimeSteps);
+}@@
+
+@@{
+rtcSetBoundsFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetBoundsFunction (rtcGetGeometry(scene,geomID), func)
+}@@
+
+@@{
+rtcSetBoundsFunction2 (EXPR scene, EXPR geomID, EXPR func, EXPR userPtr)
+=>
+rtcSetBoundsFunction (rtcGetGeometry(scene,geomID), func)
+}@@
+
+@@{
+rtcSetBoundsFunction3 (EXPR scene, EXPR geomID, EXPR func, EXPR userPtr)
+=>
+rtcSetBoundsFunction (rtcGetGeometry(scene,geomID), func)
+}@@
+
+@@{
+REGEXPR(name,rtcSetIntersectFunction.*)(
+=>
+rtcSetIntersectFunction(
+}@@
+
+@@{
+rtcSetIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetIntersectFunction (rtcGetGeometry(scene,geomID), func)
+}@@
+
+@@{
+REGEXPR(name,rtcSetOccludedFunction.*)(
+=>
+rtcSetOccludedFunction(
+}@@
+
+@@{
+rtcSetOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetOccludedFunction (rtcGetGeometry(scene,geomID), func)
 }@@
 
 
