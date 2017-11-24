@@ -831,17 +831,17 @@ rtcNewSubdivisionMesh2(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,
 }@@
 
 @@{
-ID geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numFaces,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles);
+ID geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numFaces,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewSubdivisionMesh (g_device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles);
+RTCGeometry geom = rtcNewSubdivisionMesh (g_device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
 rtcReleaseGeometry(geom);
 }@@
 
 @@{
-rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numFaces,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR geomID);
+rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numFaces,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps,EXPR geomID);
 =>
-RTCGeometry geom = rtcNewSubdivisionMesh (g_device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles);
+RTCGeometry geom = rtcNewSubdivisionMesh (g_device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
 }@@
