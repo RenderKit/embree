@@ -669,7 +669,7 @@ rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// instance
+// geometries
 
 @@{
 unsigned int ID geomID = REGEXPR(name,rtcNew.*)
@@ -1050,6 +1050,22 @@ rtcGetGeometry (EXPR scene,EXPR geomID)
 geom
 }@@
 }@@
+
+////////////////////////////////////////////////////////////////////////////////////////
+// add rtcCommitGeometry before every return
+
+@@{
+RTCGeometry ID geom = REGEXPR(name,rtcNew.*)
+=>
+RTCGeometry geom = name
+@@{
+return EXPR e0;
+=>
+rtcCommitGeometry(geom);
+return e0;
+}@@
+}@@
+
 
 /////////////////////////////////
 // buffers
