@@ -740,9 +740,9 @@ rtcSetTransform(rtcGetGeometry(scene,geomID),layout,xfm,timeStep)
 // rtcNewTriangleMesh
 
 @@{
-rtcNewTriangleMesh (EXPR scene,EXPR flags,EXPR numTriangles,EXPR numVertices)
+rtcNewTriangleMesh
 =>
-rtcNewTriangleMesh2(scene,flags,numTriangles,numVertices,1)
+rtcNewTriangleMesh2
 }@@
 
 @@{
@@ -775,14 +775,13 @@ rtcSetGeometryBuildQuality(geom,flags);
 rtcSetNumTimeSteps(geom,numTimeSteps);
 }@@
 
-
 ////////////////////////////
 // rtcNewQuadMesh
 
 @@{
-rtcNewQuadMesh (EXPR scene,EXPR flags,EXPR numQuads,EXPR numVertices)
+rtcNewQuadMesh
 =>
-rtcNewQuadMesh2(scene,flags,numQuads,numVertices,1)
+rtcNewQuadMesh2
 }@@
 
 @@{
@@ -820,9 +819,9 @@ rtcSetNumTimeSteps(geom,numTimeSteps);
 // rtcNewSubdivisionMesh
 
 @@{
-rtcNewSubdivisionMesh (EXPR scene,EXPR flags,EXPR numFaces,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles)
+rtcNewSubdivisionMesh
 =>
-rtcNewSubdivisionMesh2(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,1)
+rtcNewSubdivisionMesh2
 }@@
 
 @@{
@@ -859,27 +858,21 @@ rtcSetNumTimeSteps(geom,numTimeSteps);
 // rtcNewCurveGeometry
 
 @@{
-rtcNewHairGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
+rtcNewHairGeometry
 =>
-rtcNewHairGeometry (scene,flags,numCurves,numVertices,1)
+rtcNewBezierGeometry
 }@@
 
 @@{
-rtcNewHairGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
+rtcNewBezierHairGeometry
 =>
-rtcNewBezierHairGeometry (scene,flags,numCurves,numVertices,numTimeSteps)
+rtcNewBezierHairGeometry2
 }@@
 
 @@{
-rtcNewBezierHairGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
+rtcNewBezierHairGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
 =>
-rtcNewBezierHairGeometry (scene,flags,numCurves,numVertices,1)
-}@@
-
-@@{
-rtcNewBezierHairGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
-=>
-rtcNewBezierHairGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
+rtcNewBezierHairGeometry2(scene,flags,numCurves,numVertices,1)
 }@@
 
 @@{
@@ -895,15 +888,15 @@ rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_RIBBON,flag
 }@@
 
 @@{
-rtcNewBSplineHairGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
+rtcNewBSplineHairGeometry
 =>
-rtcNewBSplineHairGeometry (scene,flags,numCurves,numVertices,1)
+rtcNewBSplineHairGeometry2
 }@@
 
 @@{
-rtcNewBSplineHairGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
+rtcNewBSplineHairGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
 =>
-rtcNewBSplineHairGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
+rtcNewBSplineHairGeometry2(scene,flags,numCurves,numVertices,1)
 }@@
 
 @@{
@@ -922,27 +915,21 @@ rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_RIBBON,fla
 
 
 @@{
-rtcNewCurveGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
+rtcNewCurveGeometry
 =>
-rtcNewCurveGeometry (scene,flags,numCurves,numVertices,1)
+rtcNewBezierCurveGeometry
 }@@
 
 @@{
-rtcNewCurveGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
+rtcNewBezierCurveGeometry
 =>
-rtcNewBezierCurveGeometry (scene,flags,numCurves,numVertices,numTimeSteps)
+rtcNewBezierCurveGeometry2
 }@@
 
 @@{
-rtcNewBezierCurveGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
+rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
 =>
-rtcNewBezierCurveGeometry (scene,flags,numCurves,numVertices,1)
-}@@
-
-@@{
-rtcNewBezierCurveGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
-=>
-rtcNewBezierCurveGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
+rtcNewBezierCurveGeometry2(scene,flags,numCurves,numVertices,1)
 }@@
 
 @@{
@@ -958,15 +945,15 @@ rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_SURFACE,fla
 }@@
 
 @@{
-rtcNewBSplineCurveGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
+rtcNewBSplineCurveGeometry
 =>
-rtcNewBSplineCurveGeometry (scene,flags,numCurves,numVertices,1)
+rtcNewBSplineCurveGeometry2
 }@@
 
 @@{
-rtcNewBSplineCurveGeometry (EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps)
+rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numCurves,EXPR numVertices)
 =>
-rtcNewBSplineCurveGeometry2(scene,flags,numCurves,numVertices,numTimeSteps)
+rtcNewBSplineCurveGeometry2(scene,flags,numCurves,numVertices,1)
 }@@
 
 @@{
@@ -983,22 +970,29 @@ rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_SURFACE,fl
 
 
 @@{
-rtcNewLineSegments (EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices)
+rtcNewLineSegments
 =>
-rtcNewLineSegments (scene,flags,numSegments,numVertices,1)
+rtcNewLineSegments2
 }@@
 
 @@{
-rtcNewLineSegments (EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
+rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices)
 =>
-rtcNewLineSegments2(scene,flags,numSegments,numVertices,numTimeSteps)
+rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 }@@
 
 @@{
-rtcNewLineSegments (EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
+rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
 rtcCurveGeometryX (scene,RTC_BASIS_LINEAR,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numSegments,numVertices,numTimeSteps)
 }@@
+
+@@{
+rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
+=>
+rtcCurveGeometryX (scene,RTC_BASIS_LINEAR,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numSegments,numVertices,numTimeSteps,geomID)
+}@@
+
 
 @@{
 ID geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps);
@@ -1014,15 +1008,6 @@ rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR num
 RTCGeometry geom = rtcNewCurveGeometry (g_device,basis,intersector,flags,numCurves,numVertices,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
-}@@
-
-@@{
-RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR intersector,EXPR flags,EXPR numCurves,EXPR numVertices,EXPR numTimeSteps);
-=>
-RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numCurves,numVertices,numTimeSteps);
-rtcSetGeometryIntersector(geom,intersector);
-rtcSetGeometryBuildQuality(geom,flags);
-rtcSetNumTimeSteps(geom,numTimeSteps);
 }@@
 
 

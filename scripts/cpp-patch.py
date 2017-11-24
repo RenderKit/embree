@@ -353,6 +353,8 @@ def parse_rules_file(rule_file):
     if (lines[0].startswith("@@{")):
       pop_line(lines)
       rules.append(parse_rule(lines))
+    elif (lines[0].startswith("@@END")):
+      return rules
     elif (lines[0].startswith("//")):
       pop_line(lines)
     elif empty_line(lines[0]):
