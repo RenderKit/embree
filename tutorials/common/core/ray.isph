@@ -125,6 +125,6 @@ struct IntersectContext
 
 inline void InitIntersectionContext(uniform IntersectContext* uniform context)
 {
-  rtcInitIntersectionContext(&context->context);
+  rtcInitIntersectContext(&context->context);
   context->userRayExt = NULL;
 }

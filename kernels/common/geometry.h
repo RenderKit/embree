@@ -172,7 +172,7 @@ namespace embree
 
     /*! sets constant tessellation rate for the geometry */
     virtual void setTessellationRate(float N) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set user data pointer. */
@@ -185,7 +185,7 @@ namespace embree
 
     /*! interpolates user data to the specified u/v location */
     virtual void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! interpolates user data to the specified u/v locations */
@@ -195,11 +195,11 @@ namespace embree
     /*! for subdivision surfaces only */
   public:
     virtual void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     virtual void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! for triangle meshes and bezier curves only */
@@ -208,34 +208,34 @@ namespace embree
 
     /*! sets type of curve */
     virtual void setGeometryIntersector(RTCGeometryIntersector type) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
     /*! Sets ray mask. */
     virtual void setMask (unsigned mask) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Creates a new Embree managed buffer. */
     virtual void* newBuffer(RTCBufferType type, size_t stride, unsigned int size) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
       return nullptr;
     }
     
     /*! Sets specified buffer. */
     virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Gets pointer of specified buffer. */
     virtual void* getBuffer(RTCBufferType type) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
       return nullptr; 
     }
 
     /*! Set displacement function. */
     virtual void setDisplacementFunction (RTCDisplacementFunction filter, RTCBounds* bounds) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersection filter function for ray packets of size N. */
@@ -249,7 +249,7 @@ namespace embree
     
     /*! Sets transformation of the instance */
     virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! for user geometries only */
@@ -257,17 +257,17 @@ namespace embree
 
     /*! Set bounds function. */
     virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersect function for ray packets of size N. */
     virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
     /*! Set occlusion function for ray packets of size N. */
     virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! returns number of time segments */

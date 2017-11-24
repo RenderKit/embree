@@ -354,7 +354,7 @@ namespace embree
 
       /* if we made this BVH static, we can not re-build it anymore  */
       if (bvh->isStatic)
-        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"static BVH cannot get rebuild");
 
       /* initialize the allocator */
       bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
@@ -372,7 +372,7 @@ namespace embree
           return rtcBuildBVHSpatialSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,splitPrimitive,buildProgress,userPtr);  
       }
       else
-        throw_RTCError(RTC_INVALID_OPERATION,"invalid build quality");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid build quality");
 
       RTCORE_CATCH_END(bvh->device);
       return nullptr;

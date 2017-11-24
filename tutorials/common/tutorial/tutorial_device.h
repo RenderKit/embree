@@ -49,8 +49,8 @@ enum Mode {
 };
 
 extern "C" Mode g_mode;
-extern "C" RTCIntersectFlags g_iflags_coherent;
-extern "C" RTCIntersectFlags g_iflags_incoherent;
+extern "C" RTCIntersectContextFlags g_iflags_coherent;
+extern "C" RTCIntersectContextFlags g_iflags_incoherent;
 
 /* error reporting function */
 void error_handler(void* userPtr, const RTCError code, const char* str = nullptr);

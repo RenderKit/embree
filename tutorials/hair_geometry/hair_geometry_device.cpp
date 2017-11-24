@@ -90,7 +90,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcDeviceNewScene(g_device);
+  RTCScene scene_out = rtcNewScene(g_device);
 
   for (size_t i=0; i<scene_in->numGeometries; i++)
   {
@@ -102,7 +102,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit (scene_out);
+  rtcCommitScene (scene_out);
 
   return scene_out;
 }
@@ -455,10 +455,10 @@ extern "C" void device_init (char* cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;

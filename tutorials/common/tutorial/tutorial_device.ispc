@@ -35,18 +35,18 @@ renderTileFunc renderTile;
 /* error reporting function */
 unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str)
 {
-  if (code == RTC_NO_ERROR)
+  if (code == RTC_ERROR_NONE)
     return;
 
   print("Embree: ");
   switch (code) {
-  case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : print("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
-  default                   : print("invalid error code"); break;
+  case RTC_ERROR_UNKNOWN          : print("RTC_ERROR_UNKNOWN"); break;
+  case RTC_ERROR_INVALID_ARGUMENT : print("RTC_ERROR_INVALID_ARGUMENT"); break;
+  case RTC_ERROR_INVALID_OPERATION: print("RTC_ERROR_INVALID_OPERATION"); break;
+  case RTC_ERROR_OUT_OF_MEMORY    : print("RTC_ERROR_OUT_OF_MEMORY"); break;
+  case RTC_ERROR_UNSUPPORTED_CPU  : print("RTC_ERROR_UNSUPPORTED_CPU"); break;
+  case RTC_ERROR_CANCELLED        : print("RTC_ERROR_CANCELLED"); break;
+  default                         : print("invalid error code"); break;
   }
   if (str) {
     print(" (");
@@ -72,7 +72,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -131,7 +131,7 @@ Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, u
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcOccluded(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -188,7 +188,7 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform 
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -245,7 +245,7 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, u
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -315,7 +315,7 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera, uniform 
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -380,7 +380,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera, unif
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -435,7 +435,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -491,7 +491,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera, unif
   /* intersect ray with scene */
   uniform int64 c0 = get_tsc();
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   uniform int64 c1 = get_tsc();
   RayStats_addRay(stats);
@@ -546,7 +546,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -581,7 +581,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 
     /* trace shadow ray */
     uniform RTCIntersectContext context;
-    rtcInitIntersectionContext(&context);
+    rtcInitIntersectContext(&context);
     rtcOccluded(g_scene,&context,RTCRay_(shadow));
     //rtcIntersect(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
@@ -643,7 +643,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -758,7 +758,7 @@ export uniform bool device_pick(const uniform float x,
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect1(g_scene,&context,RTCRay1_(ray));
 
   /* shade pixel */

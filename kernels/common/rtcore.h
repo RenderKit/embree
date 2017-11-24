@@ -21,8 +21,8 @@
 namespace embree
 {
    /*! decoding of intersection flags */
-  __forceinline bool isCoherent  (RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) == 0; }
-  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) != 0; }
+  __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT) == 0; }
+  __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT) != 0; }
 
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR >= 8)
 #  define USE_TASK_ARENA 1
@@ -33,50 +33,50 @@ namespace embree
 /*! Makros used in the rtcore API implementation */
 #define RTCORE_CATCH_BEGIN try {
   
-#define RTCORE_CATCH_END(device)                                        \
-  } catch (std::bad_alloc&) {                                           \
-    Device::process_error(device,RTC_OUT_OF_MEMORY,"out of memory");    \
-  } catch (rtcore_error& e) {                                           \
-    Device::process_error(device,e.error,e.what());                     \
-  } catch (std::exception& e) {                                         \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,e.what());           \
-  } catch (...) {                                                       \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,"unknown exception caught"); \
+#define RTCORE_CATCH_END(device)                                                \
+  } catch (std::bad_alloc&) {                                                   \
+    Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
+  } catch (rtcore_error& e) {                                                   \
+    Device::process_error(device,e.error,e.what());                             \
+  } catch (std::exception& e) {                                                 \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,e.what());                   \
+  } catch (...) {                                                               \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
   }
   
-#define RTCORE_CATCH_END2(scene)                                        \
-  } catch (std::bad_alloc&) {                                           \
-    Device* device = scene ? scene->device : nullptr;                   \
-    Device::process_error(device,RTC_OUT_OF_MEMORY,"out of memory");    \
-  } catch (rtcore_error& e) {                                           \
-    Device* device = scene ? scene->device : nullptr;                   \
-    Device::process_error(device,e.error,e.what());                     \
-  } catch (std::exception& e) {                                         \
-    Device* device = scene ? scene->device : nullptr;                   \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,e.what());           \
-  } catch (...) {                                                       \
-    Device* device = scene ? scene->device : nullptr;                   \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,"unknown exception caught"); \
+#define RTCORE_CATCH_END2(scene)                                                \
+  } catch (std::bad_alloc&) {                                                   \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
+  } catch (rtcore_error& e) {                                                   \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,e.error,e.what());                             \
+  } catch (std::exception& e) {                                                 \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,e.what());                   \
+  } catch (...) {                                                               \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
   }
 
-#define RTCORE_VERIFY_HANDLE(handle)                                    \
-  if (handle == nullptr) {                                              \
-    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");            \
+#define RTCORE_VERIFY_HANDLE(handle)                               \
+  if (handle == nullptr) {                                         \
+    throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \
   }
 
-#define RTCORE_VERIFY_GEOMID(id)                                  \
+#define RTCORE_VERIFY_GEOMID(id)                                   \
   if (id == RTC_INVALID_GEOMETRY_ID) {                             \
-    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
+    throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \
   }
 
 #define RTCORE_VERIFY_UPPER(id,upper)                              \
   if (id > upper) {                                                \
-    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
+    throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \
   }
 
-#define RTCORE_VERIFY_RANGE(id,lower,upper)				\
-  if (id < lower || id > upper)						\
-    throw_RTCError(RTC_INVALID_OPERATION,"argument out of bounds");
+#define RTCORE_VERIFY_RANGE(id,lower,upper)	\
+  if (id < lower || id > upper)						  \
+    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"argument out of bounds");
   
 #if 0 // enable to debug print all API calls
 #define RTCORE_TRACE(x) std::cout << #x << std::endl;
@@ -101,13 +101,13 @@ namespace embree
   };
 
 #if defined(DEBUG) // only report file and line in debug mode
-  #define throw_RTCError(error,str)                                      \
+  #define throw_RTCError(error,str) \
     throw rtcore_error(error,std::string(__FILE__) + " (" + toString(__LINE__) + "): " + std::string(str));
 #else
-  #define throw_RTCError(error,str)                                      \
+  #define throw_RTCError(error,str) \
     throw rtcore_error(error,str);
 #endif
 
-#define RTC_BUILD_SETTINGS_HAS(settings,member)                 \
+#define RTC_BUILD_SETTINGS_HAS(settings,member) \
   (settings.size > (offsetof(RTCBuildSettings,member)+sizeof(settings.member))) 
 }

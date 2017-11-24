@@ -67,7 +67,7 @@ namespace embree
   void SubdivMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
   {
     if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry intersector");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry intersector");
     
     Geometry::update();
   }
@@ -75,7 +75,7 @@ namespace embree
   void SubdivMesh::setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)
   {
     if (topologyID >= topology.size())
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid topology ID");
     topology[topologyID].setSubdivisionMode(mode);
   }
 
@@ -90,10 +90,10 @@ namespace embree
           commitCounter++; // triggers recalculation of cached interpolation data
         }
       } else {
-        throw_RTCError(RTC_INVALID_OPERATION,"invalid index buffer specified");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid index buffer specified");
       }
     } else {
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid vertex buffer specified");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid vertex buffer specified");
     }
   }
 
@@ -101,7 +101,7 @@ namespace embree
   { 
     /* verify that all accesses are 4 bytes aligned */
     if (stride & 0x3) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     if (type != RTC_LEVEL_BUFFER)
       commitCounter++;
@@ -179,7 +179,7 @@ namespace embree
     }
 
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
 
     return nullptr;
   }
@@ -188,7 +188,7 @@ namespace embree
   { 
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     if (type != RTC_LEVEL_BUFFER)
       commitCounter++;
@@ -253,7 +253,7 @@ namespace embree
       levels.set(device,ptr,offset,stride,size);
 
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
   }
 
   void* SubdivMesh::getBuffer(RTCBufferType type) 
@@ -287,7 +287,7 @@ namespace embree
       return levels.get(); 
 
     else 
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type"); 
 
     return nullptr;
   }
@@ -343,7 +343,7 @@ namespace embree
       levels.setModified(true);
 
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
 
     Geometry::update();
   }

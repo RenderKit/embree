@@ -216,7 +216,7 @@ namespace embree
     {
       /* report error if buffer is not existing */
       if (!device)
-        throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer specified");
       
       /* return buffer */
       return ptr;

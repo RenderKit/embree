@@ -105,7 +105,7 @@ namespace embree
   void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
     RTCDevice device = rtcNewDevice(cfg);
-    rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor,nullptr);
+    rtcSetDeviceMemoryMonitorFunction(device,memoryMonitor,nullptr);
 
     RTCBVH bvh = rtcNewBVH(device);
 
@@ -149,10 +149,10 @@ namespace embree
   {
     /* create new Embree device */
     g_device = rtcNewDevice(cfg);
-    error_handler(nullptr,rtcDeviceGetError(g_device));
+    error_handler(nullptr,rtcGetDeviceError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
     /* set start render mode */
     renderTile = renderTileStandard;

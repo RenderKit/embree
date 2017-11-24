@@ -130,7 +130,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
   return scene_out;
@@ -175,7 +175,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
   }
 
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
@@ -327,7 +327,7 @@ void renderTileStandard(int taskIndex,
   }
 
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
@@ -408,10 +408,10 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
@@ -429,7 +429,7 @@ extern "C" void device_render (int* pixels,
   if (!g_scene) {
     g_scene = convertScene(g_ispc_scene);
     updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
   
   /* render image */

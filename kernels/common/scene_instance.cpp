@@ -47,7 +47,7 @@ namespace embree
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (timeStep >= numTimeSteps)
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid timestep");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = xfm;
     if (timeStep == 0) world2local0 = rcp(xfm);

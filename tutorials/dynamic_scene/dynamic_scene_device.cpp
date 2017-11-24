@@ -122,15 +122,15 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
-  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
-  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
+  g_scene = rtcNewScene(g_device);
+  rtcSetSceneAccelFlags(g_scene,RTC_ACCEL_ROBUST);
+  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create some triangulated spheres */
@@ -155,7 +155,7 @@ extern "C" void device_init (char* cfg)
   colors[id] = Vec3fa(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -190,7 +190,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
   /* intersect ray with scene */
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect1(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
@@ -306,7 +306,7 @@ extern "C" void device_render (int* pixels,
     animateSphere(i,time+i);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

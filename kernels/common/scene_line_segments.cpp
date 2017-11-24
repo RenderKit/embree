@@ -48,7 +48,7 @@ namespace embree
   void LineSegments::setGeometryIntersector(RTCGeometryIntersector type)
   {
     if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
-      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve type");
     
     Geometry::update();
   }
@@ -57,7 +57,7 @@ namespace embree
   {
     /* verify that all accesses are 4 bytes aligned */
     if (stride & 0x3) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
@@ -81,7 +81,7 @@ namespace embree
       return segments.get();
     }
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
 
     return nullptr;
   }
@@ -90,7 +90,7 @@ namespace embree
   {
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3))
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
@@ -116,7 +116,7 @@ namespace embree
       setNumPrimitives(size);
     }
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
   }
 
   void* LineSegments::getBuffer(RTCBufferType type)
@@ -128,7 +128,7 @@ namespace embree
       return vertices[type - RTC_VERTEX_BUFFER0].get();
     }
     else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type"); 
       return nullptr;
     }
   }

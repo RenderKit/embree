@@ -216,7 +216,7 @@ namespace embree
         {
           /* this should never occur but is a fatal error */
           if (depth > maxDepth)
-            throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+            throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
           /* create leaf for few primitives */
           if (current.size() <= maxLeafSize)

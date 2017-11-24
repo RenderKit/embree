@@ -122,12 +122,12 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   {
     /* create the geometry */
     print("creating sphere %i (lazy)\n",instance->userID);
-    instance->object = rtcDeviceNewScene(g_device);
+    instance->object = rtcNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* when join mode is not supported we let only a single thread build */
-    if (!rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
-      rtcCommit(instance->object);
+    if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED))
+      rtcCommitScene(instance->object);
 
     /* now switch to the LAZY_COMMIT state */
     memory_barrier();
@@ -141,10 +141,10 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
     }
   }
 
-  /* multiple threads might enter the rtcCommitJoin function to jointly
+  /* multiple threads might enter the rtcCommitJoinScene function to jointly
    * build the internal data structures */
-  if (rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
-    rtcCommitJoin(instance->object);
+  if (rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED))
+    rtcCommitJoinScene(instance->object);
 
   /* switch to LAZY_VALID state */
   atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
@@ -153,9 +153,9 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
 void eagerCreate(uniform LazyGeometry* uniform instance)
 {
   print("creating sphere %i (eager)\n",instance->userID);
-  instance->object = rtcDeviceNewScene(g_device);
+  instance->object = rtcNewScene(g_device);
   createTriangulatedSphere(instance->object,instance->center,instance->radius);
-  rtcCommit(instance->object);
+  rtcCommitScene(instance->object);
   instance->state = LAZY_VALID;
 }
 
@@ -226,7 +226,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
 
   /* if we do not support the join mode then Embree also does not
    * support lazy build */
-  if (!rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
+  if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED))
     eagerCreate(instance);
 
   return instance;
@@ -264,13 +264,13 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
+  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
+  g_scene = rtcNewScene(g_device);
   
   /* instantiate geometry */
   createGroundPlane(g_scene);
@@ -278,7 +278,7 @@ export void device_init (uniform int8* uniform cfg)
     uniform float a = 2.0f*M_PI*(uniform float)i/(uniform float)numSpheres;
     g_objects[i] = createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
   }
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -289,7 +289,7 @@ export void device_init (uniform int8* uniform cfg)
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, 4);

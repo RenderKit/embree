@@ -983,15 +983,15 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
 
   /* commit changes to scene */
   //progressStart();
-  //rtcSetProgressMonitorFunction(scene_out,progressMonitor,nullptr);
-  rtcCommit (scene_out);
-  //rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
+  //rtcSetSceneProgressMonitorFunction(scene_out,progressMonitor,nullptr);
+  rtcCommitScene (scene_out);
+  //rtcSetSceneProgressMonitorFunction(scene_out,nullptr,nullptr);
   //progressEnd();
 
   return scene_out;
@@ -1675,10 +1675,10 @@ extern "C" void device_init (char* cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -1701,7 +1701,7 @@ extern "C" void device_render (int* pixels,
   if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
 
   /* create accumulator */
@@ -1729,7 +1729,7 @@ extern "C" void device_render (int* pixels,
 
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
     }
   }
   else

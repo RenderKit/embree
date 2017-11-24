@@ -62,11 +62,11 @@ namespace embree
     /*! sets the size of the software cache. */
     void setCacheSize(size_t bytes);
 
-    /*! configures some parameter */
-    void setParameter1i(const RTCParameter parm, ssize_t val);
+    /*! sets a property */
+    void setProperty(const RTCDeviceProperty prop, ssize_t val);
 
-    /*! returns some configuration */
-    ssize_t getParameter1i(const RTCParameter parm);
+    /*! gets a property */
+    ssize_t getProperty(const RTCDeviceProperty prop);
 
   private:
 

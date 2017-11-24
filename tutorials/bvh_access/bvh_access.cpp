@@ -31,18 +31,18 @@ namespace embree
   /* error reporting function */
   void error_handler(void* userPtr, const RTCError code, const char* str)
   {
-    if (code == RTC_NO_ERROR) 
+    if (code == RTC_ERROR_NONE) 
       return;
     
     printf("Embree: ");
     switch (code) {
-    case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-    case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-    case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-    case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-    case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-    case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-    default                   : printf("invalid error code"); break;
+    case RTC_ERROR_UNKNOWN          : printf("RTC_ERROR_UNKNOWN"); break;
+    case RTC_ERROR_INVALID_ARGUMENT : printf("RTC_ERROR_INVALID_ARGUMENT"); break;
+    case RTC_ERROR_INVALID_OPERATION: printf("RTC_ERROR_INVALID_OPERATION"); break;
+    case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
+    case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
+    case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
+    default                         : printf("invalid error code"); break;
     }
     if (str) { 
       printf(" ("); 
@@ -231,20 +231,20 @@ namespace embree
 
     /* create new Embree device and force bvh4.triangle4v hierarchy for triangles */
     RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
-    error_handler(nullptr,rtcDeviceGetError(device));
+    error_handler(nullptr,rtcGetDeviceError(device));
     
     /* set error handler */
-    rtcDeviceSetErrorFunction(device,error_handler,nullptr);
+    rtcSetDeviceErrorFunction(device,error_handler,nullptr);
     
     /* create scene */
-    RTCScene scene = rtcDeviceNewScene(device);
+    RTCScene scene = rtcNewScene(device);
     addCube(device,scene,Vec3fa(-1,0,0));
     addCube(device,scene,Vec3fa(1,0,0));
     addCube(device,scene,Vec3fa(0,0,-1));
     addCube(device,scene,Vec3fa(0,0,1));
     addHair(device,scene);
     addGroundPlane(device,scene);
-    rtcCommit (scene);
+    rtcCommitScene (scene);
     /* print triangle BVH */
     print_bvh(scene);
 

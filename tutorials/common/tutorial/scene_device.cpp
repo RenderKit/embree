@@ -490,7 +490,7 @@ namespace embree
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality)
   {
     node2geom.clear();
-    RTCScene scene_out = rtcDeviceNewScene(g_device);
+    RTCScene scene_out = rtcNewScene(g_device);
     
     /* use geometry instancing feature */
     if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP)
@@ -539,34 +539,34 @@ namespace embree
       {
         ISPCGeometry* geometry = scene_in->geometries[i];
         if (geometry->type == SUBDIV_MESH) {
-          RTCScene objscene = rtcDeviceNewScene(g_device);
+          RTCScene objscene = rtcNewScene(g_device);
           ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry,quality,objscene);
           scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
+          //rtcCommitScene(objscene);
         }
         else if (geometry->type == TRIANGLE_MESH) {
-          RTCScene objscene = rtcDeviceNewScene(g_device);
+          RTCScene objscene = rtcNewScene(g_device);
           ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry,quality,objscene);
           scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
+          //rtcCommitScene(objscene);
         }
         else if (geometry->type == QUAD_MESH) {
-          RTCScene objscene = rtcDeviceNewScene(g_device);
+          RTCScene objscene = rtcNewScene(g_device);
           ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry,quality,objscene);
           scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
+          //rtcCommitScene(objscene);
         }
         else if (geometry->type == CURVES) {
-          RTCScene objscene = rtcDeviceNewScene(g_device);
+          RTCScene objscene = rtcNewScene(g_device);
           ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry,quality,objscene);
           scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
+          //rtcCommitScene(objscene);
         }
         else if (geometry->type == GROUP) {
-          RTCScene objscene = rtcDeviceNewScene(g_device);
+          RTCScene objscene = rtcNewScene(g_device);
           ConvertGroup(g_device,(ISPCGroup*) geometry,quality,objscene);
           scene_in->geomID_to_scene[i] = objscene;
-          //rtcCommit(objscene);
+          //rtcCommitScene(objscene);
         }
         else if (geometry->type == INSTANCE) {
           unsigned int geomID = ConvertInstance(g_device,scene_in, (ISPCInstance*) geometry, i, scene_out);

@@ -53,7 +53,7 @@ namespace embree
   void Geometry::preCommit()
   {
     if (state == MODIFIED)
-      throw_RTCError(RTC_INVALID_OPERATION,"geometry got not committed");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry got not committed");
   }
 
   void Geometry::postCommit()
@@ -136,7 +136,7 @@ namespace embree
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
       scene->numIntersectionFiltersN -= intersectionFilterN != nullptr;
@@ -148,7 +148,7 @@ namespace embree
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY) 
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
       scene->numIntersectionFiltersN -= occlusionFilterN != nullptr;
@@ -160,7 +160,7 @@ namespace embree
   void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
   {
-    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
+    if (numFloats > 256) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
 
     __aligned(64) float P_tmp[256];

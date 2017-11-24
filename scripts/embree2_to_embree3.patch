@@ -41,19 +41,19 @@ rtcReleaseDevice (device)
 @@{
 rtcSetParameter1i (EXPR e0,EXPR e1)
 =>
-rtcDeviceSetParameter1i (g_device,e0,e1)
+rtcSetDeviceProperty (g_device,e0,e1)
 }@@
 
 @@{
 rtcGetParameter1i (EXPR e0)
 =>
-rtcDeviceGetParameter1i (g_device,e0)
+rtcGetDeviceProperty (g_device,e0)
 }@@
 
 @@{
 rtcGetError ()
 =>
-rtcDeviceGetError (device)
+rtcGetDeviceError (device)
 }@@
 
 @@{
@@ -71,13 +71,13 @@ RTCErrorFunc
 @@{
 rtcSetErrorFunction(EXPR e0)
 =>
-rtcDeviceSetErrorFunction(g_device,e0,NULL)
+rtcSetDeviceErrorFunction(g_device,e0,NULL)
 }@@
 
 @@{
-rtcDeviceSetErrorFunction2(EXPR e0,EXPR e1,EXPR e2)
+rtcSetDeviceErrorFunction2(EXPR e0,EXPR e1,EXPR e2)
 =>
-rtcDeviceSetErrorFunction(e0,e1,e2)
+rtcSetDeviceErrorFunction(e0,e1,e2)
 }@@
 
 @@{
@@ -95,13 +95,13 @@ RTCMemoryMonitorFunc
 @@{
 rtcSetMemoryMonitorFunction(EXPR e0)
 =>
-rtcDeviceSetMemoryMonitorFunction(g_device,e0,nullptr)
+rtcSetDeviceMemoryMonitorFunction(g_device,e0,nullptr)
 }@@
 
 @@{
-rtcDeviceSetMemoryMonitorFunction2(EXPR e0,EXPR e1,EXPR e2)
+rtcSetDeviceMemoryMonitorFunction2(EXPR e0,EXPR e1,EXPR e2)
 =>
-rtcDeviceSetMemoryMonitorFunction(e0,e1,e2)
+rtcSetDeviceMemoryMonitorFunction(e0,e1,e2)
 }@@
 
 @@{
@@ -210,19 +210,19 @@ RTC_INTERSECT_STREAM
 RTCIntersectContext ID context;
 =>
 RTCIntersectContext context;
-rtcInitIntersectionContext(&context);
+rtcInitIntersectContext(&context);
 }@@
 
 @@{
 rtcNewScene(EXPR e0,EXPR e1)
 =>
-rtcDeviceNewScene(g_device,e0,e1)
+rtcNewScene(g_device,e0,e1)
 }@@
 
 @@{
-ID scene = rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
+ID scene = rtcNewScene(EXPR device,EXPR sflags,EXPR aflags);
 =>
-scene = rtcDeviceNewScene(device);
+scene = rtcNewScene(device);
 COMMENT rtcSetAccelFlags(scene,sflags); // FIXME: set proper accel flags
 COMMENT rtcSetBuildQuality(scene,sflags); // FIXME: set proper build quality
 COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
@@ -232,7 +232,7 @@ COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
 return rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 =>
 {
-  RTCScene VAR scene = rtcDeviceNewScene(device);
+  RTCScene VAR scene = rtcNewScene(device);
   COMMENT rtcSetAccelFlags(scene,sflags); // FIXME: set proper accel flags
   COMMENT rtcSetBuildQuality(scene,sflags); // FIXME: set proper build quality
   COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
@@ -255,13 +255,13 @@ RTCProgressMonitorFunc
 @@{
 rtcCommitThread(EXPR scene,EXPR threadID,EXPR numThreads)
 =>
-rtcCommitJoin(scene)
+rtcCommitJoinScene(scene)
 }@@
 
 @@{
 rtcGetBounds(EXPR scene,EXPR bounds)
 =>
-rtcGetBounds(scene,&bounds)
+rtcGetSceneBounds(scene,&bounds)
 }@@
 
 @@{
@@ -269,7 +269,7 @@ rtcIntersect(EXPR scene, EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect1(scene,&context,&ray);
 }
 }@@
@@ -285,7 +285,7 @@ rtcIntersect4(EXPR valid,EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect4(valid,scene,&context,&ray);
 }
 }@@
@@ -301,7 +301,7 @@ rtcIntersect8(EXPR valid,EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect8(valid,scene,&context,&ray);
 }
 }@@
@@ -317,7 +317,7 @@ rtcIntersect16(EXPR valid,EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcIntersect16(valid,scene,&context,&ray);
 }
 }@@
@@ -340,7 +340,7 @@ rtcOccluded(EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcOccluded1(scene,&context,&ray);
 }
 }@@
@@ -356,7 +356,7 @@ rtcOccluded4(EXPR valid,EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcOccluded4(valid,scene,&context,&ray);
 }
 }@@
@@ -372,7 +372,7 @@ rtcOccluded8(EXPR valid,EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcOccluded8(valid,scene,&context,&ray);
 }
 }@@
@@ -388,7 +388,7 @@ rtcOccluded16(EXPR valid,EXPR scene,EXPR ray);
 =>
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   rtcOccluded16(valid,scene,&context,&ray);
 }
 }@@

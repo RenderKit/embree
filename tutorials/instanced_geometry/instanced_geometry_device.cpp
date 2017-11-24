@@ -131,23 +131,23 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
+  g_scene = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcDeviceNewScene(g_device);
+  g_scene1 = rtcNewScene(g_device);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5f);
   createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommit (g_scene1);
+  rtcCommitScene (g_scene1);
 
   /* instantiate geometry */
   g_instance0 = rtcNewInstance(g_device,g_scene1,1);
@@ -195,7 +195,7 @@ extern "C" void device_init (char* cfg)
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -318,7 +318,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace rays */
   RTCIntersectContext primary_context;
-  rtcInitIntersectionContext(&primary_context);
+  rtcInitIntersectContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
   rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(Ray));
 
@@ -372,7 +372,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace shadow rays */
   RTCIntersectContext shadow_context;
-  rtcInitIntersectionContext(&shadow_context);
+  rtcInitIntersectContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
   rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));
 
@@ -472,7 +472,7 @@ extern "C" void device_render (int* pixels,
   rtcCommitGeometry(g_instance1);
   rtcCommitGeometry(g_instance2);
   rtcCommitGeometry(g_instance3);
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
