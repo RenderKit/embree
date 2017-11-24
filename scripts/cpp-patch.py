@@ -5,6 +5,7 @@ import os
 import copy
 import re
 
+unique_id = 0
 identifier_begin_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 identifier_cont_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
 number_chars = "0123456789";
@@ -158,11 +159,15 @@ def match(pattern,ppos,tokens,tpos,env):
   elif pattern[ppos] == "ID":
     ppos+=1
     var = pattern[ppos]
-    ppos+=1
     if (not is_identifier_token(tokens[tpos])):
       return (ppos,tpos,False)
-    env[var] = [tokens[tpos]]
-    tpos+=1
+    b = True
+    if var in env:
+      b = env[var] == [tokens[tpos]]
+    if b:
+      ppos+=1
+      env[var] = [tokens[tpos]]
+      tpos+=1
     return (ppos,tpos,True)
 
   elif pattern[ppos] == "REGEXPR":
@@ -170,11 +175,14 @@ def match(pattern,ppos,tokens,tpos,env):
     name = pattern[ppos]
     ppos+=1
     pat = pattern[ppos]
-    if (re.match(pat,tokens[tpos]) == None):
-      return (ppos,tpos,False)
     ppos+=1
-    env[name] = [tokens[tpos]]
-    tpos+=1
+    next = pattern[ppos]
+    try: (expr,tpos) = parse_expr(tokens,tpos,next)
+    except ValueError: return (ppos,tpos,False)
+    m = "".join(filter(no_delimiter_token,expr))
+    if (re.match(pat,m) == None):
+      return (ppos,tpos,False)
+    env[name] = [m]
     return (ppos,tpos,True)
     
   elif pattern[ppos] == "EXPR":
@@ -187,14 +195,16 @@ def match(pattern,ppos,tokens,tpos,env):
     if (tokens[tpos] != next):
       return (ppos,tpos,False)
 
+    b = True
     if var in env:
       b = filter(no_delimiter_token,env[var]) == filter(no_delimiter_token,expr)
-      return (ppos,tpos,b)
-    
-    tpos+=1
-    ppos+=1
-    env[var] = expr
-    return (ppos,tpos,True)
+
+    if (b):
+      tpos+=1
+      ppos+=1
+      env[var] = expr
+      
+    return (ppos,tpos,b)
     
   elif pattern[ppos] == tokens[tpos]:
     ppos+=1
@@ -205,13 +215,20 @@ def match(pattern,ppos,tokens,tpos,env):
     return (ppos,tpos,False)
 
 def substitute (env,tokens,ident):
+  global unique_id
   result = []
-  for token in tokens:
-    if token in env:
-      result = result + env[token]
+  for i in range(0,len(tokens)):
+    if tokens[i] == "VAR":
+      var = tokens[i+2]
+      env[var] = [var+"_"+str(unique_id)]
+      unique_id+=1
+    elif tokens[i] == "COMMENT":
+      result.append("//")
+    elif tokens[i] in env:
+      result = result + env[tokens[i]]
     else:
-      result.append(token)
-    if token == "\n" and ident != 0:
+      result.append(tokens[i])
+    if tokens[i] == "\n" and ident != 0:
       result.append(" "*ident)
   return result
 
@@ -347,6 +364,8 @@ def parse_rules_file(rule_file):
     if (lines[0].startswith("@@{")):
       pop_line(lines)
       rules.append(parse_rule(lines))
+    elif (lines[0].startswith("@@END")):
+      return rules
     elif (lines[0].startswith("//")):
       pop_line(lines)
     elif empty_line(lines[0]):
