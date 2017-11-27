@@ -61,12 +61,12 @@ Vec3fa sampleSphere(const float u, const float v)
 
 void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -74,14 +74,14 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
+  RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
   for (size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
-  rtcSetGeometryIntersector(geom,hair->type);
+  rtcSetGeometrySubtype(geom,hair->subtype);
   rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
-  rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryTessellationRate(geom,hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);

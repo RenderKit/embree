@@ -144,7 +144,7 @@ inline uniform float updateEdgeLevel(const uniform Vec3fa& cam_pos, uniform Vec3
 /* adds a subdiv cube to the scene */
 uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),NUM_VERTICES);
@@ -189,7 +189,7 @@ void setTriangleSubdivCubeLevels (RTCGeometry geom, const uniform Vec3fa& cam_po
 /* adds a subdiv cube to the scene */
 uniform unsigned int addQuadSubdivCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),NUM_VERTICES);
@@ -235,7 +235,7 @@ void setQuadSubdivCubeLevels (RTCGeometry geom, const uniform Vec3fa& cam_pos)
 /* adds a triangle cube to the scene */
 uniform unsigned int addTriangleCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewTriangleMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),NUM_VERTICES);
@@ -253,7 +253,7 @@ uniform unsigned int addTriangleCube (RTCScene scene_i, const uniform Vec3f& pos
 /* adds a quad cube to the scene */
 uniform unsigned int addQuadCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewQuadMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_QUAD);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcNewBuffer(geom, RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),NUM_VERTICES);
@@ -271,8 +271,8 @@ uniform unsigned int addQuadCube (RTCScene scene_i, const uniform Vec3f& pos)
 /* add curve geometry */
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_BASIS_BEZIER);
-  rtcSetGeometryIntersector(geom,RTC_GEOMETRY_INTERSECTOR_SURFACE);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_CURVE_BEZIER);
+  rtcSetGeometrySubtype(geom,RTC_GEOMETRY_SUBTYPE_SURFACE);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(uniform Vec3fa), NUM_HAIR_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(uniform Vec3fa), NUM_HAIR_VERTICES);
@@ -296,7 +296,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);

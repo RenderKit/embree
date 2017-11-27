@@ -67,7 +67,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setGeometryIntersector(RTCGeometryIntersector type);
+    void setSubtype(RTCGeometrySubtype type);
     void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
     void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
@@ -176,7 +176,7 @@ namespace embree
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
       {
-        if (unlikely(subdiv_mode == RTC_SUBDIV_NO_BOUNDARY)) {
+        if (unlikely(subdiv_mode == RTC_SUBDIVISION_MODE_NO_BOUNDARY)) {
           if (getHalfEdge(i)->faceHasBorder()) return false;
         }
         return true;

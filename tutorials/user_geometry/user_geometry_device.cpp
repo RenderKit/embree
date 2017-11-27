@@ -241,12 +241,12 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.l.vy = Vec3fa(0,1,0);
   instance->local2world.l.vz = Vec3fa(0,0,1);
   instance->local2world.p    = Vec3fa(0,0,0);
-  instance->geometry = rtcNewUserGeometry(g_device);
-  rtcSetNumPrimitives(instance->geometry,1);
-  rtcSetUserData(instance->geometry,instance);
-  rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
-  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
+  rtcSetGeometryNumPrimitives(instance->geometry,1);
+  rtcSetGeometryUserData(instance->geometry,instance);
+  rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
+  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
@@ -732,17 +732,17 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
 
 Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
   sphere->geometry = geom;
   sphere->geomID = rtcAttachGeometry(scene,geom);
-  rtcSetNumPrimitives(geom,1);
-  rtcSetUserData(geom,sphere);
-  rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
-  rtcSetIntersectFunction(geom,sphereIntersectFunc);
-  rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  rtcSetGeometryNumPrimitives(geom,1);
+  rtcSetGeometryUserData(geom,sphere);
+  rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
+  rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
+  rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
@@ -750,29 +750,29 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 
 Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (size_t i=0; i<N; i++) {
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }
-  rtcSetNumPrimitives(geom,N);
-  rtcSetUserData(geom,spheres);
-  rtcSetBoundsFunction(geom,sphereBoundsFunc,nullptr);
+  rtcSetGeometryNumPrimitives(geom,N);
+  rtcSetGeometryUserData(geom,spheres);
+  rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
   if (g_mode == MODE_NORMAL)
   {
-    rtcSetIntersectFunction(geom,sphereIntersectFunc);
-    rtcSetOccludedFunction (geom,sphereOccludedFunc);
-    rtcSetIntersectionFilterFunction(geom,sphereFilterFunction);
-    rtcSetOcclusionFilterFunction(geom,sphereFilterFunction);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);
+    rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFunction);
+    rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFunction);
   }
   else
   {
-    rtcSetIntersectFunction(geom,sphereIntersectFuncN);
-    rtcSetOccludedFunction (geom,sphereOccludedFuncN);
-    rtcSetIntersectionFilterFunction(geom,sphereFilterFunctionN);
-    rtcSetOcclusionFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
+    rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFunctionN);
   }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
@@ -786,7 +786,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
@@ -843,7 +843,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
