@@ -902,6 +902,19 @@ namespace embree
       }
       break;
 
+    case RTC_GEOMETRY_TYPE_SUBDIVISION:
+      {
+#if defined(EMBREE_GEOMETRY_SUBDIV)
+        createSubdivMeshTy createSubdivMesh = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+        Geometry* geom = createSubdivMesh(device);
+        return (RTCGeometry) geom->refInc();
+#else
+        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewSubdivisionMesh is not supported");
+#endif
+      }
+      break;
+
     case RTC_GEOMETRY_TYPE_USER:
       {
 #if defined(EMBREE_GEOMETRY_USER)
@@ -951,24 +964,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
     geometry->setSubtype(type);
     RTCORE_CATCH_END2(geometry);
-  }
-    
-  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice) 
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewSubdivisionMesh);
-    RTCORE_VERIFY_HANDLE(hdevice);
-#if defined(EMBREE_GEOMETRY_SUBDIV)
-    createSubdivMeshTy createSubdivMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-    Geometry* geom = createSubdivMesh(device);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewSubdivisionMesh is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
   }
 
   /*! sets the build quality of the geometry */
