@@ -8,6 +8,9 @@ embree2
 embree3
 }@@
 
+////////////////////////////////////////////////////////////////////////////////////////
+// rtcore_device.h
+
 @@{
 rtcNewDevice ()
 =>
@@ -35,23 +38,227 @@ RTCDevice g_device = rtcInit (e0);
 @@{
 rtcExit ()
 =>
-rtcReleaseDevice (device)
+rtcReleaseDevice (g_device)
 }@@
 
 @@{
-rtcSetParameter1i (EXPR e0,EXPR e1)
+RTC_SOFTWARE_CACHE_SIZE
 =>
-rtcSetDeviceProperty (g_device,e0,e1)
+RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE
 }@@
 
 @@{
-rtcGetParameter1i (EXPR e0)
+RTC_CONFIG_INTERSECT1
 =>
-rtcGetDeviceProperty (g_device,e0)
+RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED
 }@@
 
+@@{
+RTC_CONFIG_INTERSECT4
+=>
+RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_INTERSECT8
+=>
+RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_INTERSECT16
+=>
+RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_INTERSECT_STREAM
+=>
+RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_RAY_MASK
+=>
+RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_BACKFACE_CULLING
+=>
+RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED
+}@@
+
+@@{
+RTC_CONFIG_INTERSECTION_FILTER
+=>
+RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_INTERSECTION_FILTER_RESTORE
+=>
+/*RTC_DEVICE_PROPERTY_INTERSECTION_FILTER_RESTORE*/
+}@@
+
+@@{
+RTC_CONFIG_IGNORE_INVALID_RAYS
+=>
+RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED
+}@@
+
+@@{
+RTC_CONFIG_TASKING_SYSTEM
+=>
+RTC_DEVICE_PROPERTY_TASKING_SYSTEM
+}@@
+
+@@{
+RTC_CONFIG_VERSION_MAJOR
+=>
+RTC_DEVICE_PROPERTY_VERSION_MAJOR
+}@@
+
+@@{
+RTC_CONFIG_VERSION_MINOR
+=>
+RTC_DEVICE_PROPERTY_VERSION_MINOR
+}@@
+
+@@{
+RTC_CONFIG_VERSION_PATCH
+=>
+RTC_DEVICE_PROPERTY_VERSION_PATCH
+}@@
+
+@@{
+RTC_CONFIG_VERSION
+=>
+RTC_DEVICE_PROPERTY_VERSION
+}@@
+
+@@{
+RTC_CONFIG_TRIANGLE_GEOMETRY
+=>
+RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_QUAD_GEOMETRY
+=>
+RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_LINE_GEOMETRY
+=>
+RTC_DEVICE_PROPERTY_LINE_GEOMETRY_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_HAIR_GEOMETRY
+=>
+RTC_DEVICE_PROPERTY_HAIR_GEOMETRY_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_SUBDIV_GEOMETRY
+=>
+RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_USER_GEOMETRY
+=>
+RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_COMMIT_JOIN
+=>
+RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED
+}@@
+
+@@{
+RTC_CONFIG_COMMIT_THREAD
+=>
+/*RTC_DEVICE_PROPERTY_COMMIT_THREAD_SUPPORTED*/
+}@@
+
+@@{
+rtcSetParameter1i (EXPR parm,EXPR val)
+=>
+rtcSetDeviceProperty (g_device,parm,val)
+}@@
+
+@@{
+rtcGetParameter1i (EXPR parm)
+=>
+rtcGetDeviceProperty (g_device,parm)
+}@@
+
+@@{
+rtcDeviceSetParameter1i (EXPR device,EXPR parm,EXPR val)
+=>
+rtcSetDeviceProperty (device,parm,val)
+}@@
+
+@@{
+rtcDeviceGetParameter1i (EXPR device,EXPR parm)
+=>
+rtcGetDeviceProperty (device,parm)
+}@@
+
+@@{
+RTC_NO_ERROR
+=>
+RTC_ERROR_NONE
+}@@
+
+@@{
+RTC_UNKNOWN_ERROR
+=>
+RTC_ERROR_UNKNOWN
+}@@
+
+@@{
+RTC_INVALID_ARGUMENT
+=>
+RTC_ERROR_INVALID_ARGUMENT
+}@@
+
+@@{
+RTC_INVALID_OPERATION
+=>
+RTC_ERROR_INVALID_OPERATION
+}@@
+
+@@{
+RTC_OUT_OF_MEMORY
+=>
+RTC_ERROR_OUT_OF_MEMORY
+}@@
+
+@@{
+RTC_UNSUPPORTED_CPU
+=>
+RTC_ERROR_UNSUPPORTED_CPU
+}@@
+
+@@{
+RTC_CANCELLED
+=>
+RTC_ERROR_CANCELLED
+}@@
+  
 @@{
 rtcGetError ()
+=>
+rtcGetDeviceError (g_device)
+}@@
+
+@@{
+rtcDeviceGetError (EXPR device)
 =>
 rtcGetDeviceError (device)
 }@@
@@ -59,49 +266,89 @@ rtcGetDeviceError (device)
 @@{
 RTC_ERROR_FUNCTION
 =>
+RTCErrorFunction
+}@@
+
+@@{
 RTCErrorFunc
+=>
+RTCErrorFunction
 }@@
 
 @@{
 RTCErrorFunc2
 =>
-RTCErrorFunc
+RTCErrorFunction
 }@@
 
 @@{
-rtcSetErrorFunction(EXPR e0)
+rtcSetErrorFunction(EXPR func)
 =>
-rtcSetDeviceErrorFunction(g_device,e0,NULL)
+rtcSetDeviceErrorFunction(g_device,func,NULL)
 }@@
 
 @@{
-rtcSetDeviceErrorFunction2(EXPR e0,EXPR e1,EXPR e2)
+rtcDeviceSetErrorFunction(EXPR device,EXPR func)
 =>
-rtcSetDeviceErrorFunction(e0,e1,e2)
+rtcSetDeviceErrorFunction(device,func,NULL)
+}@@
+
+@@{
+rtcDeviceSetErrorFunction2(EXPR device,EXPR func,EXPR userPtr)
+=>
+rtcSetDeviceErrorFunction(device,func,userPtr)
+}@@
+
+@@{
+void EXPR RTCErrorFunc (const RTCError ID error, const char* ID str)
+{
+=>
+void RTCErrorFunc (void* userPtr, const RTCError ID error, const char* str)
+{
 }@@
 
 @@{
 RTC_MEMORY_MONITOR_FUNCTION
 =>
+RTCMemoryMonitorFunction
+}@@
+
+@@{
 RTCMemoryMonitorFunc
+=>
+RTCMemoryMonitorFunction
 }@@
 
 @@{
 RTCMemoryMonitorFunc2
 =>
-RTCMemoryMonitorFunc
+RTCMemoryMonitorFunction
 }@@
 
 @@{
-rtcSetMemoryMonitorFunction(EXPR e0)
+rtcSetMemoryMonitorFunction(EXPR func)
 =>
-rtcSetDeviceMemoryMonitorFunction(g_device,e0,nullptr)
+rtcSetDeviceMemoryMonitorFunction(g_device,func,NULL)
 }@@
 
 @@{
-rtcSetDeviceMemoryMonitorFunction2(EXPR e0,EXPR e1,EXPR e2)
+rtcDeviceSetMemoryMonitorFunction(EXPR device,EXPR func)
 =>
-rtcSetDeviceMemoryMonitorFunction(e0,e1,e2)
+rtcSetDeviceMemoryMonitorFunction(device,func,NULL)
+}@@
+
+@@{
+rtcDeviceSetMemoryMonitorFunction2(EXPR device,EXPR func,EXPR userPtr)
+=>
+rtcSetDeviceMemoryMonitorFunction(device,func,userPtr)
+}@@
+
+@@{
+void EXPR RTCMemoryMonitorFunc (const ssize_t ID bytes, const bool ID post)
+{
+=>
+void RTCMemoryMonitorFunc (void* userPtr, const ssize_t bytes, const bool post)
+{
 }@@
 
 @@{
@@ -113,6 +360,12 @@ rtcDebug();
 // rtcore_scene.h
 
 @@{
+RTC_BUILD_QUALITY_NORMAL
+=>
+RTC_BUILD_QUALITY_MEDIUM
+}@@
+
+@@{
 RTC_SCENE_STATIC
 =>
 RTC_BUILD_QUALITY_MEDIUM
@@ -121,7 +374,7 @@ RTC_BUILD_QUALITY_MEDIUM
 @@{
 RTC_SCENE_DYNAMIC
 =>
-RTC_SCENE_FLAG_DYNAMIC
+RTC_SCENE_FLAG_DYNAMIC | RTC_BUILD_QUALITY_LOW
 }@@
 
 @@{
@@ -133,13 +386,13 @@ RTC_ACCEL_COMPACT
 @@{
 RTC_SCENE_COHERENT
 =>
-0
+RTC_SCENE_FLAG_NONE
 }@@
 
 @@{
 RTC_SCENE_INCOHERENT
 =>
-0
+RTC_SCENE_FLAG_NONE
 }@@
 
 @@{
@@ -207,6 +460,24 @@ RTC_INTERSECT_STREAM
 }@@
 
 @@{
+RTCIntersectFlags
+=>
+RTCIntersectContextFlags
+}@@
+
+@@{
+RTC_INTERSECT_COHERENT
+=>
+RTC_INTERSECT_CONTEXT_FLAG_COHERENT
+}@@
+
+@@{
+RTC_INTERSECT_INCOHERENT
+=>
+RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT
+}@@
+
+@@{
 RTCIntersectContext ID context;
 =>
 RTCIntersectContext context;
@@ -214,17 +485,23 @@ rtcInitIntersectContext(&context);
 }@@
 
 @@{
-rtcNewScene(EXPR e0,EXPR e1)
+rtcNewScene(EXPR sflags,EXPR aflags)
 =>
-rtcNewScene(g_device,e0,e1)
+rtcDeviceNewScene(g_device,sflags,aflags)
 }@@
 
 @@{
-ID scene = rtcNewScene(EXPR device,EXPR sflags,EXPR aflags);
+rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags)
+=>
+rtcDeviceNewScene(device,sflags,aflags)
+}@@
+
+@@{
+ID scene = rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 =>
 scene = rtcNewScene(device);
-COMMENT rtcSetAccelFlags(scene,sflags); // FIXME: set proper accel flags
-COMMENT rtcSetBuildQuality(scene,sflags); // FIXME: set proper build quality
+COMMENT rtcSetSceneAccelFlags(scene,sflags); // FIXME: set proper accel flags
+COMMENT rtcSetSceneBuildQuality(scene,sflags); // FIXME: set proper build quality
 COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
 }@@
 
@@ -233,8 +510,8 @@ return rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 =>
 {
   RTCScene VAR scene = rtcNewScene(device);
-  COMMENT rtcSetAccelFlags(scene,sflags); // FIXME: set proper accel flags
-  COMMENT rtcSetBuildQuality(scene,sflags); // FIXME: set proper build quality
+  COMMENT rtcSetSceneAccelFlags(scene,sflags); // FIXME: set proper accel flags
+  COMMENT rtcSetSceneBuildQuality(scene,sflags); // FIXME: set proper build quality
   COMMENT rtcSetSceneFlags(scene,sflags); // FIXME: set proper scene flags
   return scene;
 }
@@ -249,7 +526,31 @@ rtcReleaseScene(scene)
 @@{
 RTC_PROGRESS_MONITOR_FUNCTION
 =>
+RTCProgressMonitorFunction
+}@@
+
+@@{
 RTCProgressMonitorFunc
+=>
+RTCProgressMonitorFunction
+}@@
+
+@@{
+rtcSetProgressMonitorFunction
+=>
+rtcSetSceneProgressMonitorFunction
+}@@
+
+@@{
+rtcCommit(EXPR scene)
+=>
+rtcCommitScene(scene)
+}@@
+
+@@{
+rtcCommitJoin(EXPR scene)
+=>
+rtcCommitJoinScene(scene)
 }@@
 
 @@{
@@ -262,6 +563,12 @@ rtcCommitJoinScene(scene)
 rtcGetBounds(EXPR scene,EXPR bounds)
 =>
 rtcGetSceneBounds(scene,&bounds)
+}@@
+
+@@{
+rtcGetLinearBounds(EXPR scene,EXPR bounds)
+=>
+rtcGetSceneLinearBounds(scene,bounds)
 }@@
 
 @@{
@@ -422,15 +729,15 @@ RTC_BUILD_QUALITY_MEDIUM
 }@@
 
 @@{
-RTC_GEOMETRY_DYNAMIC
-=>
-RTC_BUILD_QUALITY_LOW
-}@@
-
-@@{
 RTC_GEOMETRY_DEFORMABLE
 =>
 RTC_BUILD_QUALITY_REFIT
+}@@
+
+@@{
+RTC_GEOMETRY_DYNAMIC
+=>
+RTC_BUILD_QUALITY_LOW
 }@@
 
 @@{
@@ -458,16 +765,308 @@ RTC_SUBDIVISION_MODE_PIN_CORNERS
 }@@
 
 @@{
+RTC_SUBDIV_NO_BOUNDARY
+=>
+RTC_SUBDIVISION_MODE_NO_BOUNDARY
+}@@
+
+@@{
+RTC_SUBDIV_SMOOTH_BOUNDARY
+=>
+RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY
+}@@
+
+@@{
+RTC_SUBDIV_PIN_CORNERS
+=>
+RTC_SUBDIVISION_MODE_PIN_CORNERS
+}@@
+
+@@{
+RTC_SUBDIV_PIN_BOUNDARY
+=>
+RTC_SUBDIVISION_MODE_PIN_BOUNDARY
+}@@
+
+@@{
+RTC_SUBDIV_PIN_ALL
+=>
+RTC_SUBDIVISION_MODE_PIN_ALL
+}@@
+
+@@{
 RTCBoundaryMode
 =>
 RTCSubdivisionMode
 }@@
 
+///////////////////////////////////////////////////////////////////////
+// convert filter function callbacks
+
 @@{
-rtcSetBoundaryMode(EXPR scene,EXPR geomID,EXPR mode)
+void EXPR intersectionFilter(void* ID geomUserPtr_in, RTCRay& ID ray_in)
+{
 =>
-rtcSetGeometrySubdivisionMode(scene,geomID,mode)
+void intersectionFilter(const RTCFilterFunctionNArguments* args)
+{
+  int* valid = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context = args->context;
+  COMMENT RTCRay* ray_in = (RTCRay*) args->ray;
+  RTCHit* potentialHit = (RTCHit*) args->potentialHit;
+  unsigned int N = args->N;
+  assert(N == 1);
+  if (!valid[0]) return; // function may get called with zero mask
+@@{
+ray_in.
+=>
+potentialHit->
 }@@
+}@@
+
+@@{
+void EXPR intersectionFilter4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in)
+{
+=>
+void intersectionFilter4(const RTCFilterFunctionNArguments* args)
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context = args->context;
+  COMMENT RTCRay4* ray_in = (RTCRay4*) args->ray;
+  RTCHit4* potentialHit = (RTCHit4*) args->potentialHit;
+  unsigned int N = args->N;
+  assert(N == 4);
+  if (none(valid)) return; // function may get called with zero mask
+@@{
+ray_in.
+=>
+potentialHit->
+}@@
+}@@
+
+@@{
+void EXPR intersectionFilter8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in)
+{
+=>
+void intersectionFilter8(const RTCFilterFunctionNArguments* args)
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context = args->context;
+  COMMENT RTCRay8* ray_in = (RTCRay8*) args->ray;
+  RTCHit8* potentialHit = (RTCHit8*) args->potentialHit;
+  unsigned int N = args->N;
+  assert(N == 8);
+  if (none(valid)) return; // function may get called with zero mask
+@@{
+ray_in.
+=>
+potentialHit->
+}@@
+}@@
+
+@@{
+void EXPR intersectionFilter16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in)
+{
+=>
+void intersectionFilter16(const RTCFilterFunctionNArguments* args)
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context = args->context;
+  COMMENT RTCRay16* ray_in = (RTCRay16*) args->ray;
+  RTCHit16* potentialHit = (RTCHit16*) args->potentialHit;
+  unsigned int N = args->N;
+  assert(N == 16);
+  if (none(valid)) return; // function may get called with zero mask
+@@{
+ray_in.
+=>
+potentialHit->
+}@@
+}@@
+
+@@{
+void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in)
+{
+=>
+void intersectionFilterN(const RTCFilterFunctionNArguments* args)
+{
+  int* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  RTCIntersectContext* context_in = args->context;
+  RTCRayN* ray_in = args->ray;
+  RTCHitN* potentialHit_in = args->potentialHit;
+  unsigned int N_in = args->N;
+  // FIXME: function may get called with zero mask
+}@@
+
+
+///////////////////////////////////////////////////////////////////////
+// convert displacement function callbacks
+
+@@{
+void EXPR RTCDisplacementFunc(void* ID geomUserPtr_in, unsigned int ID geomID_in, unsigned int ID primID_in,
+const float* ID u_in, const float* ID v_in, const float* ID nx_in, const float* ID ny_in, const float* ID nz_in,
+float* ID px_in, float* ID py_in, float* ID pz_in, size_t ID N_in)
+{
+=>
+void RTCDisplacementFunc(const RTCDisplacementFunctionArguments* const args)
+{
+  void* geomUserPtr_in = args->geomUserPtr;
+  unsigned int geomID_in = args->geomID;
+  unsigned int primID_in = args->primID;
+  const float* u_in = args->u;
+  const float* v_in = args->v;
+  const float* nx_in = args->nx;
+  const float* ny_in = args->ny;
+  const float* nz_in = args->nz;
+  float* px_in = args->px;
+  float* py_in = args->py;
+  float* pz_in = args->pz;
+  size_t N_in = args->N;
+}@@
+
+@@{
+void EXPR RTCDisplacementFunc2(void* ID geomUserPtr_in, unsigned int ID geomID_in, unsigned int ID primID_in, unsigned int ID time_in,
+const float* ID u_in, const float* ID v_in, const float* ID nx_in, const float* ID ny_in, const float* ID nz_in,
+float* ID px_in, float* ID py_in, float* ID pz_in, size_t ID N_in)
+{
+=>
+void RTCDisplacementFunc2(const RTCDisplacementFunctionArguments* const args)
+{
+  void* geomUserPtr_in = args->geomUserPtr;
+  unsigned int geomID_in = args->geomID;
+  unsigned int primID_in = args->primID;
+  unsigned int time_in = args->time;
+  const float* u_in = args->u;
+  const float* v_in = args->v;
+  const float* nx_in = args->nx;
+  const float* ny_in = args->ny;
+  const float* nz_in = args->nz;
+  float* px_in = args->px;
+  float* py_in = args->py;
+  float* pz_in = args->pz;
+  size_t N_in = args->N;
+}@@
+
+///////////////////////////////////////////////////////////////////////
+// convert user geometry callbacks
+
+@@{
+void EXPR instanceBoundsFunc(void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+{
+=>
+void instanceBoundsFunc(const RTCBoundsFunctionArguments* args)
+{
+  COMMENT void* userPtr = args->userPtr;
+  void* geomUserPtr_in = args->geomUserPtr;
+  size_t item_in = args->item;
+  COMMENT unsigned int time = args->time;
+  RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+void EXPR instanceBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+{
+=>
+void instanceBoundsFunc2(const RTCBoundsFunctionArguments* args)
+{
+  void* userPtr_in = args->userPtr;
+  void* geomUserPtr_in = args->geomUserPtr;
+  size_t item_in = args->item;
+  COMMENT size_t time = args->time;
+  RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+void EXPR instanceBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, size_t ID time_in, RTCBounds& ID bounds_out)
+{
+=>
+void instanceBoundsFunc3(const RTCBoundsFunctionArguments* args)
+{
+  void* userPtr_in = args->userPtr;
+  void* geomUserPtr_in = args->geomUserPtr;
+  size_t item_in = args->item;
+  size_t time_in = args->time;
+  RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc(const RTCIntersectFunctionNArguments* args)
+{
+  COMMENT void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay& ray_in = *(RTCRay*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 1);
+}@@
+
+@@{
+void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc4(const RTCIntersectFunctionNArguments* args)
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay4& ray_in = *(RTCRay4*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 4);
+}@@
+
+@@{
+void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc8(const RTCIntersectFunctionNArguments* args)
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay8& ray_in = *(RTCRay8*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 8);
+}@@
+
+@@{
+void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFunc16(const RTCIntersectFunctionNArguments* args)
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay16& ray_in = *(RTCRay16*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+  assert(N_in == 16);
+}@@
+
+@@{
+void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID item_in)
+{
+=>
+void RTCIntersectFuncN(const RTCIntersectFunctionNArguments* args)
+{
+  const int* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  RTCIntersectContext* context_in = args->context;
+  RTCRayN* ray_in = args->ray;
+  unsigned int N_in = args->N;
+  unsigned int item_in = args->item;
+}@@
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -483,6 +1082,12 @@ rtcSetGeometryTessellationRate(rtcGetGeometry(scene,geomID),rate)
 rtcSetMask(EXPR scene,EXPR geomID,EXPR mask)
 =>
 rtcSetGeometryMask(rtcGetGeometry(scene,geomID),mask)
+}@@
+
+@@{
+rtcSetBoundaryMode(EXPR scene,EXPR geomID,EXPR mode)
+=>
+rtcSetGeometrySubdivisionMode(rtcGetGeometry(scene,geomID),0,mode)
 }@@
 
 @@{
@@ -609,13 +1214,13 @@ rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
 @@{
 rtcSetOcclusionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetGeometryOccluddedFilterFunction(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetOcclusionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
 =>
-rtcSetGeometryOccluddedFilterFunction(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 
@@ -683,243 +1288,46 @@ rtcSetBoundsFunctionX(EXPR geom,EXPR func,EXPR userPtr)
 rtcSetGeometryBoundsFunction(geom,func,userPtr)
 }@@
 
-
 @@{
-rtcSetIntersectFunction(EXPR scene,EXPR geomID,EXPR func)
+rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
 =>
-rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+COMMENT rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
 }@@
 
 @@{
-rtcSetIntersectFunction4(EXPR scene,EXPR geomID,EXPR func)
+REGEXPR(name,rtcSetIntersectFunction.*)(
 =>
-rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunction(
 }@@
 
 @@{
-rtcSetIntersectFunction8(EXPR scene,EXPR geomID,EXPR func)
+rtcSetGeometryIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
 =>
-rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryIntersectFunction (rtcGetGeometry(scene,geomID), func)
 }@@
 
 @@{
-rtcSetIntersectFunction16(EXPR scene,EXPR geomID,EXPR func)
+rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
 =>
-rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+COMMENT rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
 }@@
 
 @@{
-rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func)
+REGEXPR(name,rtcSetOccludedFunction.*)(
 =>
-rtcSetGeometryIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunction(
 }@@
 
 @@{
-rtcSetIntersectFunctionN(EXPR scene,EXPR geomID,EXPR func)
+rtcSetGeometryOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
 =>
-rtcSetIntersectFunctionN(rtcGetGeometry(scene,geomID),func)
+rtcSetGeometryOccludedFunction (rtcGetGeometry(scene,geomID), func)
 }@@
-
-@@{
-rtcSetOccludedFunction(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOccludedFunction4(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOccludedFunction8(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOccludedFunction16(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOccludedFunctionN(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFunctionN(rtcGetGeometry(scene,geomID),func)
-}@@
-
-
-
-
 
 @@{
 rtcDeleteGeometry(EXPR scene,EXPR geomID)
 =>
 rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-
-//////////////////////////////////////////////////////////////////////////
-// convert intersection filter functions
-
-@@{
-void EXPR intersectionFilter(void* ID geomUserPtr_in, RTCRay& ID ray_in)
-{
-=>
-void intersectionFilter(const RTCFilterFunctionNArguments* args)
-{
-  int* valid = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context = args->context;
-  COMMENT RTCRay* ray_in = (RTCRay*) args->ray;
-  RTCHit* potentialHit = (RTCHit*) args->potentialHit;
-  unsigned int N = args->N;
-  assert(N == 1);
-  if (!valid[0]) return; // function may get called with zero mask
-@@{
-ray_in.
-=>
-potentialHit->
-}@@
-}@@
-
-@@{
-void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in)
-{
-=>
-void intersectionFilterN(const RTCFilterFunctionNArguments* args)
-{
-  int* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  RTCIntersectContext* context_in = args->context;
-  RTCRayN* ray_in = args->ray;
-  RTCHitN* potentialHit_in = args->potentialHit;
-  unsigned int N_in = args->N;
-  // FIXME: function may get called with zero mask
-}@@
-
-///////////////////////////////////////////////////////////////////////
-// convert user geometry callbacks
-
-@@{
-void EXPR instanceBoundsFunc(void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
-{
-=>
-void instanceBoundsFunc(const RTCBoundsFunctionArguments* args)
-{
-  COMMENT void* userPtr = args->userPtr;
-  void* geomUserPtr_in = args->geomUserPtr;
-  size_t item_in = args->item;
-  COMMENT unsigned int time = args->time;
-  RTCBounds& bounds_out = *args->bounds_o;
-}@@
-
-@@{
-void EXPR instanceBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
-{
-=>
-void instanceBoundsFunc2(const RTCBoundsFunctionArguments* args)
-{
-  void* userPtr_in = args->userPtr;
-  void* geomUserPtr_in = args->geomUserPtr;
-  size_t item_in = args->item;
-  COMMENT size_t time = args->time;
-  RTCBounds& bounds_out = *args->bounds_o;
-}@@
-
-@@{
-void EXPR instanceBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, size_t ID time_in, RTCBounds& ID bounds_out)
-{
-=>
-void instanceBoundsFunc3(const RTCBoundsFunctionArguments* args)
-{
-  void* userPtr_in = args->userPtr;
-  void* geomUserPtr_in = args->geomUserPtr;
-  size_t item_in = args->item;
-  size_t time_in = args->time;
-  RTCBounds& bounds_out = *args->bounds_o;
-}@@
-
-@@{
-void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID item_in)
-{
-=>
-void RTCIntersectFunc(const RTCIntersectFunctionNArguments* args)
-{
-  COMMENT void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay& ray_in = *(RTCRay*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
-  assert(N_in == 1);
-}@@
-
-@@{
-void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID item_in)
-{
-=>
-void RTCIntersectFunc4(const RTCIntersectFunctionNArguments* args)
-{
-  void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay4& ray_in = *(RTCRay4*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
-  assert(N_in == 4);
-}@@
-
-@@{
-void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID item_in)
-{
-=>
-void RTCIntersectFunc8(const RTCIntersectFunctionNArguments* args)
-{
-  void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay8& ray_in = *(RTCRay8*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
-  assert(N_in == 8);
-}@@
-
-@@{
-void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID item_in)
-{
-=>
-void RTCIntersectFunc16(const RTCIntersectFunctionNArguments* args)
-{
-  void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay16& ray_in = *(RTCRay16*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
-  assert(N_in == 16);
-}@@
-
-@@{
-void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID item_in)
-{
-=>
-void RTCIntersectFuncN(const RTCIntersectFunctionNArguments* args)
-{
-  const int* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  RTCIntersectContext* context_in = args->context;
-  RTCRayN* ray_in = args->ray;
-  unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
 }@@
 
 
@@ -1013,48 +1421,6 @@ rtcSetNumPrimitives(geom,numPrimitives);
 rtcSetNumTimeSteps(geom,numTimeSteps);
 }@@
 
-@@{
-rtcSetBoundsFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetBoundsFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-rtcSetBoundsFunction2 (EXPR scene, EXPR geomID, EXPR func, EXPR userPtr)
-=>
-rtcSetBoundsFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-rtcSetBoundsFunction3 (EXPR scene, EXPR geomID, EXPR func, EXPR userPtr)
-=>
-rtcSetBoundsFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-REGEXPR(name,rtcSetIntersectFunction.*)(
-=>
-rtcSetIntersectFunction(
-}@@
-
-@@{
-rtcSetIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetIntersectFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-REGEXPR(name,rtcSetOccludedFunction.*)(
-=>
-rtcSetOccludedFunction(
-}@@
-
-@@{
-rtcSetOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetOccludedFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // instance
@@ -1102,7 +1468,13 @@ rtcReleaseGeometry(geom);
 }@@
 
 @@{
-rtcSetTransform(EXPR scene,EXPR geomID,EXPR layout,EXPR xfm)
+rtcSetTransform
+=>
+rtcSetTransform2
+}@@
+
+@@{
+rtcSetTransform2(EXPR scene,EXPR geomID,EXPR layout,EXPR xfm)
 =>
 rtcSetTransform2(scene,geomID,layout,xfm,0)
 }@@
@@ -1314,7 +1686,7 @@ rtcNewBezierCurveGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BEZIER,RTC_GEOMETRY_INTERSECTOR_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BEZIER,RTC_GEOMETRY_SUBTYPE_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1338,7 +1710,7 @@ rtcNewBSplineCurveGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_BASIS_BSPLINE,RTC_GEOMETRY_INTERSECTOR_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BSPLINE,RTC_GEOMETRY_SUBTYPE_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1363,7 +1735,7 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX (scene,RTC_BASIS_LINEAR,RTC_GEOMETRY_INTERSECTOR_RIBBON,flags,numSegments,numVertices,numTimeSteps)
+rtcNewCurveGeometryX (scene,RTC_CURVE_BASIS_LINEAR,RTC_GEOMETRY_SUBTYPE_RIBBON,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1711,6 +2083,11 @@ rtcGetBuffer(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 ////////////////////////////////////////////////
 // drop extra arguments of geometry creation
 
+@@{
+rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+rtcNewUserGeometry (EXPR device)
+}@@
 
 @@{
 rtcNewTriangleMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
@@ -1738,13 +2115,7 @@ rtcNewCurveGeometry (device,basis)
 
 
 ////////////////////////////////////////////////
-// BVH build API
-
-@@{
-RTC_BUILD_QUALITY_NORMAL
-=>
-RTC_BUILD_QUALITY_MEDIUM
-}@@
+// rtcore_builder.h
 
 @@{
 rtcBuildBVH(EXPR bvh, EXPR settings, EXPR primitives, EXPR numPrimitives, EXPR createNode, EXPR setNodeChildren, EXPR setNodeBounds, EXPR createLeaf, EXPR splitPrimitive, EXPR buildProgress, EXPR userPtr);
@@ -1890,17 +2261,17 @@ cont.context.flags
 @@{
 LINEAR_BASIS
 =>
-RTC_BASIS_LINEAR
+RTC_CURVE_BASIS_LINEAR
 }@@
 
 @@{
 BEZIER_BASIS
 =>
-RTC_BASIS_BEZIER
+RTC_CURVE_BASIS_BEZIER
 }@@
 
 @@{
 BSPLINE_BASIS
 =>
-RTC_BASIS_BSPLINE
+RTC_CURVE_BASIS_BSPLINE
 }@@
