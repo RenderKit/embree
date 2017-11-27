@@ -33,7 +33,7 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis); 
+    NativeCurves (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype);
     
   public:
     void enabling();
@@ -269,24 +269,24 @@ namespace embree
     }
 
   public:
-    Buffer<unsigned int> curves;                   //!< array of curve indices
-    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<Buffer<char>> userbuffers;            //!< user buffers
-    RTCGeometrySubtype subtype;                                //!< hair or surface geometry
-    RTCCurveBasis basis;                                    //!< basis of user provided vertices
-    int tessellationRate;                           //!< tessellation rate for bezier curve
+    Buffer<unsigned int> curves;            //!< array of curve indices
+    vector<Buffer<Vec3fa>> vertices;        //!< vertex array for each timestep
+    vector<Buffer<char>> userbuffers;       //!< user buffers
+    RTCGeometryType type;                   //!< basis of user provided vertices
+    RTCGeometrySubtype subtype;             //!< hair or surface geometry
+    int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
-    BufferView<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
-    Buffer<unsigned int> native_curves;                   //!< array of curve indices
-    vector<Buffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
+    BufferView<Vec3fa> native_vertices0;    //!< fast access to first vertex buffer
+    Buffer<unsigned int> native_curves;     //!< array of curve indices
+    vector<Buffer<Vec3fa>> native_vertices; //!< vertex array for each timestep
   };
 
   namespace isa
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis)
-        : NativeCurves(device,subtype,basis) {}
+      NativeCurvesISA (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+        : NativeCurves(device,type,subtype) {}
 
       template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
       
@@ -295,8 +295,8 @@ namespace embree
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis)
-         : NativeCurvesISA(device,subtype,basis) {}
+      CurvesBezier (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+         : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
@@ -304,14 +304,14 @@ namespace embree
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, RTCGeometrySubtype subtype, RTCCurveBasis basis)
-         : NativeCurvesISA(device,subtype,basis) {}
+      CurvesBSpline (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+         : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCGeometrySubtype COMMA RTCCurveBasis);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCGeometrySubtype COMMA RTCCurveBasis);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCGeometryType COMMA RTCGeometrySubtype);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCGeometryType COMMA RTCGeometrySubtype);
 }

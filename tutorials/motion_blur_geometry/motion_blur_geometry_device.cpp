@@ -99,7 +99,7 @@ unsigned int cube_quad_faces[6] = {
 unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int), 12);
 
   for (size_t t=0; t<num_time_steps; t++)
@@ -140,7 +140,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
 unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   /* create a quad cube with 6 quads and 8 vertices */
-  RTCGeometry geom = rtcNewQuadMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int), 6);
 
   for (size_t t=0; t<num_time_steps; t++)
@@ -167,7 +167,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
 unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
   //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,  0, sizeof(Vec3fa  ), 8);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices, 0, sizeof(unsigned int), NUM_INDICES);
@@ -205,7 +205,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometrySubtype type, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry(g_device, RTC_CURVE_BASIS_BSPLINE);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE);
   rtcSetGeometrySubtype(geom,type);
   rtcSetGeometryTessellationRate (geom,16.0f);
 
@@ -241,7 +241,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometrySubtype typ
 /* add line geometry */
 unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_CURVE_BASIS_LINEAR);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_CURVE_LINEAR);
   rtcSetGeometrySubtype(geom,RTC_GEOMETRY_SUBTYPE_RIBBON);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
@@ -277,7 +277,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
 RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   RTCScene scene = rtcNewScene(g_device);
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int), 12);
   rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(float), 8);
   rtcCommitGeometry(geom);
@@ -306,7 +306,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
 RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
   RTCScene scene = rtcNewScene(g_device);
-  RTCGeometry geom = rtcNewQuadMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
   rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int), 6);
 
   for (size_t t=0; t<num_time_steps; t++)
@@ -470,7 +470,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
 Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewUserGeometry(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
@@ -491,7 +491,7 @@ Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigne
 unsigned int addGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);

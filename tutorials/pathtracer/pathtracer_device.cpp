@@ -1163,7 +1163,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     
-    if (mesh->basis == RTC_CURVE_BASIS_LINEAR)
+    if (mesh->type == RTC_GEOMETRY_TYPE_CURVE_LINEAR)
     {
       materialID = mesh->geom.materialID;
       const Vec3fa dx = normalize(dg.Ng);
@@ -1175,7 +1175,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       int vtx = mesh->hairs[dg.primID].vertex;
       dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
-    else if (mesh->basis == RTC_CURVE_BASIS_BEZIER || mesh->basis == RTC_CURVE_BASIS_BSPLINE)
+    else if (mesh->type == RTC_GEOMETRY_TYPE_CURVE_BEZIER || mesh->type == RTC_GEOMETRY_TYPE_CURVE_BSPLINE)
     {
       ISPCHairSet* mesh = (ISPCHairSet*) geometry;
       materialID = mesh->geom.materialID;
@@ -1185,7 +1185,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ty = Vec3fa(0,1,0);
         dg.Ng = dg.Ns = Vec3fa(0,0,1);
       }
-      else if (mesh->type == RTC_GEOMETRY_SUBTYPE_RIBBON)
+      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_RIBBON)
       {
         const Vec3fa dx = normalize(dg.Ng);
         const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
@@ -1195,7 +1195,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ng = dg.Ns = dz;
         dg.eps = 1.1f*p.w;
       }
-      else if (mesh->type == RTC_GEOMETRY_SUBTYPE_SURFACE)
+      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_SURFACE)
       {
         const Vec3fa dx = normalize(Vec3fa(dp));
         const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));

@@ -756,21 +756,21 @@ namespace embree
       };
       
     public:
-      HairSetNode (RTCGeometrySubtype type, RTCCurveBasis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), type(type), basis(basis), material(material), tessellation_rate(4)
+      HairSetNode (RTCGeometryType type, RTCGeometrySubtype subtype, Ref<MaterialNode> material, size_t numTimeSteps = 0)
+        : Node(true), type(type), subtype(subtype), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometrySubtype type, RTCCurveBasis basis)
-        : Node(true), type(type), basis(basis), hairs(hairs), material(material), tessellation_rate(4) 
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometryType type, RTCGeometrySubtype subtype)
+        : Node(true), type(type), subtype(subtype), hairs(hairs), material(material), tessellation_rate(4)
       {
         positions.push_back(positions_in);
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), basis(imesh->basis), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        : Node(true), type(imesh->type), subtype(imesh->subtype), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
         hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -817,10 +817,10 @@ namespace embree
       void verify() const;
 
     public:
-      RTCGeometrySubtype type;                //!< type of geometry (hair or curve)
-      RTCCurveBasis basis;              //!< basis function of curve (bezier or bspline)
+      RTCGeometryType type;                   //!< basis function of curve (bezier or bspline)
+      RTCGeometrySubtype subtype;             //!< subtype of geometry (hair or curve)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
-      std::vector<Hair> hairs;  //!< list of hairs
+      std::vector<Hair> hairs;                //!< list of hairs
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
     };

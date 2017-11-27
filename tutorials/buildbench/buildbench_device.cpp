@@ -33,7 +33,7 @@ namespace embree {
 
   void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
   {
-    RTCGeometry geom = rtcNewTriangleMesh (g_device);
+    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -45,7 +45,7 @@ namespace embree {
 
   void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
   {
-    RTCGeometry geom = rtcNewQuadMesh (g_device);
+    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -57,7 +57,7 @@ namespace embree {
 
   void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
   {
-    RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+    RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
@@ -78,15 +78,15 @@ namespace embree {
 
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCBuildQuality quality)
   {
-    RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->basis);
-    rtcSetGeometrySubtype(geom,hair->type);
+    RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
+    rtcSetGeometrySubtype(geom,hair->subtype);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<hair->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-    if (hair->basis != RTC_CURVE_BASIS_LINEAR)
+    if (hair->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
     rtcCommitGeometry(geom);
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);

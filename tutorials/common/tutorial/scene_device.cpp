@@ -232,8 +232,8 @@ namespace embree
     if (face_offsets) delete[] face_offsets;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometrySubtype type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in) 
-    : geom(CURVES), type(type), basis(basis)
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, RTCGeometrySubtype subtype, Ref<SceneGraph::HairSetNode> in)
+    : geom(CURVES), type(type), subtype(subtype)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -291,7 +291,7 @@ namespace embree
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
       geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
+      geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->subtype,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
       geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
@@ -305,7 +305,7 @@ namespace embree
 
   unsigned int ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewTriangleMesh (device);
+    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -321,7 +321,7 @@ namespace embree
   
   unsigned int ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewQuadMesh (device);
+    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -337,7 +337,7 @@ namespace embree
   
   unsigned int ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewSubdivisionMesh(device);
+    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
@@ -386,15 +386,15 @@ namespace embree
   
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
-    RTCGeometry geom = rtcNewCurveGeometry  (device, mesh->basis);
-    rtcSetGeometrySubtype(geom,mesh->type);
+    RTCGeometry geom = rtcNewGeometry(device, mesh->type);
+    rtcSetGeometrySubtype(geom, mesh->subtype);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
-    if (mesh->basis != RTC_CURVE_BASIS_LINEAR)
+    if (mesh->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
     rtcCommitGeometry(geom);
 
