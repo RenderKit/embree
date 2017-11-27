@@ -313,8 +313,10 @@ def parseCommandLine(argv):
     
 parseCommandLine(sys.argv[1:len(sys.argv)])
 if (rule_file == ""):
-  raise ValueError("no rule file specified");
+  printUsage()
+  raise ValueError("no patch file specified");
 if (cpp_file_in == ""):
+  printUsage()
   raise ValueError("no input file specified");
 
 line = 1
