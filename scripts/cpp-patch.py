@@ -5,6 +5,11 @@ import os
 import copy
 import re
 
+rule_file = ""
+cpp_file_in = ""
+cpp_file_out = ""
+ispc_mode = False
+
 unique_id = 0
 identifier_begin_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 identifier_cont_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
@@ -69,7 +74,7 @@ def parse_number(chars,tokens):
   tokens.append(id)
   return True
 
-def tokenize(chars,regex):
+def tokenize(chars,parse_pattern):
   tokens = []
   while chars:
     if chars[0] == "\n": tokens.append(chars.pop(0)); continue;
@@ -78,7 +83,7 @@ def tokenize(chars,regex):
     elif parse_number(chars,tokens): continue;
     elif parse_line_comment(chars,tokens): continue;
     elif parse_comment(chars,tokens): continue;
-    elif tokens and regex and tokens[-1] == "REGEXPR": parse_regexpr(chars,tokens); continue;
+    elif tokens and parse_pattern and tokens[-1] == "REGEXPR": parse_regexpr(chars,tokens); continue;
     elif chars[0] == "(": tokens.append(chars.pop(0)); continue;
     elif chars[0] == ")": tokens.append(chars.pop(0)); continue;
     elif chars[0] == "[": tokens.append(chars.pop(0)); continue;
@@ -155,6 +160,13 @@ def match(pattern,ppos,tokens,tpos,env):
   if is_delimiter_token(tokens[tpos]):
     tpos+=1
     return (ppos,tpos,True)
+
+  elif ispc_mode and tokens[tpos] == "uniform":
+    tpos+=1
+    return (ppos,tpos,True)
+  elif ispc_mode and tokens[tpos] == "varying":
+    tpos+=1
+    return (ppos,tpos,True)
     
   elif pattern[ppos] == "ID":
     ppos+=1
@@ -217,19 +229,30 @@ def match(pattern,ppos,tokens,tpos,env):
 def substitute (env,tokens,ident):
   global unique_id
   result = []
-  for i in range(0,len(tokens)):
+  i = 0
+  while i<len(tokens):
     if tokens[i] == "VAR":
       var = tokens[i+2]
       env[var] = [var+"_"+str(unique_id)]
       unique_id+=1
     elif tokens[i] == "COMMENT":
       result.append("//")
+      
+    elif not ispc_mode and tokens[i] == "uniform":
+      i+=1 # also skip next space
+      
+    elif not ispc_mode and tokens[i] == "varying":
+      i+=1 # also skip next space
+    
     elif tokens[i] in env:
       result = result + env[tokens[i]]
     else:
       result.append(tokens[i])
+      
     if tokens[i] == "\n" and ident != 0:
       result.append(" "*ident)
+
+    i+=1
   return result
 
 def print_token_list(list,f):
@@ -281,10 +304,6 @@ def apply_rule (rule,env_in,tokens):
         tpos+=1
   return result
 
-rule_file = ""
-cpp_file_in = ""
-cpp_file_out = ""
-
 def printUsage():
   sys.stdout.write("Usage: cpp-patch.py --patch embree2_to_embree3.patch --in infile.cpp --out outfile.cpp\n")
 
@@ -292,8 +311,11 @@ def parseCommandLine(argv):
   global rule_file
   global cpp_file_in
   global cpp_file_out
+  global ispc_mode
   if len(argv) == 0:
     return;
+  elif len(argv)>=1 and argv[0] == "--ispc":
+    ispc_mode = True
   elif len(argv)>=2 and argv[0] == "--patch":
     rule_file = argv[1]
     parseCommandLine(argv[2:len(argv)])
