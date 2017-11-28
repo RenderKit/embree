@@ -56,7 +56,7 @@ namespace embree
           int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
@@ -104,7 +104,7 @@ namespace embree
           int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
               HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
@@ -144,7 +144,7 @@ namespace embree
           hit.finalize();
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
@@ -194,7 +194,7 @@ namespace embree
 #endif
 
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
               hit.finalize();
@@ -232,7 +232,7 @@ namespace embree
           int geomID = geomIDs[i];
           int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+#if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
           goto entry;
           while (true) 
@@ -253,7 +253,7 @@ namespace embree
             }
 #endif
             
-#if defined(EMBREE_INTERSECTION_FILTER) 
+#if defined(EMBREE_FILTER_FUNCTION) 
             /* call intersection filter function */
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
@@ -314,7 +314,7 @@ namespace embree
           int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
 
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+#if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
           goto entry;
           while (true) 
@@ -335,7 +335,7 @@ namespace embree
             }
 #endif
             
-#if defined(EMBREE_INTERSECTION_FILTER) 
+#if defined(EMBREE_FILTER_FUNCTION) 
             /* call intersection filter function */
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
@@ -381,7 +381,7 @@ namespace embree
           Scene* scene = context->scene;
 
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+#if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
           if (unlikely(filter))
             hit.finalize(); /* called only once */
 
@@ -407,7 +407,7 @@ namespace embree
             }
 #endif
             
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
             /* if we have no filter then the test passed */
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
@@ -459,7 +459,7 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) 
           {
             bool foundhit = false;
@@ -519,7 +519,7 @@ namespace embree
 #endif
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
           {
             hit.finalize();
@@ -574,7 +574,7 @@ namespace embree
 #endif
           
           /* occlusion filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               HitK<K> h(context->instID,geomID,primID,u,v,t,Ng);
@@ -631,7 +631,7 @@ namespace embree
 #endif
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
             {
@@ -682,7 +682,7 @@ namespace embree
 #endif
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               HitK<K> h(context->instID,geomID,primID,u,v,t,Ng);
@@ -734,7 +734,7 @@ namespace embree
 #endif
           
           /* occlusion filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
             {
@@ -782,7 +782,7 @@ namespace embree
           int geomID = geomIDs[i];
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+#if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
           goto entry;
           while (true) 
@@ -802,7 +802,7 @@ namespace embree
             }
 #endif
             
-#if defined(EMBREE_INTERSECTION_FILTER) 
+#if defined(EMBREE_FILTER_FUNCTION) 
             /* call intersection filter function */
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
@@ -861,7 +861,7 @@ namespace embree
           Scene* scene = context->scene;
 
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+#if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
           if (unlikely(filter))
             hit.finalize(); /* called only once */
           
@@ -886,7 +886,7 @@ namespace embree
             }
 #endif
             
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
             /* execute occlusion filer */
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
@@ -939,7 +939,7 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) 
             {
@@ -1008,7 +1008,7 @@ namespace embree
 #endif
 
           /* intersection filter test */
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
             {
