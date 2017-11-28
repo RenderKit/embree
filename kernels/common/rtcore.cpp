@@ -128,27 +128,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetSceneAccelFlags (RTCScene hscene, RTCAccelFlags accel) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetSceneAccelFlags);
-    RTCORE_VERIFY_HANDLE(hscene);
-    scene->setAccelFlags(accel);
-    RTCORE_CATCH_END2(scene);
-  }
-
-  RTCORE_API RTCAccelFlags rtcGetSceneAccelFlags(RTCScene hscene)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetSceneAccelFlags);
-    RTCORE_VERIFY_HANDLE(hscene);
-    return scene->getAccelFlags();
-    RTCORE_CATCH_END2(scene);
-    return RTC_ACCEL_FAST;
-  }
-  
   RTCORE_API void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
   {
     Scene* scene = (Scene*) hscene;
@@ -829,13 +808,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     args->report(args,filter_args);
   }
 
-  RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     args->report(args,filter_args);
@@ -1166,33 +1145,28 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcInterpolate(RTCGeometry hgeometry, unsigned primID, float u, float v, 
-                                 RTCBufferType buffer,
-                                 float* P, float* dPdu, float* dPdv, 
-                                 float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                 unsigned int numFloats)
+  RTCORE_API void rtcInterpolate(const RTCInterpolateArguments* const args)
   {
-    Geometry* geometry = (Geometry*) hgeometry;
+    Geometry* geometry = (Geometry*) args->geometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(args->geometry);
+#endif
+    geometry->interpolate(args);
     RTCORE_CATCH_END2(geometry);
   }
 
 #if defined (EMBREE_RAY_PACKETS)
-  RTCORE_API void rtcInterpolateN(RTCGeometry hgeometry,
-                                  const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                  RTCBufferType buffer,
-                                  float* P, float* dPdu, float* dPdv, 
-                                  float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                  unsigned int numFloats)
+  RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* const args)
   {
-    Geometry* geometry = (Geometry*) hgeometry;
+    Geometry* geometry = (Geometry*) args->geometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(args->geometry);
+#endif
+    geometry->interpolateN(args);
     RTCORE_CATCH_END2(geometry);
   }
 #endif

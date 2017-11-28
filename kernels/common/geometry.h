@@ -184,13 +184,12 @@ namespace embree
     }
 
     /*! interpolates user data to the specified u/v location */
-    virtual void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) {
+    virtual void interpolate(const RTCInterpolateArguments* const args) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! interpolates user data to the specified u/v locations */
-    virtual void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+    virtual void interpolateN(const RTCInterpolateNArguments* const args);
 
     /*! for subdivision surfaces only */
   public:

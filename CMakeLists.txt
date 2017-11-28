@@ -107,8 +107,8 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 
 OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
-OPTION(EMBREE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
-OPTION(EMBREE_INTERSECTION_FILTER_CONTEXT "Enables filter function inside context." OFF)
+OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
+OPTION(EMBREE_FILTER_FUNCTION_CONTEXT "Enables filter function inside context." OFF)
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
 OPTION(EMBREE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)

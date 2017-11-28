@@ -324,14 +324,8 @@ namespace embree
       SubdivMeshISA (Device* device)
         : SubdivMesh(device) {}
 
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-      
-      template<typename vbool, typename vint, typename vfloat>
-        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, unsigned int numUVs, 
-                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-      
+      void interpolate(const RTCInterpolateArguments* const args);
+      void interpolateN(const RTCInterpolateNArguments* const args);
     };
   }
 

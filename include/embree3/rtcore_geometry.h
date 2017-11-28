@@ -268,10 +268,10 @@ struct RTCOccludedFunctionNArguments
 typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* const args);
 
 /*! report intersection from intersect function */
-RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /*! report intersection from occluded function */
-RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
@@ -447,8 +447,78 @@ RTCORE_API void* rtcGetGeometryUserData(RTCGeometry geometry);
  *  order derivatives by setting ddPdudu, ddPdvdv, and ddPdudv to
  *  NULL. The buffers have to be padded at the end such that the last
  *  element can be read or written safely using SSE instructions. */
-RTCORE_API void rtcInterpolate(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
-                               float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+struct RTCInterpolateArguments
+{
+  RTCGeometry geometry;
+  unsigned int primID;
+  float u, v;
+  enum RTCBufferType buffer;
+  float* P;
+  float* dPdu;
+  float* dPdv;
+  float* ddPdudu;
+  float* ddPdvdv;
+  float* ddPdudv;
+  unsigned int numFloats;
+};
+  
+RTCORE_API void rtcInterpolate(const struct RTCInterpolateArguments* const args);
+
+RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, float* P, unsigned int numFloats)
+{
+  struct RTCInterpolateArguments args;
+  args.geometry = geometry;
+  args.primID = primID;
+  args.u = u;
+  args.v = v;
+  args.buffer = buffer;
+  args.P = P;
+  args.dPdu = NULL;
+  args.dPdv = NULL;
+  args.ddPdudu = NULL;
+  args.ddPdvdv = NULL;
+  args.ddPdudv = NULL;
+  args.numFloats = numFloats;
+  rtcInterpolate(&args);
+}
+
+RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
+                                         float* P, float* dPdu, float* dPdv, unsigned int numFloats)
+{
+  struct RTCInterpolateArguments args;
+  args.geometry = geometry;
+  args.primID = primID;
+  args.u = u;
+  args.v = v;
+  args.buffer = buffer;
+  args.P = P;
+  args.dPdu = dPdu;
+  args.dPdv = dPdv;
+  args.ddPdudu = NULL;
+  args.ddPdvdv = NULL;
+  args.ddPdudv = NULL;
+  args.numFloats = numFloats;
+  rtcInterpolate(&args);
+}
+
+RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
+                                         float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+{
+  struct RTCInterpolateArguments args;
+  args.geometry = geometry;
+  args.primID = primID;
+  args.u = u;
+  args.v = v;
+  args.buffer = buffer;
+  args.P = P;
+  args.dPdu = dPdu;
+  args.dPdv = dPdv;
+  args.ddPdudu = ddPdudu;
+  args.ddPdvdv = ddPdvdv;
+  args.ddPdudv = ddPdudv;
+  args.numFloats = numFloats;
+  rtcInterpolate(&args);
+}
 
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
@@ -469,10 +539,25 @@ RTCORE_API void rtcInterpolate(RTCGeometry geometry, unsigned int primID, float 
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-RTCORE_API void rtcInterpolateN(RTCGeometry geometry, 
-                                const void* valid, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                enum RTCBufferType buffer, 
-                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+struct RTCInterpolateNArguments
+{
+  RTCGeometry geometry;
+  const void* valid;
+  const unsigned int* primIDs;
+  const float* u;
+  const float* v;
+  unsigned int numUVs;
+  enum RTCBufferType buffer;
+  float* P;
+  float* dPdu;
+  float* dPdv;
+  float* ddPdudu;
+  float* ddPdvdv;
+  float* ddPdudv;
+  unsigned int numFloats;
+};
+
+RTCORE_API void rtcInterpolateN(const struct RTCInterpolateNArguments* const args);
 
 /*! Commits the geometry. */
 RTCORE_API void rtcCommitGeometry(RTCGeometry geometry);

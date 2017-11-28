@@ -335,7 +335,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
-    rtcReportIntersection(args,&fargs);
+    rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       copyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
@@ -362,7 +362,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
-    rtcReportIntersection(args,&fargs);
+    rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       copyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
@@ -421,7 +421,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
-    rtcReportOcclusion(args,&fargs);
+    rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
       ray->geomID = 0;
@@ -448,7 +448,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
-    rtcReportOcclusion(args,&fargs);
+    rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
       ray->geomID = 0;
@@ -521,7 +521,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
   
-      rtcReportIntersection(args,&fargs);
+      rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
         copyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
@@ -548,7 +548,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
   
-      rtcReportIntersection(args,&fargs);
+      rtcFilterIntersection(args,&fargs);
 
       /* update for all accepted hits */
       if (imask == -1)
@@ -622,7 +622,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
   
-      rtcReportOcclusion(args,&fargs);
+      rtcFilterOcclusion(args,&fargs);
 
       /* update for all accepted hits */
       if (imask == -1)
@@ -654,7 +654,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
   
-      rtcReportOcclusion(args,&fargs);
+      rtcFilterOcclusion(args,&fargs);
 
       /* update for all accepted hits */
       if (imask == -1)

@@ -1240,26 +1240,60 @@ rtcGetGeometryUserData(rtcGetGeometry(scene,geomID))
 @@{
 rtcInterpolate(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR numFloats)
 =>
-rtcInterpolate(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,NULL,NULL,NULL,numFloats)
+rtcInterpolate1(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,numFloats)
 }@@
 
 @@{
 rtcInterpolate2(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
 =>
-rtcInterpolate(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
+rtcInterpolate2(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
 }@@
 
 
 @@{
-rtcInterpolateN(EXPR scene,EXPR geomID,EXPR valid,EXPR primID,EXPR u,EXPR v,EXPR numUVs,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR numFloats)
+rtcInterpolateN(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EXPR v_in,EXPR numUVs_in,EXPR buffer_in,EXPR P_o,EXPR dPdu_o,EXPR dPdv_o,EXPR numFloats_in)
 =>
-rtcInterpolateN(rtcGetGeometry(scene,geomID),valid,primID,u,v,numUVs,buffer,P,dPdu,dPdv,NULL,NULL,NULL,numFloats)
+{
+  RTCInterpolateNArguments args;
+  args.geometry = rtcGetGeometry(scene,geomID);
+  args.valid = valid_in;
+  args.primIDs = primID_in;
+  args.u = u_in;
+  args.v = v_in;
+  args.numUVs = numUVs_in;
+  args.buffer = buffer_in;
+  args.P = P_o;
+  args.dPdu = dPdu_o;
+  args.dPdv = dPdv_o;
+  args.ddPdudu = NULL;
+  args.ddPdvdv = NULL;
+  args.ddPdudv = NULL;
+  args.numFloats = numFloats_in;
+  rtcInterpolateN(&args)
+}
 }@@
 
 @@{
-rtcInterpolateN2(EXPR scene,EXPR geomID,EXPR valid,EXPR primID,EXPR u,EXPR v,EXPR numUVs,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
+rtcInterpolateN2(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EXPR v_in,EXPR numUVs_in,EXPR buffer_in,EXPR P_o,EXPR dPdu_o,EXPR dPdv_o,EXPR ddPdudu_o,EXPR ddPdvdv_o,EXPR ddPdudv_o,EXPR numFloats_in)
 =>
-rtcInterpolateN(rtcGetGeometry(scene,geomID),valid,primID,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
+{
+  RTCInterpolateNArguments args;
+  args.geometry = rtcGetGeometry(scene,geomID);
+  args.valid = valid_in;
+  args.primIDs = primID_in;
+  args.u = u_in;
+  args.v = v_in;
+  args.numUVs = numUVs_in;
+  args.buffer = buffer_in;
+  args.P = P_o;
+  args.dPdu = dPdu_o;
+  args.dPdv = dPdv_o;
+  args.ddPdudu = ddPdudu_o;
+  args.ddPdvdv = ddPdvdv_o;
+  args.ddPdudv = ddPdudv_o;
+  args.numFloats = numFloats_in;
+  rtcInterpolateN(&args)
+}
 }@@
 
 
