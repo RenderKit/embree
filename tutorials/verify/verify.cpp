@@ -1732,7 +1732,7 @@ namespace embree
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,NULL,NULL,NULL,N);
+      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N_total+i] + 4.0f*data[(v0-4+0)*N_total+i] + 1.0f*data[(v0-4+1)*N_total+i]);
@@ -1749,7 +1749,7 @@ namespace embree
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,NULL,NULL,NULL, (unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
@@ -1763,7 +1763,7 @@ namespace embree
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,NULL,NULL,NULL, (unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         float v = data[v0*N_total+i];
@@ -1868,7 +1868,7 @@ namespace embree
       assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,NULL,NULL,NULL, (unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         float p0 = data[v0*N_total+i];
@@ -1966,7 +1966,7 @@ namespace embree
       assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(geom,primID,u,v,buffer,P,dPdu,dPdv,NULL,NULL,NULL, (unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         const float p00 = data[(v0+0)*N_total+i];

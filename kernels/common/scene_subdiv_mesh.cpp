@@ -771,8 +771,20 @@ namespace embree
       return new SubdivMeshISA(device);
     }
     
-    void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
+    void SubdivMeshISA::interpolate(const RTCInterpolateArguments* const args)
     {
+      unsigned int primID = args->primID;
+      float u = args->u;
+      float v = args->v;
+      RTCBufferType buffer = args->buffer;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* dPdv = args->dPdv;
+      float* ddPdudu = args->ddPdudu;
+      float* ddPdvdv = args->ddPdvdv;
+      float* ddPdudv = args->ddPdudv;
+      unsigned int numFloats = args->numFloats;
+      
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
@@ -834,9 +846,22 @@ namespace embree
       }
     }
     
-    void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                     RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+    void SubdivMeshISA::interpolateN(const RTCInterpolateNArguments* const args)
     {
+      const void* valid_i = args->valid;
+      const unsigned* primIDs = args->primIDs;
+      const float* u = args->u;
+      const float* v = args->v;
+      unsigned int numUVs = args->numUVs;
+      RTCBufferType buffer = args->buffer;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* dPdv = args->dPdv;
+      float* ddPdudu = args->ddPdudu;
+      float* ddPdvdv = args->ddPdvdv;
+      float* ddPdudv = args->ddPdudv;
+      unsigned int numFloats = args->numFloats;
+    
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));

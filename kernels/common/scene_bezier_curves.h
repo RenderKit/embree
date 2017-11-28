@@ -45,7 +45,6 @@ namespace embree
     void* getBuffer(RTCBufferType type);
     bool verify ();
     void setTessellationRate(float N);
-    // FIXME: implement interpolateN
     void preCommit();
 
   public:
@@ -288,7 +287,7 @@ namespace embree
       NativeCurvesISA (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
         : NativeCurves(device,type,subtype) {}
 
-      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      template<typename Curve> void interpolate_helper(const RTCInterpolateArguments* const args);
       
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
     };
@@ -299,7 +298,7 @@ namespace embree
          : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      void interpolate(const RTCInterpolateArguments* const args);
     };
     
     struct CurvesBSpline : public NativeCurvesISA
@@ -308,7 +307,7 @@ namespace embree
          : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      void interpolate(const RTCInterpolateArguments* const args);
     };
   }
 

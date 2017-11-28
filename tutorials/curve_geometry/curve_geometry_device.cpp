@@ -149,7 +149,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     if (ray.geomID > 0)
     {
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,nullptr,nullptr,nullptr,3);
+        rtcInterpolate0(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,3);
       }
       diffuse = 0.5f*diffuse;
     }

@@ -224,7 +224,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     if (ray.geomID > 0) {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,nullptr,nullptr,nullptr,3);
+        rtcInterpolate1(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ng = normalize(cross(dPdv,dPdu));
       dPdu = dPdu + Ng*displacement_du(P,dPdu);

@@ -182,8 +182,20 @@ namespace embree
     return true;
   }
 
-  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+  void QuadMesh::interpolate(const RTCInterpolateArguments* const args)
   {
+    unsigned int primID = args->primID;
+    float u = args->u;
+    float v = args->v;
+    RTCBufferType buffer = args->buffer;
+    float* P = args->P;
+    float* dPdu = args->dPdu;
+    float* dPdv = args->dPdv;
+    float* ddPdudu = args->ddPdudu;
+    float* ddPdvdv = args->ddPdvdv;
+    float* ddPdudv = args->ddPdudv;
+    unsigned int numFloats = args->numFloats;
+
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
