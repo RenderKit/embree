@@ -69,8 +69,8 @@
     embree::Vec3f Ng;         //!< Not normalized geometry normal
     float u;                  //!< Barycentric u coordinate of hit
     float v;                  //!< Barycentric v coordinate of hit
-    unsigned int geomID;           //!< geometry ID
     unsigned int primID;           //!< primitive ID
+    unsigned int geomID;           //!< geometry ID
     unsigned int instID;           //!< instance ID
 
     __forceinline float &tnear() { return org.w; };

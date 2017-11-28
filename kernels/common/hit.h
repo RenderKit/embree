@@ -40,8 +40,8 @@ namespace embree
     vfloat<K> t;         // hit distance
     vfloat<K> u;         // barycentric u coordinate of hit
     vfloat<K> v;         // barycentric v coordinate of hit
-    vint<K> geomID;      // geometry ID
     vint<K> primID;      // primitive ID
+    vint<K> geomID;      // geometry ID
     vint<K> instID;      // instance ID
   };
 
@@ -64,8 +64,8 @@ namespace embree
     float t;         // hit distance
     float u;         // barycentric u coordinate of hit
     float v;         // barycentric v coordinate of hit
-    int geomID;      // geometry ID
     int primID;      // primitive ID
+    int geomID;      // geometry ID
     int instID;      // instance ID
   };
 
@@ -80,9 +80,9 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const HitK<K>& ray)
   {
     return cout << "{ " << std::endl
-                << "  instID = " << ray.instID << std::endl
-                << "  geomID = " << ray.geomID << std::endl
                 << "  primID = " << ray.primID <<  std::endl
+                << "  geomID = " << ray.geomID << std::endl
+                << "  instID = " << ray.instID << std::endl
                 << "  u = " << ray.u <<  std::endl
                 << "  v = " << ray.v << std::endl
                 << "  t = " << ray.v << std::endl

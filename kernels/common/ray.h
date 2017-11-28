@@ -143,8 +143,8 @@ namespace embree
     Vec3vf<K> Ng;    // geometry normal
     vfloat<K> u;     // barycentric u coordinate of hit
     vfloat<K> v;     // barycentric v coordinate of hit
-    vint<K> geomID;  // geometry ID
     vint<K> primID;  // primitive ID
+    vint<K> geomID;  // geometry ID
     vint<K> instID;  // instance ID
 
     __forceinline vfloat<K> &tnear() { return _tnear; }
@@ -233,8 +233,8 @@ namespace embree
     Vec3f Ng;   // not normalized geometry normal
     float u;     // barycentric u coordinate of hit
     float v;     // barycentric v coordinate of hit
-    unsigned geomID;  // geometry ID
     unsigned primID;  // primitive ID
+    unsigned geomID;  // geometry ID
     unsigned instID;  // instance ID
 
     __forceinline float &tnear() { return org.w; };
@@ -275,14 +275,14 @@ namespace embree
                               const vint16& new_geomID,
                               const vint16& new_primID)
     {
-      vint16::storeu_compact_single(m_mask, &geomID, new_geomID);
-      vint16::storeu_compact_single(m_mask, &primID, new_primID);
       vfloat16::storeu_compact_single(m_mask, &tfar(), new_t);
       vfloat16::storeu_compact_single(m_mask, &u, new_u);
       vfloat16::storeu_compact_single(m_mask, &v, new_v);
       vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
       vfloat16::storeu_compact_single(m_mask, &Ng.y, new_gnormaly);
       vfloat16::storeu_compact_single(m_mask, &Ng.z, new_gnormalz);
+      vint16::storeu_compact_single(m_mask, &primID, new_primID);
+      vint16::storeu_compact_single(m_mask, &geomID, new_geomID);
     }
 
 #endif
@@ -299,7 +299,7 @@ namespace embree
       ray[i].time  = time[i]; ray[i].mask = mask[i]; ray[i].id = id[i]; ray[i].flags = flags[i];
       ray[i].Ng.x = Ng.x[i]; ray[i].Ng.y = Ng.y[i]; ray[i].Ng.z = Ng.z[i];
       ray[i].u = u[i]; ray[i].v = v[i];
-      ray[i].geomID = geomID[i]; ray[i].primID = primID[i]; ray[i].instID = instID[i];
+      ray[i].primID = primID[i]; ray[i].geomID = geomID[i]; ray[i].instID = instID[i];
     }
   }
 
@@ -312,7 +312,7 @@ namespace embree
     ray.time  = time[i];  ray.mask = mask[i];  ray.id = id[i]; ray.flags = flags[i];
     ray.Ng.x = Ng.x[i]; ray.Ng.y = Ng.y[i]; ray.Ng.z = Ng.z[i];
     ray.u = u[i]; ray.v = v[i];
-    ray.geomID = geomID[i]; ray.primID = primID[i]; ray.instID = instID[i];
+    ray.primID = primID[i]; ray.geomID = geomID[i]; ray.instID = instID[i];
   }
 
   /* Converts single rays to ray packet */
@@ -326,7 +326,7 @@ namespace embree
       time[i] = ray[i].time; mask[i] = ray[i].mask; id[i] = ray[i].id; flags[i] = ray[i].flags;
       Ng.x[i] = ray[i].Ng.x; Ng.y[i] = ray[i].Ng.y; Ng.z[i] = ray[i].Ng.z;
       u[i] = ray[i].u; v[i] = ray[i].v;
-      geomID[i] = ray[i].geomID; primID[i] = ray[i].primID; instID[i] = ray[i].instID;
+      primID[i] = ray[i].primID; geomID[i] = ray[i].geomID;  instID[i] = ray[i].instID;
     }
   }
 
@@ -339,7 +339,7 @@ namespace embree
     time[i] = ray.time; mask[i] = ray.mask; id[i] = ray.id; flags[i] = ray.flags;
     Ng.x[i] = ray.Ng.x; Ng.y[i] = ray.Ng.y; Ng.z[i] = ray.Ng.z;
     u[i] = ray.u; v[i] = ray.v;
-    geomID[i] = ray.geomID; primID[i] = ray.primID; instID[i] = ray.instID;
+    primID[i] = ray.primID; geomID[i] = ray.geomID; instID[i] = ray.instID;
   }
 
   /* copies a ray packet element into another element*/
@@ -351,7 +351,7 @@ namespace embree
     time[dest] = time[source]; mask[dest] = mask[source]; id[dest] = id[source]; flags[dest] = flags[source]; 
     Ng.x[dest] = Ng.x[source]; Ng.y[dest] = Ng.y[source]; Ng.z[dest] = Ng.z[source];
     u[dest] = u[source]; v[dest] = v[source];
-    geomID[dest] = geomID[source]; primID[dest] = primID[source]; instID[dest] = instID[source];
+    primID[dest] = primID[source]; geomID[dest] = geomID[source];  instID[dest] = instID[source];
   }
 
   /* Shortcuts */
@@ -373,12 +373,12 @@ namespace embree
                 << "  mask = " << ray.mask << std::endl
                 << "  id = " << ray.id << std::endl
                 << "  flags = " << ray.flags << std::endl
-                << "  instID = " << ray.instID << std::endl
-                << "  geomID = " << ray.geomID << std::endl
-                << "  primID = " << ray.primID <<  std::endl
+                << "  Ng = " << ray.Ng
                 << "  u = " << ray.u <<  std::endl
                 << "  v = " << ray.v << std::endl
-                << "  Ng = " << ray.Ng
+                << "  primID = " << ray.primID <<  std::endl
+                << "  geomID = " << ray.geomID << std::endl
+                << "  instID = " << ray.instID << std::endl
                 << "}";
   }
 
@@ -413,8 +413,8 @@ namespace embree
     __forceinline float* u(size_t offset = 0) { return (float*)&ptr[15*4*N+offset]; };     //!< Barycentric u coordinate of hit
     __forceinline float* v(size_t offset = 0) { return (float*)&ptr[16*4*N+offset]; };     //!< Barycentric v coordinate of hit
 
-    __forceinline int* geomID(size_t offset = 0) { return (int*)&ptr[17*4*N+offset]; };  //!< geometry ID
-    __forceinline int* primID(size_t offset = 0) { return (int*)&ptr[18*4*N+offset]; };  //!< primitive ID
+    __forceinline int* primID(size_t offset = 0) { return (int*)&ptr[17*4*N+offset]; };  //!< primitive ID
+    __forceinline int* geomID(size_t offset = 0) { return (int*)&ptr[18*4*N+offset]; };  //!< geometry ID
     __forceinline int* instID(size_t offset = 0) { return (int*)&ptr[19*4*N+offset]; };  //!< instance ID
 
 
@@ -450,9 +450,9 @@ namespace embree
         ray.Ng.x = Ng_x(offset)[0];
         ray.Ng.y = Ng_y(offset)[0];
         ray.Ng.z = Ng_z(offset)[0];
+        ray.primID = primID(offset)[0];
         ray.instID = instID(offset)[0];
         ray.geomID = geometryID;
-        ray.primID = primID(offset)[0];
       }
     }
 
@@ -808,8 +808,8 @@ namespace embree
       Ng_z    = (float*)&t.Ng.z;
       u      = (float*)&t.u;
       v      = (float*)&t.v;
-      geomID = (unsigned*)&t.geomID;
       primID = (unsigned*)&t.primID;
+      geomID = (unsigned*)&t.geomID;
       instID = (unsigned*)&t.instID;
     }
 
@@ -1067,8 +1067,8 @@ namespace embree
     float* __restrict__ u;     //!< Barycentric u coordinate of hit
     float* __restrict__ v;     //!< Barycentric v coordinate of hit
 
-    unsigned* __restrict__ geomID;  //!< geometry ID
     unsigned* __restrict__ primID;  //!< primitive ID
+    unsigned* __restrict__ geomID;  //!< geometry ID
     unsigned* __restrict__ instID;  //!< instance ID (optional)
   };
 

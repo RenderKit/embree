@@ -53,8 +53,8 @@ struct RTCORE_ALIGN(16) RTCRay
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit
 
-  unsigned geomID;   //!< geometry ID
-  unsigned primID;   //!< primitive ID
+  unsigned primID;   //!< geometry ID
+  unsigned geomID;   //!< primitive ID
   unsigned instID;   //!< instance ID
 };
 
@@ -86,8 +86,8 @@ struct RTCORE_ALIGN(16) RTCRay4
   float u[4];     //!< Barycentric u coordinate of hit
   float v[4];     //!< Barycentric v coordinate of hit
   
-  unsigned geomID[4];  //!< geometry ID
-  unsigned primID[4];  //!< primitive ID
+  unsigned primID[4];  //!< geometry ID
+  unsigned geomID[4];  //!< primitive ID
   unsigned instID[4];  //!< instance ID
 };
 
@@ -119,8 +119,8 @@ struct RTCORE_ALIGN(32) RTCRay8
   float u[8];     //!< Barycentric u coordinate of hit
   float v[8];     //!< Barycentric v coordinate of hit
   
-  unsigned geomID[8];  //!< geometry ID
-  unsigned primID[8];  //!< primitive ID
+  unsigned primID[8];  //!< geometry ID
+  unsigned geomID[8];  //!< primitive ID
   unsigned instID[8];  //!< instance ID
 };
 
@@ -152,8 +152,8 @@ struct RTCORE_ALIGN(64) RTCRay16
   float u[16];     //!< Barycentric u coordinate of hit
   float v[16];     //!< Barycentric v coordinate of hit
   
-  unsigned geomID[16];  //!< geometry ID
-  unsigned primID[16];  //!< primitive ID
+  unsigned primID[16];  //!< geometry ID
+  unsigned geomID[16];  //!< primitive ID
   unsigned instID[16];  //!< instance ID
 };
 
@@ -184,9 +184,9 @@ struct RTCRayNp
 
   float* u;     //!< Barycentric u coordinate of hit
   float* v;     //!< Barycentric v coordinate of hit
- 
+
+  unsigned* primID;  //!< primitive ID 
   unsigned* geomID;  //!< geometry ID
-  unsigned* primID;  //!< primitive ID
   unsigned* instID;  //!< instance ID (optional)
 };
 
@@ -223,8 +223,8 @@ RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N, unsigned in
 RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[15*N+i]; }  //!< Barycentric u coordinate of hit
 RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[16*N+i]; }  //!< Barycentric v coordinate of hit
 
-RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }  //!< geometry ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[18*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[18*N+i]; }  //!< geometry ID
 RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[19*N+i]; }  //!< instance ID
 
 /* Helper functions to access hit packets of size N */
@@ -236,8 +236,8 @@ RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, unsigned int N, unsig
 RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; } //!< Barycentric u coordinate of hit
 RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; } //!< Barycentric v coordinate of hit
 
-RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[6*N+i]; }  //!< geometry ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[7*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[6*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[7*N+i]; }  //!< geometry ID
 RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[8*N+i]; }  //!< instance ID
 
 
@@ -271,9 +271,9 @@ public:
   
   float u[N];     //!< Barycentric u coordinate of hit
   float v[N];     //!< Barycentric v coordinate of hit
-  
+
+  unsigned primID[N];  //!< primitive ID  
   unsigned geomID[N];  //!< geometry ID
-  unsigned primID[N];  //!< primitive ID
   unsigned instID[N];  //!< instance ID
 };
 
@@ -289,8 +289,8 @@ struct RTCHitNt
   float u[N];          //!< Barycentric u coordinate of hit
   float v[N];          //!< Barycentric v coordinate of hit
 
-  unsigned geomID[N];  //!< geometry ID
   unsigned primID[N];  //!< primitive ID
+  unsigned geomID[N];  //!< geometry ID
   unsigned instID[N];  //!< instance ID
 };
 
@@ -304,8 +304,8 @@ struct RTCHit
   float u;          //!< Barycentric u coordinate of hit
   float v;          //!< Barycentric v coordinate of hit
 
-  unsigned geomID;  //!< geometry ID
   unsigned primID;  //!< primitive ID
+  unsigned geomID;  //!< geometry ID
   unsigned instID;  //!< instance ID
 };
 
@@ -330,8 +330,8 @@ RTCORE_FORCEINLINE RTCRay RTCRayNtoRTCRay(RTCRayN* ptr, unsigned int N, unsigned
   ray.Ng_z    = RTCRayN_Ng_z(ptr,N,i);
   ray.u       = RTCRayN_u(ptr,N,i);
   ray.v       = RTCRayN_v(ptr,N,i);
-  ray.geomID  = RTCRayN_geomID(ptr,N,i);
   ray.primID  = RTCRayN_primID(ptr,N,i);
+  ray.geomID  = RTCRayN_geomID(ptr,N,i);
   ray.instID  = RTCRayN_instID(ptr,N,i);
   return ray;
 };
@@ -345,8 +345,8 @@ RTCORE_FORCEINLINE RTCHit RTCHitNtoRTCHit(const RTCHitN* ptr, unsigned int N, un
   hit.t      = RTCHitN_t(ptr,N,i);
   hit.u      = RTCHitN_u(ptr,N,i);
   hit.v      = RTCHitN_v(ptr,N,i);
-  hit.geomID = RTCHitN_geomID(ptr,N,i);
   hit.primID = RTCHitN_primID(ptr,N,i);
+  hit.geomID = RTCHitN_geomID(ptr,N,i);
   hit.instID = RTCHitN_instID(ptr,N,i);
   return hit;
 };
@@ -360,8 +360,8 @@ RTCORE_FORCEINLINE void copyRTCHitToRTCRay(RTCRay *ray, RTCHit *hit)
   ray->tfar = hit->t;
   ray->u = hit->u;
   ray->v = hit->v;
-  ray->geomID = hit->geomID;
   ray->primID = hit->primID;
+  ray->geomID = hit->geomID;
   ray->instID = hit->instID;
 }
 
@@ -373,8 +373,8 @@ RTCORE_FORCEINLINE void copyRTCHitToRTCRayN(RTCRayN *rays,  RTCHit *hit, unsigne
   RTCRayN_tfar(rays,N,ui)   = hit->t;
   RTCRayN_u(rays,N,ui)      = hit->u;
   RTCRayN_v(rays,N,ui)      = hit->v;
-  RTCRayN_geomID(rays,N,ui) = hit->geomID;
   RTCRayN_primID(rays,N,ui) = hit->primID;
+  RTCRayN_geomID(rays,N,ui) = hit->geomID;
   RTCRayN_instID(rays,N,ui) = hit->instID;
 }
 
@@ -386,8 +386,8 @@ RTCORE_FORCEINLINE void copyHitFromRTCRayToRTCRayN(RTCRayN *rays, RTCRay *ray, u
   RTCRayN_tfar(rays,N,ui)   = ray->tfar;
   RTCRayN_u(rays,N,ui)      = ray->u;
   RTCRayN_v(rays,N,ui)      = ray->v;
-  RTCRayN_geomID(rays,N,ui) = ray->geomID;
   RTCRayN_primID(rays,N,ui) = ray->primID;
+  RTCRayN_geomID(rays,N,ui) = ray->geomID;
   RTCRayN_instID(rays,N,ui) = ray->instID;
 }
 

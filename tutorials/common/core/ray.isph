@@ -31,8 +31,8 @@ struct Ray1
   uniform Vec3f Ng;      //!< Geometric normal.
   uniform float u;       //!< Barycentric u coordinate of hit
   uniform float v;       //!< Barycentric v coordinate of hit
-  uniform int geomID;    //!< geometry ID
   uniform int primID;    //!< primitive ID
+  uniform int geomID;    //!< geometry ID
   uniform int instID;    //!< instance ID
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
@@ -58,8 +58,8 @@ struct Ray
   Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
   int primID;    //!< primitive ID
+  int geomID;    //!< geometry ID
   int instID;    //!< instance ID
 };
 
