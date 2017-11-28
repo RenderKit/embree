@@ -128,27 +128,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetSceneAccelFlags (RTCScene hscene, RTCAccelFlags accel) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetSceneAccelFlags);
-    RTCORE_VERIFY_HANDLE(hscene);
-    scene->setAccelFlags(accel);
-    RTCORE_CATCH_END2(scene);
-  }
-
-  RTCORE_API RTCAccelFlags rtcGetSceneAccelFlags(RTCScene hscene)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetSceneAccelFlags);
-    RTCORE_VERIFY_HANDLE(hscene);
-    return scene->getAccelFlags();
-    RTCORE_CATCH_END2(scene);
-    return RTC_ACCEL_FAST;
-  }
-  
   RTCORE_API void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
   {
     Scene* scene = (Scene*) hscene;
@@ -817,11 +796,11 @@ namespace embree
     return transform;
   }
 
-  RTCORE_API void rtcSetTransform (RTCGeometry hgeometry, RTCMatrixType layout, const float* xfm, unsigned int timeStep) 
+  RTCORE_API void rtcSetGeometryTransform (RTCGeometry hgeometry, RTCMatrixType layout, const float* xfm, unsigned int timeStep) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetTransform);
+    RTCORE_TRACE(rtcSetGeometryTransform);
     RTCORE_VERIFY_HANDLE(hgeometry);
     RTCORE_VERIFY_HANDLE(xfm);
     const AffineSpace3fa transform = convertTransform(layout,xfm);
@@ -829,147 +808,141 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewUserGeometry);
-    RTCORE_VERIFY_HANDLE(hdevice);
-#if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = new UserGeometry(device,0,1);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewUserGeometry is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
-
-  RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     args->report(args,filter_args);
   }
 
-  RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     args->report(args,filter_args);
   }
   
-  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice)
+  RTCORE_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewTriangleMesh);
+    RTCORE_TRACE(rtcNewGeometry);
     RTCORE_VERIFY_HANDLE(hdevice);
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
-    createTriangleMeshTy createTriangleMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
-    Geometry* geom = createTriangleMesh(device);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewTriangleMesh is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
+    
+    switch (type)
+    {
+    case RTC_GEOMETRY_TYPE_TRIANGLE:
+      {
+  #if defined(EMBREE_GEOMETRY_TRIANGLES)
+        createTriangleMeshTy createTriangleMesh = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
+        Geometry* geom = createTriangleMesh(device);
+        return (RTCGeometry) geom->refInc();
+  #else
+        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewTriangleMesh is not supported");
+  #endif
+      }
+      break;
 
-  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewQuadMesh);
-    RTCORE_VERIFY_HANDLE(hdevice);
+    case RTC_GEOMETRY_TYPE_QUAD:
+      {
 #if defined(EMBREE_GEOMETRY_QUADS)
-    createQuadMeshTy createQuadMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
-    Geometry* geom = createQuadMesh(device);
-    return (RTCGeometry) geom->refInc();
+        createQuadMeshTy createQuadMesh = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
+        Geometry* geom = createQuadMesh(device);
+        return (RTCGeometry) geom->refInc();
 #else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewQuadMesh is not supported");
+        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewQuadMesh is not supported");
 #endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
-  }
+      }
+      break;
 
-  RTCORE_API RTCGeometry rtcNewCurveGeometry (RTCDevice hdevice, RTCCurveBasis basis)
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewCurveGeometry);
-    RTCORE_VERIFY_HANDLE(hdevice);
+    case RTC_GEOMETRY_TYPE_CURVE_LINEAR:
+    case RTC_GEOMETRY_TYPE_CURVE_BEZIER:
+    case RTC_GEOMETRY_TYPE_CURVE_BSPLINE:
+      {
 #if defined(EMBREE_GEOMETRY_HAIR)
-    createLineSegmentsTy createLineSegments = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
-    createCurvesBezierTy createCurvesBezier = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
-    createCurvesBSplineTy createCurvesBSpline = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
+        createLineSegmentsTy createLineSegments = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
+        createCurvesBezierTy createCurvesBezier = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
+        createCurvesBSplineTy createCurvesBSpline = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
 
-    Geometry* geom = nullptr;
-    switch (basis) {
-    case RTC_BASIS_LINEAR : geom = createLineSegments (device); break;
-    case RTC_BASIS_BEZIER : geom = createCurvesBezier (device,RTC_GEOMETRY_INTERSECTOR_SURFACE,basis); break;
-    case RTC_BASIS_BSPLINE: geom = createCurvesBSpline(device,RTC_GEOMETRY_INTERSECTOR_SURFACE,basis); break;
-    default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve basis");
-    }
-    return (RTCGeometry) geom->refInc();
+        Geometry* geom;
+        switch (type) {
+        case RTC_GEOMETRY_TYPE_CURVE_LINEAR : geom = createLineSegments (device); break;
+        case RTC_GEOMETRY_TYPE_CURVE_BEZIER : geom = createCurvesBezier (device,type,RTC_GEOMETRY_SUBTYPE_SURFACE); break;
+        case RTC_GEOMETRY_TYPE_CURVE_BSPLINE: geom = createCurvesBSpline(device,type,RTC_GEOMETRY_SUBTYPE_SURFACE); break;
+        default:                              geom = nullptr; break;
+        }
+        return (RTCGeometry) geom->refInc();
 #else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewCurveGeometry is not supported");
+        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewCurveGeometry is not supported");
 #endif
+      }
+      break;
+
+    case RTC_GEOMETRY_TYPE_SUBDIVISION:
+      {
+#if defined(EMBREE_GEOMETRY_SUBDIV)
+        createSubdivMeshTy createSubdivMesh = nullptr;
+        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+        Geometry* geom = createSubdivMesh(device);
+        return (RTCGeometry) geom->refInc();
+#else
+        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewSubdivisionMesh is not supported");
+#endif
+      }
+      break;
+
+    case RTC_GEOMETRY_TYPE_USER:
+      {
+#if defined(EMBREE_GEOMETRY_USER)
+        Geometry* geom = new UserGeometry(device,0,1);
+        return (RTCGeometry) geom->refInc();
+#else
+        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewUserGeometry is not supported");
+#endif
+      }
+      break;
+
+    default:
+      throw_RTCError(RTC_ERROR_UNKNOWN,"invalid geometry type");
+    }
+
     RTCORE_CATCH_END(device);
     return nullptr;
   }
 
-  RTCORE_API void rtcSetNumPrimitives(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetNumPrimitives);
+    RTCORE_TRACE(rtcSetGeometryNumPrimitives);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setNumPrimitives(N);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetNumTimeSteps);
+    RTCORE_TRACE(rtcSetGeometryNumTimeSteps);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setNumTimeSteps(N);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryIntersector(RTCGeometry hgeometry, RTCGeometryIntersector type)
+  RTCORE_API void rtcSetGeometrySubtype(RTCGeometry hgeometry, RTCGeometrySubtype type)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetGeometryIntersector);
+    RTCORE_TRACE(rtcSetGeometrySubtype);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON && type != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve type");
-    geometry->setGeometryIntersector(type);
+    if (type != RTC_GEOMETRY_SUBTYPE_RIBBON && type != RTC_GEOMETRY_SUBTYPE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+    geometry->setSubtype(type);
     RTCORE_CATCH_END2(geometry);
-  }
-    
-  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice) 
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewSubdivisionMesh);
-    RTCORE_VERIFY_HANDLE(hdevice);
-#if defined(EMBREE_GEOMETRY_SUBDIV)
-    createSubdivMeshTy createSubdivMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-    Geometry* geom = createSubdivMesh(device);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewSubdivisionMesh is not supported");
-#endif
-    RTCORE_CATCH_END(device);
-    return nullptr;
   }
 
   /*! sets the build quality of the geometry */
@@ -988,31 +961,31 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
   
-  RTCORE_API void rtcSetMask (RTCGeometry hgeometry, int mask) 
+  RTCORE_API void rtcSetGeometryMask (RTCGeometry hgeometry, int mask) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetMask);
+    RTCORE_TRACE(rtcSetGeometryMask);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setMask(mask);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetSubdivisionMode (RTCGeometry hgeometry, unsigned topologyID, RTCSubdivisionMode mode) 
+  RTCORE_API void rtcSetGeometrySubdivisionMode (RTCGeometry hgeometry, unsigned topologyID, RTCSubdivisionMode mode) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetSubdivisionMode);
+    RTCORE_TRACE(rtcSetGeometrySubdivisionMode);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setSubdivisionMode(topologyID,mode);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIndexBuffer (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
+  RTCORE_API void rtcSetGeometryIndexBuffer (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIndexBuffer);
+    RTCORE_TRACE(rtcSetGeometryIndexBuffer);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setIndexBuffer(vertexBuffer,indexBuffer);
     RTCORE_CATCH_END2(geometry);
@@ -1051,11 +1024,11 @@ namespace embree
     return nullptr;
   }
   
-  RTCORE_API void rtcEnable (RTCGeometry hgeometry) 
+  RTCORE_API void rtcEnableGeometry (RTCGeometry hgeometry) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcEnable);
+    RTCORE_TRACE(rtcEnableGeometry);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->enable();
     RTCORE_CATCH_END2(geometry);
@@ -1071,78 +1044,78 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcDisable (RTCGeometry hgeometry) 
+  RTCORE_API void rtcDisableGeometry (RTCGeometry hgeometry) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDisable);
+    RTCORE_TRACE(rtcDisableGeometry);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->disable();
     RTCORE_CATCH_END2(geometry);
   }
 
-    RTCORE_API void rtcSetTessellationRate (RTCGeometry hgeometry, float tessellationRate)
+    RTCORE_API void rtcSetGeometryTessellationRate (RTCGeometry hgeometry, float tessellationRate)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetTessellationRate);
+    RTCORE_TRACE(rtcSetGeometryTessellationRate);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setTessellationRate(tessellationRate);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetUserData (RTCGeometry hgeometry, void* ptr) 
+  RTCORE_API void rtcSetGeometryUserData (RTCGeometry hgeometry, void* ptr) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetUserData);
+    RTCORE_TRACE(rtcSetGeometryUserData);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setUserData(ptr);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcGetUserData (RTCGeometry hgeometry)
+  RTCORE_API void* rtcGetGeometryUserData (RTCGeometry hgeometry)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetUserData);
+    RTCORE_TRACE(rtcGetGeometryUserData);
     RTCORE_VERIFY_HANDLE(hgeometry);
     return geometry->getUserData();
     RTCORE_CATCH_END2(geometry);
     return nullptr;
   }
 
-  RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
+  RTCORE_API void rtcSetGeometryBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBoundsFunction);
+    RTCORE_TRACE(rtcSetGeometryBoundsFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setBoundsFunction(bounds,userPtr);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func, RTCBounds* bounds)
+  RTCORE_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func, RTCBounds* bounds)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetDisplacementFunction);
+    RTCORE_TRACE(rtcSetGeometryDisplacementFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setDisplacementFunction(func,bounds);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunctionN intersect) 
+  RTCORE_API void rtcSetGeometryIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunctionN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction);
+    RTCORE_TRACE(rtcSetGeometryIntersectFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setIntersectFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
+  RTCORE_API void rtcSetGeometryOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1152,53 +1125,48 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
+  RTCORE_API void rtcSetGeometryIntersectFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction);
+    RTCORE_TRACE(rtcSetGeometryIntersectFilterFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setIntersectionFilterFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
+  RTCORE_API void rtcSetGeometryOccludedFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction);
+    RTCORE_TRACE(rtcSetGeometryOccludedFilterFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setOcclusionFilterFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcInterpolate(RTCGeometry hgeometry, unsigned primID, float u, float v, 
-                                 RTCBufferType buffer,
-                                 float* P, float* dPdu, float* dPdv, 
-                                 float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                 unsigned int numFloats)
+  RTCORE_API void rtcInterpolate(const RTCInterpolateArguments* const args)
   {
-    Geometry* geometry = (Geometry*) hgeometry;
+    Geometry* geometry = (Geometry*) args->geometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(args->geometry);
+#endif
+    geometry->interpolate(args);
     RTCORE_CATCH_END2(geometry);
   }
 
 #if defined (EMBREE_RAY_PACKETS)
-  RTCORE_API void rtcInterpolateN(RTCGeometry hgeometry,
-                                  const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                  RTCBufferType buffer,
-                                  float* P, float* dPdu, float* dPdv, 
-                                  float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                                  unsigned int numFloats)
+  RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* const args)
   {
-    Geometry* geometry = (Geometry*) hgeometry;
+    Geometry* geometry = (Geometry*) args->geometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(args->geometry);
+#endif
+    geometry->interpolateN(args);
     RTCORE_CATCH_END2(geometry);
   }
 #endif

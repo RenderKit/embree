@@ -341,9 +341,9 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-IGNORE-INVALID-RA
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-NO-INTERSECTION-FILTER:
+nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-NO-FILTER-FUNCTION:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 INTERSECTION_FILTER:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:AVX2 tasking:TBB2017 FILTER_FUNCTION:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 

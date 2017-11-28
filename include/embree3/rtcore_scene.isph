@@ -27,15 +27,6 @@ struct RTCRay1;
 struct RTCRay;
 struct RTCRayNp;
 
-/*! Acceleration structure flags */
-enum RTCAccelFlags
-{
-  RTC_ACCEL_FAST      = 0,          //!< default mode
-  RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
-  RTC_ACCEL_ROBUST       = (1 << 2),    //!< use acceleration structure that allows robust traversal
-  RTC_ACCEL_ROBUST_COMPACT = (1 << 1) | (1 << 2)
-};
-
 /*! Build quality levels */
 enum RTCBuildQuality
 {
@@ -50,7 +41,9 @@ enum RTCSceneFlags
 {
   RTC_SCENE_FLAG_NONE                    = 0,
   RTC_SCENE_FLAG_DYNAMIC                 = (1 << 0), //!< provides better build performance for dynamic scenes
-  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 1)  //!< enables support for intersection filter function inside context
+  RTC_SCENE_FLAG_COMPACT                 = (1 << 1),   //!< use memory conservative acceleration structure
+  RTC_SCENE_FLAG_ROBUST                  = (1 << 2),    //!< use acceleration structure that allows robust traversal
+  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 3)  //!< enables support for intersection filter function inside context
 };
 
 /*! Intersection context flags */
@@ -102,12 +95,6 @@ typedef unmasked uniform bool (*uniform RTCProgressMonitorFunction)(void* unifor
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 RTCORE_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction func, void* uniform ptr);
 
-/*! Sets the build mode of a scene. */
-RTCORE_API void rtcSetSceneAccelFlags(RTCScene scene, uniform RTCAccelFlags accel);
-
-/*! Returns the accel flags. */
-RTCORE_API uniform RTCAccelFlags rtcGetSceneAccelFlags(RTCScene scene);
- 
 /*! Sets the build quality of a scene. */
 RTCORE_API void rtcSetSceneBuildQuality(RTCScene scene, uniform RTCBuildQuality quality);
 
@@ -115,7 +102,7 @@ RTCORE_API void rtcSetSceneBuildQuality(RTCScene scene, uniform RTCBuildQuality 
 RTCORE_API uniform RTCBuildQuality rtcGetSceneBuildQuality(RTCScene scene);
 
 /*! Sets the scene flags. */
-RTCORE_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags hints);
+RTCORE_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags sflags);
 
 /*! Returns the scene flags. */
 RTCORE_API uniform RTCSceneFlags rtcGetSceneFlags(RTCScene scene);

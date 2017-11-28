@@ -64,10 +64,10 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  void SubdivMesh::setSubtype(RTCGeometrySubtype type_in)
   {
-    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry intersector");
+    if (type_in != RTC_GEOMETRY_SUBTYPE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry subtype");
     
     Geometry::update();
   }
@@ -368,7 +368,7 @@ namespace embree
   }
 
   SubdivMesh::Topology::Topology(SubdivMesh* mesh)
-    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
+    : mesh(mesh), subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
   {
   }
   
@@ -530,15 +530,15 @@ namespace embree
         for (size_t i=0; i<mesh->faceVertices[f]; i++) 
         {
           /* pin corner vertices when requested by user */
-          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge[i].isCorner())
+          if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge[i].isCorner())
             edge[i].vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
             edge[i].vertex_crease_weight = float(inf);
 
           /* pin all edges and vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_ALL) {
             edge[i].edge_crease_weight = float(inf);
             edge[i].vertex_crease_weight = float(inf);
           }
@@ -587,15 +587,15 @@ namespace embree
 	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
 
           /* pin corner vertices when requested by user */
-          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge.isCorner())
+          if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge.isCorner())
             edge.vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge.vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_BOUNDARY && edge.vertexHasBorder()) 
             edge.vertex_crease_weight = float(inf);
 
           /* pin every vertex when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_ALL) {
             edge.edge_crease_weight = float(inf);
             edge.vertex_crease_weight = float(inf);
           }
@@ -771,8 +771,20 @@ namespace embree
       return new SubdivMeshISA(device);
     }
     
-    void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
+    void SubdivMeshISA::interpolate(const RTCInterpolateArguments* const args)
     {
+      unsigned int primID = args->primID;
+      float u = args->u;
+      float v = args->v;
+      RTCBufferType buffer = args->buffer;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* dPdv = args->dPdv;
+      float* ddPdudu = args->ddPdudu;
+      float* ddPdvdv = args->ddPdvdv;
+      float* ddPdudv = args->ddPdudv;
+      unsigned int numFloats = args->numFloats;
+      
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
@@ -834,9 +846,22 @@ namespace embree
       }
     }
     
-    void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                     RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+    void SubdivMeshISA::interpolateN(const RTCInterpolateNArguments* const args)
     {
+      const void* valid_i = args->valid;
+      const unsigned* primIDs = args->primIDs;
+      const float* u = args->u;
+      const float* v = args->v;
+      unsigned int numUVs = args->numUVs;
+      RTCBufferType buffer = args->buffer;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* dPdv = args->dPdv;
+      float* ddPdudu = args->ddPdudu;
+      float* ddPdvdv = args->ddPdvdv;
+      float* ddPdudv = args->ddPdudv;
+      unsigned int numFloats = args->numFloats;
+    
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));

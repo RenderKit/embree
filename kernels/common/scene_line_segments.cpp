@@ -45,10 +45,10 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setGeometryIntersector(RTCGeometryIntersector type)
+  void LineSegments::setSubtype(RTCGeometrySubtype type)
   {
-    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid curve type");
+    if (type != RTC_GEOMETRY_SUBTYPE_RIBBON)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
     
     Geometry::update();
   }
@@ -158,8 +158,16 @@ namespace embree
     return true;
   }
 
-  void LineSegments::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+  void LineSegments::interpolate(const RTCInterpolateArguments* const args)
   {
+    unsigned int primID = args->primID;
+    float u = args->u;
+    RTCBufferType buffer = args->buffer;
+    float* P = args->P;
+    float* dPdu = args->dPdu;
+    float* ddPdudu = args->ddPdudu;
+    unsigned int numFloats = args->numFloats;
+      
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));

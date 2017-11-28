@@ -67,7 +67,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setGeometryIntersector(RTCGeometryIntersector type);
+    void setSubtype(RTCGeometrySubtype type);
     void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
     void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
@@ -176,7 +176,7 @@ namespace embree
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
       {
-        if (unlikely(subdiv_mode == RTC_SUBDIV_NO_BOUNDARY)) {
+        if (unlikely(subdiv_mode == RTC_SUBDIVISION_MODE_NO_BOUNDARY)) {
           if (getHalfEdge(i)->faceHasBorder()) return false;
         }
         return true;
@@ -324,14 +324,8 @@ namespace embree
       SubdivMeshISA (Device* device)
         : SubdivMesh(device) {}
 
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-      
-      template<typename vbool, typename vint, typename vfloat>
-        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, unsigned int numUVs, 
-                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-      
+      void interpolate(const RTCInterpolateArguments* const args);
+      void interpolateN(const RTCInterpolateNArguments* const args);
     };
   }
 

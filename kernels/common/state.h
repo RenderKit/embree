@@ -123,7 +123,6 @@ namespace embree
   public:
     bool ignore_config_files;              //!< if true no more config files get parse
     bool float_exceptions;                 //!< enable floating point exceptions
-    int accel_flags;
     int quality_flags;
     int scene_flags;
     size_t verbose;                        //!< verbosity of output

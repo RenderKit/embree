@@ -248,8 +248,8 @@ def runConfig(config):
     conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
   if "IGNORE_INVALID_RAYS" in config:
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
-  if "INTERSECTION_FILTER" in config:
-    conf.append("-D EMBREE_INTERSECTION_FILTER="+config["INTERSECTION_FILTER"])
+  if "FILTER_FUNCTION" in config:
+    conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
   if "RAY_MASK" in config:
     conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
   if "RAY_PACKETS" in config:

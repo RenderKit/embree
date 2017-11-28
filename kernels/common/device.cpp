@@ -155,7 +155,7 @@ namespace embree
 #if defined (EMBREE_BACKFACE_CULLING)
     v += "backfaceculling ";
 #endif
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
 #endif
     return v;
@@ -444,7 +444,7 @@ namespace embree
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 0;
 #endif
 
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
     case RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED: return 1;
 #else
     case RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED: return 0;

@@ -449,18 +449,18 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> mesh, ssize_t id)
   {
-    std::string str_type = "";
-    switch (mesh->type) {
-    case RTC_GEOMETRY_INTERSECTOR_RIBBON: str_type = "ribbon"; break;
-    case RTC_GEOMETRY_INTERSECTOR_SURFACE: str_type = "surface"; break;
-    default: throw std::runtime_error("invalid curve type");
+    std::string str_subtype = "";
+    switch (mesh->subtype) {
+    case RTC_GEOMETRY_SUBTYPE_RIBBON: str_subtype = "ribbon"; break;
+    case RTC_GEOMETRY_SUBTYPE_SURFACE: str_subtype = "surface"; break;
+    default: throw std::runtime_error("invalid geometry subtype");
     }
 
-    std::string str_basis = "";
-    switch (mesh->basis) {
-    case RTC_BASIS_LINEAR: str_basis = "linear"; break;
-    case RTC_BASIS_BEZIER: str_basis = "bezier"; break;
-    case RTC_BASIS_BSPLINE: str_basis = "bspline"; break;
+    std::string str_type = "";
+    switch (mesh->type) {
+    case RTC_GEOMETRY_TYPE_CURVE_LINEAR: str_type = "linear"; break;
+    case RTC_GEOMETRY_TYPE_CURVE_BEZIER: str_type = "bezier"; break;
+    case RTC_GEOMETRY_TYPE_CURVE_BSPLINE: str_type = "bspline"; break;
     default: throw std::runtime_error("invalid basis");
     }
 
@@ -471,7 +471,7 @@ namespace embree
       hairid[i] = mesh->hairs[i].id;
     }
     
-    open("Curve type=\""+str_type+"\" basis=\""+str_basis+"\"",id);
+    open("Curve type=\""+str_subtype+"\" basis=\""+str_type+"\"",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store4f("positions",p);

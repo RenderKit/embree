@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) 
-    : Geometry(device,BEZIER_CURVES,0,1), subtype(subtype), basis(basis), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+    : Geometry(device,BEZIER_CURVES,0,1), type(type), subtype(subtype), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
@@ -45,7 +45,7 @@ namespace embree
     Geometry::update();
   }
 
-  void NativeCurves::setGeometryIntersector(RTCGeometryIntersector type_in)
+  void NativeCurves::setSubtype(RTCGeometrySubtype type_in)
   {
     this->subtype = type_in;
     Geometry::update();
@@ -177,9 +177,16 @@ namespace embree
   namespace isa
   {
     template<typename Curve>
-    __forceinline void NativeCurvesISA::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                                           float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
+    __forceinline void NativeCurvesISA::interpolate_helper(const RTCInterpolateArguments* const args)
     {
+      unsigned int primID = args->primID;
+      float u = args->u;
+      RTCBufferType buffer = args->buffer;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* ddPdudu = args->ddPdudu;
+      unsigned int numFloats = args->numFloats;
+    
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
              (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -254,8 +261,8 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) {
-      return new CurvesBezier(device,subtype,basis);
+    NativeCurves* createCurvesBezier(Device* device, RTCGeometryType type, RTCGeometrySubtype subtype) {
+      return new CurvesBezier(device,type,subtype);
     }
     
     void CurvesBezier::preCommit() {
@@ -267,14 +274,12 @@ namespace embree
       Geometry::preCommit();
     }
     
-    void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                   float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
-    {
-      interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    void CurvesBezier::interpolate(const RTCInterpolateArguments* const args) {
+      interpolate_helper<BezierCurveT<vfloatx>>(args);
     }
     
-    NativeCurves* createCurvesBSpline(Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) {
-      return new CurvesBSpline(device,subtype,basis);
+    NativeCurves* createCurvesBSpline(Device* device, RTCGeometryType type, RTCGeometrySubtype subtype) {
+      return new CurvesBSpline(device,type,subtype);
     }
     
     void CurvesBSpline::preCommit() {
@@ -286,10 +291,8 @@ namespace embree
       Geometry::preCommit();
     }
     
-    void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                    float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
-    {
-      interpolate_helper<BSplineCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    void CurvesBSpline::interpolate(const RTCInterpolateArguments* const args) {
+      interpolate_helper<BSplineCurveT<vfloatx>>(args);
     }
   }
 }

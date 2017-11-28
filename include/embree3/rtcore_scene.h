@@ -32,15 +32,6 @@ struct RTCRay8;
 struct RTCRay16;
 struct RTCRayNp;
 
-/*! Acceleration structure flags */
-enum RTCAccelFlags
-{
-  RTC_ACCEL_FAST      = 0,          //!< default mode
-  RTC_ACCEL_COMPACT      = (1 << 1),   //!< use memory conservative acceleration structure
-  RTC_ACCEL_ROBUST       = (1 << 2),   //!< use acceleration structure that allows robust traversal
-  RTC_ACCEL_ROBUST_COMPACT = (1 << 1) | (1 << 2)
-};
-
 /*! Build quality levels */
 enum RTCBuildQuality
 {
@@ -55,7 +46,9 @@ enum RTCSceneFlags
 {
   RTC_SCENE_FLAG_NONE                    = 0,
   RTC_SCENE_FLAG_DYNAMIC                 = (1 << 0), //!< provides better build performance for dynamic scenes
-  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 1)  //!< enables support for intersection filter function inside context
+  RTC_SCENE_FLAG_COMPACT                 = (1 << 1),   //!< use memory conservative acceleration structure
+  RTC_SCENE_FLAG_ROBUST                  = (1 << 2),   //!< use acceleration structure that allows robust traversal
+  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 3)  //!< enables support for intersection filter function inside context
 };
 
 /*! Intersection context flags */
@@ -107,12 +100,6 @@ typedef bool (*RTCProgressMonitorFunction)(void* ptr, const double n);
 /*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
 RTCORE_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction func, void* ptr);
 
-/*! Sets the acceleration structure flags for a scene. */
-RTCORE_API void rtcSetSceneAccelFlags(RTCScene scene, enum RTCAccelFlags accel);
-
-/*! Returns the accel flags. */
-RTCORE_API enum RTCAccelFlags rtcGetSceneAccelFlags(RTCScene scene);
-  
 /*! Sets the build quality of a scene. */
 RTCORE_API void rtcSetSceneBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
 
@@ -120,7 +107,7 @@ RTCORE_API void rtcSetSceneBuildQuality(RTCScene scene, enum RTCBuildQuality qua
 RTCORE_API enum RTCBuildQuality rtcGetSceneBuildQuality(RTCScene scene);
 
 /*! Sets the scene flags. */
-RTCORE_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags hints);
+RTCORE_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags sflags);
 
 /*! Returns the scene flags. */
 RTCORE_API enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
@@ -248,6 +235,12 @@ RTCORE_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* contex
 RTCORE_API void rtcReleaseScene(RTCScene scene);
 
 #if defined(__cplusplus)
+
+/*! \brief Helper to easily combing scene flags */
+inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {
+  return (RTCSceneFlags)((size_t)a | (size_t)b);
+}
+  
 }
 #endif
   

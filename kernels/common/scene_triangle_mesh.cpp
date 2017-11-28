@@ -45,10 +45,10 @@ namespace embree
     Geometry::update();
   }
 
-  void TriangleMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
+  void TriangleMesh::setSubtype(RTCGeometrySubtype type_in)
   {
-    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry intersector");
+    if (type_in != RTC_GEOMETRY_SUBTYPE_SURFACE)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry subtype");
     
     Geometry::update();
   }
@@ -187,8 +187,20 @@ namespace embree
     return true;
   }
   
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
+  void TriangleMesh::interpolate(const RTCInterpolateArguments* const args)
   {
+    unsigned int primID = args->primID;
+    float u = args->u;
+    float v = args->v;
+    RTCBufferType buffer = args->buffer;
+    float* P = args->P;
+    float* dPdu = args->dPdu;
+    float* dPdv = args->dPdv;
+    float* ddPdudu = args->ddPdudu;
+    float* ddPdvdv = args->ddPdvdv;
+    float* ddPdudv = args->ddPdudv;
+    unsigned int numFloats = args->numFloats;
+
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));

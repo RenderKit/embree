@@ -157,12 +157,25 @@ namespace embree
     occlusionFilterN = filter;
   }
 
-  void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+  void Geometry::interpolateN(const RTCInterpolateNArguments* const args)
   {
+    const void* valid_i = args->valid;
+    const unsigned* primIDs = args->primIDs;
+    const float* u = args->u;
+    const float* v = args->v;
+    unsigned int numUVs = args->numUVs;
+    RTCBufferType buffer = args->buffer;
+    float* P = args->P;
+    float* dPdu = args->dPdu;
+    float* dPdv = args->dPdv;
+    float* ddPdudu = args->ddPdudu;
+    float* ddPdvdv = args->ddPdvdv;
+    float* ddPdudv = args->ddPdudv;
+    unsigned int numFloats = args->numFloats;
+
     if (numFloats > 256) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
-
+ 
     __aligned(64) float P_tmp[256];
     __aligned(64) float dPdu_tmp[256];
     __aligned(64) float dPdv_tmp[256];
@@ -179,7 +192,20 @@ namespace embree
     for (unsigned int i=0; i<numUVs; i++)
     {
       if (valid && !valid[i]) continue;
-      interpolate(primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,ddPdudut,ddPdvdvt,ddPdudvt,numFloats);
+
+      RTCInterpolateArguments iargs;
+      iargs.primID = primIDs[i];
+      iargs.u = u[i];
+      iargs.v = v[i];
+      iargs.buffer = buffer;
+      iargs.P = Pt;
+      iargs.dPdu = dPdut;
+      iargs.dPdv = dPdvt;
+      iargs.ddPdudu = ddPdudut;
+      iargs.ddPdvdv = ddPdvdvt;
+      iargs.ddPdudv = ddPdudvt;
+      iargs.numFloats = numFloats;
+      interpolate(&iargs);
       
       if (likely(P)) {
         for (unsigned int j=0; j<numFloats; j++) 
