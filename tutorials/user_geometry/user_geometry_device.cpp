@@ -337,7 +337,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
-    rtcReportIntersection(args,&fargs);
+    rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       copyRTCHitToRTCRay((RTCRay *)ray,&hit);
@@ -364,7 +364,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
-    rtcReportIntersection(args,&fargs);
+    rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       copyRTCHitToRTCRay((RTCRay *)ray,&hit);
@@ -423,7 +423,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
-    rtcReportOcclusion(args,&fargs);
+    rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
       ray->geomID = 0;
@@ -450,7 +450,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
-    rtcReportOcclusion(args,&fargs);
+    rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
       ray->geomID = 0;
@@ -523,7 +523,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
   
-      rtcReportIntersection(args,&fargs);
+      rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
         copyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
@@ -550,7 +550,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
   
-      rtcReportIntersection(args,&fargs);
+      rtcFilterIntersection(args,&fargs);
 
       /* update for all accepted hits */
       if (imask == -1)
@@ -624,7 +624,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
   
-      rtcReportOcclusion(args,&fargs);
+      rtcFilterOcclusion(args,&fargs);
 
       /* update for all accepted hits */
       if (imask == -1)
@@ -656,7 +656,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
   
-      rtcReportOcclusion(args,&fargs);
+      rtcFilterOcclusion(args,&fargs);
 
       /* update for all accepted hits */
       if (imask == -1)

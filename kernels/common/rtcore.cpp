@@ -808,13 +808,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     args->report(args,filter_args);
   }
 
-  RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     args->report(args,filter_args);

@@ -268,10 +268,10 @@ struct RTCOccludedFunctionNArguments
 typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* const args);
 
 /*! report intersection from intersect function */
-RTCORE_API void rtcReportIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /*! report intersection from occluded function */
-RTCORE_API void rtcReportOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
