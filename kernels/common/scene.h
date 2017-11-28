@@ -134,9 +134,6 @@ namespace embree
     /*! detaches some geometry */
     void detachGeometry(size_t geomID);
 
-    void setAccelFlags(RTCAccelFlags accel_flags);
-    RTCAccelFlags getAccelFlags() const;
-    
     void setBuildQuality(RTCBuildQuality quality_flags);
     RTCBuildQuality getBuildQuality() const;
     
@@ -195,9 +192,9 @@ namespace embree
     }
 
     /* flag decoding */
-    __forceinline bool isFastAccel() const { return accel_flags == RTC_ACCEL_FAST; }
-    __forceinline bool isCompactAccel() const { return accel_flags & RTC_ACCEL_COMPACT; }
-    __forceinline bool isRobustAccel()  const { return accel_flags & RTC_ACCEL_ROBUST; }
+    __forceinline bool isFastAccel() const { return !isCompactAccel() && !isRobustAccel(); }
+    __forceinline bool isCompactAccel() const { return scene_flags & RTC_SCENE_FLAG_COMPACT; }
+    __forceinline bool isRobustAccel()  const { return scene_flags & RTC_SCENE_FLAG_ROBUST; }
     __forceinline bool isStaticAccel()  const { return !(scene_flags & RTC_SCENE_FLAG_DYNAMIC); }
     __forceinline bool isDynamicAccel() const { return scene_flags & RTC_SCENE_FLAG_DYNAMIC; }
     
@@ -226,9 +223,8 @@ namespace embree
   public:
     Device* device;
     bool flags_modified;
-    RTCAccelFlags accel_flags;
-    RTCBuildQuality quality_flags;
     RTCSceneFlags scene_flags;
+    RTCBuildQuality quality_flags;
     AccelN accels;
     MutexSys buildMutex;
     SpinLock geometriesMutex;

@@ -128,27 +128,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetSceneAccelFlags (RTCScene hscene, RTCAccelFlags accel) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetSceneAccelFlags);
-    RTCORE_VERIFY_HANDLE(hscene);
-    scene->setAccelFlags(accel);
-    RTCORE_CATCH_END2(scene);
-  }
-
-  RTCORE_API RTCAccelFlags rtcGetSceneAccelFlags(RTCScene hscene)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetSceneAccelFlags);
-    RTCORE_VERIFY_HANDLE(hscene);
-    return scene->getAccelFlags();
-    RTCORE_CATCH_END2(scene);
-    return RTC_ACCEL_FAST;
-  }
-  
   RTCORE_API void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
   {
     Scene* scene = (Scene*) hscene;

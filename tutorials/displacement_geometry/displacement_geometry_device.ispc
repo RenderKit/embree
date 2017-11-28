@@ -179,7 +179,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene */
   g_scene = rtcNewScene(g_device);
-  rtcSetSceneAccelFlags(g_scene,RTC_ACCEL_ROBUST);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
   /* add ground plane */
   addGroundPlane(g_scene);

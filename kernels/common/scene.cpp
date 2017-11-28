@@ -33,9 +33,8 @@ namespace embree
     : Accel(AccelData::TY_UNKNOWN),
       device(device),
       flags_modified(true),
-      accel_flags(RTC_ACCEL_FAST),
-      quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       scene_flags(RTC_SCENE_FLAG_NONE),
+      quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFiltersN(0)
@@ -53,8 +52,6 @@ namespace embree
     intersectors = Accel::Intersectors(missing_rtcCommit);
 
     /* one can overwrite flags through device for debugging */
-    if (device->accel_flags != -1)
-      accel_flags = (RTCAccelFlags) device->accel_flags;
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
     if (device->scene_flags != -1)
@@ -685,17 +682,6 @@ namespace embree
     }
     
     setModified(false);
-  }
-
-  void Scene::setAccelFlags(RTCAccelFlags accel_flags_i)
-  {
-    if (accel_flags == accel_flags_i) return;
-    accel_flags = accel_flags_i;
-    flags_modified = true;
-  }
-
-  RTCAccelFlags Scene::getAccelFlags() const {
-    return accel_flags;
   }
 
   void Scene::setBuildQuality(RTCBuildQuality quality_flags_i)

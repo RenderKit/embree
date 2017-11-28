@@ -92,12 +92,11 @@ namespace embree {
     hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  RTCScene createScene(RTCAccelFlags aflags, RTCBuildQuality qflags, RTCSceneFlags hflags)
+  RTCScene createScene(RTCSceneFlags sflags, RTCBuildQuality qflags)
   {
     RTCScene scene_out = rtcNewScene(g_device);
-    rtcSetSceneAccelFlags(scene_out,aflags);
+    rtcSetSceneFlags(scene_out,sflags);
     rtcSetSceneBuildQuality(scene_out,qflags);
-    rtcSetSceneFlags(scene_out,hflags);
     return scene_out;
   }
 
@@ -204,7 +203,7 @@ namespace embree {
   void Benchmark_Dynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality = RTC_BUILD_QUALITY_LOW)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_SCENE_FLAG_DYNAMIC);
+    g_scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
     convertScene(g_scene, scene_in, quality);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -243,7 +242,7 @@ namespace embree {
   void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality = RTC_BUILD_QUALITY_MEDIUM)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_ACCEL_FAST, RTC_BUILD_QUALITY_LOW, RTC_SCENE_FLAG_DYNAMIC);
+    g_scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
     convertScene(g_scene, scene_in,quality);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
@@ -289,7 +288,7 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = createScene(RTC_ACCEL_FAST,qflags,RTC_SCENE_FLAG_NONE);
+      g_scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
       convertScene(g_scene,scene_in,quality);
 
       double t0 = getSeconds();

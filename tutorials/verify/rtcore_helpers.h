@@ -567,15 +567,17 @@ namespace embree
     }
   }
 
-  inline std::string to_string(RTCAccelFlags accel_flags)
+  inline std::string to_string(RTCSceneFlags scene_flags)
   {
-    if      (accel_flags == RTC_ACCEL_FAST) return "FastAccel";
-    else if (accel_flags == RTC_ACCEL_COMPACT) return "CompactAccel";
-    else if (accel_flags == RTC_ACCEL_ROBUST ) return "RobustAccel";
-    else if (accel_flags == (RTCAccelFlags)(RTC_ACCEL_COMPACT | RTC_ACCEL_ROBUST)) return "CompactRobust";
-    else { assert(false); return ""; }
+    std::string ret;
+    if (scene_flags & RTC_SCENE_FLAG_DYNAMIC) ret += "Dynamic";
+    else ret += "Static";
+    if (scene_flags & RTC_SCENE_FLAG_COMPACT) ret += "Compact";
+    if (scene_flags & RTC_SCENE_FLAG_ROBUST ) ret += "Robust";
+    if (!(scene_flags & RTC_SCENE_FLAG_COMPACT) && !(scene_flags & RTC_SCENE_FLAG_ROBUST)) ret += "Fast"; 
+    return ret;
   }
-
+  
   inline std::string to_string(RTCBuildQuality quality_flags)
   {
     if      (quality_flags == RTC_BUILD_QUALITY_LOW   ) return "LowQuality";
@@ -585,42 +587,28 @@ namespace embree
     else { assert(false); return ""; }
   }
 
-  inline std::string to_string(RTCSceneFlags hint_flags)
-  {
-    if  (hint_flags & RTC_SCENE_FLAG_DYNAMIC) return "DynamicAccel";
-    else return "StaticAccel";
-  }
-
   struct SceneFlags
   {
-    SceneFlags (RTCAccelFlags aflags, RTCBuildQuality qflags, RTCSceneFlags hflags)
-    : aflags(aflags), qflags(qflags), hflags(hflags) {}
+    SceneFlags (RTCSceneFlags sflags, RTCBuildQuality qflags)
+    : sflags(sflags), qflags(qflags) {}
 
-    RTCAccelFlags aflags;
+    RTCSceneFlags sflags;
     RTCBuildQuality qflags;
-    RTCSceneFlags hflags;
   };
   
   inline std::string to_string(SceneFlags sflags) {
-    return to_string(sflags.aflags) + "." + to_string(sflags.qflags) + "." + to_string(sflags.hflags);
+    return to_string(sflags.sflags) + "." + to_string(sflags.qflags);
   }
 
   inline std::string to_string(SceneFlags sflags, RTCBuildQuality quality) {
     return to_string(sflags)+to_string(quality);
   }
 
-  static const size_t numSceneFlags = 32-8;
+  static const size_t numSceneFlags = 8*3;
 
-  SceneFlags getSceneFlags(size_t i) 
-  {
-    i = i%(3<<3);
-    int accel_flags = 0;
-    int hint_flags = 0;
-    if (i & 1) hint_flags  |= RTC_SCENE_FLAG_DYNAMIC;
-    if (i & 2) accel_flags |= RTC_ACCEL_COMPACT;
-    if (i & 4) accel_flags |= RTC_ACCEL_ROBUST;
-    int quality_flags = (i>>3)&3;
-    return SceneFlags((RTCAccelFlags)accel_flags,(RTCBuildQuality)quality_flags,(RTCSceneFlags)hint_flags);
+  SceneFlags getSceneFlags(size_t i) {
+    i = i % numSceneFlags;
+    return SceneFlags((RTCSceneFlags)(i&7),(RTCBuildQuality)(i>>3));
   }
 
   static const size_t numSceneGeomFlags = 32;
