@@ -24,12 +24,13 @@ def parse_delimiter(chars,tokens):
   tokens.append(id)
   return True
   
-def parse_identifier(chars,tokens):
+def parse_identifier(chars,tokens,parse_pattern):
   if (not chars[0] in identifier_begin_chars): return False;
   id = ""
   while chars and (chars[0] in identifier_cont_chars):
     id = id + chars.pop(0)
-  tokens.append(id)
+  if (id == "size_t" and ispc_mode): tokens.append("uintptr_t")
+  else: tokens.append(id)
   return True
 
 def parse_line_comment(chars,tokens):
@@ -56,7 +57,7 @@ def parse_comment(chars,tokens):
 def parse_regexpr(chars,tokens):
   if chars[0] != "(": return False
   chars.pop(0)
-  parse_identifier(chars,tokens)
+  parse_identifier(chars,tokens,True)
   if chars.pop(0) != ",":
     return False
   id = ""
@@ -79,7 +80,7 @@ def tokenize(chars,parse_pattern):
   while chars:
     if chars[0] == "\n": tokens.append(chars.pop(0)); continue;
     elif parse_delimiter(chars,tokens): continue;
-    elif parse_identifier(chars,tokens): continue;
+    elif parse_identifier(chars,tokens,parse_pattern): continue;
     elif parse_number(chars,tokens): continue;
     elif parse_line_comment(chars,tokens): continue;
     elif parse_comment(chars,tokens): continue;
@@ -237,6 +238,9 @@ def substitute (env,tokens,ident):
       unique_id+=1
     elif tokens[i] == "COMMENT":
       result.append("//")
+
+    elif ispc_mode and tokens[i] == "size_t":
+      result.append("uintptr_t")
       
     elif not ispc_mode and tokens[i] == "uniform":
       i+=1 # also skip next space

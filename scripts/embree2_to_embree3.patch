@@ -849,7 +849,7 @@ void intersectionFilter(const uniform RTCFilterFunctionNArguments* uniform args)
   uniform int* uniform valid = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* uniform context = args->context;
-  COMMENT RTCRay* uniform ray_in = (RTCRay* uniform) args->ray;
+  COMMENT RTCRay* uniform ray_in = (varying RTCRay* uniform) args->ray;
   RTCHit* uniform potentialHit = (RTCHit* uniform) args->potentialHit;
   uniform unsigned int N = args->N;
   assert(N == 1);
@@ -933,7 +933,7 @@ void intersectionFilter(const uniform RTCFilterFunctionNArguments* uniform args)
   const void* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* uniform context = args->context;
-  COMMENT RTCRay* uniform ray_in = (RTCRay* uniform) args->ray;
+  COMMENT varying RTCRay* uniform ray_in = (varying RTCRay* uniform) args->ray;
   RTCHit* uniform potentialHit = (RTCHit* uniform) args->potentialHit;
   uniform unsigned int N = args->N;
   assert(N == sizeof(varying float)/4);
@@ -1060,7 +1060,8 @@ void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* uniform args
   COMMENT void* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* uniform context_in = args->context;
-  varying RTCRay& ray_in = *(varying RTCRay* uniform) args->ray;
+  varying RTCRay* uniform ray_ptr_in = (varying RTCRay* uniform) args->ray;
+  varying RTCRay& ray_in = *ray_ptr_in;
   uniform unsigned int N_in = args->N;
   uniform unsigned int item_in = args->item;
   assert(N_in == 1);
@@ -1124,8 +1125,6 @@ void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* uniform arg
   uniform unsigned int N_in = args->N;
   uniform unsigned int item_in = args->item;
 }@@
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // geometry modification functions
@@ -2282,13 +2281,13 @@ rtcReleaseBVH(bvh)
 @@{
 RTCRay
 =>
-Ray
+varying Ray
 }@@
 
 @@{
 Ray ID myray
 =>
-Ray myray
+varying Ray myray
 @@{cpp
 ID myray.tnear
 =>
@@ -2309,7 +2308,7 @@ RTCRay_(myray)
 @@{
 Ray& ID myray =
 =>
-Ray& myray =
+varying Ray& myray =
 @@{cpp
 ID myray.tnear
 =>
@@ -2374,7 +2373,7 @@ RTC_CURVE_BASIS_BSPLINE
 @@{
 RTCRay ID ray;
 =>
-RTCRay ray;
+varying RTCRay ray;
 @@{
 ray.orgx
 =>
