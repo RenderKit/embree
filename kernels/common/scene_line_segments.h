@@ -59,8 +59,8 @@ namespace embree
     /*! returns the i'th segment */
     __forceinline unsigned int getStartEndBitMask(size_t i) const {
       unsigned int mask = 0;
-      mask |= (i == 0                ) ? (unsigned int)1 << 30 : 0; // first segment
-      mask |= (i == segments.size()-1) ? (unsigned int)1 << 31 : 0; // last segment
+      mask |= (i == 0                ) ? ((unsigned int)1 << 30) : 0; // first segment
+      mask |= (i == segments.size()-1) ? ((unsigned int)1 << 31) : 0; // last segment
       return mask;
     }
 
