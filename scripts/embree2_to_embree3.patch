@@ -1055,7 +1055,7 @@ void RTCBoundsFunc3(const uniform RTCBoundsFunctionArguments* const uniform args
 void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID item_in)
 {
 =>
-void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* const uniform args)
+unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* const uniform args)
 {
   COMMENT void* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
@@ -2324,6 +2324,12 @@ myray.tfar()
 =>
 RTCRay_(myray)
 }@@
+}@@
+
+@@{
+RTCIntersectContext* ID context_in = args->context;
+=>
+uniform IntersectContext* uniform context_in = (uniform IntersectContext* uniform) args->context;
 }@@
 
 @@{

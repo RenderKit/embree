@@ -268,6 +268,9 @@ def substitute (env,tokens,ident):
       
     elif not ispc_mode and tokens[i] == "varying":
       i+=1 # also skip next space
+
+    elif not ispc_mode and tokens[i] == "unmasked":
+      i+=1 # also skip next space
     
     elif tokens[i] in env:
       result = result + env[tokens[i]]
