@@ -36,7 +36,7 @@ namespace embree
     __forceinline RayK(const Vec3vf<K>& org, const Vec3vf<K>& dir,
                        const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                        const vfloat<K>& time = zero, const vint<K>& mask = -1, const vint<K>& id = 0, const vint<K>& flags = 0)
-      : org(org), dir(dir), _tnear(tnear), _tfar(tfar), time(time), mask(mask), id(id), flags(flags), geomID(-1), primID(-1), instID(-1) {}
+      : org(org), dir(dir), _tnear(tnear), _tfar(tfar), time(time), mask(mask), id(id), flags(flags), primID(-1), geomID(-1), instID(-1) {}
 
     /* Returns the size of the ray */
     static __forceinline size_t size() { return K; }
@@ -190,7 +190,7 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1, int id = 0, int flags = 0, unsigned int geomID = RTC_INVALID_GEOMETRY_ID, unsigned int primID = RTC_INVALID_GEOMETRY_ID, unsigned int instID = RTC_INVALID_GEOMETRY_ID)
-      : org(org,tnear), dir(dir,tfar),  time(time), mask(mask), id(id), flags(flags), geomID(geomID), primID(primID), instID(instID) {}
+      : org(org,tnear), dir(dir,tfar),  time(time), mask(mask), id(id), flags(flags), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Tests if we hit something */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
@@ -451,8 +451,8 @@ namespace embree
         ray.Ng.y = Ng_y(offset)[0];
         ray.Ng.z = Ng_z(offset)[0];
         ray.primID = primID(offset)[0];
-        ray.instID = instID(offset)[0];
         ray.geomID = geometryID;
+        ray.instID = instID(offset)[0];
       }
     }
 

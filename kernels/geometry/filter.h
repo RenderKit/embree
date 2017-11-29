@@ -67,7 +67,7 @@ namespace embree
     __forceinline void reportIntersection1(IntersectFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args)
     {
 #if defined(EMBREE_FILTER_FUNCTION)
-      IntersectContext* context = args->internal_context;
+      IntersectContext* MAYBE_UNUSED context = args->internal_context;
       const Geometry* const geometry = args->geometry;
       if (geometry->intersectionFilterN) {
         assert(context->scene->hasGeometryFilterFunction());
@@ -124,7 +124,7 @@ namespace embree
     __forceinline void reportOcclusion1(OccludedFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args)
     {
 #if defined(EMBREE_FILTER_FUNCTION)
-      IntersectContext* context = args->internal_context;
+      IntersectContext* MAYBE_UNUSED context = args->internal_context;
       const Geometry* const geometry = args->geometry;
       if (geometry->occlusionFilterN) {
         assert(context->scene->hasGeometryFilterFunction());

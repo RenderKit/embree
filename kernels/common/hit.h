@@ -30,7 +30,7 @@ namespace embree
 
     /* Constructs a hit */
     __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const vfloat<K>& t, const Vec3vf<K>& Ng)
-      : Ng(Ng), t(t), u(u), v(v), geomID(geomID), primID(primID), instID(instID) {}
+      : Ng(Ng), t(t), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return K; }
@@ -54,7 +54,7 @@ namespace embree
 
     /* Constructs a hit */
     __forceinline HitK(int instID, int geomID, int primID, float u, float v, float t, const Vec3fa& Ng)
-      : Ng(Ng.x,Ng.y,Ng.z), t(t), u(u), v(v), geomID(geomID), primID(primID), instID(instID) {}
+      : Ng(Ng.x,Ng.y,Ng.z), t(t), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return 1; }
@@ -93,9 +93,9 @@ namespace embree
   __forceinline void copyHitToRay(Ray &ray, const Hit& hit)
   {
     ray.Ng   = hit.Ng;
-    ray.instID = hit.instID;
-    ray.geomID = hit.geomID;
     ray.primID = hit.primID;
+    ray.geomID = hit.geomID;
+    ray.instID = hit.instID;
     ray.u    = hit.u;
     ray.v    = hit.v;
     ray.tfar() = hit.t;
@@ -107,9 +107,9 @@ namespace embree
     vfloat<K>::storeu(mask,&ray.Ng.x, hit.Ng.x);
     vfloat<K>::storeu(mask,&ray.Ng.y, hit.Ng.y);
     vfloat<K>::storeu(mask,&ray.Ng.z, hit.Ng.z);
-    vint<K>::storeu(mask,&ray.instID, hit.instID);
-    vint<K>::storeu(mask,&ray.geomID, hit.geomID);
     vint<K>::storeu(mask,&ray.primID, hit.primID);
+    vint<K>::storeu(mask,&ray.geomID, hit.geomID);
+    vint<K>::storeu(mask,&ray.instID, hit.instID);
     vfloat<K>::storeu(mask,&ray.u, hit.u);
     vfloat<K>::storeu(mask,&ray.v, hit.v);
     vfloat<K>::storeu(mask,&ray._tfar, hit.t);

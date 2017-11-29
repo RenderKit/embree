@@ -50,7 +50,7 @@
                       unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
                       unsigned int primID = RTC_INVALID_GEOMETRY_ID, 
                       unsigned int instID = RTC_INVALID_GEOMETRY_ID)
-      : org(org,tnear), dir(dir,tfar), time(time), mask(mask), geomID(geomID), primID(primID), instID(instID)  {}
+      : org(org,tnear), dir(dir,tfar), time(time), mask(mask), primID(primID), geomID(geomID), instID(instID)  {}
 
     /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
