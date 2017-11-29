@@ -159,6 +159,9 @@ def parse_expr(tokens,tpos,term_token):
      
 def match(pattern,ppos,tokens,tpos,env,depth):
 
+  #print("\npattern:"); print_token_list(pattern[ppos:],sys.stdout)
+  #print("\ntokens:"); print_token_list(tokens[tpos:],sys.stdout)
+  
   if is_delimiter_token(tokens[tpos]):
     tpos+=1
     return (ppos,tpos,depth,True)
@@ -187,16 +190,16 @@ def match(pattern,ppos,tokens,tpos,env,depth):
   elif pattern[ppos] == "LHS":
     ppos+=1
     var = pattern[ppos]
-    lhs = tokens[tpos]
-    if (not is_identifier_token(lhs)):
+    if (not is_identifier_token(tokens[tpos])):
       return (ppos,tpos,depth,False)
+    lhs = [tokens[tpos]]
     tpos+=1
     ppos+=1
     while is_identifier_token(tokens[tpos]) or tokens[tpos] == "." or tokens[tpos] == "->":
-      lhs += tokens[tpos]
+      lhs.append(tokens[tpos])
       tpos+=1
         
-    env[var] = [lhs]
+    env[var] = lhs
     return (ppos,tpos,depth,True)
 
   elif pattern[ppos] == "REGEXPR":
