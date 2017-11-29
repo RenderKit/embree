@@ -305,7 +305,7 @@ def apply_rule (rule,env_in,tokens):
   return result
 
 def printUsage():
-  sys.stdout.write("Usage: cpp-patch.py --patch embree2_to_embree3.patch --in infile.cpp --out outfile.cpp\n")
+  sys.stdout.write("Usage: cpp-patch.py [--ispc] --patch embree2_to_embree3.patch --in infile.cpp [--out outfile.cpp]\n")
 
 def parseCommandLine(argv):
   global rule_file
@@ -316,6 +316,7 @@ def parseCommandLine(argv):
     return;
   elif len(argv)>=1 and argv[0] == "--ispc":
     ispc_mode = True
+    parseCommandLine(argv[1:len(argv)])
   elif len(argv)>=2 and argv[0] == "--patch":
     rule_file = argv[1]
     parseCommandLine(argv[2:len(argv)])
@@ -332,7 +333,7 @@ def parseCommandLine(argv):
     sys.stderr.write("unknown command line option: "+argv[0])
     printUsage()
     sys.exit(1)
-    
+
 parseCommandLine(sys.argv[1:len(sys.argv)])
 if (rule_file == ""):
   printUsage()
@@ -369,8 +370,14 @@ def parse_rules_file(rule_file):
     subst_str = subst_str.strip('\n')
     
     while lines[0].startswith("@@{"):
-      pop_line(lines)
-      next_rules.append(parse_rule(lines))
+      l = pop_line(lines)
+      rule = parse_rule(lines)
+      if (l.startswith("@@{cpp")):
+        if (not ispc_mode): next_rules.append(rule)
+      elif (l.startswith("@@{ispc")):
+        if (ispc_mode): next_rules.append(rule)
+      else:
+        next_rules.append(rule)
 
     if lines[0].startswith("}@@"):
       pop_line(lines)
@@ -386,8 +393,14 @@ def parse_rules_file(rule_file):
   rules = []
   while lines:
     if (lines[0].startswith("@@{")):
-      pop_line(lines)
-      rules.append(parse_rule(lines))
+      l = pop_line(lines)
+      rule = parse_rule(lines)
+      if (l.startswith("@@{cpp")):
+        if (not ispc_mode): rules.append(rule)
+      elif (l.startswith("@@{ispc")):
+        if(ispc_mode): rules.append(rule)
+      else:
+        rules.append(rule)
     elif (lines[0].startswith("@@END")):
       return rules
     elif (lines[0].startswith("//")):

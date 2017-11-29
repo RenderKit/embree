@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////////////
 // rtcore.h
 
@@ -577,7 +576,7 @@ rtcGetLinearBounds(EXPR scene,EXPR bounds)
 rtcGetSceneLinearBounds(scene,bounds)
 }@@
 
-@@{
+@@{cpp
 rtcIntersect(EXPR scene, EXPR ray);
 =>
 {
@@ -587,10 +586,26 @@ rtcIntersect(EXPR scene, EXPR ray);
 }
 }@@
 
-@@{
+@@{ispc
+rtcIntersect(EXPR scene, EXPR ray);
+=>
+{
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+  rtcIntersect(scene,&context,&ray);
+}
+}@@
+
+@@{cpp
 rtcIntersect1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect1(scene,context,&ray);
+}@@
+
+@@{ispc
+rtcIntersectEx(EXPR scene,EXPR context,EXPR ray);
+=>
+rtcIntersect(scene,context,&ray);
 }@@
 
 @@{
@@ -648,7 +663,7 @@ rtcIntersectNp(scene,context,&ray,N);
 }@@
 
 
-@@{
+@@{cpp
 rtcOccluded(EXPR scene,EXPR ray);
 =>
 {
@@ -658,10 +673,26 @@ rtcOccluded(EXPR scene,EXPR ray);
 }
 }@@
 
-@@{
+@@{ispc
+rtcOccluded(EXPR scene,EXPR ray);
+=>
+{
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+  rtcOccluded(scene,&context,&ray);
+}
+}@@
+
+@@{cpp
 rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded1(scene,context,&ray);
+}@@
+
+@@{ispc
+rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
+=>
+rtcOccluded(scene,context,&ray);
 }@@
 
 @@{
@@ -1862,7 +1893,7 @@ geom
 @@{
 RTCGeometry ID geom = REGEXPR(name,rtcNew.*)(
 =>
-RTCGeometry geom = name(
+uniform RTCGeometry geom = name(
 @@{
 return EXPR e0;
 =>
@@ -1932,7 +1963,7 @@ RTC_USER_VERTEX_BUFFER_(t)
 @@{
 RTCGeometry ID geom = rtcNewTriangleMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
@@ -1963,7 +1994,7 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
 @@{
 RTCGeometry ID geom = rtcNewQuadMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
@@ -1994,7 +2025,7 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
 @@{
 RTCGeometry ID geom = rtcNewSubdivisionMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+uniform RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_FACE_BUFFER)
 =>
@@ -2095,7 +2126,7 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices) /* FIXME: ve
 @@{
 RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
@@ -2139,7 +2170,6 @@ rtcMapBuffer(EXPR geom,EXPR type)
 =>
 rtcGetBuffer(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 }@@
-
 
 ////////////////////////////////////////////////
 // drop extra arguments of geometry creation
@@ -2259,12 +2289,12 @@ Ray
 Ray ID myray
 =>
 Ray myray
-@@{
+@@{cpp
 ID myray.tnear
 =>
 myray.tnear()
 }@@
-@@{
+@@{cpp
 ID myray.tfar
 =>
 myray.tfar()
@@ -2280,12 +2310,12 @@ RTCRay_(myray)
 Ray& ID myray =
 =>
 Ray& myray =
-@@{
+@@{cpp
 ID myray.tnear
 =>
 myray.tnear()
 }@@
-@@{
+@@{cpp
 ID myray.tfar
 =>
 myray.tfar()
@@ -2306,7 +2336,7 @@ IntersectContext
 @@{
 IntersectContext ID cont;
 =>
-IntersectContext cont;
+uniform IntersectContext cont;
 @@{
 ID cont.flags
 =>
