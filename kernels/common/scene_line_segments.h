@@ -56,6 +56,14 @@ namespace embree
       return segments[i];
     }
 
+    /*! returns the i'th segment */
+    __forceinline unsigned int getStartEndBitMask(size_t i) const {
+      unsigned int mask = 0;
+      mask |= (i == 0                ) ? (unsigned int)1 << 30 : 0; // first segment
+      mask |= (i == segments.size()-1) ? (unsigned int)1 << 31 : 0; // last segment
+      return mask;
+    }
+
      /*! returns i'th vertex of the first time step */
     __forceinline Vec3fa vertex(size_t i) const {
       return vertices0[i];
@@ -166,7 +174,7 @@ namespace embree
 
   public:
     Buffer<unsigned int> segments;                 //!< array of line segment indices
-    BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
+    BufferView<Vec3fa> vertices0;                  //!< fast access to first vertex buffer
     vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<Buffer<char>> userbuffers;              //!< user buffers
   };

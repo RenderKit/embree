@@ -92,6 +92,8 @@ namespace embree
                               const Scene* scene,
                               float time) const;
 
+    static __forceinline int unmask(int index) { return index & 0x3fffffff; }
+
     /* Calculate the bounds of the line segments */
     __forceinline const BBox3fa bounds(const Scene* scene, size_t itime = 0) const
     {
@@ -99,8 +101,8 @@ namespace embree
       for (size_t i=0; i<M && valid(i); i++)
       {
         const LineSegments* geom = scene->get<LineSegments>(geomID(i));
-        const Vec3fa& p0 = geom->vertex(v0[i]+0,itime);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1,itime);
+        const Vec3fa& p0 = geom->vertex(unmask(v0[i])+0,itime);
+        const Vec3fa& p1 = geom->vertex(unmask(v0[i])+1,itime);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);
@@ -148,7 +150,8 @@ namespace embree
         if (begin<end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
-          v0[i] = geom->segment(prim->primID());
+          const unsigned int mask = geom->getStartEndBitMask(prim->primID());
+          v0[i] = geom->segment(prim->primID()) | mask;         
           begin++;
         } else {
           assert(i);
@@ -182,8 +185,8 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const Vec3fa& p0 = geom->vertex(v0[i]+0);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1);
+        const Vec3fa& p0 = geom->vertex(unmask(v0[i])+0);
+        const Vec3fa& p1 = geom->vertex(unmask(v0[i])+1);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);
@@ -212,18 +215,17 @@ namespace embree
     const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
     const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
     const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
-
-    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3]));
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(unmask(v0[0])));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(unmask(v0[1])));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(unmask(v0[2])));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(unmask(v0[3])));
 
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
 
-    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1));
-    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1));
-    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1));
-    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1));
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(unmask(v0[0])+1));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(unmask(v0[1])+1));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(unmask(v0[2])+1));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(unmask(v0[3])+1));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
   }
@@ -237,17 +239,16 @@ namespace embree
                                        const LineSegments* geom3,
                                        const vint4& itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0],itime[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1],itime[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2],itime[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3],itime[3]));
-
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(unmask(v0[0]),itime[0]));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(unmask(v0[1]),itime[1]));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(unmask(v0[2]),itime[2]));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(unmask(v0[3]),itime[3]));
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
 
-    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1,itime[0]));
-    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1,itime[1]));
-    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1,itime[2]));
-    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1,itime[3]));
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(unmask(v0[0])+1,itime[0]));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(unmask(v0[1])+1,itime[1]));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(unmask(v0[2])+1,itime[2]));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(unmask(v0[3])+1,itime[3]));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
   }
@@ -262,7 +263,6 @@ namespace embree
     const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
     const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
     const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
-
     const vfloat4 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
     vfloat4 ftime;
     const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
