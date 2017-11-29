@@ -330,8 +330,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       /* generate anisotropic BRDF */
       AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr;
-      Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
-      eps = 1.1f*p.w;
     }
     else if (geometry->type == TRIANGLE_MESH)
     {

@@ -28,12 +28,6 @@
 /*! maximal number of time steps */
 #define RTC_MAX_TIME_STEPS 129
 
-/*! maximal number of user vertex buffers */
-#define RTC_MAX_USER_VERTEX_BUFFERS 16
-
-/*! maximal number of index buffers for subdivision surfaces */
-#define RTC_MAX_INDEX_BUFFERS 16
-
 /*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType 
 {

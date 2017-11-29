@@ -23,7 +23,6 @@
 /*! \{ */
 
 /*! Forward declarations for ray structures */
-struct RTCRay1;
 struct RTCRay;
 struct RTCRayNp;
 
@@ -132,7 +131,7 @@ RTCORE_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCBounds* unifo
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
  *  has to be aligned to 16 bytes. */
-RTCORE_API void rtcIntersect1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform ray);
+RTCORE_API void rtcIntersect1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray);
 
 /*! Intersects a varying ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
@@ -161,12 +160,12 @@ inline void rtcIntersect(RTCScene scene, uniform RTCIntersectContext* uniform co
  *  function can only be called for scenes with the RTC_INTERSECT_STREAM
  *  flag set. The stride specifies the offset between rays in
  *  bytes. */
-RTCORE_API void rtcIntersect1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform unsigned int M, const uniform size_t stride);
+RTCORE_API void rtcIntersect1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform rays, const uniform unsigned int M, const uniform size_t stride);
 
 /*! Intersects a stream of pointers to M rays with the scene. This
  *  function can only be called for scenes with the
  *  RTC_INTERSECT_STREAM flag set. */
-RTCORE_API void rtcIntersect1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform unsigned int M);
+RTCORE_API void rtcIntersect1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay** uniform rays, const uniform unsigned int M);
 
 /*! Intersects a stream of M ray packets of size N in SOA format with the
  *  scene. This function can only be called for scenes with the
@@ -193,7 +192,7 @@ RTCORE_API void rtcIntersectNp(RTCScene scene, uniform RTCIntersectContext* unif
 /*! Tests if a uniform ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
  *  set. The ray has to be aligned to 16 bytes. */
-RTCORE_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform ray);
+RTCORE_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray);
 
 /*! Tests if a varying ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_VARYING flag
@@ -222,12 +221,12 @@ inline void rtcOccluded(RTCScene scene, uniform RTCIntersectContext* uniform con
  *  scene. This function can only be called for scenes with the
  *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
  *  rays in bytes.*/
-RTCORE_API void rtcOccluded1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform unsigned int M, const uniform size_t stride);
+RTCORE_API void rtcOccluded1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform rays, const uniform unsigned int M, const uniform size_t stride);
 
 /*! Tests if a stream of pointers to M rays in AOS layout is occluded by the
  *  scene. This function can only be called for scenes with the
  *  RTC_INTERSECT_STREAM flag set. */
-RTCORE_API void rtcOccluded1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform unsigned int M);
+RTCORE_API void rtcOccluded1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay** uniform rays, const uniform unsigned int M);
 
 /*! Tests if a stream of M ray packets of size N in SOA format is
  *  occluded by the scene. This function can only be called for scenes
