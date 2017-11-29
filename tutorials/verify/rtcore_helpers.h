@@ -683,6 +683,8 @@ namespace embree
     rayp.tfar = &RTCRayN_tfar(ray, N, 0);
     rayp.time = &RTCRayN_time(ray, N, 0);
     rayp.mask = &RTCRayN_mask(ray, N, 0);
+    rayp.id = &RTCRayN_id(ray, N, 0);
+    rayp.flags = &RTCRayN_flags(ray, N, 0);
     rayp.instID = &RTCRayN_instID(ray, N, 0);
     rayp.geomID = &RTCRayN_geomID(ray, N, 0);
     rayp.primID = &RTCRayN_primID(ray, N, 0);

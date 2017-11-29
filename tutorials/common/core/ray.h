@@ -62,13 +62,15 @@
     //float tfar;               //!< End of ray segment
     float time;               //!< Time of this ray for motion blur.
     unsigned int mask;        //!< used to mask out objects during traversal
+    unsigned int id;          //!< ray ID
+    unsigned int flags;       //!< ray flags
 
   public:
     embree::Vec3f Ng;         //!< Not normalized geometry normal
     float u;                  //!< Barycentric u coordinate of hit
     float v;                  //!< Barycentric v coordinate of hit
-    unsigned int geomID;           //!< geometry ID
     unsigned int primID;           //!< primitive ID
+    unsigned int geomID;           //!< geometry ID
     unsigned int instID;           //!< instance ID
 
     __forceinline float &tnear() { return org.w; };
