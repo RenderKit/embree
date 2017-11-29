@@ -1480,7 +1480,7 @@ rtcNewUserGeometry4 (scene, quality, numPrimitives, 1)
 }@@
 
 @@{
-ID geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+LHS geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
 =>
 uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1506,10 +1506,10 @@ rtcReleaseGeometry(geom);
 @@{
 RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
 =>
-uniform RTCGeometry ID geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
+uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
 rtcSetGeometryBuildQuality(geom,quality);
-rtcSetNumPrimitives(geom,numPrimitives);
-rtcSetNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryNumPrimitives(geom,numPrimitives);
+rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
 }@@
 
 
@@ -1535,7 +1535,7 @@ rtcNewInstance3(target,source,1)
 }@@
 
 @@{
-ID geomID = rtcNewInstance3(EXPR target,EXPR source,EXPR numTimeSteps);
+LHS geomID = rtcNewInstance3(EXPR target,EXPR source,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewInstance (g_device,source,numTimeSteps);
 geomID = rtcAttachGeometry(target,geom);
@@ -1593,7 +1593,7 @@ rtcNewTriangleMesh2(scene,flags,numPrimitives,numVertices,1)
 }@@
 
 @@{
-ID geomID = rtcNewTriangleMesh2 (EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewTriangleMesh2 (EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewTriangleMesh (g_device,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1632,7 +1632,7 @@ rtcNewQuadMesh2(scene,flags,numPrimitives,numVertices,1)
 }@@
 
 @@{
-ID geomID = rtcNewQuadMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewQuadMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewQuadMesh (g_device,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1672,7 +1672,7 @@ rtcNewSubdivisionMesh2(scene,flags,numPrimitives,numEdges,numVertices,numEdgeCre
 }@@
 
 @@{
-ID geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
+LHS geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewSubdivisionMesh (g_device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1837,7 +1837,7 @@ rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_CURVE_LINEAR,RTC_GEOMETRY_SUBTYPE_
 
 
 @@{
-ID geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,basis,intersector,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1865,7 +1865,7 @@ rtcReleaseGeometry(geom);
 // optimize away rtcGetGeometry
 
 @@{
-ID geomID = rtcAttachGeometry(EXPR scene,EXPR geom);
+LHS geomID = rtcAttachGeometry(EXPR scene,EXPR geom);
 =>
 geomID = rtcAttachGeometry(scene,geom);
 @@{

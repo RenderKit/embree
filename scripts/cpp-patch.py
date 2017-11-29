@@ -85,6 +85,7 @@ def tokenize(chars,parse_pattern):
     elif parse_line_comment(chars,tokens): continue;
     elif parse_comment(chars,tokens): continue;
     elif tokens and parse_pattern and tokens[-1] == "REGEXPR": parse_regexpr(chars,tokens); continue;
+    elif len(chars) >= 2 and chars[0] == "-" and chars[1] == ">": chars.pop(0); chars.pop(0); tokens.append("->"); continue;
     elif chars[0] == "(": tokens.append(chars.pop(0)); continue;
     elif chars[0] == ")": tokens.append(chars.pop(0)); continue;
     elif chars[0] == "[": tokens.append(chars.pop(0)); continue;
@@ -181,6 +182,21 @@ def match(pattern,ppos,tokens,tpos,env,depth):
       ppos+=1
       env[var] = [tokens[tpos]]
       tpos+=1
+    return (ppos,tpos,depth,True)
+
+  elif pattern[ppos] == "LHS":
+    ppos+=1
+    var = pattern[ppos]
+    lhs = tokens[tpos]
+    if (not is_identifier_token(lhs)):
+      return (ppos,tpos,depth,False)
+    tpos+=1
+    ppos+=1
+    while is_identifier_token(tokens[tpos]) or tokens[tpos] == "." or tokens[tpos] == "->":
+      lhs += tokens[tpos]
+      tpos+=1
+        
+    env[var] = [lhs]
     return (ppos,tpos,depth,True)
 
   elif pattern[ppos] == "REGEXPR":
