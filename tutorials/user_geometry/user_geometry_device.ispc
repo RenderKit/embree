@@ -19,6 +19,13 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
+/* scene data */
+RTCDevice g_device = NULL;
+RTCScene g_scene  = NULL;
+RTCScene g_scene0 = NULL;
+RTCScene g_scene1 = NULL;
+RTCScene g_scene2 = NULL;
+
 void renderTileStandardStream(uniform int taskIndex,
                               uniform int threadIndex,
                               uniform int* uniform pixels,
@@ -534,12 +541,6 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   return mesh;
 }
 
-/* scene data */
-RTCDevice g_device = NULL;
-RTCScene g_scene  = NULL;
-RTCScene g_scene0 = NULL;
-RTCScene g_scene1 = NULL;
-RTCScene g_scene2 = NULL;
 uniform Sphere* uniform g_spheres = NULL;
 uniform Sphere* uniform g_sphere0 = NULL;
 uniform Sphere* uniform g_sphere1 = NULL;

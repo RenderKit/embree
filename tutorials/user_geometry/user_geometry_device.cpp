@@ -21,6 +21,13 @@ namespace embree {
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
+/* scene data */
+RTCDevice g_device = nullptr;
+RTCScene g_scene  = nullptr;
+RTCScene g_scene0 = nullptr;
+RTCScene g_scene1 = nullptr;
+RTCScene g_scene2 = nullptr;
+  
 void renderTileStandardStream(int taskIndex,
                               int threadIndex,
                               int* pixels,
@@ -536,12 +543,6 @@ unsigned int createGroundPlane (RTCScene scene)
   return mesh;
 }
 
-/* scene data */
-RTCDevice g_device = nullptr;
-RTCScene g_scene  = nullptr;
-RTCScene g_scene0 = nullptr;
-RTCScene g_scene1 = nullptr;
-RTCScene g_scene2 = nullptr;
 Sphere* g_spheres = nullptr;
 Sphere* g_sphere0 = nullptr;
 Sphere* g_sphere1 = nullptr;
