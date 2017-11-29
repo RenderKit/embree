@@ -156,24 +156,24 @@ def parse_expr(tokens,tpos,term_token):
 
   raise ValueError()
      
-def match(pattern,ppos,tokens,tpos,env):
+def match(pattern,ppos,tokens,tpos,env,depth):
 
   if is_delimiter_token(tokens[tpos]):
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
 
   elif ispc_mode and tokens[tpos] == "uniform":
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
   elif ispc_mode and tokens[tpos] == "varying":
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
     
   elif pattern[ppos] == "ID":
     ppos+=1
     var = pattern[ppos]
     if (not is_identifier_token(tokens[tpos])):
-      return (ppos,tpos,False)
+      return (ppos,tpos,depth,False)
     b = True
     if var in env:
       b = env[var] == [tokens[tpos]]
@@ -181,7 +181,7 @@ def match(pattern,ppos,tokens,tpos,env):
       ppos+=1
       env[var] = [tokens[tpos]]
       tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
 
   elif pattern[ppos] == "REGEXPR":
     ppos+=1
@@ -191,12 +191,12 @@ def match(pattern,ppos,tokens,tpos,env):
     ppos+=1
     next = pattern[ppos]
     try: (expr,tpos) = parse_expr(tokens,tpos,next)
-    except ValueError: return (ppos,tpos,False)
+    except ValueError: return (ppos,tpos,depth,False)
     m = "".join(filter(no_delimiter_token,expr))
     if (re.match(pat,m) == None):
-      return (ppos,tpos,False)
+      return (ppos,tpos,depth,False)
     env[name] = [m]
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
     
   elif pattern[ppos] == "EXPR":
     ppos+=1
@@ -204,9 +204,9 @@ def match(pattern,ppos,tokens,tpos,env):
     ppos+=1
     next = pattern[ppos]
     try: (expr,tpos) = parse_expr(tokens,tpos,next)
-    except ValueError: return (ppos,tpos,False)
+    except ValueError: return (ppos,tpos,depth,False)
     if (tokens[tpos] != next):
-      return (ppos,tpos,False)
+      return (ppos,tpos,depth,False)
 
     b = True
     if var in env:
@@ -217,15 +217,17 @@ def match(pattern,ppos,tokens,tpos,env):
       ppos+=1
       env[var] = expr
       
-    return (ppos,tpos,b)
+    return (ppos,tpos,depth,b)
     
   elif pattern[ppos] == tokens[tpos]:
+    if tokens[tpos] == "{": depth = depth+1
+    if tokens[tpos] == "}": depth = depth-1
     ppos+=1
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
 
   else:
-    return (ppos,tpos,False)
+    return (ppos,tpos,depth,False)
 
 def substitute (env,tokens,ident):
   global unique_id
@@ -263,16 +265,17 @@ def print_token_list(list,f):
   for c in list:
     f.write(c)
       
-def match_rule (pattern, tokens, tpos, env):
+def match_rule (pattern, tokens, tpos, env, depth):
   tpos_in = tpos
+  depth_in = depth
   ppos = 0
   while (tpos < len(tokens) and ppos < len(pattern)):
-    (ppos,tpos,m) = match(pattern,ppos,tokens,tpos,env)
+    (ppos,tpos,depth,m) = match(pattern,ppos,tokens,tpos,env,depth)
     if (not m): break
   if ppos < len(pattern):
-    return (False,tpos_in)
+    return (False,tpos_in,depth_in)
   else:
-    return (True,tpos)
+    return (True,tpos,depth)
 
 def update_delimiter_ident(token,ident):
   for x in token:
@@ -293,7 +296,7 @@ def apply_rule (rule,env_in,tokens):
       tpos+=1
     else:
       env = dict(env_in)
-      (b,tpos) = match_rule (pattern,tokens,tpos,env)
+      (b,tpos,depth) = match_rule (pattern,tokens,tpos,env,depth)
       if (b):
         result = result + substitute (env,subst,ident)
         for follow_rule in follow_rules:
