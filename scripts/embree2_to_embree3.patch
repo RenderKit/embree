@@ -1967,7 +1967,7 @@ uniform RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVert
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -1977,7 +1977,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -1998,7 +1998,7 @@ uniform RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,4*sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,4*sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2008,7 +2008,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -2029,7 +2029,7 @@ uniform RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numE
 @@{
 rtcMapBuffer(EXPR geom,RTC_FACE_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_FACE_BUFFER,sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_FACE_BUFFER,sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_FACE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2039,7 +2039,7 @@ rtcSetBuffer(geom,RTC_FACE_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),numEdges)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform int),numEdges)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2049,7 +2049,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numEdges)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -2059,7 +2059,7 @@ rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
 @@{
 rtcMapBuffer(EXPR geom,RTC_LEVEL_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_LEVEL_BUFFER,sizeof(int),numEdges)
+rtcNewBuffer(geom,RTC_LEVEL_BUFFER,sizeof(uniform int),numEdges)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_LEVEL_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2069,7 +2069,7 @@ rtcSetBuffer(geom,RTC_LEVEL_BUFFER,ptr,offset,stride,numEdges)
 @@{
 rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(int),numEdgeCreases)
+rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(uniform int),numEdgeCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2079,7 +2079,7 @@ rtcSetBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,ptr,offset,stride,numEdgeCreases)
 @@{
 rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(float),numEdgeCreases)
+rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(uniform float),numEdgeCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2089,7 +2089,7 @@ rtcSetBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numEdgeCreases
 @@{
 rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,sizeof(int),numVertexCreases)
+rtcNewBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,sizeof(uniform int),numVertexCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2099,7 +2099,7 @@ rtcSetBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,ptr,offset,stride,numVertexCrea
 @@{
 rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,sizeof(float),numVertexCreases)
+rtcNewBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,sizeof(uniform float),numVertexCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2109,7 +2109,7 @@ rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numVertexCre
 @@{
 rtcMapBuffer(EXPR geom,RTC_HOLE_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_HOLE_BUFFER,sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_HOLE_BUFFER,sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_HOLE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2130,7 +2130,7 @@ uniform RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,n
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2140,7 +2140,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
