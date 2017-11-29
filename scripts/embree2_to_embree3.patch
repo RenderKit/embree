@@ -1506,7 +1506,7 @@ rtcReleaseGeometry(geom);
 @@{
 RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
 =>
-uniform RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps);
+uniform RTCGeometry ID geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
 rtcSetGeometryBuildQuality(geom,quality);
 rtcSetNumPrimitives(geom,numPrimitives);
 rtcSetNumTimeSteps(geom,numTimeSteps);
