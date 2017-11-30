@@ -913,7 +913,7 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryPrimitiveCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -923,7 +923,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;

@@ -215,7 +215,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   instance->center = center;
   instance->radius = radius;
   instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  rtcSetGeometryNumPrimitives(instance->geometry,1);
+  rtcSetGeometryPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);

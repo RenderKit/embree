@@ -347,10 +347,10 @@ RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   
   );
 
 /*! Sets the number of primitives. */
-RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry geometry, unsigned int N);
+RTCORE_API void rtcSetGeometryPrimitiveCount(RTCGeometry geometry, unsigned int N);
 
 /*! Sets the number of time steps. */
-RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, unsigned int N);
+RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, unsigned int N);
  
 /*! Sets the subtype of the geometry. */
 RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, enum RTCGeometrySubtype type);
