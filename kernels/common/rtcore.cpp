@@ -1013,11 +1013,11 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcGetBuffer(RTCGeometry hgeometry, RTCBufferType type) 
+  RTCORE_API void* rtcGetBufferData(RTCGeometry hgeometry, RTCBufferType type) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetBuffer);
+    RTCORE_TRACE(rtcGetBufferData);
     RTCORE_VERIFY_HANDLE(hgeometry);
     return geometry->getBuffer(type);
     RTCORE_CATCH_END2(geometry);

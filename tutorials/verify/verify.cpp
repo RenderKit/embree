@@ -1535,7 +1535,7 @@ namespace embree
     
     static void move_mesh(RTCGeometry mesh, size_t numVertices, Vec3fa& pos) 
     {
-      Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(mesh,RTC_VERTEX_BUFFER); 
+      Vec3fa* vertices = (Vec3fa*) rtcGetBufferData(mesh,RTC_VERTEX_BUFFER); 
       for (size_t i=0; i<numVertices; i++) vertices[i] += Vec3fa(pos);
       rtcCommitGeometry(mesh);
     }
@@ -3249,7 +3249,7 @@ namespace embree
             }
             case 1: {
               RTCGeometry hgeom = rtcGetGeometry(*task->scene,geom[index].first);
-              Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(hgeom,RTC_VERTEX_BUFFER);
+              Vec3fa* vertices = (Vec3fa*) rtcGetBufferData(hgeom,RTC_VERTEX_BUFFER);
               if (vertices) { 
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
@@ -3257,7 +3257,7 @@ namespace embree
               {
               case 4: case 5: case 10: case 11:
                 RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
-                Vec3fa* vertices = (Vec3fa*)rtcGetBuffer(hgeom, RTC_VERTEX_BUFFER1);
+                Vec3fa* vertices = (Vec3fa*)rtcGetBufferData(hgeom, RTC_VERTEX_BUFFER1);
                 if (vertices) {
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }

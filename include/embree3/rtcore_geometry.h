@@ -390,7 +390,7 @@ RTCORE_API void rtcSetBuffer(RTCGeometry geometry, enum RTCBufferType type,
                              const void* ptr, size_t byteOffset, size_t byteStride, unsigned int size);
 
 /*! \brief Gets pointer to specified buffer. */
-RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, enum RTCBufferType type);
+RTCORE_API void* rtcGetBufferData(RTCGeometry geometry, enum RTCBufferType type);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);

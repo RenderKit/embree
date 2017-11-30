@@ -263,7 +263,7 @@ void animateSphere (int id, float time)
 {
   /* animate vertices */
   RTCGeometry geom = rtcGetGeometry(g_scene,id);
-  Vertex* vertices = (Vertex*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcGetBufferData(geom,RTC_VERTEX_BUFFER);
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
   const Vec3fa pos = position[id];

@@ -167,7 +167,7 @@ void interpolateVertices(RTCGeometry geom,
                          const uniform Vec3fa* uniform const input1,
                          const uniform float tt)
   {
-    uniform Vec3fa* uniform vertices = (Vec3fa*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
+    uniform Vec3fa* uniform vertices = (Vec3fa*) rtcGetBufferData(geom,RTC_VERTEX_BUFFER);
 #if 1
     const uniform size_t blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
     launch[blocks] interpolateVertexBlock(numVertices,vertices,input0,input1,tt); sync;

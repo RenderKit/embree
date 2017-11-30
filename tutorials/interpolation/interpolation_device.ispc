@@ -172,8 +172,8 @@ uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3
 
 void setTriangleSubdivCubeLevels (RTCGeometry geom, const uniform Vec3fa& cam_pos)
 {
-  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
-  uniform float* uniform level = (uniform float* uniform) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
+  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcGetBufferData(geom, RTC_VERTEX_BUFFER);
+  uniform float* uniform level = (uniform float* uniform) rtcGetBufferData(geom, RTC_LEVEL_BUFFER);
 
   for (uniform size_t i=0; i<NUM_TRI_INDICES; i+=3)
   {
@@ -217,8 +217,8 @@ uniform unsigned int addQuadSubdivCube (RTCScene scene_i, const uniform Vec3f& p
 
 void setQuadSubdivCubeLevels (RTCGeometry geom, const uniform Vec3fa& cam_pos)
 {
-  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
-  uniform float* uniform level = (uniform float* uniform) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
+  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcGetBufferData(geom, RTC_VERTEX_BUFFER);
+  uniform float* uniform level = (uniform float* uniform) rtcGetBufferData(geom, RTC_LEVEL_BUFFER);
 
   for (uniform size_t i=0; i<NUM_QUAD_INDICES; i+=4)
   {
