@@ -123,7 +123,7 @@ void lazyCreate(LazyGeometry* instance)
   if (atomic_cmpxchg((int32_t*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
     /* create the geometry */
-    printf("creating sphere %i (lazy)\n",instance->userID);
+    //printf("creating sphere %i (lazy)\n",instance->userID);
     instance->object = rtcNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
@@ -154,7 +154,7 @@ void lazyCreate(LazyGeometry* instance)
 
 void eagerCreate(LazyGeometry* instance)
 {
-  printf("creating sphere %i (eager)\n",instance->userID);
+  //printf("creating sphere %i (eager)\n",instance->userID);
   instance->object = rtcNewScene(g_device);
   createTriangulatedSphere(instance->object,instance->center,instance->radius);
   rtcCommitScene(instance->object);

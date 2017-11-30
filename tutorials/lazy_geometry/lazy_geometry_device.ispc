@@ -121,7 +121,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   if (atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
     /* create the geometry */
-    print("creating sphere %i (lazy)\n",instance->userID);
+    //print("creating sphere %i (lazy)\n",instance->userID);
     instance->object = rtcNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
@@ -152,7 +152,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
 
 void eagerCreate(uniform LazyGeometry* uniform instance)
 {
-  print("creating sphere %i (eager)\n",instance->userID);
+  //print("creating sphere %i (eager)\n",instance->userID);
   instance->object = rtcNewScene(g_device);
   createTriangulatedSphere(instance->object,instance->center,instance->radius);
   rtcCommitScene(instance->object);
