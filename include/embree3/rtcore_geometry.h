@@ -369,8 +369,8 @@ RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, int mask);
 /*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
 RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned topologyID, enum RTCSubdivisionMode mode);
 
-/*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, enum RTCBufferType vertexBuffer, enum RTCBufferType indexBuffer);
+/*! \brief Binds a user buffer of vertex attributes to an index buffer topology. */
+RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, enum RTCBufferType vertexBuffer, enum RTCBufferType indexBuffer);
 
 RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, enum RTCBufferType type, size_t byteStride, unsigned int numItems);
 

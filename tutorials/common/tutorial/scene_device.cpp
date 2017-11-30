@@ -354,7 +354,7 @@ namespace embree
       rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER_(1), mesh->normals[0], 0, sizeof(Vec3fa  ), mesh->numNormals);
       if (mesh->normal_indices) {
         rtcSetBuffer(geom, RTC_INDEX_BUFFER_(1),  mesh->normal_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-        rtcSetGeometryIndexBuffer(geom, RTC_USER_VERTEX_BUFFER_(1), RTC_INDEX_BUFFER_(1));
+        rtcSetGeometryVertexAttributeTopology(geom, RTC_USER_VERTEX_BUFFER_(1), RTC_INDEX_BUFFER_(1));
         rtcSetGeometrySubdivisionMode(geom, 1, mesh->normal_subdiv_mode);
       }
     }
@@ -364,7 +364,7 @@ namespace embree
       rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER_(2), mesh->texcoords, 0, sizeof(Vec2f), mesh->numTexCoords);
       if (mesh->texcoord_indices) {
         rtcSetBuffer(geom, RTC_INDEX_BUFFER_(2),  mesh->texcoord_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-        rtcSetGeometryIndexBuffer(geom, RTC_USER_VERTEX_BUFFER_(2), RTC_INDEX_BUFFER_(2));
+        rtcSetGeometryVertexAttributeTopology(geom, RTC_USER_VERTEX_BUFFER_(2), RTC_INDEX_BUFFER_(2));
         rtcSetGeometrySubdivisionMode(geom, 2, mesh->texcoord_subdiv_mode);
       }
     }

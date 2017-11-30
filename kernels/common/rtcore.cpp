@@ -981,7 +981,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryIndexBuffer (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
+  RTCORE_API void rtcSetGeometryVertexAttributeTopology (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
