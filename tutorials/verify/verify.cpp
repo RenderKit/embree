@@ -1559,8 +1559,7 @@ namespace embree
       unsigned geom0 = scene.addSphere      (sampler,quality,pos0,1.0f,numPhi).first;
       unsigned geom1 = scene.addQuadSphere  (sampler,quality,pos1,1.0f,numPhi).first;
       unsigned geom2 = scene.addSubdivSphere(sampler,quality,pos2,1.0f,numPhi,4).first;
-      //unsigned geom3 = scene.addSphereHair  (sampler,quality,pos3,1.0f).first;
-      unsigned geom3 = scene.addSphere      (sampler,quality,pos3,1.0f,numPhi).first;
+      unsigned geom3 = scene.addSphereHair  (sampler,quality,pos3,1.0f).first;
       RTCGeometry hgeom0 = rtcGetGeometry(scene,geom0);
       RTCGeometry hgeom1 = rtcGetGeometry(scene,geom1);
       RTCGeometry hgeom2 = rtcGetGeometry(scene,geom2);
@@ -1570,12 +1569,11 @@ namespace embree
       for (size_t i=0; i<16; i++) 
       {
         bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
-        Vec3fa ds(2,0.1f,2);
+        Vec3fa ds(2,0.1f,2,0.0f);
         if (move0) { move_mesh(hgeom0,numVertices,ds); pos0 += ds; }
         if (move1) { move_mesh(hgeom1,numVertices,ds); pos1 += ds; }
         if (move2) { move_mesh(hgeom2,numVertices,ds); pos2 += ds; }
-        if (move3) { move_mesh(hgeom3,numVertices,ds); pos3 += ds; }
-        //if (move3) { move_mesh(hgeom3,4,ds); pos3 += ds; }
+        if (move3) { move_mesh(hgeom3,4,ds); pos3 += ds; }
         rtcCommitScene (scene);
         AssertNoError(device);
 
@@ -1590,7 +1588,9 @@ namespace embree
         for (unsigned int numRays=1; numRays<maxRays; numRays++) {
           for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
-          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+          for (size_t i=0; i<numRays; i++)
+            if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+              return VerifyApplication::FAILED;
         }
       }
       AssertNoError(device);
