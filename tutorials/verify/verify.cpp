@@ -303,7 +303,7 @@ namespace embree
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCBuildQuality quality, Sphere* sphere)
     {
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER);
-      rtcSetGeometryPrimitiveCount(geom,1);
+      rtcSetGeometryUserPrimitiveCount(geom,1);
       rtcSetGeometryBuildQuality(geom,quality);
       AssertNoError(device);
       rtcSetGeometryBoundsFunction(geom,BoundsFunc,nullptr);

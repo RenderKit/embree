@@ -101,9 +101,8 @@ namespace embree
 
     /*! sets the number of primitives */
     __forceinline void setNumPrimitives(unsigned int numPrimitives_in)
-    {
-      if (numPrimitives_in == numPrimitives)
-        return;
+    {      
+      if (numPrimitives_in == numPrimitives) return;
       
       if (isEnabled() && scene) disabling();
       numPrimitives = numPrimitives_in;

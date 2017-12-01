@@ -240,7 +240,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.l.vz = make_Vec3f(0,0,1);
   instance->local2world.p    = make_Vec3f(0,0,0);
   instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  rtcSetGeometryPrimitiveCount(instance->geometry,1);
+  rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
@@ -736,7 +736,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   sphere->r = r;
   sphere->geometry = geom;
   sphere->geomID = rtcAttachGeometry(scene,geom);
-  rtcSetGeometryPrimitiveCount(geom,1);
+  rtcSetGeometryUserPrimitiveCount(geom,1);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
@@ -755,7 +755,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }
-  rtcSetGeometryPrimitiveCount(geom,N);
+  rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL)
