@@ -625,7 +625,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-  //rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(Vec3fa  ), NUM_VERTICES);
+  //rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(Vec3fa  ), NUM_VERTICES);
   Vec3fa* ptr = (Vec3fa*) rtcNewBuffer(geom, RTC_VERTEX_BUFFER, sizeof(Vec3fa), NUM_VERTICES);
   for (size_t i=0; i<NUM_VERTICES; i++) {
     float x = cube_vertices[i][0];
@@ -634,7 +634,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
     Vec3fa vtx = Vec3fa(x,y,z);
     ptr[i] = Vec3fa(offset+LinearSpace3fa::rotate(Vec3fa(0,1,0),rotation)*LinearSpace3fa::scale(scale)*vtx);
   }
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,  cube_tri_indices , 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
 
   /* create per-triangle color array */
   colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
@@ -673,9 +673,9 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
 unsigned int addSubdivCube (RTCScene scene_i)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
-  rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(Vec3fa  ), NUM_VERTICES);
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
-  rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(Vec3fa  ), NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
 
   float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_QUAD_INDICES);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
@@ -721,7 +721,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 

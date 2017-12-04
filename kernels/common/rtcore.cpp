@@ -107,14 +107,57 @@ namespace embree
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API RTCScene rtcNewScene (RTCDevice device) 
+  RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice hdevice, size_t byteStride, unsigned int numItems)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewBuffer);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    Buffer* buffer = new Buffer((Device*)hdevice, numItems, byteStride);
+    return (RTCBuffer)buffer->refInc();
+    RTCORE_CATCH_END((Device*)hdevice);
+    return nullptr;
+  }
+
+  RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice hdevice, void* ptr, size_t byteStride, unsigned int numItems)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewSharedBuffer);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    Buffer* buffer = new Buffer((Device*)hdevice, numItems, byteStride, ptr);
+    return (RTCBuffer)buffer->refInc();
+    RTCORE_CATCH_END((Device*)hdevice);
+    return nullptr;
+  }
+
+  RTCORE_API void* rtcGetBufferData(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetBufferData);
+    RTCORE_VERIFY_HANDLE(hbuffer);
+    return buffer->data();
+    RTCORE_CATCH_END2(buffer);
+    return nullptr;
+  }
+
+  RTCORE_API void rtcReleaseBuffer(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcReleaseBuffer);
+    RTCORE_VERIFY_HANDLE(hbuffer);
+    buffer->refDec();
+    RTCORE_CATCH_END2(buffer);
+  }
+
+  RTCORE_API RTCScene rtcNewScene (RTCDevice hdevice) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewScene);
-    RTCORE_VERIFY_HANDLE(device);
-    Scene* scene = new Scene((Device*)device);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    Scene* scene = new Scene((Device*)hdevice);
     return (RTCScene) scene->refInc();
-    RTCORE_CATCH_END((Device*)device);
+    RTCORE_CATCH_END((Device*)hdevice);
     return nullptr;
   }
 
@@ -981,45 +1024,68 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryIndexBuffer (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
+  RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry hgeometry, unsigned int vertexBufferSlot, unsigned int indexBufferSlot)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryIndexBuffer);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIndexBuffer(vertexBuffer,indexBuffer);
+    geometry->setVertexAttributeTopology(vertexBufferSlot, indexBufferSlot);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcNewBuffer(RTCGeometry hgeometry, RTCBufferType type, size_t byteStride, unsigned int numItems) 
+  RTCORE_API void rtcSetGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
+                                       RTCBuffer hbuffer)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Ref<Geometry> geometry = (Geometry*)hgeometry;
+    Ref<Buffer> buffer = (Buffer*)hbuffer;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewBuffer);
+    RTCORE_TRACE(rtcSetGeometryBuffer);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    return geometry->newBuffer(type,byteStride,numItems);
-    RTCORE_CATCH_END2(geometry);
-    return nullptr;
-  }
-
-  RTCORE_API void rtcSetBuffer(RTCGeometry hgeometry, RTCBufferType type, const void* ptr, size_t offset, size_t stride, unsigned int size)
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBuffer);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    RTCORE_VERIFY_UPPER(stride,unsigned(inf));
-    geometry->setBuffer(type,(void*)ptr,offset,stride,size);
+    RTCORE_VERIFY_HANDLE(hbuffer);
+    if (geometry->device != buffer->device)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
+    geometry->setBuffer(type, slot, format, buffer, 0, buffer->size());
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcGetBuffer(RTCGeometry hgeometry, RTCBufferType type) 
+  RTCORE_API void rtcSetGeometryBufferRange(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
+                                            RTCBuffer hbuffer, size_t byteOffset, unsigned int numItems)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Ref<Geometry> geometry = (Geometry*)hgeometry;
+    Ref<Buffer> buffer = (Buffer*)hbuffer;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetBuffer);
+    RTCORE_TRACE(rtcSetGeometryBufferRange);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    return geometry->getBuffer(type);
+    RTCORE_VERIFY_HANDLE(hbuffer);
+    if (geometry->device != buffer->device)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
+    geometry->setBuffer(type, slot, format, buffer, byteOffset, numItems);
+    RTCORE_CATCH_END2(geometry);
+  }
+
+  RTCORE_API void rtcSetSharedGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
+                                             const void* ptr, size_t byteOffset, size_t byteStride, unsigned int numItems)
+  {
+    Ref<Geometry> geometry = (Geometry*)hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetSharedGeometryBuffer);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    Ref<Buffer> buffer = new Buffer(geometry->device, numItems, byteStride, (void*)ptr);
+    geometry->setBuffer(type, slot, format, buffer, byteOffset, numItems);
+    RTCORE_CATCH_END2(geometry);
+  }
+
+  RTCORE_API void* rtcSetNewGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
+                                           size_t byteStride, unsigned int numItems)
+  {
+    Ref<Geometry> geometry = (Geometry*)hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetNewGeometryBuffer);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    Ref<Buffer> buffer = new Buffer(geometry->device, numItems, byteStride);
+    geometry->setBuffer(type, slot, format, buffer, 0, numItems);
+    return buffer->data();
     RTCORE_CATCH_END2(geometry);
     return nullptr;
   }
@@ -1034,13 +1100,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcUpdateBuffer (RTCGeometry hgeometry, RTCBufferType type) 
+  RTCORE_API void rtcUpdateGeometryBuffer (RTCGeometry hgeometry, RTCBufferType type, unsigned int slot) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcUpdateBuffer);
+    RTCORE_TRACE(rtcUpdateGeometryBuffer);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->updateBuffer(type);
+    geometry->updateBuffer(type, slot);
     RTCORE_CATCH_END2(geometry);
   }
 
@@ -1054,7 +1120,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-    RTCORE_API void rtcSetGeometryTessellationRate (RTCGeometry hgeometry, float tessellationRate)
+  RTCORE_API void rtcSetGeometryTessellationRate (RTCGeometry hgeometry, float tessellationRate)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;

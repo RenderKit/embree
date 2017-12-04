@@ -29,6 +29,7 @@
 #include "rtcore_version.h"
 #include "rtcore_common.isph"
 #include "rtcore_device.isph"
+#include "rtcore_buffer.isph"
 #include "rtcore_ray.isph"
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"

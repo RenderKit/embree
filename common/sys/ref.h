@@ -40,9 +40,10 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   template<typename Type>
-  class Ref {
+  class Ref
+  {
   public:
-    Type* const ptr;
+    Type* ptr;
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -50,36 +51,55 @@ namespace embree
 
     __forceinline Ref() : ptr(nullptr) {}
     __forceinline Ref(NullTy) : ptr(nullptr) {}
-    __forceinline Ref( const Ref& input ) : ptr(input.ptr) { if ( ptr ) ptr->refInc(); }
+    __forceinline Ref(const Ref& input) : ptr(input.ptr) { if (ptr) ptr->refInc(); }
+    __forceinline Ref(Ref&& input) : ptr(input.ptr) { input.ptr = nullptr; }
 
-    __forceinline Ref( Type* const input ) : ptr(input) {
-      if ( ptr )
+    __forceinline Ref(Type* const input) : ptr(input)
+    {
+      if (ptr)
         ptr->refInc();
     }
 
-    __forceinline ~Ref() {
-      if (ptr) ptr->refDec();
+    __forceinline ~Ref()
+    {
+      if (ptr)
+        ptr->refDec();
     }
 
-    __forceinline Ref& operator= ( const Ref& input )
+    __forceinline Ref& operator =(const Ref& input)
     {
-      if ( input.ptr ) input.ptr->refInc();
-      if (ptr) ptr->refDec();
-      *(Type**)&ptr = input.ptr;
+      if (input.ptr)
+        input.ptr->refInc();
+      if (ptr)
+        ptr->refDec();
+      ptr = input.ptr;
       return *this;
     }
 
-    __forceinline Ref& operator= ( Type* const input )
+    __forceinline Ref& operator =(Ref&& input)
     {
-      if ( input ) input->refInc();
-      if (ptr) ptr->refDec();
-      *(Type**)&ptr = input;
+      if (ptr)
+        ptr->refDec();
+      ptr = input.ptr;
+      input.ptr = nullptr;
       return *this;
     }
 
-    __forceinline Ref& operator= ( NullTy ) {
-      if (ptr) ptr->refDec();
-      *(Type**)&ptr = nullptr;
+    __forceinline Ref& operator =(Type* const input)
+    {
+      if (input)
+        input->refInc();
+      if (ptr)
+        ptr->refDec();
+      ptr = input;
+      return *this;
+    }
+
+    __forceinline Ref& operator =(NullTy)
+    {
+      if (ptr)
+        ptr->refDec();
+      ptr = nullptr;
       return *this;
     }
 
@@ -101,13 +121,13 @@ namespace embree
     __forceinline const Ref<TypeOut> dynamicCast() const { return Ref<TypeOut>(dynamic_cast<TypeOut*>(ptr)); }
   };
 
-  template<typename Type> __forceinline  bool operator < ( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr <  b.ptr ; }
+  template<typename Type> __forceinline bool operator < (const Ref<Type>& a, const Ref<Type>& b) { return a.ptr   <  b.ptr;   }
 
-  template<typename Type> __forceinline  bool operator ==( const Ref<Type>& a, NullTy             ) { return a.ptr == nullptr  ; }
-  template<typename Type> __forceinline  bool operator ==( NullTy            , const Ref<Type>& b ) { return nullptr  == b.ptr ; }
-  template<typename Type> __forceinline  bool operator ==( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr == b.ptr ; }
+  template<typename Type> __forceinline bool operator ==(const Ref<Type>& a, NullTy            ) { return a.ptr   == nullptr; }
+  template<typename Type> __forceinline bool operator ==(NullTy            , const Ref<Type>& b) { return nullptr == b.ptr;   }
+  template<typename Type> __forceinline bool operator ==(const Ref<Type>& a, const Ref<Type>& b) { return a.ptr   == b.ptr;   }
 
-  template<typename Type> __forceinline  bool operator !=( const Ref<Type>& a, NullTy             ) { return a.ptr != nullptr  ; }
-  template<typename Type> __forceinline  bool operator !=( NullTy            , const Ref<Type>& b ) { return nullptr  != b.ptr ; }
-  template<typename Type> __forceinline  bool operator !=( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr != b.ptr ; }
+  template<typename Type> __forceinline bool operator !=(const Ref<Type>& a, NullTy            ) { return a.ptr   != nullptr; }
+  template<typename Type> __forceinline bool operator !=(NullTy            , const Ref<Type>& b) { return nullptr != b.ptr;   }
+  template<typename Type> __forceinline bool operator !=(const Ref<Type>& a, const Ref<Type>& b) { return a.ptr   != b.ptr;   }
 }

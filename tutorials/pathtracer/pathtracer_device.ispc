@@ -1653,7 +1653,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
     rtcCommitGeometry(geometry->geometry);
   }
 }

@@ -308,9 +308,9 @@ namespace embree
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_INT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.geometry = geom;
@@ -324,9 +324,9 @@ namespace embree
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_INT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.geometry = geom;
@@ -341,40 +341,40 @@ namespace embree
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t), mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
 
     /* create geometry topology */
-    rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_INT, mesh->position_indices, 0, sizeof(unsigned int), mesh->numEdges);
     rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
 
     /* set normal buffers and optionally normal topology */
     if (mesh->normals) {
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER_(1), mesh->normals[0], 0, sizeof(Vec3fa  ), mesh->numNormals);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTC_FORMAT_FLOAT3, mesh->normals[0], 0, sizeof(Vec3fa), mesh->numNormals);
       if (mesh->normal_indices) {
-        rtcSetBuffer(geom, RTC_INDEX_BUFFER_(1),  mesh->normal_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-        rtcSetGeometryIndexBuffer(geom, RTC_USER_VERTEX_BUFFER_(1), RTC_INDEX_BUFFER_(1));
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 1, RTC_FORMAT_INT, mesh->normal_indices, 0, sizeof(unsigned int), mesh->numEdges);
+        rtcSetGeometryIndexBuffer(geom, 1, 1);
         rtcSetGeometrySubdivisionMode(geom, 1, mesh->normal_subdiv_mode);
       }
     }
 
     /* set texcoord buffer and optionally texcoord topology */
     if (mesh->texcoords) {
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER_(2), mesh->texcoords, 0, sizeof(Vec2f), mesh->numTexCoords);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 2, RTC_FORMAT_FLOAT2, mesh->texcoords, 0, sizeof(Vec2f), mesh->numTexCoords);
       if (mesh->texcoord_indices) {
-        rtcSetBuffer(geom, RTC_INDEX_BUFFER_(2),  mesh->texcoord_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-        rtcSetGeometryIndexBuffer(geom, RTC_USER_VERTEX_BUFFER_(2), RTC_INDEX_BUFFER_(2));
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 2, RTC_FORMAT_INT, mesh->texcoord_indices, 0, sizeof(unsigned int), mesh->numEdges);
+        rtcSetGeometryIndexBuffer(geom, 2, 2);
         rtcSetGeometrySubdivisionMode(geom, 2, mesh->texcoord_subdiv_mode);
       }
     }
 
-    rtcSetBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
-    rtcSetBuffer(geom, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int), mesh->numHoles);
-    rtcSetBuffer(geom, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
-    rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
-    rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
-    rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,                 0, RTC_FORMAT_INT,   mesh->verticesPerFace,       0, sizeof(unsigned int),   mesh->numFaces);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_HOLE,                 0, RTC_FORMAT_INT,   mesh->holes,                 0, sizeof(unsigned int),   mesh->numHoles);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_INT2,  mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT, mesh->edge_crease_weights,   0, sizeof(float),          mesh->numEdgeCreases);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_INT,   mesh->vertex_creases,        0, sizeof(unsigned int),   mesh->numVertexCreases);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, mesh->vertex_crease_weights, 0, sizeof(float),          mesh->numVertexCreases);
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
@@ -391,9 +391,9 @@ namespace embree
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_INT2, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
     if (mesh->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
     rtcCommitGeometry(geom);

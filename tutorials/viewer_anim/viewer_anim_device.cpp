@@ -50,7 +50,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   rtcSetGeometryBuildQuality(geom, quality);
   Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -64,7 +64,7 @@ void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   rtcSetGeometryBuildQuality(geom, quality);
   Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -79,14 +79,14 @@ void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
   Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-  rtcSetBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
-  rtcSetBuffer(geom, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int), mesh->numFaces);
-  rtcSetBuffer(geom, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
-  rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
-  rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
-  rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
+  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_HOLE,   mesh->holes, 0, sizeof(unsigned int), mesh->numFaces);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
   rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
@@ -104,7 +104,7 @@ void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   /* generate vertex buffer */
   Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
   for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   if (hair->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
     rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);

@@ -164,7 +164,8 @@ namespace embree
     const float* u = args->u;
     const float* v = args->v;
     unsigned int numUVs = args->numUVs;
-    RTCBufferType buffer = args->buffer;
+    RTCBufferType bufferType = args->bufferType;
+    unsigned int bufferSlot = args->bufferSlot;
     float* P = args->P;
     float* dPdu = args->dPdu;
     float* dPdv = args->dPdv;
@@ -197,7 +198,8 @@ namespace embree
       iargs.primID = primIDs[i];
       iargs.u = u[i];
       iargs.v = v[i];
-      iargs.buffer = buffer;
+      iargs.bufferType = bufferType;
+      iargs.bufferSlot = bufferSlot;
       iargs.P = Pt;
       iargs.dPdu = dPdut;
       iargs.dPdv = dPdvt;

@@ -18,6 +18,7 @@
 
 #include "default.h"
 #include "device.h"
+#include "buffer.h"
 
 namespace embree
 {
@@ -139,24 +140,24 @@ namespace embree
     void detach();
 
     /*! Enable geometry. */
-    virtual void enable ();
+    virtual void enable();
 
     /*! Update geometry. */
-    virtual void update ();
+    virtual void update();
     
     /*! commit of geometry */
     virtual void commit();
 
     /*! Update geometry buffer. */
-    virtual void updateBuffer (RTCBufferType type) {
+    virtual void updateBuffer(RTCBufferType type, unsigned int slot) {
       update(); // update everything for geometries not supporting this call
     }
     
     /*! Disable geometry. */
-    virtual void disable ();
+    virtual void disable();
 
     /*! Verify the geometry */
-    virtual bool verify () { return true; }
+    virtual bool verify() { return true; }
 
     /*! called if geometry is switching from disabled to enabled state */
     virtual void enabling() = 0;
@@ -176,7 +177,7 @@ namespace embree
     }
 
     /*! Set user data pointer. */
-    virtual void setUserData (void* ptr);
+    virtual void setUserData(void* ptr);
       
     /*! Get user data pointer. */
     __forceinline void* getUserData() const {
@@ -197,7 +198,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
-    virtual void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer) {
+    virtual void setVertexAttributeTopology(unsigned int vertexBufferSlot, unsigned int indexBufferSlot) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -211,25 +212,14 @@ namespace embree
     }
     
     /*! Sets ray mask. */
-    virtual void setMask (unsigned mask) { 
+    virtual void setMask(unsigned mask) { 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    /*! Creates a new Embree managed buffer. */
-    virtual void* newBuffer(RTCBufferType type, size_t stride, unsigned int size) { 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
-      return nullptr;
     }
     
     /*! Sets specified buffer. */
-    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) { 
+    virtual void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format,
+                           const Ref<Buffer>& buffer, size_t offset, unsigned int num) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    /*! Gets pointer of specified buffer. */
-    virtual void* getBuffer(RTCBufferType type) { 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-      return nullptr; 
     }
 
     /*! Set displacement function. */

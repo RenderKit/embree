@@ -47,14 +47,12 @@ namespace embree
   public:
     void enabling();
     void disabling();
-    void setMask (unsigned mask);
+    void setMask(unsigned mask);
     void setSubtype(RTCGeometrySubtype type);
-    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
-    void* getBuffer(RTCBufferType type);
+    void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num);
     void preCommit();
-    void postCommit ();
-    bool verify ();
+    void postCommit();
+    bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
 
   public:
@@ -205,10 +203,10 @@ namespace embree
     }
 
   public:
-    Buffer<Quad> quads;                            //!< array of quads
+    BufferView<Quad> quads;                            //!< array of quads
     BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
-    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<Buffer<char>> userbuffers;              //!< user buffers
+    vector<BufferView<Vec3fa>> vertices;               //!< vertex array for each timestep
+    vector<BufferView<char>> userbuffers;              //!< user buffers
   };
 
   namespace isa

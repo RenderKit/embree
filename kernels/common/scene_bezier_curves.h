@@ -38,12 +38,10 @@ namespace embree
   public:
     void enabling();
     void disabling();
-    void setMask (unsigned mask);
+    void setMask(unsigned mask);
     void setSubtype(RTCGeometrySubtype type);
-    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
-    void* getBuffer(RTCBufferType type);
-    bool verify ();
+    void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num);
+    bool verify();
     void setTessellationRate(float N);
     void preCommit();
 
@@ -268,16 +266,16 @@ namespace embree
     }
 
   public:
-    Buffer<unsigned int> curves;            //!< array of curve indices
-    vector<Buffer<Vec3fa>> vertices;        //!< vertex array for each timestep
-    vector<Buffer<char>> userbuffers;       //!< user buffers
+    BufferView<unsigned int> curves;            //!< array of curve indices
+    vector<BufferView<Vec3fa>> vertices;        //!< vertex array for each timestep
+    vector<BufferView<char>> userbuffers;       //!< user buffers
     RTCGeometryType type;                   //!< basis of user provided vertices
     RTCGeometrySubtype subtype;             //!< hair or surface geometry
     int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
     BufferView<Vec3fa> native_vertices0;    //!< fast access to first vertex buffer
-    Buffer<unsigned int> native_curves;     //!< array of curve indices
-    vector<Buffer<Vec3fa>> native_vertices; //!< vertex array for each timestep
+    BufferView<unsigned int> native_curves;     //!< array of curve indices
+    vector<BufferView<Vec3fa>> native_vertices; //!< vertex array for each timestep
   };
 
   namespace isa

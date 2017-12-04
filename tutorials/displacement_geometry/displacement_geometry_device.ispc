@@ -125,9 +125,9 @@ uniform unsigned int addCube (RTCScene scene_i)
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
-  rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
-  rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
   uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(uniform float), NUM_INDICES);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
@@ -154,7 +154,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 

@@ -43,7 +43,7 @@ uniform unsigned int createSphere (uniform RTCBuildQuality quality, const unifor
 
   /* map triangle and vertex buffer */
   uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2*numTheta*(numPhi-1));
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(uniform Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere geometry */
   uniform int tri = 0;
@@ -105,7 +105,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 

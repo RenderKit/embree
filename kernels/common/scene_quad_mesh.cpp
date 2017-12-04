@@ -52,46 +52,10 @@ namespace embree
     
     Geometry::update();
   }
-  
-  void* QuadMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
+
+  void QuadMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
   { 
-    /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
-
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
-      if (stride*size > 16ll*1024ll*1024ll*1024ll) 
-       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
-
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].newBuffer(device,size,stride); 
-      vertices0 = vertices[0];
-      setNumTimeSteps((unsigned int)vertices.size());
-      return vertices[bid].get();
-    } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = Buffer<char>(device,size,stride,true);
-      return userbuffers[bid].get();
-    }
-    else if (type == RTC_INDEX_BUFFER) 
-    {
-      quads.newBuffer(device,size,stride);
-      setNumPrimitives(size);
-      return quads.get();
-    }
-    else
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-
-    return nullptr;
-  }
-
-  void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
-  { 
+#if 0
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
@@ -118,27 +82,14 @@ namespace embree
       userbuffers[bid].set(device,ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
-    else if (type == RTC_INDEX_BUFFER) 
+    else if (type == RTC_BUFFER_TYPE_INDEX)
     {
       quads.set(device,ptr,offset,stride,size);
       setNumPrimitives(size);
     }
     else
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-  }
-
-  void* QuadMesh::getBuffer(RTCBufferType type) 
-  {
-    if (type == RTC_INDEX_BUFFER) {
-      return quads.get();
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].get();
-    }
-    else {
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type"); 
-      return nullptr;
-    }
+#endif
   }
 
   void QuadMesh::preCommit () 
@@ -187,7 +138,8 @@ namespace embree
     unsigned int primID = args->primID;
     float u = args->u;
     float v = args->v;
-    RTCBufferType buffer = args->buffer;
+    RTCBufferType bufferType = args->bufferType;
+    unsigned int bufferSlot = args->bufferSlot;
     float* P = args->P;
     float* dPdu = args->dPdu;
     float* dPdv = args->dPdv;
@@ -197,16 +149,16 @@ namespace embree
     unsigned int numFloats = args->numFloats;
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= 1));
     const char* src = nullptr; 
     size_t stride = 0;
-    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF].getPtr();
-      stride = userbuffers[buffer&0xFFFF].getStride();
+    if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+      src    = userbuffers[bufferSlot].getPtr();
+      stride = userbuffers[bufferSlot].getStride();
     } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
+      src    = vertices[bufferSlot].getPtr();
+      stride = vertices[bufferSlot].getStride();
     }
 
     for (unsigned int i=0; i<numFloats; i+=VSIZEX)

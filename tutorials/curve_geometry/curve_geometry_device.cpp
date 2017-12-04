@@ -67,9 +67,9 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE);
   rtcSetGeometrySubtype(geom,RTC_GEOMETRY_SUBTYPE_SURFACE);
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair_indices,0,sizeof(unsigned int),NUM_CURVES);
-  rtcSetBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa),NUM_VERTICES);
-  rtcSetBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa),NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,hair_indices,0,sizeof(unsigned int),NUM_CURVES);
+  rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa),NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa),NUM_VERTICES);
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
@@ -90,7 +90,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 

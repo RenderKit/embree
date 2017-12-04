@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rtcore_device.h"
+#include "rtcore_buffer.h"
 
 /*! \ingroup embree_kernel_api */
 /*! \{ */
@@ -37,40 +37,6 @@ extern "C" {
 /*! maximal number of index buffers for subdivision surfaces */
 #define RTC_MAX_INDEX_BUFFERS 16
 
-/*! \brief Specifies the type of buffers when mapping buffers */
-enum RTCBufferType 
-{
-  RTC_INDEX_BUFFER         = 0x01000000,
-  RTC_INDEX_BUFFER0        = 0x01000000,
-  RTC_INDEX_BUFFER1        = 0x01000001,
-  /* ... */
-  
-  RTC_VERTEX_BUFFER        = 0x02000000,
-  RTC_VERTEX_BUFFER0       = 0x02000000,
-  RTC_VERTEX_BUFFER1       = 0x02000001,
-  /* ... */
-
-  RTC_USER_VERTEX_BUFFER   = 0x02100000,
-  RTC_USER_VERTEX_BUFFER0  = 0x02100000,
-  RTC_USER_VERTEX_BUFFER1  = 0x02100001,
-  /* ... */
-
-  RTC_FACE_BUFFER          = 0x03000000,
-  RTC_LEVEL_BUFFER         = 0x04000000,
-
-  RTC_EDGE_CREASE_INDEX_BUFFER = 0x05000000,
-  RTC_EDGE_CREASE_WEIGHT_BUFFER = 0x06000000,
-
-  RTC_VERTEX_CREASE_INDEX_BUFFER = 0x07000000,
-  RTC_VERTEX_CREASE_WEIGHT_BUFFER = 0x08000000,
-
-  RTC_HOLE_BUFFER          = 0x09000000,
-};
-
-#define RTC_INDEX_BUFFER_(i)  (enum RTCBufferType)(RTC_INDEX_BUFFER+(i))
-#define RTC_VERTEX_BUFFER_(i) (enum RTCBufferType)(RTC_VERTEX_BUFFER+(i))
-#define RTC_USER_VERTEX_BUFFER_(i) (enum RTCBufferType)(RTC_USER_VERTEX_BUFFER+(i))
-
 /*! \brief Supported types of matrix layout for functions involving matrices */
 enum RTCMatrixType {
   RTC_MATRIX_ROW_MAJOR = 0,
@@ -86,7 +52,7 @@ enum RTCGeometryType
     steps (1 for normal meshes, and up to RTC_MAX_TIME_STEPS for multi
     segment motion blur), have to get specified. The triangle indices
     can be set by mapping and writing to the index buffer
-    (RTC_INDEX_BUFFER) and the triangle vertices can be set by mapping
+    (RTC_BUFFER_TYPE_INDEX) and the triangle vertices can be set by mapping
     and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
     multi-segment motion blur, multiple vertex buffers have to get filled
     (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
@@ -101,7 +67,7 @@ enum RTCGeometryType
     number of vertices (numVertices), and number of time steps (1 for
     normal meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
     blur), have to get specified. The quad indices can be set by mapping
-    and writing to the index buffer (RTC_INDEX_BUFFER) and the quad
+    and writing to the index buffer (RTC_BUFFER_TYPE_INDEX) and the quad
     vertices can be set by mapping and writing into the vertex buffer
     (RTC_VERTEX_BUFFER). In case of multi-segment motion blur, multiple
     vertex buffers have to get filled (RTC_VERTEX_BUFFER0,
@@ -120,7 +86,7 @@ enum RTCGeometryType
 
     The following buffers have to get filled by the application: the face
     buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4)
-    of each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
+    of each of the numFaces faces, the index buffer (RTC_BUFFER_TYPE_INDEX)
     contains multiple (3 or 4) 32bit vertex indices for each face and
     numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
     stores numVertices vertices as single precision x,y,z floating point
@@ -130,7 +96,7 @@ enum RTCGeometryType
     RTC_VERTEX_BUFFER1, etc.), one for each time step.
 
     Optionally, the application can fill the hole buffer
-    (RTC_HOLE_BUFFER) with numHoles many 32 bit indices of faces that
+    (RTC_BUFFER_TYPE_HOLE) with numHoles many 32 bit indices of faces that
     should be considered non-existing.
 
     Optionally, the application can fill the level buffer
@@ -143,9 +109,9 @@ enum RTCGeometryType
 
     Optionally, the application can fill the sparse edge crease buffers
     to make some edges appear sharper. The edge crease index buffer
-    (RTC_EDGE_CREASE_INDEX_BUFFER) contains numEdgeCreases many pairs of
+    (RTC_BUFFER_TYPE_EDGE_CREASE_INDEX) contains numEdgeCreases many pairs of
     32 bit vertex indices that specify unoriented edges. The edge crease
-    weight buffer (RTC_EDGE_CREASE_WEIGHT_BUFFER) stores for each of
+    weight buffer (RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT) stores for each of
     theses crease edges a positive floating point weight. The larger this
     weight, the sharper the edge. Specifying a weight of infinify is
     supported and marks an edge as infinitely sharp. Storing an edge
@@ -157,9 +123,9 @@ enum RTCGeometryType
 
     Optionally, the application can fill the sparse vertex crease buffers
     to make some vertices appear sharper. The vertex crease index buffer
-    (RTC_VERTEX_CREASE_INDEX_BUFFER), contains numVertexCreases many 32
+    (RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX), contains numVertexCreases many 32
     bit vertex indices to speficy a set of vertices. The vertex crease
-    weight buffer (RTC_VERTEX_CREASE_WEIGHT_BUFFER) specifies for each of
+    weight buffer (RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT) specifies for each of
     these vertices a positive floating point weight. The larger this
     weight, the sharper the vertex. Specifying a weight of infinity is
     supported and makes the vertex infinitely sharp. Storing a vertex
@@ -173,7 +139,7 @@ enum RTCGeometryType
     curves (numCurves), number of vertices (numVertices), and number of
     time steps have to get specified at construction time (1 for normal
     meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-    blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
+    blur). Further, the curve index buffer (RTC_BUFFER_TYPE_INDEX) and the
     curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
     and writing to the appropiate buffers. In case of multi-segment
     motion blur multiple vertex buffers have to get filled
@@ -376,38 +342,41 @@ RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, int mask);
 RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned topologyID, enum RTCSubdivisionMode mode);
 
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, enum RTCBufferType vertexBuffer, enum RTCBufferType indexBuffer);
+RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, unsigned int vertexBufferSlot, unsigned int indexBufferSlot);
 
-RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, enum RTCBufferType type, size_t byteStride, unsigned int numItems);
+RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
+                                     RTCBuffer buffer);
+
+RTCORE_API void rtcSetGeometryBufferRange(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
+                                          RTCBuffer buffer, size_t byteOffset, unsigned int numItems);
 
 /*! \brief Shares a data buffer between the application and
- *  Embree. The data has to remain valid as long as the mesh exists,
- *  and the user is responsible to free the data when the mesh gets
- *  deleted. For sharing the buffer, one has to specify the number of
- *  elements of the buffer, a byte offset to the first element, and
- *  byte stride of elements stored inside the buffer. The addresses
- *  ptr+offset+i*stride have to be aligned to 4 bytes. For vertex
- *  buffers and user vertex buffers the buffer has to be padded with 0
- *  to a size of a multiple of 16 bytes, as Embree always accesses
- *  vertex buffers and user vertex buffers using SSE instructions. If
- *  this function is not called, Embree will allocate and manage
- *  buffers of the default layout. */
-RTCORE_API void rtcSetBuffer(RTCGeometry geometry, enum RTCBufferType type, 
-                             const void* ptr, size_t byteOffset, size_t byteStride, unsigned int size);
+  Embree. The data has to remain valid as long as the mesh exists,
+  and the user is responsible to free the data when the mesh gets
+  deleted. For sharing the buffer, one has to specify the number of
+  elements of the buffer, a byte offset to the first element, and
+  byte stride of elements stored inside the buffer. The addresses
+  ptr+offset+i*stride have to be aligned to 4 bytes. For vertex
+  buffers the buffer has to be padded with 0 to a size of a multiple
+  of 16 bytes, as Embree always accesses vertex buffers using SSE
+  instructions. If this function is not called, Embree will allocate
+  and manage buffers of the default layout. */
+RTCORE_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
+                                           const void* ptr, size_t byteOffset, size_t byteStride, unsigned int numItems);
 
-/*! \brief Gets pointer to specified buffer. */
-RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, enum RTCBufferType type);
+RTCORE_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
+                                         size_t byteStride, unsigned int numItems);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);
 
-/*! \brief Update spefific geometry buffer. 
+/*! \brief Update specific geometry buffer. 
 
   Each time geometry buffers got modified, the user has to call some
   update function to tell the ray tracing engine which buffers got
-  modified. The rtcUpdateBuffer function taggs a specific buffer of
+  modified. The rtcUpdateGeometryBuffer function tags a specific buffer of
   some geometry as modified. */
-RTCORE_API void rtcUpdateBuffer(RTCGeometry geometry, enum RTCBufferType type);
+RTCORE_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
 /*! \brief Disable geometry. 
 
@@ -452,7 +421,8 @@ struct RTCInterpolateArguments
   RTCGeometry geometry;
   unsigned int primID;
   float u, v;
-  enum RTCBufferType buffer;
+  enum RTCBufferType bufferType;
+  unsigned int bufferSlot;
   float* P;
   float* dPdu;
   float* dPdv;
@@ -464,14 +434,15 @@ struct RTCInterpolateArguments
   
 RTCORE_API void rtcInterpolate(const struct RTCInterpolateArguments* const args);
 
-RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, float* P, unsigned int numFloats)
+RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot, float* P, unsigned int numFloats)
 {
   struct RTCInterpolateArguments args;
   args.geometry = geometry;
   args.primID = primID;
   args.u = u;
   args.v = v;
-  args.buffer = buffer;
+  args.bufferType = bufferType;
+  args.bufferSlot = bufferSlot;
   args.P = P;
   args.dPdu = NULL;
   args.dPdv = NULL;
@@ -482,7 +453,7 @@ RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primI
   rtcInterpolate(&args);
 }
 
-RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
+RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
                                          float* P, float* dPdu, float* dPdv, unsigned int numFloats)
 {
   struct RTCInterpolateArguments args;
@@ -490,7 +461,8 @@ RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primI
   args.primID = primID;
   args.u = u;
   args.v = v;
-  args.buffer = buffer;
+  args.bufferType = bufferType;
+  args.bufferSlot = bufferSlot;
   args.P = P;
   args.dPdu = dPdu;
   args.dPdv = dPdv;
@@ -501,7 +473,7 @@ RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primI
   rtcInterpolate(&args);
 }
 
-RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType buffer, 
+RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
                                          float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
 {
   struct RTCInterpolateArguments args;
@@ -509,7 +481,8 @@ RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primI
   args.primID = primID;
   args.u = u;
   args.v = v;
-  args.buffer = buffer;
+  args.bufferType = bufferType;
+  args.bufferSlot = bufferSlot;
   args.P = P;
   args.dPdu = dPdu;
   args.dPdv = dPdv;
@@ -547,7 +520,8 @@ struct RTCInterpolateNArguments
   const float* u;
   const float* v;
   unsigned int numUVs;
-  enum RTCBufferType buffer;
+  enum RTCBufferType bufferType;
+  unsigned int bufferSlot;
   float* P;
   float* dPdu;
   float* dPdv;

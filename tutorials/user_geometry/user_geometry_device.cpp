@@ -790,7 +790,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),numTheta*(numPhi+1));
-  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2*numTheta*(numPhi-1));
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere */
   int tri = 0;
@@ -853,7 +853,7 @@ unsigned int createGroundPlane (RTCScene scene)
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 

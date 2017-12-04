@@ -52,94 +52,53 @@ namespace embree
     
     Geometry::update();
   }
-  
-  void* TriangleMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
-  { 
-    /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
-      if (stride*size > 16ll*1024ll*1024ll*1024ll)
-       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
-
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].newBuffer(device,size,stride);
-      vertices0 = vertices[0];
-      setNumTimeSteps((unsigned int)vertices.size());
-      return vertices[bid].get();
-    } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = Buffer<char>(device,size,stride,true);
-      return userbuffers[bid].get();
-    }
-    else if (type == RTC_INDEX_BUFFER) 
-    {
-      triangles.newBuffer(device,size,stride); 
-      setNumPrimitives(size);
-      return triangles.get();
-    }
-    else 
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-
-    return nullptr;
-  }
-
-  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
+  void TriangleMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
+    if (((size_t(buffer->ptr) + offset) & 0x3) || (buffer->stride & 0x3)) 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
+    if (type == RTC_BUFFER_TYPE_VERTEX)
     {
-      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
-      if (stride*size > 16ll*1024ll*1024ll*1024ll) {
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
-      }
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].set(device,ptr,offset,stride,size);
-      vertices[bid].checkPadding16();
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (buffer->stride*num > 16ll*1024ll*1024ll*1024ll)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
+
+      buffer->checkPadding16();
+
+      if (slot >= vertices.size())
+        vertices.resize(slot+1);
+      vertices[slot].set(buffer, offset, num, format);
       vertices0 = vertices[0];
       //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
       //  vertices.pop_back();
       setNumTimeSteps((unsigned int)vertices.size());
     }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = Buffer<char>(device,size,stride);
-      userbuffers[bid].set(device,ptr,offset,stride,size);
-      userbuffers[bid].checkPadding16();
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT4)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      buffer->checkPadding16();
+
+      if (slot >= userbuffers.size())
+        userbuffers.resize(slot+1);
+      userbuffers[slot].set(buffer, offset, num, format);
     }
-    else if (type == RTC_INDEX_BUFFER) 
+    else if (type == RTC_BUFFER_TYPE_INDEX)
     {
-      triangles.set(device,ptr,offset,stride,size); 
-      setNumPrimitives(size);
+      if (format != RTC_FORMAT_INT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+
+      triangles.set(buffer, offset, num, format);
+      setNumPrimitives(num);
     }
     else 
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-  }
-
-  void* TriangleMesh::getBuffer(RTCBufferType type) 
-  {
-    if (type == RTC_INDEX_BUFFER) {
-      return triangles.get();
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].get();
-    }
-    else {
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type"); 
-      return nullptr;
-    }
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
   void TriangleMesh::preCommit () 
@@ -192,7 +151,8 @@ namespace embree
     unsigned int primID = args->primID;
     float u = args->u;
     float v = args->v;
-    RTCBufferType buffer = args->buffer;
+    RTCBufferType bufferType = args->bufferType;
+    unsigned int bufferSlot = args->bufferSlot;
     float* P = args->P;
     float* dPdu = args->dPdu;
     float* dPdv = args->dPdv;
@@ -202,16 +162,16 @@ namespace embree
     unsigned int numFloats = args->numFloats;
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= 1));
     const char* src = nullptr; 
     size_t stride = 0;
-    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF].getPtr();
-      stride = userbuffers[buffer&0xFFFF].getStride();
+    if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+      src    = userbuffers[bufferSlot].getPtr();
+      stride = userbuffers[bufferSlot].getStride();
     } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
+      src    = vertices[bufferSlot].getPtr();
+      stride = vertices[bufferSlot].getStride();
     }
     
     for (unsigned int i=0; i<numFloats; i+=VSIZEX)

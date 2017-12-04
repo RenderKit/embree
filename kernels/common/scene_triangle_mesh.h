@@ -49,9 +49,7 @@ namespace embree
     void disabling();
     void setMask (unsigned mask);
     void setSubtype(RTCGeometrySubtype type);
-    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
-    void* getBuffer(RTCBufferType type);
+    void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num);
     void preCommit();
     void postCommit();
     bool verify ();
@@ -203,10 +201,10 @@ namespace embree
     }
 
   public:
-    Buffer<Triangle> triangles;                    //!< array of triangles
-    BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
-    vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<Buffer<char>> userbuffers;         //!< user buffers
+    BufferView<Triangle> triangles;       //!< array of triangles
+    BufferView<Vec3fa> vertices0;         //!< fast access to first vertex buffer
+    vector<BufferView<Vec3fa>> vertices;  //!< vertex array for each timestep
+    vector<RawBufferView> userbuffers;    //!< user buffers
   };
 
   namespace isa

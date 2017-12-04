@@ -1172,9 +1172,9 @@ rtcCommitGeometry(rtcGetGeometry(scene,geomID))
 }@@
 
 @@{
-rtcUpdateBuffer(EXPR scene,EXPR geomID,EXPR type)
+rtcUpdateGeometryBuffer(EXPR scene,EXPR geomID,EXPR type)
 =>
-rtcUpdateBuffer(rtcGetGeometry(scene,geomID),type);
+rtcUpdateGeometryBuffer(rtcGetGeometry(scene,geomID),type);
 rtcCommitGeometry(rtcGetGeometry(scene,geomID)) /* FIXME: do commit once after all updates */
 }@@
 

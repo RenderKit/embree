@@ -26,14 +26,14 @@ uniform Vec3fa* uniform vertex_colors = NULL;
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  RTCGeometry mesh = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* create face and vertex color arrays */
   face_colors = uniform new uniform Vec3f[12];
   vertex_colors = uniform new uniform Vec3fa[8];
 
   /* set vertices and vertex colors */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),8);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),8);
   vertex_colors[0] = make_Vec3fa(0,0,0); vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1;
   vertex_colors[1] = make_Vec3fa(0,0,1); vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1;
   vertex_colors[2] = make_Vec3fa(0,1,0); vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1;
@@ -45,7 +45,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   /* set triangles and face colors */
   uniform int tri = 0;
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(uniform Triangle),12);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_INT3,sizeof(uniform Triangle),12);
 
   // left side
   face_colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 2; tri++;
@@ -71,7 +71,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   face_colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 3; tri++;
   face_colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 5; triangles[tri].v2 = 7; tri++;
 
-  rtcSetBuffer(mesh,RTC_USER_VERTEX_BUFFER0,vertex_colors,0,sizeof(uniform Vec3fa), 8);
+  rtcSetSharedGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,RTC_FORMAT_FLOAT3,vertex_colors,0,sizeof(uniform Vec3fa),8);
   
   rtcCommitGeometry(mesh);
   return rtcAttachAndReleaseGeometry(scene_i,mesh);
@@ -84,14 +84,14 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry mesh = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_INT3,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
   

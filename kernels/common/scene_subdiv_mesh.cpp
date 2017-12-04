@@ -79,10 +79,10 @@ namespace embree
     topology[topologyID].setSubdivisionMode(mode);
   }
 
-  void SubdivMesh::setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer)
+  void SubdivMesh::setVertexAttributeTopology(unsigned int vertexBufferSlot, unsigned int indexBufferSlot)
   {
     if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+(int)userbuffers.size()) {
-      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+(int)topology.size()) {
+      if (indexBuffer >= RTC_BUFFER_TYPE_INDEX && indexBuffer < RTC_BUFFER_TYPE_INDEX+(int)topology.size()) {
         unsigned vid = vertexBuffer & 0xFFFF;
         unsigned iid = indexBuffer & 0xFFFF;
         if ((unsigned)userbuffers[vid].userdata != iid) {
@@ -97,95 +97,9 @@ namespace embree
     }
   }
 
-  void* SubdivMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
+  void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
   { 
-    /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
-
-    if (type != RTC_LEVEL_BUFFER)
-      commitCounter++;
-
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      if (bid >= vertices.size()) {
-        vertices.resize(bid+1);
-        vertex_buffer_tags.resize(bid+1);
-      }
-      vertices[bid].newBuffer(device,size,stride);
-      setNumTimeSteps((unsigned int)vertices.size());
-      return vertices[bid].get();
-    }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) {
-        userbuffers.resize(bid+1);
-        user_buffer_tags.resize(bid+1);
-      }
-      userbuffers[bid] = Buffer<char>(device,size,stride,true);
-      return userbuffers[bid].get();
-    }
-    else if (type == RTC_FACE_BUFFER) 
-    {
-      faceVertices.newBuffer(device,size,stride);
-      setNumPrimitives(size);
-      return faceVertices.get();
-      // if (isEnabled() && size != (size_t)-1) disabling();
-      // faceVertices.set(ptr,offset,stride,size);
-      // setNumPrimitives(size);
-      // if (isEnabled() && size != (size_t)-1) enabling();
-    }
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-    {
-      int begin = (int)topology.size();
-      if (bid >= topology.size()) {
-        topology.resize(bid+1);
-        for (size_t i=begin; i<topology.size(); i++)
-          topology[i] = Topology(this);
-      }
-      topology[bid].vertexIndices.newBuffer(device,size,stride);
-      return topology[bid].vertexIndices.get();
-    }
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER) {
-      edge_creases.newBuffer(device,size,stride);
-      return edge_creases.get();
-    }
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER) {
-      edge_crease_weights.newBuffer(device,size,stride);
-      return edge_crease_weights.get();
-    }
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER) {
-      vertex_creases.newBuffer(device,size,stride);
-      return vertex_creases.get();
-    }
-
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER) {
-      vertex_crease_weights.newBuffer(device,size,stride);
-      return vertex_crease_weights.get();
-    }
-
-    else if (type == RTC_HOLE_BUFFER) {
-      holes.newBuffer(device,size,stride);
-      return holes.get();
-    }
-
-    else if (type == RTC_LEVEL_BUFFER) {
-      levels.newBuffer(device,size,stride);
-      return levels.get();
-    }
-
-    else
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-
-    return nullptr;
-  }
-
-  void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
-  { 
+#if 0    
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
@@ -224,7 +138,7 @@ namespace embree
       setNumPrimitives(size);
     }
 
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER_(RTC_MAX_INDEX_BUFFERS))
+    else if (type >= RTC_BUFFER_TYPE_INDEX && type < RTC_INDEX_BUFFER_(RTC_MAX_INDEX_BUFFERS))
     {
       int begin = (int)topology.size();
       if (bid >= topology.size()) {
@@ -234,19 +148,19 @@ namespace embree
       }
       topology[bid].vertexIndices.set(device,ptr,offset,stride,size);
     }
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
       edge_creases.set(device,ptr,offset,stride,size);
 
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
       edge_crease_weights.set(device,ptr,offset,stride,size);
 
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
       vertex_creases.set(device,ptr,offset,stride,size);
 
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
       vertex_crease_weights.set(device,ptr,offset,stride,size);
 
-    else if (type == RTC_HOLE_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_HOLE)
       holes.set(device,ptr,offset,stride,size);
 
     else if (type == RTC_LEVEL_BUFFER)
@@ -254,42 +168,7 @@ namespace embree
 
     else
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-  }
-
-  void* SubdivMesh::getBuffer(RTCBufferType type) 
-  {
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps))
-      return vertices[bid].get();
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].vertexIndices.get();
-
-    else if (type == RTC_FACE_BUFFER)
-      return faceVertices.get();
-
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
-      return edge_creases.get(); 
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
-      return edge_crease_weights.get(); 
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
-      return vertex_creases.get(); 
-    
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
-      return vertex_crease_weights.get();
-
-    else if (type == RTC_HOLE_BUFFER)
-      return holes.get();
-
-    else if (type == RTC_LEVEL_BUFFER)
-      return levels.get(); 
-
-    else 
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type"); 
-
-    return nullptr;
+#endif
   }
 
   void SubdivMesh::update ()
@@ -306,7 +185,7 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::updateBuffer (RTCBufferType type)
+  void SubdivMesh::updateBuffer (RTCBufferType type, unsigned int slot)
   {
     if (type != RTC_LEVEL_BUFFER)
       commitCounter++;
@@ -321,22 +200,22 @@ namespace embree
     else if (type == RTC_FACE_BUFFER)
       faceVertices.setModified(true);
 
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
+    else if (type >= RTC_BUFFER_TYPE_INDEX && type < RTC_BUFFER_TYPE_INDEX+RTC_MAX_INDEX_BUFFERS)
       topology[bid].vertexIndices.setModified(true);
 
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
       edge_creases.setModified(true);
 
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
       edge_crease_weights.setModified(true);
 
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
       vertex_creases.setModified(true);
 
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
       vertex_crease_weights.setModified(true);
 
-    else if (type == RTC_HOLE_BUFFER)
+    else if (type == RTC_BUFFER_TYPE_HOLE)
       holes.setModified(true);
 
     else if (type == RTC_LEVEL_BUFFER)
@@ -376,7 +255,7 @@ namespace embree
   {
     if (subdiv_mode == mode) return;
     subdiv_mode = mode;
-    mesh->updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
+    mesh->updateBuffer(RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT);
   }
   
   void SubdivMesh::Topology::update () {

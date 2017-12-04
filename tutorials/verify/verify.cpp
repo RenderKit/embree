@@ -180,9 +180,9 @@ namespace embree
         AssertNoError(device);
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
-        rtcSetBuffer(geom,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),(unsigned int)mesh->triangles.size());
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_INT3,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),(unsigned int)mesh->triangles.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
+          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
         AssertNoError(device);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -195,9 +195,9 @@ namespace embree
         AssertNoError(device);
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
-        rtcSetBuffer(geom,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), (unsigned int)mesh->quads.size());
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_INT4,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), (unsigned int)mesh->quads.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
+          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
         AssertNoError(device);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -210,15 +210,15 @@ namespace embree
         AssertNoError(device);
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
-        rtcSetBuffer(geom,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), (unsigned int)mesh->verticesPerFace.size());
-        rtcSetBuffer(geom,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int), (unsigned int)mesh->position_indices.size());
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE, 0,RTC_FORMAT_INT,mesh->verticesPerFace.data(),0,sizeof(int), (unsigned int)mesh->verticesPerFace.size());
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_INT,mesh->position_indices.data(),0,sizeof(int), (unsigned int)mesh->position_indices.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
-        if (mesh->edge_creases.size()) rtcSetBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int), (unsigned int)mesh->edge_creases.size());
-        if (mesh->edge_crease_weights.size()) rtcSetBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float),(unsigned int)mesh->edge_crease_weights.size());
-        if (mesh->vertex_creases.size()) rtcSetBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int), (unsigned int)mesh->vertex_creases.size());
-        if (mesh->vertex_crease_weights.size()) rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float), (unsigned int)mesh->vertex_crease_weights.size());
-        if (mesh->holes.size()) rtcSetBuffer(geom,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int), (unsigned int)mesh->holes.size());
+          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
+        if (mesh->edge_creases.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,0,RTC_FORMAT_INT2,mesh->edge_creases.data(),0,2*sizeof(int), (unsigned int)mesh->edge_creases.size());
+        if (mesh->edge_crease_weights.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,0,RTC_FORMAT_FLOAT,mesh->edge_crease_weights.data(),0,sizeof(float),(unsigned int)mesh->edge_crease_weights.size());
+        if (mesh->vertex_creases.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,0,RTC_FORMAT_INT,mesh->vertex_creases.data(),0,sizeof(int), (unsigned int)mesh->vertex_creases.size());
+        if (mesh->vertex_crease_weights.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,0,RTC_FORMAT_FLOAT,mesh->vertex_crease_weights.data(),0,sizeof(float), (unsigned int)mesh->vertex_crease_weights.size());
+        if (mesh->holes.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_HOLE,0,RTC_FORMAT_INT,mesh->holes.data(),0,sizeof(int),(unsigned int)mesh->holes.size());
         rtcSetGeometryTessellationRate(geom,mesh->tessellationRate);
         rtcSetGeometrySubdivisionMode(geom,0,mesh->position_subdiv_mode);
         AssertNoError(device);
@@ -235,8 +235,8 @@ namespace embree
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex), (unsigned int)mesh->positions[t].size());
-        rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), (unsigned int)mesh->hairs.size());
+          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex), (unsigned int)mesh->positions[t].size());
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_INT2,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), (unsigned int)mesh->hairs.size());
         AssertNoError(device);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -320,19 +320,19 @@ namespace embree
     {
       if (Ref<SceneGraph::TriangleMeshNode> mesh = geom.second.dynamicCast<SceneGraph::TriangleMeshNode>())
       {
-        rtcSetBuffer(rtcGetGeometry(scene,geom.first),RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = geom.second.dynamicCast<SceneGraph::QuadMeshNode>())
       {
-        rtcSetBuffer(rtcGetGeometry(scene,geom.first),RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
       } 
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = geom.second.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
-        rtcSetBuffer(rtcGetGeometry(scene,geom.first),RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = geom.second.dynamicCast<SceneGraph::HairSetNode>())
       {
-        rtcSetBuffer(rtcGetGeometry(scene,geom.first),RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
       } 
     }
 
@@ -868,30 +868,30 @@ namespace embree
       avector<char> indexBuffer(8+16*6*sizeof(int));
       avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
       
-      rtcSetBuffer(geom,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),1,3*sizeof(int),16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float),16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
 
-      rtcSetBuffer(geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3,16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),0,3*sizeof(int)+3,16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3,16);
+      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3,16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
       
-      rtcSetBuffer(geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),0,3*sizeof(int),16);
       AssertNoError(device);
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float),16);
-      AssertNoError(device);
-      
-      rtcSetBuffer(geom,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int),16);
-      AssertNoError(device);
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float),16);
       AssertNoError(device);
       
-      rtcSetBuffer(geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),8,6*sizeof(int),16);
+      AssertNoError(device);
+      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float),16);
       AssertNoError(device);
       
-      rtcSetBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),0,3*sizeof(int),16);
+      AssertNoError(device);
+      
+      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float),16);
       AssertNoError(device);
       
       return VerifyApplication::PASSED;
@@ -1006,8 +1006,8 @@ namespace embree
                 
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
         rtcSetGeometryBuildQuality(geom,quality);
-        rtcSetBuffer(geom, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
-        rtcSetBuffer(geom, RTC_INDEX_BUFFER, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
+        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
         rtcCommitGeometry(geom);
         rtcAttachAndReleaseGeometry(scene,geom);
         
@@ -1810,32 +1810,32 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
       AssertNoError(device);
       
-      rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
-      rtcSetBuffer(geom, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
-      rtcSetBuffer(geom, RTC_EDGE_CREASE_INDEX_BUFFER,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int), 3);
-      rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,  interpolation_edge_crease_weights,  0, sizeof(float), 3);
-      rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER, interpolation_vertex_crease_indices,0, sizeof(unsigned int), 2);
-      rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float), 2);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
+      rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int), 3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  interpolation_edge_crease_weights,  0, sizeof(float), 3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, interpolation_vertex_crease_indices,0, sizeof(unsigned int), 2);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,interpolation_vertex_crease_weights,0, sizeof(float), 2);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       bool passed = true;
@@ -1901,27 +1901,27 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
       AssertNoError(device);
       
-      rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       rtcDisableGeometry(geom);
@@ -2006,27 +2006,27 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BEZIER);
       AssertNoError(device);
       
-      rtcSetBuffer(geom, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
       rtcDisableGeometry(geom);
@@ -2097,8 +2097,8 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
       rtcSetGeometryBuildQuality(geom,quality);
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
-      rtcSetBuffer(geom, RTC_INDEX_BUFFER , triangles, 0, sizeof(Triangle), 1);
+      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , triangles, 0, sizeof(Triangle), 1);
       rtcCommitGeometry(geom);
       rtcAttachAndReleaseGeometry(scene,geom);
       rtcCommitScene (scene);
@@ -2172,8 +2172,8 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
       rtcSetGeometryBuildQuality(geom, quality);
-      rtcSetBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
-      rtcSetBuffer(geom, RTC_INDEX_BUFFER , quads, 0, 4*sizeof(int), 1);
+      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , quads, 0, 4*sizeof(int), 1);
       rtcCommitGeometry(geom);
       rtcAttachAndReleaseGeometry(scene,geom);
       rtcCommitScene (scene);

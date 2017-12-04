@@ -63,9 +63,9 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
   rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -76,10 +76,10 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
   for (size_t t=0; t<hair->numTimeSteps; t++) {
-    rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
   rtcSetGeometrySubtype(geom,hair->subtype);
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcSetGeometryTessellationRate(geom,hair->tessellation_rate);
   rtcCommitGeometry(geom);

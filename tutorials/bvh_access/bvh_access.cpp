@@ -71,7 +71,7 @@ namespace embree
     
     /* set triangles */
     int tri = 0;
-    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),12);
+    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),12);
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -117,7 +117,7 @@ namespace embree
     vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
     
     /* set triangles */
-    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),2);
     triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
     triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
@@ -138,7 +138,7 @@ namespace embree
     pos[2] = vfloat4(0.0f,2.0f,0.0f,0.1f);
     pos[3] = vfloat4(0.0f,3.0f,0.0f,0.1f);
 
-    int* index = (int*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),1);
+    int* index = (int*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(int),1);
     index[0] = 0;
 
     rtcCommitGeometry(geom);
