@@ -179,7 +179,7 @@ namespace embree
     {
       if (native_curves.size() != size()) 
       {
-        native_curves.set(new Buffer(device, size(), sizeof(unsigned int)), RTC_FORMAT_INT);
+        native_curves.set(new Buffer(device, size(), sizeof(unsigned int)), RTC_FORMAT_UINT);
         parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way

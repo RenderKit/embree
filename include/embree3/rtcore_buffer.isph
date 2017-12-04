@@ -25,10 +25,10 @@
 /*! \brief Specifies the format of buffers and other data structures */
 enum RTCFormat
 {
-  RTC_FORMAT_INT,
-  RTC_FORMAT_INT2,
-  RTC_FORMAT_INT3,
-  RTC_FORMAT_INT4,
+  RTC_FORMAT_UINT,
+  RTC_FORMAT_UINT2,
+  RTC_FORMAT_UINT3,
+  RTC_FORMAT_UINT4,
 
   RTC_FORMAT_FLOAT,
   RTC_FORMAT_FLOAT2,
