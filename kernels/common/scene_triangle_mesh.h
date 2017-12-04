@@ -201,10 +201,10 @@ namespace embree
     }
 
   public:
-    BufferView<Triangle> triangles;       //!< array of triangles
-    BufferView<Vec3fa> vertices0;         //!< fast access to first vertex buffer
-    vector<BufferView<Vec3fa>> vertices;  //!< vertex array for each timestep
-    vector<RawBufferView> vertexAttribs;  //!< vertex attributes
+    BufferView<Triangle> triangles;      //!< array of triangles
+    BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer
+    vector<BufferView<Vec3fa>> vertices; //!< vertex array for each timestep
+    vector<RawBufferView> vertexAttribs; //!< vertex attributes
   };
 
   namespace isa

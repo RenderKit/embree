@@ -85,8 +85,8 @@ namespace embree
       if (indexBuffer >= RTC_BUFFER_TYPE_INDEX && indexBuffer < RTC_BUFFER_TYPE_INDEX+(int)topology.size()) {
         unsigned vid = vertexBuffer & 0xFFFF;
         unsigned iid = indexBuffer & 0xFFFF;
-        if ((unsigned)vertexAttribs[vid].userdata != iid) {
-          vertexAttribs[vid].userdata = iid;
+        if ((unsigned)vertexAttribs[vid].userData != iid) {
+          vertexAttribs[vid].userData = iid;
           commitCounter++; // triggers recalculation of cached interpolation data
         }
       } else {
@@ -624,7 +624,7 @@ namespace embree
       return false;
 
     for (auto& b : vertexAttribs)
-      if (!topology[b.userdata].verify(b.size()))
+      if (!topology[b.userData].verify(b.size()))
         return false;
 
     /*! verify vertices */
@@ -677,7 +677,7 @@ namespace embree
         src    = vertexAttribs[bufID].getPtr();
         stride = vertexAttribs[bufID].getStride();
         baseEntry = &user_buffer_tags[bufID];
-        int topologyID = vertexAttribs[bufID].userdata;
+        int topologyID = vertexAttribs[bufID].userData;
         topo = &topology[topologyID];
       } else {
         assert(bufID < numTimeSteps);
@@ -754,7 +754,7 @@ namespace embree
         src    = vertexAttribs[bufID].getPtr();
         stride = vertexAttribs[bufID].getStride();
         baseEntry = &user_buffer_tags[bufID];
-        int topologyID = vertexAttribs[bufID].userdata;
+        int topologyID = vertexAttribs[bufID].userData;
         topo = &topology[topologyID];
       } else {
         assert(bufID < numTimeSteps);

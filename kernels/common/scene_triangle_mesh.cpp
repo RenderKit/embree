@@ -57,7 +57,7 @@ namespace embree
   {
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(buffer->getPtr()) + offset) & 0x3) || (buffer->getStride() & 0x3)) 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
     {
@@ -69,7 +69,6 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
 
       buffer->checkPadding16();
-
       if (slot >= vertices.size())
         vertices.resize(slot+1);
       vertices[slot].set(buffer, offset, num, format);
@@ -84,7 +83,6 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
 
       buffer->checkPadding16();
-
       if (slot >= vertexAttribs.size())
         vertexAttribs.resize(slot+1);
       vertexAttribs[slot].set(buffer, offset, num, format);
@@ -101,7 +99,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void TriangleMesh::preCommit () 
+  void TriangleMesh::preCommit() 
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)

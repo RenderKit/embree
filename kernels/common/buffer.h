@@ -169,13 +169,13 @@ namespace embree
     }
 
   public:
-    Device* device;  //!< device to report memory usage to 
-    char* ptr;       //!< pointer to buffer data
-    size_t stride;   //!< stride of the buffer in bytes
-    size_t num;      //!< number of elements in the buffer
-    bool shared;     //!< set if memory is shared with application
-    bool modified;   //!< true if the buffer got modified
-    int userData;    //!< special data
+    Device* device; //!< device to report memory usage to 
+    char* ptr;      //!< pointer to buffer data
+    size_t stride;  //!< stride of the buffer in bytes
+    size_t num;     //!< number of elements in the buffer
+    bool shared;    //!< set if memory is shared with application
+    bool modified;  //!< true if the buffer got modified
+    int userData;   //!< special data
   };
 
   /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
@@ -183,8 +183,8 @@ namespace embree
   {
   public:
     /*! Buffer construction */
-    RawBufferView(size_t num = 0, size_t stride = 0, RTCFormat format = RTC_FORMAT_UNDEFINED)
-      : ptr_ofs(nullptr), stride(stride), num(num), format(format) {}
+    RawBufferView()
+      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED) {}
 
   public:
     /*! sets the buffer view */
@@ -259,9 +259,6 @@ namespace embree
   public:
     typedef T value_type;
 
-    BufferView(size_t num = 0, size_t stride = 0) 
-      : RawBufferView(num, stride) {}
-
     /*! access to the ith element of the buffer */
     __forceinline       T& operator [](size_t i)       { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
     __forceinline const T& operator [](size_t i) const { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
@@ -272,9 +269,6 @@ namespace embree
   {
   public:
     typedef Vec3fa value_type;
-
-    BufferView(size_t num = 0, size_t stride = 0) 
-      : RawBufferView(num, stride) {}
 
     /*! access to the ith element of the buffer */
     __forceinline const Vec3fa operator [](size_t i) const

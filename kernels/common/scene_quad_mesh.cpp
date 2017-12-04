@@ -55,44 +55,51 @@ namespace embree
 
   void QuadMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
   { 
-#if 0
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (buffer->getStride() & 0x3)) 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
+    if (type == RTC_BUFFER_TYPE_VERTEX) 
     {
-      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
-      if (stride*size > 16ll*1024ll*1024ll*1024ll) 
-       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].set(device,ptr,offset,stride,size); 
-      vertices[bid].checkPadding16();
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (buffer->getStride()*num > 16ll*1024ll*1024ll*1024ll) 
+       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
+
+      buffer->checkPadding16();
+      if (slot >= vertices.size())
+        vertices.resize(slot+1);
+      vertices[slot].set(buffer, offset, num, format);
       vertices0 = vertices[0];
       //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
       //  vertices.pop_back();
       setNumTimeSteps((unsigned int)vertices.size());
     } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
+    else if (type >= RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
-      if (bid >= vertexAttribs.size()) vertexAttribs.resize(bid+1);
-      vertexAttribs[bid] = Buffer<char>(device,size,stride);
-      vertexAttribs[bid].set(device,ptr,offset,stride,size);  
-      vertexAttribs[bid].checkPadding16();
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT4)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      buffer->checkPadding16();
+      if (slot >= vertexAttribs.size())
+        vertexAttribs.resize(slot+1);
+      vertexAttribs[slot].set(buffer, offset, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
-      quads.set(device,ptr,offset,stride,size);
-      setNumPrimitives(size);
+      if (format != RTC_FORMAT_UINT4)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+
+      quads.set(buffer, offset, num, format);
+      setNumPrimitives(num);
     }
     else
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
-#endif
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void QuadMesh::preCommit () 
+  void QuadMesh::preCommit() 
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)
@@ -102,13 +109,13 @@ namespace embree
     Geometry::preCommit();
   }
 
-  void QuadMesh::postCommit () 
+  void QuadMesh::postCommit() 
   {
     scene->vertices[geomID] = (int*) vertices0.getPtr();
     Geometry::postCommit();
   }
 
-  bool QuadMesh::verify () 
+  bool QuadMesh::verify() 
   {
     /*! verify consistent size of vertex arrays */
     if (vertices.size() == 0) return false;
