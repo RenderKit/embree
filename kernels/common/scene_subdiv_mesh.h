@@ -246,7 +246,7 @@ namespace embree
     vector<BufferView<Vec3fa>> vertices;
 
     /*! user data buffers */
-    vector<BufferView<char>> userbuffers;
+    vector<BufferView<char>> vertexAttribs;
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
     BufferView<Edge> edge_creases;

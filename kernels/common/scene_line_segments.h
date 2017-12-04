@@ -166,7 +166,7 @@ namespace embree
     BufferView<unsigned int> segments;                 //!< array of line segment indices
     BufferView<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<BufferView<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<BufferView<char>> userbuffers;              //!< user buffers
+    vector<BufferView<char>> vertexAttribs;              //!< user buffers
   };
 
   namespace isa

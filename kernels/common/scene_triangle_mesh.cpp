@@ -85,9 +85,9 @@ namespace embree
 
       buffer->checkPadding16();
 
-      if (slot >= userbuffers.size())
-        userbuffers.resize(slot+1);
-      userbuffers[slot].set(buffer, offset, num, format);
+      if (slot >= vertexAttribs.size())
+        vertexAttribs.resize(slot+1);
+      vertexAttribs[slot].set(buffer, offset, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
@@ -126,7 +126,7 @@ namespace embree
         return false;
 
     /*! verify size of user vertex arrays */
-    for (const auto& buffer : userbuffers)
+    for (const auto& buffer : vertexAttribs)
       if (buffer.size() != numVertices())
         return false;
 
@@ -163,12 +163,12 @@ namespace embree
 
     /* calculate base pointer and stride */
     assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= 1));
+           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
     const char* src = nullptr; 
     size_t stride = 0;
     if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-      src    = userbuffers[bufferSlot].getPtr();
-      stride = userbuffers[bufferSlot].getStride();
+      src    = vertexAttribs[bufferSlot].getPtr();
+      stride = vertexAttribs[bufferSlot].getStride();
     } else {
       src    = vertices[bufferSlot].getPtr();
       stride = vertices[bufferSlot].getStride();

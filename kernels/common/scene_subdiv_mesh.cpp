@@ -81,12 +81,12 @@ namespace embree
 
   void SubdivMesh::setVertexAttributeTopology(unsigned int vertexBufferSlot, unsigned int indexBufferSlot)
   {
-    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+(int)userbuffers.size()) {
+    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+(int)vertexAttribs.size()) {
       if (indexBuffer >= RTC_BUFFER_TYPE_INDEX && indexBuffer < RTC_BUFFER_TYPE_INDEX+(int)topology.size()) {
         unsigned vid = vertexBuffer & 0xFFFF;
         unsigned iid = indexBuffer & 0xFFFF;
-        if ((unsigned)userbuffers[vid].userdata != iid) {
-          userbuffers[vid].userdata = iid;
+        if ((unsigned)vertexAttribs[vid].userdata != iid) {
+          vertexAttribs[vid].userdata = iid;
           commitCounter++; // triggers recalculation of cached interpolation data
         }
       } else {
@@ -124,13 +124,13 @@ namespace embree
     }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
     {
-      if (bid >= userbuffers.size()) {
-        userbuffers.resize(bid+1);
+      if (bid >= vertexAttribs.size()) {
+        vertexAttribs.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      userbuffers[bid] = Buffer<char>(device,size,stride);
-      userbuffers[bid].set(device,ptr,offset,stride,size);  
-      userbuffers[bid].checkPadding16();
+      vertexAttribs[bid] = Buffer<char>(device,size,stride);
+      vertexAttribs[bid].set(device,ptr,offset,stride,size);  
+      vertexAttribs[bid].checkPadding16();
     }
     else if (type == RTC_FACE_BUFFER) 
     {
@@ -195,7 +195,7 @@ namespace embree
       vertices[bid].setModified(true);
     
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
-      userbuffers[bid].setModified(true);
+      vertexAttribs[bid].setModified(true);
 
     else if (type == RTC_FACE_BUFFER)
       faceVertices.setModified(true);
@@ -582,8 +582,8 @@ namespace embree
     /* create interpolation cache mapping for interpolatable meshes */
     for (size_t i=0; i<vertex_buffer_tags.size(); i++)
       vertex_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertices[i].getStride()));
-    for (size_t i=0; i<userbuffers.size(); i++)
-      if (userbuffers[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(userbuffers[i].getStride()));
+    for (size_t i=0; i<vertexAttribs.size(); i++)
+      if (vertexAttribs[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertexAttribs[i].getStride()));
 
     /* cleanup some state for static scenes */
     if (scene == nullptr || scene->isStaticAccel()) 
@@ -623,7 +623,7 @@ namespace embree
     if (!topology[0].verify(numVertices()))
       return false;
 
-    for (auto& b : userbuffers)
+    for (auto& b : vertexAttribs)
       if (!topology[b.userdata].verify(b.size()))
         return false;
 
@@ -673,11 +673,11 @@ namespace embree
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
       if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-        assert(bufID < userbuffers.size());
-        src    = userbuffers[bufID].getPtr();
-        stride = userbuffers[bufID].getStride();
+        assert(bufID < vertexAttribs.size());
+        src    = vertexAttribs[bufID].getPtr();
+        stride = vertexAttribs[bufID].getStride();
         baseEntry = &user_buffer_tags[bufID];
-        int topologyID = userbuffers[bufID].userdata;
+        int topologyID = vertexAttribs[bufID].userdata;
         topo = &topology[topologyID];
       } else {
         assert(bufID < numTimeSteps);
@@ -750,11 +750,11 @@ namespace embree
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
       if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-        assert(bufID < userbuffers.size());
-        src    = userbuffers[bufID].getPtr();
-        stride = userbuffers[bufID].getStride();
+        assert(bufID < vertexAttribs.size());
+        src    = vertexAttribs[bufID].getPtr();
+        stride = vertexAttribs[bufID].getStride();
         baseEntry = &user_buffer_tags[bufID];
-        int topologyID = userbuffers[bufID].userdata;
+        int topologyID = vertexAttribs[bufID].userdata;
         topo = &topology[topologyID];
       } else {
         assert(bufID < numTimeSteps);

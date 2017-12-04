@@ -268,7 +268,7 @@ namespace embree
   public:
     BufferView<unsigned int> curves;            //!< array of curve indices
     vector<BufferView<Vec3fa>> vertices;        //!< vertex array for each timestep
-    vector<BufferView<char>> userbuffers;       //!< user buffers
+    vector<BufferView<char>> vertexAttribs;       //!< user buffers
     RTCGeometryType type;                   //!< basis of user provided vertices
     RTCGeometrySubtype subtype;             //!< hair or surface geometry
     int tessellationRate;                   //!< tessellation rate for bezier curve

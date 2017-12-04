@@ -77,10 +77,10 @@ namespace embree
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = Buffer<char>(device,size,stride);
-      userbuffers[bid].set(device,ptr,offset,stride,size);  
-      userbuffers[bid].checkPadding16();
+      if (bid >= vertexAttribs.size()) vertexAttribs.resize(bid+1);
+      vertexAttribs[bid] = Buffer<char>(device,size,stride);
+      vertexAttribs[bid].set(device,ptr,offset,stride,size);  
+      vertexAttribs[bid].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
@@ -154,8 +154,8 @@ namespace embree
     const char* src = nullptr; 
     size_t stride = 0;
     if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-      src    = userbuffers[bufferSlot].getPtr();
-      stride = userbuffers[bufferSlot].getStride();
+      src    = vertexAttribs[bufferSlot].getPtr();
+      stride = vertexAttribs[bufferSlot].getStride();
     } else {
       src    = vertices[bufferSlot].getPtr();
       stride = vertices[bufferSlot].getStride();
