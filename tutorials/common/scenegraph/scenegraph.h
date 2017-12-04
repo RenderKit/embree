@@ -749,11 +749,23 @@ namespace embree
       public:
         Hair () {}
         Hair (unsigned vertex, unsigned id) 
-          : vertex(vertex), id(id) {}
+        : vertex(vertex), end_vertex(vertex+1), id(id) {}
+      public:
+        unsigned vertex,end_vertex, id;  //!< index of first control point and hair ID
+      };
+
+      struct HairCurve
+      {
+      public:
+        HairCurve () {}
+        HairCurve (unsigned vertex, unsigned end_vertex, unsigned id) 
+        : vertex(vertex), end_vertex(end_vertex), id(id) {
+        }
 
       public:
-        unsigned vertex,id;  //!< index of first control point and hair ID
+        unsigned vertex, end_vertex, id;  //!< index of first control point and hair ID
       };
+
       
     public:
       HairSetNode (RTCGeometryType type, RTCGeometrySubtype subtype, Ref<MaterialNode> material, size_t numTimeSteps = 0)
@@ -821,6 +833,8 @@ namespace embree
       RTCGeometrySubtype subtype;             //!< subtype of geometry (hair or curve)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
+      std::vector<HairCurve> hair_curves;     //!< list of hairs
+
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
     };

@@ -182,7 +182,9 @@ namespace embree
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     for (auto hair : hairs)
       if (size_t(hair.vertex) >= N)
+      {
         THROW_RUNTIME_ERROR("invalid hair");
+      }
   }
 
   avector<Vec3fa> bspline_to_bezier_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
