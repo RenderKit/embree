@@ -27,11 +27,11 @@ namespace embree
   public:
     /*! Buffer construction */
     Buffer() 
-      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false), modified(true), userData(0) {}
+      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false), modified(true) {}
 
     /*! Buffer construction */
     Buffer(Device* device, size_t num_in, size_t stride_in, void* ptr_in = nullptr)
-      : device(device), stride(stride_in), num(num_in), modified(true), userData(0) 
+      : device(device), stride(stride_in), num(num_in), modified(true)
     {
       if (ptr_in)
       {
@@ -175,7 +175,6 @@ namespace embree
     size_t num;     //!< number of elements in the buffer
     bool shared;    //!< set if memory is shared with application
     bool modified;  //!< true if the buffer got modified
-    int userData;   //!< special data
   };
 
   /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
@@ -184,7 +183,7 @@ namespace embree
   public:
     /*! Buffer construction */
     RawBufferView()
-      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED) {}
+      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), userData(0) {}
 
   public:
     /*! sets the buffer view */
@@ -244,11 +243,12 @@ namespace embree
       return ptr_ofs; 
     }
 
-  protected:
+  public:
     char* ptr_ofs;      //!< base pointer plus offset
     size_t stride;      //!< stride of the buffer in bytes
     size_t num;         //!< number of elements in the buffer
     RTCFormat format;   //!< format of the buffer
+    int userData;       //!< special data
     Ref<Buffer> buffer; //!< reference to the parent buffer (optional)
   };
 
