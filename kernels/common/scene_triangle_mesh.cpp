@@ -56,7 +56,7 @@ namespace embree
   void TriangleMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->ptr) + offset) & 0x3) || (buffer->stride & 0x3)) 
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (buffer->getStride() & 0x3)) 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
@@ -65,7 +65,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
       /* if buffer is larger than 16GB the premultiplied index optimization does not work */
-      if (buffer->stride*num > 16ll*1024ll*1024ll*1024ll)
+      if (buffer->getStride()*num > 16ll*1024ll*1024ll*1024ll)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
 
       buffer->checkPadding16();
@@ -111,13 +111,13 @@ namespace embree
     Geometry::preCommit();
   }
 
-  void TriangleMesh::postCommit () 
+  void TriangleMesh::postCommit() 
   {
     scene->vertices[geomID] = (int*) vertices0.getPtr();
     Geometry::postCommit();
   }
 
-  bool TriangleMesh::verify () 
+  bool TriangleMesh::verify() 
   {
     /*! verify size of vertex arrays */
     if (vertices.size() == 0) return false;

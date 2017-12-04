@@ -27,11 +27,11 @@ namespace embree
   public:
     /*! Buffer construction */
     Buffer() 
-      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false), modified(true), userdata(0) {}
+      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false), modified(true), userData(0) {}
 
     /*! Buffer construction */
     Buffer(Device* device, size_t num_in, size_t stride_in, void* ptr_in = nullptr)
-      : device(device), stride(stride_in), num(num_in), modified(true), userdata(0) 
+      : device(device), stride(stride_in), num(num_in), modified(true), userData(0) 
     {
       if (ptr_in)
       {
@@ -175,7 +175,7 @@ namespace embree
     size_t num;      //!< number of elements in the buffer
     bool shared;     //!< set if memory is shared with application
     bool modified;   //!< true if the buffer got modified
-    int userdata;    //!< special data
+    int userData;    //!< special data
   };
 
   /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
