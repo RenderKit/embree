@@ -347,10 +347,10 @@ RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   
   );
 
 /*! Sets the number of primitives. */
-RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry geometry, unsigned int N);
+RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int N);
 
 /*! Sets the number of time steps. */
-RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, unsigned int N);
+RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, unsigned int N);
  
 /*! Sets the subtype of the geometry. */
 RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, enum RTCGeometrySubtype type);
@@ -369,8 +369,8 @@ RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, int mask);
 /*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
 RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned topologyID, enum RTCSubdivisionMode mode);
 
-/*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, enum RTCBufferType vertexBuffer, enum RTCBufferType indexBuffer);
+/*! \brief Binds a user buffer of vertex attributes to an index buffer topology. */
+RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, enum RTCBufferType vertexBuffer, enum RTCBufferType indexBuffer);
 
 RTCORE_API void* rtcNewBuffer(RTCGeometry geometry, enum RTCBufferType type, size_t byteStride, unsigned int numItems);
 
@@ -390,7 +390,7 @@ RTCORE_API void rtcSetBuffer(RTCGeometry geometry, enum RTCBufferType type,
                              const void* ptr, size_t byteOffset, size_t byteStride, unsigned int size);
 
 /*! \brief Gets pointer to specified buffer. */
-RTCORE_API void* rtcGetBuffer(RTCGeometry geometry, enum RTCBufferType type);
+RTCORE_API void* rtcGetBufferData(RTCGeometry geometry, enum RTCBufferType type);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);

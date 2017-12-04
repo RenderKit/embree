@@ -474,8 +474,8 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   sphere->r = r;
   sphere->geomID = rtcAttachGeometry(scene,geom);
   sphere->num_time_steps = num_time_steps;
-  rtcSetGeometryNumPrimitives(geom,1);
-  rtcSetGeometryNumTimeSteps(geom,num_time_steps);
+  rtcSetGeometryUserPrimitiveCount(geom,1);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);

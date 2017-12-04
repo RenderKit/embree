@@ -121,7 +121,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   if (atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
     /* create the geometry */
-    print("creating sphere %i (lazy)\n",instance->userID);
+    //print("creating sphere %i (lazy)\n",instance->userID);
     instance->object = rtcNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
@@ -152,7 +152,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
 
 void eagerCreate(uniform LazyGeometry* uniform instance)
 {
-  print("creating sphere %i (eager)\n",instance->userID);
+  //print("creating sphere %i (eager)\n",instance->userID);
   instance->object = rtcNewScene(g_device);
   createTriangulatedSphere(instance->object,instance->center,instance->radius);
   rtcCommitScene(instance->object);
@@ -215,7 +215,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   instance->center = center;
   instance->radius = radius;
   instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  rtcSetGeometryNumPrimitives(instance->geometry,1);
+  rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);

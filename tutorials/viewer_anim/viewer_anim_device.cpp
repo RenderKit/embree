@@ -169,7 +169,7 @@ void interpolateVertices(RTCGeometry geom,
                          const Vec3fa* const input1,
                          const float tt)
   {
-    Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcGetBufferData(geom,RTC_VERTEX_BUFFER);
 #if 1
     const size_t blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
     parallel_for(size_t(0),size_t(blocks),[&](const range<size_t>& range) {

@@ -343,10 +343,10 @@ RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   
   );
 
 /*! Sets the number of primitives. */
-RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int N);
 
 /*! Sets the number of time steps. */
-RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int N);
  
 /*! Sets the subtype of the geometry. */
 RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, uniform RTCGeometrySubtype type);
@@ -365,8 +365,8 @@ RTCORE_API void rtcSetGeometryMask (RTCGeometry geometry, uniform int mask);
 /*! \brief Sets boundary interpolation mode for specified subdivision surface topology. */
 RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
-/*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
+/*! \brief Binds a user buffer of vertex attributes to an index buffer topology. */
+RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 
 RTCORE_API void* uniform rtcNewBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform size_t byteStride, uniform unsigned int numItems);
 
@@ -386,7 +386,7 @@ RTCORE_API void rtcSetBuffer(RTCGeometry geometry, uniform RTCBufferType type,
                              const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int size);
 
 /*! \brief Gets pointer to specified buffer. */
-RTCORE_API void* uniform rtcGetBuffer(RTCGeometry geometry, uniform RTCBufferType type);
+RTCORE_API void* uniform rtcGetBufferData(RTCGeometry geometry, uniform RTCBufferType type);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);

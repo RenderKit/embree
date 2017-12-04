@@ -304,9 +304,9 @@ namespace embree
     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_CURVE_BEZIER,RTC_GEOMETRY_SUBTYPE_RIBBON,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
-    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,radius,0),radius));
-    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,radius),radius));
-    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,+radius,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(+radius,0,0),radius));
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 

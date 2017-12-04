@@ -1681,10 +1681,6 @@ extern "C" void device_init (char* cfg)
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
 
-#if ENABLE_FILTER_FUNCTION == 0
-  printf("Warning: filter functions disabled\n");
-#endif
-
 } // device_init
 
 /* called by the C++ code to render */

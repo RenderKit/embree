@@ -1675,10 +1675,6 @@ export void device_init (uniform int8* uniform cfg)
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
 
-#if ENABLE_FILTER_FUNCTION == 0
-  print("Warning: filter functions disabled\n");
-#endif
-
 } // device_init
 
 /* called by the C++ code to render */

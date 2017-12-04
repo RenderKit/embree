@@ -913,17 +913,23 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryNumPrimitives);
     RTCORE_VERIFY_HANDLE(hgeometry);
+    /* should be called for user geometries only */
+    if (unlikely(geometry->type != Geometry::USER_GEOMETRY))
+    {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
+      return;
+    }
     geometry->setNumPrimitives(N);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -981,7 +987,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryIndexBuffer (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
+  RTCORE_API void rtcSetGeometryVertexAttributeTopology (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1013,11 +1019,11 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcGetBuffer(RTCGeometry hgeometry, RTCBufferType type) 
+  RTCORE_API void* rtcGetBufferData(RTCGeometry hgeometry, RTCBufferType type) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetBuffer);
+    RTCORE_TRACE(rtcGetBufferData);
     RTCORE_VERIFY_HANDLE(hgeometry);
     return geometry->getBuffer(type);
     RTCORE_CATCH_END2(geometry);
