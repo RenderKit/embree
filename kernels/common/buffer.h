@@ -249,7 +249,7 @@ namespace embree
     size_t num;         //!< number of elements in the buffer
     RTCFormat format;   //!< format of the buffer
     int userData;       //!< special data
-    Ref<Buffer> buffer; //!< reference to the parent buffer (optional)
+    Ref<Buffer> buffer; //!< reference to the parent buffer
   };
 
   /*! A typed contiguous range of a buffer. This class does not own the buffer content. */
