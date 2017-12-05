@@ -149,6 +149,7 @@ namespace embree
       {
         const LineSegments* geom = scene->get<LineSegments>(prim->geomID());
         if (begin<end) {
+          /* encode the RTCCurveFlags into the two most significant bits */
           const unsigned int mask = geom->getStartEndBitMask(prim->primID());
           geomID[i] = prim->geomID() | mask;
           primID[i] = prim->primID();
@@ -197,7 +198,7 @@ namespace embree
 
     /*! output operator */
     friend __forceinline std::ostream& operator<<(std::ostream& cout, const LineMi& line) {
-      return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomIDs << ", " << line.primIDs << "}";
+      return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomID() << ", " << line.primID() << "}";
     }
     
   public:
