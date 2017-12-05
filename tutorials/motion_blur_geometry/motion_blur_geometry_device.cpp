@@ -171,7 +171,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 
   //rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,  0, sizeof(Vec3fa  ), 8);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_quad_indices, 0, sizeof(unsigned int), NUM_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,0, sizeof(unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_quad_faces,0, sizeof(unsigned int), NUM_FACES);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   cube_edge_crease_indices,  0, 2*sizeof(unsigned int), 0);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  cube_edge_crease_weights,  0, sizeof(float), 0);
@@ -179,7 +179,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, cube_vertex_crease_indices,0, sizeof(unsigned int), 0);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,cube_vertex_crease_weights,0, sizeof(float), 0);
 
-  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_INDICES);
+  float* level = (float*) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL, sizeof(float), NUM_INDICES);
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
 
   for (size_t t=0; t<num_time_steps; t++)

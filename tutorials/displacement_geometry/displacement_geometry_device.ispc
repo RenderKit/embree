@@ -127,9 +127,9 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
-  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(uniform float), NUM_INDICES);
+  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL, sizeof(uniform float), NUM_INDICES);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
 
   rtcSetGeometryDisplacementFunction(geom,displacementFunction,NULL);

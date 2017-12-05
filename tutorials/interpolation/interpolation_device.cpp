@@ -153,7 +153,7 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_tri_indices , 0, sizeof(unsigned int), NUM_TRI_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_tri_faces,    0, sizeof(unsigned int), NUM_TRI_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_tri_faces,    0, sizeof(unsigned int), NUM_TRI_FACES);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   cube_edge_crease_indices,  0, 2*sizeof(unsigned int), 0);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  cube_edge_crease_weights,  0, sizeof(float), 0);
@@ -163,7 +163,7 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 
   rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
 
-  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_TRI_INDICES);
+  float* level = (float*) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL, sizeof(float), NUM_TRI_INDICES);
   for (size_t i=0; i<NUM_TRI_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
   rtcCommitGeometry(geom);
@@ -175,7 +175,7 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 void setTriangleSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
 {
   Vec3fa* vtx = (Vec3fa*) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
-  float* level = (float*) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
+  float* level = (float*) rtcGetBuffer(geom, RTC_BUFFER_TYPE_LEVEL);
 
   for (size_t i=0; i<NUM_TRI_INDICES; i+=3)
   {
@@ -184,7 +184,7 @@ void setTriangleSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
     level[i+2] = updateEdgeLevel(cam_pos, vtx, cube_tri_indices, i+2, i+0);
   }
 
-  rtcUpdateGeometryBuffer(geom, RTC_LEVEL_BUFFER);
+  rtcUpdateGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL);
   rtcCommitGeometry(geom);
 }
 
@@ -198,7 +198,7 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   cube_edge_crease_indices,  0, 2*sizeof(unsigned int), 0);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  cube_edge_crease_weights,  0, sizeof(float), 0);
@@ -208,7 +208,7 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 
   rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa), NUM_VERTICES);
 
-  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER,sizeof(float),NUM_QUAD_INDICES);
+  float* level = (float*) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL,sizeof(float),NUM_QUAD_INDICES);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
   rtcCommitGeometry(geom);
@@ -220,7 +220,7 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 void setQuadSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
 {
   Vec3fa* vtx = (Vec3fa*) rtcGetBuffer(geom, RTC_VERTEX_BUFFER);
-  float* level = (float*) rtcGetBuffer(geom, RTC_LEVEL_BUFFER);
+  float* level = (float*) rtcGetBuffer(geom, RTC_BUFFER_TYPE_LEVEL);
 
   for (size_t i=0; i<NUM_QUAD_INDICES; i+=4)
   {
@@ -230,7 +230,7 @@ void setQuadSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
     level[i+3] = updateEdgeLevel(cam_pos, vtx, cube_quad_indices, i+3, i+0);
   }
 
-  rtcUpdateGeometryBuffer(geom, RTC_LEVEL_BUFFER);
+  rtcUpdateGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL);
   rtcCommitGeometry(geom);
 }
 

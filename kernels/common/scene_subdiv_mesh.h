@@ -68,8 +68,8 @@ namespace embree
     void disabling();
     void setMask (unsigned mask);
     void setSubtype(RTCGeometrySubtype type);
-    void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
-    void setVertexAttributeTopology(unsigned int vertexBufferSlot, unsigned int indexBufferSlot);
+    void setSubdivisionMode (unsigned int topologyID, RTCSubdivisionMode mode);
+    void setVertexAttributeTopology(unsigned int vertexAttribID, unsigned int topologyID);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num);
     void update();
     void updateBuffer(RTCBufferType type, unsigned int slot);
@@ -246,7 +246,7 @@ namespace embree
     vector<BufferView<Vec3fa>> vertices;
 
     /*! user data buffers */
-    vector<BufferView<char>> vertexAttribs;
+    vector<RawBufferView> vertexAttribs;
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
     BufferView<Edge> edge_creases;
@@ -296,7 +296,7 @@ namespace embree
       return slots*prim+slot;
     }
     std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> vertex_buffer_tags;
-    std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> user_buffer_tags;
+    std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> vertex_attrib_buffer_tags;
     std::vector<Patch3fa::Ref> patch_eval_trees;
     
     /*! the following data is only required during construction of the

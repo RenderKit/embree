@@ -77,9 +77,9 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vec3fa),mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetSharedGeometryBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float), mesh->numEdges);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL,  mesh->subdivlevel, 0, sizeof(uniform float), mesh->numEdges);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  mesh->position_indices  , 0, sizeof(uniform unsigned int), mesh->numEdges);
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int), mesh->numFaces);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int), mesh->numFaces);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_HOLE,   mesh->holes, 0, sizeof(uniform unsigned int), mesh->numFaces);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int), mesh->numEdgeCreases);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   mesh->edge_crease_weights,   0, sizeof(uniform float), mesh->numEdgeCreases);

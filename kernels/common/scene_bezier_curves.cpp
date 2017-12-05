@@ -153,7 +153,7 @@ namespace embree
     
       /* calculate base pointer and stride */
       assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE /*&& bufferSlot <= 1*/));
+             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
       const char* src = nullptr; 
       size_t stride = 0;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {

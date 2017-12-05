@@ -123,7 +123,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ), 8);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_indices , 0, 3*sizeof(uniform unsigned int));
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   cube_edge_crease_indices,  0, 2*sizeof(uniform unsigned int), 0);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  cube_edge_crease_weights,  0, sizeof(uniform float), 0);
@@ -133,7 +133,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_colors, 0, sizeof(uniform Vec3fa), 8);
 
-  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(uniform float),NUM_INDICES);
+  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL, sizeof(uniform float),NUM_INDICES);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
 
   rtcCommitGeometry(geom);

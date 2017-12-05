@@ -63,9 +63,9 @@ namespace embree {
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX,t,mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetSharedGeometryBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-    rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_HOLE,   mesh->holes, 0, sizeof(unsigned int), mesh->numHoles);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);

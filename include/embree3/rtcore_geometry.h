@@ -85,7 +85,7 @@ enum RTCGeometryType
     construction time.
 
     The following buffers have to get filled by the application: the face
-    buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4)
+    buffer (RTC_BUFFER_TYPE_FACE) contains the number edges/indices (3 or 4)
     of each of the numFaces faces, the index buffer (RTC_BUFFER_TYPE_INDEX)
     contains multiple (3 or 4) 32bit vertex indices for each face and
     numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
@@ -100,7 +100,7 @@ enum RTCGeometryType
     should be considered non-existing.
 
     Optionally, the application can fill the level buffer
-    (RTC_LEVEL_BUFFER) with a tessellation level for each of the numEdges
+    (RTC_BUFFER_TYPE_LEVEL) with a tessellation level for each of the numEdges
     edges. The subdivision level is a positive floating point value, that
     specifies how many quads along the edge should get generated during
     tessellation. The tessellation level is a lower bound, thus the
@@ -328,7 +328,7 @@ RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, unsigned int N)
 RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, enum RTCGeometrySubtype type);
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
- *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
+ *  geometry. For subdivision meshes the RTC_BUFFER_TYPE_LEVEL can also be used
  *  optionally to set a different tessellation rate per edge.*/
 RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, float tessellationRate);
 
@@ -339,10 +339,10 @@ RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQu
 RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, int mask);
 
 /*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
-RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned topologyID, enum RTCSubdivisionMode mode);
+RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned int topologyID, enum RTCSubdivisionMode mode);
 
-/*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry geometry, unsigned int vertexBufferSlot, unsigned int indexBufferSlot);
+/*! \brief Binds a vertex attribute to some topology. */
+RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigned int vertexAttributeID, unsigned int topologyID);
 
 RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
                                      RTCBuffer buffer);

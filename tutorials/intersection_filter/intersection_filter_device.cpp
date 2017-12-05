@@ -675,9 +675,9 @@ unsigned int addSubdivCube (RTCScene scene_i)
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
   rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(Vec3fa  ), NUM_VERTICES);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_quad_indices , 0, sizeof(unsigned int), NUM_QUAD_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
 
-  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_QUAD_INDICES);
+  float* level = (float*) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL, sizeof(float), NUM_QUAD_INDICES);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */

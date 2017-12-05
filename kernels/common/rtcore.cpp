@@ -1024,13 +1024,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryIndexBuffer(RTCGeometry hgeometry, unsigned int vertexBufferSlot, unsigned int indexBufferSlot)
+  RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry hgeometry, unsigned int vertexAttributeID, unsigned int topologyID)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetGeometryIndexBuffer);
+    RTCORE_TRACE(rtcSetGeometryVertexAttributeTopology);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setVertexAttributeTopology(vertexBufferSlot, indexBufferSlot);
+    geometry->setVertexAttributeTopology(vertexAttributeID, topologyID);
     RTCORE_CATCH_END2(geometry);
   }
 
@@ -1044,7 +1044,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hgeometry);
     RTCORE_VERIFY_HANDLE(hbuffer);
     if (geometry->device != buffer->device)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "inputs are from different devices");
     geometry->setBuffer(type, slot, format, buffer, 0, buffer->size());
     RTCORE_CATCH_END2(geometry);
   }

@@ -328,7 +328,7 @@ namespace embree
       } 
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = geom.second.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
-        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_FACE  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = geom.second.dynamicCast<SceneGraph::HairSetNode>())
       {
@@ -1811,7 +1811,7 @@ namespace embree
       AssertNoError(device);
       
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
-      rtcSetSharedGeometryBuffer(geom, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int), 3);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  interpolation_edge_crease_weights,  0, sizeof(float), 3);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, interpolation_vertex_crease_indices,0, sizeof(unsigned int), 2);
