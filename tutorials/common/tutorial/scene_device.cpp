@@ -393,11 +393,7 @@ namespace embree
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t), mesh->positions[t],0,sizeof(Vec3fa), mesh->numVertices);
     }
-#if 1
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
-#else
-    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hair_curves,0,sizeof(ISPCHairRange),mesh->numHairs);
-#endif
     if (mesh->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
     rtcCommitGeometry(geom);

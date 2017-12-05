@@ -63,13 +63,6 @@ namespace embree
     unsigned int id;
   };
 
-  struct ISPCHairCurve
-  {
-    unsigned int start_vertex;
-    unsigned int end_vertex;
-    unsigned int id;
-  };
-
   enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH };
   
   struct ISPCGeometry
@@ -182,13 +175,13 @@ namespace embree
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;          //!< for each hair, index to first control point
-    ISPCHairCurve* hair_curves;    //!< for each hair curve, start and end point
 
     RTCGeometryType type;
     RTCGeometrySubtype subtype;
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;
+    unsigned int numHairCurves;
     unsigned int tessellation_rate;
   };
   

@@ -113,18 +113,6 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      // PING;
-      // PRINT(offset);
-      // PRINT(stride);
-      // PRINT(size);
-      // Buffer<unsigned int> curves;
-      // curves.set(device,ptr,offset,stride,size); 
-      // for (size_t i=0;i<size;i++)
-      // {
-      //   PRINT(i);
-      //   PRINT(curves[i]);
-      // }
-
       segments.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
     }

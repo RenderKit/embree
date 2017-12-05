@@ -1056,19 +1056,10 @@ namespace embree
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
-    size_t curves = indices.size() / 2;
     curveid.resize(indices.size(),0);
-    mesh->hair_curves.resize(curves); 
-    //PRINT(curves);
-    for (size_t i=0; i<curves; i++) {
-#if 0
-      mesh->hair_curves[i] = SceneGraph::HairSetNode::HairCurve(indices[2*i],indices[2*i+1],curveid[i]);
-#else
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[2*i],curveid[i]);
-#endif
-      //PRINT(indices[2*i]);
-      //PRINT(indices[2*i+1]);
-    }
+    mesh->hairs.resize(indices.size()); 
+    for (size_t i=0; i<indices.size(); i++) 
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
 
     if (type == RTC_GEOMETRY_TYPE_CURVE_BSPLINE) {
       for (auto& vertices : mesh->positions)
