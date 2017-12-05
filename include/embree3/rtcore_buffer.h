@@ -25,30 +25,6 @@
 extern "C" {
 #endif
 
-/*! \brief Specifies the format of buffers and other data structures */
-enum RTCFormat
-{
-  RTC_FORMAT_UNDEFINED = 0,
-
-  RTC_FORMAT_UINT,
-  RTC_FORMAT_UINT2,
-  RTC_FORMAT_UINT3,
-  RTC_FORMAT_UINT4,
-
-  RTC_FORMAT_INT,
-  RTC_FORMAT_INT2,
-  RTC_FORMAT_INT3,
-  RTC_FORMAT_INT4,
-
-  RTC_FORMAT_FLOAT,
-  RTC_FORMAT_FLOAT2,
-  RTC_FORMAT_FLOAT3,
-  RTC_FORMAT_FLOAT4,
-
-  RTC_FORMAT_FLOAT3X4
-  // ...
-};
-
 /*! \brief Specifies the type of buffers */
 enum RTCBufferType 
 {

@@ -27,11 +27,11 @@ namespace embree
   public:
     /*! Buffer construction */
     Buffer() 
-      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false), modified(true) {}
+      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false) {}
 
     /*! Buffer construction */
     Buffer(Device* device, size_t num_in, size_t stride_in, void* ptr_in = nullptr)
-      : device(device), stride(stride_in), num(num_in), modified(true)
+      : device(device), stride(stride_in), num(num_in)
     {
       if (ptr_in)
       {
@@ -72,7 +72,6 @@ namespace embree
       num = num_in;
       stride = stride_in;
       shared = false;
-      modified = true;
     }
 
     /*! sets shared buffer */
@@ -146,16 +145,6 @@ namespace embree
       return unsigned(stride);
     }
     
-    /*! mark buffer as modified or unmodified */
-    __forceinline void setModified(bool b) {
-      modified = b;
-    }
-    
-    /*! mark buffer as modified or unmodified */
-    __forceinline bool isModified() const {
-      return modified;
-    }
-    
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
       return ptr; 
@@ -174,7 +163,6 @@ namespace embree
     size_t stride;  //!< stride of the buffer in bytes
     size_t num;     //!< number of elements in the buffer
     bool shared;    //!< set if memory is shared with application
-    bool modified;  //!< true if the buffer got modified
   };
 
   /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
@@ -183,7 +171,7 @@ namespace embree
   public:
     /*! Buffer construction */
     RawBufferView()
-      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), userData(0) {}
+      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modified(true), userData(0) {}
 
   public:
     /*! sets the buffer view */
@@ -196,6 +184,7 @@ namespace embree
       stride = buffer_in->stride;
       num = num_in;
       format = format_in;
+      modified = true;
       buffer = buffer_in;
     }
 
@@ -238,6 +227,16 @@ namespace embree
       return format;
     }
 
+    /*! mark buffer as modified or unmodified */
+    __forceinline void setModified(bool b) {
+      modified = b;
+    }
+
+    /*! mark buffer as modified or unmodified */
+    __forceinline bool isModified() const {
+      return modified;
+    }
+
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
       return ptr_ofs; 
@@ -248,6 +247,7 @@ namespace embree
     size_t stride;      //!< stride of the buffer in bytes
     size_t num;         //!< number of elements in the buffer
     RTCFormat format;   //!< format of the buffer
+    bool modified;      //!< true if the buffer got modified
     int userData;       //!< special data
     Ref<Buffer> buffer; //!< reference to the parent buffer
   };
