@@ -65,9 +65,12 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
-    __forceinline       vint<M>& geomID()       { return geomIDs; }
-    __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    template<class T>
+    static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
+
+    __forceinline       vint<M> geomID()       { return unmask(geomIDs); }
+    __forceinline const vint<M> geomID() const { return unmask(geomIDs); }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return unmask(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
@@ -91,8 +94,6 @@ namespace embree
                               Vec4vf<M>& p1,
                               const Scene* scene,
                               float time) const;
-
-    static __forceinline int unmask(int index) { return index & 0x3fffffff; }
 
     /* Calculate the bounds of the line segments */
     __forceinline const BBox3fa bounds(const Scene* scene, size_t itime = 0) const
