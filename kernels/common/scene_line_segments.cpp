@@ -116,6 +116,10 @@ namespace embree
       segments.set(device,ptr,offset,stride,size); 
       setNumPrimitives(size);
     }
+    else if (type == RTC_CURVE_FLAGS_BUFFER) 
+    {
+      flags.set(device,ptr,offset,stride,size);
+    }
     else
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
   }

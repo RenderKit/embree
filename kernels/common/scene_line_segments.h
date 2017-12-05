@@ -59,8 +59,8 @@ namespace embree
     /*! returns the i'th segment */
     __forceinline unsigned int getStartEndBitMask(size_t i) const {
       unsigned int mask = 0;
-      mask |= (i == 0                ) ? ((unsigned int)1 << 30) : 0; // first segment
-      mask |= (i == segments.size()-1) ? ((unsigned int)1 << 31) : 0; // last segment
+      if (flags) 
+        mask |= (flags[i] & 0x3) << 30;
       return mask;
     }
 
@@ -175,6 +175,7 @@ namespace embree
   public:
     Buffer<unsigned int> segments;                 //!< array of line segment indices
     BufferView<Vec3fa> vertices0;                  //!< fast access to first vertex buffer
+    Buffer<char> flags;                            //!< start, end flag per segment
     vector<Buffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<Buffer<char>> userbuffers;              //!< user buffers
   };

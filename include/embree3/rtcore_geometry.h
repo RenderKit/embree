@@ -59,6 +59,8 @@ enum RTCBufferType
   RTC_VERTEX_CREASE_WEIGHT_BUFFER = 0x08000000,
 
   RTC_HOLE_BUFFER          = 0x09000000,
+
+  RTC_CURVE_FLAGS_BUFFER    = 0x0a000000
 };
 
 #define RTC_INDEX_BUFFER_(i)  (enum RTCBufferType)(RTC_INDEX_BUFFER+(i))
@@ -218,6 +220,11 @@ enum RTCSubdivisionMode
   RTC_SUBDIVISION_MODE_PIN_CORNERS     = 2, //!< smooth border with fixed corners
   RTC_SUBDIVISION_MODE_PIN_BOUNDARY    = 3, //!< linearly interpolation along border
   RTC_SUBDIVISION_MODE_PIN_ALL         = 4, //!< pin every vertex (interpolates every patch linearly)
+};
+
+enum RTCCurveFlags { 
+  RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), 
+  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1) 
 };
 
 /*! Arguments for RTCBoundsFunction */
