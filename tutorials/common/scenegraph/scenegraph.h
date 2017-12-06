@@ -820,6 +820,7 @@ namespace embree
       RTCGeometrySubtype subtype;             //!< subtype of geometry (hair or curve)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
+      std::vector<unsigned char> flags;                //!< left, right end cap flags
 
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
