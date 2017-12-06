@@ -279,7 +279,7 @@ namespace embree
   public:
     Buffer<unsigned int> curves;            //!< array of curve indices
     vector<Buffer<Vec3fa>> vertices;        //!< vertex array for each timestep
-    Buffer<char> flags;                            //!< start, end flag per segment
+    Buffer<char> flags;                     //!< start, end flag per segment
     vector<Buffer<char>> userbuffers;       //!< user buffers
     RTCGeometryType type;                   //!< basis of user provided vertices
     RTCGeometrySubtype subtype;             //!< hair or surface geometry

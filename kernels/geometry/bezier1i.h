@@ -46,7 +46,7 @@ namespace embree
     __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID)
       : vertexID(vertexID), geom(geomID), prim(primID) {}
 
-    /* Returns the geometry IDs */
+    /* Returns the geometry ID */
     template<class T>
     static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
 
