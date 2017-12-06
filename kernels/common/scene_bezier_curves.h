@@ -64,6 +64,15 @@ namespace embree
       return native_curves[i];
     }
 
+    /*! returns the i'th segment */
+    __forceinline unsigned int getStartEndBitMask(size_t i) const {
+      unsigned int mask = 0;
+      if (flags) 
+        mask |= (flags[i] & 0x3) << 30;
+      return mask;
+    }
+
+
     /*! returns the i'th curve */
     __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
     {
@@ -270,6 +279,7 @@ namespace embree
   public:
     Buffer<unsigned int> curves;            //!< array of curve indices
     vector<Buffer<Vec3fa>> vertices;        //!< vertex array for each timestep
+    Buffer<char> flags;                            //!< start, end flag per segment
     vector<Buffer<char>> userbuffers;       //!< user buffers
     RTCGeometryType type;                   //!< basis of user provided vertices
     RTCGeometrySubtype subtype;             //!< hair or surface geometry

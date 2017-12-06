@@ -76,10 +76,13 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      PING;
       segments.newBuffer(device,size,stride); 
       setNumPrimitives(size);
       return segments.get();
+    }
+    else if (type == RTC_CURVE_FLAGS_BUFFER) 
+    {
+      flags.newBuffer(device,stride,size);
     }
     else
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
