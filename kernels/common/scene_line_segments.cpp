@@ -56,7 +56,7 @@ namespace embree
   void* LineSegments::newBuffer(RTCBufferType type, size_t stride, unsigned int size)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
+    if ((type != RTC_CURVE_FLAGS_BUFFER) && (stride & 0x3)) 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     unsigned bid = type & 0xFFFF;
