@@ -239,6 +239,7 @@ namespace embree
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
     hairs = (ISPCHair*) in->hairs.data();
+    flags = (unsigned char*)in->flags.data();
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numHairs = (unsigned)in->numPrimitives();
@@ -396,6 +397,9 @@ namespace embree
     rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair),mesh->numHairs);
     if (mesh->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
+
+    rtcSetBuffer(geom,RTC_CURVE_FLAGS_BUFFER,mesh->flags,0,sizeof(unsigned char),mesh->numHairs);
+
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
