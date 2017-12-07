@@ -1,0 +1,73 @@
+.TH "rtcNewInstance" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcNewInstance\ \-\ creates\ a\ new\ instance
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCORE_API\ RTCGeometry\ rtcNewInstance(RTCDevice\ device,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCScene\ source,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unsigned\ int\ numTimeSteps);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Embree supports instancing of scenes using some affine transformation
+(3x3 matrix plus translation).
+As the instanced scene is stored only a single time, even if instanced
+to multiple locations, this feature can be used to create very complex
+scenes.
+Only single level instancing is supported by Embree natively, however,
+multi\-level instancing can be implemented through user geometries.
+.PP
+Instances are created using the \f[C]rtcNewInstance\f[] function call.
+To instantiate a scene, one first has to generate the scene
+\f[C]scene\f[] to instantiate, then one can create an instance of this
+scene the following way:
+.IP
+.nf
+\f[C]
+RTCGeometry\ geometry\ instance\ =\ rtcNewInstance(device,\ scene);
+\f[]
+.fi
+.PP
+Please note, that \f[C]rtcCommitScene\f[] on the instanced scene should
+be called first, followed by \f[C]rtcCommitGeometry\f[] on the instance,
+followed by \f[C]rtcCommitScene\f[] on the toplevel scene containing the
+instance.
+.PP
+For multi segment motion blur the number of timesteps has to get
+specified using the \f[C]rtcSetNumTimeSteps\f[] call and a
+transformation for each time step specified using the
+\f[C]rtcSetGeometryTransform\f[] function.
+.PP
+If a ray hits the instance, then the \f[C]geomID\f[] and \f[C]primID\f[]
+members of the ray are set to the geometry ID and primitive ID of the
+hit primitive in the instanced scene, and the \f[C]instID\f[] member of
+the ray is set to the geometry ID of the instance in the toplevel scene.
+.PP
+The instancing scheme can also get implemented using user geometries.
+Therefore, the user geometry code should set the \f[C]instID\f[] member
+of the intersection context to the geometry ID of the instance, then
+trace the transformed ray, and finally set the \f[C]instID\f[] field of
+the intersection context again to \-1.
+The \f[C]instID\f[] field is copied automatically by each primitive
+intersector into the \f[C]instID\f[] field of the ray when the primitive
+is hit.
+.PP
+See tutorial [Instanced Geometry] for an example of how to use
+instances.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+get queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

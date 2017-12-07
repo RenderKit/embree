@@ -1,0 +1,52 @@
+.TH "RTCHitN" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTCHitN\ \-\ hit\ packet\ of\ runtime\ size
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ HitN;
+
+float&\ RTCHitN_Ng_x(RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+float&\ RTCHitN_Ng_y(RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+float&\ RTCHitN_Ng_z(RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+
+unsigned&\ RTCHitN_primID(RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+unsigned&\ RTCHitN_geomID(RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+unsigned&\ RTCHitN_instID(RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+
+float&\ RTCHitN_u\ \ \ (RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+float&\ RTCHitN_v\ \ \ (RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+float&\ RTCHitN_t\ \ \ (RTCHitN*\ hits,\ size_t\ N,\ size_t\ i);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+When the hit packet size is not known at compile time (e.g.
+when Embree returns a potential hit packet in the
+\f[C]RTCFilterFuncN\f[] callback function), Embree uses the
+\f[C]RTCHitN\f[] type for hit packets.
+These hit packets can only have size 1, 4, 8, or 16, no other packet
+size will get used.
+.PP
+You can either implement different special code paths for each of these
+possible packet sizes and cast the hit to the appropiate hit packet
+type, or implement one general code path that uses the
+\f[C]RTCHit_XXX\f[] helper functions to access hit packet components.
+.PP
+These helper functions get a pointer to the hit packet (\f[C]ptr\f[]
+argument), the packet size (\f[C]N\f[] argument), and returns a
+reference to some component (e.g.
+x\-component of Ng) of the the ith hit of the packet (\f[C]i\f[]
+argument).
+.SS EXIT STATUS
+.SS SEE ALSO
+.PP
+[RTCRayN]

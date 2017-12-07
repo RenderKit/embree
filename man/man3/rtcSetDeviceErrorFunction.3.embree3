@@ -1,0 +1,43 @@
+.TH "rtcSetDeviceErrorFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetDeviceErrorFunction\ \-\ sets\ an\ error\ callback\ function\ for\ the\ device
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+typedef\ void\ (*RTCErrorFunction)(void*\ userPtr,\ const\ RTCError\ code,\ const\ char*\ str);
+
+void\ rtcSetDeviceErrorFunction(RTCDevice\ device,\ RTCErrorFunction\ func,\ void*\ userPtr);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Using the \f[C]rtcSetDeviceErrorFunction\f[] call, it is possible to set
+a callback function \f[C]func\f[] with payload \f[C]userPtr\f[] that is
+called whenever an error occurs for the specified device.
+Only a single callback function can get registered per device and
+further invokations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer to
+\f[C]rtcSetDeviceErrorFunction\f[] disables the set callback function
+again.
+.PP
+When the registered callback function is invoked, it gets passed the
+user defined payload \f[C]userPtr\f[] (as specified at registration
+time), the error code \f[C]code\f[] of the occured error, as well as
+some string \f[C]str\f[] that describes the error further.
+.PP
+The error code is also set if an error callback function is registered.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcGetDeviceError]

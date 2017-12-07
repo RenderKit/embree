@@ -1,0 +1,48 @@
+.TH "rtcSetGeometryBufferRange" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryBufferRange\ \-\ sets\ a\ sub\-range\ of\ a\ buffer\ to\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryBufferRange(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCBufferType\ type,
+\ \ unsigned\ int\ slot,
+\ \ enum\ RTCFormat\ format,
+\ \ RTCBuffer\ buffer,
+\ \ size_t\ byteOffset,
+\ \ unsigned\ int\ numItems
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryBufferRange\f[] function assigns a sub\-range of
+a buffer object (\f[C]buffer\f[] argument) of specified format
+(\f[C]format\f[] argument) to some geometry buffer slot (\f[C]type\f[]
+and \f[C]slot\f[] argument) of the specified geometry (\f[C]geometry\f[]
+argument).
+The sub\-range of the buffer to assign is specified using a byte offset
+to the start element (\f[C]byteOffset\f[] argument) and the number of
+buffer items (\f[C]numItems\f[] argument).
+After successful completion of this function, the geometry will hold a
+reference count of the buffer object.
+.PP
+The start address \f[C]byteOffset\f[] has to be aligned to 4 bytes,
+otherwise the \f[C]rtcBindBuffer\f[] function will fail.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
+[rtcSetNewGeometryBuffer]

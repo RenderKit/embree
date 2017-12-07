@@ -1,0 +1,204 @@
+.TH "rtcBuildBVH" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcBuildBVH\ \-\ builds\ a\ BVH
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void*\ rtcBuildBVH(RTCBVH\ bvh,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ BVH\ to\ build
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ const\ struct\ RTCBuildSettings*\ settings,\ //!<\ settings\ for\ BVH\ builder
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ struct\ RTCBuildPrimitive*\ primitives,\ \ \ \ //!<\ list\ of\ input\ primitives
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ size_t\ numPrimitives,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ number\ of\ input\ primitives
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCCreateNodeFunction\ createNode,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ creates\ a\ node
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCSetNodeChildrenFunction\ setNodeChildren,\ \ \ \ \ \ \ \ \ //!<\ sets\ pointer\ to\ all\ children
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCSetNodeBoundsFunction\ setNodeBounds,\ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ sets\ bounds\ of\ all\ children
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCCreateLeafFunction\ createLeaf,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ creates\ a\ leaf
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCSplitPrimitiveFunction\ splitPrimitive,\ \ \ \ \ \ \ \ \ \ \ //!<\ splits\ a\ primitive
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCProgressMonitorFunction\ buildProgress,\ \ \ \ \ \ \ \ \ \ \ //!<\ used\ to\ report\ build\ progress
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ void*\ userPtr\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ user\ pointer\ passed\ to\ callback\ functions
+\f[]
+.fi
+.PP
+);
+.SS DESCRIPTION
+.PP
+The \f[C]rtcBuildBVH\f[] function builds a BVH (\f[C]bvh\f[] argument),
+with the provided settings (\f[C]settigns\f[] argument), over the build
+primitives (\f[C]primitives\f[] argument).
+.PP
+The \f[C]rtcBuildBVH\f[] function can get used to build a BVH in user
+defined format over arbitrary primitives.
+The function gets passed the BVH objects (\f[C]bvh\f[] argument), the
+build settings to use (\f[C]settings\f[] argument), the array of
+primitives (\f[C]primitives\f[] argument) and its size
+(\f[C]numPrimitives\f[] argument), the previously described callback
+function pointers, and a user defined pointer (\f[C]userPtr\f[]
+argument) that is passed to all callback functions.
+The function pointer to the primitive split function
+(\f[C]splitPrimitive\f[] argument) may be \f[C]NULL\f[], however, then
+no spatial splitting in high quality mode is possible.
+The function pointer used to report the build progress
+(\f[C]buildProgress\f[] argument) is optional and may also be
+\f[C]NULL\f[].
+The \f[C]primitives\f[] array can be freed by the application again
+after the BVH is built.
+.PP
+For static scenes that do not require a further \f[C]rtcBuildBVH\f[]
+call one should use the \f[C]rtcMakeStatic\f[] function after the build
+which clears some internal data.
+.IP
+.nf
+\f[C]
+void\ rtcMakeStaticBVH(RTCBVH);
+\f[]
+.fi
+.PP
+Some settings have to be passed to be BVH build function:
+.IP
+.nf
+\f[C]
+enum\ RTCBuildQuality
+{
+\ \ RTC_BUILD_QUALITY_LOW\ =\ 0,\ \ \ \ //\ build\ low\ quality\ BVH\ (good\ for\ dynamic\ scenes)
+\ \ RTC_BUILD_QUALITY_NORMAL\ =\ 1,\ //\ build\ standard\ quality\ BVH
+\ \ RTC_BUILD_QUALITY_HIGH\ =\ 2,\ \ \ //\ build\ high\ quality\ BVH
+};
+\ \ 
+struct\ RTCBuildSettings
+{
+\ \ unsigned\ size;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //\ size\ of\ this\ structure\ in\ bytes
+\ \ RTCBuildQuality\ quality;\ \ \ \ \ //\ quality\ of\ BVH\ build
+\ \ unsigned\ maxBranchingFactor;\ //\ branching\ factor\ of\ BVH\ to\ build
+\ \ unsigned\ maxDepth;\ \ \ \ \ \ \ \ \ \ \ //\ maximal\ depth\ of\ BVH\ to\ build
+\ \ unsigned\ sahBlockSize;\ \ \ \ \ \ \ //\ blocksize\ for\ SAH\ heuristic
+\ \ unsigned\ minLeafSize;\ \ \ \ \ \ \ \ //\ minimal\ size\ of\ a\ leaf
+\ \ unsigned\ maxLeafSize;\ \ \ \ \ \ \ \ //\ maximal\ size\ of\ a\ leaf
+\ \ float\ travCost;\ \ \ \ \ \ \ \ \ \ \ \ \ \ //\ estimated\ cost\ of\ one\ traversal\ step
+\ \ float\ intCost;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //\ estimated\ cost\ of\ one\ primitive\ intersection
+\ \ unsigned\ extraSpace;\ \ \ \ \ \ \ \ \ //\ for\ spatial\ splitting\ we\ need\ extra\ space\ at\ end\ of\ primitive\ array
+};
+\f[]
+.fi
+.PP
+Some default values for the settings can be obtained using the
+\f[C]rtcDefaultBuildSettings\f[] function.
+Using the \f[C]quality\f[] setting, one can select between a faster low
+quality build which is good for dynamic scenes, and a standard quality
+build for static scenes.
+One can also specify the desired maximal branching factor of the BVH
+(\f[C]maxBranchingFactor\f[] setting), the maximal depth the BVH should
+have (\f[C]maxDepth\f[] setting), some power of 2 block size for the SAH
+heuristic (\f[C]sahBlockSize\f[]), the minimal and maximal leaf size
+(\f[C]minLeafSize\f[] and \f[C]maxLeafSize\f[] setting), and the
+estimated cost of one traversal step and primitve intersection
+(\f[C]travCost\f[] and \f[C]intCost\f[] setting).
+To spatially split primitives in high quality mode, the builder needs
+some extra space at the end of the build primitive array.
+The amount of extra space can be passed using the \f[C]extraSpace\f[]
+setting, and should be about the same size as there are primitives.
+The \f[C]size\f[] member has always to be set to the size of the
+\f[C]RTCBuildSettings\f[] structure in bytes.
+.PP
+Four callback functions have to get registered which are invoked during
+build to create BVH nodes (\f[C]RTCCreateNodeFunc\f[]), set the pointers
+to all children (\f[C]RTCSetNodeChildrenFunc\f[]), set the bounding
+boxes of all children (\f[C]RTCSetNodeBoundsFunc\f[]), and to create a
+leaf node (\f[C]RTCCreateLeafFunc\f[]).
+.IP
+.nf
+\f[C]
+typedef\ void*\ (*RTCCreateNodeFunc)\ (RTCThreadLocalAllocator,\ size_t\ numChildren,\ void*\ userPtr);
+
+typedef\ void\ \ (*RTCSetNodeChildFunc)\ (void*\ nodePtr,\ void**\ childPtrs,\ size_t\ numChildren,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ void*\ userPtr);
+
+typedef\ void\ \ (*RTCSetNodeBoundsFunc)\ (void*\ nodePtr,\ const\ RTCBounds**,\ size_t\ numChildren,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ void*\ userPtr);
+
+typedef\ void*\ (*RTCCreateLeafFunc)\ (RTCThreadLocalAllocator,\ const\ RTCBuildPrimitive*\ prims,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ size_t\ numPrimitives,\ void*\ userPtr);
+
+typedef\ void\ \ (*RTCSplitPrimitiveFunc)\ (const\ RTCBuildPrimitive&,\ unsigned\ dim,\ float\ pos,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ RTCBounds&\ lbounds,\ RTCBounds&\ rbounds,\ void*\ userPtr);
+\f[]
+.fi
+.PP
+The \f[C]RTCCreateNodeFunc\f[] and \f[C]RTCCreateLeafFunc\f[] type
+callbacks are passed a thread local allocator object that should be used
+for fast allocation of nodes using the \f[C]rtcThreadLocalAlloc\f[]
+function.
+.IP
+.nf
+\f[C]
+void*\ rtcThreadLocalAlloc(RTCThreadLocalAllocator,\ size_t\ bytes,\ size_t\ align);
+\f[]
+.fi
+.PP
+We strongly recommend using this allocation mechanism, as alternative
+approaches like standard \f[C]malloc\f[] can be over 10× slower.
+The allocator object passed to the create callbacks has to be used only
+inside the current thread.
+Memory allocated using \f[C]rtcThreadLocalAlloc\f[] is automatically
+freed when the \f[C]RTCBVH\f[] object is deleted.
+If you use your own memory allocation scheme you have to free the memory
+yourself after the \f[C]RTCBVH\f[] object got deleted.
+.PP
+The \f[C]RTCCreateNodeFunc\f[] callback additionally gets passed the
+number of children for this node in the range from 2 to
+maxBranchingFactor (\f[C]numChildren\f[] argument).
+.PP
+The \f[C]RTCSetNodeChildFunc\f[] callback function, gets passed a
+pointer to the node as input (\f[C]nodePtr\f[] argument), an array of
+pointers to the children (\f[C]childPtrs\f[] argument), and the size of
+this array (\f[C]numChildren\f[] argument).
+.PP
+The \f[C]RTCSetNodeBoundsFunc\f[] callback function, get a pointer to
+the node as input (\f[C]nodePtr\f[] argument), an array of pointers to
+the bounding boxes of the children (\f[C]bounds\f[] argument), and the
+size of this array (\f[C]numChildren\f[] argument).
+.PP
+The \f[C]RTCCreateLeafFunc\f[] callback additionally get an array of
+primitives as input (\f[C]primitives\f[] argument), and the size of this
+array (\f[C]numPrimitives\f[] argument).
+The callback should read the \f[C]geomID\f[] and \f[C]primID\f[] members
+from the passed primitives to construct the leaf.
+.PP
+The \f[C]RTCSplitPrimitiveFunc\f[] callback is invoked in high quality
+mode to split a primitive (\f[C]prim\f[] argument) at some specified
+position (\f[C]pos\f[] argument) and dimension (\f[C]dim\f[] argument).
+The callback should return bounds of the clipped left and right part of
+the primitive (\f[C]lbounds\f[] and \f[C]rbounds\f[] arguments).
+.PP
+There is an optional progress callback function that can be used to get
+progress on the BVH build.
+.IP
+.nf
+\f[C]
+typedef\ void\ (*RTCBuildProgressFunc)\ (void*\ userPtr,\ double\ N);
+\f[]
+.fi
+.PP
+This progress function is called with the estimated completion rate in
+the range [0, 1].
+.PP
+All callback functions are typically called from multiple threads, thus
+their implementation has to be thread safe.
+.PP
+All callback function get a user defined pointer (\f[C]userPtr\f[]
+argument) as input which is provided to the \f[C]rtcBuildBVH\f[] call.
+This pointer can be used to access the application scene object inside
+the callback functions.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewBVH]

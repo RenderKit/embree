@@ -1,0 +1,118 @@
+.TH "RTC_GEOMETRY_TYPE_CURVE" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_CURVE_LINEAR\ \-\ linear\ curve\ geometry\ type
+RTC_GEOMETRY_TYPE_CURVE_BEZIER\ \-\ bezier\ curve\ geometry\ type
+RTC_GEOMETRY_TYPE_CURVE_BSPLINE\ \-\ b\-spline\ curve\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry0\ =\ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_CURVE_LINEAR);
+RTCGeometry\ geometry1\ =\ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_CURVE_BEZIER);
+RTCGeometry\ geometry2\ =\ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_CURVE_BSPLINE);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Curves with per vertex radius are supported with linear, cubic bezier,
+and cubic b\-spline basis.
+.PP
+Curve geometries are created by passing
+\f[C]RTC_GEOMETRY_TYPE_CURVE_LINEAR\f[],
+\f[C]RTC_GEOMETRY_TYPE_CURVE_BEZIER\f[], or
+\f[C]RTC_GEOMETRY_TYPE_CURVE_BSPLINE\f[], to the \f[C]rtcNewGeometry\f[]
+function.
+The curve indices can be specified through an index buffer
+(\f[C]RTC_INDEX_BUFFER\f[]) and the curve vertices through the vertex
+buffer (\f[C]RTC_VERTEX_BUFFER\f[]).
+.PP
+The index buffer contains an array of ranges (pair of 32\-bit indices)
+and the number of primitives are infered from the size of this index
+buffer.
+The ranges are pointing to the ID of the first control vertex and last
+control vertex of the curve.
+The curve consists of multiple connected curve segments, which are
+either using a linear basis, cubic bezier basis, or cubic b\-spline
+basis, depending on curve type.
+Thus the ranges can refer to a range of many points, more than the basis
+would require.
+Given a range [first,last] of a curve, the start vertices of the
+i\[aq]th curve segments can be obtained through first+i*stride and there
+is a total of floor((last\-first+1)/stride) many curve segments.
+The stride is 1 for the linear and b\-spline basis, and 3 for the bezier
+basis.
+This means that line segments and bezier segments share end points, and
+B\-Spline segments share 3 control vertices.
+Please note that it is possible to also represent just a single curve
+segment as a curve.
+.PP
+The vertex buffer stores all control points in the form of a single
+precision position and radius stored in \f[C]x\f[], \f[C]y\f[],
+\f[C]z\f[], \f[C]r\f[] order in memory.
+The number of vertices is infered from the size of this buffer.
+The radii maybe smaller zero for the B\-Spline basis, but the
+interpolated radius should always be greater or equal to zero.
+.PP
+Two subtypes are supported \f[C]RTC_GEOMETRY_SUBTYPE_RIBBON\f[] and
+\f[C]RTC_GEOMETRY_SUBTYPE_SURFACE\f[], which can get set using the
+\f[C]rtcSetGeometrySubtype\f[] API call.
+The \f[C]RTC_GEOMETRY_SUBTYPE_SURFACE\f[] is the default subtype for
+each geometry.
+.PP
+The ribbon mode is a fast mode designed to render distant hair.
+In this mode the curve is rendered as a connected sequence of ray facing
+ribbons/quads.
+Individual ribbons are considered to have subpixel size and zooming onto
+these ribbons might show geometric artifacts.
+The number of ribbons to subdivide into can be specified through the
+\f[C]rtcSetTessellationRate\f[] function.
+By default the tessellation rate is 4.
+.PP
+In the surface mode a real geometric surface is rendered for the curve,
+which is more expensive but allows closeup views.
+For the bezier and b\-spline basis this mode renders the sweep surface
+of sweeping a varying radius circle tangential along the curve.
+As a limitation, the radius of the curve has to be smaller than the
+curvature radius of the curve at each location on the curve.
+The surface mode is currently not supported for the linear basis.
+.PP
+For multi segment motion blur the number of timesteps has to get
+specified using the \f[C]rtcSetNumTimeSteps\f[] call.
+Further a vertex buffer for each time step has to get set, and all these
+buffers have to have the same stride and size.
+.PP
+When a curve intersection is found, the sum of local curve segment ID
+and local parametric \f[C]u\f[] value along the curve segment are
+returned as \f[C]u\f[] hit parameter.
+This means that the local curve segment ID can be obtained through
+\f[C]floor(u)\f[] and the local curve u value as \f[C]frac(u)\f[].
+To avoid an invalid curve segment ID at the very end of the curve, it is
+guaranteed that \f[C]u\f[] is always some epsilon smaller than the
+number of curve segments.
+.PP
+For bezier and b\-spline ribbons the \f[C]v\f[]\-coordinate is set to
+the normalized distance in the range \-1 to +1.
+For the linear basis and in surface mode the \f[C]v\f[]\-coordinate is
+set to zero.
+.PP
+In ribbon mode, the geometry normal \f[C]Ng\f[] is filled with the
+tangent of the curve at the hit location.
+In surface mode the geometry normal \f[C]Ng\f[] is filled with the
+non\-normalized geometric normal of the surface.
+.PP
+Also see tutorial [Hair] and [Curves] for an example of how to create
+and use curve geometries.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+get queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

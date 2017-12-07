@@ -1,0 +1,65 @@
+.TH "RTC_GEOMETRY_TYPE_QUAD" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_QUAD\ \-\ quad\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =\ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_QUAD);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Quad meshes are created by passing \f[C]RTC_GEOMETRY_TYPE_QUAD\f[] to
+the \f[C]rtcNewGeometry\f[] function call.
+The quad indices can be specified through an index buffer
+(\f[C]RTC_INDEX_BUFFER\f[]) and the quad vertices through the vertex
+buffer (\f[C]RTC_VERTEX_BUFFER\f[]).
+The index buffer contains an array of four 32\-bit indices and the
+number of primitives is infered from the size of that buffer.
+The vertex buffer contains an array of single precision \f[C]x\f[],
+\f[C]y\f[], \f[C]z\f[] floating point coordinates and the number of
+vertices are infered from the size of that buffer.
+The vertex buffer can be at most 16GB large.
+.PP
+For multi segment motion blur the number of timesteps has to get
+specified using the \f[C]rtcSetNumTimeSteps\f[] call.
+Further a vertex buffer for each time step has to get set, and all these
+buffers have to have the same stride and size.
+.PP
+A quad is internally handled as a pair of two triangles
+\f[C]v0,v1,v3\f[] and \f[C]v2,v3,v1\f[], with the u\[aq]/v\[aq]
+coordinates of the second triangle corrected by \f[C]u\ =\ 1\-u\[aq]\f[]
+and \f[C]v\ =\ 1\-v\[aq]\f[] to produce a quad parametrization where
+\f[C]u\f[] and \f[C]v\f[] are in the range 0 to 1.
+Thus the parametrization of a quad uses the first vertex \f[C]p0\f[] as
+base point, and the vector \f[C]p1\ \-\ p0\f[] as u\-direction and
+\f[C]p3\ \-\ p0\f[] as v\-direction.
+Thus vertex attributes \f[C]t0,t1,t2,t3\f[] can get bi\-linearly
+interpolated over the quadrilateral the following way:
+.IP
+.nf
+\f[C]
+t_uv\ =\ (1\-v)((1\-u)*t0\ +\ u*t1)\ +\ v*((1\-u)*t3\ +\ u*t2)
+\f[]
+.fi
+.PP
+Mixed triangle/quad meshes are supported by encoding a triangle as a
+quad, which can get achieved by replicating the last triangle vertex
+(\f[C]v0,v1,v2\f[] \-> \f[C]v0,v1,v2,v2\f[]).
+This way the second triangle is a line (which can never get hit) and the
+parametrization of the first triangle is compatible with the standard
+triangle parametrization.
+.PP
+A quad whose vertices are layed out counter\-clockwise has its geometry
+normal pointing upwards outside the front face, like illustrated in the
+following picture.
+.PP
+[][imgQuadUV]

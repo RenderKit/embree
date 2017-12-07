@@ -1,0 +1,88 @@
+.TH "rtcSetGeometryOccludedFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryOccludedFunction\ \-\ sets\ callback\ function\ to\ test\ if\ primitive\ is\ an\ occluder
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCOccludedFunctionNArguments
+{
+\ \ int*\ valid;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ valid\ mask
+\ \ void*\ geomUserPtr;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ geometry\ user\ data
+\ \ struct\ RTCIntersectContext*\ context;\ //!<\ intersection\ context\ as\ passed\ to\ rtcIntersect/rtcOccluded
+\ \ struct\ RTCRayN*\ ray;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ ray\ packet\ to\ intersect
+\ \ unsigned\ int\ N;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ number\ of\ rays\ in\ packet
+\ \ unsigned\ int\ item;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ item\ to\ intersect
+};
+
+typedef\ void\ (*RTCOccludedFunctionN)(const\ struct\ RTCOccludedFunctionNArguments*\ const\ args);
+
+void\ rtcSetGeometryOccludedFunction(RTCGeometry\ geometry,\ RTCOccludedFunctionN\ occluded);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryOccludedFunction\f[] function registers a
+ray/primitive occlusion callback function \f[C]occluded\f[] for the
+specified user geometry \f[C]geometry\f[].
+Only a single callback function can get registered per geometry and
+further invokations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the set callback
+function again.
+.PP
+The registered callback function is invoked by the
+\f[C]rtcOccluded\f[]\-type ray queries to test if the rays of a packet
+of variable size are occluded by a user defined primitive.
+The callback function gets passed a number of arguments through the
+\f[C]RTCOccludedFunctionNArguments\f[] structure.
+The value \f[C]N\f[] specifies the ray packet size, \f[C]valid\f[]
+points to an array of integers which specify if the corresponding ray is
+valid (\-1) or invalid (0), the \f[C]geomUserPtr\f[] member points to
+the geometry user data previously set through
+\f[C]rtcSetGeometryUserData\f[], the \f[C]context\f[] member points to
+the intersection context passed to the ray query, the \f[C]ray\f[]
+member points to a ray packet of variable size \f[C]N\f[], and the
+\f[C]item\f[] member identifies the primitive ID of the primitive to
+test for occlusion.
+.PP
+The task of the callback function is to intersect each active ray from
+the ray packet with the specified user primitive.
+If the user defined primitive is missed by a ray of the ray packet the
+function should return without modifying the ray.
+If an intersection of the user defined primitive with the ray was found,
+it should set the \f[C]geomID\f[] of the ray to \f[C]0\f[].
+.PP
+As a primitive might have multiple intersections with a ray, the
+occlusion filter function needs to get invoked by the user geometry
+occluded callback for each intersection encountered, if filtering of
+intersections is desired.
+This can get achieved through the \f[C]rtcFilterOcclusion\f[] call.
+.PP
+From inside the user geometry occluded function, it is safe to trace new
+rays and create new geometry.
+.PP
+When performing ray queries using the \f[C]rtcOccluded1/4/8/16\f[]
+functions, it is guaranteed that the ray packet size (and order of rays
+inside the packet) passed to the the \f[C]RTCOccludedFunctionN\f[]
+callback matches the initial ray packet.
+When performing ray queries using the stream API such as
+\f[C]rtcOccluded1M\f[], \f[C]rtcOccluded1Mp\f[], \f[C]rtcOccludedNM\f[],
+or \f[C]rtcOccludedNp\f[] the order of rays might change and the ray
+packet size of the callback function can be 1/4/8 or 16.
+Use the \f[C]rayID\f[] component of the ray in case you need to identify
+the original ray, e.g.
+to access a per ray payload.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryIntersectFunction], [rtcFilterOcclusion]

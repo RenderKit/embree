@@ -1,0 +1,94 @@
+.TH "rtcInterpolate" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcInterpolate\ \-\ interpolates\ vertex\ attributes
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCInterpolateArguments
+{
+\ \ RTCGeometry\ geometry;
+\ \ unsigned\ int\ primID;
+\ \ float\ u,\ v;
+\ \ enum\ RTCBufferType\ buffer;
+\ \ float*\ P;
+\ \ float*\ dPdu;
+\ \ float*\ dPdv;
+\ \ float*\ ddPdudu;
+\ \ float*\ ddPdvdv;
+\ \ float*\ ddPdudv;
+};
+
+void\ rtcInterpolate(const\ struct\ RTCInterpolateArguments*\ const\ args);
+void\ rtcInterpolate0(...);
+void\ rtcInterpolate1(...);
+void\ rtcInterpolate2(...);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcInterpolate\f[] function smoothly interpolates per\-vertex
+data over the geometry.
+This interpolation is supported for triangle meshes, quad meshs, curve
+geometries, and subdivision geometry.
+The interpolated value can be calculated, but also first and second
+order derivatives of that value.
+This interpolation ignores displacements of subdivision surfaces and
+always interpolates the underlying base surface.
+.PP
+The \f[C]rtcInterpolate\f[] call gets passed a number of arguments
+inside a structure of type \f[C]RTCInterpolateArguments\f[].
+The function smoothly interpolates the per\-vertex data stored in the
+specified geometry buffer (\f[C]buffer\f[] parameter) to the u/v
+location (\f[C]u\f[] and \f[C]v\f[] parameters) of the primitive
+(\f[C]primID\f[] parameter) of the geometry (\f[C]geometry\f[]
+parameter).
+The number of values \f[C]M\f[] to interpolate are derived from the
+format of the interpolation buffer (\f[C]buffer\f[] parameter).
+As interpolation buffer one can specify the
+\f[C]RTC_VERTEX_BUFFER_(i)\f[] as well as user vertex buffers
+\f[C]RTC_USER_VERTEX_BUFFER_(i)\f[].
+.PP
+The \f[C]rtcInterpolate\f[] call stores \f[C]M\f[] interpolated floating
+point values to the memory location pointed to by \f[C]P\f[].
+One can avoid storing the interpolated value by setting \f[C]P\f[] to
+NULL.
+.PP
+The first order derivative of the interpolation by u and v are stored at
+the \f[C]dPdu\f[] and \f[C]dPdv\f[] memory locations.
+One can avoid storing first order derivatives by setting both
+\f[C]dPdu\f[] and \f[C]dPdv\f[] to NULL.
+.PP
+The second order derivatives are stored at the \f[C]ddPdudu\f[],
+\f[C]ddPdvdv\f[], and \f[C]ddPdudv\f[] memory locations.
+One can avoid storing second order derivatives by setting these three
+pointers to NULL.
+.PP
+The \f[C]rtcInterpolate0\f[], \f[C]rtcInterpolate1\f[], and
+\f[C]rtcInterpolate2\f[] functions, are versions that just interpolate
+the value (\f[C]rtcInterpolate0\f[]), additionally calculate first
+derivatives (\f[C]rtcInterpolate1\f[]), or additionally calculate second
+derivatives (\f[C]rtcInterpolate2\f[]), by accepting standard function
+arguments instead of the \f[C]RTCInterpolateArguments\f[] structure.
+.PP
+To use \f[C]rtcInterpolate\f[] for some geometry, all changes to that
+geometry have to be properly commited using \f[C]rtcCommitGeometry\f[].
+.PP
+All input buffers and output arrays must be padded to 16 bytes.
+.PP
+See tutorial [Interpolation] for an example of using the
+\f[C]rtcInterpolate\f[] function.
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcInterpolateN]
