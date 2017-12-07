@@ -185,6 +185,8 @@ namespace embree
       {
         THROW_RUNTIME_ERROR("invalid hair");
       }
+    if (flags.size() != 0 && flags.size() != hairs.size())
+      THROW_RUNTIME_ERROR("size of flags array does not match size of curve array");
   }
 
   avector<Vec3fa> bspline_to_bezier_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)

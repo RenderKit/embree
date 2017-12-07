@@ -564,7 +564,7 @@ namespace embree
       std::vector<unsigned char> data;
       data.resize(xml->body.size());
       for (size_t i=0; i<data.size(); i++) 
-        data[i] = xml->body[i].Int();
+        data[i] = (unsigned char)xml->body[i].Int();
       return data;
     }
   }
@@ -1051,6 +1051,8 @@ namespace embree
     std::string tessellation_rate = xml->parm("tessellation_rate");
     if (tessellation_rate != "")
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
+
+    mesh->flags = loadUCharArray(xml->childOpt("flags"));
 
     mesh->verify();
     return mesh.dynamicCast<SceneGraph::Node>();

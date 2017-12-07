@@ -399,7 +399,6 @@ namespace embree
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
 
     rtcSetBuffer(geom,RTC_CURVE_FLAGS_BUFFER,mesh->flags,0,sizeof(unsigned char),mesh->numHairs);
-
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
