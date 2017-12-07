@@ -40,6 +40,7 @@ ENDIF()
 # Install Headers
 ##############################################################
 INSTALL(DIRECTORY include/embree3 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
+INSTALL(DIRECTORY man/man3 DESTINATION ${CMAKE_INSTALL_MANDIR} COMPONENT devel)
 
 ##############################################################
 # Install Models
