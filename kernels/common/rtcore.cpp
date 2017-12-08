@@ -967,7 +967,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
   
-  RTCORE_API void rtcSetGeometryMask (RTCGeometry hgeometry, int mask) 
+  RTCORE_API void rtcSetGeometryMask (RTCGeometry hgeometry, unsigned int mask) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;

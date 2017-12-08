@@ -371,7 +371,7 @@ RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, float tesse
 RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuality quality);
 
 /*! \brief Sets 32 bit ray mask. */
-RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, int mask);
+RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, unsigned int mask);
 
 /*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
 RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned topologyID, enum RTCSubdivisionMode mode);
