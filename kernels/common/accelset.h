@@ -97,7 +97,7 @@ namespace embree
         BBox3fa box;
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.userPtr = boundsFuncUserPtr;
+        //args.userPtr = boundsFuncUserPtr;
         args.geomUserPtr = intersectors.ptr;
         args.item = (unsigned int)i;
         args.time = (unsigned int)itime;
@@ -112,7 +112,7 @@ namespace embree
         BBox3fa box[2];
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.userPtr = boundsFuncUserPtr;
+        //args.userPtr = boundsFuncUserPtr;
         args.geomUserPtr = intersectors.ptr;
         args.item = (unsigned int)i;
         args.time = (unsigned int)(itime+0);
@@ -245,7 +245,7 @@ namespace embree
 
     public:
       RTCBoundsFunction boundsFunc;
-      void* boundsFuncUserPtr;
+      //void* boundsFuncUserPtr;
 
       struct Intersectors 
       {

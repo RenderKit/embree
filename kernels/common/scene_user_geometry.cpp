@@ -36,7 +36,7 @@ namespace embree
   void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) 
   {
     this->boundsFunc = bounds;
-    this->boundsFuncUserPtr = userPtr;
+    //this->boundsFuncUserPtr = userPtr;
   }
 
   void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) 

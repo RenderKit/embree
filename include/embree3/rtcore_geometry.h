@@ -230,7 +230,6 @@ enum RTCCurveFlags {
 /*! Arguments for RTCBoundsFunction */
 struct RTCBoundsFunctionArguments
 {
-  void* userPtr;              //!< pointer to user data
   void* geomUserPtr;          //!< pointer to geometry user data
   unsigned int item;          //!< item to calculate bounds for
   unsigned int time;          //!< time to calculate bounds for
