@@ -1442,7 +1442,7 @@ namespace embree
             if (random_bool()) {
               RTCGeometry hgeom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
               rtcCommitGeometry(hgeom);
-              unsigned int geomID = rtcAttachAndReleaseGeometryByID(scene,hgeom,index);
+              unsigned int geomID = rtcAttachAndReleaseGeometry(scene,hgeom);
               geom[geomID] = geomID;
               AssertNoError(device);
             } else {
