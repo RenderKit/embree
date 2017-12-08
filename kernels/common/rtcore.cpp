@@ -1219,7 +1219,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned int rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
+  RTCORE_API void rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
     Ref<Geometry> geometry = (Geometry*) hgeometry;
@@ -1230,27 +1230,9 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
-    return scene->bind(geomID,geometry);
+    unsigned int gID = scene->bind(geomID,geometry);
+    assert(gID == geomID);
     RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-
-  RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID_in)
-  {
-    Scene* scene = (Scene*) hscene;
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcAttachAndReleaseGeometryByID);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    RTCORE_VERIFY_GEOMID(geomID_in);
-    if (scene->device != geometry->device)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
-    unsigned int geomID = scene->bind(geomID_in,geometry);
-    geometry->refDec();
-    return geomID;
-    RTCORE_CATCH_END2(scene);
-    return -1;
   }
   
   RTCORE_API void rtcDetachGeometry (RTCScene hscene, unsigned int geomID)

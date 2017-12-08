@@ -569,7 +569,7 @@ RTCORE_API unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);
 RTCORE_API unsigned int rtcAttachAndReleaseGeometry(RTCScene scene, RTCGeometry geometry);
 
 /*! \brief Attaches the geometry to some scene using the specified geometry ID. */
-RTCORE_API unsigned int rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
+RTCORE_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
 
 /*! \brief Detaches the geometry from the scene. */
 RTCORE_API void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
