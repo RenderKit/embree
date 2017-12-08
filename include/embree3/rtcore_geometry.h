@@ -53,7 +53,7 @@ enum RTCGeometryType
     segment motion blur), have to get specified. The triangle indices
     can be set by mapping and writing to the index buffer
     (RTC_BUFFER_TYPE_INDEX) and the triangle vertices can be set by mapping
-    and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
+    and writing into the vertex buffer (RTC_BUFFER_TYPE_VERTEX). In case of
     multi-segment motion blur, multiple vertex buffers have to get filled
     (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
     step. The index buffer has the default layout of three 32 bit
@@ -69,7 +69,7 @@ enum RTCGeometryType
     blur), have to get specified. The quad indices can be set by mapping
     and writing to the index buffer (RTC_BUFFER_TYPE_INDEX) and the quad
     vertices can be set by mapping and writing into the vertex buffer
-    (RTC_VERTEX_BUFFER). In case of multi-segment motion blur, multiple
+    (RTC_BUFFER_TYPE_VERTEX). In case of multi-segment motion blur, multiple
     vertex buffers have to get filled (RTC_VERTEX_BUFFER0,
     RTC_VERTEX_BUFFER1, etc.), one for each time step. The index buffer has
     the default layout of three 32 bit integer indices for each quad. An
@@ -88,7 +88,7 @@ enum RTCGeometryType
     buffer (RTC_BUFFER_TYPE_FACE) contains the number edges/indices (3 or 4)
     of each of the numFaces faces, the index buffer (RTC_BUFFER_TYPE_INDEX)
     contains multiple (3 or 4) 32bit vertex indices for each face and
-    numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
+    numEdges indices in total, the vertex buffer (RTC_BUFFER_TYPE_VERTEX)
     stores numVertices vertices as single precision x,y,z floating point
     coordinates aligned to 16 bytes. The value of the 4th float used for
     alignment can be arbitrary. In case of multi-segment motion blur,
@@ -140,7 +140,7 @@ enum RTCGeometryType
     time steps have to get specified at construction time (1 for normal
     meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
     blur). Further, the curve index buffer (RTC_BUFFER_TYPE_INDEX) and the
-    curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+    curve vertex buffer (RTC_BUFFER_TYPE_VERTEX) have to get set by mapping
     and writing to the appropiate buffers. In case of multi-segment
     motion blur multiple vertex buffers have to get filled
     (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
@@ -366,6 +366,9 @@ RTCORE_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferT
 
 RTCORE_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
                                          size_t byteStride, unsigned int numItems);
+
+/*! Returns a pointer to the buffer data. */
+RTCORE_API void* rtcGetGeometryBufferData(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);

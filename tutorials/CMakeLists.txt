@@ -54,7 +54,7 @@ ENDIF()
 
 ADD_SUBDIRECTORY(common)
 
-#ADD_SUBDIRECTORY(verify)
+ADD_SUBDIRECTORY(verify)
 ADD_SUBDIRECTORY(triangle_geometry)
 #ADD_SUBDIRECTORY(dynamic_scene)
 #ADD_SUBDIRECTORY(user_geometry)

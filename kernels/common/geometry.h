@@ -221,6 +221,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Gets specified buffer. */
+    virtual void* getBuffer(RTCBufferType type, unsigned int slot) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
+    }
+
     /*! Set displacement function. */
     virtual void setDisplacementFunction (RTCDisplacementFunction filter, RTCBounds* bounds) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 

@@ -71,6 +71,7 @@ namespace embree
     void setSubdivisionMode (unsigned int topologyID, RTCSubdivisionMode mode);
     void setVertexAttributeTopology(unsigned int vertexAttribID, unsigned int topologyID);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num);
+    void* getBuffer(RTCBufferType type, unsigned int slot);
     void update();
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void setTessellationRate(float N);

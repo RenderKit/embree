@@ -39,6 +39,7 @@ namespace embree
     void setMask (unsigned mask);
     void setSubtype(RTCGeometrySubtype type);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num);
+    void* getBuffer(RTCBufferType type, unsigned int slot);
     bool verify ();
     void interpolate(const RTCInterpolateArguments* const args);
 

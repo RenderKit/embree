@@ -75,7 +75,7 @@ namespace embree
     } 
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
-      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT4)
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
 
       buffer->checkPadding16();
@@ -93,6 +93,33 @@ namespace embree
     }
     else
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
+  }
+
+  void* LineSegments::getBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return segments.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertices[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertexAttribs[slot].getPtr();
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+      return nullptr;
+    }
   }
 
   bool LineSegments::verify ()

@@ -1071,8 +1071,8 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetSharedGeometryBuffer);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    Ref<Buffer> buffer = new Buffer(geometry->device, numItems, byteStride, (void*)ptr);
-    geometry->setBuffer(type, slot, format, buffer, byteOffset, numItems);
+    Ref<Buffer> buffer = new Buffer(geometry->device, numItems, byteStride, (char*)ptr + byteOffset);
+    geometry->setBuffer(type, slot, format, buffer, 0, numItems);
     RTCORE_CATCH_END2(geometry);
   }
 
@@ -1086,6 +1086,17 @@ namespace embree
     Ref<Buffer> buffer = new Buffer(geometry->device, numItems, byteStride);
     geometry->setBuffer(type, slot, format, buffer, 0, numItems);
     return buffer->data();
+    RTCORE_CATCH_END2(geometry);
+    return nullptr;
+  }
+
+  RTCORE_API void* rtcGetGeometryBufferData(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot)
+  {
+    Ref<Geometry> geometry = (Geometry*)hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetGeometryBufferData);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->getBuffer(type, slot);
     RTCORE_CATCH_END2(geometry);
     return nullptr;
   }

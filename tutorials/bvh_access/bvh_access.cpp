@@ -59,7 +59,7 @@ namespace embree
     RTCGeometry mesh = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_TRIANGLE);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),8); 
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,sizeof(Vec3fa),8); 
     vertices[0].x = pos.x + -1; vertices[0].y = pos.y + -1; vertices[0].z = pos.z + -1; 
     vertices[1].x = pos.x + -1; vertices[1].y = pos.y + -1; vertices[1].z = pos.z + +1; 
     vertices[2].x = pos.x + -1; vertices[2].y = pos.y + +1; vertices[2].z = pos.z + -1; 
@@ -110,7 +110,7 @@ namespace embree
     RTCGeometry mesh = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_TRIANGLE);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),4); 
+    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,sizeof(Vec3fa),4); 
     vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
     vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
     vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
@@ -132,7 +132,7 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_CURVE_BEZIER);
 
-    vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(vfloat4),4);
+    vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_VERTEX,sizeof(vfloat4),4);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);
     pos[1] = vfloat4(0.0f,1.0f,0.0f,0.1f);
     pos[2] = vfloat4(0.0f,2.0f,0.0f,0.1f);

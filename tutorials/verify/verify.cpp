@@ -235,8 +235,8 @@ namespace embree
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex), (unsigned int)mesh->positions[t].size());
-        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT2,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), (unsigned int)mesh->hairs.size());
+          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex), (unsigned int)mesh->positions[t].size());
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), (unsigned int)mesh->hairs.size());
         AssertNoError(device);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -320,19 +320,19 @@ namespace embree
     {
       if (Ref<SceneGraph::TriangleMeshNode> mesh = geom.second.dynamicCast<SceneGraph::TriangleMeshNode>())
       {
-        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = geom.second.dynamicCast<SceneGraph::QuadMeshNode>())
       {
-        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT4,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
       } 
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = geom.second.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
-        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_FACE  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_FACE,0,RTC_FORMAT_UINT,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = geom.second.dynamicCast<SceneGraph::HairSetNode>())
       {
-        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
+        rtcSetSharedGeometryBuffer(rtcGetGeometry(scene,geom.first),RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
       } 
     }
 
@@ -865,33 +865,68 @@ namespace embree
       }
       AssertNoError(device);
 
+      RTCFormat indexFormat;
+      RTCFormat vertexFormat;
+      switch (gtype) {
+      case TRIANGLE_MESH:
+      case TRIANGLE_MESH_MB:
+        indexFormat  = RTC_FORMAT_UINT3;
+        vertexFormat = RTC_FORMAT_FLOAT3;
+        break;
+
+      case QUAD_MESH:
+      case QUAD_MESH_MB:
+        indexFormat  = RTC_FORMAT_UINT4;
+        vertexFormat = RTC_FORMAT_FLOAT3;
+        break;
+
+      case SUBDIV_MESH:
+      case SUBDIV_MESH_MB:
+        indexFormat  = RTC_FORMAT_UINT;
+        vertexFormat = RTC_FORMAT_FLOAT3;
+        break;
+
+      case HAIR_GEOMETRY:
+      case HAIR_GEOMETRY_MB:
+      case CURVE_GEOMETRY:
+      case CURVE_GEOMETRY_MB:
+        indexFormat  = RTC_FORMAT_UINT;
+        vertexFormat = RTC_FORMAT_FLOAT4;
+        break;
+
+      default:
+        indexFormat  = RTC_FORMAT_UNDEFINED;
+        vertexFormat = RTC_FORMAT_UNDEFINED;
+        break;
+      }
+
       avector<char> indexBuffer(8+16*6*sizeof(int));
       avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
       
-      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),1,3*sizeof(int),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,indexFormat,indexBuffer.data(),1,3*sizeof(int),16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
-      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),1,3*sizeof(float),16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
 
-      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),0,3*sizeof(int)+3,16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,indexFormat,indexBuffer.data(),0,3*sizeof(int)+3,16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
-      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3,16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),0,3*sizeof(float)+3,16);
       AssertError(device,RTC_ERROR_INVALID_OPERATION);
+
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,indexFormat,indexBuffer.data(),0,3*sizeof(int),16);
+      AssertNoError(device);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),0,3*sizeof(float),16);
+      AssertNoError(device);
+
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,indexFormat,indexBuffer.data(),8,6*sizeof(int),16);
+      AssertNoError(device);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),12,9*sizeof(float),16);
+      AssertNoError(device);
+
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,indexFormat,indexBuffer.data(),0,3*sizeof(int),16);
+      AssertNoError(device);
       
-      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),0,3*sizeof(int),16);
-      AssertNoError(device);
-      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float),16);
-      AssertNoError(device);
-      
-      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),8,6*sizeof(int),16);
-      AssertNoError(device);
-      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float),16);
-      AssertNoError(device);
-      
-      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,indexBuffer.data(),0,3*sizeof(int),16);
-      AssertNoError(device);
-      
-      rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float),16);
+      rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),0,4*sizeof(float),16);
       AssertNoError(device);
       
       return VerifyApplication::PASSED;
@@ -1006,8 +1041,8 @@ namespace embree
                 
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
         rtcSetGeometryBuildQuality(geom,quality);
-        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, p.data(), 0, 3 * sizeof(float), numVertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
         rtcCommitGeometry(geom);
         rtcAttachAndReleaseGeometry(scene,geom);
         
@@ -1535,8 +1570,9 @@ namespace embree
     
     static void move_mesh(RTCGeometry mesh, size_t numVertices, Vec3fa& pos) 
     {
-      Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(mesh,RTC_VERTEX_BUFFER); 
-      for (size_t i=0; i<numVertices; i++) vertices[i] += Vec3fa(pos);
+      Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(mesh,RTC_BUFFER_TYPE_VERTEX,0);
+      for (size_t i=0; i<numVertices; i++)
+        vertices[i] += Vec3fa(pos);
       rtcCommitGeometry(mesh);
     }
 
@@ -1727,12 +1763,12 @@ namespace embree
     InterpolateSubdivTest (std::string name, int isa, unsigned int N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
 
-    bool checkInterpolation2D(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, unsigned int N, unsigned int N_total)
+    bool checkInterpolation2D(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType bufferType, unsigned int bufferSlot, float* data, unsigned int N, unsigned int N_total)
     {
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,N);
+      rtcInterpolate1(geom,primID,u,v,bufferType,bufferSlot,P,dPdu,dPdv,N);
       
       for (size_t i=0; i<N; i++) {
         float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N_total+i] + 4.0f*data[(v0-4+0)*N_total+i] + 1.0f*data[(v0-4+1)*N_total+i]);
@@ -1744,12 +1780,12 @@ namespace embree
       return passed;
     }
     
-    bool checkInterpolation1D(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, unsigned int N, unsigned int N_total)
+    bool checkInterpolation1D(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType bufferType, unsigned int bufferSlot, float* data, unsigned int N, unsigned int N_total)
     {
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,bufferType,bufferSlot,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
@@ -1758,12 +1794,12 @@ namespace embree
       return passed;
     }
     
-    bool checkInterpolationSharpVertex(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkInterpolationSharpVertex(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType bufferType, unsigned int bufferSlot, float* data, size_t N, size_t N_total)
     {
       assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,bufferType,bufferSlot,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         float v = data[v0*N_total+i];
@@ -1772,31 +1808,31 @@ namespace embree
       return passed;
     }
     
-    bool checkSubdivInterpolation(const RTCDeviceRef& device, RTCGeometry geom, RTCBufferType buffer, float* vertices0, unsigned int N, unsigned int N_total)
+    bool checkSubdivInterpolation(const RTCDeviceRef& device, RTCGeometry geom, RTCBufferType bufferType, unsigned int bufferSlot, float* vertices0, unsigned int N, unsigned int N_total)
     {
       rtcSetGeometrySubdivisionMode(geom,0,RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY);
       AssertNoError(device);
       rtcCommitGeometry(geom);
       AssertNoError(device);
       bool passed = true;
-      passed &= checkInterpolation1D(geom,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
-      passed &= checkInterpolation1D(geom,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation1D(geom,0,0.0f,0.0f,4,0,1,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkInterpolation1D(geom,2,1.0f,0.0f,2,3,7,bufferType,bufferSlot,vertices0,N,N_total);
       
-      passed &= checkInterpolation2D(geom,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
-      passed &= checkInterpolation2D(geom,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation2D(geom,3,1.0f,0.0f,5,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkInterpolation2D(geom,1,1.0f,1.0f,6,bufferType,bufferSlot,vertices0,N,N_total);
       
-      //passed &= checkInterpolation1D(geom,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
-      //passed &= checkInterpolation1D(geom,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
+      //passed &= checkInterpolation1D(geom,3,1.0f,1.0f,8,9,10,bufferType,bufferSlot,vertices0,N,N_total);
+      //passed &= checkInterpolation1D(geom,7,1.0f,0.0f,9,10,11,bufferType,bufferSlot,vertices0,N,N_total);
       
-      passed &= checkInterpolationSharpVertex(geom,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
-      passed &= checkInterpolationSharpVertex(geom,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,6,0.0f,1.0f,12,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,8,1.0f,1.0f,15,bufferType,bufferSlot,vertices0,N,N_total);
       
       rtcSetGeometrySubdivisionMode(geom,0,RTC_SUBDIVISION_MODE_PIN_CORNERS);
       rtcCommitGeometry(geom);
       AssertNoError(device);
       
-      passed &= checkInterpolationSharpVertex(geom,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
-      passed &= checkInterpolationSharpVertex(geom,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,0,0.0f,0.0f,0,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(geom,2,1.0f,0.0f,3,bufferType,bufferSlot,vertices0,N,N_total);
       return passed;
     }
     
@@ -1810,44 +1846,46 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
       AssertNoError(device);
       
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int), 3);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,  interpolation_edge_crease_weights,  0, sizeof(float), 3);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, interpolation_vertex_crease_indices,0, sizeof(unsigned int), 2);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,interpolation_vertex_crease_weights,0, sizeof(float), 2);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,                0, RTC_FORMAT_UINT,  interpolation_quad_indices,          0, sizeof(unsigned int),   num_interpolation_quad_faces*4);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,                 0, RTC_FORMAT_UINT,  interpolation_quad_faces,            0, sizeof(unsigned int),   num_interpolation_quad_faces);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_UINT2, interpolation_edge_crease_indices,   0, 2*sizeof(unsigned int), 3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT, interpolation_edge_crease_weights,   0, sizeof(float),          3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_UINT,  interpolation_vertex_crease_indices, 0, sizeof(unsigned int),   2);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, interpolation_vertex_crease_weights, 0, sizeof(float),          2);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT3, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTCFormat(RTC_FORMAT_FLOAT+N), user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTCFormat(RTC_FORMAT_FLOAT+N), user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
-      //passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
-      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
-      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
+      if (N >= 3) {
+        passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX,0,vertices0.data(),3,N);
+        //passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX,1,vertices1.data(),3,N);
+      }
+      passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,user_vertices0.data(),N,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1,user_vertices1.data(),N,N);
       
-      passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
-      //passed &= checkSubdivInterpolation(device,geom,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
-      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
-      passed &= checkSubdivInterpolation(device,geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX,0,vertices0.data(),1,N);
+      //passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX,1,vertices1.data(),1,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,user_vertices0.data(),1,N);
+      passed &= checkSubdivInterpolation(device,geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1,user_vertices1.data(),1,N);
 
       rtcReleaseGeometry(geom);
       AssertNoError(device);
@@ -1863,12 +1901,12 @@ namespace embree
     InterpolateTrianglesTest (std::string name, int isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
-    bool checkTriangleInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkTriangleInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType bufferType, unsigned int bufferSlot, float* data, size_t N, size_t N_total)
     {
       assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,bufferType,bufferSlot,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         float p0 = data[v0*N_total+i];
@@ -1880,13 +1918,13 @@ namespace embree
       return passed;
     }
     
-    bool checkTriangleInterpolation(RTCGeometry geom, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    bool checkTriangleInterpolation(RTCGeometry geom, RTCBufferType bufferType, unsigned int bufferSlot, float* vertices0, size_t N, size_t N_total)
     {
       bool passed = true;
-      passed &= checkTriangleInterpolation(geom,0,0.0f,0.0f,0,1,5,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(geom,0,0.5f,0.5f,0,1,5,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(geom,17,0.0f,0.0f,10,15,14,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(geom,17,0.5f,0.5f,10,15,14,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,0,0.0f,0.0f,0,1,5,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,0,0.5f,0.5f,0,1,5,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,17,0.0f,0.0f,10,15,14,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(geom,17,0.5f,0.5f,10,15,14,bufferType,bufferSlot,vertices0,N,N_total);
       return passed;
     }
 
@@ -1901,27 +1939,27 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
       AssertNoError(device);
       
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, interpolation_triangle_indices, 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT3, vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTCFormat(RTC_FORMAT_FLOAT+N), user_vertices0.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTCFormat(RTC_FORMAT_FLOAT+N), user_vertices1.data(), 0, N*sizeof(float), num_interpolation_vertices);
       AssertNoError(device);
       
       rtcDisableGeometry(geom);
@@ -1930,15 +1968,17 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
-      //passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
-      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
-      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
+      if (N >= 3) {
+        passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,0,vertices0.data(),3,N);
+        //passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,1,vertices1.data(),3,N);
+      }
+      passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,user_vertices0.data(),N,N);
+      passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1,user_vertices1.data(),N,N);
       
-      passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
-      //passed &= checkTriangleInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
-      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
-      passed &= checkTriangleInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
+      passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,0,vertices0.data(),1,N);
+      //passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,1,vertices1.data(),1,N);
+      passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,user_vertices0.data(),1,N);
+      passed &= checkTriangleInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1,user_vertices1.data(),1,N);
 
       rtcReleaseGeometry(geom);
       AssertNoError(device);
@@ -1961,12 +2001,12 @@ namespace embree
     InterpolateHairTest (std::string name, int isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
-    bool checkHairInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    bool checkHairInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType bufferType, unsigned int bufferSlot, float* data, size_t N, size_t N_total)
     {
       assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate1(geom,primID,u,v,buffer,P,dPdu,dPdv,(unsigned int)N);
+      rtcInterpolate1(geom,primID,u,v,bufferType,bufferSlot,P,dPdu,dPdv,(unsigned int)N);
       
       for (size_t i=0; i<N; i++) {
         const float p00 = data[(v0+0)*N_total+i];
@@ -1985,13 +2025,13 @@ namespace embree
       return passed;
     }
     
-    bool checkHairInterpolation(RTCGeometry geom, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    bool checkHairInterpolation(RTCGeometry geom, RTCBufferType bufferType, unsigned int bufferSlot, float* vertices0, size_t N, size_t N_total)
     {
       bool passed = true;
-      passed &= checkHairInterpolation(geom,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(geom,1,0.5f,0.0f,3,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(geom,2,0.0f,0.0f,6,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(geom,3,0.2f,0.0f,9,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,0,0.0f,0.0f,0,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,1,0.5f,0.0f,3,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,2,0.0f,0.0f,6,bufferType,bufferSlot,vertices0,N,N_total);
+      passed &= checkHairInterpolation(geom,3,0.2f,0.0f,9,bufferType,bufferSlot,vertices0,N,N_total);
       return passed;
     }
     
@@ -2006,27 +2046,27 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BEZIER);
       AssertNoError(device);
       
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, interpolation_hair_indices, 0, sizeof(unsigned int), num_interpolation_hairs);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT4, vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTCFormat(RTC_FORMAT_FLOAT+N), user_vertices0.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetSharedGeometryBuffer(geom, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTCFormat(RTC_FORMAT_FLOAT+N), user_vertices1.data(), 0, N*sizeof(float), num_interpolation_hair_vertices);
       AssertNoError(device);
       
       rtcDisableGeometry(geom);
@@ -2035,15 +2075,17 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
-      //passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
-      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
-      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
+      if (N >= 4) {
+        passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,0,vertices0.data(),4,N);
+        //passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,1,vertices1.data(),4,N);
+      }
+      passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,user_vertices0.data(),N,N);
+      passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1,user_vertices1.data(),N,N);
       
-      passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
-      //passed &= checkHairInterpolation(geom,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
-      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
-      passed &= checkHairInterpolation(geom,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
+      passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,0,vertices0.data(),1,N);
+      //passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,1,vertices1.data(),1,N);
+      passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,user_vertices0.data(),1,N);
+      passed &= checkHairInterpolation(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1,user_vertices1.data(),1,N);
 
       rtcReleaseGeometry(geom);
       AssertNoError(device);
@@ -2097,8 +2139,8 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
       rtcSetGeometryBuildQuality(geom,quality);
-      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , triangles, 0, sizeof(Triangle), 1);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices , 0, sizeof(Vec3f), 3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  triangles, 0, sizeof(Triangle), 1);
       rtcCommitGeometry(geom);
       rtcAttachAndReleaseGeometry(scene,geom);
       rtcCommitScene (scene);
@@ -2172,8 +2214,8 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
       rtcSetGeometryBuildQuality(geom, quality);
-      rtcSetSharedGeometryBuffer(geom, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , quads, 0, 4*sizeof(int), 1);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices , 0, sizeof(Vec3f), 4);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT4,  quads, 0, 4*sizeof(int), 1);
       rtcCommitGeometry(geom);
       rtcAttachAndReleaseGeometry(scene,geom);
       rtcCommitScene (scene);
@@ -3247,7 +3289,7 @@ namespace embree
             }
             case 1: {
               RTCGeometry hgeom = rtcGetGeometry(*task->scene,geom[index].first);
-              Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(hgeom,RTC_VERTEX_BUFFER);
+              Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(hgeom, RTC_BUFFER_TYPE_VERTEX, 0);
               if (vertices) { 
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
@@ -3255,7 +3297,7 @@ namespace embree
               {
               case 4: case 5: case 10: case 11:
                 RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
-                Vec3fa* vertices = (Vec3fa*)rtcGetBuffer(hgeom, RTC_VERTEX_BUFFER1);
+                Vec3fa* vertices = (Vec3fa*)rtcGetGeometryBufferData(hgeom, RTC_BUFFER_TYPE_VERTEX, 1);
                 if (vertices) {
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }

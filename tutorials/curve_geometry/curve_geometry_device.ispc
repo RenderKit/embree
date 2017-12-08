@@ -66,7 +66,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE);
   rtcSetGeometrySubtype(geom,RTC_GEOMETRY_SUBTYPE_SURFACE);
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,hair_indices,0,sizeof(uniform unsigned int),NUM_CURVES);
-  rtcSetSharedGeometryBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(uniform Vec3fa),NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,hair_vertices,0,sizeof(uniform Vec3fa),NUM_VERTICES);
   rtcSetSharedGeometryBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(uniform Vec3fa),NUM_VERTICES);
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -81,7 +81,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_BUFFER_TYPE_VERTEX,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;

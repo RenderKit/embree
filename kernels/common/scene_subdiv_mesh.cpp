@@ -199,6 +199,75 @@ namespace embree
     }
   }
 
+  void* SubdivMesh::getBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertices[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertexAttribs[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_FACE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return faceVertices.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot >= topology.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return topology[slot].vertexIndices.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return edge_creases.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return edge_crease_weights.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertex_creases.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertex_crease_weights.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_HOLE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return holes.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_LEVEL)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return levels.getPtr();
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+      return nullptr;
+    }
+  }
+
   void SubdivMesh::update()
   {
     faceVertices.setModified(true);

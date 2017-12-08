@@ -117,12 +117,12 @@ namespace embree
     }
 
     /*! returns pointer to first element */
-    __forceinline const char* getPtr() const {
+    __forceinline char* getPtr() const {
       return ptr;
     }
 
     /*! returns pointer to ith element */
-    __forceinline const char* getPtr(size_t i) const
+    __forceinline char* getPtr(size_t i) const
     {
       assert(i<num);
       return ptr + i*stride;
@@ -194,12 +194,12 @@ namespace embree
     }
 
     /*! returns pointer to the first element */
-    __forceinline const char* getPtr() const {
+    __forceinline char* getPtr() const {
       return ptr_ofs;
     }
 
     /*! returns pointer to the i'th element */
-    __forceinline const char* getPtr(size_t i) const
+    __forceinline char* getPtr(size_t i) const
     {
       assert(i<num);
       return ptr_ofs + i*stride;
