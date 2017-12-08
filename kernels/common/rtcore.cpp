@@ -883,7 +883,7 @@ namespace embree
 
     case RTC_GEOMETRY_TYPE_SUBDIVISION:
       {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
         createSubdivMeshTy createSubdivMesh = nullptr;
         SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
         Geometry* geom = createSubdivMesh(device);

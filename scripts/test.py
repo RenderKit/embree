@@ -265,7 +265,7 @@ def runConfig(config):
   if "HAIR" in config:
     conf.append("-D EMBREE_GEOMETRY_HAIR="+config["HAIR"])
   if "SUBDIV" in config:
-    conf.append("-D EMBREE_GEOMETRY_SUBDIV="+config["SUBDIV"])
+    conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
 

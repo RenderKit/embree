@@ -488,7 +488,7 @@ namespace embree
 
   void Scene::createSubdivAccel()
   {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     if (device->subdiv_accel == "default") 
     {
       //if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -506,7 +506,7 @@ namespace embree
 
   void Scene::createSubdivMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     if (device->subdiv_accel_mb == "default") 
     {
       //if (quality_flags != RTC_BUILD_QUALITY_LOW)
