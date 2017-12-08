@@ -413,7 +413,7 @@ RTCORE_API void rtcUpdateBuffer(RTCGeometry geometry, uniform RTCBufferType type
 RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func, uniform RTCBounds *uniform bounds);
+RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func);
 
 /*! \brief Sets the intersection filter function for ray packets of size N. */
 RTCORE_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);

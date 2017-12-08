@@ -417,7 +417,7 @@ RTCORE_API void rtcUpdateBuffer(RTCGeometry geometry, enum RTCBufferType type);
 RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction func, struct RTCBounds* bounds);
+RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction func);
 
 /*! \brief Sets the intersection filter function for single rays. */
 RTCORE_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, RTCFilterFunctionN func);

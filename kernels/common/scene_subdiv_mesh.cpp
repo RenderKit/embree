@@ -348,11 +348,10 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunction func, RTCBounds* bounds) 
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunction func) 
   {
     this->displFunc   = func;
-    if (bounds) this->displBounds = *(BBox3fa*)bounds; 
-    else        this->displBounds = empty;
+    this->displBounds = empty;
   }
 
   void SubdivMesh::setTessellationRate(float N)

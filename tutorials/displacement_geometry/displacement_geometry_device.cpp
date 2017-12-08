@@ -134,7 +134,7 @@ unsigned int addCube (RTCScene scene_i)
   float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_INDICES);
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
 
-  rtcSetGeometryDisplacementFunction(geom,displacementFunction,nullptr);
+  rtcSetGeometryDisplacementFunction(geom,displacementFunction);
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);

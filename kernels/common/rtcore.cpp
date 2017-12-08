@@ -1101,13 +1101,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func, RTCBounds* bounds)
+  RTCORE_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryDisplacementFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setDisplacementFunction(func,bounds);
+    geometry->setDisplacementFunction(func);
     RTCORE_CATCH_END2(geometry);
   }
 
