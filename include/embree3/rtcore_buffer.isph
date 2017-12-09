@@ -45,10 +45,10 @@ enum RTCBufferType
 typedef uniform struct __RTCBuffer* uniform RTCBuffer;
 
 /*! \brief Creates a new buffer. */
-RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, uniform size_t byteStride, uniform unsigned int numItems);
+RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, uniform size_t byteSize);
 
 /*! \brief Creates a new shared buffer. */
-RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* uniform ptr, uniform size_t byteStride, uniform unsigned int numItems);
+RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* uniform ptr, uniform size_t byteSize);
 
 /*! Returns a pointer to the buffer data. */
 RTCORE_API void* uniform rtcGetBufferData(RTCBuffer buffer);

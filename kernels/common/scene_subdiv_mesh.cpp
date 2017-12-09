@@ -95,10 +95,10 @@ namespace embree
     }
   }
 
-  void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
+  void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (buffer->getStride() & 0x3))
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type != RTC_BUFFER_TYPE_LEVEL)
@@ -109,12 +109,12 @@ namespace embree
       if (format != RTC_FORMAT_FLOAT3)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
-      buffer->checkPadding16();
       if (slot >= vertices.size()) {
         vertices.resize(slot+1);
         vertex_buffer_tags.resize(slot+1);
       }
-      vertices[slot].set(buffer, offset, num, format);
+      vertices[slot].set(buffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
       /*while (vertices.size() > 1 && vertices.back().getPtr() == nullptr) {
         vertices.pop_back();
         vertex_buffer_tags.pop_back();
@@ -123,19 +123,19 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
-      buffer->checkPadding16();
       if (slot >= vertexAttribs.size()) {
         vertexAttribs.resize(slot+1);
         vertex_attrib_buffer_tags.resize(slot+1);
       }
-      vertexAttribs[slot].set(buffer, offset, num, format);
+      vertexAttribs[slot].set(buffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_FACE)
     {
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid face buffer format");
 
-      faceVertices.set(buffer, offset, num, format);
+      faceVertices.set(buffer, offset, stride, num, format);
       setNumPrimitives(num);
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
@@ -149,49 +149,49 @@ namespace embree
         for (size_t i = begin; i < topology.size(); i++)
           topology[i] = Topology(this);
       }
-      topology[slot].vertexIndices.set(buffer, offset, num, format);
+      topology[slot].vertexIndices.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
     {
       if (format != RTC_FORMAT_UINT2)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid edge crease index buffer format");
 
-      edge_creases.set(buffer, offset, num, format);
+      edge_creases.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
     {
       if (format != RTC_FORMAT_FLOAT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid edge crease weight buffer format");
 
-      edge_crease_weights.set(buffer, offset, num, format);
+      edge_crease_weights.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
     {
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex crease index buffer format");
 
-      vertex_creases.set(buffer, offset, num, format);
+      vertex_creases.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
     {
       if (format != RTC_FORMAT_FLOAT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex crease weight buffer format");
 
-      vertex_crease_weights.set(buffer, offset, num, format);
+      vertex_crease_weights.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_HOLE)
     {
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid hole buffer format");
 
-      holes.set(buffer, offset, num, format);
+      holes.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_LEVEL)
     {
       if (format != RTC_FORMAT_FLOAT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid level buffer format");
 
-      levels.set(buffer, offset, num, format);
+      levels.set(buffer, offset, stride, num, format);
     }
     else
     {

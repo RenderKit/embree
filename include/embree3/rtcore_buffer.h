@@ -48,10 +48,10 @@ enum RTCBufferType
 typedef struct __RTCBuffer* RTCBuffer;
 
 /*! \brief Creates a new buffer. */
-RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteStride, unsigned int numItems);
+RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
 
 /*! \brief Creates a new shared buffer. */
-RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteStride, unsigned int numItems);
+RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
 
 /*! Returns a pointer to the buffer data. */
 RTCORE_API void* rtcGetBufferData(RTCBuffer buffer);

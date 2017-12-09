@@ -4790,7 +4790,7 @@ namespace embree
     for (size_t i=0; i<benchmarks.size(); i++) {
       plot << "\"" << outFileName.name() << "." << benchmarks[i]->name << ".txt\" using 1:2 title \"" << benchmarks[i]->name << "\" with lines";
       if (i != benchmarks.size()-1) plot << ",\\";
-      plot << std::endl;      
+      plot << std::endl;
     }
     plot << std::endl;
     plot.close();

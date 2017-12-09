@@ -345,10 +345,7 @@ RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsi
 RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform unsigned int vertexAttributeID, uniform unsigned int topologyID);
 
 RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                     uniform RTCBuffer buffer);
-
-RTCORE_API void rtcSetGeometryBufferRange(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                          uniform RTCBuffer buffer, uniform size_t byteOffset, uniform unsigned int numItems);
+                                     uniform RTCBuffer buffer, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int numItems);
 
 /*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,

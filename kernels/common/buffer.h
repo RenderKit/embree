@@ -27,11 +27,11 @@ namespace embree
   public:
     /*! Buffer construction */
     Buffer() 
-      : device(nullptr), ptr(nullptr), stride(0), num(0), shared(false) {}
+      : device(nullptr), ptr(nullptr), numBytes(0), shared(false) {}
 
     /*! Buffer construction */
-    Buffer(Device* device, size_t num_in, size_t stride_in, void* ptr_in = nullptr)
-      : device(device), stride(stride_in), num(num_in)
+    Buffer(Device* device, size_t numBytes_in, void* ptr_in = nullptr)
+      : device(device), numBytes(numBytes_in)
     {
       if (ptr_in)
       {
@@ -57,32 +57,30 @@ namespace embree
     
   public:
     /* inits and allocates the buffer */
-    void create(Device* device_in, size_t num_in, size_t stride_in) 
+    void create(Device* device_in, size_t numBytes_in)
     {
-      init(device_in, num_in, stride_in);
+      init(device_in, numBytes_in);
       alloc();
     }
     
     /* inits the buffer */
-    void init(Device* device_in, size_t num_in, size_t stride_in) 
+    void init(Device* device_in, size_t numBytes_in)
     {
       free();
       device = device_in;
       ptr = nullptr;
-      num = num_in;
-      stride = stride_in;
+      numBytes = numBytes_in;
       shared = false;
     }
 
     /*! sets shared buffer */
-    void set(Device* device_in, void* ptr_in, size_t num_in, size_t stride_in)
+    void set(Device* device_in, void* ptr_in, size_t numBytes_in)
     {
       free();
       device = device_in;
       ptr = (char*)ptr_in;
-      if (num_in != (size_t)-1)
-        num = num_in;
-      stride = stride_in;
+      if (numBytes_in != (size_t)-1)
+        numBytes = numBytes_in;
       shared = true;
     }
     
@@ -121,48 +119,21 @@ namespace embree
       return ptr;
     }
 
-    /*! returns pointer to ith element */
-    __forceinline char* getPtr(size_t i) const
-    {
-      assert(i<num);
-      return ptr + i*stride;
-    }
-
-    /*! returns the number of elements of the buffer */
-    __forceinline size_t size() const { 
-      return num; 
-    }
-
     /*! returns the number of bytes of the buffer */
     __forceinline size_t bytes() const { 
-      return num*stride; 
-    }
-
-    /*! returns buffer stride */
-    __forceinline unsigned getStride() const
-    {
-      assert(stride <= unsigned(inf));
-      return unsigned(stride);
+      return numBytes;
     }
     
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
       return ptr; 
     }
-    
-    /*! checks padding to 16 byte check, fails hard */
-    __forceinline void checkPadding16() const 
-    {
-      if (ptr && size()) 
-        volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
-    }
 
   public:
-    Device* device; //!< device to report memory usage to 
-    char* ptr;      //!< pointer to buffer data
-    size_t stride;  //!< stride of the buffer in bytes
-    size_t num;     //!< number of elements in the buffer
-    bool shared;    //!< set if memory is shared with application
+    Device* device;  //!< device to report memory usage to
+    char* ptr;       //!< pointer to buffer data
+    size_t numBytes; //!< number of bytes in the buffer
+    bool shared;     //!< set if memory is shared with application
   };
 
   /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
@@ -175,22 +146,17 @@ namespace embree
 
   public:
     /*! sets the buffer view */
-    void set(const Ref<Buffer>& buffer_in, size_t offset_in, size_t num_in, RTCFormat format_in)
+    void set(const Ref<Buffer>& buffer_in, size_t offset_in, size_t stride_in, size_t num_in, RTCFormat format_in)
     {
-      if ((offset_in + buffer_in->stride * num_in) > (buffer_in->stride * buffer_in->num))
+      if ((offset_in + stride_in * num_in) > (stride_in * buffer_in->numBytes))
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "buffer range out of bounds");
 
       ptr_ofs = buffer_in->ptr + offset_in;
-      stride = buffer_in->stride;
+      stride = stride_in;
       num = num_in;
       format = format_in;
       modified = true;
       buffer = buffer_in;
-    }
-
-    void set(const Ref<Buffer>& buffer_in, RTCFormat format_in)
-    {
-      set(buffer_in, 0, buffer_in->size(), format_in);
     }
 
     /*! returns pointer to the first element */
@@ -240,6 +206,13 @@ namespace embree
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
       return ptr_ofs; 
+    }
+
+    /*! checks padding to 16 byte check, fails hard */
+    __forceinline void checkPadding16() const
+    {
+      if (ptr_ofs && num)
+        volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
     }
 
   public:

@@ -53,10 +53,10 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, unsigned int num)
+  void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (buffer->getStride() & 0x3))
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
@@ -64,10 +64,10 @@ namespace embree
       if (format != RTC_FORMAT_FLOAT4)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
-      buffer->checkPadding16();
       if (slot >= vertices.size())
         vertices.resize(slot+1);
-      vertices[slot].set(buffer, offset, num, format);
+      vertices[slot].set(buffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
       vertices0 = vertices[0];
       //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
       // vertices.pop_back();
@@ -78,17 +78,17 @@ namespace embree
       if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
 
-      buffer->checkPadding16();
       if (slot >= vertexAttribs.size())
         vertexAttribs.resize(slot+1);
-      vertexAttribs[slot].set(buffer, offset, num, format);
+      vertexAttribs[slot].set(buffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
-      segments.set(buffer, offset, num, format);
+      segments.set(buffer, offset, stride, num, format);
       setNumPrimitives(num);
     }
     else
