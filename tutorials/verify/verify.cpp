@@ -3282,13 +3282,11 @@ namespace embree
               }
             }
             case 3: {
-              if (quality[index] != RTC_BUILD_QUALITY_REFIT) {
-                RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
-                RTCBuildQuality q = (RTCBuildQuality) (RandomSampler_getInt(task->sampler)%4);
-                rtcSetGeometryBuildQuality(hgeom,q);
-                quality[index] = q;
-                rtcCommitGeometry(hgeom);
-              }
+              RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
+              RTCBuildQuality q = (RTCBuildQuality) (RandomSampler_getInt(task->sampler)%4);
+              rtcSetGeometryBuildQuality(hgeom,q);
+              quality[index] = q;
+              rtcCommitGeometry(hgeom);
             }
             }
             break;
