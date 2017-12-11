@@ -231,7 +231,7 @@ enum RTCCurveFlags {
 struct RTCBoundsFunctionArguments
 {
   void* geomUserPtr;          //!< pointer to geometry user data
-  unsigned int item;          //!< item to calculate bounds for
+  unsigned int primID;        //!< item to calculate bounds for
   unsigned int time;          //!< time to calculate bounds for
   struct RTCBounds* bounds_o; //!< returns calculated bounds
 };
@@ -244,10 +244,10 @@ struct RTCIntersectFunctionNArguments
 {
   int* valid;                          //!< pointer to valid mask
   void* geomUserPtr;                   //!< pointer to geometry user data
+  unsigned int primID;                 //!< ID of primitive to intersect
   struct RTCIntersectContext* context; //!< intersection context as passed to rtcIntersect/rtcOccluded
   struct RTCRayN* ray;                 //!< ray packet to intersect
   unsigned int N;                      //!< number of rays in packet
-  unsigned int item;                   //!< item to intersect
 };
 
 /*! Type of intersect function pointer for ray packets of size N */
@@ -258,10 +258,10 @@ struct RTCOccludedFunctionNArguments
 {
   int* valid;                          //!< pointer to valid mask
   void* geomUserPtr;                   //!< pointer to geometry user data
+  unsigned int primID;                 //!< ID if primitive to intersect
   struct RTCIntersectContext* context; //!< intersection context as passed to rtcIntersect/rtcOccluded
   struct RTCRayN* ray;                 //!< ray packet to intersect
   unsigned int N;                      //!< number of rays in packet
-  unsigned int item;                   //!< item to intersect
 };
   
 /*! Type of occlusion function pointer for ray packets of size N. */

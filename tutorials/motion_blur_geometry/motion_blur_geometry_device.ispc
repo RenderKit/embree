@@ -360,7 +360,7 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
   const uniform unsigned int time = args->time;
-  const uniform Sphere& sphere = spheres[args->item];
+  const uniform Sphere& sphere = spheres[args->primID];
   uniform float ft = 2.0f*M_PI * (uniform float) time / (uniform float) (sphere.num_time_steps-1);
   uniform Vec3f p = sphere.p + make_Vec3f(cos(ft),0.0f,sin(ft));
   bounds_o->lower_x = p.x-sphere.r;
@@ -376,10 +376,10 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   RTCRayN* uniform rays = args->ray;
-  uniform unsigned int item = args->item;
+  uniform unsigned int primID = args->primID;
   assert(args->N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
-  const uniform Sphere& sphere = spheres[item];
+  const uniform Sphere& sphere = spheres[primID];
 
   if (!valid[programIndex])
     return;
@@ -411,7 +411,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     ray->v = 0.0f;
     ray->tfar = t0;
     ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
+    ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t0*ray->dir-sphere_p;
   }
   if ((ray->tnear < t1) & (t1 < ray->tfar)) {
@@ -419,7 +419,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     ray->v = 0.0f;
     ray->tfar = t1;
     ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
+    ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t1*ray->dir-sphere_p;
   }
 }
@@ -429,10 +429,10 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   RTCRayN* uniform rays = args->ray;
-  uniform unsigned int item = args->item;
+  uniform unsigned int primID = args->primID;
   assert(args->N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
-  const uniform Sphere& sphere = spheres[item];
+  const uniform Sphere& sphere = spheres[primID];
 
   if (!valid[programIndex])
     return;

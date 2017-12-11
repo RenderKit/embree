@@ -277,7 +277,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 {
   const Sphere* spheres = (const Sphere*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
-  const Sphere& sphere = spheres[args->item];
+  const Sphere& sphere = spheres[args->primID];
   bounds_o->lower_x = sphere.p.x-sphere.r;
   bounds_o->lower_y = sphere.p.y-sphere.r;
   bounds_o->lower_z = sphere.p.z-sphere.r;
@@ -291,11 +291,11 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   Ray *ray = (Ray*)args->ray;
-  unsigned int item = args->item;
+  unsigned int primID = args->primID;
   
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
-  const Sphere& sphere = spheres[item];
+  const Sphere& sphere = spheres[primID];
   
   if (!valid[0]) return;
 
@@ -315,7 +315,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   hit.v = 0.0f;
   hit.instID = args->context->instID;
   hit.geomID = sphere.geomID;
-  hit.primID = item;
+  hit.primID = primID;
   if ((ray->tnear() < t0) & (t0 < ray->tfar()))
   {
     int imask;
@@ -376,11 +376,11 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   Ray *ray = (Ray*)args->ray;
-  unsigned int item = args->item;
+  unsigned int primID = args->primID;
   
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*) ptr;
-  const Sphere& sphere = spheres[item];
+  const Sphere& sphere = spheres[primID];
   
   if (!valid[0])
     return;
@@ -401,7 +401,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   hit.v = 0.0f;
   hit.instID = args->context->instID;
   hit.geomID = sphere.geomID;
-  hit.primID = item;
+  hit.primID = primID;
   if ((ray->tnear() < t0) & (t0 < ray->tfar()))
   {
     int imask;
@@ -464,7 +464,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   void* ptr  = args->geomUserPtr;
   RTCRayN* rays = args->ray;
   unsigned int N = args->N;
-  unsigned int item = args->item;
+  unsigned int primID = args->primID;
   const Sphere* spheres = (const Sphere*) ptr;
 
   /* iterate over all rays in ray packet */
@@ -482,7 +482,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     float& ray_tnear = RTCRayN_tnear(rays,N,ui);
     float& ray_tfar = RTCRayN_tfar(rays,N,ui);
 
-    const Sphere& sphere = spheres[item];
+    const Sphere& sphere = spheres[primID];
     const Vec3fa v = ray_org-sphere.p;
     const float A = dot(ray_dir,ray_dir);
     const float B = 2.0f*dot(v,ray_dir);
@@ -501,7 +501,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     potentialhit.v = 0.0f;
     potentialhit.instID = args->context->instID;
     potentialhit.geomID = sphere.geomID;
-    potentialhit.primID = item;
+    potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       int imask;
@@ -565,7 +565,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   void* ptr  = args->geomUserPtr;
   RTCRayN* rays = args->ray;
   unsigned int N = args->N;
-  unsigned int item = args->item;
+  unsigned int primID = args->primID;
   const Sphere* spheres = (const Sphere*) ptr;
 
   /* iterate over all rays in ray packet */
@@ -583,7 +583,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     float& ray_tnear = RTCRayN_tnear(rays,N,ui);
     float& ray_tfar = RTCRayN_tfar(rays,N,ui);
 
-    const Sphere& sphere = spheres[item];
+    const Sphere& sphere = spheres[primID];
     const Vec3fa v = ray_org-sphere.p;
     const float A = dot(ray_dir,ray_dir);
     const float B = 2.0f*dot(v,ray_dir);
@@ -602,7 +602,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     potentialhit.v = 0.0f;
     potentialhit.instID = args->context->instID;
     potentialhit.geomID = sphere.geomID;
-    potentialhit.primID = item;
+    potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       int imask;

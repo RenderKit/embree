@@ -1045,14 +1045,14 @@ RTCBoundsFunction
 }@@
 
 @@{
-void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
 {
 =>
 void RTCBoundsFunc(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
   COMMENT void* uniform userPtr = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t item_in = args->item;
+  uniform size_t primID_in = args->primID;
   COMMENT uniform unsigned int time = args->time;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
@@ -1064,14 +1064,14 @@ RTCBoundsFunction
 }@@
 
 @@{
-void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
 {
 =>
 void RTCBoundsFunc2(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
   void* uniform userPtr_in = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t item_in = args->item;
+  uniform size_t primID_in = args->primID;
   COMMENT uniform size_t time = args->time;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
@@ -1083,14 +1083,14 @@ RTCBoundsFunction
 }@@
 
 @@{
-void EXPR RTCBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, size_t ID time_in, RTCBounds& ID bounds_out)
+void EXPR RTCBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, size_t ID time_in, RTCBounds& ID bounds_out)
 {
 =>
 void RTCBoundsFunc3(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
   void* uniform userPtr_in = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t item_in = args->item;
+  uniform size_t primID_in = args->primID;
   uniform size_t time_in = args->time;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
@@ -1108,7 +1108,7 @@ RTCOccludedFunctionN
 }@@
 
 @@{
-void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID item_in)
+void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID primID_in)
 {
 =>
 unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
@@ -1120,7 +1120,7 @@ unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* con
   varying RTCRay* uniform ray_ptr_in = (varying RTCRay* uniform ) args->ray;
   varying RTCRay& ray_in = *ray_ptr_in;
   uniform unsigned int N_in = args->N;
-  uniform unsigned int item_in = args->item;
+  uniform unsigned int primID_in = args->primID;
   assert(N_in == __programCount);
   if (*vvalid_in != -1) return;
 }@@
@@ -1138,7 +1138,7 @@ RTCOccludedFunctionN
 }@@
 
 @@{
-void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID item_in)
+void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID primID_in)
 {
 =>
 void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
@@ -1148,7 +1148,7 @@ void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const unifo
   COMMENT RTCIntersectContext* context_in = args->context;
   RTCRay4& ray_in = *(RTCRay4*) args->ray;
   unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
+  unsigned int primID_in = args->primID;
   assert(N_in == 4);
 }@@
 
@@ -1165,7 +1165,7 @@ RTCOccludedFunctionN
 }@@
 
 @@{
-void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID item_in)
+void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID primID_in)
 {
 =>
 void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
@@ -1175,7 +1175,7 @@ void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const unifo
   COMMENT RTCIntersectContext* context_in = args->context;
   RTCRay8& ray_in = *(RTCRay8*) args->ray;
   unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
+  unsigned int primID_in = args->primID;
   assert(N_in == 8);
 }@@
 
@@ -1192,7 +1192,7 @@ RTCOccludedFunctionN
 }@@
 
 @@{
-void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID item_in)
+void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID primID_in)
 {
 =>
 void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
@@ -1202,7 +1202,7 @@ void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const unif
   COMMENT RTCIntersectContext* context_in = args->context;
   RTCRay16& ray_in = *(RTCRay16*) args->ray;
   unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
+  unsigned int primID_in = args->primID;
   assert(N_in == 16);
 }@@
 
@@ -1219,7 +1219,7 @@ RTCOccludedFunctionN
 }@@
 
 @@{
-void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID item_in)
+void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID primID_in)
 {
 =>
 void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
@@ -1229,7 +1229,7 @@ void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const unifo
   RTCIntersectContext* uniform context_in = args->context;
   RTCRayN* uniform ray_in = args->ray;
   uniform unsigned int N_in = args->N;
-  uniform unsigned int item_in = args->item;
+  uniform unsigned int primID_in = args->primID;
 }@@
 
 ////////////////////////////////////////////////////////////////////////////////////////

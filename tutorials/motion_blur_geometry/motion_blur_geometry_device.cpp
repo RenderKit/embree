@@ -362,7 +362,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
   const Sphere* spheres = (const Sphere*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
   const unsigned int time = args->time;
-  const Sphere& sphere = spheres[args->item];
+  const Sphere& sphere = spheres[args->primID];
   float ft = 2.0f*float(pi) * (float) time / (float) (sphere.num_time_steps-1);
   Vec3fa p = sphere.p + Vec3fa(cos(ft),0.0f,sin(ft));
   bounds_o->lower_x = p.x-sphere.r;
@@ -378,10 +378,10 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCRayN* rays = args->ray;
-  unsigned int item = args->item;
+  unsigned int primID = args->primID;
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
-  const Sphere& sphere = spheres[item];
+  const Sphere& sphere = spheres[primID];
 
   if (!valid[0])
     return;
@@ -413,7 +413,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     ray->v = 0.0f;
     ray->tfar() = t0;
     ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
+    ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t0*ray->dir-sphere_p;
   }
   if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
@@ -421,7 +421,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     ray->v = 0.0f;
     ray->tfar() = t1;
     ray->geomID = sphere.geomID;
-    ray->primID = (unsigned int) item;
+    ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t1*ray->dir-sphere_p;
   }
 }
@@ -431,10 +431,10 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCRayN* rays = args->ray;
-  unsigned int item = args->item;
+  unsigned int primID = args->primID;
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
-  const Sphere& sphere = spheres[item];
+  const Sphere& sphere = spheres[primID];
 
   if (!valid[0])
     return;
