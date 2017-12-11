@@ -209,33 +209,33 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
 
-    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=4)
     {
-      const vboolx valid = vintx((int)i)+vintx(step) < vintx(int(numFloats));
+      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(numFloats));
       const size_t ofs = i*sizeof(float);
       const Quad& tri = quad(primID);
-      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
-      const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[tri.v[3]*stride+ofs]);      
-      const vboolx left = u+v <= 1.0f;
-      const vfloatx Q0 = select(left,p0,p2);
-      const vfloatx Q1 = select(left,p1,p3);
-      const vfloatx Q2 = select(left,p3,p1);
-      const vfloatx U  = select(left,u,vfloatx(1.0f)-u);
-      const vfloatx V  = select(left,v,vfloatx(1.0f)-v);
-      const vfloatx W  = 1.0f-U-V;
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
+      const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[tri.v[3]*stride+ofs]);      
+      const vbool4 left = u+v <= 1.0f;
+      const vfloat4 Q0 = select(left,p0,p2);
+      const vfloat4 Q1 = select(left,p1,p3);
+      const vfloat4 Q2 = select(left,p3,p1);
+      const vfloat4 U  = select(left,u,vfloat4(1.0f)-u);
+      const vfloat4 V  = select(left,v,vfloat4(1.0f)-v);
+      const vfloat4 W  = 1.0f-U-V;
       if (P) {
-        vfloatx::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
+        vfloat4::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
       }
       if (dPdu) { 
-        assert(dPdu); vfloatx::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
-        assert(dPdv); vfloatx::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
+        assert(dPdu); vfloat4::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
+        assert(dPdv); vfloat4::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
       }
       if (ddPdudu) { 
-        assert(ddPdudu); vfloatx::storeu(valid,ddPdudu+i,vfloatx(zero));
-        assert(ddPdvdv); vfloatx::storeu(valid,ddPdvdv+i,vfloatx(zero));
-        assert(ddPdudv); vfloatx::storeu(valid,ddPdudv+i,vfloatx(zero));
+        assert(ddPdudu); vfloat4::storeu(valid,ddPdudu+i,vfloat4(zero));
+        assert(ddPdvdv); vfloat4::storeu(valid,ddPdvdv+i,vfloat4(zero));
+        assert(ddPdudv); vfloat4::storeu(valid,ddPdudv+i,vfloat4(zero));
       }
     }
   }

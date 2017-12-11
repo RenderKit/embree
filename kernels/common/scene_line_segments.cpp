@@ -189,16 +189,16 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
     
-    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=4)
     {
       const size_t ofs = i*sizeof(float);
       const size_t segment = segments[primID];
-      const vboolx valid = vintx((int)i)+vintx(step) < vintx(int(numFloats));
-      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
-      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
-      if (P      ) vfloatx::storeu(valid,P+i,lerp(p0,p1,u));
-      if (dPdu   ) vfloatx::storeu(valid,dPdu+i,p1-p0);
-      if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
+      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(numFloats));
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
+      if (P      ) vfloat4::storeu(valid,P+i,lerp(p0,p1,u));
+      if (dPdu   ) vfloat4::storeu(valid,dPdu+i,p1-p0);
+      if (ddPdudu) vfloat4::storeu(valid,dPdu+i,vfloat4(zero));
     }
   }
 #endif

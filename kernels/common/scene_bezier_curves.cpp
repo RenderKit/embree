@@ -208,20 +208,20 @@ namespace embree
         stride = vertices[buffer&0xFFFF].getStride();
       }
       
-      for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+      for (unsigned int i=0; i<numFloats; i+=4)
       {
         size_t ofs = i*sizeof(float);
         const size_t curve = curves[primID];
-        const vboolx valid = vintx((int)i)+vintx(step) < vintx((int)numFloats);
-        const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-        const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-        const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-        const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+        const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)numFloats);
+        const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+        const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+        const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+        const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
         
         const Curve bezier(p0,p1,p2,p3);
-        if (P      ) vfloatx::storeu(valid,P+i,      bezier.eval(u));
-        if (dPdu   ) vfloatx::storeu(valid,dPdu+i,   bezier.eval_du(u));
-        if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+        if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+        if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+        if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
       }
     }
     
@@ -283,7 +283,7 @@ namespace embree
     }
     
     void CurvesBezier::interpolate(const RTCInterpolateArguments* const args) {
-      interpolate_helper<BezierCurveT<vfloatx>>(args);
+      interpolate_helper<BezierCurveT<vfloat4>>(args);
     }
     
     NativeCurves* createCurvesBSpline(Device* device, RTCGeometryType type, RTCGeometrySubtype subtype) {
@@ -300,7 +300,7 @@ namespace embree
     }
     
     void CurvesBSpline::interpolate(const RTCInterpolateArguments* const args) {
-      interpolate_helper<BSplineCurveT<vfloatx>>(args);
+      interpolate_helper<BSplineCurveT<vfloat4>>(args);
     }
   }
 }

@@ -214,27 +214,27 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
     
-    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=4)
     {
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const vboolx valid = vintx((int)i)+vintx(step) < vintx(int(numFloats));
-      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
+      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(numFloats));
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
       
       if (P) {
-        vfloatx::storeu(valid,P+i,madd(w,p0,madd(u,p1,v*p2)));
+        vfloat4::storeu(valid,P+i,madd(w,p0,madd(u,p1,v*p2)));
       }
       if (dPdu) {
-        assert(dPdu); vfloatx::storeu(valid,dPdu+i,p1-p0);
-        assert(dPdv); vfloatx::storeu(valid,dPdv+i,p2-p0);
+        assert(dPdu); vfloat4::storeu(valid,dPdu+i,p1-p0);
+        assert(dPdv); vfloat4::storeu(valid,dPdv+i,p2-p0);
       }
       if (ddPdudu) {
-        assert(ddPdudu); vfloatx::storeu(valid,ddPdudu+i,vfloatx(zero));
-        assert(ddPdvdv); vfloatx::storeu(valid,ddPdvdv+i,vfloatx(zero));
-        assert(ddPdudv); vfloatx::storeu(valid,ddPdudv+i,vfloatx(zero));
+        assert(ddPdudu); vfloat4::storeu(valid,ddPdudu+i,vfloat4(zero));
+        assert(ddPdvdv); vfloat4::storeu(valid,ddPdvdv+i,vfloat4(zero));
+        assert(ddPdudv); vfloat4::storeu(valid,ddPdudv+i,vfloat4(zero));
       }
     }
   }
