@@ -758,6 +758,16 @@ namespace embree
 
   void Scene::commit (bool join) 
   {
+#if defined(TASKING_PPL)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcCommitJoinScene not supported with PPL");
+#endif
+    
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcCommitJoinScene not supported with this TBB version");
+#endif
+
     /* try to obtain build lock */
     Lock<MutexSys> lock(buildMutex,buildMutex.try_lock());
 
@@ -767,9 +777,6 @@ namespace embree
       if (!join) 
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoinScene to join a build operation");
       
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"join not supported");
-#endif
 #if USE_TASK_ARENA
       device->arena->execute([&]{ group->wait(); });
 #else
