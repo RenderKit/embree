@@ -786,7 +786,7 @@ namespace embree
       
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
+             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS)));
       const char* src = nullptr; 
       size_t stride = 0;
       size_t bufID = buffer&0xFFFF;
@@ -863,7 +863,7 @@ namespace embree
     
       /* calculate base pointer and stride */
       assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
+             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS)));
       const char* src = nullptr; 
       size_t stride = 0;
       size_t bufID = buffer&0xFFFF;

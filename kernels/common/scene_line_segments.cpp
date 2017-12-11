@@ -178,7 +178,7 @@ namespace embree
       
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS)));
     const char* src = nullptr;
     size_t stride = 0;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
