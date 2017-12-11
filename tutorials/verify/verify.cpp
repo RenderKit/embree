@@ -3237,7 +3237,7 @@ namespace embree
           case 16:
           case 17:
           {
-            int op = RandomSampler_getInt(task->sampler)%3;
+            int op = RandomSampler_getInt(task->sampler)%4;
             switch (op) {
             case 0: {
               rtcDetachGeometry(*task->scene,geom[index].first);     
@@ -3261,6 +3261,7 @@ namespace embree
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
               }
+              rtcCommitGeometry(hgeom);
               break;
             }
             case 2: {
@@ -3271,27 +3272,23 @@ namespace embree
               case 8:
               case 11:
               case 14:
+                RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
                 task->scene->resizeRandomly(geom[index],task->sampler);
+                rtcCommitGeometry(hgeom);
                 break;
               }
+            }
+            case 3: {
+              RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
+              RTCBuildQuality quality = (RTCBuildQuality) (RandomSampler_getInt(task->sampler)%4);
+              rtcSetGeometryBuildQuality(hgeom,quality);
+              rtcCommitGeometry(hgeom);
             }
             }
             break;
           }
           }
-        }
-        
-        /* entirely delete all objects at the end */
-        if (j == numIterations-1) {
-          for (size_t i=0; i<numSlots; i++) {
-            if (geom[i].first != -1) {
-              rtcDetachGeometry(*task->scene,geom[i].first);
-              if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) task->errorCounter++;;
-              geom[i].first = -1;
-              geom[i].second = nullptr;
-            }
-          }
-        }
+        }       
       }
 
       if (thread->threadCount) {
@@ -4379,15 +4376,15 @@ namespace embree
       /**************************************************************************/
       
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
+      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,30));
 
       if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED)) {
 	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
-	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,30));
       }
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
-      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,300));
+      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
 
       /**************************************************************************/
       /*                           Benchmarks                                   */
