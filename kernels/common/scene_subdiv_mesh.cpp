@@ -132,6 +132,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_FACE)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid face buffer format");
 
@@ -153,6 +155,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UINT2)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid edge crease index buffer format");
 
@@ -160,6 +164,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_FLOAT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid edge crease weight buffer format");
 
@@ -167,6 +173,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex crease index buffer format");
 
@@ -174,6 +182,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_FLOAT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex crease weight buffer format");
 
@@ -181,6 +191,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_HOLE)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid hole buffer format");
 
@@ -188,6 +200,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_LEVEL)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_FLOAT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid level buffer format");
 

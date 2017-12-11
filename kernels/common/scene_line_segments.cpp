@@ -98,7 +98,7 @@ namespace embree
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UCHAR)
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid curve flag buffer format");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid flag buffer format");
 
       flags.set(buffer, offset, stride, num, format);
     }

@@ -89,6 +89,8 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UINT4)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
