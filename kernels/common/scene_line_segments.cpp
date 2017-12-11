@@ -56,7 +56,7 @@ namespace embree
   void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if ((type != RTC_BUFFER_TYPE_CURVE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
@@ -93,7 +93,7 @@ namespace embree
       segments.set(buffer, offset, stride, num, format);
       setNumPrimitives(num);
     }
-    else if (type == RTC_BUFFER_TYPE_CURVE_FLAGS)
+    else if (type == RTC_BUFFER_TYPE_FLAGS)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
@@ -126,7 +126,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return vertexAttribs[slot].getPtr();
     }
-    else if (type == RTC_BUFFER_TYPE_CURVE_FLAGS) 
+    else if (type == RTC_BUFFER_TYPE_FLAGS) 
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");

@@ -43,7 +43,7 @@ enum RTCBufferType
 
   RTC_BUFFER_TYPE_HOLE,
 
-  RTC_BUFFER_TYPE_CURVE_FLAGS
+  RTC_BUFFER_TYPE_FLAGS
 };
 
 /*! \brief Defines an opaque buffer type */
