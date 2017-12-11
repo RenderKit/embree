@@ -127,8 +127,10 @@ namespace embree
     }
 
     /*! sets the build quality */
-    void setBuildQuality(RTCBuildQuality quality_in) {
+    void setBuildQuality(RTCBuildQuality quality_in)
+    {
       this->quality = quality_in;
+      Geometry::update();
     }
     
     /*! for all geometries */
