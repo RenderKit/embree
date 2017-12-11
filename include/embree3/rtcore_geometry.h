@@ -273,29 +273,29 @@ RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArgument
 /*! report intersection from occluded function */
 RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
 
+/*! \brief Defines an opaque geometry type */
+typedef struct __RTCGeometry* RTCGeometry;
+
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
 {
-  void* geomUserPtr;   //!< pointer to user data of geometry
-  unsigned int geomID; //!< ID of geometry to displace
-  unsigned int primID; //!< ID of primitive of geometry to displace
-  unsigned int time;   //!< time step to calculate displacement for
-  const float* u;      //!< u coordinates (source)
-  const float* v;      //!< v coordinates (source)
-  const float* nx;     //!< x coordinates of normalized normal at point to displace (source)
-  const float* ny;     //!< y coordinates of normalized normal at point to displace (source)
-  const float* nz;     //!< z coordinates of normalized normal at point to displace (source)
-  float* px;           //!< x coordinates of points to displace (source and target)
-  float* py;           //!< y coordinates of points to displace (source and target)
-  float* pz;           //!< z coordinates of points to displace (source and target)
-  unsigned int N;      //!< number of points to displace
+  void* geomUserPtr;    //!< pointer to user data of geometry
+  RTCGeometry geometry; //!< geometry handle to displace
+  unsigned int primID;  //!< ID of primitive of geometry to displace
+  unsigned int time;    //!< time step to calculate displacement for
+  const float* u;       //!< u coordinates (source)
+  const float* v;       //!< v coordinates (source)
+  const float* nx;      //!< x coordinates of normalized normal at point to displace (source)
+  const float* ny;      //!< y coordinates of normalized normal at point to displace (source)
+  const float* nz;      //!< z coordinates of normalized normal at point to displace (source)
+  float* px;            //!< x coordinates of points to displace (source and target)
+  float* py;            //!< y coordinates of points to displace (source and target)
+  float* pz;            //!< z coordinates of points to displace (source and target)
+  unsigned int N;       //!< number of points to displace
 };
  
 /*! Displacement mapping function */
 typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionArguments* const args);
-
-/*! \brief Defines an opaque geometry type */
-typedef struct __RTCGeometry* RTCGeometry;
 
 /*! Creates a new geometry. */
 RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, enum RTCGeometryType type);

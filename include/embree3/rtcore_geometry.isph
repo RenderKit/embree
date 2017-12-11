@@ -270,11 +270,14 @@ RTCORE_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionN
 /*! report intersection from occluded function */
 RTCORE_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
+/*! \brief Defines an opaque geometry type */
+typedef uniform struct __RTCGeometry* uniform RTCGeometry;
+
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
 {
   void* uniform geomUserPtr;       //!< pointer to user data of geometry
-  uniform unsigned int geomID;     //!< ID of geometry to displace
+  RTCGeometry geometry;            //!< ID of geometry to displace
   uniform unsigned int primID;     //!< ID of primitive of geometry to displace
   uniform unsigned int time;       //!< time step to calculate displacement for
   uniform const float* uniform u;  //!< u coordinates (source)
@@ -290,9 +293,6 @@ struct RTCDisplacementFunctionArguments
 
 /*! Type of displacement callback functions */
 typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionArguments* uniform const args);
-
-/*! \brief Defines an opaque geometry type */
-typedef uniform struct __RTCGeometry* uniform RTCGeometry;
 
 /*! Creates a new geometry. */
 RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);

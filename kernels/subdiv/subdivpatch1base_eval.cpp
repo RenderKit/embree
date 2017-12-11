@@ -139,7 +139,8 @@ namespace embree
         if (unlikely(geom->displFunc)) {
           RTCDisplacementFunctionArguments args;
           args.geomUserPtr = geom->userPtr;
-          args.geomID = patch.geomID();
+          args.geometry = (RTCGeometry)geom;
+          //args.geomID = patch.geomID();
           args.primID = patch.primID();
           args.time = patch.time();
           args.u = grid_u;
@@ -199,7 +200,8 @@ namespace embree
             const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
             RTCDisplacementFunctionArguments args;
             args.geomUserPtr = geom->userPtr;
-            args.geomID = patch.geomID();
+            args.geometry = (RTCGeometry)geom;
+            //args.geomID = patch.geomID();
             args.primID = patch.primID();
             args.time = patch.time();
             args.u = &u[0];
@@ -273,7 +275,8 @@ namespace embree
         {
           RTCDisplacementFunctionArguments args;
           args.geomUserPtr = geom->userPtr;
-          args.geomID = patch.geomID();
+          args.geometry = (RTCGeometry)geom;
+          //args.geomID = patch.geomID();
           args.primID = patch.primID();
           args.time = patch.time();
           args.u = grid_u;
@@ -373,7 +376,8 @@ namespace embree
             const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
             RTCDisplacementFunctionArguments args;
             args.geomUserPtr = geom->userPtr;
-            args.geomID = patch.geomID();
+            args.geometry = (RTCGeometry)geom;
+            //args.geomID = patch.geomID();
             args.primID = patch.primID();
             args.time = patch.time();
             args.u = &u[0];
