@@ -1,0 +1,38 @@
+.TH "rtcSetGeometryBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryBuffer\ \-\ sets\ a\ buffer\ of\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryBuffer(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCBufferType\ type,
+\ \ unsigned\ int\ slot,
+\ \ enum\ RTCFormat\ format,
+\ \ RTCBuffer\ buffer
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryBuffer\f[] function assigns a view of a buffer
+object (\f[C]buffer\f[] argument) of specified format (\f[C]format\f[]
+argument) to some geometry buffer slot (\f[C]type\f[] and \f[C]slot\f[]
+argument) of the specified geometry (\f[C]geometry\f[] argument).
+The geometry will hold a reference count of the assigned buffer.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryBufferRange], [rtcSetSharedGeometryBuffer],
+[rtcSetNewGeometryBuffer]

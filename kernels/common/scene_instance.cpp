@@ -36,7 +36,7 @@ namespace embree
     for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
     boundsFunc = device->instance_factory->InstanceBoundsFunc();
-    boundsFuncUserPtr = nullptr;
+    //boundsFuncUserPtr = nullptr;
     intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
   }
 

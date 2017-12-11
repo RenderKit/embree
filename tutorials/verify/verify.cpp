@@ -303,7 +303,7 @@ namespace embree
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCBuildQuality quality, Sphere* sphere)
     {
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER);
-      rtcSetGeometryNumPrimitives(geom,1);
+      rtcSetGeometryUserPrimitiveCount(geom,1);
       rtcSetGeometryBuildQuality(geom,quality);
       AssertNoError(device);
       rtcSetGeometryBoundsFunction(geom,BoundsFunc,nullptr);
@@ -789,9 +789,8 @@ namespace embree
       AssertNoError(device);
       rtcCommitScene (scene);
       AssertNoError(device);
-      BBox3fa bbox[2];
-      rtcGetSceneLinearBounds(scene,(RTCBounds*)bbox);
-      LBBox3fa bounds1(bbox[0],bbox[1]);
+      LBBox3fa bounds1;
+      rtcGetSceneLinearBounds(scene,(RTCLinearBounds*)&bounds1);
       AssertNoError(device);
       return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }
@@ -1477,7 +1476,7 @@ namespace embree
             if (random_bool()) {
               RTCGeometry hgeom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
               rtcCommitGeometry(hgeom);
-              unsigned int geomID = rtcAttachAndReleaseGeometryByID(scene,hgeom,index);
+              unsigned int geomID = rtcAttachAndReleaseGeometry(scene,hgeom);
               geom[geomID] = geomID;
               AssertNoError(device);
             } else {
@@ -1605,7 +1604,7 @@ namespace embree
       for (size_t i=0; i<16; i++) 
       {
         bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
-        Vec3fa ds(2,0.1f,2);
+        Vec3fa ds(2,0.1f,2,0.0f);
         if (move0) { move_mesh(hgeom0,numVertices,ds); pos0 += ds; }
         if (move1) { move_mesh(hgeom1,numVertices,ds); pos1 += ds; }
         if (move2) { move_mesh(hgeom2,numVertices,ds); pos2 += ds; }
@@ -1624,7 +1623,9 @@ namespace embree
         for (unsigned int numRays=1; numRays<maxRays; numRays++) {
           for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
-          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+          for (size_t i=0; i<numRays; i++)
+            if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+              return VerifyApplication::FAILED;
         }
       }
       AssertNoError(device);
@@ -3171,6 +3172,7 @@ namespace embree
     const size_t numIterations = 2*numSlots;
     std::pair<int,Ref<SceneGraph::Node>> geom[numSlots];
     int types[numSlots];
+    RTCBuildQuality quality[numSlots];
     Sphere spheres[numSlots];
     size_t numVertices[numSlots];
     for (size_t i=0; i<numSlots; i++)  {
@@ -3211,33 +3213,33 @@ namespace embree
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
-          case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
-          case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles); break;
-          case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles); break;
+          case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
-          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles); break;
-          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles); break;
+          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles); break;
-	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,4,numTriangles); break;
-	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,4,numTriangles); break;
+          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,4,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,4,numTriangles); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
-	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
-	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,&spheres[index]); break;
-          case 19: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_REFIT,&spheres[index]); break;
-          case 20: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_LOW,&spheres[index]); break;
+          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 19: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_REFIT,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 20: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_LOW,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_LOW; break;
           }; 
 	  //if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) task->errorCounter++;;
           if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) {
@@ -3278,7 +3280,7 @@ namespace embree
           case 16:
           case 17:
           {
-            int op = RandomSampler_getInt(task->sampler)%3;
+            int op = RandomSampler_getInt(task->sampler)%4;
             switch (op) {
             case 0: {
               rtcDetachGeometry(*task->scene,geom[index].first);     
@@ -3302,6 +3304,7 @@ namespace embree
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
               }
+              rtcCommitGeometry(hgeom);
               break;
             }
             case 2: {
@@ -3312,27 +3315,26 @@ namespace embree
               case 8:
               case 11:
               case 14:
-                task->scene->resizeRandomly(geom[index],task->sampler);
+                if (quality[index] != RTC_BUILD_QUALITY_REFIT) {
+                  RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
+                  task->scene->resizeRandomly(geom[index],task->sampler);
+                  rtcCommitGeometry(hgeom);
+                }
                 break;
               }
+            }
+            case 3: {
+              RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
+              RTCBuildQuality q = (RTCBuildQuality) (RandomSampler_getInt(task->sampler)%4);
+              rtcSetGeometryBuildQuality(hgeom,q);
+              quality[index] = q;
+              rtcCommitGeometry(hgeom);
             }
             }
             break;
           }
           }
-        }
-        
-        /* entirely delete all objects at the end */
-        if (j == numIterations-1) {
-          for (size_t i=0; i<numSlots; i++) {
-            if (geom[i].first != -1) {
-              rtcDetachGeometry(*task->scene,geom[i].first);
-              if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) task->errorCounter++;;
-              geom[i].first = -1;
-              geom[i].second = nullptr;
-            }
-          }
-        }
+        }       
       }
 
       if (thread->threadCount) {
@@ -4420,15 +4422,15 @@ namespace embree
       /**************************************************************************/
       
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
+      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,30));
 
       if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED)) {
 	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
-	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,30));
       }
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
-      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,300));
+      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
 
       /**************************************************************************/
       /*                           Benchmarks                                   */

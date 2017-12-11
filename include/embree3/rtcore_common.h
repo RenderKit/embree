@@ -125,7 +125,13 @@ struct RTCORE_ALIGN(16) RTCBounds
   float upper_x, upper_y, upper_z, align1;
 };
 
+/*! Linear axis aligned bounding box representation */
+struct RTCORE_ALIGN(16) RTCLinearBounds
+{
+  struct RTCBounds bounds0;
+  struct RTCBounds bounds1;
+};
+
 #if defined(__cplusplus)
 }
 #endif
-

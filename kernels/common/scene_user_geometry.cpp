@@ -33,19 +33,15 @@ namespace embree
     Geometry::update();
   }
 
-  void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) 
-  {
+  void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
     this->boundsFunc = bounds;
-    this->boundsFuncUserPtr = userPtr;
   }
 
-  void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) 
-  {
+  void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) {
     intersectors.intersectorN.intersect = intersect;
   }
 
-  void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) 
-  {
+  void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) {
     intersectors.intersectorN.occluded = occluded;
   }
 }

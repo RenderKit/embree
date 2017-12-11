@@ -1,0 +1,44 @@
+.TH "rtcSetGeometryIndexBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryIndexBuffer\ \-\ binds\ a\ user\ vertex\ buffer\ to\ some\ topology
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryIndexBuffer(RTCGeometry\ geometry,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ enum\ RTCBufferType\ vertexBuffer,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ enum\ RTCBufferType\ indexBuffer);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryIndexBuffer\f[] function binds a user vertex
+buffer (\f[C]vertexBuffer\f[] argument) to some topology
+(\f[C]indexBuffer\f[] argument) for the specified subdivision geometry
+(\f[C]geometry\f[] argument).
+Vertex buffers are always bound to the default topology (topology 0) and
+cannot get bound differently.
+A user vertex buffer always uses the topology it is bound to when used
+in the \f[C]rtcInterpolate\f[] and \f[C]rtcInterpolateN\f[] call.
+.PP
+A topology consists of a subdivision mode set through
+\f[C]rtcSetGeometrySubdivisionMode\f[] and an index buffer.
+This index buffer can assign indices for each face of the subdivision
+geometry that are different to the indices of the default topology.
+These new indices can for instance get used to introduce additional
+borders into the subdivision mesh to map multiple textures onto one
+subdivision geometry.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcInterpolate], [rtcInterpolateN]

@@ -37,9 +37,9 @@ struct Ray1
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
-inline uniform RTCRay1* uniform RTCRay1_(uniform Ray1& ray)
+inline uniform RTCRay* uniform RTCRay1_(uniform Ray1& ray)
 {
-  uniform RTCRay1* uniform ray_ptr = (uniform RTCRay1* uniform)&ray;
+  uniform RTCRay* uniform ray_ptr = (uniform RTCRay* uniform)&ray;
   return ray_ptr;
 }
 

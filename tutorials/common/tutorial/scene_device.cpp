@@ -239,6 +239,7 @@ namespace embree
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
     hairs = (ISPCHair*) in->hairs.data();
+    flags = (unsigned char*)in->flags.data();
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numHairs = (unsigned)in->numPrimitives();
@@ -396,6 +397,8 @@ namespace embree
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT2, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
     if (mesh->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
+
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_CURVE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
     rtcCommitGeometry(geom);
 
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
@@ -423,6 +426,7 @@ namespace embree
     }
   }
 
+#if 0
   unsigned int ConvertGroupGeometry(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCScene scene_out)
   {
     std::vector<unsigned> geometries(group->numGeometries);
@@ -442,9 +446,11 @@ namespace embree
     group->geom.geomID = geomID;
     return geomID;
   }
+#endif
   
   unsigned int ConvertInstance(RTCDevice device, ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
+#if 0
     if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP)
     {
       if (instance->numTimeSteps == 1) {
@@ -462,6 +468,7 @@ namespace embree
         throw std::runtime_error("motion blur not yet supported for geometry instances");
     } 
     else
+#endif
     {
       RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
       if (instance->numTimeSteps == 1) {
@@ -518,11 +525,13 @@ namespace embree
           assert(geomID == i);
           rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
         }
+#if 0
         else if (geometry->type == GROUP) {
           unsigned int geomID = ConvertGroupGeometry(g_device,(ISPCGroup*) geometry, quality, scene_out);
           assert(geomID == i);
           rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
         }
+#endif
         else if (geometry->type == INSTANCE) {
           unsigned int geomID = ConvertInstance(g_device, scene_in, (ISPCInstance*) geometry, i, scene_out);
           assert(geomID == i); scene_in->geomID_to_inst[geomID] = (ISPCInstance*) geometry;

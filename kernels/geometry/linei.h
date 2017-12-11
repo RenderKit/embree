@@ -65,9 +65,12 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
-    __forceinline       vint<M>& geomID()       { return geomIDs; }
-    __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    template<class T>
+    static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
+
+    __forceinline       vint<M> geomID()       { return unmask(geomIDs); }
+    __forceinline const vint<M> geomID() const { return unmask(geomIDs); }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return unmask(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
@@ -146,9 +149,11 @@ namespace embree
       {
         const LineSegments* geom = scene->get<LineSegments>(prim->geomID());
         if (begin<end) {
-          geomID[i] = prim->geomID();
+          /* encode the RTCCurveFlags into the two most significant bits */
+          const unsigned int mask = geom->getStartEndBitMask(prim->primID());
+          geomID[i] = prim->geomID() | mask;
           primID[i] = prim->primID();
-          v0[i] = geom->segment(prim->primID());
+          v0[i] = geom->segment(prim->primID());         
           begin++;
         } else {
           assert(i);
@@ -193,7 +198,7 @@ namespace embree
 
     /*! output operator */
     friend __forceinline std::ostream& operator<<(std::ostream& cout, const LineMi& line) {
-      return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomIDs << ", " << line.primIDs << "}";
+      return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomID() << ", " << line.primID() << "}";
     }
     
   public:
@@ -212,7 +217,6 @@ namespace embree
     const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
     const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
     const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
-
     const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2]));
@@ -241,7 +245,6 @@ namespace embree
     const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1],itime[1]));
     const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2],itime[2]));
     const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3],itime[3]));
-
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
 
     const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1,itime[0]));
@@ -262,7 +265,6 @@ namespace embree
     const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
     const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
     const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
-
     const vfloat4 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
     vfloat4 ftime;
     const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);

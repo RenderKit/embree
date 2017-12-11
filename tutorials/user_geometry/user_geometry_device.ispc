@@ -240,7 +240,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.l.vz = make_Vec3f(0,0,1);
   instance->local2world.p    = make_Vec3f(0,0,0);
   instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  rtcSetGeometryNumPrimitives(instance->geometry,1);
+  rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
@@ -275,7 +275,7 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
-  const uniform Sphere& sphere = spheres[args->item];
+  const uniform Sphere& sphere = spheres[args->primID];
   bounds_o->lower_x = sphere.p.x-sphere.r;
   bounds_o->lower_y = sphere.p.y-sphere.r;
   bounds_o->lower_z = sphere.p.z-sphere.r;
@@ -289,11 +289,11 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   varying Ray *uniform ray = (varying Ray*uniform)args->ray;
-  uniform unsigned int item = args->item;
+  uniform unsigned int primID = args->primID;
   
   assert(args->N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
-  const uniform Sphere& sphere = spheres[item];
+  const uniform Sphere& sphere = spheres[primID];
   
   if (!valid[programIndex]) return;
 
@@ -313,7 +313,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   hit.v = 0.0f;
   hit.instID = args->context->instID;
   hit.geomID = sphere.geomID;
-  hit.primID = item;
+  hit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
   {
     varying int imask;
@@ -374,11 +374,11 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   varying Ray *uniform ray = (varying Ray*uniform)args->ray;
-  uniform unsigned int item = args->item;
+  uniform unsigned int primID = args->primID;
   
   assert(args->N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
-  const uniform Sphere& sphere = spheres[item];
+  const uniform Sphere& sphere = spheres[primID];
   
   if (!valid[programIndex])
     return;
@@ -399,7 +399,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   hit.v = 0.0f;
   hit.instID = args->context->instID;
   hit.geomID = sphere.geomID;
-  hit.primID = item;
+  hit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
   {
     varying int imask;
@@ -462,7 +462,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
   void* uniform ptr  = args->geomUserPtr;
   RTCRayN* uniform rays = args->ray;
   uniform unsigned int N = args->N;
-  uniform unsigned int item = args->item;
+  uniform unsigned int primID = args->primID;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -480,7 +480,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     float& ray_tnear = RTCRayN_tnear(rays,N,ui);
     float& ray_tfar = RTCRayN_tfar(rays,N,ui);
 
-    const uniform Sphere& sphere = spheres[item];
+    const uniform Sphere& sphere = spheres[primID];
     const Vec3f v = ray_org-sphere.p;
     const float A = dot(ray_dir,ray_dir);
     const float B = 2.0f*dot(v,ray_dir);
@@ -499,7 +499,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     potentialhit.v = 0.0f;
     potentialhit.instID = args->context->instID;
     potentialhit.geomID = sphere.geomID;
-    potentialhit.primID = item;
+    potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       varying int imask;
@@ -563,7 +563,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
   void* uniform ptr  = args->geomUserPtr;
   RTCRayN* uniform rays = args->ray;
   uniform unsigned int N = args->N;
-  uniform unsigned int item = args->item;
+  uniform unsigned int primID = args->primID;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -581,7 +581,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
     float& ray_tnear = RTCRayN_tnear(rays,N,ui);
     float& ray_tfar = RTCRayN_tfar(rays,N,ui);
 
-    const uniform Sphere& sphere = spheres[item];
+    const uniform Sphere& sphere = spheres[primID];
     const Vec3f v = ray_org-sphere.p;
     const float A = dot(ray_dir,ray_dir);
     const float B = 2.0f*dot(v,ray_dir);
@@ -600,7 +600,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
     potentialhit.v = 0.0f;
     potentialhit.instID = args->context->instID;
     potentialhit.geomID = sphere.geomID;
-    potentialhit.primID = item;
+    potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       varying int imask;
@@ -736,7 +736,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   sphere->r = r;
   sphere->geometry = geom;
   sphere->geomID = rtcAttachGeometry(scene,geom);
-  rtcSetGeometryNumPrimitives(geom,1);
+  rtcSetGeometryUserPrimitiveCount(geom,1);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
@@ -755,7 +755,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }
-  rtcSetGeometryNumPrimitives(geom,N);
+  rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL)

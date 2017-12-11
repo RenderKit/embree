@@ -749,10 +749,9 @@ namespace embree
       public:
         Hair () {}
         Hair (unsigned vertex, unsigned id) 
-          : vertex(vertex), id(id) {}
-
+        : vertex(vertex), id(id) {}
       public:
-        unsigned vertex,id;  //!< index of first control point and hair ID
+        unsigned vertex, id;  //!< index of first control point and hair ID
       };
       
     public:
@@ -771,7 +770,7 @@ namespace embree
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
         : Node(true), type(imesh->type), subtype(imesh->subtype), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
-        hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
+        hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -821,6 +820,8 @@ namespace embree
       RTCGeometrySubtype subtype;             //!< subtype of geometry (hair or curve)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
+      std::vector<unsigned char> flags;       //!< left, right end cap flags
+
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
     };

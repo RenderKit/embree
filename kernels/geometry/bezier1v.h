@@ -48,6 +48,10 @@ namespace embree
     __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID)
       : p0(p0), p1(p1), p2(p2), p3(p3), geom(geomID), prim(primID) {}
 
+    /* Returns the geometry ID */
+    template<class T>
+    static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
+
     /*! return primitive ID */
     __forceinline unsigned int primID() const { 
       return prim;
@@ -55,7 +59,7 @@ namespace embree
 
     /*! return geometry ID */
     __forceinline unsigned int geomID() const { 
-      return geom; 
+      return unmask(geom); 
     }
 
     /*! fill triangle from triangle list */
@@ -71,7 +75,9 @@ namespace embree
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID);
+      /* encode the RTCCurveFlags into the two most significant bits */
+      const unsigned int mask = curves->getStartEndBitMask(primID);
+      new (this) Bezier1v(p0,p1,p2,p3,geomID | mask,primID);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 

@@ -1,0 +1,126 @@
+.\"t
+.TH "rtcNewDevice" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcNewDevice\ \-\ creates\ a\ new\ device
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCDevice\ rtcNewDevice(const\ char*\ config);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+This function creates a new device and returns a handle to this device.
+The device object is reference counted with an initial reference count
+of 1.
+The handle can get released using the \f[C]rtcReleaseDevice\f[] API
+call.
+.PP
+All objects created from the device (like scenes, geometries, etc.) hold
+a reference to the device, thus the device will not get destroyed unless
+these objects are destroyed first.
+.PP
+A configuration string \f[C]config\f[] can get passed to the device
+construction.
+This configuration string can be \f[C]NULL\f[] to use the default
+configuration.
+.PP
+When creating the device, Embree reads configurations for the device
+from the following locations in order:
+.IP "1)" 3
+\f[C]cfg\f[] string passed to the \f[C]rtcNewDevice\f[] function is
+evaluated
+.IP "2)" 3
+\f[C]\&.embree3\f[] file in the application folder is evaluated
+.IP "3)" 3
+\f[C]\&.embree3\f[] file in the home folder is evaluated
+.PP
+Settings performed later overwrite previous settings.
+This way the configuration for the application can be changed globally
+(either through the \f[C]rtcNewDevice\f[] call or through the
+\f[C]\&.embree3\f[] file in the application folder) and each user has
+the option to modify the configuration to fit its needs.
+.PP
+The following configuration is supported:
+.PP
+Configuration for \f[C]rtcNewDevice\f[].
+.TS
+tab(@);
+lw(30.0n) lw(29.2n) lw(9.2n).
+T{
+Parameter
+T}@T{
+Description
+T}@T{
+Default
+T}
+_
+T{
+ignore_config_files=[0/1]
+T}@T{
+When set to 1, configuration files are ignored.
+T}@T{
+0
+T}
+T{
+threads=[int]
+T}@T{
+Specifies a number of build threads to use.
+A value of 0 enables all threads.
+T}@T{
+0
+T}
+T{
+set_affinity=[0/1]
+T}@T{
+When enabled build threads are affinitized.
+T}@T{
+0
+T}
+T{
+start_threads=[0/1]
+T}@T{
+When enabled build thread are started upfront.
+This can be usefull for benchmarking.
+T}@T{
+0
+T}
+T{
+isa=[sse2,sse4.2,avx,avx2, avx512knl,avx512skx]
+T}@T{
+Enables specified ISA.
+T}@T{
+\-
+T}
+T{
+max_isa=[sse2,sse4.2,avx,avx2, avx512knl,avx512skx]
+T}@T{
+Uses system ISA, but maximally the specified ISA.
+T}@T{
+\-
+T}
+.TE
+.PP
+Different configuration options should be separated by ",", e.g.:
+.IP
+.nf
+\f[C]
+rtcNewDevice("threads=1,isa=avx");
+\f[]
+.fi
+.SS EXIT STATUS
+.PP
+On success returns a handle of the created device.
+On failure returns \f[C]NULL\f[] as device and sets a per thread error
+code that can get queried using \f[C]rtcDeviceGetError(NULL)\f[].
+.SS SEE ALSO
+.PP
+[rtcRetainDevice], [rtcReleaseDevice]

@@ -272,6 +272,7 @@ namespace embree
     avector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
     avector<AffineSpace3fa> loadAffineSpace3faArray(const Ref<XML>& xml);
     std::vector<unsigned> loadUIntArray(const Ref<XML>& xml);
+    std::vector<unsigned char> loadUCharArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
     std::vector<Vec4i> loadVec4iArray(const Ref<XML>& xml);
@@ -547,6 +548,23 @@ namespace embree
       data.resize(xml->body.size());
       for (size_t i=0; i<data.size(); i++) 
         data[i] = xml->body[i].Int();
+      return data;
+    }
+  }
+
+  std::vector<unsigned char> XMLLoader::loadUCharArray(const Ref<XML>& xml)
+  {
+    if (!xml) return std::vector<unsigned char>();
+
+    if (xml->parm("flags") != "") {
+      return loadBinary<std::vector<unsigned char>>(xml);
+    } 
+    else 
+    {
+      std::vector<unsigned char> data;
+      data.resize(xml->body.size());
+      for (size_t i=0; i<data.size(); i++) 
+        data[i] = (unsigned char)xml->body[i].Int();
       return data;
     }
   }
@@ -1034,6 +1052,8 @@ namespace embree
     if (tessellation_rate != "")
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
+    mesh->flags = loadUCharArray(xml->childOpt("flags"));
+
     mesh->verify();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
@@ -1058,9 +1078,10 @@ namespace embree
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
     mesh->hairs.resize(indices.size()); 
-    for (size_t i=0; i<indices.size(); i++) {
+    for (size_t i=0; i<indices.size(); i++) 
       mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
-    }
+
+    mesh->flags = loadUCharArray(xml->childOpt("flags"));
 
     if (type == RTC_GEOMETRY_TYPE_CURVE_BSPLINE) {
       for (auto& vertices : mesh->positions)

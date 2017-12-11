@@ -28,16 +28,6 @@
 /*! maximal number of time steps */
 #define RTC_MAX_TIME_STEPS 129
 
-/*! maximal number of user vertex buffers */
-#define RTC_MAX_USER_VERTEX_BUFFERS 16
-
-/*! maximal number of index buffers for subdivision surfaces */
-#define RTC_MAX_INDEX_BUFFERS 16
-
-#define RTC_INDEX_BUFFER_(i)  (uniform RTCBufferType)(RTC_BUFFER_TYPE_INDEX+(i))
-#define RTC_VERTEX_BUFFER_(i) (uniform RTCBufferType)(RTC_BUFFER_TYPE_VERTEX+(i))
-#define RTC_USER_VERTEX_BUFFER_(i) (uniform RTCBufferType)(RTC_USER_VERTEX_BUFFER+(i))
-
 /*! \brief Supported types of matrix layout for functions involving matrices */
 enum RTCMatrixType {
   RTC_MATRIX_ROW_MAJOR = 0,
@@ -193,12 +183,16 @@ enum RTCSubdivisionMode
   RTC_SUBDIVISION_MODE_PIN_ALL         = 4, //!< pin every vertex (interpolates every patch linearly)
 };
 
+enum RTCCurveFlags { 
+  RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), 
+  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1) 
+};
+
 /*! Arguments for RTCBoundsFunction */
 struct RTCBoundsFunctionArguments
 {
-  void* uniform userPtr;               //!< pointer to user data
   void* uniform geomUserPtr;           //!< pointer to geometry user data
-  uniform unsigned int item;           //!< item to calculate bounds for
+  uniform unsigned int primID;         //!< ID of primitive to intersect
   uniform unsigned int time;           //!< time to calculate bounds for
   uniform RTCBounds* uniform bounds_o; //!< returns calculated bounds
 };
@@ -211,10 +205,10 @@ struct RTCIntersectFunctionNArguments
 {
   uniform int* uniform valid;                   //!< pointer to valid mask
   void* uniform geomUserPtr;                    //!< pointer to geometry user data
+  uniform unsigned int primID;                  //!< ID of primitive to intersect
   uniform RTCIntersectContext* uniform context; //!< intersection context as passed to rtcIntersect/rtcOccluded
   RTCRayN* uniform ray;                         //!< ray packet of size N
   uniform unsigned int N;                       //!< number of rays in ray packet
-  uniform unsigned int item;                    //!< item to intersect
 };
 
 /*! Type of intersect function pointer for ray packets of size N. */
@@ -225,10 +219,10 @@ struct RTCOccludedFunctionNArguments
 {
   uniform int* uniform valid;                   //!< pointer to valid mask
   void* uniform geomUserPtr;                    //!< pointer to geometry user data
+  uniform unsigned int primID;                  //!< ID of primitive to intersect
   uniform RTCIntersectContext* uniform context; //!< intersection context as passed to rtcIntersect/rtcOccluded
   RTCRayN* uniform ray;                         //!< ray packet of size N
   uniform unsigned int N;                       //!< number of rays in ray packet
-  uniform unsigned int item;                    //!< item to intersect
 };
 
 /*! Type of occlusion function pointer for ray packets of size N. */
@@ -240,11 +234,14 @@ RTCORE_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionN
 /*! report intersection from occluded function */
 RTCORE_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
+/*! \brief Defines an opaque geometry type */
+typedef uniform struct __RTCGeometry* uniform RTCGeometry;
+
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionArguments
 {
   void* uniform geomUserPtr;       //!< pointer to user data of geometry
-  uniform unsigned int geomID;     //!< ID of geometry to displace
+  RTCGeometry geometry;            //!< ID of geometry to displace
   uniform unsigned int primID;     //!< ID of primitive of geometry to displace
   uniform unsigned int time;       //!< time step to calculate displacement for
   uniform const float* uniform u;  //!< u coordinates (source)
@@ -260,9 +257,6 @@ struct RTCDisplacementFunctionArguments
 
 /*! Type of displacement callback functions */
 typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionArguments* uniform const args);
-
-/*! \brief Defines an opaque geometry type */
-typedef uniform struct __RTCGeometry* uniform RTCGeometry;
 
 /*! Creates a new geometry. */
 RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);
@@ -319,10 +313,10 @@ RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   
   );
 
 /*! Sets the number of primitives. */
-RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int N);
 
 /*! Sets the number of time steps. */
-RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int N);
  
 /*! Sets the subtype of the geometry. */
 RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, uniform RTCGeometrySubtype type);
@@ -336,7 +330,7 @@ RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, uniform flo
 RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, uniform RTCBuildQuality quality);
 
 /*! \brief Sets 32 bit ray mask. */
-RTCORE_API void rtcSetGeometryMask (RTCGeometry geometry, uniform int mask);
+RTCORE_API void rtcSetGeometryMask (RTCGeometry geometry, uniform unsigned int mask);
 
 /*! \brief Sets boundary interpolation mode for specified subdivision surface topology. */
 RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
@@ -387,7 +381,7 @@ RTCORE_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, uniform RTCBufferT
 RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func, uniform RTCBounds *uniform bounds);
+RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func);
 
 /*! \brief Sets the intersection filter function for ray packets of size N. */
 RTCORE_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
@@ -555,10 +549,7 @@ RTCORE_API uniform unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry ge
 RTCORE_API uniform unsigned int rtcAttachAndReleaseGeometry(RTCScene scene, RTCGeometry geometry);
 
 /*! \brief Attaches the geometry to some scene using the specified geometry ID. */
-RTCORE_API uniform unsigned int rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, uniform unsigned int geomID);
-
-/*! \brief Attaches the geometry to some scene using the specified geometry ID and releases the geometry handle afterwards. */
-RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
+RTCORE_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, uniform unsigned int geomID);
 
 /*! \brief Detaches the geometry from the scene. */
 RTCORE_API void rtcDetachGeometry(RTCScene scene, uniform unsigned int geomID);

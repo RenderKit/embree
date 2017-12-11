@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////////////
 // rtcore.h
 
@@ -388,7 +387,7 @@ RTC_SCENE_FLAG_DYNAMIC | RTC_BUILD_QUALITY_LOW
 @@{
 RTC_SCENE_COMPACT
 =>
-RTC_ACCEL_COMPACT
+RTC_SCENE_FLAG_COMPACT
 }@@
 
 @@{
@@ -412,7 +411,7 @@ RTC_BUILD_QUALITY_HIGH
 @@{
 RTC_SCENE_ROBUST
 =>
-RTC_ACCEL_ROBUST
+RTC_SCENE_FLAG_ROBUST
 }@@
 
 @@{
@@ -577,7 +576,7 @@ rtcGetLinearBounds(EXPR scene,EXPR bounds)
 rtcGetSceneLinearBounds(scene,bounds)
 }@@
 
-@@{
+@@{cpp
 rtcIntersect(EXPR scene, EXPR ray);
 =>
 {
@@ -587,10 +586,26 @@ rtcIntersect(EXPR scene, EXPR ray);
 }
 }@@
 
-@@{
+@@{ispc
+rtcIntersect(EXPR scene, EXPR ray);
+=>
+{
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+  rtcIntersect(scene,&context,&ray);
+}
+}@@
+
+@@{cpp
 rtcIntersect1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect1(scene,context,&ray);
+}@@
+
+@@{ispc
+rtcIntersectEx(EXPR scene,EXPR context,EXPR ray);
+=>
+rtcIntersect(scene,context,&ray);
 }@@
 
 @@{
@@ -648,7 +663,7 @@ rtcIntersectNp(scene,context,&ray,N);
 }@@
 
 
-@@{
+@@{cpp
 rtcOccluded(EXPR scene,EXPR ray);
 =>
 {
@@ -658,10 +673,26 @@ rtcOccluded(EXPR scene,EXPR ray);
 }
 }@@
 
-@@{
+@@{ispc
+rtcOccluded(EXPR scene,EXPR ray);
+=>
+{
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+  rtcOccluded(scene,&context,&ray);
+}
+}@@
+
+@@{cpp
 rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded1(scene,context,&ray);
+}@@
+
+@@{ispc
+rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
+=>
+rtcOccluded(scene,context,&ray);
 }@@
 
 @@{
@@ -810,19 +841,51 @@ RTCSubdivisionMode
 // convert filter function callbacks
 
 @@{
+RTCFilterFunc
+=>
+RTCFilterFunctionN
+}@@
+
+@@{
+RTCFilterFunc4
+=>
+RTCFilterFunctionN
+}@@
+
+@@{
+RTCFilterFunc8
+=>
+RTCFilterFunctionN
+}@@
+
+@@{
+RTCFilterFunc16
+=>
+RTCFilterFunctionN
+}@@
+
+@@{
+RTCFilterFuncN
+=>
+RTCFilterFunctionN
+}@@
+
+@@{
 void EXPR intersectionFilter(void* ID geomUserPtr_in, RTCRay& ID ray_in)
 {
 =>
-void intersectionFilter(const uniform RTCFilterFunctionNArguments* uniform args)
+unmasked void intersectionFilter(const uniform RTCFilterFunctionNArguments* uniform const args)
 {
   uniform int* uniform valid = args->valid;
+  varying int* uniform vvalid = (varying int* uniform ) valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* uniform context = args->context;
-  COMMENT RTCRay* uniform ray_in = (RTCRay* uniform) args->ray;
-  RTCHit* uniform potentialHit = (RTCHit* uniform) args->potentialHit;
+  COMMENT uniform RTCIntersectContext* uniform context = args->context;
+  COMMENT varying RTCRay* uniform ray_in = (varying RTCRay* uniform ) args->ray;
+  varying RTCHit* uniform potentialHit = (varying RTCHit* uniform ) args->potentialHit;
+  #warning use potentialHit to access hit
   uniform unsigned int N = args->N;
-  assert(N == 1);
-  if (!valid[0]) return; // function may get called with zero mask
+  assert(N == __programCount);
+  if (*vvalid != -1) return;
 @@{
 ray_in.
 =>
@@ -834,13 +897,14 @@ potentialHit->
 void EXPR intersectionFilter4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in)
 {
 =>
-void intersectionFilter4(const RTCFilterFunctionNArguments* args)
+void intersectionFilter4(const uniform RTCFilterFunctionNArguments* const uniform args)
 {
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay4* ray_in = (RTCRay4*) args->ray;
   RTCHit4* potentialHit = (RTCHit4*) args->potentialHit;
+  #warning use potentialHit to access hit
   unsigned int N = args->N;
   assert(N == 4);
   if (none(valid)) return; // function may get called with zero mask
@@ -855,13 +919,14 @@ potentialHit->
 void EXPR intersectionFilter8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in)
 {
 =>
-void intersectionFilter8(const RTCFilterFunctionNArguments* args)
+void intersectionFilter8(const uniform RTCFilterFunctionNArguments* const uniform args)
 {
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay8* ray_in = (RTCRay8*) args->ray;
   RTCHit8* potentialHit = (RTCHit8*) args->potentialHit;
+  #warning use potentialHit to access hit
   unsigned int N = args->N;
   assert(N == 8);
   if (none(valid)) return; // function may get called with zero mask
@@ -876,36 +941,16 @@ potentialHit->
 void EXPR intersectionFilter16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in)
 {
 =>
-void intersectionFilter16(const RTCFilterFunctionNArguments* args)
+void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const uniform args)
 {
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay16* ray_in = (RTCRay16*) args->ray;
   RTCHit16* potentialHit = (RTCHit16*) args->potentialHit;
+  #warning use potentialHit to access hit
   unsigned int N = args->N;
   assert(N == 16);
-  if (none(valid)) return; // function may get called with zero mask
-@@{
-ray_in.
-=>
-potentialHit->
-}@@
-}@@
-
-@@{
-void EXPR intersectionFilter(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay& ID ray_in)
-{
-=>
-void intersectionFilter(const uniform RTCFilterFunctionNArguments* uniform args)
-{
-  const void* uniform valid_in = args->valid;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* uniform context = args->context;
-  COMMENT RTCRay* uniform ray_in = (RTCRay* uniform) args->ray;
-  RTCHit* uniform potentialHit = (RTCHit* uniform) args->potentialHit;
-  uniform unsigned int N = args->N;
-  assert(N == sizeof(varying float)/4);
   if (none(valid)) return; // function may get called with zero mask
 @@{
 ray_in.
@@ -918,7 +963,7 @@ potentialHit->
 void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in)
 {
 =>
-void intersectionFilterN(const uniform RTCFilterFunctionNArguments* uniform args)
+void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const uniform args)
 {
   int* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
@@ -934,12 +979,24 @@ void intersectionFilterN(const uniform RTCFilterFunctionNArguments* uniform args
 // convert displacement function callbacks
 
 @@{
+RTCDisplacementFunc
+=>
+RTCDisplacementFunction
+}@@
+
+@@{
+RTCDisplacementFunc2
+=>
+RTCDisplacementFunction
+}@@
+
+@@{
 void EXPR RTCDisplacementFunc(void* ID geomUserPtr_in, unsigned int ID geomID_in, unsigned int ID primID_in,
 const float* ID u_in, const float* ID v_in, const float* ID nx_in, const float* ID ny_in, const float* ID nz_in,
 float* ID px_in, float* ID py_in, float* ID pz_in, size_t ID N_in)
 {
 =>
-void RTCDisplacementFunc(const RTCDisplacementFunctionArguments* const args)
+void RTCDisplacementFunc(const uniform RTCDisplacementFunctionArguments* const uniform args)
 {
   void* uniform geomUserPtr_in = args->geomUserPtr;
   uniform unsigned int geomID_in = args->geomID;
@@ -961,7 +1018,7 @@ const float* ID u_in, const float* ID v_in, const float* ID nx_in, const float* 
 float* ID px_in, float* ID py_in, float* ID pz_in, size_t ID N_in)
 {
 =>
-void RTCDisplacementFunc2(const RTCDisplacementFunctionArguments* const args)
+void RTCDisplacementFunc2(const uniform RTCDisplacementFunctionArguments* const uniform args)
 {
   void* uniform geomUserPtr_in = args->geomUserPtr;
   uniform unsigned int geomID_in = args->geomID;
@@ -982,119 +1039,198 @@ void RTCDisplacementFunc2(const RTCDisplacementFunctionArguments* const args)
 // convert user geometry callbacks
 
 @@{
-void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+RTCBoundsFunc
+=>
+RTCBoundsFunction
+}@@
+
+@@{
+void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
 {
 =>
-void RTCBoundsFunc(const uniform RTCBoundsFunctionArguments* uniform args)
+void RTCBoundsFunc(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
   COMMENT void* uniform userPtr = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t item_in = args->item;
+  uniform size_t primID_in = args->primID;
   COMMENT uniform unsigned int time = args->time;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
 
 @@{
-void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, RTCBounds& ID bounds_out)
+RTCBoundsFunc2
+=>
+RTCBoundsFunction
+}@@
+
+@@{
+void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
 {
 =>
-void RTCBoundsFunc2(const RTCBoundsFunctionArguments* args)
+void RTCBoundsFunc2(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
   void* uniform userPtr_in = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t item_in = args->item;
+  uniform size_t primID_in = args->primID;
   COMMENT uniform size_t time = args->time;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
 
 @@{
-void EXPR RTCBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID item_in, size_t ID time_in, RTCBounds& ID bounds_out)
+RTCBoundsFunc3
+=>
+RTCBoundsFunction
+}@@
+
+@@{
+void EXPR RTCBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, size_t ID time_in, RTCBounds& ID bounds_out)
 {
 =>
-void RTCBoundsFunc3(const RTCBoundsFunctionArguments* args)
+void RTCBoundsFunc3(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
   void* uniform userPtr_in = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t item_in = args->item;
+  uniform size_t primID_in = args->primID;
   uniform size_t time_in = args->time;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
 
 @@{
-void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID item_in)
-{
+RTCIntersectFunc
 =>
-void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* uniform args)
-{
-  COMMENT void* uniform valid_in = args->valid;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* uniform context_in = args->context;
-  varying RTCRay& ray_in = *(varying RTCRay* uniform) args->ray;
-  uniform unsigned int N_in = args->N;
-  uniform unsigned int item_in = args->item;
-  assert(N_in == 1);
+RTCIntersectFunctionN
 }@@
 
 @@{
-void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID item_in)
+RTCOccludedFunc
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID primID_in)
 {
 =>
-void RTCIntersectFunc4(const RTCIntersectFunctionNArguments* args)
+unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
+{
+  void* uniform valid_in = args->valid;
+  varying int* uniform vvalid_in = (varying int* uniform ) valid_in;
+  void* uniform geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* uniform context_in = args->context;
+  varying RTCRay* uniform ray_ptr_in = (varying RTCRay* uniform ) args->ray;
+  varying RTCRay& ray_in = *ray_ptr_in;
+  uniform unsigned int N_in = args->N;
+  uniform unsigned int primID_in = args->primID;
+  assert(N_in == __programCount);
+  if (*vvalid_in != -1) return;
+}@@
+
+@@{
+RTCIntersectFunc4
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc4
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID primID_in)
+{
+=>
+void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
 {
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
   RTCRay4& ray_in = *(RTCRay4*) args->ray;
   unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
+  unsigned int primID_in = args->primID;
   assert(N_in == 4);
 }@@
 
 @@{
-void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID item_in)
+RTCIntersectFunc8
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc8
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID primID_in)
 {
 =>
-void RTCIntersectFunc8(const RTCIntersectFunctionNArguments* args)
+void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
 {
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
   RTCRay8& ray_in = *(RTCRay8*) args->ray;
   unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
+  unsigned int primID_in = args->primID;
   assert(N_in == 8);
 }@@
 
 @@{
-void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID item_in)
+RTCIntersectFunc16
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc16
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID primID_in)
 {
 =>
-void RTCIntersectFunc16(const RTCIntersectFunctionNArguments* args)
+void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
 {
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
   RTCRay16& ray_in = *(RTCRay16*) args->ray;
   unsigned int N_in = args->N;
-  unsigned int item_in = args->item;
+  unsigned int primID_in = args->primID;
   assert(N_in == 16);
 }@@
 
 @@{
-void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID item_in)
+RTCIntersectFuncN
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFuncN
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID primID_in)
 {
 =>
-void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* uniform args)
+void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
 {
   const int* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   RTCIntersectContext* uniform context_in = args->context;
   RTCRayN* uniform ray_in = args->ray;
   uniform unsigned int N_in = args->N;
-  uniform unsigned int item_in = args->item;
+  uniform unsigned int primID_in = args->primID;
 }@@
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // geometry modification functions
@@ -1450,7 +1586,7 @@ rtcNewUserGeometry4 (scene, quality, numPrimitives, 1)
 }@@
 
 @@{
-ID geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+LHS geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
 =>
 uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1476,10 +1612,10 @@ rtcReleaseGeometry(geom);
 @@{
 RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
 =>
-uniform RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps);
+uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
 rtcSetGeometryBuildQuality(geom,quality);
-rtcSetNumPrimitives(geom,numPrimitives);
-rtcSetNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryNumPrimitives(geom,numPrimitives);
+rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
 }@@
 
 
@@ -1505,7 +1641,7 @@ rtcNewInstance3(target,source,1)
 }@@
 
 @@{
-ID geomID = rtcNewInstance3(EXPR target,EXPR source,EXPR numTimeSteps);
+LHS geomID = rtcNewInstance3(EXPR target,EXPR source,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewInstance (g_device,source,numTimeSteps);
 geomID = rtcAttachGeometry(target,geom);
@@ -1563,7 +1699,7 @@ rtcNewTriangleMesh2(scene,flags,numPrimitives,numVertices,1)
 }@@
 
 @@{
-ID geomID = rtcNewTriangleMesh2 (EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewTriangleMesh2 (EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewTriangleMesh (g_device,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1602,7 +1738,7 @@ rtcNewQuadMesh2(scene,flags,numPrimitives,numVertices,1)
 }@@
 
 @@{
-ID geomID = rtcNewQuadMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewQuadMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewQuadMesh (g_device,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1642,7 +1778,7 @@ rtcNewSubdivisionMesh2(scene,flags,numPrimitives,numEdges,numVertices,numEdgeCre
 }@@
 
 @@{
-ID geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
+LHS geomID = rtcNewSubdivisionMesh2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewSubdivisionMesh (g_device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1747,7 +1883,7 @@ rtcNewBezierCurveGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BEZIER,RTC_GEOMETRY_SUBTYPE_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_CURVE_BEZIER,RTC_GEOMETRY_SUBTYPE_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1771,7 +1907,7 @@ rtcNewBSplineCurveGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_CURVE_BASIS_BSPLINE,RTC_GEOMETRY_SUBTYPE_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_CURVE_BSPLINE,RTC_GEOMETRY_SUBTYPE_SURFACE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1796,7 +1932,7 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX (scene,RTC_CURVE_BASIS_LINEAR,RTC_GEOMETRY_SUBTYPE_RIBBON,flags,numSegments,numVertices,numTimeSteps)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_CURVE_LINEAR,RTC_GEOMETRY_SUBTYPE_RIBBON,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
@@ -1807,7 +1943,7 @@ rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_CURVE_LINEAR,RTC_GEOMETRY_SUBTYPE_
 
 
 @@{
-ID geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,basis,intersector,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
@@ -1835,7 +1971,7 @@ rtcReleaseGeometry(geom);
 // optimize away rtcGetGeometry
 
 @@{
-ID geomID = rtcAttachGeometry(EXPR scene,EXPR geom);
+LHS geomID = rtcAttachGeometry(EXPR scene,EXPR geom);
 =>
 geomID = rtcAttachGeometry(scene,geom);
 @@{
@@ -1862,7 +1998,7 @@ geom
 @@{
 RTCGeometry ID geom = REGEXPR(name,rtcNew.*)(
 =>
-RTCGeometry geom = name(
+uniform RTCGeometry geom = name(
 @@{
 return EXPR e0;
 =>
@@ -1932,11 +2068,11 @@ RTC_USER_VERTEX_BUFFER_(t)
 @@{
 RTCGeometry ID geom = rtcNewTriangleMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -1946,7 +2082,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -1963,11 +2099,11 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
 @@{
 RTCGeometry ID geom = rtcNewQuadMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,4*sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,4*sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -1977,7 +2113,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -1994,11 +2130,11 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
 @@{
 RTCGeometry ID geom = rtcNewSubdivisionMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+uniform RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_FACE_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_FACE_BUFFER,sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_FACE_BUFFER,sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_FACE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2008,7 +2144,7 @@ rtcSetBuffer(geom,RTC_FACE_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),numEdges)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform int),numEdges)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2018,7 +2154,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numEdges)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -2028,7 +2164,7 @@ rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
 @@{
 rtcMapBuffer(EXPR geom,RTC_LEVEL_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_LEVEL_BUFFER,sizeof(int),numEdges)
+rtcNewBuffer(geom,RTC_LEVEL_BUFFER,sizeof(uniform int),numEdges)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_LEVEL_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2038,7 +2174,7 @@ rtcSetBuffer(geom,RTC_LEVEL_BUFFER,ptr,offset,stride,numEdges)
 @@{
 rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(int),numEdgeCreases)
+rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(uniform int),numEdgeCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2048,7 +2184,7 @@ rtcSetBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,ptr,offset,stride,numEdgeCreases)
 @@{
 rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(float),numEdgeCreases)
+rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(uniform float),numEdgeCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2058,7 +2194,7 @@ rtcSetBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numEdgeCreases
 @@{
 rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,sizeof(int),numVertexCreases)
+rtcNewBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,sizeof(uniform int),numVertexCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2068,7 +2204,7 @@ rtcSetBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,ptr,offset,stride,numVertexCrea
 @@{
 rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,sizeof(float),numVertexCreases)
+rtcNewBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,sizeof(uniform float),numVertexCreases)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2078,7 +2214,7 @@ rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numVertexCre
 @@{
 rtcMapBuffer(EXPR geom,RTC_HOLE_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_HOLE_BUFFER,sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_HOLE_BUFFER,sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_HOLE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2095,11 +2231,11 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices) /* FIXME: ve
 @@{
 RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewCurveGeometry (device,basis,intersector,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),numPrimitives)
+rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform int),numPrimitives)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
@@ -2109,7 +2245,7 @@ rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
 @@{
 rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(float),numVertices)
+rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
 }@@
 @@{
 rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
@@ -2139,7 +2275,6 @@ rtcMapBuffer(EXPR geom,EXPR type)
 =>
 rtcGetGeometryBufferData(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 }@@
-
 
 ////////////////////////////////////////////////
 // drop extra arguments of geometry creation
@@ -2171,7 +2306,7 @@ rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION)
 @@{
 rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR intersector,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometry (device,basis)
+rtcNewGeometry (device,basis)
 }@@
 
 
@@ -2252,19 +2387,19 @@ rtcReleaseBVH(bvh)
 @@{
 RTCRay
 =>
-Ray
+varying Ray
 }@@
 
 @@{
 Ray ID myray
 =>
-Ray myray
-@@{
+varying Ray myray
+@@{cpp
 ID myray.tnear
 =>
 myray.tnear()
 }@@
-@@{
+@@{cpp
 ID myray.tfar
 =>
 myray.tfar()
@@ -2279,13 +2414,13 @@ RTCRay_(myray)
 @@{
 Ray& ID myray =
 =>
-Ray& myray =
-@@{
+varying Ray& myray =
+@@{cpp
 ID myray.tnear
 =>
 myray.tnear()
 }@@
-@@{
+@@{cpp
 ID myray.tfar
 =>
 myray.tfar()
@@ -2298,6 +2433,12 @@ RTCRay_(myray)
 }@@
 
 @@{
+RTCIntersectContext* ID context_in = args->context;
+=>
+uniform IntersectContext* uniform context_in = (uniform IntersectContext* uniform ) args->context;
+}@@
+
+@@{
 RTCIntersectContext
 =>
 IntersectContext
@@ -2306,7 +2447,7 @@ IntersectContext
 @@{
 IntersectContext ID cont;
 =>
-IntersectContext cont;
+uniform IntersectContext cont;
 @@{
 ID cont.flags
 =>
@@ -2322,17 +2463,86 @@ cont.context.flags
 @@{
 LINEAR_BASIS
 =>
-RTC_CURVE_BASIS_LINEAR
+RTC_GEOMETRY_TYPE_CURVE_LINEAR
 }@@
 
 @@{
 BEZIER_BASIS
 =>
-RTC_CURVE_BASIS_BEZIER
+RTC_GEOMETRY_TYPE_CURVE_BEZIER
 }@@
 
 @@{
 BSPLINE_BASIS
 =>
-RTC_CURVE_BASIS_BSPLINE
+RTC_GEOMETRY_TYPE_CURVE_BSPLINE
 }@@
+
+
+////////////////////////////////////////////////
+// rtcore_ray.h
+
+@@{
+RTCRay ID ray;
+=>
+varying RTCRay ray;
+@@{
+ray.orgx
+=>
+ray.org_x
+}@@
+@@{
+ray.orgy
+=>
+ray.org_y
+}@@
+@@{
+ray.orgz
+=>
+ray.org_z
+}@@
+@@{
+ray.dirx
+=>
+ray.dir_x
+}@@
+@@{
+ray.diry
+=>
+ray.dir_y
+}@@
+@@{
+ray.dirz
+=>
+ray.dir_z
+}@@
+@@{
+ray.Ngx
+=>
+ray.Ng_x
+}@@
+@@{
+ray.Ngy
+=>
+ray.Ng_y
+}@@
+@@{
+ray.Ngz
+=>
+ray.Ng_z
+}@@
+}@@
+
+@@{cpp
+__programCount
+=>
+1
+}@@
+
+@@{ispc
+__programCount
+=>
+programCount
+}@@
+
+

@@ -1,0 +1,56 @@
+.TH "rtcNewSharedBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcNewSharedBuffer\ \-\ creates\ a\ new\ shared\ buffer
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCBuffer\ rtcNewSharedBuffer(RTCDevice\ device,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ void*\ ptr,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ size_t\ byteStride,
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unsigned\ int\ numItems);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+This \f[C]rtcNewSharedBuffer\f[] function creates a new shared buffer
+object bound to the specified device (\f[C]device\f[] argument) and
+returns a handle to this buffer.
+The buffer object is reference counted with an initial reference count
+of 1.
+The buffer handle can get released using the \f[C]rtcReleaseBuffer\f[]
+API call.
+At construction time, the pointer to the user managed buffer data
+(\f[C]ptr\f[] argument), the byte stride between the buffer elements
+(\f[C]byteStride\f[] argument) and the number of items
+(\f[C]numItems\f[] argument) is specified.
+The user managed buffer has to have at least
+\f[C]byteStride*numItems\f[] many bytes allocated, and can get
+deallocated again when the buffer gets no longer accessed.
+.PP
+When the shared buffer will get used as a vertex buffer
+(\f[C]RTC_VERTEX_BUFFER\f[] and \f[C]RTC_USER_VERTEX_BUFFER\f[]), the
+last buffer element must be readable using 16 byte SSE load
+instructions, thus padding the last element is required for some
+layouts.
+E.g.
+a standard float3 vertex buffer layout should add storage for at least
+one more float to the end of the buffer.
+.PP
+The data pointer (\f[C]ptr\f[] argument) and byte stride
+(\f[C]byteStride\f[] argument) both have to be aligned to 4 bytes,
+otherwise the \f[C]rtcNewSharedBuffer\f[] function will fail.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+get queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcRetainBuffer], [rtcReleaseBuffer]

@@ -1,0 +1,36 @@
+.TH "rtcFilterOcclusion" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcFilterOcclusion\ \-\ invokes\ occlusion\ filter\ functions
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcFilterOcclusion(
+\ \ const\ struct\ RTCOccludedFunctionNArguments*\ const\ args,
+\ \ const\ struct\ RTCFilterFunctionNArguments*\ filterArgs
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcFilterOcclusion\f[] function can be called inside an
+\f[C]RTCOccludedFunctionN\f[]callback function to invoke the occlusion
+filter registered to the geometry and stored inside the context.
+Therefore an \f[C]RTCFilterFunctionNArguments\f[] struct should be
+created (see \f[C]rtcSetGeometryIntersectFilterFunction\f[]) which
+basically consists of a potential hit packet to filter, the
+corresponding ray packet, a valid mask, and a packet size.
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcFilterIntersection]

@@ -78,7 +78,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1_bvh4.cpp
   )
 
-IF (EMBREE_GEOMETRY_SUBDIV)
+IF (EMBREE_GEOMETRY_SUBDIVISION)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
   common/scene_subdiv_mesh.cpp
   subdiv/tessellation_cache.cpp
@@ -119,7 +119,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_builder_twolevel.cpp
       bvh/bvh_builder_instancing.cpp)
 
-    IF (EMBREE_GEOMETRY_SUBDIV)
+    IF (EMBREE_GEOMETRY_SUBDIVISION)
       LIST(APPEND ${TARGET} bvh/bvh_builder_subdiv.cpp)
     ENDIF()
   ENDIF()
@@ -141,7 +141,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_statistics.cpp)
   ENDIF()
 
-  IF (EMBREE_GEOMETRY_SUBDIV)
+  IF (EMBREE_GEOMETRY_SUBDIVISION)
     LIST(APPEND ${TARGET}
         common/scene_subdiv_mesh.cpp
         geometry/grid_soa.cpp

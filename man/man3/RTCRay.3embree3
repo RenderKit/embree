@@ -1,0 +1,74 @@
+.TH "RTCRay" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTCRay\ \-\ type\ of\ single\ ray
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore_ray.h>
+
+struct\ RTCORE_ALIGN(16)\ RTCRay
+{
+\ \ float\ org_x;\ \ \ \ \ \ \ \ //!<\ x\ coordinate\ of\ ray\ origin
+\ \ float\ org_y;\ \ \ \ \ \ \ \ //!<\ y\ coordinate\ of\ ray\ origin
+\ \ float\ org_z;\ \ \ \ \ \ \ \ //!<\ z\ coordinate\ of\ ray\ origin
+\ \ float\ tnear;\ \ \ \ \ \ \ \ //!<\ Start\ of\ ray\ segment
+
+\ \ float\ dir_x;\ \ \ \ \ \ \ \ //!<\ x\ coordinate\ of\ ray\ direction
+\ \ float\ dir_y;\ \ \ \ \ \ \ \ //!<\ y\ coordinate\ of\ ray\ direction
+\ \ float\ dir_z;\ \ \ \ \ \ \ \ //!<\ z\ coordinate\ of\ ray\ direction
+\ \ float\ tfar;\ \ \ \ \ \ \ \ \ //!<\ End\ of\ ray\ segment\ (set\ to\ hit\ distance)
+
+\ \ float\ time;\ \ \ \ \ \ \ \ \ \ //!<\ Time\ of\ this\ ray\ for\ motion\ blur
+\ \ unsigned\ mask;\ \ \ \ \ \ \ //!<\ Used\ to\ mask\ out\ objects\ during\ traversal
+
+\ \ unsigned\ int\ id;\ \ \ \ //!<\ ray\ ID
+\ \ unsigned\ int\ flags;\ //!<\ ray\ flags
+\ \ 
+\ \ /*\ hit\ data\ */
+\ \ float\ Ng_x;\ \ \ \ \ \ \ \ \ //!<\ x\ coordinate\ of\ geometry\ normal
+\ \ float\ Ng_y;\ \ \ \ \ \ \ \ \ //!<\ y\ coordinate\ of\ geometry\ normal
+\ \ float\ Ng_z;\ \ \ \ \ \ \ \ \ //!<\ z\ coordinate\ of\ geometry\ normal
+\ \ \ 
+\ \ float\ u;\ \ \ \ \ \ \ \ \ \ \ //!<\ Barycentric\ u\ coordinate\ of\ hit
+\ \ float\ v;\ \ \ \ \ \ \ \ \ \ \ //!<\ Barycentric\ v\ coordinate\ of\ hit
+
+\ \ unsigned\ primID;\ \ \ //!<\ primitive\ ID\ of\ hit\ primitive
+\ \ unsigned\ geomID;\ \ \ //!<\ geometry\ ID\ of\ hit\ geometry
+\ \ unsigned\ instID;\ \ \ //!<\ instance\ ID\ of\ hit\ instance
+};
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]RTCRay\f[] structure defines the ray layout for a single ray.
+The ray contains the origin (\f[C]org_x\f[], \f[C]org_y\f[],
+\f[C]org_z\f[] members), direction vector (\f[C]dir_x\f[],
+\f[C]dir_y\f[], \f[C]dir_z\f[] members), and ray segment (\f[C]tnear\f[]
+and \f[C]tfar\f[] members).
+The ray direction does not have to be normalized, and only the parameter
+range specified by the tnear/tfar interval is considered valid.
+.PP
+The ray segment has to be in the range [0, ∞], thus ranges that start
+behind the ray origin are not allowed, but ranges can reach to infinity.
+For rays inside a ray stream, tfar>tnear identifies inactive rays.
+.PP
+The ray further contains a motion blur time in the range [0, 1]
+(\f[C]time\f[] member), a ray mask (\f[C]mask\f[] member), a ray ID
+(\f[C]id\f[] member), and some ray flags (\f[C]flags\f[] member).
+.PP
+The \f[C]embree3/rtcore_ray.h\f[] header additionally defines the same
+ray structure in structure of array layout (SOA) for API functions
+accepting ray packets of size 4 (\f[C]RTCRay4\f[] type), size 8
+(\f[C]RTCRay8\f[] type), and size 16 (\f[C]RTCRay16\f[] type).
+The header additionally defines an \f[C]RTCRayNt\f[] template to
+generate ray packets of an arbitrary compile time size.
+.SS EXIT STATUS
+.SS SEE ALSO
+.PP
+[RTCHit]

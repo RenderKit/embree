@@ -32,28 +32,11 @@ extern uniform float g_debug;
 /* stores pointer to currently used rendePixel function */
 renderTileFunc renderTile;
 
-/* error reporting function */
-unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str)
-{
-  if (code == RTC_ERROR_NONE)
-    return;
+extern "C" unmasked void tutorial_error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
 
-  print("Embree: ");
-  switch (code) {
-  case RTC_ERROR_UNKNOWN          : print("RTC_ERROR_UNKNOWN"); break;
-  case RTC_ERROR_INVALID_ARGUMENT : print("RTC_ERROR_INVALID_ARGUMENT"); break;
-  case RTC_ERROR_INVALID_OPERATION: print("RTC_ERROR_INVALID_OPERATION"); break;
-  case RTC_ERROR_OUT_OF_MEMORY    : print("RTC_ERROR_OUT_OF_MEMORY"); break;
-  case RTC_ERROR_UNSUPPORTED_CPU  : print("RTC_ERROR_UNSUPPORTED_CPU"); break;
-  case RTC_ERROR_CANCELLED        : print("RTC_ERROR_CANCELLED"); break;
-  default                         : print("invalid error code"); break;
-  }
-  if (str) {
-    print(" (");
-    while (*str) putchar(*str++);
-    print(")\n");
-  }
-  abort();
+/* error reporting function */
+unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str) {
+  tutorial_error_handler(userPtr,code,str);
 }
 
 /* renders a single pixel with eyelight shading */

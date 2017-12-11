@@ -56,7 +56,7 @@ namespace embree
   void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
+    if ((type != RTC_BUFFER_TYPE_CURVE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
@@ -85,14 +85,25 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
       segments.set(buffer, offset, stride, num, format);
       setNumPrimitives(num);
     }
+    else if (type == RTC_BUFFER_TYPE_CURVE_FLAGS)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UCHAR)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid curve flag buffer format");
+
+      flags.set(buffer, offset, stride, num, format);
+    }
     else
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
   void* LineSegments::getBuffer(RTCBufferType type, unsigned int slot)
@@ -114,6 +125,12 @@ namespace embree
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return vertexAttribs[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_CURVE_FLAGS) 
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return flags.getPtr();
     }
     else
     {
@@ -171,16 +188,16 @@ namespace embree
       stride = vertices[bufferSlot].getStride();
     }
     
-    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<numFloats; i+=4)
     {
       const size_t ofs = i*sizeof(float);
       const size_t segment = segments[primID];
-      const vboolx valid = vintx((int)i)+vintx(step) < vintx(int(numFloats));
-      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
-      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
-      if (P      ) vfloatx::storeu(valid,P+i,lerp(p0,p1,u));
-      if (dPdu   ) vfloatx::storeu(valid,dPdu+i,p1-p0);
-      if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
+      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(numFloats));
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
+      if (P      ) vfloat4::storeu(valid,P+i,lerp(p0,p1,u));
+      if (dPdu   ) vfloat4::storeu(valid,dPdu+i,p1-p0);
+      if (ddPdudu) vfloat4::storeu(valid,dPdu+i,vfloat4(zero));
     }
   }
 #endif

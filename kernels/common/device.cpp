@@ -316,7 +316,7 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
@@ -492,7 +492,7 @@ namespace embree
     case RTC_DEVICE_PROPERTY_HAIR_GEOMETRY_SUPPORTED: return 0;
 #endif
 
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     case RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED: return 1;
 #else
     case RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED: return 0;
@@ -504,7 +504,9 @@ namespace embree
     case RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED: return 0;
 #endif
 
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+#if defined(TASKING_PPL)
+    case RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED: return 0;
+#elif defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     case RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED: return 0;
 #else
     case RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED: return 1;

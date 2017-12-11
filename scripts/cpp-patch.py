@@ -24,12 +24,13 @@ def parse_delimiter(chars,tokens):
   tokens.append(id)
   return True
   
-def parse_identifier(chars,tokens):
+def parse_identifier(chars,tokens,parse_pattern):
   if (not chars[0] in identifier_begin_chars): return False;
   id = ""
   while chars and (chars[0] in identifier_cont_chars):
     id = id + chars.pop(0)
-  tokens.append(id)
+  if (id == "size_t" and ispc_mode): tokens.append("uintptr_t")
+  else: tokens.append(id)
   return True
 
 def parse_line_comment(chars,tokens):
@@ -56,7 +57,7 @@ def parse_comment(chars,tokens):
 def parse_regexpr(chars,tokens):
   if chars[0] != "(": return False
   chars.pop(0)
-  parse_identifier(chars,tokens)
+  parse_identifier(chars,tokens,True)
   if chars.pop(0) != ",":
     return False
   id = ""
@@ -79,11 +80,12 @@ def tokenize(chars,parse_pattern):
   while chars:
     if chars[0] == "\n": tokens.append(chars.pop(0)); continue;
     elif parse_delimiter(chars,tokens): continue;
-    elif parse_identifier(chars,tokens): continue;
+    elif parse_identifier(chars,tokens,parse_pattern): continue;
     elif parse_number(chars,tokens): continue;
     elif parse_line_comment(chars,tokens): continue;
     elif parse_comment(chars,tokens): continue;
     elif tokens and parse_pattern and tokens[-1] == "REGEXPR": parse_regexpr(chars,tokens); continue;
+    elif len(chars) >= 2 and chars[0] == "-" and chars[1] == ">": chars.pop(0); chars.pop(0); tokens.append("->"); continue;
     elif chars[0] == "(": tokens.append(chars.pop(0)); continue;
     elif chars[0] == ")": tokens.append(chars.pop(0)); continue;
     elif chars[0] == "[": tokens.append(chars.pop(0)); continue;
@@ -155,24 +157,27 @@ def parse_expr(tokens,tpos,term_token):
 
   raise ValueError()
      
-def match(pattern,ppos,tokens,tpos,env):
+def match(pattern,ppos,tokens,tpos,env,depth):
 
+  #print("\npattern:"); print_token_list(pattern[ppos:],sys.stdout)
+  #print("\ntokens:"); print_token_list(tokens[tpos:],sys.stdout)
+  
   if is_delimiter_token(tokens[tpos]):
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
 
   elif ispc_mode and tokens[tpos] == "uniform":
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
   elif ispc_mode and tokens[tpos] == "varying":
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
     
   elif pattern[ppos] == "ID":
     ppos+=1
     var = pattern[ppos]
     if (not is_identifier_token(tokens[tpos])):
-      return (ppos,tpos,False)
+      return (ppos,tpos,depth,False)
     b = True
     if var in env:
       b = env[var] == [tokens[tpos]]
@@ -180,7 +185,22 @@ def match(pattern,ppos,tokens,tpos,env):
       ppos+=1
       env[var] = [tokens[tpos]]
       tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
+
+  elif pattern[ppos] == "LHS":
+    ppos+=1
+    var = pattern[ppos]
+    if (not is_identifier_token(tokens[tpos])):
+      return (ppos,tpos,depth,False)
+    lhs = [tokens[tpos]]
+    tpos+=1
+    ppos+=1
+    while is_identifier_token(tokens[tpos]) or tokens[tpos] == "." or tokens[tpos] == "->":
+      lhs.append(tokens[tpos])
+      tpos+=1
+        
+    env[var] = lhs
+    return (ppos,tpos,depth,True)
 
   elif pattern[ppos] == "REGEXPR":
     ppos+=1
@@ -190,12 +210,12 @@ def match(pattern,ppos,tokens,tpos,env):
     ppos+=1
     next = pattern[ppos]
     try: (expr,tpos) = parse_expr(tokens,tpos,next)
-    except ValueError: return (ppos,tpos,False)
+    except ValueError: return (ppos,tpos,depth,False)
     m = "".join(filter(no_delimiter_token,expr))
     if (re.match(pat,m) == None):
-      return (ppos,tpos,False)
+      return (ppos,tpos,depth,False)
     env[name] = [m]
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
     
   elif pattern[ppos] == "EXPR":
     ppos+=1
@@ -203,9 +223,9 @@ def match(pattern,ppos,tokens,tpos,env):
     ppos+=1
     next = pattern[ppos]
     try: (expr,tpos) = parse_expr(tokens,tpos,next)
-    except ValueError: return (ppos,tpos,False)
+    except ValueError: return (ppos,tpos,depth,False)
     if (tokens[tpos] != next):
-      return (ppos,tpos,False)
+      return (ppos,tpos,depth,False)
 
     b = True
     if var in env:
@@ -216,15 +236,17 @@ def match(pattern,ppos,tokens,tpos,env):
       ppos+=1
       env[var] = expr
       
-    return (ppos,tpos,b)
+    return (ppos,tpos,depth,b)
     
   elif pattern[ppos] == tokens[tpos]:
+    if tokens[tpos] == "{": depth = depth+1
+    if tokens[tpos] == "}": depth = depth-1
     ppos+=1
     tpos+=1
-    return (ppos,tpos,True)
+    return (ppos,tpos,depth,True)
 
   else:
-    return (ppos,tpos,False)
+    return (ppos,tpos,depth,False)
 
 def substitute (env,tokens,ident):
   global unique_id
@@ -237,11 +259,17 @@ def substitute (env,tokens,ident):
       unique_id+=1
     elif tokens[i] == "COMMENT":
       result.append("//")
+
+    elif ispc_mode and tokens[i] == "size_t":
+      result.append("uintptr_t")
       
     elif not ispc_mode and tokens[i] == "uniform":
       i+=1 # also skip next space
       
     elif not ispc_mode and tokens[i] == "varying":
+      i+=1 # also skip next space
+
+    elif not ispc_mode and tokens[i] == "unmasked":
       i+=1 # also skip next space
     
     elif tokens[i] in env:
@@ -259,16 +287,17 @@ def print_token_list(list,f):
   for c in list:
     f.write(c)
       
-def match_rule (pattern, tokens, tpos, env):
+def match_rule (pattern, tokens, tpos, env, depth):
   tpos_in = tpos
+  depth_in = depth
   ppos = 0
   while (tpos < len(tokens) and ppos < len(pattern)):
-    (ppos,tpos,m) = match(pattern,ppos,tokens,tpos,env)
+    (ppos,tpos,depth,m) = match(pattern,ppos,tokens,tpos,env,depth)
     if (not m): break
   if ppos < len(pattern):
-    return (False,tpos_in)
+    return (False,tpos_in,depth_in)
   else:
-    return (True,tpos)
+    return (True,tpos,depth)
 
 def update_delimiter_ident(token,ident):
   for x in token:
@@ -289,7 +318,7 @@ def apply_rule (rule,env_in,tokens):
       tpos+=1
     else:
       env = dict(env_in)
-      (b,tpos) = match_rule (pattern,tokens,tpos,env)
+      (b,tpos,depth) = match_rule (pattern,tokens,tpos,env,depth)
       if (b):
         result = result + substitute (env,subst,ident)
         for follow_rule in follow_rules:
@@ -305,7 +334,7 @@ def apply_rule (rule,env_in,tokens):
   return result
 
 def printUsage():
-  sys.stdout.write("Usage: cpp-patch.py --patch embree2_to_embree3.patch --in infile.cpp --out outfile.cpp\n")
+  sys.stdout.write("Usage: cpp-patch.py [--ispc] --patch embree2_to_embree3.patch --in infile.cpp [--out outfile.cpp]\n")
 
 def parseCommandLine(argv):
   global rule_file
@@ -316,6 +345,7 @@ def parseCommandLine(argv):
     return;
   elif len(argv)>=1 and argv[0] == "--ispc":
     ispc_mode = True
+    parseCommandLine(argv[1:len(argv)])
   elif len(argv)>=2 and argv[0] == "--patch":
     rule_file = argv[1]
     parseCommandLine(argv[2:len(argv)])
@@ -332,7 +362,7 @@ def parseCommandLine(argv):
     sys.stderr.write("unknown command line option: "+argv[0])
     printUsage()
     sys.exit(1)
-    
+
 parseCommandLine(sys.argv[1:len(sys.argv)])
 if (rule_file == ""):
   printUsage()
@@ -369,8 +399,14 @@ def parse_rules_file(rule_file):
     subst_str = subst_str.strip('\n')
     
     while lines[0].startswith("@@{"):
-      pop_line(lines)
-      next_rules.append(parse_rule(lines))
+      l = pop_line(lines)
+      rule = parse_rule(lines)
+      if (l.startswith("@@{cpp")):
+        if (not ispc_mode): next_rules.append(rule)
+      elif (l.startswith("@@{ispc")):
+        if (ispc_mode): next_rules.append(rule)
+      else:
+        next_rules.append(rule)
 
     if lines[0].startswith("}@@"):
       pop_line(lines)
@@ -386,8 +422,14 @@ def parse_rules_file(rule_file):
   rules = []
   while lines:
     if (lines[0].startswith("@@{")):
-      pop_line(lines)
-      rules.append(parse_rule(lines))
+      l = pop_line(lines)
+      rule = parse_rule(lines)
+      if (l.startswith("@@{cpp")):
+        if (not ispc_mode): rules.append(rule)
+      elif (l.startswith("@@{ispc")):
+        if(ispc_mode): rules.append(rule)
+      else:
+        rules.append(rule)
     elif (lines[0].startswith("@@END")):
       return rules
     elif (lines[0].startswith("//")):

@@ -174,12 +174,18 @@ namespace embree
 
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
-    ISPCHair* hairs;         //!< for each hair, index to first control point
+    ISPCHair* hairs;          //!< for each hair, index to first control point
+#if !defined(ISPC)
+    unsigned char* flags;     //!< end cap flags per segment
+#else
+    uint8* flags;             //!< end cap flags per segment
+#endif
     RTCGeometryType type;
     RTCGeometrySubtype subtype;
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;
+    unsigned int numHairCurves;
     unsigned int tessellation_rate;
   };
   

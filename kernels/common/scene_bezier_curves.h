@@ -63,6 +63,15 @@ namespace embree
       return native_curves[i];
     }
 
+    /*! returns the i'th segment */
+    __forceinline unsigned int getStartEndBitMask(size_t i) const {
+      unsigned int mask = 0;
+      if (flags) 
+        mask |= (flags[i] & 0x3) << 30;
+      return mask;
+    }
+
+
     /*! returns the i'th curve */
     __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
     {
@@ -267,14 +276,15 @@ namespace embree
     }
 
   public:
-    BufferView<unsigned int> curves;            //!< array of curve indices
-    vector<BufferView<Vec3fa>> vertices;        //!< vertex array for each timestep
-    vector<BufferView<char>> vertexAttribs;       //!< user buffers
+    BufferView<unsigned int> curves;        //!< array of curve indices
+    vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    BufferView<char> flags;                 //!< start, end flag per segment
+    vector<BufferView<char>> vertexAttribs; //!< user buffers
     RTCGeometryType type;                   //!< basis of user provided vertices
     RTCGeometrySubtype subtype;             //!< hair or surface geometry
     int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
-    BufferView<Vec3fa> native_vertices0;    //!< fast access to first vertex buffer
+    BufferView<Vec3fa> native_vertices0;        //!< fast access to first vertex buffer
     BufferView<unsigned int> native_curves;     //!< array of curve indices
     vector<BufferView<Vec3fa>> native_vertices; //!< vertex array for each timestep
   };

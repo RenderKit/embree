@@ -102,9 +102,8 @@ namespace embree
 
     /*! sets the number of primitives */
     __forceinline void setNumPrimitives(unsigned int numPrimitives_in)
-    {
-      if (numPrimitives_in == numPrimitives)
-        return;
+    {      
+      if (numPrimitives_in == numPrimitives) return;
       
       if (isEnabled() && scene) disabling();
       numPrimitives = numPrimitives_in;
@@ -129,8 +128,10 @@ namespace embree
     }
 
     /*! sets the build quality */
-    void setBuildQuality(RTCBuildQuality quality_in) {
+    void setBuildQuality(RTCBuildQuality quality_in)
+    {
       this->quality = quality_in;
+      Geometry::update();
     }
     
     /*! for all geometries */
@@ -227,7 +228,7 @@ namespace embree
     }
 
     /*! Set displacement function. */
-    virtual void setDisplacementFunction (RTCDisplacementFunction filter, RTCBounds* bounds) {
+    virtual void setDisplacementFunction (RTCDisplacementFunction filter) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

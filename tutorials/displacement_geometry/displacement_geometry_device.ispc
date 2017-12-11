@@ -132,7 +132,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
 
-  rtcSetGeometryDisplacementFunction(geom,displacementFunction,NULL);
+  rtcSetGeometryDisplacementFunction(geom,displacementFunction);
 
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);

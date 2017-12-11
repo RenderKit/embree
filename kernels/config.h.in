@@ -25,7 +25,7 @@
 #cmakedefine EMBREE_GEOMETRY_QUADS
 #cmakedefine EMBREE_GEOMETRY_LINES
 #cmakedefine EMBREE_GEOMETRY_HAIR
-#cmakedefine EMBREE_GEOMETRY_SUBDIV
+#cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_RAY_PACKETS
 #cmakedefine EMBREE_NATIVE_CURVE_BSPLINE
@@ -54,7 +54,7 @@
   #define IF_ENABLED_HAIR(x)
 #endif
 
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
   #define IF_ENABLED_SUBDIV(x) x
 #else
   #define IF_ENABLED_SUBDIV(x)

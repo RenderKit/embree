@@ -185,17 +185,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API RTCBuildQuality rtcGetSceneBuildQuality(RTCScene hscene)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetSceneBuildQuality);
-    RTCORE_VERIFY_HANDLE(hscene);
-    return scene->getBuildQuality();
-    RTCORE_CATCH_END2(scene);
-    return RTC_BUILD_QUALITY_MEDIUM;
-  }
-
   RTCORE_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags sflags) 
   {
     Scene* scene = (Scene*) hscene;
@@ -256,7 +245,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcGetSceneLinearBounds(RTCScene hscene, RTCBounds* bounds_o)
+  RTCORE_API void rtcGetSceneLinearBounds(RTCScene hscene, RTCLinearBounds* bounds_o)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -267,22 +256,22 @@ namespace embree
     if (scene->isModified())
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     
-    bounds_o[0].lower_x = scene->bounds.bounds0.lower.x;
-    bounds_o[0].lower_y = scene->bounds.bounds0.lower.y;
-    bounds_o[0].lower_z = scene->bounds.bounds0.lower.z;
-    bounds_o[0].align0  = 0;
-    bounds_o[0].upper_x = scene->bounds.bounds0.upper.x;
-    bounds_o[0].upper_y = scene->bounds.bounds0.upper.y;
-    bounds_o[0].upper_z = scene->bounds.bounds0.upper.z;
-    bounds_o[0].align1  = 0;
-    bounds_o[1].lower_x = scene->bounds.bounds1.lower.x;
-    bounds_o[1].lower_y = scene->bounds.bounds1.lower.y;
-    bounds_o[1].lower_z = scene->bounds.bounds1.lower.z;
-    bounds_o[1].align0  = 0;
-    bounds_o[1].upper_x = scene->bounds.bounds1.upper.x;
-    bounds_o[1].upper_y = scene->bounds.bounds1.upper.y;
-    bounds_o[1].upper_z = scene->bounds.bounds1.upper.z;
-    bounds_o[1].align1  = 0;
+    bounds_o->bounds0.lower_x = scene->bounds.bounds0.lower.x;
+    bounds_o->bounds0.lower_y = scene->bounds.bounds0.lower.y;
+    bounds_o->bounds0.lower_z = scene->bounds.bounds0.lower.z;
+    bounds_o->bounds0.align0  = 0;
+    bounds_o->bounds0.upper_x = scene->bounds.bounds0.upper.x;
+    bounds_o->bounds0.upper_y = scene->bounds.bounds0.upper.y;
+    bounds_o->bounds0.upper_z = scene->bounds.bounds0.upper.z;
+    bounds_o->bounds0.align1  = 0;
+    bounds_o->bounds1.lower_x = scene->bounds.bounds1.lower.x;
+    bounds_o->bounds1.lower_y = scene->bounds.bounds1.lower.y;
+    bounds_o->bounds1.lower_z = scene->bounds.bounds1.lower.z;
+    bounds_o->bounds1.align0  = 0;
+    bounds_o->bounds1.upper_x = scene->bounds.bounds1.upper.x;
+    bounds_o->bounds1.upper_y = scene->bounds.bounds1.upper.y;
+    bounds_o->bounds1.upper_z = scene->bounds.bounds1.upper.z;
+    bounds_o->bounds1.align1  = 0;
     RTCORE_CATCH_END2(scene);
   }
   
@@ -926,7 +915,7 @@ namespace embree
 
     case RTC_GEOMETRY_TYPE_SUBDIVISION:
       {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
         createSubdivMeshTy createSubdivMesh = nullptr;
         SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
         Geometry* geom = createSubdivMesh(device);
@@ -956,17 +945,23 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetGeometryNumPrimitives(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryNumPrimitives);
     RTCORE_VERIFY_HANDLE(hgeometry);
+    /* should be called for user geometries only */
+    if (unlikely(geometry->type != Geometry::USER_GEOMETRY))
+    {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
+      return;
+    }
     geometry->setNumPrimitives(N);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryNumTimeSteps(RTCGeometry hgeometry, unsigned int N)
+  RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1004,7 +999,7 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
   
-  RTCORE_API void rtcSetGeometryMask (RTCGeometry hgeometry, int mask) 
+  RTCORE_API void rtcSetGeometryMask (RTCGeometry hgeometry, unsigned int mask) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
@@ -1157,13 +1152,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func, RTCBounds* bounds)
+  RTCORE_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryDisplacementFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setDisplacementFunction(func,bounds);
+    geometry->setDisplacementFunction(func);
     RTCORE_CATCH_END2(geometry);
   }
 
@@ -1275,7 +1270,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned int rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
+  RTCORE_API void rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
     Ref<Geometry> geometry = (Geometry*) hgeometry;
@@ -1286,27 +1281,9 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
-    return scene->bind(geomID,geometry);
+    unsigned int gID = scene->bind(geomID,geometry);
+    assert(gID == geomID);
     RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-
-  RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID_in)
-  {
-    Scene* scene = (Scene*) hscene;
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcAttachAndReleaseGeometryByID);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    RTCORE_VERIFY_GEOMID(geomID_in);
-    if (scene->device != geometry->device)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
-    unsigned int geomID = scene->bind(geomID_in,geometry);
-    geometry->refDec();
-    return geomID;
-    RTCORE_CATCH_END2(scene);
-    return -1;
   }
   
   RTCORE_API void rtcDetachGeometry (RTCScene hscene, unsigned int geomID)

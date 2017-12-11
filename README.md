@@ -580,7 +580,7 @@ parameters that can be configured in CMake:
   EMBREE_GEOMETRY_HAIR           Enables support for hair          ON
                                  geometries.
 
-  EMBREE_GEOMETRY_SUBDIV         Enables support for subdiv        ON
+  EMBREE_GEOMETRY_SUBDIVISION    Enables support for subdiv        ON
                                  geometries.
 
   EMBREE_GEOMETRY_USER           Enables support for user          ON

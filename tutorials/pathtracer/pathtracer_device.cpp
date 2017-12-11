@@ -1172,8 +1172,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       dg.Tx = dx;
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
-      int vtx = mesh->hairs[dg.primID].vertex;
-      dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
     else if (mesh->type == RTC_GEOMETRY_TYPE_CURVE_BEZIER || mesh->type == RTC_GEOMETRY_TYPE_CURVE_BSPLINE)
     {
@@ -1193,7 +1191,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.eps = 1.1f*p.w;
       }
       else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_SURFACE)
       {
@@ -1683,10 +1680,6 @@ extern "C" void device_init (char* cfg)
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
-
-#if ENABLE_FILTER_FUNCTION == 0
-  printf("Warning: filter functions disabled\n");
-#endif
 
 } // device_init
 

@@ -1,0 +1,137 @@
+.TH "rtcGetDeviceProperty" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetDeviceProperty\ \-\ queries\ some\ property\ of\ the\ device
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+ssize_t\ rtcGetDeviceProperty(RTCDevice\ device,\ const\ RTCDeviceProperty\ prop);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetDeviceProperty\f[] function can be used to query some
+properties of a device object.
+Input to the function are the device \f[C]device\f[] to query the
+propery of, and the property \f[C]prop\f[] to query.
+The returned property is an integer of type \f[C]ssize_t\f[].
+.PP
+Possible properties to query are:
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE\f[]: Queries size of the
+software cache in bytes.
+The software cache is used to cache interpolation data for subdivision
+surfaces.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED\f[]: Queries if
+\f[C]rtcIntersect1\f[] and \f[C]rtcOccluded1\f[] functions are
+supported.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED\f[]: Queries if
+\f[C]rtcIntersect4\f[] and \f[C]rtcOccluded4\f[] functions are
+supported.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_RAY_PACKETS\f[] and \f[C]SSE2\f[] (or \f[C]SSE4.2\f[])
+enabled, and if the machine running on supports \f[C]SSE2\f[] (or
+\f[C]SSE4.2\f[]).
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED\f[]: Queries if
+\f[C]rtcIntersect8\f[] and \f[C]rtcOccluded8\f[] functions are
+supported.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_RAY_PACKETS\f[] and \f[C]AVX\f[] (or \f[C]AVX2\f[]) enabled,
+and if the machine running on supports \f[C]AVX\f[] (or \f[C]AVX2\f[]).
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED\f[]: Queries if
+\f[C]rtcIntersect16\f[] and \f[C]rtcOccluded16\f[] functions are
+supported.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_RAY_PACKETS\f[] and \f[C]AVX512SKX\f[] (or
+\f[C]AVX512KNL\f[]) enabled, and if the machine running on supports
+\f[C]AVX512SKX\f[] (or \f[C]AVX512KNL\f[]).
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED\f[]: Queries if
+\f[C]rtcIntersect1M\f[], \f[C]rtcIntersect1Mp\f[],
+\f[C]rtcIntersectNM\f[], \f[C]rtcIntersectNp\f[],
+\f[C]rtcOccluded1M\f[], \f[C]rtcOccluded1Mp\f[], \f[C]rtcOccludedNM\f[],
+and \f[C]rtcOccludedNp\f[] are supported.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_RAY_PACKETS\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED\f[]: Queries if ray masks
+are supported.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_RAY_MASK\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED\f[]: Queries if back
+face culling is supported.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_BACKFACE_CULLING\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED\f[]: Queries if
+filter functions are enabled, which is the case if Embree is compiled
+with \f[C]EMBREE_FILTER_FUNCTION\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED\f[]: Queries if
+invalid rays are ignored, which is the case if Embree is compiled with
+\f[C]EMBREE_IGNORE_INVALID_RAYS\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_TASKING_SYSTEM\f[]: Queries the tasking system
+Embree is compiled with (0 = INTERNAL, 1 = TBB, 2 = PPL).
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION_MAJOR\f[]: Queries the major version
+number of Embree.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION_MINOR\f[]: Queries the minor version
+number of Embree.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION_PATCH\f[]: Queries the patch version
+number of Embree.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION\f[]: Queries the combined version
+number (MAJOR.MINOR.PATCH) with two decimal digits per component.
+E.g.
+for Embree 2.8.3 the integer 208003 is returned.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED\f[]: Queries if
+triangles are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_TRIANGLES\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED\f[]: Queries if quads
+are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_QUADS\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED\f[]: Queries if curves
+are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_CURVES\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED\f[]: Queries if
+subdivision meshes are supported, which is the case if Embree is
+compiled with \f[C]EMBREE_GEOMETRY_SUBDIVISION\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED\f[]: Queries if user
+geometries are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_USER\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED\f[]: Queries if
+\f[C]rtcCommitJoin\f[] is supported.
+This is not the case when Embree is compiled with PPL or some older
+versions of TBB.
+.SS EXIT STATUS
+.PP
+On success returns the value of the queried property.
+For properties returning a boolean value, the return value 0 denotes
+false and 1 denotes true.
+.PP
+On failure zero is returned and an error code is set that can get
+queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetDeviceProperty]

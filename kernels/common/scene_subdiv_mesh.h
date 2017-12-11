@@ -77,7 +77,7 @@ namespace embree
     void setTessellationRate(float N);
     bool verify();
     void commit();
-    void setDisplacementFunction (RTCDisplacementFunction func, RTCBounds* bounds);
+    void setDisplacementFunction (RTCDisplacementFunction func);
 
   public:
 

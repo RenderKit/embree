@@ -1,0 +1,37 @@
+.TH "rtcGetSceneLinearBounds" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetSceneLinearBounds\ \-\ return\ the\ linear\ bounds\ of\ the\ scene
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCORE_ALIGN(16)\ RTCLinearBounds
+{
+\ \ RTCBounds\ bounds0;
+\ \ RTCBounds\ bounds1;
+};
+
+void\ rtcGetSceneLinearBounds(RTCScene\ scene,\ struct\ RTCLinearBounds*\ bounds_o);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+This function queries linear bounds of the scene as a pair of axis
+aigned bounding boxes and stores them to \f[C]bounds_o\f[].
+Linearly interpolating these bounds to a specific time \f[C]t\f[] yields
+bounds for the geometry at that time.
+The function can only get invoked after the scene got commited.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can get queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcGetSceneBounds], [rtcCommitScene], [rtcCommitJoinScene]
