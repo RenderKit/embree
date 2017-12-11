@@ -331,20 +331,6 @@ RTCORE_API RTCGeometry rtcNewInstance(RTCDevice device,
                                       RTCScene source,                  //!< the scene to instantiate
                                       unsigned int numTimeSteps);       //!< number of timesteps, one matrix per timestep
 
-/*! \brief Creates a new geometry instance. 
-
-  WARNING: This function is deprecated, do not use it.
-
-  A geometry instance contains a reference to some geometry to
-  instantiate and the transformation to instantiate that geometry
-  with. An implementation will typically transform the ray with the
-  inverse of the provided transformation and continue traversing the
-  ray through the provided scene. If any geometry is hit, the geometry
-  ID (geomID) member of the ray will get set to the geometry ID of the
-  instance. */
-RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryInstance(RTCDevice device, RTCScene scene, unsigned geomID);
-RTCORE_API RTCORE_DEPRECATED RTCGeometry rtcNewGeometryGroup   (RTCDevice device, RTCScene scene, unsigned* geomIDs, unsigned int N);
-
 /*! \brief Sets transformation of the instance for specified timestep */
 RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   //!< ID of geometry 
                                         enum RTCMatrixType layout,              //!< layout of transformation matrix
