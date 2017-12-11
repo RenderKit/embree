@@ -97,9 +97,6 @@ RTCORE_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMo
 /*! Sets the build quality of a scene. */
 RTCORE_API void rtcSetSceneBuildQuality(RTCScene scene, uniform RTCBuildQuality quality);
 
-/*! Returns the build quality of a scene. */
-RTCORE_API uniform RTCBuildQuality rtcGetSceneBuildQuality(RTCScene scene);
-
 /*! Sets the scene flags. */
 RTCORE_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags sflags);
 

@@ -142,17 +142,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API RTCBuildQuality rtcGetSceneBuildQuality(RTCScene hscene)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetSceneBuildQuality);
-    RTCORE_VERIFY_HANDLE(hscene);
-    return scene->getBuildQuality();
-    RTCORE_CATCH_END2(scene);
-    return RTC_BUILD_QUALITY_MEDIUM;
-  }
-
   RTCORE_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags sflags) 
   {
     Scene* scene = (Scene*) hscene;
