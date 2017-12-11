@@ -129,7 +129,7 @@ RTCORE_API void rtcGetSceneBounds(RTCScene scene, struct RTCBounds* bounds_o);
 /*! Returns linear AABBs of the scene. The result bounds_o gets filled
  *  with AABBs for time 0 and time 1. rtcCommitScene has to get called
  *  previously to this function. */
-RTCORE_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCBounds* bounds_o);
+RTCORE_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bounds_o);
 
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the

@@ -789,9 +789,8 @@ namespace embree
       AssertNoError(device);
       rtcCommitScene (scene);
       AssertNoError(device);
-      BBox3fa bbox[2];
-      rtcGetSceneLinearBounds(scene,(RTCBounds*)bbox);
-      LBBox3fa bounds1(bbox[0],bbox[1]);
+      LBBox3fa bounds1;
+      rtcGetSceneLinearBounds(scene,(RTCLinearBounds*)&bounds1);
       AssertNoError(device);
       return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }

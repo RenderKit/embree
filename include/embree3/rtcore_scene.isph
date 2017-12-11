@@ -123,7 +123,7 @@ RTCORE_API void rtcGetSceneBounds(RTCScene scene, uniform RTCBounds* uniform bou
 /*! Returns linear AABBs of the scene. The result bounds_o gets filled
  *  with AABBs for time 0 and time 1. rtcCommitScene has to get called
  *  previously to this function. */
-RTCORE_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
+RTCORE_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCLinearBounds* uniform bounds_o);
 
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray

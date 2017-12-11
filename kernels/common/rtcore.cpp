@@ -202,7 +202,7 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcGetSceneLinearBounds(RTCScene hscene, RTCBounds* bounds_o)
+  RTCORE_API void rtcGetSceneLinearBounds(RTCScene hscene, RTCLinearBounds* bounds_o)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -213,22 +213,22 @@ namespace embree
     if (scene->isModified())
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     
-    bounds_o[0].lower_x = scene->bounds.bounds0.lower.x;
-    bounds_o[0].lower_y = scene->bounds.bounds0.lower.y;
-    bounds_o[0].lower_z = scene->bounds.bounds0.lower.z;
-    bounds_o[0].align0  = 0;
-    bounds_o[0].upper_x = scene->bounds.bounds0.upper.x;
-    bounds_o[0].upper_y = scene->bounds.bounds0.upper.y;
-    bounds_o[0].upper_z = scene->bounds.bounds0.upper.z;
-    bounds_o[0].align1  = 0;
-    bounds_o[1].lower_x = scene->bounds.bounds1.lower.x;
-    bounds_o[1].lower_y = scene->bounds.bounds1.lower.y;
-    bounds_o[1].lower_z = scene->bounds.bounds1.lower.z;
-    bounds_o[1].align0  = 0;
-    bounds_o[1].upper_x = scene->bounds.bounds1.upper.x;
-    bounds_o[1].upper_y = scene->bounds.bounds1.upper.y;
-    bounds_o[1].upper_z = scene->bounds.bounds1.upper.z;
-    bounds_o[1].align1  = 0;
+    bounds_o->bounds0.lower_x = scene->bounds.bounds0.lower.x;
+    bounds_o->bounds0.lower_y = scene->bounds.bounds0.lower.y;
+    bounds_o->bounds0.lower_z = scene->bounds.bounds0.lower.z;
+    bounds_o->bounds0.align0  = 0;
+    bounds_o->bounds0.upper_x = scene->bounds.bounds0.upper.x;
+    bounds_o->bounds0.upper_y = scene->bounds.bounds0.upper.y;
+    bounds_o->bounds0.upper_z = scene->bounds.bounds0.upper.z;
+    bounds_o->bounds0.align1  = 0;
+    bounds_o->bounds1.lower_x = scene->bounds.bounds1.lower.x;
+    bounds_o->bounds1.lower_y = scene->bounds.bounds1.lower.y;
+    bounds_o->bounds1.lower_z = scene->bounds.bounds1.lower.z;
+    bounds_o->bounds1.align0  = 0;
+    bounds_o->bounds1.upper_x = scene->bounds.bounds1.upper.x;
+    bounds_o->bounds1.upper_y = scene->bounds.bounds1.upper.y;
+    bounds_o->bounds1.upper_z = scene->bounds.bounds1.upper.z;
+    bounds_o->bounds1.align1  = 0;
     RTCORE_CATCH_END2(scene);
   }
   
