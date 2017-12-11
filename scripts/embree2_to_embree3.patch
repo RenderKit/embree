@@ -2137,7 +2137,7 @@ rtcUnmapBuffer(EXPR geom, EXPR type);
 @@{
 rtcMapBuffer(EXPR geom,EXPR type)
 =>
-rtcGetBuffer(geom,type) /* FIXME: check if this should be rtcNewBuffer */
+rtcGetGeometryBufferData(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 }@@
 
 

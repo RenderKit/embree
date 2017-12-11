@@ -59,7 +59,7 @@ namespace embree
     RTCGeometry mesh = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_TRIANGLE);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,sizeof(Vec3fa),8); 
+    Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), 8); 
     vertices[0].x = pos.x + -1; vertices[0].y = pos.y + -1; vertices[0].z = pos.z + -1; 
     vertices[1].x = pos.x + -1; vertices[1].y = pos.y + -1; vertices[1].z = pos.z + +1; 
     vertices[2].x = pos.x + -1; vertices[2].y = pos.y + +1; vertices[2].z = pos.z + -1; 
@@ -71,7 +71,7 @@ namespace embree
     
     /* set triangles */
     int tri = 0;
-    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),12);
+    Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle), 12);
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -110,14 +110,14 @@ namespace embree
     RTCGeometry mesh = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_TRIANGLE);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,sizeof(Vec3fa),4); 
+    Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), 4); 
     vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
     vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
     vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
     vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
     
     /* set triangles */
-    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_BUFFER_TYPE_INDEX,sizeof(Triangle),2);
+    Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle), 2);
     triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
     triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
@@ -132,13 +132,13 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_CURVE_BEZIER);
 
-    vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_VERTEX,sizeof(vfloat4),4);
+    vfloat4* pos = (vfloat4*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(vfloat4), 4);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);
     pos[1] = vfloat4(0.0f,1.0f,0.0f,0.1f);
     pos[2] = vfloat4(0.0f,2.0f,0.0f,0.1f);
     pos[3] = vfloat4(0.0f,3.0f,0.0f,0.1f);
 
-    int* index = (int*) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(int),1);
+    int* index = (int*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, sizeof(int), 1);
     index[0] = 0;
 
     rtcCommitGeometry(geom);

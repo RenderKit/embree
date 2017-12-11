@@ -624,7 +624,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices,     0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
-  Vec3fa* uniform ptr = (Vec3fa* uniform) rtcNewBuffer(geom, RTC_BUFFER_TYPE_VERTEX, sizeof(uniform Vec3fa), NUM_VERTICES);
+  Vec3fa* uniform ptr = (Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_VERTICES);
   for (uniform size_t i=0; i<NUM_VERTICES; i++) {
     uniform float x = cube_vertices[i][0];
     uniform float y = cube_vertices[i][1];
@@ -632,7 +632,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
     uniform Vec3f vtx = make_Vec3f(x,y,z);
     ptr[i] = make_Vec3fa(offset+make_LinearSpace3f_rotate(make_Vec3f(0,1,0),rotation)*make_LinearSpace3f_scale(scale)*vtx);
   }
-  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,  cube_tri_indices , 0, 3*sizeof(uniform unsigned int), NUM_TRI_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_tri_indices, 0, 3*sizeof(uniform unsigned int), NUM_TRI_FACES);
 
   /* create per-triangle color array */
   colors = uniform new uniform Vec3f[12];
@@ -653,12 +653,12 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   if (g_mode == MODE_NORMAL)
   {
     rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
-    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilter);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   }
   else
   {
     rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
-    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterN);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -671,11 +671,11 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
 uniform unsigned int addSubdivCube (RTCScene scene_i)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices,      0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  cube_quad_indices , 0, sizeof(uniform unsigned int), NUM_QUAD_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   cube_quad_faces,    0, sizeof(uniform unsigned int), NUM_QUAD_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices,      0, sizeof(uniform Vec3fa),       NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   cube_quad_indices,  0, sizeof(uniform unsigned int), NUM_QUAD_INDICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_quad_faces,    0, sizeof(uniform unsigned int), NUM_QUAD_FACES);
 
-  uniform float* level = (uniform float*) rtcNewBuffer(geom, RTC_BUFFER_TYPE_LEVEL, sizeof(uniform float), NUM_QUAD_INDICES);
+  uniform float* level = (uniform float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_QUAD_INDICES);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */
@@ -691,12 +691,12 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   if (g_mode == MODE_NORMAL)
   {
     rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
-    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilter);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   }
   else
   {
     rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
-    rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterN);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -712,14 +712,14 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_BUFFER_TYPE_VERTEX,sizeof(uniform Vertex),4);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_BUFFER_TYPE_INDEX,sizeof(uniform Triangle),2);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
