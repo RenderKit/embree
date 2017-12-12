@@ -363,7 +363,7 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
-  const uniform unsigned int time = args->time;
+  const uniform unsigned int time = args->timeStep;
   const uniform Sphere& sphere = spheres[args->primID];
   uniform float ft = 2.0f*M_PI * (uniform float) time / (uniform float) (sphere.num_time_steps-1);
   uniform Vec3f p = sphere.p + make_Vec3f(cos(ft),0.0f,sin(ft));

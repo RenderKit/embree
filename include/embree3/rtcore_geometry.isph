@@ -194,7 +194,7 @@ struct RTCBoundsFunctionArguments
 {
   void* uniform geomUserPtr;           //!< pointer to geometry user data
   uniform unsigned int primID;         //!< ID of primitive to intersect
-  uniform unsigned int time;           //!< time to calculate bounds for
+  uniform unsigned int timeStep;       //!< time step to calculate bounds for
   uniform RTCBounds* uniform bounds_o; //!< returns calculated bounds
 };
 
@@ -244,7 +244,7 @@ struct RTCDisplacementFunctionNArguments
   void* uniform geomUserPtr;         //!< pointer to user data of geometry
   RTCGeometry geometry;              //!< ID of geometry to displace
   uniform unsigned int primID;       //!< ID of primitive of geometry to displace
-  uniform unsigned int time;         //!< time step to calculate displacement for
+  uniform unsigned int timeStep;     //!< time step to calculate displacement for
   uniform const float* uniform u;    //!< u coordinates (source)
   uniform const float* uniform v;    //!< v coordinates (source)
   uniform const float* uniform Ng_x; //!< x coordinates of normal at point to displace (source)

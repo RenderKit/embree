@@ -365,7 +365,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
 {
   const Sphere* spheres = (const Sphere*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
-  const unsigned int time = args->time;
+  const unsigned int time = args->timeStep;
   const Sphere& sphere = spheres[args->primID];
   float ft = 2.0f*float(pi) * (float) time / (float) (sphere.num_time_steps-1);
   Vec3fa p = sphere.p + Vec3fa(cos(ft),0.0f,sin(ft));

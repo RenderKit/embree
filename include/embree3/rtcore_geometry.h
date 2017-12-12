@@ -197,7 +197,7 @@ struct RTCBoundsFunctionArguments
 {
   void* geomUserPtr;          //!< pointer to geometry user data
   unsigned int primID;        //!< item to calculate bounds for
-  unsigned int time;          //!< time to calculate bounds for
+  unsigned int timeStep;      //!< time step to calculate bounds for
   struct RTCBounds* bounds_o; //!< returns calculated bounds
 };
   
@@ -244,19 +244,19 @@ typedef struct __RTCGeometry* RTCGeometry;
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionNArguments
 {
-  void* geomUserPtr;    //!< pointer to user data of geometry
-  RTCGeometry geometry; //!< geometry handle to displace
-  unsigned int primID;  //!< ID of primitive of geometry to displace
-  unsigned int time;    //!< time step to calculate displacement for
-  const float* u;       //!< u coordinates (source)
-  const float* v;       //!< v coordinates (source)
-  const float* Ng_x;    //!< x coordinates of normalized normal at point to displace (source)
-  const float* Ng_y;    //!< y coordinates of normalized normal at point to displace (source)
-  const float* Ng_z;    //!< z coordinates of normalized normal at point to displace (source)
-  float* P_x;           //!< x coordinates of points to displace (source and target)
-  float* P_y;           //!< y coordinates of points to displace (source and target)
-  float* P_z;           //!< z coordinates of points to displace (source and target)
-  unsigned int N;       //!< number of points to displace
+  void* geomUserPtr;     //!< pointer to user data of geometry
+  RTCGeometry geometry;  //!< geometry handle to displace
+  unsigned int primID;   //!< ID of primitive of geometry to displace
+  unsigned int timeStep; //!< time step to calculate displacement for
+  const float* u;        //!< u coordinates (source)
+  const float* v;        //!< v coordinates (source)
+  const float* Ng_x;     //!< x coordinates of normalized normal at point to displace (source)
+  const float* Ng_y;     //!< y coordinates of normalized normal at point to displace (source)
+  const float* Ng_z;     //!< z coordinates of normalized normal at point to displace (source)
+  float* P_x;            //!< x coordinates of points to displace (source and target)
+  float* P_y;            //!< y coordinates of points to displace (source and target)
+  float* P_z;            //!< z coordinates of points to displace (source and target)
+  unsigned int N;        //!< number of points to displace
 };
  
 /*! Displacement mapping function */

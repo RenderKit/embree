@@ -99,7 +99,7 @@ namespace embree
         RTCBoundsFunctionArguments args;
         args.geomUserPtr = intersectors.ptr;
         args.primID = (unsigned int)i;
-        args.time = (unsigned int)itime;
+        args.timeStep = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
         boundsFunc(&args);
         return box;
@@ -113,10 +113,10 @@ namespace embree
         RTCBoundsFunctionArguments args;
         args.geomUserPtr = intersectors.ptr;
         args.primID = (unsigned int)i;
-        args.time = (unsigned int)(itime+0);
+        args.timeStep = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
         boundsFunc(&args);
-        args.time = (unsigned int)(itime+1);
+        args.timeStep = (unsigned int)(itime+1);
         args.bounds_o = (RTCBounds*)&box[1];
         boundsFunc(&args);
         return LBBox3fa(box[0],box[1]);

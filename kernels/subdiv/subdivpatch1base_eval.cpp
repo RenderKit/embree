@@ -142,7 +142,7 @@ namespace embree
           args.geometry = (RTCGeometry)geom;
           //args.geomID = patch.geomID();
           args.primID = patch.primID();
-          args.time = patch.time();
+          args.timeStep = patch.time();
           args.u = grid_u;
           args.v = grid_v;
           args.Ng_x = grid_Ng_x;
@@ -203,7 +203,7 @@ namespace embree
             args.geometry = (RTCGeometry)geom;
             //args.geomID = patch.geomID();
             args.primID = patch.primID();
-            args.time = patch.time();
+            args.timeStep = patch.time();
             args.u = &u[0];
             args.v = &v[0];
             args.Ng_x = &normal.x[0];
@@ -278,7 +278,7 @@ namespace embree
           args.geometry = (RTCGeometry)geom;
           //args.geomID = patch.geomID();
           args.primID = patch.primID();
-          args.time = patch.time();
+          args.timeStep = patch.time();
           args.u = grid_u;
           args.v = grid_v;
           args.Ng_x = grid_Ng_x;
@@ -379,7 +379,7 @@ namespace embree
             args.geometry = (RTCGeometry)geom;
             //args.geomID = patch.geomID();
             args.primID = patch.primID();
-            args.time = patch.time();
+            args.timeStep = patch.time();
             args.u = &u[0];
             args.v = &v[0];
             args.Ng_x = &normal.x[0];

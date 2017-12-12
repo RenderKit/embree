@@ -24,7 +24,7 @@ namespace embree
     void InstanceBoundsFunction(const struct RTCBoundsFunctionArguments* const args)
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
-      unsigned int itime = args->time;
+      unsigned int itime = args->timeStep;
 
       assert(itime < instance->numTimeSteps);
       unsigned num_time_segments = instance->numTimeSegments();
