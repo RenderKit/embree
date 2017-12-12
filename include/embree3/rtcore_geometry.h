@@ -402,7 +402,8 @@ struct RTCInterpolateArguments
 {
   RTCGeometry geometry;
   unsigned int primID;
-  float u, v;
+  float u;
+  float v;
   enum RTCBufferType bufferType;
   unsigned int bufferSlot;
   float* P;
@@ -501,7 +502,7 @@ struct RTCInterpolateNArguments
   const unsigned int* primIDs;
   const float* u;
   const float* v;
-  unsigned int numUVs;
+  unsigned int N;
   enum RTCBufferType bufferType;
   unsigned int bufferSlot;
   float* P;

@@ -852,7 +852,7 @@ namespace embree
       const unsigned* primIDs = args->primIDs;
       const float* u = args->u;
       const float* v = args->v;
-      unsigned int numUVs = args->numUVs;
+      unsigned int N = args->N;
       RTCBufferType bufferType = args->bufferType;
       unsigned int bufferSlot = args->bufferSlot;
       float* P = args->P;
@@ -887,9 +887,9 @@ namespace embree
       
       const int* valid = (const int*) valid_i;
       
-      for (size_t i=0; i<numUVs; i+=4) 
+      for (size_t i=0; i<N; i+=4) 
       {
-        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(int(numUVs));
+        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(int(N));
         if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) continue;
         
@@ -904,13 +904,13 @@ namespace embree
                            const size_t M = min(4u,valueCount-j);
                            isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),commitCounter,
                                                                             topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                                            P ? P+j*numUVs+i : nullptr,
-                                                                            dPdu ? dPdu+j*numUVs+i : nullptr,
-                                                                            dPdv ? dPdv+j*numUVs+i : nullptr,
-                                                                            ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
-                                                                            ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
-                                                                            ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
-                                                                            numUVs,M);
+                                                                            P ? P+j*N+i : nullptr,
+                                                                            dPdu ? dPdu+j*N+i : nullptr,
+                                                                            dPdv ? dPdv+j*N+i : nullptr,
+                                                                            ddPdudu ? ddPdudu+j*N+i : nullptr,
+                                                                            ddPdvdv ? ddPdvdv+j*N+i : nullptr,
+                                                                            ddPdudv ? ddPdudv+j*N+i : nullptr,
+                                                                            N,M);
                          }
                        });
       }

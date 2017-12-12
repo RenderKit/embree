@@ -190,7 +190,7 @@ namespace embree
     const unsigned* primIDs = args->primIDs;
     const float* u = args->u;
     const float* v = args->v;
-    unsigned int numUVs = args->numUVs;
+    unsigned int N = args->N;
     RTCBufferType bufferType = args->bufferType;
     unsigned int bufferSlot = args->bufferSlot;
     float* P = args->P;
@@ -217,7 +217,7 @@ namespace embree
     float* ddPdudut = nullptr, *ddPdvdvt = nullptr, *ddPdudvt = nullptr;
     if (ddPdudu) { ddPdudut = ddPdudu_tmp; ddPdvdvt = ddPdvdv_tmp; ddPdudvt = ddPdudv_tmp; }
     
-    for (unsigned int i=0; i<numUVs; i++)
+    for (unsigned int i=0; i<N; i++)
     {
       if (valid && !valid[i]) continue;
 
@@ -238,21 +238,21 @@ namespace embree
       
       if (likely(P)) {
         for (unsigned int j=0; j<valueCount; j++) 
-          P[j*numUVs+i] = Pt[j];
+          P[j*N+i] = Pt[j];
       }
       if (likely(dPdu)) 
       {
         for (unsigned int j=0; j<valueCount; j++) {
-          dPdu[j*numUVs+i] = dPdut[j];
-          dPdv[j*numUVs+i] = dPdvt[j];
+          dPdu[j*N+i] = dPdut[j];
+          dPdv[j*N+i] = dPdvt[j];
         }
       }
       if (likely(ddPdudu)) 
       {
         for (unsigned int j=0; j<valueCount; j++) {
-          ddPdudu[j*numUVs+i] = ddPdudut[j];
-          ddPdvdv[j*numUVs+i] = ddPdvdvt[j];
-          ddPdudv[j*numUVs+i] = ddPdudvt[j];
+          ddPdudu[j*N+i] = ddPdudut[j];
+          ddPdvdv[j*N+i] = ddPdvdvt[j];
+          ddPdudv[j*N+i] = ddPdudvt[j];
         }
       }
     }

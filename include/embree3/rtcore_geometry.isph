@@ -422,7 +422,7 @@ struct RTCInterpolateNArguments
   const unsigned int* primIDs;
   const float* u;
   const float* v;
-  unsigned int numUVs;
+  unsigned int N;
   RTCBufferType bufferType;
   unsigned int bufferSlot;
   float* P;
@@ -467,7 +467,7 @@ RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned i
   args.primIDs = (const uniform unsigned int* uniform)&primID;
   args.u = (const uniform float* uniform)&u;
   args.v = (const uniform float* uniform)&v;
-  args.numUVs = sizeof(varying float)/4;
+  args.N = sizeof(varying float)/4;
   args.bufferType = bufferType;
   args.bufferSlot = bufferSlot;
   args.P = (uniform float* uniform)P;
@@ -495,7 +495,7 @@ RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned i
   args.primIDs = (const uniform unsigned int* uniform)&primID;
   args.u = (const uniform float* uniform)&u;
   args.v = (const uniform float* uniform)&v;
-  args.numUVs = sizeof(varying float)/4;
+  args.N = sizeof(varying float)/4;
   args.bufferType = bufferType;
   args.bufferSlot = bufferSlot;
   args.P = (uniform float* uniform)P;
@@ -524,7 +524,7 @@ RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, varying unsigned i
   args.primIDs = (const uniform unsigned int* uniform)&primID;
   args.u = (const uniform float* uniform)&u;
   args.v = (const uniform float* uniform)&v;
-  args.numUVs = sizeof(varying float)/4;
+  args.N = sizeof(varying float)/4;
   args.bufferType = bufferType;
   args.bufferSlot = bufferSlot;
   args.P = (uniform float* uniform)P;
