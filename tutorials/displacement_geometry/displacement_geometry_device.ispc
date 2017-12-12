@@ -101,7 +101,7 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-unmasked void displacementFunction(const struct RTCDisplacementFunctionArguments* uniform const args)
+unmasked void displacementFunction(const struct RTCDisplacementFunctionNArguments* uniform const args)
 {
   const uniform float* uniform nx = args->nx;
   const uniform float* uniform ny = args->ny;

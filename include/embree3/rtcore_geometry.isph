@@ -239,7 +239,7 @@ RTCORE_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArgu
 typedef uniform struct __RTCGeometry* uniform RTCGeometry;
 
 /*! Arguments for RTCDisplacementFunction callback */
-struct RTCDisplacementFunctionArguments
+struct RTCDisplacementFunctionNArguments
 {
   void* uniform geomUserPtr;       //!< pointer to user data of geometry
   RTCGeometry geometry;            //!< ID of geometry to displace
@@ -257,7 +257,7 @@ struct RTCDisplacementFunctionArguments
 };
 
 /*! Type of displacement callback functions */
-typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionArguments* uniform const args);
+typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* uniform const args);
 
 /*! Creates a new geometry. */
 RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type, uniform RTCGeometrySubtype type);
