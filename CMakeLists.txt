@@ -113,8 +113,7 @@ OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable b
 
 OPTION(EMBREE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
 OPTION(EMBREE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
-OPTION(EMBREE_GEOMETRY_LINES "Enables support for line geometries." ON)
-OPTION(EMBREE_GEOMETRY_CURVES "Enables support for hair geometries." ON)
+OPTION(EMBREE_GEOMETRY_CURVES "Enables support for curve geometries." ON)
 OPTION(EMBREE_GEOMETRY_SUBDIVISION "Enables support for subdiv geometries." ON)
 OPTION(EMBREE_GEOMETRY_USER "Enables support for user geometries." ON)
 OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)

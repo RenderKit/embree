@@ -23,7 +23,6 @@
 #cmakedefine EMBREE_IGNORE_INVALID_RAYS
 #cmakedefine EMBREE_GEOMETRY_TRIANGLES
 #cmakedefine EMBREE_GEOMETRY_QUADS
-#cmakedefine EMBREE_GEOMETRY_LINES
 #cmakedefine EMBREE_GEOMETRY_CURVES
 #cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
@@ -40,12 +39,6 @@
   #define IF_ENABLED_QUADS(x) x
 #else
   #define IF_ENABLED_QUADS(x)
-#endif
-
-#if defined(EMBREE_GEOMETRY_LINES)
-  #define IF_ENABLED_LINES(x) x
-#else
-  #define IF_ENABLED_LINES(x)
 #endif
 
 #if defined(EMBREE_GEOMETRY_CURVES)

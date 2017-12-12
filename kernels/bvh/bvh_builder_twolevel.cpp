@@ -330,7 +330,7 @@ namespace embree
       }
     }
 
-#if defined(EMBREE_GEOMETRY_LINES)    
+#if defined(EMBREE_GEOMETRY_CURVES)    
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,LineSegments>((BVH4*)bvh,scene,createMeshAccel);
     }
