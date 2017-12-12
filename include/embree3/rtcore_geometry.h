@@ -521,9 +521,6 @@ RTCORE_API void rtcCommitGeometry(RTCGeometry geometry);
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);
 
-/*! \brief Attaches the geometry to some scene and releases geometry handle afterwards. */
-RTCORE_API unsigned int rtcAttachAndReleaseGeometry(RTCScene scene, RTCGeometry geometry);
-
 /*! \brief Attaches the geometry to some scene using the specified geometry ID. */
 RTCORE_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
 

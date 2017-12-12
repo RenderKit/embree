@@ -40,7 +40,8 @@ namespace embree {
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     rtcCommitGeometry(geom);
-    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
+    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcReleaseGeometry(geom);
   }
 
   void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
@@ -52,7 +53,8 @@ namespace embree {
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     rtcCommitGeometry(geom);
-    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
+    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcReleaseGeometry(geom);
   }
 
   void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
@@ -73,7 +75,8 @@ namespace embree {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, mesh->vertex_crease_weights, 0, sizeof(float),          mesh->numVertexCreases);
     rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
     rtcCommitGeometry(geom);
-    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
+    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcReleaseGeometry(geom);
   }
 
   void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCBuildQuality quality)
@@ -88,7 +91,8 @@ namespace embree {
     if (hair->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
       rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
     rtcCommitGeometry(geom);
-    hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
+    hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcReleaseGeometry(geom);
   }
 
   RTCScene createScene(RTCSceneFlags sflags, RTCBuildQuality qflags)

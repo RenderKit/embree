@@ -1042,7 +1042,8 @@ namespace embree
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, p.data(), 0, 3 * sizeof(float), numVertices);
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
         rtcCommitGeometry(geom);
-        rtcAttachAndReleaseGeometry(scene,geom);
+        rtcAttachGeometry(scene,geom);
+        rtcReleaseGeometry(geom);
         
         rtcCommitScene(scene);
       }
@@ -1475,13 +1476,15 @@ namespace embree
             if (random_bool()) {
               RTCGeometry hgeom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
               rtcCommitGeometry(hgeom);
-              unsigned int geomID = rtcAttachAndReleaseGeometry(scene,hgeom);
+              unsigned int geomID = rtcAttachGeometry(scene,hgeom);
+              rtcReleaseGeometry(hgeom);
               geom[geomID] = geomID;
               AssertNoError(device);
             } else {
               RTCGeometry hgeom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
               rtcCommitGeometry(hgeom);
-              unsigned int geomID = rtcAttachAndReleaseGeometry(scene,hgeom);
+              unsigned int geomID = rtcAttachGeometry(scene,hgeom);
+              rtcReleaseGeometry(hgeom);
               geom[geomID] = geomID;
               AssertNoError(device);
             }
@@ -2142,7 +2145,8 @@ namespace embree
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices , 0, sizeof(Vec3f), 3);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  triangles, 0, sizeof(Triangle), 1);
       rtcCommitGeometry(geom);
-      rtcAttachAndReleaseGeometry(scene,geom);
+      rtcAttachGeometry(scene,geom);
+      rtcReleaseGeometry(geom);
       rtcCommitScene (scene);
       AssertNoError(device);
 
@@ -2217,7 +2221,8 @@ namespace embree
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices , 0, sizeof(Vec3f), 4);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT4,  quads, 0, 4*sizeof(int), 1);
       rtcCommitGeometry(geom);
-      rtcAttachAndReleaseGeometry(scene,geom);
+      rtcAttachGeometry(scene,geom);
+      rtcReleaseGeometry(geom);
       rtcCommitScene (scene);
       AssertNoError(device);
 
