@@ -103,12 +103,12 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
 
 unmasked void displacementFunction(const struct RTCDisplacementFunctionNArguments* uniform const args)
 {
-  const uniform float* uniform nx = args->nx;
-  const uniform float* uniform ny = args->ny;
-  const uniform float* uniform nz = args->nz;
-  uniform float* uniform px = args->px;
-  uniform float* uniform py = args->py;
-  uniform float* uniform pz = args->pz;
+  const uniform float* uniform nx = args->Ng_x;
+  const uniform float* uniform ny = args->Ng_y;
+  const uniform float* uniform nz = args->Ng_z;
+  uniform float* uniform px = args->P_x;
+  uniform float* uniform py = args->P_y;
+  uniform float* uniform pz = args->P_z;
   uniform unsigned int N = args->N;
                                    
   foreach (i=0 ... N) {

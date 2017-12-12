@@ -241,19 +241,19 @@ typedef uniform struct __RTCGeometry* uniform RTCGeometry;
 /*! Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionNArguments
 {
-  void* uniform geomUserPtr;       //!< pointer to user data of geometry
-  RTCGeometry geometry;            //!< ID of geometry to displace
-  uniform unsigned int primID;     //!< ID of primitive of geometry to displace
-  uniform unsigned int time;       //!< time step to calculate displacement for
-  uniform const float* uniform u;  //!< u coordinates (source)
-  uniform const float* uniform v;  //!< v coordinates (source)
-  uniform const float* uniform nx; //!< x coordinates of normal at point to displace (source)
-  uniform const float* uniform ny; //!< y coordinates of normal at point to displace (source)
-  uniform const float* uniform nz; //!< z coordinates of normal at point to displace (source)
-  uniform float* uniform px;       //!< x coordinates of points to displace (source and target)
-  uniform float* uniform py;       //!< y coordinates of points to displace (source and target)
-  uniform float* uniform pz;       //!< z coordinates of points to displace (source and target)
-  uniform unsigned int N;          //!< number of points to displace
+  void* uniform geomUserPtr;         //!< pointer to user data of geometry
+  RTCGeometry geometry;              //!< ID of geometry to displace
+  uniform unsigned int primID;       //!< ID of primitive of geometry to displace
+  uniform unsigned int time;         //!< time step to calculate displacement for
+  uniform const float* uniform u;    //!< u coordinates (source)
+  uniform const float* uniform v;    //!< v coordinates (source)
+  uniform const float* uniform Ng_x; //!< x coordinates of normal at point to displace (source)
+  uniform const float* uniform Ng_y; //!< y coordinates of normal at point to displace (source)
+  uniform const float* uniform Ng_z; //!< z coordinates of normal at point to displace (source)
+  uniform float* uniform P_x;        //!< x coordinates of points to displace (source and target)
+  uniform float* uniform P_y;        //!< y coordinates of points to displace (source and target)
+  uniform float* uniform P_z;        //!< z coordinates of points to displace (source and target)
+  uniform unsigned int N;            //!< number of points to displace
 };
 
 /*! Type of displacement callback functions */

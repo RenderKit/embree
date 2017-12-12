@@ -105,12 +105,12 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
 
 void displacementFunction(const struct RTCDisplacementFunctionNArguments* const args)
 {
-  const float* nx = args->nx;
-  const float* ny = args->ny;
-  const float* nz = args->nz;
-  float* px = args->px;
-  float* py = args->py;
-  float* pz = args->pz;
+  const float* nx = args->Ng_x;
+  const float* ny = args->Ng_y;
+  const float* nz = args->Ng_z;
+  float* px = args->P_x;
+  float* py = args->P_y;
+  float* pz = args->P_z;
   unsigned int N = args->N;
                                    
   for (unsigned int i=0; i<N; i++) {

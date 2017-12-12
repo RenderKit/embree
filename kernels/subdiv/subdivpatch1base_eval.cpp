@@ -145,12 +145,12 @@ namespace embree
           args.time = patch.time();
           args.u = grid_u;
           args.v = grid_v;
-          args.nx = grid_Ng_x;
-          args.ny = grid_Ng_y;
-          args.nz = grid_Ng_z;
-          args.px = grid_x;
-          args.py = grid_y;
-          args.pz = grid_z;
+          args.Ng_x = grid_Ng_x;
+          args.Ng_y = grid_Ng_y;
+          args.Ng_z = grid_Ng_z;
+          args.P_x = grid_x;
+          args.P_y = grid_y;
+          args.P_z = grid_z;
           args.N = dwidth*dheight;
           geom->displFunc(&args);
         }
@@ -206,12 +206,12 @@ namespace embree
             args.time = patch.time();
             args.u = &u[0];
             args.v = &v[0];
-            args.nx = &normal.x[0];
-            args.ny = &normal.y[0];
-            args.nz = &normal.z[0];
-            args.px = &vtx.x[0];
-            args.py = &vtx.y[0];
-            args.pz = &vtx.z[0];
+            args.Ng_x = &normal.x[0];
+            args.Ng_y = &normal.y[0];
+            args.Ng_z = &normal.z[0];
+            args.P_x = &vtx.x[0];
+            args.P_y = &vtx.y[0];
+            args.P_z = &vtx.z[0];
             args.N = VSIZEX;
             geom->displFunc(&args);
           }
@@ -281,12 +281,12 @@ namespace embree
           args.time = patch.time();
           args.u = grid_u;
           args.v = grid_v;
-          args.nx = grid_Ng_x;
-          args.ny = grid_Ng_y;
-          args.nz = grid_Ng_z;
-          args.px = grid_x;
-          args.py = grid_y;
-          args.pz = grid_z;
+          args.Ng_x = grid_Ng_x;
+          args.Ng_y = grid_Ng_y;
+          args.Ng_z = grid_Ng_z;
+          args.P_x = grid_x;
+          args.P_y = grid_y;
+          args.P_z = grid_z;
           args.N = dwidth*dheight;
           geom->displFunc(&args);
         }
@@ -382,12 +382,12 @@ namespace embree
             args.time = patch.time();
             args.u = &u[0];
             args.v = &v[0];
-            args.nx = &normal.x[0];
-            args.ny = &normal.y[0];
-            args.nz = &normal.z[0];
-            args.px = &vtx.x[0];
-            args.py = &vtx.y[0];
-            args.pz = &vtx.z[0];
+            args.Ng_x = &normal.x[0];
+            args.Ng_y = &normal.y[0];
+            args.Ng_z = &normal.z[0];
+            args.P_x = &vtx.x[0];
+            args.P_y = &vtx.y[0];
+            args.P_z = &vtx.z[0];
             args.N = VSIZEX;
             geom->displFunc(&args);
           }

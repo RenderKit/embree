@@ -250,12 +250,12 @@ struct RTCDisplacementFunctionNArguments
   unsigned int time;    //!< time step to calculate displacement for
   const float* u;       //!< u coordinates (source)
   const float* v;       //!< v coordinates (source)
-  const float* nx;      //!< x coordinates of normalized normal at point to displace (source)
-  const float* ny;      //!< y coordinates of normalized normal at point to displace (source)
-  const float* nz;      //!< z coordinates of normalized normal at point to displace (source)
-  float* px;            //!< x coordinates of points to displace (source and target)
-  float* py;            //!< y coordinates of points to displace (source and target)
-  float* pz;            //!< z coordinates of points to displace (source and target)
+  const float* Ng_x;    //!< x coordinates of normalized normal at point to displace (source)
+  const float* Ng_y;    //!< y coordinates of normalized normal at point to displace (source)
+  const float* Ng_z;    //!< z coordinates of normalized normal at point to displace (source)
+  float* P_x;           //!< x coordinates of points to displace (source and target)
+  float* P_y;           //!< y coordinates of points to displace (source and target)
+  float* P_z;           //!< z coordinates of points to displace (source and target)
   unsigned int N;       //!< number of points to displace
 };
  
