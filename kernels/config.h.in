@@ -24,7 +24,7 @@
 #cmakedefine EMBREE_GEOMETRY_TRIANGLES
 #cmakedefine EMBREE_GEOMETRY_QUADS
 #cmakedefine EMBREE_GEOMETRY_LINES
-#cmakedefine EMBREE_GEOMETRY_HAIR
+#cmakedefine EMBREE_GEOMETRY_CURVES
 #cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_RAY_PACKETS
@@ -48,10 +48,10 @@
   #define IF_ENABLED_LINES(x)
 #endif
 
-#if defined(EMBREE_GEOMETRY_HAIR)
-  #define IF_ENABLED_HAIR(x) x
+#if defined(EMBREE_GEOMETRY_CURVES)
+  #define IF_ENABLED_CURVES(x) x
 #else
-  #define IF_ENABLED_HAIR(x)
+  #define IF_ENABLED_CURVES(x)
 #endif
 
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)

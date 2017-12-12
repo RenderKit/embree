@@ -577,7 +577,7 @@ parameters that can be configured in CMake:
   EMBREE_GEOMETRY_LINES          Enables support for line          ON
                                  geometries.
 
-  EMBREE_GEOMETRY_HAIR           Enables support for hair          ON
+  EMBREE_GEOMETRY_CURVES         Enables support for hair          ON
                                  geometries.
 
   EMBREE_GEOMETRY_SUBDIVISION    Enables support for subdiv        ON
