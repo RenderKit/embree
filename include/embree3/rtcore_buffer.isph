@@ -55,6 +55,9 @@ RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* uniform ptr, uni
 /*! Returns a pointer to the buffer data. */
 RTCORE_API void* uniform rtcGetBufferData(RTCBuffer buffer);
 
+/*! Retains the buffer (increments reference count). */
+RTCORE_API void rtcRetainBuffer(RTCBuffer buffer);
+
 /*! Releases the buffer handle. */
 RTCORE_API void rtcReleaseBuffer(RTCBuffer buffer);
 

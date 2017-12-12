@@ -228,7 +228,10 @@ RTCORE_API void rtcOccludedNM(RTCScene scene, struct RTCIntersectContext* contex
  *  of the ray packet. */
 RTCORE_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayNp* rays, const unsigned int N);
 
-/*! Releases the scene. */
+/*! Retains the scene (increments reference count). */
+RTCORE_API void rtcRetainScene(RTCScene scene);
+
+/*! Releases the scene (decrements reference count). */
 RTCORE_API void rtcReleaseScene(RTCScene scene);
 
 #if defined(__cplusplus)

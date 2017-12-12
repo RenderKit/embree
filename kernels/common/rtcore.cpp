@@ -42,6 +42,17 @@ namespace embree
     return (RTCDevice) nullptr;
   }
 
+  RTCORE_API void rtcRetainDevice(RTCDevice hdevice) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcRetainDevice);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    Lock<MutexSys> lock(g_mutex);
+    device->refInc();
+    RTCORE_CATCH_END(nullptr);
+  }
+  
   RTCORE_API void rtcReleaseDevice(RTCDevice hdevice) 
   {
     Device* device = (Device*) hdevice;
@@ -140,6 +151,16 @@ namespace embree
     return nullptr;
   }
 
+  RTCORE_API void rtcRetainBuffer(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcRetainBuffer);
+    RTCORE_VERIFY_HANDLE(hbuffer);
+    buffer->refInc();
+    RTCORE_CATCH_END2(buffer);
+  }
+  
   RTCORE_API void rtcReleaseBuffer(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;
@@ -726,6 +747,16 @@ namespace embree
 #endif
     RTCORE_CATCH_END2(scene);
   }
+
+  RTCORE_API void rtcRetainScene (RTCScene hscene) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcRetainScene);
+    RTCORE_VERIFY_HANDLE(hscene);
+    scene->refInc();
+    RTCORE_CATCH_END2(scene);
+  }
   
   RTCORE_API void rtcReleaseScene (RTCScene hscene) 
   {
@@ -1295,6 +1326,16 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
+  RTCORE_API void rtcRetainGeometry (RTCGeometry hgeometry)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcRetainGeometry);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->refInc();
+    RTCORE_CATCH_END2(geometry);
+  }
+  
   RTCORE_API void rtcReleaseGeometry (RTCGeometry hgeometry)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

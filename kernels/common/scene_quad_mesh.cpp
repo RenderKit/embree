@@ -45,6 +45,12 @@ namespace embree
     Geometry::update();
   }
 
+  void QuadMesh::setNumTimeSteps (unsigned int numTimeSteps)
+  {
+    vertices.resize(numTimeSteps);
+    Geometry::setNumTimeSteps(numTimeSteps);
+  }
+  
   void QuadMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
@@ -61,13 +67,11 @@ namespace embree
        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
 
       if (slot >= vertices.size())
-        vertices.resize(slot+1);
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid vertex buffer slot");
+
       vertices[slot].set(buffer, offset, stride, num, format);
       vertices[slot].checkPadding16();
       vertices0 = vertices[0];
-      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
-      //  vertices.pop_back();
-      setNumTimeSteps((unsigned int)vertices.size());
     } 
     else if (type >= RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -120,6 +124,34 @@ namespace embree
     }
   }
 
+  void QuadMesh::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      quads.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
+
+    Geometry::update();
+  }
+
   void QuadMesh::preCommit() 
   {
     /* verify that stride of all time steps are identical */
@@ -133,6 +165,13 @@ namespace embree
   void QuadMesh::postCommit() 
   {
     scene->vertices[geomID] = (int*) vertices0.getPtr();
+
+    quads.setModified(false);
+    for (auto& vertices : vertices)
+      vertices.setModified(false);
+    for (auto& attrib : vertexAttribs)
+      attrib.setModified(false);
+
     Geometry::postCommit();
   }
 

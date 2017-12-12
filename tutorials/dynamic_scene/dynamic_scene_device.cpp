@@ -290,6 +290,7 @@ void animateSphere (int id, float time)
 #endif
 
   /* commit mesh */
+  rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
   rtcCommitGeometry(geom);
 }
 

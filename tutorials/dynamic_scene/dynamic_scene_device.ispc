@@ -284,6 +284,7 @@ void animateSphere (uniform int id, uniform float time)
 #endif
 
   /* commit mesh */
+  rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
   rtcCommitGeometry(geom);
 }
 

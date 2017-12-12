@@ -307,6 +307,7 @@ namespace embree
   unsigned int ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -323,6 +324,7 @@ namespace embree
   unsigned int ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -339,6 +341,7 @@ namespace embree
   unsigned int ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
@@ -388,6 +391,7 @@ namespace embree
   unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
     RTCGeometry geom = rtcNewGeometry(device, mesh->type, mesh->subtype);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {

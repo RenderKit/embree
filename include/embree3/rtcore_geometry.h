@@ -527,7 +527,10 @@ RTCORE_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsi
 /*! \brief Detaches the geometry from the scene. */
 RTCORE_API void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
 
-/*! Releases the geometry handle. */
+/*! Retains the geometry (increments reference count). */
+RTCORE_API void rtcRetainGeometry(RTCGeometry geometry);
+
+/*! Releases the geometry (decrements reference count) */
 RTCORE_API void rtcReleaseGeometry(RTCGeometry geometry);
 
 /*! Returns RTCGeometry from scene and geomID. */

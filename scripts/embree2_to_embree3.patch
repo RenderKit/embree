@@ -1614,8 +1614,8 @@ RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPri
 =>
 uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
 rtcSetGeometryBuildQuality(geom,quality);
-rtcSetGeometryNumPrimitives(geom,numPrimitives);
-rtcSetGeometryNumTimeSteps(geom,numTimeSteps);
+rtcSetGeometryPrimitiveCount(geom,numPrimitives);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
 }@@
 
 
@@ -1722,6 +1722,14 @@ rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
 }@@
 
+@@{
+RTCGeometry ID geom = rtcNewTriangleMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+=>
+uniform RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
+rtcSetGeometryBuildQuality(geom,flags);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
+
 ////////////////////////////
 // rtcNewQuadMesh
 
@@ -1761,6 +1769,13 @@ rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
 }@@
 
+@@{
+RTCGeometry ID geom = rtcNewQuadMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+=>
+uniform RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
+rtcSetGeometryBuildQuality(geom,flags);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
 
 ////////////////////////////
 // rtcNewSubdivisionMesh
@@ -1801,6 +1816,13 @@ rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
 }@@
 
+@@{
+RTCGeometry ID geom = rtcNewSubdivisionMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
+=>
+uniform RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+rtcSetGeometryBuildQuality(geom,flags);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
 
 ////////////////////////////
 // rtcNewCurveGeometry
@@ -1964,6 +1986,14 @@ rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrim
 uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
+}@@
+
+@@{
+RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+=>
+uniform RTCGeometry geom = rtcNewCurveGeometry (device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
+rtcSetGeometryBuildQuality(geom,flags);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
 }@@
 
 

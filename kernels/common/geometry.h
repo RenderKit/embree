@@ -101,31 +101,10 @@ namespace embree
     __forceinline size_t size() const { return numPrimitives; }
 
     /*! sets the number of primitives */
-    __forceinline void setNumPrimitives(unsigned int numPrimitives_in)
-    {      
-      if (numPrimitives_in == numPrimitives) return;
-      
-      if (isEnabled() && scene) disabling();
-      numPrimitives = numPrimitives_in;
-      numPrimitivesChanged = true;
-      if (isEnabled() && scene) enabling();
-      
-      Geometry::update();
-    }
+    virtual void setNumPrimitives(unsigned int numPrimitives_in);
 
     /*! sets number of time steps */
-    __forceinline void setNumTimeSteps (unsigned numTimeSteps_in)
-    {
-      if (numTimeSteps_in == numTimeSteps)
-        return;
-      
-      if (isEnabled() && scene) disabling();
-      numTimeSteps = numTimeSteps_in;
-      fnumTimeSegments = float(numTimeSteps_in-1);
-      if (isEnabled() && scene) enabling();
-      
-      Geometry::update();
-    }
+    virtual void setNumTimeSteps (unsigned int numTimeSteps_in);
 
     /*! sets the build quality */
     void setBuildQuality(RTCBuildQuality quality_in)
@@ -144,7 +123,7 @@ namespace embree
     virtual void enable();
 
     /*! Update geometry. */
-    virtual void update();
+    void update();
     
     /*! commit of geometry */
     virtual void commit();

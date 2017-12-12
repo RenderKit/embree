@@ -247,7 +247,10 @@ inline void rtcOccludedVM(RTCScene scene, uniform RTCIntersectContext* uniform c
  *  of the ray packet. */
 RTCORE_API void rtcOccludedNp(RTCScene scene, uniform RTCIntersectContext* uniform context, const uniform RTCRayNp* uniform rays, const uniform unsigned int N);
 
-/*! Releases the scene. */
+/*! Retains the scene (increments reference count). */
+RTCORE_API void rtcRetainScene(RTCScene scene);
+
+/*! Releases the scene (decrements reference count). */
 RTCORE_API void rtcReleaseScene(RTCScene scene);
 
 /*! @} */

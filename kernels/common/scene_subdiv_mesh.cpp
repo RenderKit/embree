@@ -88,6 +88,13 @@ namespace embree
     }
   }
 
+  void SubdivMesh::setNumTimeSteps (unsigned int numTimeSteps)
+  {
+    vertices.resize(numTimeSteps);
+    vertex_buffer_tags.resize(numTimeSteps);
+    Geometry::setNumTimeSteps(numTimeSteps);
+  }
+
   void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
@@ -102,17 +109,11 @@ namespace embree
       if (format != RTC_FORMAT_FLOAT3)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
-      if (slot >= vertices.size()) {
-        vertices.resize(slot+1);
-        vertex_buffer_tags.resize(slot+1);
-      }
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid vertex buffer slot");
+
       vertices[slot].set(buffer, offset, stride, num, format);
       vertices[slot].checkPadding16();
-      /*while (vertices.size() > 1 && vertices.back().getPtr() == nullptr) {
-        vertices.pop_back();
-        vertex_buffer_tags.pop_back();
-        }*/
-      setNumTimeSteps((unsigned int)vertices.size());
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -273,22 +274,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
       return nullptr;
     }
-  }
-
-  void SubdivMesh::update()
-  {
-    faceVertices.setModified(true);
-    holes.setModified(true);
-    for (auto& buffer : vertices)
-      buffer.setModified(true);
-    levels.setModified(true);
-    edge_creases.setModified(true);
-    edge_crease_weights.setModified(true);
-    vertex_creases.setModified(true);
-    vertex_crease_weights.setModified(true); 
-    for (auto& t : topology)
-      t.update();
-    Geometry::update();
   }
 
   void SubdivMesh::updateBuffer(RTCBufferType type, unsigned int slot)

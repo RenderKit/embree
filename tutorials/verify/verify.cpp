@@ -178,6 +178,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),(unsigned int)mesh->triangles.size());
@@ -193,6 +194,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT4,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), (unsigned int)mesh->quads.size());
@@ -208,6 +210,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE, 0,RTC_FORMAT_UINT,mesh->verticesPerFace.data(),0,sizeof(int), (unsigned int)mesh->verticesPerFace.size());
@@ -231,6 +234,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, mesh->type, mesh->subtype);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
@@ -1574,6 +1578,7 @@ namespace embree
       Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(mesh,RTC_BUFFER_TYPE_VERTEX,0);
       for (size_t i=0; i<numVertices; i++)
         vertices[i] += Vec3fa(pos);
+      rtcUpdateGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0);
       rtcCommitGeometry(mesh);
     }
 
@@ -3299,6 +3304,8 @@ namespace embree
               if (vertices) { 
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
+              rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 0);
+              
               switch (types[index])
               {
               case 4: case 5: case 10: case 11:
@@ -3307,6 +3314,7 @@ namespace embree
                 if (vertices) {
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
+                rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 1);
               }
               rtcCommitGeometry(hgeom);
               break;
