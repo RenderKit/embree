@@ -282,27 +282,69 @@ namespace embree
       commitCounter++;
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertices[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertexAttribs[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_FACE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       faceVertices.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot >= topology.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       topology[slot].vertexIndices.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       edge_creases.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       edge_crease_weights.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertex_creases.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertex_crease_weights.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_HOLE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       holes.setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_LEVEL)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       levels.setModified(true);
+    }
     else
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
 
     Geometry::update();
   }
