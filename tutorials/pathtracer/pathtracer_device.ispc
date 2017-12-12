@@ -1161,7 +1161,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     
-    if (mesh->type == RTC_GEOMETRY_TYPE_CURVE_LINEAR)
+    if (mesh->type == RTC_GEOMETRY_TYPE_LINEAR_CURVE)
     {
       materialID = mesh->geom.materialID;
       const Vec3f dx = normalize(dg.Ng);
@@ -1171,7 +1171,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
     }
-    else if (mesh->type == RTC_GEOMETRY_TYPE_CURVE_BEZIER || mesh->type == RTC_GEOMETRY_TYPE_CURVE_BSPLINE)
+    else if (mesh->type == RTC_GEOMETRY_TYPE_BEZIER_CURVE || mesh->type == RTC_GEOMETRY_TYPE_BSPLINE_CURVE)
     {
       uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
       materialID = mesh->geom.materialID;

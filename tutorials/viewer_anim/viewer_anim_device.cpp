@@ -104,7 +104,7 @@ void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), hair->numVertices);
   for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, hair->hairs, 0, sizeof(ISPCHair), hair->numHairs);
-  if (hair->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
+  if (hair->type != RTC_GEOMETRY_TYPE_LINEAR_CURVE)
     rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   hair->geom.geometry = geom;

@@ -458,9 +458,9 @@ namespace embree
 
     std::string str_type = "";
     switch (mesh->type) {
-    case RTC_GEOMETRY_TYPE_CURVE_LINEAR: str_type = "linear"; break;
-    case RTC_GEOMETRY_TYPE_CURVE_BEZIER: str_type = "bezier"; break;
-    case RTC_GEOMETRY_TYPE_CURVE_BSPLINE: str_type = "bspline"; break;
+    case RTC_GEOMETRY_TYPE_LINEAR_CURVE: str_type = "linear"; break;
+    case RTC_GEOMETRY_TYPE_BEZIER_CURVE: str_type = "bezier"; break;
+    case RTC_GEOMETRY_TYPE_BSPLINE_CURVE: str_type = "bspline"; break;
     default: throw std::runtime_error("invalid basis");
     }
 

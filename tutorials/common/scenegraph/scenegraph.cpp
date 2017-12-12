@@ -229,26 +229,26 @@ namespace embree
 
   void SceneGraph::HairSetNode::convert_bezier_to_bspline()
   {
-    if (type != RTC_GEOMETRY_TYPE_CURVE_BEZIER) return;
+    if (type != RTC_GEOMETRY_TYPE_BEZIER_CURVE) return;
     for (size_t i=0; i<positions.size(); i++) {
       positions[i] = bezier_to_bspline_helper(hairs,positions[i]);
     }
     for (size_t i=0; i<hairs.size(); i++) {
       hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
-    type = RTC_GEOMETRY_TYPE_CURVE_BSPLINE;
+    type = RTC_GEOMETRY_TYPE_BSPLINE_CURVE;
   }
 
   void SceneGraph::HairSetNode::convert_bspline_to_bezier()
   {
-    if (type != RTC_GEOMETRY_TYPE_CURVE_BSPLINE) return;
+    if (type != RTC_GEOMETRY_TYPE_BSPLINE_CURVE) return;
     for (size_t i=0; i<positions.size(); i++) {
       positions[i] = bspline_to_bezier_helper(hairs,positions[i]);
     }
     for (size_t i=0; i<hairs.size(); i++) {
       hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
-    type = RTC_GEOMETRY_TYPE_CURVE_BEZIER;
+    type = RTC_GEOMETRY_TYPE_BEZIER_CURVE;
   }
 
   bool test_location(const std::vector<avector<Vec3fa>>& in, ssize_t ipos, std::vector<avector<Vec3fa>>& out, ssize_t opos)
@@ -702,7 +702,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_CURVE_LINEAR, RTC_GEOMETRY_SUBTYPE_RIBBON, hmesh->material);
+      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_LINEAR_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON, hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);

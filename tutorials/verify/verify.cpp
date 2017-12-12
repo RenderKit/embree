@@ -816,9 +816,9 @@ namespace embree
       rtcSetGeometryUserData(geom1,(void*)2);
       RTCGeometry geom2 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       rtcSetGeometryUserData(geom2,(void*)3);
-      RTCGeometry geom3 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_CURVE_BEZIER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+      RTCGeometry geom3 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_LINEAR_CURVE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       rtcSetGeometryUserData(geom3,(void*)4);
-      RTCGeometry geom4 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+      RTCGeometry geom4 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       rtcSetGeometryUserData(geom4,(void*)5);
       RTCGeometry geom5 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       rtcSetGeometryUserData(geom5,(void*)6);
@@ -859,10 +859,10 @@ namespace embree
       case QUAD_MESH_MB     : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT); break;
       case SUBDIV_MESH      : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT); break;
       case SUBDIV_MESH_MB   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT); break;
-      case HAIR_GEOMETRY    : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BEZIER, RTC_GEOMETRY_SUBTYPE_RIBBON); break;
-      case HAIR_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE, RTC_GEOMETRY_SUBTYPE_RIBBON); break;
-      case CURVE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BEZIER, RTC_GEOMETRY_SUBTYPE_SURFACE); break;
-      case CURVE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE, RTC_GEOMETRY_SUBTYPE_SURFACE); break;
+      case HAIR_GEOMETRY    : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON); break;
+      case HAIR_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON); break;
+      case CURVE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_SURFACE); break;
+      case CURVE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_SURFACE); break;
       default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
       }
       AssertNoError(device);
@@ -993,8 +993,8 @@ namespace embree
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,quality,2));
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,quality,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_CURVE_BEZIER, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_SUBTYPE_RIBBON,RTC_GEOMETRY_TYPE_CURVE_BSPLINE,2),quality);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_SUBTYPE_RIBBON,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,2),quality);
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,2),quality);
       rtcCommitScene (scene);
@@ -2051,7 +2051,7 @@ namespace embree
 
       size_t M = num_interpolation_hair_vertices*N+16; // padds the arrays with some valid data
       
-      RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CURVE_BEZIER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+      RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       AssertNoError(device);
       
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, interpolation_hair_indices, 0, sizeof(unsigned int), num_interpolation_hairs);

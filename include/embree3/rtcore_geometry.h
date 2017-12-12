@@ -146,9 +146,9 @@ enum RTCGeometryType
     considered to be subpixel sized which allows the implementation to
     approximate the intersection calculation. This in particular means
     that zooming onto one hair might show geometric artefacts. */
-  RTC_GEOMETRY_TYPE_CURVE_LINEAR,
-  RTC_GEOMETRY_TYPE_CURVE_BEZIER,
-  RTC_GEOMETRY_TYPE_CURVE_BSPLINE,
+  RTC_GEOMETRY_TYPE_LINEAR_CURVE,
+  RTC_GEOMETRY_TYPE_BEZIER_CURVE,
+  RTC_GEOMETRY_TYPE_BSPLINE_CURVE,
 
   /*! Creates a new user geometry object. This feature makes it possible
     to add arbitrary types of geometry to the scene by providing

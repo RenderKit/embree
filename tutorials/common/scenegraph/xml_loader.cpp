@@ -1032,7 +1032,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, RTCGeometrySubtype subtype)
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_CURVE_BEZIER,subtype,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_BEZIER_CURVE,subtype,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1083,7 +1083,7 @@ namespace embree
 
     mesh->flags = loadUCharArray(xml->childOpt("flags"));
 
-    if (type == RTC_GEOMETRY_TYPE_CURVE_BSPLINE) {
+    if (type == RTC_GEOMETRY_TYPE_BSPLINE_CURVE) {
       for (auto& vertices : mesh->positions)
         fix_bspline_end_points(indices,vertices);
     }
@@ -1229,11 +1229,11 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_RIBBON);
-      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_CURVE_LINEAR,RTC_GEOMETRY_SUBTYPE_RIBBON);
+      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_LINEAR_CURVE,RTC_GEOMETRY_SUBTYPE_RIBBON);
       else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_RIBBON);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_CURVE_BSPLINE,RTC_GEOMETRY_SUBTYPE_RIBBON);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_RIBBON);
       else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_SURFACE);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_CURVE_BSPLINE,RTC_GEOMETRY_SUBTYPE_SURFACE);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_SURFACE);
       
       else if (xml->name == "Curves")
       {
@@ -1245,9 +1245,9 @@ namespace embree
 
         RTCGeometryType type;
         std::string str_type = xml->parm("basis");
-        if    (str_type == "linear") type = RTC_GEOMETRY_TYPE_CURVE_LINEAR;
-        else if (str_type == "bezier") type = RTC_GEOMETRY_TYPE_CURVE_BEZIER;
-        else if (str_type == "bspline") type = RTC_GEOMETRY_TYPE_CURVE_BSPLINE;
+        if    (str_type == "linear") type = RTC_GEOMETRY_TYPE_LINEAR_CURVE;
+        else if (str_type == "bezier") type = RTC_GEOMETRY_TYPE_BEZIER_CURVE;
+        else if (str_type == "bspline") type = RTC_GEOMETRY_TYPE_BSPLINE_CURVE;
         else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve basis: "+str_type);
         
         node = sceneMap[id] = loadCurves(xml,type,subtype);

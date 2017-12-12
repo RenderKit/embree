@@ -92,7 +92,7 @@ namespace embree {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, hair->positions[t], 0, sizeof(Vertex), hair->numVertices);
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, hair->hairs, 0, sizeof(ISPCHair), hair->numHairs);
-    if (hair->type != RTC_GEOMETRY_TYPE_CURVE_LINEAR)
+    if (hair->type != RTC_GEOMETRY_TYPE_LINEAR_CURVE)
       rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
     rtcCommitGeometry(geom);
     hair->geom.geomID = rtcAttachGeometry(scene_out,geom);

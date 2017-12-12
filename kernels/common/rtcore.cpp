@@ -929,9 +929,9 @@ namespace embree
     }
     break;
     
-    case RTC_GEOMETRY_TYPE_CURVE_LINEAR:
-    case RTC_GEOMETRY_TYPE_CURVE_BEZIER:
-    case RTC_GEOMETRY_TYPE_CURVE_BSPLINE:
+    case RTC_GEOMETRY_TYPE_LINEAR_CURVE:
+    case RTC_GEOMETRY_TYPE_BEZIER_CURVE:
+    case RTC_GEOMETRY_TYPE_BSPLINE_CURVE:
     {
 #if defined(EMBREE_GEOMETRY_CURVES)
       if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
@@ -939,7 +939,7 @@ namespace embree
           subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
 
-      if (type == RTC_GEOMETRY_TYPE_CURVE_LINEAR &&
+      if (type == RTC_GEOMETRY_TYPE_LINEAR_CURVE &&
           subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
           subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
@@ -953,9 +953,9 @@ namespace embree
       
       Geometry* geom;
       switch (type) {
-      case RTC_GEOMETRY_TYPE_CURVE_LINEAR : geom = createLineSegments (device); break;
-      case RTC_GEOMETRY_TYPE_CURVE_BEZIER : geom = createCurvesBezier (device,type,subtype); break;
-      case RTC_GEOMETRY_TYPE_CURVE_BSPLINE: geom = createCurvesBSpline(device,type,subtype); break;
+      case RTC_GEOMETRY_TYPE_LINEAR_CURVE : geom = createLineSegments (device); break;
+      case RTC_GEOMETRY_TYPE_BEZIER_CURVE : geom = createCurvesBezier (device,type,subtype); break;
+      case RTC_GEOMETRY_TYPE_BSPLINE_CURVE: geom = createCurvesBSpline(device,type,subtype); break;
       default:                              geom = nullptr; break;
       }
       return (RTCGeometry) geom->refInc();
