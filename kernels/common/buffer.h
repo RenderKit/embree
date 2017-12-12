@@ -33,6 +33,8 @@ namespace embree
     Buffer(Device* device, size_t numBytes_in, void* ptr_in = nullptr)
       : device(device), numBytes(numBytes_in)
     {
+      device->refInc();
+      
       if (ptr_in)
       {
         shared = true;
@@ -48,6 +50,7 @@ namespace embree
     /*! Buffer destruction */
     ~Buffer() {
       free();
+      device->refDec();
     }
     
     /*! this class is not copyable */
