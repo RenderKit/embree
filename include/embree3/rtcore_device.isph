@@ -40,10 +40,10 @@ typedef uniform struct __RTCDevice* uniform RTCDevice;
 */
 RTCORE_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg = NULL);
 
-/*! \brief Deletes an Embree device.
-
-  Deletes the Embree device again. After deletion, all scene handles
-  are invalid. */
+/*! Retains the Embree device (increments reference count) */
+RTCORE_API void rtcRetainDevice(RTCDevice device);
+  
+/*! Releases an Embree device (decrements reference count) */
 RTCORE_API void rtcReleaseDevice(RTCDevice device);
 
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */

@@ -43,10 +43,10 @@ typedef struct __RTCDevice* RTCDevice;
 */
 RTCORE_API RTCDevice rtcNewDevice(const char* cfg);
 
-/*! \brief Deletes an Embree device.
-
-  Deletes the Embree device again. After deletion, all scene handles
-  are invalid. */
+/*! Retains the Embree device (increments reference count) */
+RTCORE_API void rtcRetainDevice(RTCDevice device);
+  
+/*! Releases an Embree device (decrements reference count) */
 RTCORE_API void rtcReleaseDevice(RTCDevice device);
 
 /*! \brief Device properties that can be queried using the rtcGetDeviceParameter function. */

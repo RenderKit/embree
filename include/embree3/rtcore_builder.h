@@ -107,7 +107,10 @@ RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t b
 /*! Makes the BVH static. No further rtcBVHBuild can be called anymore on the BVH. */
 RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
 
-/*! Deletes the BVH including all allocated nodes. */
+/*! Retains the BVH (increments reference count). */
+RTCORE_API void rtcRetainBVH(RTCBVH bvh);
+
+/*! Releases the BVH (decrements reference count). */
 RTCORE_API void rtcReleaseBVH(RTCBVH bvh);
 
 #if defined(__cplusplus)

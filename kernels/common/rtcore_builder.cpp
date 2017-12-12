@@ -33,7 +33,7 @@ namespace embree
 { 
   namespace isa // FIXME: support more ISAs for builders
   {
-    struct BVH
+    struct BVH : public RefCount
     {
       BVH (Device* device)
         : device(device), isStatic(false), allocator(device,true), morton_src(device,0), morton_tmp(device,0)
@@ -58,7 +58,8 @@ namespace embree
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcNewAllocator);
       RTCORE_VERIFY_HANDLE(device);
-      return (RTCBVH) new BVH((Device*)device);
+      BVH* bvh = new BVH((Device*)device);
+      return (RTCBVH) bvh->refInc();
       RTCORE_CATCH_END((Device*)device);
       return nullptr;
     }
@@ -400,14 +401,25 @@ namespace embree
       RTCORE_CATCH_END(bvh->device);
     }
 
+    RTCORE_API void rtcRetainBVH(RTCBVH hbvh)
+    {
+      BVH* bvh = (BVH*) hbvh;
+      Device* device = bvh ? bvh->device : nullptr;
+      RTCORE_CATCH_BEGIN;
+      RTCORE_TRACE(rtcRetainBVH);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      bvh->refInc();
+      RTCORE_CATCH_END(device);
+    }
+    
     RTCORE_API void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcDeleteAllocator);
+      RTCORE_TRACE(rtcReleaseBVH);
       RTCORE_VERIFY_HANDLE(hbvh);
-      delete bvh;
+      bvh->refDec();
       RTCORE_CATCH_END(device);
     }
   }
