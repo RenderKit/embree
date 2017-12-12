@@ -933,7 +933,7 @@ namespace embree
     case RTC_GEOMETRY_TYPE_CURVE_BEZIER:
     case RTC_GEOMETRY_TYPE_CURVE_BSPLINE:
     {
-#if defined(EMBREE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_CURVES)
       if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
           subtype != RTC_GEOMETRY_SUBTYPE_SURFACE &&
           subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)

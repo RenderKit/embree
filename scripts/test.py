@@ -260,10 +260,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_TRIANGLES="+config["TRIS"])
   if "QUADS" in config:
     conf.append("-D EMBREE_GEOMETRY_QUADS="+config["QUADS"])
-  if "LINES" in config:
-    conf.append("-D EMBREE_GEOMETRY_LINES="+config["LINES"])
-  if "HAIR" in config:
-    conf.append("-D EMBREE_GEOMETRY_HAIR="+config["HAIR"])
+  if "CURVES" in config:
+    conf.append("-D EMBREE_GEOMETRY_CURVES="+config["CURVES"])
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:

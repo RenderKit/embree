@@ -44,12 +44,12 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR8(BVH8Quad4iMBIntersector8HybridMoeller, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<8 COMMA QuadMiMBIntersectorKMoeller <4 COMMA 8 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR8(BVH8Quad4iMBIntersector8HybridPluecker,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D COMMA true COMMA ArrayIntersectorK_1<8 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 8 COMMA true> > >));
 
-    IF_ENABLED_LINES(DEFINE_INTERSECTOR8(BVH8Line4iIntersector8,  BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 8 COMMA true> > >));
-    IF_ENABLED_LINES(DEFINE_INTERSECTOR8(BVH8Line4iMBIntersector8,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 8 COMMA true> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH8Line4iIntersector8,  BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 8 COMMA true> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH8Line4iMBIntersector8,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 8 COMMA true> > >));
   
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >));
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8OBBBezier1iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH8OBBBezier1iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR8(BVH8VirtualIntersector8Chunk, BVHNIntersectorKChunk<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA ObjectIntersector8> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR8(BVH8VirtualMBIntersector8Chunk, BVHNIntersectorKChunk<8 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<8 COMMA ObjectIntersector8MB> >));
