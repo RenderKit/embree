@@ -72,7 +72,7 @@ namespace embree
 
       /* otherwise build MBlur BVH */
       else {
-        BBox3fa gbounds[RTC_MAX_TIME_STEPS];
+        BBox3fa gbounds[RTC_MAX_TIME_STEP_COUNT];
         troot = buildMSMBlurBVH(make_range(0,int(time_steps-1)),gbounds).first;
 
         if (bounds_o)

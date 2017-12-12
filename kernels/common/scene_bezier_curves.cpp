@@ -243,7 +243,7 @@ namespace embree
       float* P = args->P;
       float* dPdu = args->dPdu;
       float* ddPdudu = args->ddPdudu;
-      unsigned int numFloats = args->numFloats;
+      unsigned int valueCount = args->valueCount;
     
       /* calculate base pointer and stride */
       assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
@@ -258,11 +258,11 @@ namespace embree
         stride = vertices[bufferSlot].getStride();
       }
       
-      for (unsigned int i=0; i<numFloats; i+=4)
+      for (unsigned int i=0; i<valueCount; i+=4)
       {
         size_t ofs = i*sizeof(float);
         const size_t curve = curves[primID];
-        const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)numFloats);
+        const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
         const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
         const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
         const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);

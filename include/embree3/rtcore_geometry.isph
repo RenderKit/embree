@@ -26,7 +26,7 @@
 #define RTC_INVALID_GEOMETRY_ID ((uniform unsigned int)-1)
 
 /*! maximal number of time steps */
-#define RTC_MAX_TIME_STEPS 129
+#define RTC_MAX_TIME_STEP_COUNT 129
 
 /*! \brief Supported types of matrix layout for functions involving matrices */
 enum RTCMatrixType {
@@ -40,7 +40,7 @@ enum RTCGeometryType
 {
   /*! \brief Creates a new triangle mesh. The number of triangles
     (numTriangles), number of vertices (numVertices), and number of time
-    steps (1 for normal meshes, and up to RTC_MAX_TIME_STEPS for multi
+    steps (1 for normal meshes, and up to RTC_MAX_TIME_STEP_COUNT for multi
     segment motion blur), have to get specified. The triangle indices
     can be set by mapping and writing to the index buffer
     (RTC_BUFFER_TYPE_INDEX) and the triangle vertices can be set by mapping
@@ -56,7 +56,7 @@ enum RTCGeometryType
 
   /*! \brief Creates a new quad mesh. The number of quads (numQuads),
     number of vertices (numVertices), and number of time steps (1 for
-    normal meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+    normal meshes, and up to RTC_MAX_TIME_STEP_COUNT for multi-segment motion
     blur), have to get specified. The quad indices can be set by mapping
     and writing to the index buffer (RTC_BUFFER_TYPE_INDEX) and the quad
     vertices can be set by mapping and writing into the vertex buffer
@@ -129,7 +129,7 @@ enum RTCGeometryType
     represented as cubic bezier curves with varying radii. The number of
     curves (numCurves), number of vertices (numVertices), and number of
     time steps have to get specified at construction time (1 for normal
-    meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+    meshes, and up to RTC_MAX_TIME_STEP_COUNT for multi-segment motion
     blur). Further, the curve index buffer (RTC_BUFFER_TYPE_INDEX) and the
     curve vertex buffer (RTC_BUFFER_TYPE_VERTEX) have to get set by mapping
     and writing to the appropiate buffers. In case of multi-segment
@@ -314,10 +314,10 @@ RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   
   );
 
 /*! Sets the number of primitives. */
-RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int userPrimCount);
 
 /*! Sets the number of time steps. */
-RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int N);
+RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int timeStepCount);
  
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_BUFFER_TYPE_LEVEL can also be used
@@ -337,7 +337,7 @@ RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsi
 RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform unsigned int vertexAttributeID, uniform unsigned int topologyID);
 
 RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                     uniform RTCBuffer buffer, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int numItems);
+                                     uniform RTCBuffer buffer, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int itemCount);
 
 /*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
@@ -352,10 +352,10 @@ RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType
  *  this function is not called, Embree will allocate and manage
  *  buffers of the default layout. */
 RTCORE_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                           const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int numItems);
+                                           const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int itemCount);
 
 RTCORE_API void* uniform rtcSetNewGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                                 uniform size_t byteStride, uniform unsigned int numItems);
+                                                 uniform size_t byteStride, uniform unsigned int itemCount);
 
 /*! Returns a pointer to the buffer data. */
 RTCORE_API void* uniform rtcGetGeometryBufferData(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);
@@ -402,7 +402,7 @@ RTCORE_API void* uniform rtcGetGeometryUserData(RTCGeometry geometry);
  *  valid pointer is NULL all elements are considers valid. The data
  *  buffer specifies per vertex data to interpolate and can be one of
  *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
- *  contain numFloats floating point values to interpolate for each
+ *  contain valueCount floating point values to interpolate for each
  *  vertex of the geometry. The P array will get filled with the
  *  interpolated datam the dPdu and dPdv arrays with the u and v
  *  derivative of the interpolation, and the ddPdudu, ddPdvdv, and
@@ -431,7 +431,7 @@ struct RTCInterpolateNArguments
   float* ddPdudu;
   float* ddPdvdv;
   float* ddPdudv;
-  unsigned int numFloats;
+  unsigned int valueCount;
 };
 
 RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
@@ -439,7 +439,7 @@ RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
 /*! Interpolates user data to some varying u/v location. The data
  *  buffer specifies per vertex data to interpolate and can be one of
  *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
- *  numFloats floating point values to interpolate for each vertex of
+ *  valueCount floating point values to interpolate for each vertex of
  *  the geometry. The P array will get filled with the
  *  interpolated datam the dPdu and dPdv arrays with the u and v
  *  derivative of the interpolation, and the ddPdudu, ddPdvdv, and
@@ -455,7 +455,7 @@ RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
 RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                          uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                          varying float* uniform P,
-                                         uniform unsigned int numFloats)
+                                         uniform unsigned int valueCount)
 {
   varying bool mask = __mask;
   unmasked {
@@ -476,14 +476,14 @@ RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned i
   args.ddPdudu = NULL;
   args.ddPdvdv = NULL;
   args.ddPdudv = NULL;
-  args.numFloats = numFloats;
+  args.valueCount = valueCount;
   rtcInterpolateN(&args);
 }
 
 RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
-                                        uniform unsigned int numFloats)
+                                        uniform unsigned int valueCount)
 {
   varying bool mask = __mask;
   unmasked {
@@ -504,7 +504,7 @@ RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned i
   args.ddPdudu = NULL;
   args.ddPdvdv = NULL;
   args.ddPdudv = NULL;
-  args.numFloats = numFloats;
+  args.valueCount = valueCount;
   rtcInterpolateN(&args);
 }
 
@@ -512,7 +512,7 @@ RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, varying unsigned i
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                                         varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
-                                        uniform unsigned int numFloats)
+                                        uniform unsigned int valueCount)
 {
   varying bool mask = __mask;
   unmasked {
@@ -533,7 +533,7 @@ RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, varying unsigned i
   args.ddPdudu = (uniform float* uniform)ddPdudu;
   args.ddPdvdv = (uniform float* uniform)ddPdvdv;
   args.ddPdudv = (uniform float* uniform)ddPdudv;
-  args.numFloats = numFloats;
+  args.valueCount = valueCount;
   rtcInterpolateN(&args);
 }
 

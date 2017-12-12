@@ -199,9 +199,9 @@ namespace embree
     float* ddPdudu = args->ddPdudu;
     float* ddPdvdv = args->ddPdvdv;
     float* ddPdudv = args->ddPdudv;
-    unsigned int numFloats = args->numFloats;
+    unsigned int valueCount = args->valueCount;
 
-    if (numFloats > 256) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
+    if (valueCount > 256) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
  
     __aligned(64) float P_tmp[256];
@@ -233,23 +233,23 @@ namespace embree
       iargs.ddPdudu = ddPdudut;
       iargs.ddPdvdv = ddPdvdvt;
       iargs.ddPdudv = ddPdudvt;
-      iargs.numFloats = numFloats;
+      iargs.valueCount = valueCount;
       interpolate(&iargs);
       
       if (likely(P)) {
-        for (unsigned int j=0; j<numFloats; j++) 
+        for (unsigned int j=0; j<valueCount; j++) 
           P[j*numUVs+i] = Pt[j];
       }
       if (likely(dPdu)) 
       {
-        for (unsigned int j=0; j<numFloats; j++) {
+        for (unsigned int j=0; j<valueCount; j++) {
           dPdu[j*numUVs+i] = dPdut[j];
           dPdv[j*numUVs+i] = dPdvt[j];
         }
       }
       if (likely(ddPdudu)) 
       {
-        for (unsigned int j=0; j<numFloats; j++) {
+        for (unsigned int j=0; j<valueCount; j++) {
           ddPdudu[j*numUVs+i] = ddPdudut[j];
           ddPdvdv[j*numUVs+i] = ddPdvdvt[j];
           ddPdudv[j*numUVs+i] = ddPdudvt[j];

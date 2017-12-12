@@ -784,10 +784,10 @@ namespace embree
       float* ddPdudu = args->ddPdudu;
       float* ddPdvdv = args->ddPdvdv;
       float* ddPdudv = args->ddPdudv;
-      unsigned int numFloats = args->numFloats;
+      unsigned int valueCount = args->valueCount;
       
       /* calculate base pointer and stride */
-      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEPS) ||
+      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEP_COUNT) ||
              (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot < RTC_MAX_USER_VERTEX_BUFFERS));
       const char* src = nullptr; 
       size_t stride = 0;
@@ -812,7 +812,7 @@ namespace embree
       bool has_dP = dPdu;     assert(!has_dP  || dPdv);
       bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
       
-      for (unsigned int i=0; i<numFloats; i+=4)
+      for (unsigned int i=0; i<valueCount; i+=4)
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
         isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),commitCounter,
@@ -825,19 +825,19 @@ namespace embree
                                         has_ddP ? &ddPdudvt : nullptr);
         
         if (has_P) {
-          for (size_t j=i; j<min(i+4,numFloats); j++) 
+          for (size_t j=i; j<min(i+4,valueCount); j++) 
             P[j] = Pt[j-i];
         }
         if (has_dP) 
         {
-          for (size_t j=i; j<min(i+4,numFloats); j++) {
+          for (size_t j=i; j<min(i+4,valueCount); j++) {
             dPdu[j] = dPdut[j-i];
             dPdv[j] = dPdvt[j-i];
           }
         }
         if (has_ddP) 
         {
-          for (size_t j=i; j<min(i+4,numFloats); j++) {
+          for (size_t j=i; j<min(i+4,valueCount); j++) {
             ddPdudu[j] = ddPdudut[j-i];
             ddPdvdv[j] = ddPdvdvt[j-i];
             ddPdudv[j] = ddPdudvt[j-i];
@@ -861,10 +861,10 @@ namespace embree
       float* ddPdudu = args->ddPdudu;
       float* ddPdvdv = args->ddPdvdv;
       float* ddPdudv = args->ddPdudv;
-      unsigned int numFloats = args->numFloats;
+      unsigned int valueCount = args->valueCount;
     
       /* calculate base pointer and stride */
-      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEPS) ||
+      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEP_COUNT) ||
              (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot < RTC_MAX_USER_VERTEX_BUFFERS));
       const char* src = nullptr; 
       size_t stride = 0;
@@ -899,9 +899,9 @@ namespace embree
         
         foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
                        {
-                         for (unsigned int j=0; j<numFloats; j+=4) 
+                         for (unsigned int j=0; j<valueCount; j+=4) 
                          {
-                           const size_t M = min(4u,numFloats-j);
+                           const size_t M = min(4u,valueCount-j);
                            isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),commitCounter,
                                                                             topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                                             P ? P+j*numUVs+i : nullptr,
