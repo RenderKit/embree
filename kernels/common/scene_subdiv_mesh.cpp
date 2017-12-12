@@ -64,19 +64,12 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setSubtype(RTCGeometrySubtype type_in)
-  {
-    if (type_in != RTC_GEOMETRY_SUBTYPE_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry subtype");
-    
-    Geometry::update();
-  }
-  
   void SubdivMesh::setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)
   {
     if (topologyID >= topology.size())
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid topology ID");
     topology[topologyID].setSubdivisionMode(mode);
+    Geometry::update();
   }
 
   void SubdivMesh::setVertexAttributeTopology(unsigned int vertexAttribID, unsigned int topologyID)

@@ -46,7 +46,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   rtcSetGeometryBuildQuality(geom, quality);
   Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -60,7 +60,7 @@ void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   rtcSetGeometryBuildQuality(geom, quality);
   Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), mesh->numVertices);
   for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
@@ -74,7 +74,7 @@ void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   rtcSetGeometryBuildQuality(geom, quality);
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
   Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), mesh->numVertices);
@@ -98,8 +98,7 @@ void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   /* create object */
-  RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
-  rtcSetGeometrySubtype(geom,hair->subtype);
+  RTCGeometry geom = rtcNewGeometry (g_device, hair->type, hair->subtype);
   rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
   Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), hair->numVertices);

@@ -45,14 +45,6 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setSubtype(RTCGeometrySubtype type)
-  {
-    if (type != RTC_GEOMETRY_SUBTYPE_RIBBON)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
-    
-    Geometry::update();
-  }
-
   void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */

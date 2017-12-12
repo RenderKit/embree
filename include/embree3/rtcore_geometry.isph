@@ -168,8 +168,9 @@ enum RTCGeometryType
 /*! Geometry subtype, which can be changed for already existing geometries */
 enum RTCGeometrySubtype
 {
-  RTC_GEOMETRY_SUBTYPE_SURFACE, //!< render curves as real geometric surfaces
-  RTC_GEOMETRY_SUBTYPE_RIBBON   //!< render curves as ray facing ribbons
+  RTC_GEOMETRY_SUBTYPE_DEFAULT = 0, //!< default geometry subtype
+  RTC_GEOMETRY_SUBTYPE_SURFACE = 1, //!< render curves as real geometric surfaces
+  RTC_GEOMETRY_SUBTYPE_RIBBON = 2   //!< render curves as ray facing ribbons
 };
 
 /*! \brief Interpolation mode for subdivision surfaces. The modes are
@@ -259,7 +260,7 @@ struct RTCDisplacementFunctionArguments
 typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionArguments* uniform const args);
 
 /*! Creates a new geometry. */
-RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);
+RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type, uniform RTCGeometrySubtype type);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
@@ -318,9 +319,6 @@ RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform u
 /*! Sets the number of time steps. */
 RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int N);
  
-/*! Sets the subtype of the geometry. */
-RTCORE_API void rtcSetGeometrySubtype(RTCGeometry geometry, uniform RTCGeometrySubtype type);
-
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_BUFFER_TYPE_LEVEL can also be used
  *  optionally to set a different tessellation rate per edge.*/

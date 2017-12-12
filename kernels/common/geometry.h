@@ -207,11 +207,6 @@ namespace embree
   public:
 
 
-    /*! sets type of curve */
-    virtual void setSubtype(RTCGeometrySubtype type) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-    
     /*! Sets ray mask. */
     virtual void setMask(unsigned mask) { 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 

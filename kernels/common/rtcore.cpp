@@ -852,99 +852,126 @@ namespace embree
     args->report(args,filter_args);
   }
   
-  RTCORE_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
+  RTCORE_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type, RTCGeometrySubtype subtype)
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewGeometry);
     RTCORE_VERIFY_HANDLE(hdevice);
+
+    if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
+        subtype != RTC_GEOMETRY_SUBTYPE_SURFACE &&
+        subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
     
     switch (type)
     {
     case RTC_GEOMETRY_TYPE_TRIANGLE:
-      {
-  #if defined(EMBREE_GEOMETRY_TRIANGLES)
-        createTriangleMeshTy createTriangleMesh = nullptr;
-        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
-        Geometry* geom = createTriangleMesh(device);
-        return (RTCGeometry) geom->refInc();
-  #else
-        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewTriangleMesh is not supported");
-  #endif
-      }
-      break;
-
-    case RTC_GEOMETRY_TYPE_QUAD:
-      {
-#if defined(EMBREE_GEOMETRY_QUADS)
-        createQuadMeshTy createQuadMesh = nullptr;
-        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
-        Geometry* geom = createQuadMesh(device);
-        return (RTCGeometry) geom->refInc();
+    {
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
+      if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+      
+      createTriangleMeshTy createTriangleMesh = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
+      Geometry* geom = createTriangleMesh(device);
+      return (RTCGeometry) geom->refInc();
 #else
-        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewQuadMesh is not supported");
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_TRIANGLE is not supported");
 #endif
-      }
-      break;
-
+    }
+    break;
+    
+    case RTC_GEOMETRY_TYPE_QUAD:
+    {
+#if defined(EMBREE_GEOMETRY_QUADS)
+      if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+      
+      createQuadMeshTy createQuadMesh = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
+      Geometry* geom = createQuadMesh(device);
+      return (RTCGeometry) geom->refInc();
+#else
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_QUAD is not supported");
+#endif
+    }
+    break;
+    
     case RTC_GEOMETRY_TYPE_CURVE_LINEAR:
     case RTC_GEOMETRY_TYPE_CURVE_BEZIER:
     case RTC_GEOMETRY_TYPE_CURVE_BSPLINE:
-      {
+    {
 #if defined(EMBREE_GEOMETRY_HAIR)
-        createLineSegmentsTy createLineSegments = nullptr;
-        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
-        createCurvesBezierTy createCurvesBezier = nullptr;
-        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
-        createCurvesBSplineTy createCurvesBSpline = nullptr;
-        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
+      if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
+          subtype != RTC_GEOMETRY_SUBTYPE_SURFACE &&
+          subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
 
-        Geometry* geom;
-        switch (type) {
-        case RTC_GEOMETRY_TYPE_CURVE_LINEAR : geom = createLineSegments (device); break;
-        case RTC_GEOMETRY_TYPE_CURVE_BEZIER : geom = createCurvesBezier (device,type,RTC_GEOMETRY_SUBTYPE_SURFACE); break;
-        case RTC_GEOMETRY_TYPE_CURVE_BSPLINE: geom = createCurvesBSpline(device,type,RTC_GEOMETRY_SUBTYPE_SURFACE); break;
-        default:                              geom = nullptr; break;
-        }
-        return (RTCGeometry) geom->refInc();
-#else
-        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewCurveGeometry is not supported");
-#endif
+      if (type == RTC_GEOMETRY_TYPE_CURVE_LINEAR &&
+          subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
+          subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+      
+      createLineSegmentsTy createLineSegments = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
+      createCurvesBezierTy createCurvesBezier = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
+      createCurvesBSplineTy createCurvesBSpline = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
+      
+      Geometry* geom;
+      switch (type) {
+      case RTC_GEOMETRY_TYPE_CURVE_LINEAR : geom = createLineSegments (device); break;
+      case RTC_GEOMETRY_TYPE_CURVE_BEZIER : geom = createCurvesBezier (device,type,subtype); break;
+      case RTC_GEOMETRY_TYPE_CURVE_BSPLINE: geom = createCurvesBSpline(device,type,subtype); break;
+      default:                              geom = nullptr; break;
       }
-      break;
-
+      return (RTCGeometry) geom->refInc();
+#else
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_CURVE is not supported");
+#endif
+    }
+    break;
+    
     case RTC_GEOMETRY_TYPE_SUBDIVISION:
-      {
+    {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
-        createSubdivMeshTy createSubdivMesh = nullptr;
-        SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-        Geometry* geom = createSubdivMesh(device);
-        return (RTCGeometry) geom->refInc();
+       if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+      
+      createSubdivMeshTy createSubdivMesh = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+      Geometry* geom = createSubdivMesh(device);
+      return (RTCGeometry) geom->refInc();
 #else
-        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewSubdivisionMesh is not supported");
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_SUBDIVISION is not supported");
 #endif
-      }
-      break;
-
+    }
+    break;
+    
     case RTC_GEOMETRY_TYPE_USER:
-      {
+    {
 #if defined(EMBREE_GEOMETRY_USER)
-        Geometry* geom = new UserGeometry(device,0,1);
-        return (RTCGeometry) geom->refInc();
+       if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
+      
+      Geometry* geom = new UserGeometry(device,0,1);
+      return (RTCGeometry) geom->refInc();
 #else
-        throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewUserGeometry is not supported");
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_USER is not supported");
 #endif
-      }
-      break;
-
+    }
+    break;
+    
     default:
       throw_RTCError(RTC_ERROR_UNKNOWN,"invalid geometry type");
     }
-
+    
     RTCORE_CATCH_END(device);
     return nullptr;
   }
-
+  
   RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
@@ -968,18 +995,6 @@ namespace embree
     RTCORE_TRACE(rtcSetGeometryNumTimeSteps);
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setNumTimeSteps(N);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetGeometrySubtype(RTCGeometry hgeometry, RTCGeometrySubtype type)
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetGeometrySubtype);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    if (type != RTC_GEOMETRY_SUBTYPE_RIBBON && type != RTC_GEOMETRY_SUBTYPE_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
-    geometry->setSubtype(type);
     RTCORE_CATCH_END2(geometry);
   }
 

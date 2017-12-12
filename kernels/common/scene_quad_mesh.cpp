@@ -45,14 +45,6 @@ namespace embree
     Geometry::update();
   }
 
-  void QuadMesh::setSubtype(RTCGeometrySubtype type_in)
-  {
-    if (type_in != RTC_GEOMETRY_SUBTYPE_SURFACE)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry subtype");
-    
-    Geometry::update();
-  }
-
   void QuadMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */

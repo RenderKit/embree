@@ -21,10 +21,13 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
-    : Geometry(device,BEZIER_CURVES,0,1), type(type), subtype(subtype), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype_in)
+    : Geometry(device,BEZIER_CURVES,0,1), type(type), subtype(subtype_in), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
+
+    if (subtype == RTC_GEOMETRY_SUBTYPE_DEFAULT)
+      subtype = RTC_GEOMETRY_SUBTYPE_SURFACE;
   }
 
   void NativeCurves::enabling() 
@@ -45,12 +48,6 @@ namespace embree
     Geometry::update();
   }
 
-  void NativeCurves::setSubtype(RTCGeometrySubtype type_in)
-  {
-    this->subtype = type_in;
-    Geometry::update();
-  }
-  
   void NativeCurves::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
