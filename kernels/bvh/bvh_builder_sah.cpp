@@ -130,7 +130,6 @@ namespace embree
         /* we reset the allocator when the group size changed */
         if (group && group->numPrimitivesChanged) {
           bvh->alloc.clear();
-          group->numPrimitivesChanged = false;
         }
 
 	/* skip build for empty scene */
@@ -175,7 +174,6 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
-          mesh->numPrimitivesChanged = false;
         }
 
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
@@ -283,7 +281,6 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
-          mesh->numPrimitivesChanged = false;
         }
 
 	/* skip build for empty scene */
@@ -546,7 +543,6 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
-          mesh->numPrimitivesChanged = false;
         }
 
 	/* skip build for empty scene */

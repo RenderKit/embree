@@ -204,6 +204,11 @@ namespace embree
       return true;
     }
 
+    /* returns true if topology changed */
+    bool topologyChanged() const {
+      return quads.isModified() || numPrimitivesChanged;
+    }
+
   public:
     BufferView<Quad> quads;                 //!< array of quads
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer

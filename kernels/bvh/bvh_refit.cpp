@@ -52,7 +52,7 @@ namespace embree
       }
       else
       {
-		BBox3fa subTreeBounds[MAX_NUM_SUB_TREES];
+        BBox3fa subTreeBounds[MAX_NUM_SUB_TREES];
         numSubTrees = 0;
         gather_subtree_refs(bvh->root,numSubTrees,0);
         if (numSubTrees)
@@ -180,7 +180,7 @@ namespace embree
 
     template<int N, typename Mesh, typename Primitive>
     BVHNRefitT<N,Mesh,Primitive>::BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode)
-      : bvh(bvh), builder(builder), refitter(nullptr), mesh(mesh) {}
+      : bvh(bvh), builder(builder), refitter(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this)), mesh(mesh) {}
 
     template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::clear()
@@ -192,29 +192,11 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::build()
     {
-      /* build initial BVH */
-      if (builder) {
+      if (mesh->topologyChanged()) {
         builder->build();
-        builder.reset(nullptr);
-        refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
       }
-      
-      /* refit BVH */
-      /*double t0 = 0.0;
-      if (bvh->device->verbosity(2)) {
-        std::cout << "refitting BVH" << N << " <" << bvh->primTy.name << "> ... " << std::flush;
-        t0 = getSeconds();
-        }*/
-      
-      refitter->refit();
-
-      /*if (bvh->device->verbosity(2)) 
-      {
-        double t1 = getSeconds();
-        std::cout << "[DONE]" << std::endl;
-        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->size())/(t1-t0) << " Mprim/s" << std::endl;
-        std::cout << BVHNStatistics<N>(bvh).str();
-        }*/
+      else
+        refitter->refit();
     }
 
     template class BVHNRefitter<4>;

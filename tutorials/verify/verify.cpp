@@ -3327,11 +3327,9 @@ namespace embree
               case 8:
               case 11:
               case 14:
-                if (quality[index] != RTC_BUILD_QUALITY_REFIT) {
-                  RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
-                  task->scene->resizeRandomly(geom[index],task->sampler);
-                  rtcCommitGeometry(hgeom);
-                }
+                RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
+                task->scene->resizeRandomly(geom[index],task->sampler);
+                rtcCommitGeometry(hgeom);
                 break;
               }
             }

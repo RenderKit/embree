@@ -174,6 +174,11 @@ namespace embree
       return true;
     }
 
+    /* returns true if topology changed */
+    bool topologyChanged() const {
+      return segments.isModified() || numPrimitivesChanged;
+    }
+
   public:
     BufferView<unsigned int> segments;      //!< array of line segment indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer

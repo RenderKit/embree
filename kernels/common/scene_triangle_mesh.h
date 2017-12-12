@@ -202,6 +202,11 @@ namespace embree
       return true;
     }
 
+    /* returns true if topology changed */
+    bool topologyChanged() const {
+      return triangles.isModified() || numPrimitivesChanged;
+    }
+
   public:
     BufferView<Triangle> triangles;      //!< array of triangles
     BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer

@@ -150,6 +150,11 @@ namespace embree
         return true;
       }
 
+      /* returns true if topology changed */
+      bool topologyChanged() const {
+        return numPrimitivesChanged;
+      }
+
       void enabling ();
       void disabling();
 

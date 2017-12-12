@@ -401,7 +401,6 @@ namespace embree
         if (mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
           morton.clear();
-          mesh->numPrimitivesChanged = false;
         }
         size_t numPrimitives = mesh->size();
         

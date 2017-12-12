@@ -83,6 +83,8 @@ namespace embree
 
   void Geometry::postCommit()
   {
+    numPrimitivesChanged = false;
+    
     /* set state to build */
     if (isEnabled())
       state = BUILD;
