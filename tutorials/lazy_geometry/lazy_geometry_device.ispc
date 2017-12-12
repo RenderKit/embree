@@ -126,7 +126,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* when join mode is not supported we let only a single thread build */
-    if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED))
+    if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED))
       rtcCommitScene(instance->object);
 
     /* now switch to the LAZY_COMMIT state */
@@ -143,7 +143,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
 
   /* multiple threads might enter the rtcCommitJoinScene function to jointly
    * build the internal data structures */
-  if (rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED))
+  if (rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED))
     rtcCommitJoinScene(instance->object);
 
   /* switch to LAZY_VALID state */
@@ -226,7 +226,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
 
   /* if we do not support the join mode then Embree also does not
    * support lazy build */
-  if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED))
+  if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED))
     eagerCreate(instance);
 
   return instance;

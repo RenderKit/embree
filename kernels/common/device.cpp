@@ -499,11 +499,11 @@ namespace embree
 #endif
 
 #if defined(TASKING_PPL)
-    case RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED: return 0;
+    case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 0;
 #elif defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
-    case RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED: return 0;
+    case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 0;
 #else
-    case RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED: return 1;
+    case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 1;
 #endif
 
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown readable property"); break;

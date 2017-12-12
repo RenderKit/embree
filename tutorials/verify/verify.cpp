@@ -4428,7 +4428,7 @@ namespace embree
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
       groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,30));
 
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED)) {
+      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED)) {
 	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
 	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,30));
       }
