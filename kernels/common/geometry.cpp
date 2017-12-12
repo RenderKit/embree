@@ -34,6 +34,31 @@ namespace embree
     device->refDec();
   }
 
+  void Geometry::setNumPrimitives(unsigned int numPrimitives_in)
+  {      
+    if (numPrimitives_in == numPrimitives) return;
+    
+    if (isEnabled() && scene) disabling();
+    numPrimitives = numPrimitives_in;
+    numPrimitivesChanged = true;
+    if (isEnabled() && scene) enabling();
+    
+    Geometry::update();
+  }
+
+  void Geometry::setNumTimeSteps (unsigned int numTimeSteps_in)
+  {
+    if (numTimeSteps_in == numTimeSteps)
+      return;
+    
+    if (isEnabled() && scene) disabling();
+    numTimeSteps = numTimeSteps_in;
+    fnumTimeSegments = float(numTimeSteps_in-1);
+    if (isEnabled() && scene) enabling();
+    
+    Geometry::update();
+  }
+  
   void Geometry::update() 
   {
     if (scene)

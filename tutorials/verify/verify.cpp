@@ -178,6 +178,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),(unsigned int)mesh->triangles.size());
@@ -193,6 +194,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT4,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), (unsigned int)mesh->quads.size());
@@ -208,6 +210,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE, 0,RTC_FORMAT_UINT,mesh->verticesPerFace.data(),0,sizeof(int), (unsigned int)mesh->verticesPerFace.size());
@@ -231,6 +234,7 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, mesh->type, mesh->subtype);
         AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)

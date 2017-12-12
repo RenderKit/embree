@@ -98,6 +98,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_triangle_indices, 0, 3*sizeof(uniform unsigned int), 12);
 
   for (uniform size_t t=0; t<num_time_steps; t++)
@@ -139,6 +140,7 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos, unif
 {
   /* create a quad cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
 
   for (uniform size_t t=0; t<num_time_steps; t++)
@@ -166,6 +168,7 @@ uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, un
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
 
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, cube_quad_indices, 0, sizeof(uniform unsigned int), NUM_INDICES);
@@ -204,6 +207,7 @@ uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, un
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform RTCGeometrySubtype subtype, uniform unsigned int num_time_steps)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_CURVE_BSPLINE, subtype);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetGeometryTessellationRate (geom,16.0f);
 
   uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
@@ -239,6 +243,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform
 uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_CURVE_LINEAR, RTC_GEOMETRY_SUBTYPE_RIBBON);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
 
   uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
   for (uniform int i=0; i<16; i++) {
@@ -303,6 +308,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
 {
   RTCScene scene = rtcNewScene(g_device);
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
 
   for (uniform size_t t=0; t<num_time_steps; t++)
