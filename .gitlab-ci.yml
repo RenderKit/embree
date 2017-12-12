@@ -409,37 +409,31 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-ISAS-AVX512SKX-TBB2017:
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-TRIS:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF CURVES:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-QUADS:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:OFF QUADS:ON LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:OFF QUADS:ON CURVES:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-LINES:
+nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-CURVES:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF LINES:ON HAIR:OFF SUBDIV:OFF USERGEOM:OFF intensity:0"
-  tags:   [docker]
-  only:   [schedules]
-
-nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-HAIR:
-  image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF LINES:OFF HAIR:ON SUBDIV:OFF USERGEOM:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF CURVES:ON SUBDIV:OFF USERGEOM:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-SUBDIV:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:ON USERGEOM:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF CURVES:OFF SUBDIV:ON USERGEOM:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-USERGEOM:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:ON intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 TRIS:ON QUADS:OFF CURVES:OFF SUBDIV:OFF USERGEOM:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
