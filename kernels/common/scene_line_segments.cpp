@@ -184,8 +184,8 @@ namespace embree
     scene->vertices[geomID] = (int*) vertices0.getPtr();
 
     segments.setModified(false);
-    for (auto& vertices : vertices)
-      vertices.setModified(false);
+    for (auto& buf : vertices)
+      buf.setModified(false);
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
     flags.setModified(false);

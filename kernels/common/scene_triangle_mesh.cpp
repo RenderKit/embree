@@ -167,8 +167,8 @@ namespace embree
     scene->vertices[geomID] = (int*) vertices0.getPtr();
 
     triangles.setModified(false);
-    for (auto& vertices : vertices)
-      vertices.setModified(false);
+    for (auto& buf : vertices)
+      buf.setModified(false);
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
     

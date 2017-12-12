@@ -220,8 +220,8 @@ namespace embree
   void NativeCurves::postCommit() 
   {
     curves.setModified(false);
-    for (auto& vertices : vertices)
-      vertices.setModified(false);
+    for (auto& buf : vertices)
+      buf.setModified(false);
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
     flags.setModified(false);
