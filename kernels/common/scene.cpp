@@ -729,7 +729,7 @@ namespace embree
     if (!buildLock.isLocked())
     {
       if (!join) 
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoinScene to join a build operation");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
       
       scheduler->join();
       return;
@@ -762,12 +762,12 @@ namespace embree
   {
 #if defined(TASKING_PPL)
     if (join)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcCommitJoinScene not supported with PPL");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with PPL");
 #endif
     
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     if (join)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcCommitJoinScene not supported with this TBB version");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with this TBB version");
 #endif
 
     /* try to obtain build lock */
@@ -777,7 +777,7 @@ namespace embree
     if (!lock.isLocked())
     {
       if (!join) 
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcCommitJoinScene to join a build operation");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
       
 #if USE_TASK_ARENA
       device->arena->execute([&]{ group->wait(); });

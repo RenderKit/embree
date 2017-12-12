@@ -555,13 +555,13 @@ rtcCommitScene(scene)
 @@{
 rtcCommitJoin(EXPR scene)
 =>
-rtcCommitJoinScene(scene)
+rtcJoinCommitScene(scene)
 }@@
 
 @@{
 rtcCommitThread(EXPR scene,EXPR threadID,EXPR numThreads)
 =>
-rtcCommitJoinScene(scene)
+rtcJoinCommitScene(scene)
 }@@
 
 @@{
