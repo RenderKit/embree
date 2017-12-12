@@ -137,6 +137,40 @@ namespace embree
     }
   }
 
+  void NativeCurves::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      curves.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS) 
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      flags.setModified(true);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
+
+    Geometry::update();
+  }
+
   void NativeCurves::setTessellationRate(float N)
   {
     tessellationRate = clamp((int)N,1,16);
@@ -169,7 +203,10 @@ namespace embree
 
   void NativeCurves::preCommit()
   {
-    if (!isEnabled()) return;
+    /* verify that stride of all time steps are identical */
+    for (unsigned int t=0; t<numTimeSteps; t++)
+      if (vertices[t].getStride() != vertices[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     native_curves = (BufferView<unsigned>) curves;
     if (native_vertices.size() != vertices.size())
@@ -178,6 +215,18 @@ namespace embree
     native_vertices0 = vertices[0];
     for (size_t i=0; i<vertices.size(); i++)
       native_vertices[i] = (BufferView<Vec3fa>) vertices[i];
+  }
+
+  void NativeCurves::postCommit() 
+  {
+    curves.setModified(false);
+    for (auto& vertices : vertices)
+      vertices.setModified(false);
+    for (auto& attrib : vertexAttribs)
+      attrib.setModified(false);
+    flags.setModified(false);
+
+    Geometry::postCommit();
   }
 
 #endif

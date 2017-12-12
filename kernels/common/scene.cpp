@@ -627,7 +627,8 @@ namespace embree
 
     /* call preCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i]) geometries[i]->preCommit();
+        if (geometries[i] && geometries[i]->isEnabled())
+          geometries[i]->preCommit();
       });
 
     /* select acceleration structures to build */
@@ -669,7 +670,8 @@ namespace embree
 
     /* call postCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i]) geometries[i]->postCommit();
+        if (geometries[i] && geometries[i]->isEnabled())
+          geometries[i]->postCommit();
       });
       
     updateInterface();

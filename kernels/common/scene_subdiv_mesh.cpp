@@ -276,22 +276,6 @@ namespace embree
     }
   }
 
-  void SubdivMesh::update()
-  {
-    faceVertices.setModified(true);
-    holes.setModified(true);
-    for (auto& buffer : vertices)
-      buffer.setModified(true);
-    levels.setModified(true);
-    edge_creases.setModified(true);
-    edge_crease_weights.setModified(true);
-    vertex_creases.setModified(true);
-    vertex_crease_weights.setModified(true); 
-    for (auto& t : topology)
-      t.update();
-    Geometry::update();
-  }
-
   void SubdivMesh::updateBuffer(RTCBufferType type, unsigned int slot)
   {
     if (type != RTC_BUFFER_TYPE_LEVEL)

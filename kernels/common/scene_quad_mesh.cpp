@@ -124,6 +124,34 @@ namespace embree
     }
   }
 
+  void QuadMesh::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      quads.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
+
+    Geometry::update();
+  }
+
   void QuadMesh::preCommit() 
   {
     /* verify that stride of all time steps are identical */
@@ -137,6 +165,13 @@ namespace embree
   void QuadMesh::postCommit() 
   {
     scene->vertices[geomID] = (int*) vertices0.getPtr();
+
+    quads.setModified(false);
+    for (auto& vertices : vertices)
+      vertices.setModified(false);
+    for (auto& attrib : vertexAttribs)
+      attrib.setModified(false);
+
     Geometry::postCommit();
   }
 

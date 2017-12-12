@@ -135,6 +135,64 @@ namespace embree
     }
   }
 
+  void LineSegments::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      segments.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS) 
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      flags.setModified(true);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
+
+    Geometry::update();
+  }
+
+  void LineSegments::preCommit() 
+  {
+    /* verify that stride of all time steps are identical */
+    for (unsigned int t=0; t<numTimeSteps; t++)
+      if (vertices[t].getStride() != vertices[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+
+    Geometry::preCommit();
+  }
+
+  void LineSegments::postCommit() 
+  {
+    scene->vertices[geomID] = (int*) vertices0.getPtr();
+
+    segments.setModified(false);
+    for (auto& vertices : vertices)
+      vertices.setModified(false);
+    for (auto& attrib : vertexAttribs)
+      attrib.setModified(false);
+    flags.setModified(false);
+
+    Geometry::postCommit();
+  }
+
   bool LineSegments::verify ()
   { 
     /*! verify consistent size of vertex arrays */

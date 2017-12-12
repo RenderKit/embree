@@ -123,7 +123,7 @@ namespace embree
     virtual void enable();
 
     /*! Update geometry. */
-    virtual void update();
+    void update();
     
     /*! commit of geometry */
     virtual void commit();

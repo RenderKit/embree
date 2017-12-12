@@ -1578,6 +1578,7 @@ namespace embree
       Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(mesh,RTC_BUFFER_TYPE_VERTEX,0);
       for (size_t i=0; i<numVertices; i++)
         vertices[i] += Vec3fa(pos);
+      rtcUpdateGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0);
       rtcCommitGeometry(mesh);
     }
 
@@ -3303,6 +3304,8 @@ namespace embree
               if (vertices) { 
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
+              rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 0);
+              
               switch (types[index])
               {
               case 4: case 5: case 10: case 11:
@@ -3311,6 +3314,7 @@ namespace embree
                 if (vertices) {
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
+                rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 1);
               }
               rtcCommitGeometry(hgeom);
               break;

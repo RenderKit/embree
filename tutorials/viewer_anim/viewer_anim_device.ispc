@@ -174,6 +174,7 @@ void interpolateVertices(RTCGeometry geom,
     for (uniform size_t i=0; i<numVertices; i++)
       vertices[i] = lerp(input0[i],input1[i],tt);
 #endif
+    rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0);
     rtcCommitGeometry(geom);
   }
 
