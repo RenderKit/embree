@@ -143,10 +143,10 @@ void lazyCreate(LazyGeometry* instance)
     }
   }
 
-  /* multiple threads might enter the rtcCommitJoinScene function to jointly
+  /* multiple threads might enter the rtcJoinCommitScene function to jointly
    * build the internal data structures */
   if (rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED))
-    rtcCommitJoinScene(instance->object);
+    rtcJoinCommitScene(instance->object);
 
   /* switch to LAZY_VALID state */
   atomic_cmpxchg((int32_t*)&instance->state,LAZY_COMMIT,LAZY_VALID);

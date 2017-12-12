@@ -115,12 +115,12 @@ RTCORE_API enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
 RTCORE_API void rtcCommitScene(RTCScene scene);
 
 /*! Commits the geometry of the scene in join mode. When Embree is
- *  using TBB (default), threads that call `rtcCommitJoinScene` will
+ *  using TBB (default), threads that call `rtcJoinCommitScene` will
  *  participate in the hierarchy build procedure. When Embree is using
  *  the internal tasking system, exclusively threads that call
- *  `rtcCommitJoinScene` will execute the build procedure. Do not
- *  mix `rtcCommitJoinScene` with other commit calls. */
-RTCORE_API void rtcCommitJoinScene(RTCScene scene);
+ *  `rtcJoinCommitScene` will execute the build procedure. Do not
+ *  mix `rtcJoinCommitScene` with other commit calls. */
+RTCORE_API void rtcJoinCommitScene(RTCScene scene);
 
 /*! Returns AABB of the scene. rtcCommitScene has to get called
  *  previously to this function. */

@@ -237,11 +237,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcCommitJoinScene (RTCScene hscene) 
+  RTCORE_API void rtcJoinCommitScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcCommitJoinScene);
+    RTCORE_TRACE(rtcJoinCommitScene);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->commit(true);
     RTCORE_CATCH_END2(scene);
