@@ -313,6 +313,19 @@ RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   
                                         uniform unsigned int timeStep = 0        //!< timestep to set the matrix for 
   );
 
+struct RTCTransform
+{
+  float vx[3]; float align0;
+  float vy[3]; float align1;
+  float vz[3]; float align2;
+  float p [3]; float align3;
+};
+
+/*! \brief Returns transformation of the instance for specified time */
+RTCORE_API void rtcGetGeometryTransform(RTCGeometry geometry,
+                                        uniform float time,
+                                        RTCTransform* uniform xfm);
+
 /*! Sets the number of primitives. */
 RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int userPrimCount);
 

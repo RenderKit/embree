@@ -220,6 +220,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Returns the transformation of the instance */
+    virtual void getTransform(float time, RTCTransform* xfm) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! for user geometries only */
   public:
 

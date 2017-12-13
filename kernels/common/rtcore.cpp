@@ -921,6 +921,15 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
+  RTCORE_API void rtcGetGeometryTransform(RTCGeometry hgeometry, float time, RTCTransform* xfm)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetGeometryTransform);
+    geometry->getTransform(time,xfm);
+    RTCORE_CATCH_END2(geometry);
+  }
+
   RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
