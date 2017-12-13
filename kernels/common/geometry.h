@@ -231,7 +231,7 @@ namespace embree
     }
 
     /*! Returns the transformation of the instance */
-    virtual void getTransform(float time, RTCTransform* xfm) {
+    virtual AffineSpace3fa getTransform(float time) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

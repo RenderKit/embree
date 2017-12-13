@@ -882,35 +882,65 @@ namespace embree
 
   AffineSpace3fa loadTransform(RTCFormat format, const float* xfm)
   {
-    AffineSpace3fa transform = one;
+    AffineSpace3fa space = one;
     switch (format)
     {
     case RTC_FORMAT_FLOAT3X4_ROW_MAJOR:
-      transform = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 4], xfm[ 8]),
-                                 Vec3fa(xfm[ 1], xfm[ 5], xfm[ 9]),
-                                 Vec3fa(xfm[ 2], xfm[ 6], xfm[10]),
-                                 Vec3fa(xfm[ 3], xfm[ 7], xfm[11]));
+      space = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 4], xfm[ 8]),
+                             Vec3fa(xfm[ 1], xfm[ 5], xfm[ 9]),
+                             Vec3fa(xfm[ 2], xfm[ 6], xfm[10]),
+                             Vec3fa(xfm[ 3], xfm[ 7], xfm[11]));
       break;
 
     case RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR:
-      transform = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
-                                 Vec3fa(xfm[ 3], xfm[ 4], xfm[ 5]),
-                                 Vec3fa(xfm[ 6], xfm[ 7], xfm[ 8]),
-                                 Vec3fa(xfm[ 9], xfm[10], xfm[11]));
+      space = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
+                             Vec3fa(xfm[ 3], xfm[ 4], xfm[ 5]),
+                             Vec3fa(xfm[ 6], xfm[ 7], xfm[ 8]),
+                             Vec3fa(xfm[ 9], xfm[10], xfm[11]));
       break;
 
     case RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR:
-      transform = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
-                                 Vec3fa(xfm[ 4], xfm[ 5], xfm[ 6]),
-                                 Vec3fa(xfm[ 8], xfm[ 9], xfm[10]),
-                                 Vec3fa(xfm[12], xfm[13], xfm[14]));
+      space = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
+                             Vec3fa(xfm[ 4], xfm[ 5], xfm[ 6]),
+                             Vec3fa(xfm[ 8], xfm[ 9], xfm[10]),
+                             Vec3fa(xfm[12], xfm[13], xfm[14]));
       break;
 
     default: 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid matrix format");
       break;
     }
-    return transform;
+    return space;
+  }
+
+  void storeTransform(const AffineSpace3fa& space, RTCFormat format, float* xfm)
+  {
+    switch (format)
+    {
+    case RTC_FORMAT_FLOAT3X4_ROW_MAJOR:
+      xfm[ 0] = space.l.vx.x;  xfm[ 1] = space.l.vy.x;  xfm[ 2] = space.l.vz.x;  xfm[ 3] = space.p.x;
+      xfm[ 4] = space.l.vx.y;  xfm[ 5] = space.l.vy.y;  xfm[ 6] = space.l.vz.y;  xfm[ 7] = space.p.y;
+      xfm[ 8] = space.l.vx.z;  xfm[ 9] = space.l.vy.z;  xfm[10] = space.l.vz.z;  xfm[11] = space.p.z;
+      break;
+
+    case RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR:
+      xfm[ 0] = space.l.vx.x;  xfm[ 1] = space.l.vx.y;  xfm[ 2] = space.l.vx.z;
+      xfm[ 3] = space.l.vy.x;  xfm[ 4] = space.l.vy.y;  xfm[ 5] = space.l.vy.z;
+      xfm[ 6] = space.l.vz.x;  xfm[ 7] = space.l.vz.y;  xfm[ 8] = space.l.vz.z;
+      xfm[ 9] = space.p.x;     xfm[10] = space.p.y;     xfm[11] = space.p.z;
+      break;
+
+    case RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR:
+      xfm[ 0] = space.l.vx.x;  xfm[ 1] = space.l.vx.y;  xfm[ 2] = space.l.vx.z;  xfm[ 3] = 0.f;
+      xfm[ 4] = space.l.vy.x;  xfm[ 5] = space.l.vy.y;  xfm[ 6] = space.l.vy.z;  xfm[ 7] = 0.f;
+      xfm[ 8] = space.l.vz.x;  xfm[ 9] = space.l.vz.y;  xfm[10] = space.l.vz.z;  xfm[11] = 0.f;
+      xfm[12] = space.p.x;     xfm[13] = space.p.y;     xfm[14] = space.p.z;     xfm[15] = 1.f;
+      break;
+
+    default:
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid matrix format");
+      break;
+    }
   }
 
   RTCORE_API void rtcSetGeometryTransform (RTCGeometry hgeometry, RTCFormat format, const void* xfm, unsigned int timeStep)
@@ -925,12 +955,13 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcGetGeometryTransform(RTCGeometry hgeometry, float time, RTCTransform* xfm)
+  RTCORE_API void rtcGetGeometryTransform(RTCGeometry hgeometry, float time, RTCFormat format, void* xfm)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetGeometryTransform);
-    geometry->getTransform(time,xfm);
+    const AffineSpace3fa transform = geometry->getTransform(time);
+    storeTransform(transform, format, (float*)xfm);
     RTCORE_CATCH_END2(geometry);
   }
 

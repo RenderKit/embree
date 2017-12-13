@@ -41,7 +41,7 @@ namespace embree
     ~Instance();
   public:
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
-    virtual void getTransform(float time, RTCTransform* xfm);
+    virtual AffineSpace3fa getTransform(float time);
     virtual void setMask (unsigned mask);
     virtual void build() {}
 

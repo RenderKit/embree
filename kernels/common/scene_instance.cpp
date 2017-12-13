@@ -53,13 +53,9 @@ namespace embree
     if (timeStep == 0) world2local0 = rcp(xfm);
   }
 
-  void Instance::getTransform(float time, RTCTransform* xfm)
+  AffineSpace3fa Instance::getTransform(float time)
   {
-    AffineSpace3fa world2local = getWorld2Local(time);
-    vfloat4::storeu(xfm->vx,vfloat4(world2local.l.vx));
-    vfloat4::storeu(xfm->vy,vfloat4(world2local.l.vy));
-    vfloat4::storeu(xfm->vz,vfloat4(world2local.l.vz));
-    vfloat4::storeu(xfm->p, vfloat4(world2local.p));
+    return getWorld2Local(time);
   }
   
   void Instance::setMask (unsigned mask) 
