@@ -355,8 +355,10 @@ namespace embree
 
     /* set normal buffers and optionally normal topology */
     if (mesh->normals) {
+      rtcSetGeometryVertexAttributeCount(geom,2);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTC_FORMAT_FLOAT3, mesh->normals[0], 0, sizeof(Vec3fa), mesh->numNormals);
       if (mesh->normal_indices) {
+        rtcSetGeometryTopologyCount(geom,2);
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 1, RTC_FORMAT_UINT, mesh->normal_indices, 0, sizeof(unsigned int), mesh->numEdges);
         rtcSetGeometryVertexAttributeTopology(geom, 1, 1);
         rtcSetGeometrySubdivisionMode(geom, 1, mesh->normal_subdiv_mode);
@@ -365,8 +367,10 @@ namespace embree
 
     /* set texcoord buffer and optionally texcoord topology */
     if (mesh->texcoords) {
+      rtcSetGeometryVertexAttributeCount(geom,3);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 2, RTC_FORMAT_FLOAT2, mesh->texcoords, 0, sizeof(Vec2f), mesh->numTexCoords);
       if (mesh->texcoord_indices) {
+        rtcSetGeometryTopologyCount(geom,3);
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 2, RTC_FORMAT_UINT, mesh->texcoord_indices, 0, sizeof(unsigned int), mesh->numEdges);
         rtcSetGeometryVertexAttributeTopology(geom, 2, 2);
         rtcSetGeometrySubdivisionMode(geom, 2, mesh->texcoord_subdiv_mode);

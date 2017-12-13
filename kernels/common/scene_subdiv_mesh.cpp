@@ -95,6 +95,24 @@ namespace embree
     Geometry::setNumTimeSteps(numTimeSteps);
   }
 
+  void SubdivMesh::setVertexAttributeCount (unsigned int N)
+  {
+    vertexAttribs.resize(N);
+    vertex_attrib_buffer_tags.resize(N);
+    Geometry::update();
+  }
+
+  void SubdivMesh::setTopologyCount (unsigned int N)
+  {
+    if (N == 0)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"at least one topology has to exist")
+        
+    size_t begin = topology.size();
+    topology.resize(N);
+    for (size_t i = begin; i < topology.size(); i++)
+      topology[i] = Topology(this);
+  }
+  
   void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
@@ -117,10 +135,12 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
-      if (slot >= vertexAttribs.size()) {
-        vertexAttribs.resize(slot+1);
-        vertex_attrib_buffer_tags.resize(slot+1);
-      }
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
       vertexAttribs[slot].set(buffer, offset, stride, num, format);
       vertexAttribs[slot].checkPadding16();
     }
@@ -139,12 +159,9 @@ namespace embree
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid face buffer format");
 
-      int begin = (int)topology.size();
-      if (slot >= topology.size()) {
-        topology.resize(slot+1);
-        for (size_t i = begin; i < topology.size(); i++)
-          topology[i] = Topology(this);
-      }
+      if (slot >= topology.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid index buffer slot");
+
       topology[slot].vertexIndices.set(buffer, offset, stride, num, format);
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)

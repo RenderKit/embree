@@ -38,6 +38,7 @@ namespace embree
     void disabling();
     void setMask (unsigned mask);
     void setNumTimeSteps (unsigned int numTimeSteps);
+    void setVertexAttributeCount (unsigned int N);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);

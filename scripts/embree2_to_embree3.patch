@@ -2306,6 +2306,20 @@ rtcMapBuffer(EXPR geom,EXPR type)
 rtcGetGeometryBufferData(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 }@@
 
+
+@@{
+rtcSetIndexBuffer(EXPR geom, RTC_USER_VERTEX_BUFFER_(EXPR vertexSlot) , RTC_INDEX_BUFFER_(EXPR indexSlot));
+=>
+rtcSetGeometryVertexAttributeTopology(geom, vertexSlot, indexSlot);
+}@@
+
+@@{
+rtcSetIndexBuffer(EXPR geom, EXPR vertexBuffer, EXPR indexBuffer);
+=>
+rtcSetGeometryVertexAttributeTopology(geom, vertexBuffer, indexBuffer);
+}@@
+
+
 ////////////////////////////////////////////////
 // drop extra arguments of geometry creation
 

@@ -71,6 +71,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   face_colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 3; tri++;
   face_colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 5; triangles[tri].v2 = 7; tri++;
 
+  rtcSetGeometryVertexAttributeCount(mesh,1);
   rtcSetSharedGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,RTC_FORMAT_FLOAT3,vertex_colors,0,sizeof(uniform Vec3fa),8);
   
   rtcCommitGeometry(mesh);

@@ -106,6 +106,16 @@ namespace embree
     /*! sets number of time steps */
     virtual void setNumTimeSteps (unsigned int numTimeSteps_in);
 
+    /*! sets number of vertex attributes */
+    virtual void setVertexAttributeCount (unsigned int N) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! sets number of topologies */
+    virtual void setTopologyCount (unsigned int N) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! sets the build quality */
     void setBuildQuality(RTCBuildQuality quality_in)
     {

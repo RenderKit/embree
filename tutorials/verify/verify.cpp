@@ -1853,6 +1853,7 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       AssertNoError(device);
+      rtcSetGeometryVertexAttributeCount(geom,2);
       
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,                0, RTC_FORMAT_UINT,  interpolation_quad_indices,          0, sizeof(unsigned int),   num_interpolation_quad_faces*4);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,                 0, RTC_FORMAT_UINT,  interpolation_quad_faces,            0, sizeof(unsigned int),   num_interpolation_quad_faces);
@@ -1946,6 +1947,7 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       AssertNoError(device);
+      rtcSetGeometryVertexAttributeCount(geom,2);
       
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, interpolation_triangle_indices, 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
       AssertNoError(device);
@@ -2053,6 +2055,7 @@ namespace embree
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
       AssertNoError(device);
+      rtcSetGeometryVertexAttributeCount(geom,2);
       
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, interpolation_hair_indices, 0, sizeof(unsigned int), num_interpolation_hairs);
       AssertNoError(device);
