@@ -617,10 +617,10 @@ namespace embree
   { 
     switch (imode) {
     case MODE_INTERSECT_NONE: return true;
-    case MODE_INTERSECT1:   return true;
-    case MODE_INTERSECT4:   return true;
-    case MODE_INTERSECT8:   return true;
-    case MODE_INTERSECT16:  return true;
+    case MODE_INTERSECT1:   return true; //rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED);
+    case MODE_INTERSECT4:   return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED);
+    case MODE_INTERSECT8:   return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED);
+    case MODE_INTERSECT16:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED);
     case MODE_INTERSECT1M:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
     case MODE_INTERSECT1Mp: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
     case MODE_INTERSECTNM1: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
