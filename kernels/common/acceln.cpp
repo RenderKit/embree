@@ -172,9 +172,17 @@ namespace embree
 
     /* create list of non-empty acceleration structures */
     validAccels.clear();
+    bool valid1 = true;
+    bool valid4 = true;
+    bool valid8 = true;
+    bool valid16 = true;
     for (size_t i=0; i<accels.size(); i++) {
       if (accels[i]->bounds.empty()) continue;
       validAccels.push_back(accels[i]);
+      valid1 &= (bool) accels[i]->intersectors.intersector1;
+      valid4 &= (bool) accels[i]->intersectors.intersector4;
+      valid8 &= (bool) accels[i]->intersectors.intersector8;
+      valid16 &= (bool) accels[i]->intersectors.intersector16;
     }
 
     if (validAccels.size() == 1) {
@@ -183,10 +191,10 @@ namespace embree
     else 
     {
       intersectors.ptr = this;
-      intersectors.intersector1  = Intersector1(&intersect,&occluded,"AccelN::intersector1");
-      intersectors.intersector4  = Intersector4(&intersect4,&occluded4,"AccelN::intersector4");
-      intersectors.intersector8  = Intersector8(&intersect8,&occluded8,"AccelN::intersector8");
-      intersectors.intersector16 = Intersector16(&intersect16,&occluded16,"AccelN::intersector16");
+      intersectors.intersector1  = Intersector1(&intersect,&occluded,valid1 ? "AccelN::intersector1": nullptr);
+      intersectors.intersector4  = Intersector4(&intersect4,&occluded4,valid4 ? "AccelN::intersector4" : nullptr);
+      intersectors.intersector8  = Intersector8(&intersect8,&occluded8,valid8 ? "AccelN::intersector8" : nullptr);
+      intersectors.intersector16 = Intersector16(&intersect16,&occluded16,valid16 ? "AccelN::intersector16": nullptr);
       intersectors.intersectorN  = IntersectorN(&intersectN,&occludedN,"AccelN::intersectorN");
     }
     

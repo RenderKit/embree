@@ -371,9 +371,10 @@ namespace embree
       ray8->set(i,ray1);
     }
 #elif defined(EMBREE_TARGET_SIMD8)
-    scene->intersectors.intersect8(valid,*ray,&context);
-#else
-    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,true);
+    if (likely(scene->intersectors.intersector8))
+      scene->intersectors.intersect8(valid,*ray,&context);
+    else
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,true);
 #endif
     RTCORE_CATCH_END2(scene);
   }
@@ -402,10 +403,11 @@ namespace embree
       scene->intersectors.intersect((RTCRay&)ray1,&context);
       ray16->set(i,ray1);
     }
-#elif defined(EMBREE_TARGET_SIMD16)
-    scene->intersectors.intersect16(valid,*ray,&context);
 #else
-    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,true);
+    if (likely(scene->intersectors.intersector16))
+      scene->intersectors.intersect16(valid,*ray,&context);
+    else
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,true);
 #endif
     RTCORE_CATCH_END2(scene);
   }
@@ -619,10 +621,11 @@ namespace embree
       scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray8->set(i,ray1);
     }
-#elif defined(EMBREE_TARGET_SIMD8)
-    scene->intersectors.occluded8(valid,*ray,&context);
 #else
-    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,false);
+    if (likely(scene->intersectors.intersector8))
+      scene->intersectors.occluded8(valid,*ray,&context);
+    else
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,false);
 #endif
 
     RTCORE_CATCH_END2(scene);
@@ -652,10 +655,11 @@ namespace embree
       scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray16->set(i,ray1);
     }
-#elif defined(EMBREE_TARGET_SIMD16)
-    scene->intersectors.occluded16(valid,*ray,&context);
 #else
-    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,false);
+    if (likely(scene->intersectors.intersector16))
+      scene->intersectors.occluded16(valid,*ray,&context);
+    else
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,false);
 #endif
 
     RTCORE_CATCH_END2(scene);
