@@ -55,10 +55,9 @@ enum RTCDeviceProperty {
                                                    cache cannot be configured during
                                                    rendering. (write only) */
 
-  RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED = 1,            //!< flag whether rtcIntersect1 is supported (read only)
-  RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED = 2,            //!< flag whether rtcIntersect4 is supported (read only)
-  RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED = 3,            //!< flag whether rtcIntersect8 is supported (read only)
-  RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED = 4,           //!< flag whether rtcIntersect16 is supported (read only)
+  RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED = 2,           //!< flag whether native ray packets of size 4 are supported
+  RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED = 3,           //!< flag whether native ray packets of size 8 are supported
+  RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED = 4,          //!< flag whether native ray packets of size 16 are supported
   RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED = 5,      //!< flag whether rtcIntersect1M, rtcIntersectVM, rtcIntersectNM and rtcIntersectNp are supported (read only)
 
   RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED = 6,              //!< flag whether ray masks are supported (read only)

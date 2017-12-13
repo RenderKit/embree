@@ -321,7 +321,6 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect4);
 
-#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
@@ -330,11 +329,20 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
-    scene->intersectors.intersect4(valid,*ray,&context);
+#if !defined(EMBREE_RAY_PACKETS)
+    Ray4* ray4 = (Ray4*) ray;
+    for (size_t i=0; i<4; i++) {
+      if (!valid[i]) continue;
+      Ray ray1; ray4->get(i,ray1);
+      scene->intersectors.intersect((RTCRay&)ray1,&context);
+      ray4->set(i,ray1);
+    }
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect4 not supported");  
+    scene->intersectors.intersect4(valid,*ray,&context);
 #endif
+    
     RTCORE_CATCH_END2(scene);
   }
   
@@ -344,7 +352,6 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect8);
 
-#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
@@ -355,9 +362,18 @@ namespace embree
     STAT3(normal.travs,cnt,cnt,cnt);
 
     IntersectContext context(scene,user_context);
+#if !defined(EMBREE_RAY_PACKETS)
+    Ray8* ray8 = (Ray8*) ray;
+    for (size_t i=0; i<8; i++) {
+      if (!valid[i]) continue;
+      Ray ray1; ray8->get(i,ray1);
+      scene->intersectors.intersect((RTCRay&)ray1,&context);
+      ray8->set(i,ray1);
+    }
+#elif defined(EMBREE_TARGET_SIMD8)
     scene->intersectors.intersect8(valid,*ray,&context);
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect8 not supported");
+    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,true);
 #endif
     RTCORE_CATCH_END2(scene);
   }
@@ -368,7 +384,6 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect16);
 
-#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
@@ -379,9 +394,18 @@ namespace embree
     STAT3(normal.travs,cnt,cnt,cnt);
 
     IntersectContext context(scene,user_context);
+#if !defined(EMBREE_RAY_PACKETS)
+    Ray16* ray16 = (Ray16*) ray;
+    for (size_t i=0; i<16; i++) {
+      if (!valid[i]) continue;
+      Ray ray1; ray16->get(i,ray1);
+      scene->intersectors.intersect((RTCRay&)ray1,&context);
+      ray16->set(i,ray1);
+    }
+#elif defined(EMBREE_TARGET_SIMD16)
     scene->intersectors.intersect16(valid,*ray,&context);
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect16 not supported");
+    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,true);
 #endif
     RTCORE_CATCH_END2(scene);
   }
@@ -546,7 +570,6 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded4);
 
-#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
@@ -555,11 +578,20 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
-    scene->intersectors.occluded4(valid,*ray,&context);
+#if !defined(EMBREE_RAY_PACKETS)
+    Ray4* ray4 = (Ray4*) ray;
+    for (size_t i=0; i<4; i++) {
+      if (!valid[i]) continue;
+      Ray ray1; ray4->get(i,ray1);
+      scene->intersectors.occluded((RTCRay&)ray1,&context);
+      ray4->geomID[i] = ray1.geomID; 
+    }
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded4 not supported");
+    scene->intersectors.occluded4(valid,*ray,&context);
 #endif
+    
     RTCORE_CATCH_END2(scene);
   }
  
@@ -569,7 +601,6 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded8);
 
-#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
@@ -580,10 +611,20 @@ namespace embree
     STAT3(shadow.travs,cnt,cnt,cnt);
 
     IntersectContext context(scene,user_context);
+#if !defined(EMBREE_RAY_PACKETS)
+    Ray8* ray8 = (Ray8*) ray;
+    for (size_t i=0; i<8; i++) {
+      if (!valid[i]) continue;
+      Ray ray1; ray8->get(i,ray1);
+      scene->intersectors.occluded((RTCRay&)ray1,&context);
+      ray8->set(i,ray1);
+    }
+#elif defined(EMBREE_TARGET_SIMD8)
     scene->intersectors.occluded8(valid,*ray,&context);
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded8 not supported");
+    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,false);
 #endif
+
     RTCORE_CATCH_END2(scene);
   }
   
@@ -593,7 +634,6 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded16);
 
-#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
@@ -604,10 +644,20 @@ namespace embree
     STAT3(shadow.travs,cnt,cnt,cnt);
 
     IntersectContext context(scene,user_context);
+#if !defined(EMBREE_RAY_PACKETS)
+    Ray16* ray16 = (Ray16*) ray;
+    for (size_t i=0; i<16; i++) {
+      if (!valid[i]) continue;
+      Ray ray1; ray16->get(i,ray1);
+      scene->intersectors.occluded((RTCRay&)ray1,&context);
+      ray16->set(i,ray1);
+    }
+#elif defined(EMBREE_TARGET_SIMD16)
     scene->intersectors.occluded16(valid,*ray,&context);
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded16 not supported");
+    scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,false);
 #endif
+
     RTCORE_CATCH_END2(scene);
   }
   

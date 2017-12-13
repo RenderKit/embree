@@ -3392,10 +3392,10 @@ namespace embree
       errorHandler(nullptr,rtcGetDeviceError(device));
 
       /* only test supported intersect modes */
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT1);
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT4);
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT8);
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT16);
+      intersectModes.push_back(MODE_INTERSECT1);
+      intersectModes.push_back(MODE_INTERSECT4);
+      intersectModes.push_back(MODE_INTERSECT8);
+      intersectModes.push_back(MODE_INTERSECT16);
       if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED)) {
         intersectModes.push_back(MODE_INTERSECT1M);
         intersectModes.push_back(MODE_INTERSECT1Mp);
@@ -3480,10 +3480,10 @@ namespace embree
       errorHandler(nullptr,rtcGetDeviceError(device));
       
       /* only test supported intersect modes */
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT1);
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT4);
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT8);
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED)) intersectModes.push_back(MODE_INTERSECT16);
+      intersectModes.push_back(MODE_INTERSECT1);
+      intersectModes.push_back(MODE_INTERSECT4);
+      intersectModes.push_back(MODE_INTERSECT8);
+      intersectModes.push_back(MODE_INTERSECT16);
       if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED)) {
         intersectModes.push_back(MODE_INTERSECT1M);
         intersectModes.push_back(MODE_INTERSECT1Mp);
