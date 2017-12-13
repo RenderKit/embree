@@ -24,13 +24,6 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-  
-/*! \brief Supported types of matrix layout for functions involving matrices */
-enum RTCMatrixType {
-  RTC_MATRIX_ROW_MAJOR = 0,
-  RTC_MATRIX_COLUMN_MAJOR = 1,
-  RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
-};
 
 /*! Geometry type */
 enum RTCGeometryType
@@ -292,8 +285,8 @@ RTCORE_API RTCGeometry rtcNewInstance(RTCDevice device,
 
 /*! \brief Sets transformation of the instance for specified timestep */
 RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   //!< ID of geometry 
-                                        enum RTCMatrixType layout,              //!< layout of transformation matrix
-                                        const float* xfm,                       //!< pointer to transformation matrix
+                                        enum RTCFormat format,              //!< layout of transformation matrix
+                                        const void* xfm,                       //!< pointer to transformation matrix
                                         unsigned int timeStep                   //!< timestep to set the matrix for 
   );
 

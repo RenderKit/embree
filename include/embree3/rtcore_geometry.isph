@@ -22,13 +22,6 @@
 /*! \ingroup embree_kernel_api_ispc */
 /*! \{ */
 
-/*! \brief Supported types of matrix layout for functions involving matrices */
-enum RTCMatrixType {
-  RTC_MATRIX_ROW_MAJOR = 0,
-  RTC_MATRIX_COLUMN_MAJOR = 1,
-  RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
-};
-
 /*! Geometry type */
 enum RTCGeometryType
 {
@@ -302,8 +295,8 @@ RTCORE_API RTCORE_DEPRECATED uniform unsigned int rtcNewGeometryInstance(RTCDevi
 
 /*! \brief Sets transformation of the instance for specified timestep */
 RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                    //!< handle of geometry 
-                                        uniform RTCMatrixType layout,            //!< layout of transformation matrix
-                                        const uniform float* uniform xfm,        //!< pointer to transformation matrix
+                                        uniform RTCFormat format,            //!< layout of transformation matrix
+                                        const void* uniform xfm,        //!< pointer to transformation matrix
                                         uniform unsigned int timeStep = 0        //!< timestep to set the matrix for 
   );
 

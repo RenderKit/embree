@@ -880,48 +880,48 @@ namespace embree
     return nullptr;
   }
 
-  AffineSpace3fa convertTransform(RTCMatrixType layout, const float* xfm)
+  AffineSpace3fa loadTransform(RTCFormat format, const float* xfm)
   {
     AffineSpace3fa transform = one;
-    switch (layout) 
+    switch (format)
     {
-    case RTC_MATRIX_ROW_MAJOR:
-      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 4],xfm[ 8]),
-                                 Vec3fa(xfm[ 1],xfm[ 5],xfm[ 9]),
-                                 Vec3fa(xfm[ 2],xfm[ 6],xfm[10]),
-                                 Vec3fa(xfm[ 3],xfm[ 7],xfm[11]));
+    case RTC_FORMAT_FLOAT3X4_ROW_MAJOR:
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 4], xfm[ 8]),
+                                 Vec3fa(xfm[ 1], xfm[ 5], xfm[ 9]),
+                                 Vec3fa(xfm[ 2], xfm[ 6], xfm[10]),
+                                 Vec3fa(xfm[ 3], xfm[ 7], xfm[11]));
       break;
 
-    case RTC_MATRIX_COLUMN_MAJOR:
-      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
-                                 Vec3fa(xfm[ 3],xfm[ 4],xfm[ 5]),
-                                 Vec3fa(xfm[ 6],xfm[ 7],xfm[ 8]),
-                                 Vec3fa(xfm[ 9],xfm[10],xfm[11]));
+    case RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR:
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
+                                 Vec3fa(xfm[ 3], xfm[ 4], xfm[ 5]),
+                                 Vec3fa(xfm[ 6], xfm[ 7], xfm[ 8]),
+                                 Vec3fa(xfm[ 9], xfm[10], xfm[11]));
       break;
 
-    case RTC_MATRIX_COLUMN_MAJOR_ALIGNED16:
-      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
-                                 Vec3fa(xfm[ 4],xfm[ 5],xfm[ 6]),
-                                 Vec3fa(xfm[ 8],xfm[ 9],xfm[10]),
-                                 Vec3fa(xfm[12],xfm[13],xfm[14]));
+    case RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR:
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
+                                 Vec3fa(xfm[ 4], xfm[ 5], xfm[ 6]),
+                                 Vec3fa(xfm[ 8], xfm[ 9], xfm[10]),
+                                 Vec3fa(xfm[12], xfm[13], xfm[14]));
       break;
 
     default: 
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"Unknown matrix type");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid matrix format");
       break;
     }
     return transform;
   }
 
-  RTCORE_API void rtcSetGeometryTransform (RTCGeometry hgeometry, RTCMatrixType layout, const float* xfm, unsigned int timeStep) 
+  RTCORE_API void rtcSetGeometryTransform (RTCGeometry hgeometry, RTCFormat format, const void* xfm, unsigned int timeStep)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryTransform);
     RTCORE_VERIFY_HANDLE(hgeometry);
     RTCORE_VERIFY_HANDLE(xfm);
-    const AffineSpace3fa transform = convertTransform(layout,xfm);
-    geometry->setTransform(transform,timeStep);
+    const AffineSpace3fa transform = loadTransform(format, (const float*)xfm);
+    geometry->setTransform(transform, timeStep);
     RTCORE_CATCH_END2(geometry);
   }
 

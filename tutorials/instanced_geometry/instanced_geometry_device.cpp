@@ -462,10 +462,10 @@ extern "C" void device_render (int* pixels,
     normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
 
   /* set instance transformations */
-  rtcSetGeometryTransform(g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0],0);
-  rtcSetGeometryTransform(g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1],0);
-  rtcSetGeometryTransform(g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2],0);
-  rtcSetGeometryTransform(g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3],0);
+  rtcSetGeometryTransform(g_instance0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&instance_xfm[0],0);
+  rtcSetGeometryTransform(g_instance1,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&instance_xfm[1],0);
+  rtcSetGeometryTransform(g_instance2,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&instance_xfm[2],0);
+  rtcSetGeometryTransform(g_instance3,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&instance_xfm[3],0);
 
   /* update scene */
   rtcCommitGeometry(g_instance0);
