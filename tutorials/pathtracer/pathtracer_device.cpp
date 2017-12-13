@@ -1289,7 +1289,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   /* compute differential geometry */
   const float tfar          = RTCHitN_t(potentialHit,N,rayID);
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
+  dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
   dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
   dg.primID = RTCHitN_primID(potentialHit,N,rayID);
   dg.u = RTCHitN_u(potentialHit,N,rayID);
@@ -1362,7 +1362,7 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   /* compute differential geometry */
   const float tfar          = RTCHitN_t(potentialHit,N,rayID);
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
+  dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
   dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
   dg.primID = RTCHitN_primID(potentialHit,N,rayID);
   dg.u = RTCHitN_u(potentialHit,N,rayID);
