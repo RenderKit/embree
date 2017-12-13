@@ -333,7 +333,7 @@ RTCORE_FORCEINLINE RTCRay RTCRayNtoRTCRay(RTCRayN* ptr, unsigned int N, unsigned
   ray.primID    = RTCRayN_primID(ptr,N,i);
   ray.geomID    = RTCRayN_geomID(ptr,N,i);
   for (size_t l=0;l<RTC_MAX_INSTANCE_LEVELS;l++)
-    ray.instID[i] = RTCRayN_instID(ptr,N,i,l);
+    ray.instID[l] = RTCRayN_instID(ptr,N,i,l);
   return ray;
 };
 
