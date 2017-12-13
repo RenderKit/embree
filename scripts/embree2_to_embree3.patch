@@ -2344,9 +2344,19 @@ rtcNewGeometry (device,basis,subtype)
 // rtcore_builder.h
 
 @@{
-rtcBuildBVH(EXPR bvh, EXPR settings, EXPR primitives, EXPR numPrimitives, EXPR createNode, EXPR setNodeChildren, EXPR setNodeBounds, EXPR createLeaf, EXPR splitPrimitive, EXPR buildProgress, EXPR userPtr);
+rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i, EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
 =>
-rtcBuildBVH(bvh, &settings, primitives, numPrimitives, createNode, setNodeChildren, setNodeBounds, createLeaf, splitPrimitive, buildProgress, userPtr);
+settings.bvh = bvh_i;
+settings.primitives = primitives_i;
+settings.numPrimitives = numPrimitives_i;
+settings.createNode = createNode_i;
+settings.setNodeChildren = setNodeChildren_i;
+settings.setNodeBounds = setNodeBounds_i;
+settings.createLeaf = createLeaf_i;
+settings.splitPrimitive = splitPrimitive_i;
+settings.buildProgress = buildProgress_i;
+settings.userPtr = userPtr_i;
+rtcBuildBVH(&settings);
 }@@
 
 @@{

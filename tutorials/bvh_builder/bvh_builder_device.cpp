@@ -109,8 +109,12 @@ namespace embree
 
     RTCBVH bvh = rtcNewBVH(device);
 
+    avector<RTCBuildPrimitive> prims;
+    prims.reserve(prims_i.size()+extraSpace);
+    prims.resize(prims_i.size());
+
     /* settings for BVH build */
-    RTCBuildSettings settings;
+    RTCBuildSettings settings = rtcDefaultBuildSettings();
     settings.size = sizeof(settings);
     settings.quality = quality;
     settings.maxBranchingFactor = 2;
@@ -121,11 +125,17 @@ namespace embree
     settings.travCost = 1.0f;
     settings.intCost = 1.0f;
     settings.extraSpace = (unsigned int)extraSpace;
-
-    avector<RTCBuildPrimitive> prims;
-    prims.reserve(prims_i.size()+extraSpace);
-    prims.resize(prims_i.size());
-
+    settings.bvh = bvh;
+    settings.primitives = prims.data();
+    settings.numPrimitives = prims.size();
+    settings.createNode = InnerNode::create;
+    settings.setNodeChildren = InnerNode::setChildren;
+    settings.setNodeBounds = InnerNode::setBounds;
+    settings.createLeaf = LeafNode::create;
+    settings.splitPrimitive = splitPrimitive;
+    settings.buildProgress = buildProgress;
+    settings.userPtr = nullptr;
+    
     for (size_t i=0; i<10; i++)
     {
       /* we recreate the prims array here, as the builders modify this array */
@@ -133,8 +143,7 @@ namespace embree
 
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(bvh,&settings,prims.data(),prims.size(),
-                                       InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,splitPrimitive,buildProgress,nullptr);
+      Node* root = (Node*) rtcBuildBVH(&settings);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;

@@ -25,41 +25,6 @@ extern "C" {
 /*! \brief Defines an opaque BVH type */
 typedef struct __RTCBVH* RTCBVH;
 
-/*! \brief Defines an opaque thread local allocator type */
-typedef struct __RTCThreadLocalAllocator* RTCThreadLocalAllocator;
-
-/*! Settings for builders */
-struct RTCBuildSettings
-{
-  unsigned int size;             //!< Size of this structure in bytes. Makes future extension easier.
-  enum RTCBuildQuality quality;   //!< quality of BVH build
-  unsigned int maxBranchingFactor; //!< miximal branching factor of BVH to build
-  unsigned int maxDepth;         //!< maximal depth of BVH to build
-  unsigned int sahBlockSize;     //!< block size for SAH heuristic
-  unsigned int minLeafSize;      //!< minimal size of a leaf
-  unsigned int maxLeafSize;      //!< maximal size of a leaf
-  float travCost;            //!< estimated cost of one traversal step
-  float intCost;             //!< estimated cost of one primitive intersection
-  unsigned int extraSpace;       //!< for spatial splitting we need extra space at end of primitive array
-};
-
-/*! Creates default build settings.  */
-RTCORE_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
-{
-  struct RTCBuildSettings settings;
-  settings.size = sizeof(settings);
-  settings.quality = RTC_BUILD_QUALITY_MEDIUM;
-  settings.maxBranchingFactor = 2;
-  settings.maxDepth = 32;
-  settings.sahBlockSize = 1;
-  settings.minLeafSize = 1;
-  settings.maxLeafSize = 32;
-  settings.travCost = 1.0f;
-  settings.intCost = 1.0f;
-  settings.extraSpace = 0;
-  return settings;
-}
-
 /*! Input primitives for the builder. Stores primitive bounds and ID. */
 struct RTCORE_ALIGN(32) RTCBuildPrimitive
 {
@@ -69,8 +34,8 @@ struct RTCORE_ALIGN(32) RTCBuildPrimitive
   int primID;                       //!< second ID
 };
 
-/*! Creates a new BVH. */
-RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
+/*! \brief Defines an opaque thread local allocator type */
+typedef struct __RTCThreadLocalAllocator* RTCThreadLocalAllocator;
 
 /*! Callback to create a node. */
 typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int numChildren, void* userPtr);
@@ -87,19 +52,64 @@ typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const
 /*! Callback to split a build primitive. */
 typedef void  (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* prim, unsigned int dim, float pos, struct RTCBounds* lbounds, struct RTCBounds* rbounds, void* userPtr);
 
+/*! Settings for builders */
+struct RTCBuildSettings
+{
+  unsigned int size;             //!< Size of this structure in bytes. Makes future extension easier.
+  enum RTCBuildQuality quality;   //!< quality of BVH build
+  unsigned int maxBranchingFactor; //!< miximal branching factor of BVH to build
+  unsigned int maxDepth;         //!< maximal depth of BVH to build
+  unsigned int sahBlockSize;     //!< block size for SAH heuristic
+  unsigned int minLeafSize;      //!< minimal size of a leaf
+  unsigned int maxLeafSize;      //!< maximal size of a leaf
+  float travCost;            //!< estimated cost of one traversal step
+  float intCost;             //!< estimated cost of one primitive intersection
+  unsigned int extraSpace;       //!< for spatial splitting we need extra space at end of primitive array
+
+  RTCBVH bvh;                                     //!< BVH to build
+  struct RTCBuildPrimitive* primitives;                  //!< list of input primitives
+  size_t numPrimitives;                           //!< number of input primitives
+  RTCCreateNodeFunction createNode;                   //!< creates a node
+  RTCSetNodeChildrenFunction setNodeChildren;         //!< sets pointer to all children
+  RTCSetNodeBoundsFunction setNodeBounds;             //!< sets bounds of all children
+  RTCCreateLeafFunction createLeaf;                   //!< creates a leaf
+  RTCSplitPrimitiveFunction splitPrimitive;           //!< splits a primitive
+  RTCProgressMonitorFunction buildProgress;           //!< used to report build progress
+  void* userPtr;                                   //!< user pointer passed to callback functions
+};
+
+/*! Creates default build settings.  */
+RTCORE_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
+{
+  struct RTCBuildSettings settings;
+  settings.size = sizeof(settings);
+  settings.quality = RTC_BUILD_QUALITY_MEDIUM;
+  settings.maxBranchingFactor = 2;
+  settings.maxDepth = 32;
+  settings.sahBlockSize = 1;
+  settings.minLeafSize = 1;
+  settings.maxLeafSize = 32;
+  settings.travCost = 1.0f;
+  settings.intCost = 1.0f;
+  settings.extraSpace = 0;
+  settings.bvh = NULL;
+  settings.primitives = NULL;
+  settings.numPrimitives = 0;
+  settings.createNode = NULL;
+  settings.setNodeChildren = NULL;
+  settings.setNodeBounds = NULL;
+  settings.createLeaf = NULL;
+  settings.splitPrimitive = NULL;
+  settings.buildProgress = NULL;
+  settings.userPtr = NULL;
+  return settings;
+}
+
+/*! Creates a new BVH. */
+RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
+
 /*! builds the BVH */
-RTCORE_API void* rtcBuildBVH(RTCBVH bvh,                                     //!< BVH to build
-                             const struct RTCBuildSettings* settings,        //!< settings for BVH builder
-                             struct RTCBuildPrimitive* primitives,                  //!< list of input primitives
-                             size_t numPrimitives,                           //!< number of input primitives
-                             RTCCreateNodeFunction createNode,                   //!< creates a node
-                             RTCSetNodeChildrenFunction setNodeChildren,         //!< sets pointer to all children
-                             RTCSetNodeBoundsFunction setNodeBounds,             //!< sets bounds of all children
-                             RTCCreateLeafFunction createLeaf,                   //!< creates a leaf
-                             RTCSplitPrimitiveFunction splitPrimitive,           //!< splits a primitive
-                             RTCProgressMonitorFunction buildProgress,           //!< used to report build progress
-                             void* userPtr                                   //!< user pointer passed to callback functions
-  ); 
+RTCORE_API void* rtcBuildBVH(const struct RTCBuildSettings* settings);
 
 /*! Allocates memory using the thread local allocator. Use this function to allocate nodes in the callback functions. */
 RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
