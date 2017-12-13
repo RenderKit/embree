@@ -1092,6 +1092,26 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
+  RTCORE_API void rtcSetGeometryVertexAttributeCount(RTCGeometry hgeometry, unsigned int N)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetGeometryVertexAttributeCount);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setVertexAttributeCount(N);
+    RTCORE_CATCH_END2(geometry);
+  }
+
+  RTCORE_API void rtcSetGeometryTopologyCount(RTCGeometry hgeometry, unsigned int N)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetGeometryTopologyCount);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setTopologyCount(N);
+    RTCORE_CATCH_END2(geometry);
+  }
+ 
   /*! sets the build quality of the geometry */
   RTCORE_API void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
   {

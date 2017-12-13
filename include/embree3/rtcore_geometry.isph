@@ -325,6 +325,12 @@ RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform u
 
 /*! Sets the number of time steps. */
 RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int timeStepCount);
+
+/*! Sets the number of vertex attributes. */
+RTCORE_API void rtcSetGeometryVertexAttributeCount(RTCGeometry geometry, uniform unsigned int vertexAttributeCount);
+
+/*! Sets the number of topologies for subdivision surfaces. */
+RTCORE_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, uniform unsigned int topologyCount);
  
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_BUFFER_TYPE_LEVEL can also be used

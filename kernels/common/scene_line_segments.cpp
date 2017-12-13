@@ -50,6 +50,12 @@ namespace embree
     vertices.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
+
+  void LineSegments::setVertexAttributeCount (unsigned int N)
+  {
+    vertexAttribs.resize(N);
+    Geometry::update();
+  }
   
   void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
@@ -75,7 +81,8 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
 
       if (slot >= vertexAttribs.size())
-        vertexAttribs.resize(slot+1);
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
       vertexAttribs[slot].set(buffer, offset, stride, num, format);
       vertexAttribs[slot].checkPadding16();
     }
