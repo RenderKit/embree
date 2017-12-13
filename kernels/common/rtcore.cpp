@@ -1310,7 +1310,6 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-#if defined (EMBREE_RAY_PACKETS)
   RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* const args)
   {
     Geometry* geometry = (Geometry*) args->geometry;
@@ -1322,7 +1321,6 @@ namespace embree
     geometry->interpolateN(args);
     RTCORE_CATCH_END2(geometry);
   }
-#endif
 
   RTCORE_API void rtcCommitGeometry (RTCGeometry hgeometry)
   {

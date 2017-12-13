@@ -16,5 +16,6 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(viewer_anim)
+ADD_TUTORIAL_ISPC(viewer_anim)
 
 

@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(interpolation)
+ADD_TUTORIAL_ISPC(interpolation)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_TEST(interpolation)

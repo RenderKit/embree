@@ -86,7 +86,7 @@ IF (BUILD_TESTING)
                      --sde ${EMBREE_TESTING_SDE}
                      --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
                      
-    IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
+    IF (EMBREE_ISPC_SUPPORT AND NOT DISABLE_ISPC_TEST)
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
                COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py

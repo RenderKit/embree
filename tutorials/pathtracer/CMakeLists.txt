@@ -16,8 +16,14 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(pathtracer)
+IF (EMBREE_RAY_PACKETS)
+  ADD_TUTORIAL_ISPC(pathtracer)
+ENDIF()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  IF (NOT ${EMBREE_RAY_PACKETS})
+    SET(DISABLE_ISPC_TEST ON)
+  ENDIF()
   ADD_EMBREE_MODELS_TEST(pathtracer pathtracer pathtracer)
   ADD_EMBREE_MODELS_TEST(pathtracer_coherent pathtracer pathtracer --coherent)
   ADD_EMBREE_MODELS_TEST(pathtracer_incoherent pathtracer pathtracer --incoherent)

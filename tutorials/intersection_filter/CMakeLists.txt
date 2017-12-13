@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(intersection_filter)
+ADD_TUTORIAL_ISPC(intersection_filter)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_TEST(intersection_filter)

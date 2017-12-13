@@ -172,4 +172,13 @@ inline void RayStats_addShadowRay(RayStats& stats) {}
 
 extern "C" RayStats* g_stats;
 
+inline bool nativePacketSupported(RTCDevice device)
+{
+  if (sizeof(float) == 1*4) return true;
+  else if (sizeof(float) == 4*4) return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED);
+  else if (sizeof(float) == 8*4) return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED);
+  else if (sizeof(float) == 16*4) return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED);
+  else return false;
+}
+
 } // namespace embree

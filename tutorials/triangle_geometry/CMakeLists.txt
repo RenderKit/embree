@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(triangle_geometry)
+ADD_TUTORIAL_ISPC(triangle_geometry)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_TEST(triangle_geometry)

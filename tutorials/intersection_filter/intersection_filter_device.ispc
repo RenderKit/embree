@@ -650,7 +650,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-  if (g_mode == MODE_NORMAL)
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
     rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
     rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
@@ -688,7 +688,7 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = make_Vec3f(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  if (g_mode == MODE_NORMAL)
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
     rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
     rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);

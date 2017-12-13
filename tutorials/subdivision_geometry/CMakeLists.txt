@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(subdivision_geometry)
+ADD_TUTORIAL_ISPC(subdivision_geometry)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_TEST(subdivision_geometry)

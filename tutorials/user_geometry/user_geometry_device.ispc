@@ -739,8 +739,16 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   rtcSetGeometryUserPrimitiveCount(geom,1);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
-  rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
-  rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
+  {
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);
+  }
+  else
+  {
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
+  }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
@@ -758,7 +766,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL)
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
     rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
     rtcSetGeometryOccludedFunction (geom,sphereOccludedFunc);

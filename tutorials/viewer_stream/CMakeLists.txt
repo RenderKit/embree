@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(viewer_stream)
+ADD_TUTORIAL_ISPC(viewer_stream)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(viewer_stream_coherent viewer viewer_stream --coherent)

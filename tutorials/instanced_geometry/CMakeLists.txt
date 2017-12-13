@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(instanced_geometry)
+ADD_TUTORIAL_ISPC(instanced_geometry)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_TEST(instanced_geometry)
