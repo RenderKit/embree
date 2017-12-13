@@ -146,7 +146,7 @@ namespace embree
     ray.v = 0.0f;
     ray.geomID = -1;
     ray.primID = -1;
-    ray.instID = -1;
+    ray.instID[0] = -1;
   }
 
   __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
@@ -156,7 +156,7 @@ namespace embree
     ray.dir_x = dir.x; ray.dir_y = dir.y; ray.dir_z = dir.z;
     ray.tnear = 0.0f; ray.tfar = inf;
     ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
+    ray.geomID = ray.primID = ray.instID[0] = -1;
     return ray;
   }
 
@@ -167,7 +167,7 @@ namespace embree
     ray.dir_x = dir.x; ray.dir_y = dir.y; ray.dir_z = dir.z;
     ray.tnear = tnear; ray.tfar = tfar;
     ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
+    ray.geomID = ray.primID = ray.instID[0] = -1;
     return ray;
   }
 
@@ -180,7 +180,7 @@ namespace embree
     ray.tfar = inf;
     ray.time = 0; 
     ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
+    ray.geomID = ray.primID = ray.instID[0] = -1;
     return ray;
   }
 
@@ -197,7 +197,7 @@ namespace embree
     ray.tfar = inf;
     ray.time = 0; 
     ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
+    ray.geomID = ray.primID = ray.instID[0] = -1;
   }
 
   __forceinline void fastMakeRay(RTCRay& ray, const Vec3fa& org, RandomSampler& sampler)
@@ -212,7 +212,7 @@ namespace embree
     ray.dir_x = dir.x; ray.dir_y = dir.y; ray.dir_z = dir.z;
     ray.tnear = tnear; ray.tfar = tfar;
     ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
+    ray.geomID = ray.primID = ray.instID[0] = -1;
     return ray;
   }
 
@@ -230,7 +230,7 @@ namespace embree
     if (*(int*)&ray0.mask   != *(int*)&ray1.mask  ) return true;
     if (*(int*)&ray0.u      != *(int*)&ray1.u     ) return true;
     if (*(int*)&ray0.v      != *(int*)&ray1.v     ) return true;
-    if (*(int*)&ray0.instID != *(int*)&ray1.instID) return true;
+    if (*(int*)&ray0.instID[0] != *(int*)&ray1.instID[0]) return true;
     if (*(int*)&ray0.geomID != *(int*)&ray1.geomID) return true;
     if (*(int*)&ray0.primID != *(int*)&ray1.primID) return true;
     if (*(int*)&ray0.Ng_x  != *(int*)&ray1.Ng_x ) return true;
@@ -249,7 +249,7 @@ namespace embree
                 << "  far = " << ray.tfar << std::endl
                 << "  time = " << ray.time << std::endl
                 << "  mask = " << ray.mask << std::endl
-                << "  instID = " << ray.instID << std::endl
+                << "  instID = " << ray.instID[0] << std::endl
                 << "  geomID = " << ray.geomID << std::endl
                 << "  primID = " << ray.primID <<  std::endl
                 << "  u = " << ray.u <<  std::endl
@@ -270,7 +270,7 @@ namespace embree
     ray_o.tfar[i] = ray_i.tfar;
     ray_o.time[i] = ray_i.time;
     ray_o.mask[i] = ray_i.mask;
-    ray_o.instID[i] = ray_i.instID;
+    ray_o.instID[0][i] = ray_i.instID[0];
     ray_o.geomID[i] = ray_i.geomID;
     ray_o.primID[i] = ray_i.primID;
     ray_o.u[i] = ray_i.u;
@@ -292,7 +292,7 @@ namespace embree
     ray_o.tfar[i] = ray_i.tfar;
     ray_o.time[i] = ray_i.time;
     ray_o.mask[i] = ray_i.mask;
-    ray_o.instID[i] = ray_i.instID;
+    ray_o.instID[0][i] = ray_i.instID[0];
     ray_o.geomID[i] = ray_i.geomID;
     ray_o.primID[i] = ray_i.primID;
     ray_o.u[i] = ray_i.u;
@@ -314,7 +314,7 @@ namespace embree
     ray_o.tfar[i] = ray_i.tfar;
     ray_o.time[i] = ray_i.time;
     ray_o.mask[i] = ray_i.mask;
-    ray_o.instID[i] = ray_i.instID;
+    ray_o.instID[0][i] = ray_i.instID[0];
     ray_o.geomID[i] = ray_i.geomID;
     ray_o.primID[i] = ray_i.primID;
     ray_o.u[i] = ray_i.u;
@@ -336,7 +336,7 @@ namespace embree
     RTCRayN_tfar(ray_o,N,i) = ray_i.tfar;
     RTCRayN_time(ray_o,N,i) = ray_i.time;
     RTCRayN_mask(ray_o,N,i) = ray_i.mask;
-    RTCRayN_instID(ray_o,N,i) = ray_i.instID;
+    RTCRayN_instID(ray_o,N,i,0) = ray_i.instID[0];
     RTCRayN_geomID(ray_o,N,i) = ray_i.geomID;
     RTCRayN_primID(ray_o,N,i) = ray_i.primID;
     RTCRayN_u(ray_o,N,i) = ray_i.u;
@@ -359,7 +359,7 @@ namespace embree
     ray_o.tfar = ray_i.tfar[i];
     ray_o.time = ray_i.time[i];
     ray_o.mask = ray_i.mask[i];
-    ray_o.instID = ray_i.instID[i];
+    ray_o.instID[0] = ray_i.instID[0][i];
     ray_o.geomID = ray_i.geomID[i];
     ray_o.primID = ray_i.primID[i];
     ray_o.u = ray_i.u[i];
@@ -383,7 +383,7 @@ namespace embree
     ray_o.tfar = ray_i.tfar[i];
     ray_o.time = ray_i.time[i];
     ray_o.mask = ray_i.mask[i];
-    ray_o.instID = ray_i.instID[i];
+    ray_o.instID[0] = ray_i.instID[0][i];
     ray_o.geomID = ray_i.geomID[i];
     ray_o.primID = ray_i.primID[i];
     ray_o.u = ray_i.u[i];
@@ -407,7 +407,7 @@ namespace embree
     ray_o.tfar = ray_i.tfar[i];
     ray_o.time = ray_i.time[i];
     ray_o.mask = ray_i.mask[i];
-    ray_o.instID = ray_i.instID[i];
+    ray_o.instID[0] = ray_i.instID[0][i];
     ray_o.geomID = ray_i.geomID[i];
     ray_o.primID = ray_i.primID[i];
     ray_o.u = ray_i.u[i];
@@ -431,7 +431,7 @@ namespace embree
     ray_o.tfar  = RTCRayN_tfar(ray_i,N,i);
     ray_o.time = RTCRayN_time(ray_i,N,i);
     ray_o.mask = RTCRayN_mask(ray_i,N,i);
-    ray_o.instID = RTCRayN_instID(ray_i,N,i);
+    ray_o.instID[0] = RTCRayN_instID(ray_i,N,i,0);
     ray_o.geomID = RTCRayN_geomID(ray_i,N,i);
     ray_o.primID = RTCRayN_primID(ray_i,N,i);
     ray_o.u = RTCRayN_u(ray_i,N,i);
@@ -685,7 +685,7 @@ namespace embree
     rayp.mask = &RTCRayN_mask(ray, N, 0);
     rayp.id = &RTCRayN_id(ray, N, 0);
     rayp.flags = &RTCRayN_flags(ray, N, 0);
-    rayp.instID = &RTCRayN_instID(ray, N, 0);
+    rayp.instID[0] = &RTCRayN_instID(ray, N, 0, 0);
     rayp.geomID = &RTCRayN_geomID(ray, N, 0);
     rayp.primID = &RTCRayN_primID(ray, N, 0);
     rayp.u = &RTCRayN_u(ray, N, 0);

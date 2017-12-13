@@ -159,6 +159,15 @@ struct RTCORE_ALIGN(16) RTCLinearBounds
   struct RTCBounds bounds1;
 };
 
+/*! invalid geometry ID */
+#define RTC_INVALID_GEOMETRY_ID ((unsigned)-1)
+
+/*! maximal number of time steps */
+#define RTC_MAX_TIME_STEP_COUNT 129
+
+/*! maximal number of time steps */
+#define RTC_MAX_INSTANCE_LEVELS 1
+
 #if defined(__cplusplus)
 }
 #endif

@@ -25,12 +25,6 @@
 extern "C" {
 #endif
   
-/*! invalid geometry ID */
-#define RTC_INVALID_GEOMETRY_ID ((unsigned)-1)
-
-/*! maximal number of time steps */
-#define RTC_MAX_TIME_STEP_COUNT 129
-
 /*! \brief Supported types of matrix layout for functions involving matrices */
 enum RTCMatrixType {
   RTC_MATRIX_ROW_MAJOR = 0,

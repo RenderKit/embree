@@ -311,7 +311,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   varying RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
-  hit.instID = args->context->instID;
+  hit.instID[0] = args->context->instID;
   hit.geomID = sphere.geomID;
   hit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
@@ -397,7 +397,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   varying RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
-  hit.instID = args->context->instID;
+  hit.instID[0] = args->context->instID;
   hit.geomID = sphere.geomID;
   hit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
@@ -497,7 +497,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
-    potentialhit.instID = args->context->instID;
+    potentialhit.instID[0] = args->context->instID;
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
@@ -598,7 +598,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
 
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
-    potentialhit.instID = args->context->instID;
+    potentialhit.instID[0] = args->context->instID;
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
