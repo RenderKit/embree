@@ -880,6 +880,18 @@ namespace embree
     return nullptr;
   }
 
+  void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Ref<Scene> scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetGeometryInstancedScene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    geometry->setInstancedScene(scene);
+    RTCORE_CATCH_END2(geometry);
+  }
+
   AffineSpace3fa loadTransform(RTCFormat format, const float* xfm)
   {
     AffineSpace3fa space = one;

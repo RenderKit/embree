@@ -45,6 +45,33 @@ namespace embree
     alignedFree(local2world);
     object->refDec();
   }
+
+  void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
+  {
+    if (numTimeSteps_in == numTimeSteps)
+      return;
+    
+    AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa));
+
+    for (size_t i=0; i<numTimeSteps_in; i++)
+      local2world[i] = one;
+     
+    for (size_t i=0; i<min(numTimeSteps,numTimeSteps_in); i++)
+      local2world2[i] = local2world[i];
+        
+    alignedFree(local2world);
+    local2world = local2world2;
+    
+    Geometry::setNumTimeSteps(numTimeSteps);
+  }
+
+  void Instance::setInstancedScene(const Ref<Scene>& scene)
+  {
+    if (object) object->refDec();
+    object = scene.ptr;
+    if (object) object->refInc();
+    Geometry::update();
+  }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {

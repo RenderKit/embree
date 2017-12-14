@@ -283,6 +283,10 @@ RTCORE_API RTCGeometry rtcNewInstance(RTCDevice device,
                                       RTCScene source,                  //!< the scene to instantiate
                                       unsigned int numTimeSteps);       //!< number of timesteps, one matrix per timestep
 
+
+/*! Sets instanced scene of instance geometry. */
+RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
+
 /*! \brief Sets transformation of the instance for specified timestep */
 RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry,                   //!< ID of geometry 
                                         enum RTCFormat format,              //!< layout of transformation matrix

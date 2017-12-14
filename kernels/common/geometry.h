@@ -224,6 +224,11 @@ namespace embree
 
     /*! for instances only */
   public:
+
+    /*! Sets the instanced scene */
+    virtual void setInstancedScene(const Ref<Scene>& scene) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
     
     /*! Sets transformation of the instance */
     virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {

@@ -36,6 +36,8 @@ namespace embree
     Instance (Device* device, Scene* object, unsigned int numTimeSteps);
     ~Instance();
   public:
+    virtual void setNumTimeSteps (unsigned int numTimeSteps);
+    virtual void setInstancedScene(const Ref<Scene>& scene);
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
     virtual AffineSpace3fa getTransform(float time);
     virtual void setMask (unsigned mask);

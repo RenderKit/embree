@@ -280,6 +280,9 @@ RTCORE_API RTCGeometry rtcNewInstance(RTCDevice device,
                                       uniform unsigned int numTimeSteps //!< number of timesteps, one matrix per timestep
   );
 
+/*! Sets instanced scene of instance geometry. */
+RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
+
 /*! \brief Creates a new geometry instance. 
 
   WARNING: This function is deprecated, do not use it.
