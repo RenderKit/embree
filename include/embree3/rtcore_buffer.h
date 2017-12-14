@@ -18,14 +18,11 @@
 
 #include "rtcore_device.h"
 
-/*! \ingroup embree_kernel_api */
-/*! \{ */
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-/*! \brief Specifies the type of buffers */
+/* Specifies the type of buffers */
 enum RTCBufferType
 {
   RTC_BUFFER_TYPE_INDEX = 0,
@@ -46,26 +43,24 @@ enum RTCBufferType
   RTC_BUFFER_TYPE_FLAGS = 10
 };
 
-/*! \brief Defines an opaque buffer type */
+/* Defines an opaque buffer type */
 typedef struct __RTCBuffer* RTCBuffer;
 
-/*! \brief Creates a new buffer. */
+/* Creates a new buffer. */
 RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
 
-/*! \brief Creates a new shared buffer. */
+/* Creates a new shared buffer. */
 RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
 
-/*! Returns a pointer to the buffer data. */
+/* Returns a pointer to the buffer data. */
 RTCORE_API void* rtcGetBufferData(RTCBuffer buffer);
 
-/*! Retains the buffer (increments reference count). */
+/* Retains the buffer (increments reference count). */
 RTCORE_API void rtcRetainBuffer(RTCBuffer buffer);
 
-/*! Releases the buffer handle (decrements reference count). */
+/* Releases the buffer (decrements reference count). */
 RTCORE_API void rtcReleaseBuffer(RTCBuffer buffer);
 
 #if defined(__cplusplus)
 }
 #endif
-
-/*! @} */

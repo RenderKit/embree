@@ -17,14 +17,12 @@
 #ifndef __RTCORE_ISPH__
 #define __RTCORE_ISPH__
 
-/*! \file rtcore.isph Defines the Embree Ray Tracing Kernel API for ISPC.
+/* \file rtcore.isph Defines the Embree Ray Tracing Kernel API for ISPC.
 
    This file defines the Embree ray tracing kernel API for C and
    C++. The user is supposed to include this file, and alternatively
    the rtcore_ray.isph file, but none of the other .isph files in this
    folder. */
-
-/*! \{ */
 
 #include "rtcore_version.h"
 #include "rtcore_common.isph"
@@ -33,7 +31,5 @@
 #include "rtcore_ray.isph"
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"
-
-/*! \} */
 
 #endif

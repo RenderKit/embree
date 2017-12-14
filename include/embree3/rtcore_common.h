@@ -62,7 +62,7 @@ typedef int ssize_t;
 #  define RTCORE_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
-/*! \brief Specifies the format of buffers and other data structures */
+/* Specifies the format of buffers and other data structures */
 enum RTCFormat
 {
   RTC_FORMAT_UNDEFINED = 0,
@@ -145,27 +145,27 @@ enum RTCFormat
   RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR = 0xb44
 };
 
-/*! Axis aligned bounding box representation */
+/* Axis aligned bounding box representation */
 struct RTCORE_ALIGN(16) RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
 };
 
-/*! Linear axis aligned bounding box representation */
+/* Linear axis aligned bounding box representation */
 struct RTCORE_ALIGN(16) RTCLinearBounds
 {
   struct RTCBounds bounds0;
   struct RTCBounds bounds1;
 };
 
-/*! invalid geometry ID */
+/* invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((unsigned)-1)
 
-/*! maximal number of time steps */
+/* maximal number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
 
-/*! maximal number of time steps */
+/* maximal number of time steps */
 #define RTC_MAX_INSTANCE_LEVELS 1
 
 #if defined(__cplusplus)
