@@ -34,7 +34,8 @@ namespace embree
     if (object) object->refInc();
     world2local0 = one;
     local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa));
-    for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
+    for (size_t i = 0; i < numTimeSteps; i++)
+      local2world[i] = one;
     intersectors.ptr = this;
     boundsFunc = device->instance_factory->InstanceBoundsFunc();
     intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
@@ -52,12 +53,12 @@ namespace embree
       return;
     
     AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa));
-
-    for (size_t i=0; i<numTimeSteps_in; i++)
-      local2world2[i] = one;
      
-    for (size_t i=0; i<min(numTimeSteps,numTimeSteps_in); i++)
+    for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++)
       local2world2[i] = local2world[i];
+
+    for (size_t i = numTimeSteps; i < numTimeSteps_in; i++)
+      local2world2[i] = one;
         
     alignedFree(local2world);
     local2world = local2world2;
@@ -79,7 +80,8 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = xfm;
-    if (timeStep == 0) world2local0 = rcp(xfm);
+    if (timeStep == 0)
+      world2local0 = rcp(xfm);
   }
 
   AffineSpace3fa Instance::getTransform(float time)
