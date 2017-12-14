@@ -997,8 +997,8 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
 
     if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
-        subtype != RTC_GEOMETRY_SUBTYPE_SURFACE &&
-        subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
+        subtype != RTC_GEOMETRY_SUBTYPE_ROUND &&
+        subtype != RTC_GEOMETRY_SUBTYPE_FLAT)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
     
     switch (type)
@@ -1039,13 +1039,13 @@ namespace embree
     {
 #if defined(EMBREE_GEOMETRY_CURVES)
       if (subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
-          subtype != RTC_GEOMETRY_SUBTYPE_SURFACE &&
-          subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
+          subtype != RTC_GEOMETRY_SUBTYPE_ROUND &&
+          subtype != RTC_GEOMETRY_SUBTYPE_FLAT)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
 
       if (type == RTC_GEOMETRY_TYPE_LINEAR_CURVE &&
           subtype != RTC_GEOMETRY_SUBTYPE_DEFAULT &&
-          subtype != RTC_GEOMETRY_SUBTYPE_RIBBON)
+          subtype != RTC_GEOMETRY_SUBTYPE_FLAT)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid geometry subtype");
       
       createLineSegmentsTy createLineSegments = nullptr;

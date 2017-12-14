@@ -244,7 +244,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometrySubtype sub
 /* add line geometry */
 unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LINEAR_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LINEAR_CURVE, RTC_GEOMETRY_SUBTYPE_FLAT);
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
 
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
@@ -558,11 +558,11 @@ extern "C" void device_init (char* cfg)
   addLines       (g_scene,Vec3fa(-5,1, 0),g_num_time_steps);
   addLines       (g_scene,Vec3fa(-5,5, 0),g_num_time_steps2);
 
-  addCurve (g_scene,Vec3fa( 0,1, 0),RTC_GEOMETRY_SUBTYPE_RIBBON,g_num_time_steps);
-  addCurve (g_scene,Vec3fa( 0,5, 0),RTC_GEOMETRY_SUBTYPE_RIBBON,g_num_time_steps2);
+  addCurve (g_scene,Vec3fa( 0,1, 0),RTC_GEOMETRY_SUBTYPE_FLAT,g_num_time_steps);
+  addCurve (g_scene,Vec3fa( 0,5, 0),RTC_GEOMETRY_SUBTYPE_FLAT,g_num_time_steps2);
 
-  addCurve (g_scene,Vec3fa(+5,1, 0),RTC_GEOMETRY_SUBTYPE_SURFACE,g_num_time_steps);
-  addCurve (g_scene,Vec3fa(+5,5, 0),RTC_GEOMETRY_SUBTYPE_SURFACE,g_num_time_steps2);
+  addCurve (g_scene,Vec3fa(+5,1, 0),RTC_GEOMETRY_SUBTYPE_ROUND,g_num_time_steps);
+  addCurve (g_scene,Vec3fa(+5,5, 0),RTC_GEOMETRY_SUBTYPE_ROUND,g_num_time_steps2);
 
   scene0 = addInstancedTriangleCube(g_scene,Vec3fa(-5,1,+5),g_num_time_steps);
   scene1 = addInstancedTriangleCube(g_scene,Vec3fa(-5,5,+5),g_num_time_steps2);

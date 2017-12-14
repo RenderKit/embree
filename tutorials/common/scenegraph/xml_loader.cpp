@@ -1228,19 +1228,19 @@ namespace embree
       else if (xml->name == "TriangleMesh"    ) node = sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
-      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_RIBBON);
-      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_LINEAR_CURVE,RTC_GEOMETRY_SUBTYPE_RIBBON);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_RIBBON);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_RIBBON);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_SURFACE);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_SURFACE);
+      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_FLAT);
+      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_LINEAR_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_FLAT);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_SUBTYPE_ROUND);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_ROUND);
       
       else if (xml->name == "Curves")
       {
         RTCGeometrySubtype subtype;
         std::string str_subtype = xml->parm("type");
-        if      (str_subtype == "ribbon" ) subtype = RTC_GEOMETRY_SUBTYPE_RIBBON;
-        else if (str_subtype == "surface") subtype = RTC_GEOMETRY_SUBTYPE_SURFACE;
+        if      (str_subtype == "ribbon" ) subtype = RTC_GEOMETRY_SUBTYPE_FLAT;
+        else if (str_subtype == "surface") subtype = RTC_GEOMETRY_SUBTYPE_ROUND;
         else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
 
         RTCGeometryType type;

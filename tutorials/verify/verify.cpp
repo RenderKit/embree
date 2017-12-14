@@ -298,7 +298,7 @@ namespace embree
     
     std::pair<unsigned,Ref<SceneGraph::Node>> addHair (RandomSampler& sampler, RTCBuildQuality quality, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,RTC_GEOMETRY_SUBTYPE_RIBBON);
+      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,RTC_GEOMETRY_SUBTYPE_FLAT);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       return addGeometry2(quality,node);
     }
@@ -859,10 +859,10 @@ namespace embree
       case QUAD_MESH_MB     : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT); break;
       case SUBDIV_MESH      : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT); break;
       case SUBDIV_MESH_MB   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT); break;
-      case HAIR_GEOMETRY    : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON); break;
-      case HAIR_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON); break;
-      case CURVE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_SURFACE); break;
-      case CURVE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_SURFACE); break;
+      case HAIR_GEOMETRY    : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_FLAT); break;
+      case HAIR_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_FLAT); break;
+      case CURVE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_ROUND); break;
+      case CURVE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_ROUND); break;
       default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
       }
       AssertNoError(device);
@@ -994,7 +994,7 @@ namespace embree
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,quality,2));
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_BEZIER_CURVE, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_SUBTYPE_RIBBON,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,2),quality);
+      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,RTC_GEOMETRY_SUBTYPE_FLAT,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,2),quality);
       rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT),quality);
       //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,2),quality);
       rtcCommitScene (scene);
@@ -1082,8 +1082,8 @@ namespace embree
       scene.addGeometry(quality,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(quality,SceneGraph::createSubdivSphere(center,radius,8,20));
       scene.addGeometry(quality,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(random_motion_vector(1.0f)));
-      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_GEOMETRY_SUBTYPE_RIBBON));
-      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_GEOMETRY_SUBTYPE_RIBBON)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_GEOMETRY_SUBTYPE_FLAT));
+      scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,RTC_GEOMETRY_SUBTYPE_FLAT)->set_motion_vector(random_motion_vector(1.0f)));
       rtcCommitScene (scene);
       AssertNoError(device);
 
@@ -1157,11 +1157,11 @@ namespace embree
       subdivmesh2->set_motion_vector(random_motion_vector(1.0f));
       scene.addGeometry(quality,subdivmesh2.dynamicCast<SceneGraph::Node>());
       
-      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_GEOMETRY_SUBTYPE_RIBBON).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_GEOMETRY_SUBTYPE_FLAT).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
       scene.addGeometry(quality,hairgeom.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_GEOMETRY_SUBTYPE_RIBBON)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,RTC_GEOMETRY_SUBTYPE_FLAT)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
       scene.addGeometry(quality,hairgeom2.dynamicCast<SceneGraph::Node>());
 
@@ -1315,9 +1315,9 @@ namespace embree
       case SUBDIV_MESH:      
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,RTC_GEOMETRY_SUBTYPE_RIBBON); break;
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,RTC_GEOMETRY_SUBTYPE_FLAT); break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,RTC_GEOMETRY_SUBTYPE_RIBBON); break;
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,RTC_GEOMETRY_SUBTYPE_FLAT); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       
@@ -3986,9 +3986,9 @@ namespace embree
         case SUBDIV_MESH:      
         case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
         case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,RTC_GEOMETRY_SUBTYPE_RIBBON)); break;
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,RTC_GEOMETRY_SUBTYPE_FLAT)); break;
         case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,RTC_GEOMETRY_SUBTYPE_RIBBON)); break;
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,RTC_GEOMETRY_SUBTYPE_FLAT)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 

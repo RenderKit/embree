@@ -45,7 +45,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
-        if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_RIBBON))
+        if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_FLAT))
           pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
           pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
@@ -55,7 +55,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
-        if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_RIBBON))
+        if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_FLAT))
           return pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
           return pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
@@ -100,7 +100,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
-        if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_RIBBON))
+        if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_FLAT))
           pre.intersectorHair.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else
           pre.intersectorCurve.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
@@ -116,7 +116,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
-         if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_RIBBON))
+         if (likely(geom->subtype == RTC_GEOMETRY_SUBTYPE_FLAT))
            return pre.intersectorHair.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
          else
            return pre.intersectorCurve.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));

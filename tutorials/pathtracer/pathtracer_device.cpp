@@ -1183,7 +1183,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ty = Vec3fa(0,1,0);
         dg.Ng = dg.Ns = Vec3fa(0,0,1);
       }
-      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_RIBBON)
+      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_FLAT)
       {
         const Vec3fa dx = normalize(dg.Ng);
         const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
@@ -1192,7 +1192,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
       }
-      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_SURFACE)
+      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_ROUND)
       {
         const Vec3fa dx = normalize(Vec3fa(dp));
         const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));

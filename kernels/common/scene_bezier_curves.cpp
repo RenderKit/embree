@@ -27,7 +27,7 @@ namespace embree
     vertices.resize(numTimeSteps);
 
     if (subtype == RTC_GEOMETRY_SUBTYPE_DEFAULT)
-      subtype = RTC_GEOMETRY_SUBTYPE_SURFACE;
+      subtype = RTC_GEOMETRY_SUBTYPE_ROUND;
   }
 
   void NativeCurves::enabling() 

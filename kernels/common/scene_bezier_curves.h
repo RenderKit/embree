@@ -146,7 +146,7 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == RTC_GEOMETRY_SUBTYPE_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      if (likely(subtype == RTC_GEOMETRY_SUBTYPE_FLAT)) return curve.tessellatedBounds(tessellationRate);
       else                                     return curve.accurateBounds();
     }
     
@@ -163,7 +163,7 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == RTC_GEOMETRY_SUBTYPE_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      if (likely(subtype == RTC_GEOMETRY_SUBTYPE_FLAT)) return curve.tessellatedBounds(tessellationRate);
       else                                     return curve.accurateBounds();
     }
 

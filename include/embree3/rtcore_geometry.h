@@ -39,8 +39,8 @@ enum RTCGeometryType
 enum RTCGeometrySubtype
 {
   RTC_GEOMETRY_SUBTYPE_DEFAULT = 0,
-  RTC_GEOMETRY_SUBTYPE_SURFACE = 1,
-  RTC_GEOMETRY_SUBTYPE_RIBBON = 2,
+  RTC_GEOMETRY_SUBTYPE_ROUND = 1,
+  RTC_GEOMETRY_SUBTYPE_FLAT = 2,
 };
 
 /* Interpolation mode for subdivision surfaces. */

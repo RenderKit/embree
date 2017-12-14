@@ -702,7 +702,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_LINEAR_CURVE, RTC_GEOMETRY_SUBTYPE_RIBBON, hmesh->material);
+      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_LINEAR_CURVE, RTC_GEOMETRY_SUBTYPE_FLAT, hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
@@ -729,7 +729,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      hmesh->subtype = RTC_GEOMETRY_SUBTYPE_SURFACE;
+      hmesh->subtype = RTC_GEOMETRY_SUBTYPE_ROUND;
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
