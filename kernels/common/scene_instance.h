@@ -33,10 +33,6 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
-    static Instance* create (Device* device, Scene* object, unsigned int numTimeSteps) {
-      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(device,object,numTimeSteps);
-    }
-  private:
     Instance (Device* device, Scene* object, unsigned int numTimeSteps);
     ~Instance();
   public:
@@ -83,6 +79,6 @@ namespace embree
   public:
     Scene* object;                 //!< pointer to instanced acceleration structure
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
-    AffineSpace3fa local2world[1]; //!< transformation from local space to world space for each timestep
+    AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
   };
 }

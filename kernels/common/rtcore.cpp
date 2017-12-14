@@ -831,7 +831,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_HANDLE(hsource);
 #if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = Instance::create(device,source,numTimeSteps);
+    Geometry* geom = new Instance(device,source,numTimeSteps);
     return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewInstance is not supported");

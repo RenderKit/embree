@@ -29,18 +29,20 @@ namespace embree
   }
 
   Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
-    : AccelSet(device,1,numTimeSteps), object(object)
+    : AccelSet(device,1,numTimeSteps), object(object), local2world(nullptr)
   {
     object->refInc();
     world2local0 = one;
+    local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa));
     for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
     boundsFunc = device->instance_factory->InstanceBoundsFunc();
-    //boundsFuncUserPtr = nullptr;
     intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
   }
 
-  Instance::~Instance() {
+  Instance::~Instance()
+  {
+    alignedFree(local2world);
     object->refDec();
   }
   
