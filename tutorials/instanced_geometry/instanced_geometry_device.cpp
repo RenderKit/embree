@@ -150,10 +150,18 @@ extern "C" void device_init (char* cfg)
   rtcCommitScene (g_scene1);
 
   /* instantiate geometry */
-  g_instance0 = rtcNewInstance(g_device,g_scene1,1);
-  g_instance1 = rtcNewInstance(g_device,g_scene1,1);
-  g_instance2 = rtcNewInstance(g_device,g_scene1,1);
-  g_instance3 = rtcNewInstance(g_device,g_scene1,1);
+  g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryInstancedScene(g_instance0,g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance0,1);
+  g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryInstancedScene(g_instance1,g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance1,1);
+  g_instance2 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryInstancedScene(g_instance2,g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance2,1);
+  g_instance3 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  rtcSetGeometryInstancedScene(g_instance3,g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance3,1);
   rtcAttachGeometry(g_scene,g_instance0);
   rtcAttachGeometry(g_scene,g_instance1);
   rtcAttachGeometry(g_scene,g_instance2);

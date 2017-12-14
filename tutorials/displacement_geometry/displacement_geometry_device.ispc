@@ -130,7 +130,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
-  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  for (uniform uintptr_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
 
   rtcSetGeometryDisplacementFunction(geom,displacementFunction);
 

@@ -880,7 +880,7 @@ namespace embree
     return nullptr;
   }
 
-  void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
+  RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     Ref<Scene> scene = (Scene*) hscene;
@@ -1017,7 +1017,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_TRIANGLE is not supported");
 #endif
     }
-    break;
     
     case RTC_GEOMETRY_TYPE_QUAD:
     {
@@ -1033,7 +1032,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_QUAD is not supported");
 #endif
     }
-    break;
     
     case RTC_GEOMETRY_TYPE_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_BEZIER_CURVE:
@@ -1069,7 +1067,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_CURVE is not supported");
 #endif
     }
-    break;
     
     case RTC_GEOMETRY_TYPE_SUBDIVISION:
     {
@@ -1085,7 +1082,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_SUBDIVISION is not supported");
 #endif
     }
-    break;
     
     case RTC_GEOMETRY_TYPE_USER:
     {
@@ -1099,7 +1095,16 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_USER is not supported");
 #endif
     }
-    break;
+
+    case RTC_GEOMETRY_TYPE_INSTANCE:
+    {
+#if defined(EMBREE_GEOMETRY_USER)
+      Geometry* geom = new Instance(device,nullptr,1);
+      return (RTCGeometry) geom->refInc();
+#else
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_INSTANCE is not supported");
+#endif
+    }
     
     default:
       throw_RTCError(RTC_ERROR_UNKNOWN,"invalid geometry type");
@@ -1115,12 +1120,10 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryUserPrimitiveCount);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    /* should be called for user geometries only */
+    
     if (unlikely(geometry->type != Geometry::USER_GEOMETRY))
-    {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
-      return;
-    }
+
     geometry->setNumPrimitives(userPrimCount);
     RTCORE_CATCH_END2(geometry);
   }
@@ -1131,6 +1134,10 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetGeometryTimeStepCount);
     RTCORE_VERIFY_HANDLE(hgeometry);
+
+    if (timeStepCount > RTC_MAX_TIME_STEP_COUNT)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"number of time steps is out of range");
+    
     geometry->setNumTimeSteps(timeStepCount);
     RTCORE_CATCH_END2(geometry);
   }

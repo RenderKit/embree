@@ -268,22 +268,6 @@ RTCORE_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCInterse
  *  geometry. */
 RTCORE_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, RTCOccludedFunctionN occluded);
 
-/*! \brief Creates a new scene instance. 
-
-  A scene instance contains a reference to a scene to instantiate and
-  the transformation to instantiate the scene with. For motion blurred
-  instances, a number of timesteps can get specified. An
-  implementation will typically transform the ray with the inverse of
-  the provided transformation (or inverse of linearly interpolated
-  transformation in case of multi-segment motion blur) and continue
-  traversing the ray through the provided scene. If any geometry is
-  hit, the instance ID (instID) member of the ray will get set to the
-  geometry ID of the instance. */
-RTCORE_API RTCGeometry rtcNewInstance(RTCDevice device,
-                                      RTCScene source,                  //!< the scene to instantiate
-                                      unsigned int numTimeSteps);       //!< number of timesteps, one matrix per timestep
-
-
 /*! Sets instanced scene of instance geometry. */
 RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 

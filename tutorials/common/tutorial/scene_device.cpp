@@ -479,7 +479,9 @@ namespace embree
     {
       RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
       if (instance->numTimeSteps == 1) {
-        RTCGeometry geom = rtcNewInstance(device, scene_inst, 1);
+        RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+         rtcSetGeometryInstancedScene(geom,scene_inst);
+         rtcSetGeometryTimeStepCount(geom,1);
         rtcSetGeometryTransform(geom,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x,0);
         rtcCommitGeometry(geom);
         unsigned int geomID = rtcAttachGeometry(scene_out,geom);
@@ -487,7 +489,9 @@ namespace embree
         return geomID;
       }
       else {
-        RTCGeometry geom = rtcNewInstance(device, scene_inst, instance->numTimeSteps);
+        RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+         rtcSetGeometryInstancedScene(geom,scene_inst);
+         rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
         for (size_t t=0; t<instance->numTimeSteps; t++)
           rtcSetGeometryTransform(geom,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x, (unsigned int)t);
         rtcCommitGeometry(geom);

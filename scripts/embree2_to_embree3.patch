@@ -1689,6 +1689,14 @@ rtcReleaseGeometry(geom);
 }@@
 
 @@{
+RTCGeometry ID geom = rtcNewInstance(EXPR device,EXPR source,EXPR numTimeSteps);
+=>
+uniform RTCGeometry geom = rtcNewInstance(device,source,numTimeSteps);
+rtcSetGeometryInstancedScene(geom,source);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
+
+@@{
 rtcSetTransform
 =>
 rtcSetTransform2
@@ -2375,6 +2383,12 @@ rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFA
 rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
 rtcNewGeometry (device,basis,subtype)
+}@@
+
+@@{
+rtcNewInstance(EXPR device,EXPR source,EXPR numTimeSteps);
+=>
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT)
 }@@
 
 

@@ -31,7 +31,7 @@ namespace embree
   Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
     : AccelSet(device,1,numTimeSteps), object(object), local2world(nullptr)
   {
-    object->refInc();
+    if (object) object->refInc();
     world2local0 = one;
     local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa));
     for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
@@ -43,7 +43,7 @@ namespace embree
   Instance::~Instance()
   {
     alignedFree(local2world);
-    object->refDec();
+    if (object) object->refDec();
   }
 
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
@@ -54,7 +54,7 @@ namespace embree
     AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa));
 
     for (size_t i=0; i<numTimeSteps_in; i++)
-      local2world[i] = one;
+      local2world2[i] = one;
      
     for (size_t i=0; i<min(numTimeSteps,numTimeSteps_in); i++)
       local2world2[i] = local2world[i];
@@ -62,7 +62,7 @@ namespace embree
     alignedFree(local2world);
     local2world = local2world2;
     
-    Geometry::setNumTimeSteps(numTimeSteps);
+    Geometry::setNumTimeSteps(numTimeSteps_in);
   }
 
   void Instance::setInstancedScene(const Ref<Scene>& scene)

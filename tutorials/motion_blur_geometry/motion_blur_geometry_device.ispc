@@ -286,7 +286,9 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& p
   rtcReleaseGeometry(geom);
   rtcCommitScene(scene);
 
-  RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
+  RTCGeometry inst = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+   rtcSetGeometryInstancedScene(inst,scene);
+   rtcSetGeometryTimeStepCount(inst,num_time_steps);
   
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
@@ -330,7 +332,9 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
   rtcReleaseGeometry(geom);  
   rtcCommitScene(scene);
 
-  RTCGeometry inst = rtcNewInstance(g_device,scene,num_time_steps);
+  RTCGeometry inst = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+   rtcSetGeometryInstancedScene(inst,scene);
+   rtcSetGeometryTimeStepCount(inst,num_time_steps);
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
