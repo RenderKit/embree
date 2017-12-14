@@ -20,7 +20,7 @@
 #include "rtcore_common.isph"
 
 /* Defines an opaque device type */
-typedef uniform struct __RTCDevice* uniform RTCDevice;
+typedef uniform struct RTCDeviceTy* uniform RTCDevice;
 
 /* Creates a new Embree device. */
 RTCORE_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg);

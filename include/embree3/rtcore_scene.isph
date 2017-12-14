@@ -81,7 +81,7 @@ struct RTCFilterFunctionNArguments
 typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform const args);
 
 /* Defines an opaque scene type */
-typedef uniform struct __RTCScene* uniform RTCScene;
+typedef uniform struct RTCSceneTy* uniform RTCScene;
 
 /* Creates a new scene. */
 RTCORE_API RTCScene rtcNewScene(RTCDevice device);

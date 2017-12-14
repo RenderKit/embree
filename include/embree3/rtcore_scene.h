@@ -87,7 +87,7 @@ RTCORE_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* cont
 }
 
 /* Defines an opaque scene type. */
-typedef struct __RTCScene* RTCScene;
+typedef struct RTCSceneTy* RTCScene;
 
 /* Creates a new scene. */
 RTCORE_API RTCScene rtcNewScene(RTCDevice device);

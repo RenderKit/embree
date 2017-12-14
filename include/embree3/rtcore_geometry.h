@@ -107,7 +107,7 @@ RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArgument
 RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /* Defines an opaque geometry type */
-typedef struct __RTCGeometry* RTCGeometry;
+typedef struct RTCGeometryTy* RTCGeometry;
 
 /* Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionNArguments

@@ -23,7 +23,7 @@ extern "C" {
 #endif
   
 /* Defines an opaque BVH type */
-typedef struct __RTCBVH* RTCBVH;
+typedef struct RTCBVHTy* RTCBVH;
 
 /* Input build primitives for the builder. */
 struct RTCORE_ALIGN(32) RTCBuildPrimitive
@@ -35,7 +35,7 @@ struct RTCORE_ALIGN(32) RTCBuildPrimitive
 };
 
 /* Defines an opaque thread local allocator type */
-typedef struct __RTCThreadLocalAllocator* RTCThreadLocalAllocator;
+typedef struct RTCThreadLocalAllocatorTy* RTCThreadLocalAllocator;
 
 /* Callback to create a node. */
 typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int numChildren, void* userPtr);

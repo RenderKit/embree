@@ -44,7 +44,7 @@ enum RTCBufferType
 };
 
 /* Defines an opaque buffer type */
-typedef struct __RTCBuffer* RTCBuffer;
+typedef struct RTCBufferTy* RTCBuffer;
 
 /* Creates a new buffer. */
 RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);

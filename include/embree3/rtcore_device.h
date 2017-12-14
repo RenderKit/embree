@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /* Defines an opaque device type */
-typedef struct __RTCDevice* RTCDevice;
+typedef struct RTCDeviceTy* RTCDevice;
 
 /* Creates a new Embree device. */
 RTCORE_API RTCDevice rtcNewDevice(const char* cfg);
