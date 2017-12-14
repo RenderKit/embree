@@ -756,12 +756,12 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   return sphere;
 }
 
-Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
+Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   unsigned int geomID = rtcAttachGeometry(scene,geom);
-  for (size_t i=0; i<N; i++) {
+  for (unsigned int i=0; i<N; i++) {
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }

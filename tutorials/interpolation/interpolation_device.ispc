@@ -130,7 +130,7 @@ uniform unsigned int hair_indices[1] = {
   0
 };
 
-inline uniform float updateEdgeLevel(const uniform Vec3fa& cam_pos, uniform Vec3fa* uniform vtx, uniform unsigned int* uniform indices, const uniform size_t e0, const uniform size_t e1)
+inline uniform float updateEdgeLevel(const uniform Vec3fa& cam_pos, uniform Vec3fa* uniform vtx, uniform unsigned int* uniform indices, const uniform unsigned int e0, const uniform unsigned int e1)
 {
   const uniform Vec3fa v0 = vtx[indices[e0]];
   const uniform Vec3fa v1 = vtx[indices[e1]];
@@ -148,7 +148,7 @@ uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3
 
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_VERTICES);
-  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  for (uniform unsigned int i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, cube_tri_indices, 0, sizeof(uniform unsigned int), NUM_TRI_INDICES);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,  0, RTC_FORMAT_UINT, cube_tri_faces,   0, sizeof(uniform unsigned int), NUM_TRI_FACES);
@@ -163,7 +163,7 @@ uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_vertex_colors, 0, sizeof(uniform Vec3fa), NUM_VERTICES);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_TRI_INDICES);
-  for (uniform size_t i=0; i<NUM_TRI_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
+  for (uniform unsigned int i=0; i<NUM_TRI_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i, geom);
@@ -176,7 +176,7 @@ void setTriangleSubdivCubeLevels (RTCGeometry geom, const uniform Vec3fa& cam_po
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_VERTEX, 0);
   uniform float* uniform level = (uniform float* uniform) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_LEVEL, 0);
 
-  for (uniform size_t i=0; i<NUM_TRI_INDICES; i+=3)
+  for (uniform unsigned int i=0; i<NUM_TRI_INDICES; i+=3)
   {
     level[i+0] = updateEdgeLevel(cam_pos, vtx, cube_tri_indices, i+0, i+1);
     level[i+1] = updateEdgeLevel(cam_pos, vtx, cube_tri_indices, i+1, i+2);
@@ -194,7 +194,7 @@ uniform unsigned int addQuadSubdivCube (RTCScene scene_i, const uniform Vec3f& p
 
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_VERTICES);
-  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  for (uniform unsigned int i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, cube_quad_indices, 0, sizeof(uniform unsigned int), NUM_QUAD_INDICES);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,  0, RTC_FORMAT_UINT, cube_quad_faces,   0, sizeof(uniform unsigned int), NUM_QUAD_FACES);
@@ -209,7 +209,7 @@ uniform unsigned int addQuadSubdivCube (RTCScene scene_i, const uniform Vec3f& p
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_vertex_colors, 0, sizeof(uniform Vec3fa), NUM_VERTICES);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_QUAD_INDICES);
-  for (uniform size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
+  for (uniform unsigned int i=0; i<NUM_QUAD_INDICES; i++) level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i, geom);
@@ -222,7 +222,7 @@ void setQuadSubdivCubeLevels (RTCGeometry geom, const uniform Vec3fa& cam_pos)
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_VERTEX, 0);
   uniform float* uniform level = (uniform float* uniform) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_LEVEL, 0);
 
-  for (uniform size_t i=0; i<NUM_QUAD_INDICES; i+=4)
+  for (uniform unsigned int i=0; i<NUM_QUAD_INDICES; i+=4)
   {
     level[i+0] = updateEdgeLevel(cam_pos, vtx, cube_quad_indices, i+0, i+1);
     level[i+1] = updateEdgeLevel(cam_pos, vtx, cube_quad_indices, i+1, i+2);
@@ -241,7 +241,7 @@ uniform unsigned int addTriangleCube (RTCScene scene_i, const uniform Vec3f& pos
 
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_VERTICES);
-  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  for (uniform unsigned int i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetGeometryVertexAttributeCount(geom,1);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT3,  cube_tri_indices,   0, 3*sizeof(uniform unsigned int), NUM_TRI_INDICES/3);
@@ -260,7 +260,7 @@ uniform unsigned int addQuadCube (RTCScene scene_i, const uniform Vec3f& pos)
 
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices, 0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_VERTICES);
-  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  for (uniform unsigned int i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetGeometryVertexAttributeCount(geom,1);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT4,  cube_quad_indices,  0, 4*sizeof(uniform unsigned int), NUM_QUAD_INDICES/4);
@@ -279,7 +279,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, hair_vertices, 0, sizeof(uniform Vec3fa), NUM_HAIR_VERTICES);
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(uniform Vec3fa), NUM_HAIR_VERTICES);
-  for (uniform size_t i=0; i<NUM_HAIR_VERTICES; i++) {
+  for (uniform unsigned int i=0; i<NUM_HAIR_VERTICES; i++) {
     vtx[i].x = hair_vertices[i][0]+pos.x;
     vtx[i].y = hair_vertices[i][1]+pos.y;
     vtx[i].z = hair_vertices[i][2]+pos.z;

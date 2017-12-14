@@ -832,12 +832,12 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
   if (mesh && mesh->texcoord_indices)
     {
       assert(primID < mesh->numFaces);
-      const size_t face_offset = mesh->face_offsets[primID];
+      const unsigned int face_offset = mesh->face_offsets[primID];
       if (mesh->verticesPerFace[primID] == 3)
 	{
-	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
-	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
-	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const unsigned int t0 = mesh->texcoord_indices[face_offset+0];
+	  const unsigned int t1 = mesh->texcoord_indices[face_offset+1];
+	  const unsigned int t2 = mesh->texcoord_indices[face_offset+2];
 	  const Vec2f txt0 = mesh->texcoords[t0];
 	  const Vec2f txt1 = mesh->texcoords[t1];
 	  const Vec2f txt2 = mesh->texcoords[t2];
@@ -846,10 +846,10 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
 	}
       else if (mesh->verticesPerFace[primID] == 4)
 	{
-	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
-	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
-	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
-	  const size_t t3 = mesh->texcoord_indices[face_offset+3];
+	  const unsigned int t0 = mesh->texcoord_indices[face_offset+0];
+	  const unsigned int t1 = mesh->texcoord_indices[face_offset+1];
+	  const unsigned int t2 = mesh->texcoord_indices[face_offset+2];
+	  const unsigned int t3 = mesh->texcoord_indices[face_offset+3];
 	  const Vec2f txt0 = mesh->texcoords[t0];
 	  const Vec2f txt1 = mesh->texcoords[t1];
 	  const Vec2f txt2 = mesh->texcoords[t2];

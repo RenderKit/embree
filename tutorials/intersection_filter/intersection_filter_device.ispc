@@ -158,33 +158,33 @@ void renderTileStandard(uniform int taskIndex,
 /*                               Stream Mode                                              */
 /******************************************************************************************/
 
-inline float gather(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid)
+inline float gather(varying float& ptr, const uniform unsigned int stride, const unsigned int pid, const unsigned int rid)
 {
   uniform float* uptr = (uniform float*) (((uniform int8* uniform)&ptr) + pid*stride);
   return uptr[rid];
 }
 
-inline unsigned int gather(varying unsigned int& ptr, const uniform size_t stride, const size_t pid, const size_t rid)
+inline unsigned int gather(varying unsigned int& ptr, const uniform unsigned int stride, const unsigned int pid, const unsigned int rid)
 {
   uniform unsigned int* uptr = (uniform unsigned int*) (((uniform int8* uniform)&ptr) + pid*stride);
   return uptr[rid];
 }
 
-inline unsigned int gather(varying unsigned int& ptr, const varying unsigned int idx, const uniform size_t stride, const size_t pid, const size_t rid)
+inline unsigned int gather(varying unsigned int& ptr, const varying unsigned int idx, const uniform unsigned int stride, const unsigned int pid, const unsigned int rid)
 {
   uniform unsigned int* uptr = (uniform unsigned int*) (((uniform int8* uniform)&ptr) + pid*stride);
   return uptr[rid + programCount*idx];
 }
 
-inline void scatter(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid, float v) {
+inline void scatter(varying float& ptr, const uniform unsigned int stride, const unsigned int pid, const unsigned int rid, float v) {
   ((uniform float*)(((uniform int8* uniform)&ptr) + pid*stride))[rid] = v;
 }
 
-inline void scatter(varying unsigned int& ptr, const uniform size_t stride, const size_t pid, const size_t rid, unsigned int v) {
+inline void scatter(varying unsigned int& ptr, const uniform unsigned int stride, const unsigned int pid, const unsigned int rid, unsigned int v) {
   ((uniform unsigned int*)(((uniform int8* uniform)&ptr) + pid*stride))[rid] = v;
 }
 
-inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, const uniform size_t stride, const size_t pid, const size_t rid, unsigned int v) {
+inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, const uniform unsigned int stride, const unsigned int pid, const unsigned int rid, unsigned int v) {
   ((uniform unsigned int*)(((uniform int8* uniform)&ptr) + pid*stride))[rid+programCount*idx] = v;
 }
 
@@ -293,7 +293,7 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
   assert(ray2);
 
-  for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
+  for (unsigned int i=ray2->firstHit; i<ray2->lastHit; i++) {
     unsigned slot= i%HIT_LIST_LENGTH;
     if (ray2->hit_geomIDs[slot] == hit->geomID && ray2->hit_primIDs[slot] == hit->primID) {
       return;
@@ -625,7 +625,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices,     0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   Vec3fa* uniform ptr = (Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_VERTICES);
-  for (uniform size_t i=0; i<NUM_VERTICES; i++) {
+  for (uniform unsigned int i=0; i<NUM_VERTICES; i++) {
     uniform float x = cube_vertices[i][0];
     uniform float y = cube_vertices[i][1];
     uniform float z = cube_vertices[i][2];
@@ -676,7 +676,7 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_quad_faces,    0, sizeof(uniform unsigned int), NUM_QUAD_FACES);
 
   uniform float* level = (uniform float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_QUAD_INDICES);
-  for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
+  for (unsigned int i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */
   colors = uniform new uniform Vec3f[6];

@@ -40,7 +40,7 @@ RTCScene g_scene = nullptr;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
-inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
   const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
@@ -51,19 +51,19 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
 }
 
 
-void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
+void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, unsigned int startID, unsigned int endID )
 {
-  for (size_t f=startID; f<endID;f++) {
+  for (unsigned int f=startID; f<endID;f++) {
     unsigned int e = mesh->face_offsets[f];
     unsigned int N = mesh->verticesPerFace[f];
     if (N == 4) /* fast path for quads */
-      for (size_t i=0; i<4; i++)
+      for (unsigned int i=0; i<4; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
     else if (N == 3) /* fast path for triangles */
-      for (size_t i=0; i<3; i++)
+      for (unsigned int i=0; i<3; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
     else /* fast path for general polygons */
-      for (size_t i=0; i<N; i++)
+      for (unsigned int i=0; i<N; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
   }
 }
@@ -71,9 +71,9 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 #if defined(ISPC)
 void updateSubMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
-  const size_t size = mesh->numFaces;
-  const size_t startID = ((taskIndex+0)*size)/taskCount;
-  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  const unsigned int size = mesh->numFaces;
+  const unsigned int startID = ((taskIndex+0)*size)/taskCount;
+  const unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
 void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* scene_in, const Vec3fa& cam_pos )
@@ -102,7 +102,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #endif
 
   /* now update large meshes */
-  for (size_t g=0; g<scene_in->numGeometries; g++)
+  for (unsigned int g=0; g<scene_in->numGeometries; g++)
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
@@ -182,10 +182,10 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 #if USE_INTERFACE == 0
   rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
 #elif USE_INTERFACE == 1
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  for (unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded1(g_scene,RTCRay_(rays[i]));
 #else
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  for (unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
 #endif
 
@@ -334,10 +334,10 @@ void renderTileStandard(int taskIndex,
 #if USE_INTERFACE == 0
   rtcIntersect1M(g_scene,&context,(RTCRay*)&rays[0],N,sizeof(Ray));
 #elif USE_INTERFACE == 1
-  for (size_t i=0; i<N; i++)
+  for (unsigned int i=0; i<N; i++)
     rtcIntersect1(g_scene,&context,RTCRay_(rays[i]));
 #else
-  for (size_t i=0; i<N; i++)
+  for (unsigned int i=0; i<N; i++)
     rtcIntersect1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
 #endif
 

@@ -954,7 +954,7 @@ void assignShaders(ISPCGeometry* geometry)
 #endif
   else if (geometry->type == GROUP) {
     ISPCGroup* group = (ISPCGroup*) geometry;
-    for (size_t i=0; i<group->numGeometries; i++)
+    for (unsigned int i=0; i<group->numGeometries; i++)
       assignShaders(group->geometries[i]);
   }
 }
@@ -964,7 +964,7 @@ typedef ISPCGeometry* ISPCGeometry_ptr;
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  for (size_t i=0; i<scene_in->numGeometries; i++)
+  for (unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
@@ -1283,7 +1283,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   bool valid = *((int*) valid_i);
   if (!valid) return;
   
-  const size_t rayID = 0;
+  const unsigned int rayID = 0;
   Ray *ray = (Ray*)_ray;
 
   /* compute differential geometry */
@@ -1356,7 +1356,7 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   bool valid = *((int*) valid_i);
   if (!valid) return;
   
-  const size_t rayID = 0;
+  const unsigned int rayID = 0;
   Ray *ray = (Ray*)_ray;
 
   /* compute differential geometry */
@@ -1406,7 +1406,7 @@ void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
   bool valid = *((int*) valid_i);
   if (!valid) return;
   
-  const size_t rayID = 0;
+  const unsigned int rayID = 0;
   
   unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
   Vec3fa Kt = Vec3fa(0.0f);
@@ -1465,7 +1465,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       //L = L + Lw*Vec3fa(1.0f);
 
       /* iterate over all lights */
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         const Light* l = g_ispc_scene->lights[i];
         Light_EvalRes le = l->eval(l,dg,ray.dir);
@@ -1508,7 +1508,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 
     /* iterate over lights */
     context.context.flags = g_iflags_incoherent;
-    for (size_t i=0; i<g_ispc_scene->numLights; i++)
+    for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
     {
       const Light* l = g_ispc_scene->lights[i];
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
@@ -1602,7 +1602,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
 /***************************************************************************************/
 
-inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
   const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
@@ -1612,20 +1612,20 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
-void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
+void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, unsigned int startID, unsigned int endID )
 {
-  for (size_t f=startID; f<endID;f++)
+  for (unsigned int f=startID; f<endID;f++)
   {
     unsigned int e = mesh->face_offsets[f];
     unsigned int N = mesh->verticesPerFace[f];
     if (N == 4) /* fast path for quads */
-      for (size_t i=0; i<4; i++)
+      for (unsigned int i=0; i<4; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
        else if (N == 3) /* fast path for triangles */
-         for (size_t i=0; i<3; i++)
+         for (unsigned int i=0; i<3; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
        else /* fast path for general polygons */
-         for (size_t i=0; i<N; i++)
+         for (unsigned int i=0; i<N; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
   }
 }
@@ -1633,16 +1633,16 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 #if defined(ISPC)
 void updateEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
-  const size_t size = mesh->numFaces;
-  const size_t startID = ((taskIndex+0)*size)/taskCount;
-  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  const unsigned int size = mesh->numFaces;
+  const unsigned int startID = ((taskIndex+0)*size)/taskCount;
+  const unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
 #endif
 
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
-  for (size_t g=0; g<scene_in->numGeometries; g++)
+  for (unsigned int g=0; g<scene_in->numGeometries; g++)
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
@@ -1703,7 +1703,7 @@ extern "C" void device_render (int* pixels,
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
 
@@ -1717,7 +1717,7 @@ extern "C" void device_render (int* pixels,
   if (camera_changed)
   {
     g_accu_count=0;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
 
     if (g_subdiv_mode) {

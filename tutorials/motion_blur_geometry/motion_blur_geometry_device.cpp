@@ -103,7 +103,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_triangle_indices, 0, 3*sizeof(unsigned int), 12);
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa), 8);
@@ -145,7 +145,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(unsigned int), 6);
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa), 8);
@@ -183,9 +183,9 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, cube_vertex_crease_weights,0, sizeof(float),        0);
 
   float* level = (float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(float), NUM_INDICES);
-  for (size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
+  for (unsigned int i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa),8);
@@ -218,7 +218,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometrySubtype sub
     bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),16);
@@ -253,7 +253,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
     bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),16);
@@ -292,7 +292,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
    rtcSetGeometryInstancedScene(inst,scene);
    rtcSetGeometryTimeStepCount(inst,num_time_steps);
   
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
@@ -315,7 +315,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(unsigned int), 6);
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa),8);
@@ -338,7 +338,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
    rtcSetGeometryInstancedScene(inst,scene);
    rtcSetGeometryTimeStepCount(inst,num_time_steps);
 
-  for (size_t t=0; t<num_time_steps; t++)
+  for (unsigned int t=0; t<num_time_steps; t++)
   {
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
@@ -697,7 +697,7 @@ extern "C" void device_render (int* pixels,
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
 
@@ -710,7 +710,7 @@ extern "C" void device_render (int* pixels,
   //camera_changed = true;
   if (camera_changed) {
     g_accu_count=0;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
 

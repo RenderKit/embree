@@ -135,7 +135,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_colors, 0, sizeof(uniform Vec3fa), 8);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
-  for (uniform size_t i=0; i<NUM_INDICES; i++)
+  for (uniform unsigned int i=0; i<NUM_INDICES; i++)
     level[i] = EDGE_LEVEL;
 
   rtcCommitGeometry(geom);

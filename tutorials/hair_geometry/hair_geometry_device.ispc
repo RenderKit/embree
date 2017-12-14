@@ -60,7 +60,7 @@ Vec3fa sampleSphere(const float u, const float v)
 void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
-  for (uniform size_t t=0; t<mesh->numTimeSteps; t++) {
+  for (uniform unsigned int t=0; t<mesh->numTimeSteps; t++) {
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
@@ -73,7 +73,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
 void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, hair->type, hair->subtype);
-  for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
+  for (uniform unsigned int t=0; t<hair->numTimeSteps; t++) {
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
@@ -89,7 +89,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(g_device);
 
-  for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+  for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
     if (geometry->type == TRIANGLE_MESH)
@@ -298,7 +298,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   Vec3f color = make_Vec3f(0.0f);
   Vec3f weight = make_Vec3f(1.0f);
-  size_t depth = 0;
+  unsigned int depth = 0;
 
   while (true)
   {
@@ -476,7 +476,7 @@ export void device_render (uniform int* uniform pixels,
     g_accu = uniform new uniform Vec3fa[width*height];
     g_accu_width = width;
     g_accu_height = height;
-    for (uniform size_t i=0; i<width*height; i++)
+    for (uniform unsigned int i=0; i<width*height; i++)
       g_accu[i] = make_Vec3fa(0.0f);
   }
 
@@ -489,7 +489,7 @@ export void device_render (uniform int* uniform pixels,
   g_accu_count++;
   if (camera_changed) {
     g_accu_count=0;
-    for (uniform size_t i=0; i<width*height; i++)
+    for (uniform unsigned int i=0; i<width*height; i++)
       g_accu[i] = make_Vec3fa(0.0f);
   }
 

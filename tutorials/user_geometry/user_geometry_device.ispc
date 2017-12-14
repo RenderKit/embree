@@ -754,12 +754,12 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   return sphere;
 }
 
-uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t N)
+uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform unsigned int N)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
-  for (uniform size_t i=0; i<N; i++) {
+  for (uniform unsigned int i=0; i<N; i++) {
     spheres[i].geometry = geom;
     spheres[i].geomID = geomID;
   }

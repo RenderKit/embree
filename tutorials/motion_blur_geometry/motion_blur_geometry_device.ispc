@@ -101,7 +101,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_triangle_indices, 0, 3*sizeof(uniform unsigned int), 12);
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa), 8);
@@ -143,7 +143,7 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos, unif
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa), 8);
@@ -181,9 +181,9 @@ uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, un
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, cube_vertex_crease_weights,0, sizeof(uniform float),        0);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
-  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
+  for (uniform unsigned int i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),8);
@@ -216,7 +216,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform
     bspline[i] = make_Vec3f(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),16);
@@ -251,7 +251,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform
     bspline[i] = make_Vec3f(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),16);
@@ -290,7 +290,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& p
    rtcSetGeometryInstancedScene(inst,scene);
    rtcSetGeometryTimeStepCount(inst,num_time_steps);
   
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
     uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
@@ -313,7 +313,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),8);
@@ -336,7 +336,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
    rtcSetGeometryInstancedScene(inst,scene);
    rtcSetGeometryTimeStepCount(inst,num_time_steps);
 
-  for (uniform size_t t=0; t<num_time_steps; t++)
+  for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),0.5f*2.0f*M_PI*(float)t/(float)(num_time_steps-1));
     uniform AffineSpace3f translation = make_AffineSpace3f_translate(pos);
@@ -695,7 +695,7 @@ export void device_render (uniform int* uniform pixels,
     g_accu = uniform new uniform Vec3fa[width*height];
     g_accu_width = width;
     g_accu_height = height;
-    for (uniform size_t i=0; i<width*height; i++)
+    for (uniform unsigned int i=0; i<width*height; i++)
       g_accu[i] = make_Vec3fa(0.0f);
   }
 
@@ -708,7 +708,7 @@ export void device_render (uniform int* uniform pixels,
   //camera_changed = true;
   if (camera_changed) {
     g_accu_count=0;
-    for (uniform size_t i=0; i<width*height; i++)
+    for (uniform unsigned int i=0; i<width*height; i++)
       g_accu[i] = make_Vec3fa(0.0f);
   }
 

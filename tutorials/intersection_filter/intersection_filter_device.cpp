@@ -160,33 +160,33 @@ void renderTileStandard(int taskIndex,
 /*                               Stream Mode                                              */
 /******************************************************************************************/
 
-inline float gather(float& ptr, const size_t stride, const size_t pid, const size_t rid)
+inline float gather(float& ptr, const unsigned int stride, const unsigned int pid, const unsigned int rid)
 {
   float* uptr = (float*) (((char*)&ptr) + pid*stride);
   return uptr[rid];
 }
 
-inline unsigned int gather(unsigned int& ptr, const size_t stride, const size_t pid, const size_t rid)
+inline unsigned int gather(unsigned int& ptr, const unsigned int stride, const unsigned int pid, const unsigned int rid)
 {
   unsigned int* uptr = (unsigned int*) (((char*)&ptr) + pid*stride);
   return uptr[rid];
 }
 
-inline unsigned int gather(unsigned int& ptr, const unsigned int idx, const size_t stride, const size_t pid, const size_t rid)
+inline unsigned int gather(unsigned int& ptr, const unsigned int idx, const unsigned int stride, const unsigned int pid, const unsigned int rid)
 {
   unsigned int* uptr = (unsigned int*) (((char*)&ptr) + pid*stride);
   return uptr[rid + 1*idx];
 }
 
-inline void scatter(float& ptr, const size_t stride, const size_t pid, const size_t rid, float v) {
+inline void scatter(float& ptr, const unsigned int stride, const unsigned int pid, const unsigned int rid, float v) {
   ((float*)(((char*)&ptr) + pid*stride))[rid] = v;
 }
 
-inline void scatter(unsigned int& ptr, const size_t stride, const size_t pid, const size_t rid, unsigned int v) {
+inline void scatter(unsigned int& ptr, const unsigned int stride, const unsigned int pid, const unsigned int rid, unsigned int v) {
   ((unsigned int*)(((char*)&ptr) + pid*stride))[rid] = v;
 }
 
-inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stride, const size_t pid, const size_t rid, unsigned int v) {
+inline void scatter(unsigned int& ptr, const unsigned int idx, const unsigned int stride, const unsigned int pid, const unsigned int rid, unsigned int v) {
   ((unsigned int*)(((char*)&ptr) + pid*stride))[rid+1*idx] = v;
 }
 
@@ -295,7 +295,7 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   Ray2* ray2 = (Ray2*) context->userRayExt;
   assert(ray2);
 
-  for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
+  for (unsigned int i=ray2->firstHit; i<ray2->lastHit; i++) {
     unsigned slot= i%HIT_LIST_LENGTH;
     if (ray2->hit_geomIDs[slot] == hit->geomID && ray2->hit_primIDs[slot] == hit->primID) {
       return;
@@ -627,7 +627,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, cube_vertices,     0, sizeof(Vec3fa  ), NUM_VERTICES);
   Vec3fa* ptr = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), NUM_VERTICES);
-  for (size_t i=0; i<NUM_VERTICES; i++) {
+  for (unsigned int i=0; i<NUM_VERTICES; i++) {
     float x = cube_vertices[i][0];
     float y = cube_vertices[i][1];
     float z = cube_vertices[i][2];
@@ -678,7 +678,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_quad_faces,    0, sizeof(unsigned int), NUM_QUAD_FACES);
 
   float* level = (float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(float), NUM_QUAD_INDICES);
-  for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
+  for (unsigned int i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */
   colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa));

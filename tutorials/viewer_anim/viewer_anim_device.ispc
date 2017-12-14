@@ -47,7 +47,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   rtcSetGeometryBuildQuality(geom, quality);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), mesh->numVertices);
-  for (uniform size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+  for (uniform unsigned int i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(uniform ISPCTriangle), mesh->numTriangles);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
@@ -61,7 +61,7 @@ void convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   rtcSetGeometryBuildQuality(geom, quality);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), mesh->numVertices);
-  for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+  for (unsigned int i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(uniform ISPCQuad), mesh->numQuads);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
@@ -74,9 +74,9 @@ void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
   uniform RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT);
   rtcSetGeometryBuildQuality(geom, quality);
-  for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
+  for (unsigned int i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), mesh->numVertices);
-  for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+  for (unsigned int i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, mesh->subdivlevel,      0, sizeof(uniform float),        mesh->numEdges);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,  mesh->position_indices, 0, sizeof(uniform unsigned int), mesh->numEdges);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,  0, RTC_FORMAT_UINT,  mesh->verticesPerFace,  0, sizeof(uniform unsigned int), mesh->numFaces);
@@ -100,7 +100,7 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(uniform Vec3fa), hair->numVertices);
-  for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
+  for (unsigned int i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, hair->hairs, 0, sizeof(uniform ISPCHair), hair->numHairs);
   if (hair->type != RTC_GEOMETRY_TYPE_LINEAR_CURVE)
     rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
@@ -109,7 +109,7 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
 }
 
-uniform size_t getNumObjects(uniform ISPCScene* uniform scene_in) {
+uniform unsigned int getNumObjects(uniform ISPCScene* uniform scene_in) {
   return scene_in->numGeometries;
 }
 
@@ -121,7 +121,7 @@ uniform RTCScene createScene(uniform ISPCScene* uniform scene_in)
   return scene;
 }
 
-void createObject(const uniform size_t i, uniform ISPCScene* uniform scene_in, uniform RTCScene scene_out)
+void createObject(const uniform unsigned int i, uniform ISPCScene* uniform scene_in, uniform RTCScene scene_out)
 {
   uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
   
@@ -146,32 +146,32 @@ uniform Vec3fa lerp(const uniform Vec3fa& v0, const uniform Vec3fa& v1, const un
 }
 
 
- task void interpolateVertexBlock(const uniform size_t numVertices,
+ task void interpolateVertexBlock(const uniform unsigned int numVertices,
                                   uniform Vec3fa* uniform vertices,
                                   const uniform Vec3fa* uniform const input0,
                                   const uniform Vec3fa* uniform const input1,
                                   const uniform float tt)
  {
-   const uniform size_t b = taskIndex;
-   const uniform size_t startID = b*VERTEX_INTERPOLATION_BLOCK_SIZE;
-   const uniform size_t endID = min(startID + VERTEX_INTERPOLATION_BLOCK_SIZE,numVertices);
-   for (uniform size_t i=startID; i<endID; i++)
+   const uniform unsigned int b = taskIndex;
+   const uniform unsigned int startID = b*VERTEX_INTERPOLATION_BLOCK_SIZE;
+   const uniform unsigned int endID = min(startID + VERTEX_INTERPOLATION_BLOCK_SIZE,numVertices);
+   for (uniform unsigned int i=startID; i<endID; i++)
      vertices[i] = lerp(input0[i],input1[i],tt);
  }
 
 
 void interpolateVertices(RTCGeometry geom,
-                         const uniform size_t numVertices,
+                         const uniform unsigned int numVertices,
                          const uniform Vec3fa* uniform const input0,
                          const uniform Vec3fa* uniform const input1,
                          const uniform float tt)
   {
     uniform Vec3fa* uniform vertices = (Vec3fa*) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_VERTEX, 0);
 #if 1
-    const uniform size_t blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
+    const uniform unsigned int blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
     launch[blocks] interpolateVertexBlock(numVertices,vertices,input0,input1,tt); sync;
 #else
-    for (uniform size_t i=0; i<numVertices; i++)
+    for (uniform unsigned int i=0; i<numVertices; i++)
       vertices[i] = lerp(input0[i],input1[i],tt);
 #endif
     rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0);
@@ -181,7 +181,7 @@ void interpolateVertices(RTCGeometry geom,
   void updateVertexData(const uniform unsigned int ID,
                         uniform ISPCScene* uniform scene_in,
                         uniform RTCScene uniform scene_out,
-                        const uniform size_t keyFrameID,
+                        const uniform unsigned int keyFrameID,
                         const uniform float tt)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[ID];
@@ -196,8 +196,8 @@ void interpolateVertices(RTCGeometry geom,
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
-      const uniform size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
-      const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
+      const uniform unsigned int t0 = (keyFrameID+0) % mesh->numTimeSteps;
+      const uniform unsigned int t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
       interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
@@ -207,8 +207,8 @@ void interpolateVertices(RTCGeometry geom,
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
-      const uniform size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
-      const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
+      const uniform unsigned int t0 = (keyFrameID+0) % mesh->numTimeSteps;
+      const uniform unsigned int t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
       interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
@@ -312,10 +312,10 @@ void renderTileStandard(uniform int taskIndex,
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (uniform unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
-        for (uniform size_t n=0;n<N;n++)
+        for (uniform unsigned int n=0;n<N;n++)
         {
           Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
@@ -326,13 +326,13 @@ void renderTileStandard(uniform int taskIndex,
         }
         /* trace shadow rays */
 #if 0
-        for (uniform size_t n=0;n<N;n++)
+        for (uniform unsigned int n=0;n<N;n++)
           rtcOccluded(g_scene,&context,RTCRay_(rays[n]));
 #else
         rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,N,sizeof(Ray));
 #endif
         /* modify pixel color based on occlusion */
-        for (uniform size_t n=0;n<N;n++)
+        for (uniform unsigned int n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
             colors[n] = colors[n] * 0.1f;
 
@@ -390,9 +390,9 @@ export void device_init (uniform int8* uniform cfg)
   g_scene = createScene(g_ispc_scene);
 
   /* create objects */
-  uniform size_t numObjects = getNumObjects(g_ispc_scene);
+  uniform unsigned int numObjects = getNumObjects(g_ispc_scene);
 
-  for (uniform size_t i=0;i<numObjects;i++)
+  for (uniform unsigned int i=0;i<numObjects;i++)
     createObject(i,g_ispc_scene,g_scene);
 
   rtcCommitScene (g_scene);
@@ -429,7 +429,7 @@ export void device_render (uniform int* uniform pixels,
     dg.P  = make_Vec3f(0.0f,0.0f,0.0f);
     dg.Ng = make_Vec3f(0.0f,0.0f,0.0f);
     dg.Ns = dg.Ng;
-    for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+    for (uniform unsigned int i=0; i<g_ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = g_ispc_scene->lights[i];
       const Vec2f sample = make_Vec2f(0.0f,0.0f);
@@ -454,12 +454,12 @@ export void device_render (uniform int* uniform pixels,
 
   if (animTime < 0.0f) animTime = getTime();
   const uniform double atime = (getTime() - animTime) * ANIM_FPS;
-  const uniform size_t intpart = (size_t)floor(atime);
+  const uniform unsigned int intpart = (unsigned int)floor(atime);
   const uniform double fracpart = atime - (double)intpart;
-  const uniform size_t keyFrameID = intpart;
+  const uniform unsigned int keyFrameID = intpart;
 
-  uniform size_t numObjects = getNumObjects(g_ispc_scene);
-  for (uniform size_t i=0;i<numObjects;i++)
+  uniform unsigned int numObjects = getNumObjects(g_ispc_scene);
+  for (uniform unsigned int i=0;i<numObjects;i++)
     updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
   /* =========== */
