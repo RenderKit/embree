@@ -26,165 +26,160 @@ extern "C" {
 struct RTCORE_ALIGN(16) RTCRay
 {
   /* ray data */
-  float org_x;        // x coordinate of ray origin
-  float org_y;        // y coordinate of ray origin
-  float org_z;        // z coordinate of ray origin
-  float tnear;       // Start of ray segment
+  float org_x;         // x coordinate of ray origin
+  float org_y;         // y coordinate of ray origin
+  float org_z;         // z coordinate of ray origin
+  float tnear;         // start of ray segment
 
-  float dir_x;        // x coordinate of ray direction
-  float dir_y;        // y coordinate of ray direction
-  float dir_z;        // z coordinate of ray direction
-  float tfar;        // End of ray segment (set to hit distance)
+  float dir_x;         // x coordinate of ray direction
+  float dir_y;         // y coordinate of ray direction
+  float dir_z;         // z coordinate of ray direction
+  float tfar;          // end of ray segment (set to hit distance)
 
-  float time;        // Time of this ray for motion blur
-  unsigned mask;     // Used to mask out objects during traversal
-
-  unsigned id;       // ray ID
-  unsigned flags;    // per flags
+  float time;          // time of this ray for motion blur
+  unsigned int mask;   // ray mask
+  unsigned int id;     // ray ID
+  unsigned int flags;  // ray flags
   
   /* hit data */
-  float Ng_x;         // x coordinate of geometry normal
-  float Ng_y;         // y coordinate of geometry normal
-  float Ng_z;         // z coordinate of geometry normal
+  float Ng_x;          // x coordinate of geometry normal
+  float Ng_y;          // y coordinate of geometry normal
+  float Ng_z;          // z coordinate of geometry normal
    
-  float u;           // Barycentric u coordinate of hit
-  float v;           // Barycentric v coordinate of hit
+  float u;             // barycentric u coordinate of hit
+  float v;             // barycentric v coordinate of hit
 
-  unsigned primID;   // geometry ID
-  unsigned geomID;   // primitive ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS];   // instance ID
+  unsigned int primID; // geometry ID
+  unsigned int geomID; // primitive ID
+  unsigned int instID[RTC_MAX_INSTANCE_LEVELS];   // instance ID
 };
 
 /* Ray structure for packets of 4 rays. */
 struct RTCORE_ALIGN(16) RTCRay4
 {
   /* ray data */
-  float org_x[4];  // x coordinate of ray origin
-  float org_y[4];  // y coordinate of ray origin
-  float org_z[4];  // z coordinate of ray origin
-  float tnear[4]; // Start of ray segment 
+  float org_x[4];
+  float org_y[4];
+  float org_z[4];
+  float tnear[4];
   
-  float dir_x[4];  // x coordinate of ray direction
-  float dir_y[4];  // y coordinate of ray direction
-  float dir_z[4];  // z coordinate of ray direction
-  float tfar[4];  // End of ray segment (set to hit distance)
+  float dir_x[4];
+  float dir_y[4];
+  float dir_z[4];
+  float tfar[4];
 
-  float time[4];  // Time of this ray for motion blur
-  unsigned mask[4];  // Used to mask out objects during traversal
-
-  unsigned id[4];       // ray ID
-  unsigned flags[4];    // per flags
+  float time[4];
+  unsigned int mask[4];
+  unsigned int id[4];
+  unsigned int flags[4];
   
   /* hit data */
-  float Ng_x[4];   // x coordinate of geometry normal
-  float Ng_y[4];   // y coordinate of geometry normal
-  float Ng_z[4];   // z coordinate of geometry normal
+  float Ng_x[4];
+  float Ng_y[4];
+  float Ng_z[4];
   
-  float u[4];     // Barycentric u coordinate of hit
-  float v[4];     // Barycentric v coordinate of hit
+  float u[4];
+  float v[4];
   
-  unsigned primID[4];  // geometry ID
-  unsigned geomID[4];  // primitive ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS][4];  // instance ID
+  unsigned int primID[4];
+  unsigned int geomID[4];
+  unsigned int instID[RTC_MAX_INSTANCE_LEVELS][4];
 };
 
 /* Ray structure for packets of 8 rays. */
 struct RTCORE_ALIGN(32) RTCRay8
 {
   /* ray data */
-  float org_x[8];  // x coordinate of ray origin
-  float org_y[8];  // y coordinate of ray origin
-  float org_z[8];  // z coordinate of ray origin
-  float tnear[8]; // Start of ray segment 
+  float org_x[8];
+  float org_y[8];
+  float org_z[8];
+  float tnear[8];
   
-  float dir_x[8];  // x coordinate of ray direction
-  float dir_y[8];  // y coordinate of ray direction
-  float dir_z[8];  // z coordinate of ray direction  
-  float tfar[8];  // End of ray segment (set to hit distance)
+  float dir_x[8];
+  float dir_y[8];
+  float dir_z[8];
+  float tfar[8];
 
-  float time[8];  // Time of this ray for motion blur
-  unsigned mask[8];  // Used to mask out objects during traversal
-
-  unsigned id[8];       // ray ID
-  unsigned flags[8];    // per flags
+  float time[8];
+  unsigned int mask[8];
+  unsigned int id[8];
+  unsigned int flags[8];
   
   /* hit data */
-  float Ng_x[8];   // x coordinate of geometry normal
-  float Ng_y[8];   // y coordinate of geometry normal
-  float Ng_z[8];   // z coordinate of geometry normal
+  float Ng_x[8];
+  float Ng_y[8];
+  float Ng_z[8];
   
-  float u[8];     // Barycentric u coordinate of hit
-  float v[8];     // Barycentric v coordinate of hit
+  float u[8];
+  float v[8];
   
-  unsigned primID[8];  // geometry ID
-  unsigned geomID[8];  // primitive ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS][8];  // instance ID
+  unsigned int primID[8];
+  unsigned int geomID[8];
+  unsigned int instID[RTC_MAX_INSTANCE_LEVELS][8];
 };
 
 /* Ray structure for packets of 16 rays. */
 struct RTCORE_ALIGN(64) RTCRay16
 {
   /* ray data */
-  float org_x[16];  // x coordinate of ray origin
-  float org_y[16];  // y coordinate of ray origin
-  float org_z[16];  // z coordinate of ray origin
-  float tnear[16]; // Start of ray segment 
+  float org_x[16];
+  float org_y[16];
+  float org_z[16];
+  float tnear[16];
   
-  float dir_x[16];  // x coordinate of ray direction
-  float dir_y[16];  // y coordinate of ray direction
-  float dir_z[16];  // z coordinate of ray direction  
-  float tfar[16];  // End of ray segment (set to hit distance)
+  float dir_x[16];
+  float dir_y[16];
+  float dir_z[16];
+  float tfar[16];
 
-  float time[16];  // Time of this ray for motion blur
-  unsigned mask[16];  // Used to mask out objects during traversal
-  
-  unsigned id[16];    // ray ID
-  unsigned flags[16]; // per flags
+  float time[16];
+  unsigned int mask[16];
+  unsigned int id[16];
+  unsigned int flags[16];
 
   /* hit data */
-  float Ng_x[16];   // x coordinate of geometry normal
-  float Ng_y[16];   // y coordinate of geometry normal
-  float Ng_z[16];   // z coordinate of geometry normal
+  float Ng_x[16];
+  float Ng_y[16];
+  float Ng_z[16];
   
-  float u[16];     // Barycentric u coordinate of hit
-  float v[16];     // Barycentric v coordinate of hit
+  float u[16];
+  float v[16];
   
-  unsigned primID[16];  // geometry ID
-  unsigned geomID[16];  // primitive ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS][16];  // instance ID
+  unsigned int primID[16];
+  unsigned int geomID[16];
+  unsigned int instID[RTC_MAX_INSTANCE_LEVELS][16];
 };
 
 /* Ray structure template for packets of N rays in pointer SOA layout. */
 struct RTCRayNp
 {
   /* ray data */
-  float* org_x;  // x coordinate of ray origin
-  float* org_y;  // y coordinate of ray origin
-  float* org_z;  // z coordinate of ray origin
-  float* tnear; // Start of ray segment (optional)
+  float* org_x;
+  float* org_y;
+  float* org_z;
+  float* tnear;
 
-  float* dir_x;  // x coordinate of ray direction
-  float* dir_y;  // y coordinate of ray direction
-  float* dir_z;  // z coordinate of ray direction  
-  float* tfar;  // End of ray segment (set to hit distance)
+  float* dir_x;
+  float* dir_y;
+  float* dir_z;
+  float* tfar;
  
-  float* time;     // Time of this ray for motion blur (optional)
-  unsigned* mask;  // Used to mask out objects during traversal (optional)
-
-  unsigned* id;    // ray ID
-  unsigned* flags; // per flags
+  float* time;
+  unsigned int* mask;
+  unsigned int* id;
+  unsigned int* flags;
 
   /* hit data */
-  float* Ng_x;   // x coordinate of geometry normal (optional)
-  float* Ng_y;   // y coordinate of geometry normal (optional)
-  float* Ng_z;   // z coordinate of geometry normal (optional)
+  float* Ng_x;
+  float* Ng_y;
+  float* Ng_z;
 
-  float* u;     // Barycentric u coordinate of hit
-  float* v;     // Barycentric v coordinate of hit
+  float* u;
+  float* v;
 
-  unsigned* primID;  // primitive ID 
-  unsigned* geomID;  // geometry ID
-  unsigned* instID[RTC_MAX_INSTANCE_LEVELS];  // instance ID (optional)
+  unsigned int* primID;
+  unsigned int* geomID;
+  unsigned int* instID[RTC_MAX_INSTANCE_LEVELS];
 };
 
 struct RTCRayN;
@@ -197,45 +192,45 @@ struct RTCHitN;
 #if defined(__cplusplus)
 
 /* Helper functions to access ray packets of runtime size N */
-RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }  // x coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }  // y coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }  // z coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }  // Start of ray segment 
+RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }  // x coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }  // y coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[6*N+i]; }  // z coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[7*N+i]; }  // End of ray segment (set to hit distance)
+RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[6*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[7*N+i]; }
 
-RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)   ptr)[8*N+i]; }   // Time of this ray for motion blur 
-RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[9*N+i]; }   // Used to mask out objects during traversal
+RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)   ptr)[8*N+i]; }
+RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[9*N+i]; }
 
-RTCORE_FORCEINLINE unsigned& RTCRayN_id   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[10*N+i]; }   // Time of this ray for motion blur 
-RTCORE_FORCEINLINE unsigned& RTCRayN_flags(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[11*N+i]; }   // Used to mask out objects during traversal
+RTCORE_FORCEINLINE unsigned& RTCRayN_id   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[10*N+i]; }
+RTCORE_FORCEINLINE unsigned& RTCRayN_flags(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[11*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[12*N+i]; }  // x coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[13*N+i]; }  // y coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[14*N+i]; }  // z coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[12*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[13*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[14*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[15*N+i]; }  // Barycentric u coordinate of hit
-RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[16*N+i]; }  // Barycentric v coordinate of hit
+RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[15*N+i]; }
+RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[16*N+i]; }
 
-RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }  // primitive ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[18*N+i]; }  // geometry ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N, unsigned int i, unsigned int level) { return ((unsigned*)ptr)[19*N+i+N*level]; }  // instance ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }
+RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[18*N+i]; }
+RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N, unsigned int i, unsigned int level) { return ((unsigned*)ptr)[19*N+i+N*level]; }
 
 /* Helper functions to access hit packets of size N */
-RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }  // x coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }  // y coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }  // z coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
+RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
+RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; } // hit distance
-RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; } // Barycentric u coordinate of hit
-RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; } // Barycentric v coordinate of hit
+RTCORE_FORCEINLINE float& RTCHitN_t   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }
+RTCORE_FORCEINLINE float& RTCHitN_u   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }
+RTCORE_FORCEINLINE float& RTCHitN_v   (const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }
 
-RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[6*N+i]; }  // primitive ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[7*N+i]; }  // geometry ID
-RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, unsigned int i, unsigned int l) { return ((unsigned*)ptr)[8*N+i+N*l]; }  // instance ID
+RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[6*N+i]; }
+RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[7*N+i]; }
+RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, unsigned int i, unsigned int l) { return ((unsigned*)ptr)[8*N+i+N*l]; }
 
 
 /* Helper structure to create a ray packet of compile time size N */
@@ -244,66 +239,66 @@ struct RTCRayNt
 {
   /* ray data */
 public:
-  float org_x[N];  // x coordinate of ray origin
-  float org_y[N];  // y coordinate of ray origin
-  float org_z[N];  // z coordinate of ray origin
-  float tnear[N]; // Start of ray segment 
+  float org_x[N];
+  float org_y[N];
+  float org_z[N];
+  float tnear[N];
   
-  float dir_x[N];  // x coordinate of ray direction
-  float dir_y[N];  // y coordinate of ray direction
-  float dir_z[N];  // z coordinate of ray direction  
-  float tfar[N];  // End of ray segment (set to hit distance)
+  float dir_x[N];
+  float dir_y[N];
+  float dir_z[N];
+  float tfar[N];
 
-  float time[N];  // Time of this ray for motion blur
-  unsigned mask[N];  // Used to mask out objects during traversal
+  float time[N];
+  unsigned mask[N];
   
-  unsigned id[N];    // ray ID
-  unsigned flags[N]; // per flags
+  unsigned id[N];
+  unsigned flags[N];
 
   /* hit data */
 public:
-  float Ng_x[N];   // x coordinate of geometry normal
-  float Ng_y[N];   // y coordinate of geometry normal
-  float Ng_z[N];   // z coordinate of geometry normal
+  float Ng_x[N];
+  float Ng_y[N];
+  float Ng_z[N];
   
-  float u[N];     // Barycentric u coordinate of hit
-  float v[N];     // Barycentric v coordinate of hit
+  float u[N];
+  float v[N];
 
-  unsigned primID[N];  // primitive ID  
-  unsigned geomID[N];  // geometry ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];  // instance ID
+  unsigned primID[N];
+  unsigned geomID[N];
+  unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];
 };
 
 /* Helper structure to create a hit packet of compile time size N */
 template<int N>
 struct RTCHitNt
 {
-  float Ng_x[N];        // x coordinate of geometry normal
-  float Ng_y[N];        // y coordinate of geometry normal
-  float Ng_z[N];        // z coordinate of geometry normal
+  float Ng_x[N];
+  float Ng_y[N];
+  float Ng_z[N];
 
-  float t[N];          // hit distance
-  float u[N];          // Barycentric u coordinate of hit
-  float v[N];          // Barycentric v coordinate of hit
+  float t[N];
+  float u[N];
+  float v[N];
 
-  unsigned primID[N];  // primitive ID
-  unsigned geomID[N];  // geometry ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];  // instance ID
+  unsigned primID[N];
+  unsigned geomID[N];
+  unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];
 };
 
 struct RTCHit
 {
-  float Ng_x;        // x coordinate of geometry normal
-  float Ng_y;        // y coordinate of geometry normal
-  float Ng_z;        // z coordinate of geometry normal
+  float Ng_x;
+  float Ng_y;
+  float Ng_z;
 
-  float t;          // hit distance
-  float u;          // Barycentric u coordinate of hit
-  float v;          // Barycentric v coordinate of hit
+  float t;
+  float u;
+  float v;
 
-  unsigned primID;  // primitive ID
-  unsigned geomID;  // geometry ID
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS];  // instance ID
+  unsigned primID;
+  unsigned geomID;
+  unsigned instID[RTC_MAX_INSTANCE_LEVELS];
 };
 
 

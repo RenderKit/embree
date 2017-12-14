@@ -26,20 +26,20 @@ struct RTCRayNp;
 /* Build quality levels */
 enum RTCBuildQuality
 {
-  RTC_BUILD_QUALITY_LOW    = 0, // create lower quality data structures (for dynamic scenes)
-  RTC_BUILD_QUALITY_MEDIUM = 1, // default build quality for most usages
-  RTC_BUILD_QUALITY_HIGH   = 2, // create higher quality data structures (longer build times)
-  RTC_BUILD_QUALITY_REFIT  = 3, // refits the BVH
+  RTC_BUILD_QUALITY_LOW    = 0,
+  RTC_BUILD_QUALITY_MEDIUM = 1,
+  RTC_BUILD_QUALITY_HIGH   = 2,
+  RTC_BUILD_QUALITY_REFIT  = 3,
 };
 
 /* Scene flags */
 enum RTCSceneFlags
 {
   RTC_SCENE_FLAG_NONE                    = 0,
-  RTC_SCENE_FLAG_DYNAMIC                 = (1 << 0), // provides better build performance for dynamic scenes
-  RTC_SCENE_FLAG_COMPACT                 = (1 << 1),   // use memory conservative acceleration structure
-  RTC_SCENE_FLAG_ROBUST                  = (1 << 2),    // use acceleration structure that allows robust traversal
-  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 3)  // enables support for intersection filter function inside context
+  RTC_SCENE_FLAG_DYNAMIC                 = (1 << 0),
+  RTC_SCENE_FLAG_COMPACT                 = (1 << 1),
+  RTC_SCENE_FLAG_ROBUST                  = (1 << 2),
+  RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 3)
 };
 
 /* Intersection context flags */
@@ -58,20 +58,7 @@ struct RTCIntersectContext
   unsigned int instID;            // will be set to geomID of instance when instance is entered
 };
 
-/* Arguments for RTCFilterFunctionN callback */
-struct RTCFilterFunctionNArguments
-{
-  uniform int* uniform valid;                 // pointer to valid mask
-  void* uniform geomUserPtr;                  // pointer to geometry user data
-  const RTCIntersectContext* uniform context; // intersection context as passed to rtcIntersect/rtcOccluded
-  struct RTCRayN* uniform ray;                // ray and previous hit
-  struct RTCHitN* uniform potentialHit;       // potential new hit
-  uniform unsigned int N;                     // number of rays in ray packet
-};
-
-/* Intersection filter function for ray packets of size N */
-typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform const args);
-
+/* initializes intersection context */
 RTCORE_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
@@ -79,16 +66,30 @@ RTCORE_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* con
   context->instID = -1;
 }
 
+/* Arguments for RTCFilterFunctionN callback */
+struct RTCFilterFunctionNArguments
+{
+  uniform int* uniform valid;
+  void* uniform geomUserPtr;
+  const RTCIntersectContext* uniform context;
+  struct RTCRayN* uniform ray;
+  struct RTCHitN* uniform potentialHit;
+  uniform unsigned int N;
+};
+
+/* Filter callback function. */
+typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform const args);
+
 /* Defines an opaque scene type */
 typedef uniform struct __RTCScene* uniform RTCScene;
 
 /* Creates a new scene. */
 RTCORE_API RTCScene rtcNewScene(RTCDevice device);
 
-/* Type of progress callback function. */
+/* Type of progress monitor callback function. */
 typedef unmasked uniform bool (*uniform RTCProgressMonitorFunction)(void* uniform ptr, const uniform double n);
 
-/* Sets the progress callback function which is called during hierarchy build. */
+/* Sets the progress monitor callback function. */
 RTCORE_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction func, void* uniform ptr);
 
 /* Sets the build quality of a scene. */
@@ -99,42 +100,27 @@ RTCORE_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags sflags);
 
 /* Returns the scene flags. */
 RTCORE_API uniform RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
- 
-/* Commits the geometry of the scene. After initializing or modifying
- *  geometries, commit has to get called before tracing
- *  rays. */
+
+/* Commits a scene. */
 RTCORE_API void rtcCommitScene(RTCScene scene);
 
-/* Commits the geometry of the scene in join mode. When Embree is
- *  using TBB (default), threads that call `rtcJoinCommitScene` will
- *  participate in the hierarchy build procedure. When Embree is using
- *  the internal tasking system, exclusively threads that call
- *  `rtcJoinCommitScene` will execute the build procedure. Do not
- *  mix `rtcJoinCommitScene` with other commit calls. */
+/* Commits a scene from multiple threads */
 RTCORE_API void rtcJoinCommitScene(RTCScene scene);
 
-/* Returns to AABB of the scene. rtcCommitScene has to get called
- *  previously to this function. */
+/* Returns AABB of the scene. */
 RTCORE_API void rtcGetSceneBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
 
-/* Returns linear AABBs of the scene. The result bounds_o gets filled
- *  with AABBs for time 0 and time 1. rtcCommitScene has to get called
- *  previously to this function. */
+/* Returns linear AABBs of the scene. */
 RTCORE_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCLinearBounds* uniform bounds_o);
 
-/* Intersects a uniform ray with the scene. This function can only be
- *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
- *  has to be aligned to 16 bytes. */
+/* Intersects a single ray with the scene. */
 RTCORE_API void rtcIntersect1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray);
 
-/* Intersects a varying ray with the scene. This function can only be
- *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
- *  valid mask and ray have both to be aligned to sizeof(varing float)
- *  bytes. */
 RTCORE_API void rtcIntersect4 (const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 RTCORE_API void rtcIntersect8 (const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 RTCORE_API void rtcIntersect16(const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
+/* Intersects a varying ray with the scene. */
 inline void rtcIntersect(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray) 
 {
   varying bool mask = __mask;
@@ -150,52 +136,31 @@ inline void rtcIntersect(RTCScene scene, uniform RTCIntersectContext* uniform co
     rtcIntersect16((uniform int* uniform)&imask, scene, context, ray);
 }
 
-/* Intersects a stream of M rays in AOS layout with the scene. This
- *  function can only be called for scenes with the RTC_INTERSECT_STREAM
- *  flag set. The stride specifies the offset between rays in
- *  bytes. */
+/* Intersects a stream of M rays with the scene. */
 RTCORE_API void rtcIntersect1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform rays, const uniform unsigned int M, const uniform size_t stride);
 
-/* Intersects a stream of pointers to M rays with the scene. This
- *  function can only be called for scenes with the
- *  RTC_INTERSECT_STREAM flag set. */
+/* Intersects a stream of pointers to M rays with the scene. */
 RTCORE_API void rtcIntersect1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay** uniform rays, const uniform unsigned int M);
 
-/* Intersects a stream of M ray packets of size N in SOA format with the
- *  scene. This function can only be called for scenes with the
- *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
- *  ray packets in bytes. */
+/* Intersects a stream of M ray packets of size N in SOA format with the scene. */
 RTCORE_API void rtcIntersectNM(RTCScene scene, uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform unsigned int N, const uniform unsigned int M, const uniform size_t stride);
 
-/* Intersects a stream of M ray packets in SOA format with the scene. This
- *  function can only be called for scenes with the RTC_INTERSECT_STREAM
- *  flag set. The stride specifies the offset between rays in
- *  bytes. */
+/* Intersects a stream of M ray packets of native packet size with the scene. */
 inline void rtcIntersectVM(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform rays, const uniform unsigned int M, const uniform size_t stride) {
   rtcIntersectNM(scene, context, (struct RTCRayN*)rays, sizeof(varying float)/4, M, stride);
 }
 
-/* Intersects a stream of M ray packets of size N in SOA format with
- *  the scene. This function can only be called for scenes with the
- *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
- *  ray packets in bytes. In contrast to the rtcIntersectNM function
- *  this function accepts a separate data pointer for each component
- *  of the ray packet. */
+/* Intersects a stream of M ray packets of size N in SOA format with the scene. */
 RTCORE_API void rtcIntersectNp(RTCScene scene, uniform RTCIntersectContext* uniform context, const uniform RTCRayNp* uniform rays, const uniform unsigned int N);
 
-/* Tests if a uniform ray is occluded by the scene. This function can
- *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
- *  set. The ray has to be aligned to 16 bytes. */
+/* Tests a single ray for occlusion with the scene. */
 RTCORE_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray);
 
-/* Tests if a varying ray is occluded by the scene. This function can
- *  only be called for scenes with the RTC_INTERSECT_VARYING flag
- *  set. The valid mask and ray have both to be aligned to
- *  sizeof(varing float) bytes. */
 RTCORE_API void rtcOccluded4 (const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 RTCORE_API void rtcOccluded8 (const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 RTCORE_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
+/* Tests a varying ray for occlusion with the scene. */
 inline void rtcOccluded(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray)
 {
   varying bool mask = __mask;
@@ -211,37 +176,21 @@ inline void rtcOccluded(RTCScene scene, uniform RTCIntersectContext* uniform con
     rtcOccluded16((uniform int* uniform)&imask, scene, context, ray);
 }
 
-/* Tests if a stream of M rays in AOS layout is occluded by the
- *  scene. This function can only be called for scenes with the
- *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
- *  rays in bytes.*/
+/* Tests a stream of M rays for occlusion with the scene. */
 RTCORE_API void rtcOccluded1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform rays, const uniform unsigned int M, const uniform size_t stride);
 
-/* Tests if a stream of pointers to M rays in AOS layout is occluded by the
- *  scene. This function can only be called for scenes with the
- *  RTC_INTERSECT_STREAM flag set. */
+/* Tests a stream of pointers to M rays for occlusion with the scene. */
 RTCORE_API void rtcOccluded1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay** uniform rays, const uniform unsigned int M);
 
-/* Tests if a stream of M ray packets of size N in SOA format is
- *  occluded by the scene. This function can only be called for scenes
- *  with the RTC_INTERSECT_STREAM flag set. The stride specifies the offset
- *  between rays in bytes.*/
+/* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
 RTCORE_API void rtcOccludedNM(RTCScene scene, uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform unsigned int N, const uniform unsigned int M, const uniform size_t stride);
 
-/* Tests if a stream of M ray packets in SOA format is occluded by the
- *  scene. This function can only be called for scenes with the
- *  RTC_INTERSECT_STREAM flag set. The stride specifies the offset between
- *  rays in bytes.*/
+/* Tests a stream of M ray packets of native size in SOA format for occlusion with the scene. */
 inline void rtcOccludedVM(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform rays, const uniform unsigned int M, const uniform size_t stride) {
   rtcOccludedNM(scene, context, (struct RTCRayN*)rays, sizeof(varying float)/4, M, stride);
 }
 
-/* Tests if a stream of M ray packets of size N in SOA format is
- *  occluded by the scene. This function can only be called for scenes
- *  with the RTC_INTERSECT_STREAM flag set. The stride specifies the offset
- *  between rays in bytes. In contrast to the rtcOccludedNM function
- *  this function accepts a separate data pointer for each component
- *  of the ray packet. */
+/* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
 RTCORE_API void rtcOccludedNp(RTCScene scene, uniform RTCIntersectContext* uniform context, const uniform RTCRayNp* uniform rays, const uniform unsigned int N);
 
 /* Retains the scene (increments reference count). */

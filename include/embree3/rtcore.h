@@ -16,13 +16,6 @@
 
 #pragma once
 
-/* \file rtcore.h Defines the Embree Ray Tracing Kernel API for C and C++ 
-
-   This file defines the Embree ray tracing kernel API for C and
-   C++. The user is supposed to include this file, and alternatively
-   the rtcore_ray.h file, but none of the other .h files in this
-   folder. */
-
 #include "rtcore_version.h"
 #include "rtcore_common.h"
 #include "rtcore_device.h"

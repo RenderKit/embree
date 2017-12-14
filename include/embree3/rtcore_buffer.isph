@@ -55,7 +55,7 @@ RTCORE_API void* uniform rtcGetBufferData(RTCBuffer buffer);
 /* Retains the buffer (increments reference count). */
 RTCORE_API void rtcRetainBuffer(RTCBuffer buffer);
 
-/* Releases the buffer handle. */
+/* Releases the buffer handle (decrements reference count). */
 RTCORE_API void rtcReleaseBuffer(RTCBuffer buffer);
 
 #endif
