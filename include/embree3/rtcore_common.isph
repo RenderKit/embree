@@ -17,12 +17,6 @@
 #ifndef __RTCORE_COMMON_ISPH__
 #define __RTCORE_COMMON_ISPH__
 
-/* This is necessary as the size_t type under ISPC may be 32 or 64 bits wide depending on the ISPC addressing mode used. */
-#if !defined(size_t) // FIXME: have to undefine these again
-#define size_t uintptr_t
-#define ssize_t intptr_t
-#endif
-
 #if !defined(RTCORE_API)
 #define RTCORE_API extern "C" unmasked
 #endif

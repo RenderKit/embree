@@ -177,15 +177,15 @@ RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unif
 
 /* Sets geometry buffer. */
 RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                     uniform RTCBuffer buffer, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int itemCount);
+                                     uniform RTCBuffer buffer, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform unsigned int itemCount);
 
 /* Sets shared geometry buffer. */
 RTCORE_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                           const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform unsigned int itemCount);
+                                           const void* uniform ptr, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform unsigned int itemCount);
 
 /* Sets new geometry buffer. */
 RTCORE_API void* uniform rtcSetNewGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                                 uniform size_t byteStride, uniform unsigned int itemCount);
+                                                 uniform uintptr_t byteStride, uniform unsigned int itemCount);
 
 /* Returns a pointer to the buffer data. */
 RTCORE_API void* uniform rtcGetGeometryBufferData(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);
