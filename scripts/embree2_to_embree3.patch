@@ -2468,6 +2468,13 @@ return true; // FIXME: you have to return true from this function
 }@@
 
 @@{
+rtcMakeStaticBVH(EXPR bvh)
+=>
+COMMENT rtcMakeStaticBVH(bvh)
+#pragma message ("set settings.flags = RTC_BUILD_FLAG_DYNAMIC instead")
+}@@
+
+@@{
 rtcDeleteBVH(EXPR bvh)
 =>
 rtcReleaseBVH(bvh)

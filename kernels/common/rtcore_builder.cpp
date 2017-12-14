@@ -36,7 +36,7 @@ namespace embree
     struct BVH : public RefCount
     {
       BVH (Device* device)
-        : device(device), isStatic(false), allocator(device,true), morton_src(device,0), morton_tmp(device,0)
+        : device(device), allocator(device,true), morton_src(device,0), morton_tmp(device,0)
       {
         device->refInc();
       }
@@ -47,7 +47,6 @@ namespace embree
 
     public:
       Device* device;
-      bool isStatic;
       FastAllocator allocator;
       mvector<BVHBuilderMorton::BuildPrim> morton_src;
       mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
@@ -347,10 +346,6 @@ namespace embree
       RTCORE_VERIFY_HANDLE(settings->setNodeBounds);
       RTCORE_VERIFY_HANDLE(settings->createLeaf);
 
-      /* if we made this BVH static, we can not re-build it anymore  */
-      if (bvh->isStatic)
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"static BVH cannot get rebuild");
-
       /* initialize the allocator */
       bvh->allocator.init_estimate(settings->numPrimitives*sizeof(BBox3fa));
       bvh->allocator.reset();
@@ -368,6 +363,13 @@ namespace embree
       }
       else
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid build quality");
+
+      /* if we are in dynamic mode, then do not clear temporary data */
+      if (!(settings->flags & RTC_BUILD_FLAG_DYNAMIC))
+      {
+        bvh->morton_src.clear();
+        bvh->morton_tmp.clear();
+      }
 
       RTCORE_CATCH_END(bvh->device);
       return nullptr;
@@ -391,7 +393,6 @@ namespace embree
       RTCORE_VERIFY_HANDLE(hbvh);
       bvh->morton_src.clear();
       bvh->morton_tmp.clear();
-      bvh->isStatic = true;
       RTCORE_CATCH_END(bvh->device);
     }
 

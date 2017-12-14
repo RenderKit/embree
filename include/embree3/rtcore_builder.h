@@ -52,11 +52,19 @@ typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const
 /* Callback to split a build primitive. */
 typedef void  (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* prim, unsigned int dim, float pos, struct RTCBounds* lbounds, struct RTCBounds* rbounds, void* userPtr);
 
+/* Build flags */
+enum RTCBuildFlags
+{
+  RTC_BUILD_FLAG_NONE                    = 0,
+  RTC_BUILD_FLAG_DYNAMIC                 = (1 << 0),
+};
+  
 /* Input for builders */
 struct RTCBuildSettings
 {
   unsigned int size;
   enum RTCBuildQuality quality;
+  enum RTCBuildFlags flags;
   unsigned int maxBranchingFactor;
   unsigned int maxDepth;
   unsigned int sahBlockSize;
@@ -84,6 +92,7 @@ RTCORE_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
   struct RTCBuildSettings settings;
   settings.size = sizeof(settings);
   settings.quality = RTC_BUILD_QUALITY_MEDIUM;
+  settings.flags = RTC_BUILD_FLAG_NONE;
   settings.maxBranchingFactor = 2;
   settings.maxDepth = 32;
   settings.sahBlockSize = 1;
@@ -113,9 +122,6 @@ RTCORE_API void* rtcBuildBVH(const struct RTCBuildSettings* settings);
 
 /* Allocates memory using the thread local allocator. */
 RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
-
-/* Frees internal builder state. */
-RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
 
 /* Retains the BVH (increments reference count). */
 RTCORE_API void rtcRetainBVH(RTCBVH bvh);

@@ -116,6 +116,7 @@ namespace embree
     /* settings for BVH build */
     RTCBuildSettings settings = rtcDefaultBuildSettings();
     settings.size = sizeof(settings);
+    settings.flags = RTC_BUILD_FLAG_DYNAMIC;
     settings.quality = quality;
     settings.maxBranchingFactor = 2;
     settings.maxDepth = 1024;
@@ -149,7 +150,6 @@ namespace embree
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
     }
 
-    rtcMakeStaticBVH(bvh);
     rtcReleaseBVH(bvh);
   }
 
