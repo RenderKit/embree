@@ -298,7 +298,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation*scale;
-    rtcSetGeometryTransform(inst,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm,t);
+    rtcSetGeometryTransform(inst,t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm);
   }
 
   rtcCommitGeometry(inst);
@@ -343,7 +343,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation;
-    rtcSetGeometryTransform(inst,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm,t);
+    rtcSetGeometryTransform(inst,t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm);
   }
 
   rtcCommitGeometry(inst);

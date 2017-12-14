@@ -143,7 +143,7 @@ RTCORE_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTC
 RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
 /* Sets transformation of the instance for specified timestep */
-RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry, uniform RTCFormat format, const void* uniform xfm, uniform unsigned int timeStep);
+RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry, uniform unsigned int timeStep, uniform RTCFormat format, const void* uniform xfm);
 
 /* Returns transformation of the instance for specified time. */
 RTCORE_API void rtcGetGeometryTransform(RTCGeometry geometry, uniform float time, uniform RTCFormat format, void* uniform xfm);

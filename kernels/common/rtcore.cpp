@@ -955,7 +955,7 @@ namespace embree
     }
   }
 
-  RTCORE_API void rtcSetGeometryTransform (RTCGeometry hgeometry, RTCFormat format, const void* xfm, unsigned int timeStep)
+  RTCORE_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeStep, RTCFormat format, const void* xfm)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
