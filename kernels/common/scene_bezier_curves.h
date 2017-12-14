@@ -24,6 +24,21 @@
 
 namespace embree
 {
+  /*! basis of a curve */
+  enum CurveType
+  {
+    LINEAR_CURVE,
+    BEZIER_CURVE,
+    BSPLINE_CURVE
+  };
+
+  /* rendering mode of a curve */
+  enum CurveSubtype
+  {
+    ROUND_CURVE,
+    FLAT_CURVE
+  };
+
   /*! represents an array of bicubic bezier curves */
   struct NativeCurves : public Geometry
   {
@@ -33,7 +48,7 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype);
+    NativeCurves (Device* device, CurveType type, CurveSubtype subtype);
     
   public:
     void enabling();
@@ -146,8 +161,10 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == RTC_GEOMETRY_SUBTYPE_FLAT)) return curve.tessellatedBounds(tessellationRate);
-      else                                     return curve.accurateBounds();
+      if (likely(subtype == FLAT_CURVE))
+        return curve.tessellatedBounds(tessellationRate);
+      else
+        return curve.accurateBounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
@@ -163,7 +180,7 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == RTC_GEOMETRY_SUBTYPE_FLAT)) return curve.tessellatedBounds(tessellationRate);
+      if (likely(subtype == FLAT_CURVE)) return curve.tessellatedBounds(tessellationRate);
       else                                     return curve.accurateBounds();
     }
 
@@ -283,8 +300,8 @@ namespace embree
     vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
-    RTCGeometryType type;                   //!< basis of user provided vertices
-    RTCGeometrySubtype subtype;             //!< hair or surface geometry
+    CurveType type;                         //!< basis of user provided vertices
+    CurveSubtype subtype;                   //!< round of flat curve
     int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
     BufferView<Vec3fa> native_vertices0;        //!< fast access to first vertex buffer
@@ -296,7 +313,7 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+      NativeCurvesISA (Device* device, CurveType type, CurveSubtype subtype)
         : NativeCurves(device,type,subtype) {}
 
       template<typename Curve> void interpolate_helper(const RTCInterpolateArguments* const args);
@@ -306,7 +323,7 @@ namespace embree
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+      CurvesBezier (Device* device, CurveType type, CurveSubtype subtype)
          : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
@@ -315,7 +332,7 @@ namespace embree
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, RTCGeometryType type, RTCGeometrySubtype subtype)
+      CurvesBSpline (Device* device, CurveType type, CurveSubtype subtype)
          : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
@@ -323,6 +340,6 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCGeometryType COMMA RTCGeometrySubtype);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCGeometryType COMMA RTCGeometrySubtype);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA CurveSubtype);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA CurveSubtype);
 }

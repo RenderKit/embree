@@ -449,19 +449,36 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> mesh, ssize_t id)
   {
-    std::string str_subtype = "";
-    switch (mesh->subtype) {
-    case RTC_GEOMETRY_SUBTYPE_FLAT: str_subtype = "ribbon"; break;
-    case RTC_GEOMETRY_SUBTYPE_ROUND: str_subtype = "surface"; break;
-    default: throw std::runtime_error("invalid geometry subtype");
-    }
-
     std::string str_type = "";
+    std::string str_subtype = "";
+
     switch (mesh->type) {
-    case RTC_GEOMETRY_TYPE_LINEAR_CURVE: str_type = "linear"; break;
-    case RTC_GEOMETRY_TYPE_BEZIER_CURVE: str_type = "bezier"; break;
-    case RTC_GEOMETRY_TYPE_BSPLINE_CURVE: str_type = "bspline"; break;
-    default: throw std::runtime_error("invalid basis");
+    case RTC_GEOMETRY_TYPE_LINEAR_CURVE:
+      str_type = "linear";
+      break;
+
+    case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
+      str_type = "bezier";
+      str_subtype = "surface";
+      break;
+
+    case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:
+      str_type = "bezier";
+      str_subtype = "ribbon";
+      break;
+
+    case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
+      str_type = "bspline";
+      str_subtype = "surface";
+      break;
+
+    case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:
+      str_type = "bspline";
+      str_subtype = "ribbon";
+      break;
+
+    default:
+      throw std::runtime_error("invalid curve type");
     }
 
     std::vector<int> indices(mesh->hairs.size());

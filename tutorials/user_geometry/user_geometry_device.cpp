@@ -241,7 +241,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.l.vy = Vec3fa(0,1,0);
   instance->local2world.l.vz = Vec3fa(0,0,1);
   instance->local2world.p    = Vec3fa(0,0,0);
-  instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  instance->geometry = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
@@ -732,7 +732,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
 
 Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
-  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
@@ -758,7 +758,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 
 Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 {
-  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (unsigned int i=0; i<N; i++) {
@@ -794,7 +794,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi+1));
@@ -851,7 +851,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),4);

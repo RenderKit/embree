@@ -63,7 +63,7 @@ uniform unsigned int hair_indices[6] = {
 /* add hair geometry */
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_BSPLINE_CURVE, RTC_GEOMETRY_SUBTYPE_ROUND);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
   rtcSetGeometryVertexAttributeCount(geom,1);
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(uniform unsigned int), NUM_CURVES);
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,           0, RTC_FORMAT_FLOAT4, hair_vertices,      0, sizeof(uniform Vec3fa),       NUM_VERTICES);
@@ -78,7 +78,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vertex), 4);

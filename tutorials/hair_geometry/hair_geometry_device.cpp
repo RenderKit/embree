@@ -61,7 +61,7 @@ Vec3fa sampleSphere(const float u, const float v)
 
 void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
@@ -74,7 +74,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewGeometry (g_device, hair->type, hair->subtype);
+  RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
   for (unsigned int t=0; t<hair->numTimeSteps; t++) {
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }

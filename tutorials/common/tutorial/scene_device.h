@@ -168,7 +168,7 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, RTCGeometrySubtype subtype, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 #endif
 
@@ -181,7 +181,6 @@ namespace embree
     uint8* flags;             //!< end cap flags per segment
 #endif
     RTCGeometryType type;
-    RTCGeometrySubtype subtype;
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;

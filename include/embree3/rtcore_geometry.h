@@ -29,18 +29,12 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_QUAD,
   RTC_GEOMETRY_TYPE_SUBDIVISION,
   RTC_GEOMETRY_TYPE_LINEAR_CURVE,
-  RTC_GEOMETRY_TYPE_BEZIER_CURVE,
-  RTC_GEOMETRY_TYPE_BSPLINE_CURVE,
+  RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
+  RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,
+  RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
+  RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,
   RTC_GEOMETRY_TYPE_USER,
   RTC_GEOMETRY_TYPE_INSTANCE
-};
-
-/* Geometry subtype */
-enum RTCGeometrySubtype
-{
-  RTC_GEOMETRY_SUBTYPE_DEFAULT = 0,
-  RTC_GEOMETRY_SUBTYPE_ROUND = 1,
-  RTC_GEOMETRY_SUBTYPE_FLAT = 2,
 };
 
 /* Interpolation mode for subdivision surfaces. */
@@ -130,8 +124,8 @@ struct RTCDisplacementFunctionNArguments
 /* Type of displacement mapping callback function. */
 typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* const args);
 
-/* Creates a new geometry of specified type and subtype. */
-RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, enum RTCGeometryType type, enum RTCGeometrySubtype subtype);
+/* Creates a new geometry of specified type. */
+RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, enum RTCGeometryType type);
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
 RTCORE_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);

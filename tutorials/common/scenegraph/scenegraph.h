@@ -755,21 +755,21 @@ namespace embree
       };
       
     public:
-      HairSetNode (RTCGeometryType type, RTCGeometrySubtype subtype, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), type(type), subtype(subtype), material(material), tessellation_rate(4)
+      HairSetNode (RTCGeometryType type, Ref<MaterialNode> material, size_t numTimeSteps = 0)
+        : Node(true), type(type), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometryType type, RTCGeometrySubtype subtype)
-        : Node(true), type(type), subtype(subtype), hairs(hairs), material(material), tessellation_rate(4)
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometryType type)
+        : Node(true), type(type), hairs(hairs), material(material), tessellation_rate(4)
       {
         positions.push_back(positions_in);
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), subtype(imesh->subtype), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -816,8 +816,7 @@ namespace embree
       void verify() const;
 
     public:
-      RTCGeometryType type;                   //!< basis function of curve (bezier or bspline)
-      RTCGeometrySubtype subtype;             //!< subtype of geometry (hair or curve)
+      RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
       std::vector<unsigned char> flags;       //!< left, right end cap flags
@@ -829,6 +828,12 @@ namespace embree
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GEOMETRY_GROUP, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
+
+    enum CurveSubtype
+    {
+      ROUND_CURVE,
+      FLAT_CURVE
+    };
   }
 }
 

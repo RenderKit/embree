@@ -1173,7 +1173,10 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
     }
-    else if (mesh->type == RTC_GEOMETRY_TYPE_BEZIER_CURVE || mesh->type == RTC_GEOMETRY_TYPE_BSPLINE_CURVE)
+    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
     {
       ISPCHairSet* mesh = (ISPCHairSet*) geometry;
       materialID = mesh->geom.materialID;
@@ -1183,7 +1186,8 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ty = Vec3fa(0,1,0);
         dg.Ng = dg.Ns = Vec3fa(0,0,1);
       }
-      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_FLAT)
+      else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
+               mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
       {
         const Vec3fa dx = normalize(dg.Ng);
         const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
@@ -1192,7 +1196,8 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
       }
-      else if (mesh->subtype == RTC_GEOMETRY_SUBTYPE_ROUND)
+      else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
+               mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
       {
         const Vec3fa dx = normalize(Vec3fa(dp));
         const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));

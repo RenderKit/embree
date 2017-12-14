@@ -301,7 +301,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_BEZIER_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,0),radius));
@@ -310,12 +310,13 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, RTCGeometrySubtype subtype, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, CurveSubtype subtype, Ref<MaterialNode> material)
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
 
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_BEZIER_CURVE,subtype,material,1);
+    RTCGeometryType type = (subtype == ROUND_CURVE) ? RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material,1);
 
     if (numHairs == 1) {
       const Vec3fa p0 = pos;
@@ -427,7 +428,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_LINEAR_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_LINEAR_CURVE,material,mblur?2:1);
 
     mesh->hairs.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
@@ -463,7 +464,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_BEZIER_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,mblur?2:1);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {
