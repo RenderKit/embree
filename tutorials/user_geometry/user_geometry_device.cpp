@@ -178,7 +178,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    rtcCopyHitFromRTCRayToRTCRayN(rays,RTCRay_(ray),N,ui);
+    rtcCopyHitFromRayToRayN(rays,RTCRay_(ray),N,ui);
   }
 }
 
@@ -340,7 +340,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyRTCHitToRTCRay((RTCRay *)ray,&hit);
+      rtcCopyHitToRay((RTCRay *)ray,&hit);
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -367,7 +367,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyRTCHitToRTCRay((RTCRay *)ray,&hit);
+      rtcCopyHitToRay((RTCRay *)ray,&hit);
   }
 }
 
@@ -494,7 +494,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);    
+    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;
@@ -526,7 +526,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
+        rtcCopyHitToRayN(rays,&potentialhit,N,ui);
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -554,7 +554,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
+        rtcCopyHitToRayN(rays,&potentialhit,N,ui);
     }
   }
 }
@@ -595,7 +595,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);
+    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;

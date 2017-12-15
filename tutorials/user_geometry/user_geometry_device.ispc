@@ -176,7 +176,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    rtcCopyHitFromRTCRayToRTCRayN(rays,RTCRay_(ray),N,ui);
+    rtcCopyHitFromRayToRayN(rays,RTCRay_(ray),N,ui);
   }
 }
 
@@ -338,7 +338,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
+      rtcCopyHitToRay((varying RTCRay *uniform)ray,&hit);
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -365,7 +365,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
+      rtcCopyHitToRay((varying RTCRay *uniform)ray,&hit);
   }
 }
 
@@ -492,7 +492,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);    
+    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);    
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;
@@ -524,7 +524,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
+        rtcCopyHitToRayN(rays,&potentialhit,N,ui);
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -552,7 +552,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
+        rtcCopyHitToRayN(rays,&potentialhit,N,ui);
     }
   }
 }
@@ -593,7 +593,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = RTCRayNtoRTCRay(args->ray,N,ui);
+    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;
