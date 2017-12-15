@@ -2360,7 +2360,7 @@ rtcReleaseGeometry(geom);
 }@@
 
 @@{
-RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps);
 =>
 uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
 rtcSetGeometryBuildQuality(geom,quality);
@@ -2995,7 +2995,7 @@ __programCount
 @@{
 RTCRayN_instID(EXPR ray, EXPR N, EXPR i)
 =>
-RTCRayN_instID(EXPR ray, EXPR N, EXPR i, 0)
+RTCRayN_instID(ray,N,i,0)
 }@@
 
 @@{ispc
