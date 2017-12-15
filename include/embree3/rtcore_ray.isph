@@ -53,31 +53,31 @@ struct RTCORE_ALIGN(16) RTCRay
 
 /* Helper functions to access ray packets of runtime size N */
 struct RTCRayN;
-inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }
-inline varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[1*N+i]); }
-inline varying float& RTCRayN_org_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[2*N+i]); }
-inline varying float& RTCRayN_tnear(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[3*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[1*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_org_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[2*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_tnear(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[3*N+i]); }
 
-inline varying float& RTCRayN_dir_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[4*N+i]); }
-inline varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[5*N+i]); }
-inline varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[6*N+i]); }
-inline varying float& RTCRayN_tfar (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[7*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_dir_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[4*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[5*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[6*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_tfar (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[7*N+i]); }
 
-inline varying float&        RTCRayN_time (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[8*N+i]); }
-inline varying unsigned int& RTCRayN_mask (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[9*N+i]); }
-inline varying unsigned int& RTCRayN_id   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[10*N+i]); }
-inline varying unsigned int& RTCRayN_flags(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[11*N+i]); }
+RTCORE_FORCEINLINE varying float&        RTCRayN_time (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[8*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCRayN_mask (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[9*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCRayN_id   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[10*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCRayN_flags(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[11*N+i]); }
 
-inline varying float& RTCRayN_Ng_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[12*N+i]); }
-inline varying float& RTCRayN_Ng_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[13*N+i]); }
-inline varying float& RTCRayN_Ng_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[14*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_Ng_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[12*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_Ng_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[13*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_Ng_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[14*N+i]); }
 
-inline varying float& RTCRayN_u   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[15*N+i]); }
-inline varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[16*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_u   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[15*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((uniform float*)ptr)[16*N+i]); }
 
-inline varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[17*N+i]); }
-inline varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[18*N+i]); }
-inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[19*N+i+l*N]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[17*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[18*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((uniform unsigned int*  )ptr)[19*N+i+l*N]); }
 
 /* Ray structure template for packets of N rays in pointer SOA layout. */
 struct RTCRayNp
@@ -130,17 +130,17 @@ struct RTCHit
 
 /* Helper functions to access hit packets of size N */
 struct RTCHitN;
-inline varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }
-inline varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }
-inline varying float& RTCHitN_Ng_z(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[2*N+i]); }
-inline varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[3*N+i]); }
-inline varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[4*N+i]); }
-inline varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[5*N+i]); }
-inline varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[6*N+i]); }
-inline varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[7*N+i]); }
-inline varying unsigned int& RTCHitN_instID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[8*N+i+l*N]); }
+RTCORE_FORCEINLINE varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCHitN_Ng_z(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[2*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[3*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[4*N+i]); }
+RTCORE_FORCEINLINE varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[5*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[6*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[7*N+i]); }
+RTCORE_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[8*N+i+l*N]); }
 
-inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i)
+RTCORE_FORCEINLINE RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i)
 {
   RTCRay ray;
   ray.org_x   = RTCRayN_org_x(ptr,N,i);
@@ -167,7 +167,7 @@ inline RTCRay RTCRayNtoRTCRay(RTCRayN* uniform ptr, uniform unsigned int N, unif
   return ray;
 };
 
-inline RTCHit RTCHitNtoRTCHit(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i)
+RTCORE_FORCEINLINE RTCHit RTCHitNtoRTCHit(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i)
 {
   RTCHit hit;
   hit.Ng_x    = RTCHitN_Ng_x(ptr,N,i);
@@ -183,7 +183,7 @@ inline RTCHit RTCHitNtoRTCHit(const RTCHitN* uniform ptr, uniform unsigned int N
   return hit;
 };
 
-inline void copyRTCHitToRTCRay(varying RTCRay *uniform ray, varying RTCHit *uniform hit)
+RTCORE_FORCEINLINE void rtcCopyRTCHitToRTCRay(varying RTCRay *uniform ray, varying RTCHit *uniform hit)
 {
   ray->Ng_x   = hit->Ng_x;
   ray->Ng_y   = hit->Ng_y;
@@ -197,7 +197,7 @@ inline void copyRTCHitToRTCRay(varying RTCRay *uniform ray, varying RTCHit *unif
     ray->instID[l] = hit->instID[l];
 }
 
-inline void copyRTCHitToRTCRayN(RTCRayN *uniform rays, varying RTCHit *uniform hit, uniform unsigned int N, uniform unsigned int ui)
+RTCORE_FORCEINLINE void rtcCopyRTCHitToRTCRayN(RTCRayN *uniform rays, varying RTCHit *uniform hit, uniform unsigned int N, uniform unsigned int ui)
 {
   RTCRayN_Ng_x(rays,N,ui)   = hit->Ng_x;
   RTCRayN_Ng_y(rays,N,ui)   = hit->Ng_y;
@@ -211,7 +211,7 @@ inline void copyRTCHitToRTCRayN(RTCRayN *uniform rays, varying RTCHit *uniform h
     RTCRayN_instID(rays,N,ui,l) = hit->instID[l];
 }
 
-inline void copyHitFromRTCRayToRTCRayN(RTCRayN *uniform rays, varying RTCRay *uniform ray, uniform unsigned int N, uniform unsigned int ui)
+RTCORE_FORCEINLINE void rtcCopyHitFromRTCRayToRTCRayN(RTCRayN *uniform rays, varying RTCRay *uniform ray, uniform unsigned int N, uniform unsigned int ui)
 {
   RTCRayN_Ng_x(rays,N,ui)   = ray->Ng_x;
   RTCRayN_Ng_y(rays,N,ui)   = ray->Ng_y;

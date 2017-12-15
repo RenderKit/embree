@@ -523,12 +523,6 @@ return rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 }@@
 
 @@{
-rtcDeleteScene(EXPR scene)
-=>
-rtcReleaseScene(scene)
-}@@
-
-@@{
 RTC_PROGRESS_MONITOR_FUNCTION
 =>
 RTCProgressMonitorFunction
@@ -583,6 +577,9 @@ rtcIntersect(EXPR scene, EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect1(scene,&context,&ray);
+  ray.Ng_x = -ray.Ng_x; // FIXME: only correct for triangles,quads, and subdivision surfaces
+  ray.Ng_y = -ray.Ng_y;
+  ray.Ng_z = -ray.Ng_z;
 }
 }@@
 
@@ -590,9 +587,12 @@ rtcIntersect(EXPR scene, EXPR ray);
 rtcIntersect(EXPR scene, EXPR ray);
 =>
 {
-  RTCIntersectContext context;
+  uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect(scene,&context,&ray);
+  ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
+  ray.Ng_y = -ray.Ng_y;
+  ray.Ng_z = -ray.Ng_z;
 }
 }@@
 
@@ -600,12 +600,18 @@ rtcIntersect(EXPR scene, EXPR ray);
 rtcIntersect1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect1(scene,context,&ray);
+ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
+ray.Ng_y = -ray.Ng_y;
+ray.Ng_z = -ray.Ng_z;
 }@@
 
 @@{ispc
 rtcIntersectEx(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect(scene,context,&ray);
+ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
+ray.Ng_y = -ray.Ng_y;
+ray.Ng_z = -ray.Ng_z;
 }@@
 
 @@{
@@ -749,9 +755,229 @@ rtcOccludedNp(EXPR scene,EXPR context,EXPR ray,EXPR N);
 rtcOccludedNp(scene,context,&ray,N);
 }@@
 
+@@{
+rtcDeleteScene(EXPR scene)
+=>
+rtcReleaseScene(scene)
+}@@
+
+////////////////////////////////////////////////////////////////////////////////////////
+// geometries
+
+@@{
+unsigned int ID geomID = REGEXPR(name,rtcNew.*)(
+=>
+uniform unsigned int geomID;
+geomID = name(
+}@@
+
+@@{
+int ID geomID = REGEXPR(name,rtcNew.*)(
+=>
+uniform int geomID;
+geomID = name(
+}@@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // rtcore_geometry.h
+
+@@{
+RTC_MAX_TIME_STEPS
+=>
+RTC_MAX_TIME_STEP_COUNT
+}@@
+
+@@{
+RTC_MAX_USER_VERTEX_BUFFERS
+=>
+65536
+}@@
+
+@@{
+RTC_MAX_INDEX_BUFFERS
+=>
+65536
+}@@
+
+@@{
+RTC_INDEX_BUFFER0
+=>
+RTC_INDEX_BUFFER
+}@@
+
+@@{
+(RTCBufferType)(RTC_INDEX_BUFFER+EXPR t)
+=>
+RTC_INDEX_BUFFER_(t)
+}@@
+
+@@{
+RTCBufferType(RTC_INDEX_BUFFER+EXPR t)
+=>
+RTC_INDEX_BUFFER_(t)
+}@@
+
+@@{
+RTC_INDEX_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_INDEX,0)
+}@@
+
+@@{
+RTC_INDEX_BUFFER1
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_INDEX,1)
+}@@
+
+@@{
+RTC_INDEX_BUFFER_(EXPR slot)
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_INDEX,slot)
+}@@
+
+
+@@{
+RTC_VERTEX_BUFFER0
+=>
+RTC_VERTEX_BUFFER
+}@@
+
+@@{
+(RTCBufferType)(RTC_VERTEX_BUFFER+EXPR t)
+=>
+RTC_VERTEX_BUFFER_(t)
+}@@
+
+@@{
+RTCBufferType(RTC_VERTEX_BUFFER+EXPR t)
+=>
+RTC_VERTEX_BUFFER_(t)
+}@@
+
+@@{
+RTC_VERTEX_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX,0)
+}@@
+
+@@{
+RTC_VERTEX_BUFFER1
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX,1)
+}@@
+
+@@{
+RTC_VERTEX_BUFFER_(EXPR slot)
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX,slot)
+}@@
+
+
+@@{
+RTC_USER_VERTEX_BUFFER0
+=>
+RTC_USER_VERTEX_BUFFER
+}@@
+
+@@{
+(RTCBufferType)(RTC_USER_VERTEX_BUFFER+EXPR t)
+=>
+RTC_USER_VERTEX_BUFFER_(t)
+}@@
+
+@@{
+RTCBufferType(RTC_USER_VERTEX_BUFFER+EXPR t)
+=>
+RTC_USER_VERTEX_BUFFER_(t)
+}@@
+
+@@{
+RTC_USER_VERTEX_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0)
+}@@
+
+@@{
+RTC_USER_VERTEX_BUFFER1
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,1)
+}@@
+
+@@{
+RTC_USER_VERTEX_BUFFER_(EXPR slot)
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,slot)
+}@@
+
+
+@@{
+RTC_FACE_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_FACE,0)
+}@@
+
+@@{
+RTC_LEVEL_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_LEVEL,0)
+}@@
+
+@@{
+RTC_EDGE_CREASE_INDEX_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,0)
+}@@
+
+@@{
+RTC_EDGE_CREASE_WEIGHT_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,0)
+}@@
+
+@@{
+RTC_VERTEX_CREASE_INDEX_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,0)
+}@@
+
+@@{
+RTC_VERTEX_CREASE_WEIGHT_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,0)
+}@@
+
+@@{
+RTC_HOLE_BUFFER
+=>
+RTC_BUFFER(RTC_BUFFER_TYPE_HOLE,0)
+}@@
+
+
+
+@@{
+RTCMatrixType
+=>
+RTCFormat
+}@@
+
+@@{
+RTC_MATRIX_ROW_MAJOR
+=>
+RTC_FORMAT_FLOAT3X4_ROW_MAJOR
+}@@
+
+@@{
+RTC_MATRIX_COLUMN_MAJOR
+=>
+RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR
+}@@
+
+@@{
+RTC_MATRIX_COLUMN_MAJOR_ALIGNED16
+=>
+RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR
+}@@
+
 
 @@{
 RTCGeometryFlags
@@ -775,6 +1001,14 @@ RTC_BUILD_QUALITY_REFIT
 RTC_GEOMETRY_DYNAMIC
 =>
 RTC_BUILD_QUALITY_LOW
+}@@
+
+
+
+@@{
+RTCBoundaryMode
+=>
+RTCSubdivisionMode
 }@@
 
 @@{
@@ -831,35 +1065,9 @@ RTC_SUBDIV_PIN_ALL
 RTC_SUBDIVISION_MODE_PIN_ALL
 }@@
 
-@@{
-RTCBoundaryMode
-=>
-RTCSubdivisionMode
-}@@
 
-@@{
-RTCMatrixType
-=>
-RTCFormat
-}@@
 
-@@{
-RTC_MATRIX_ROW_MAJOR
-=>
-RTC_FORMAT_FLOAT3X4_ROW_MAJOR
-}@@
 
-@@{
-RTC_MATRIX_COLUMN_MAJOR
-=>
-RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR
-}@@
-
-@@{
-RTC_MATRIX_COLUMN_MAJOR_ALIGNED16
-=>
-RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR
-}@@
 
 ///////////////////////////////////////////////////////////////////////
 // convert filter function callbacks
@@ -904,9 +1112,10 @@ unmasked void intersectionFilter(const uniform RTCFilterFunctionNArguments* unif
   varying int* uniform vvalid = (varying int* uniform ) valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT uniform RTCIntersectContext* uniform context = args->context;
-  COMMENT varying RTCRay* uniform ray_in = (varying RTCRay* uniform ) args->ray;
+  COMMENT varying RTCRay& ray_in = *(varying RTCRay* uniform ) args->ray;
   varying RTCHit* uniform potentialHit = (varying RTCHit* uniform ) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *vvalid = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   uniform unsigned int N = args->N;
   assert(N == __programCount);
   if (*vvalid != -1) return;
@@ -918,6 +1127,12 @@ potentialHit->
 }@@
 
 @@{
+void EXPR intersectionFilter(void* ID geomUserPtr_in, RTCRay& ID ray_in);
+=>
+unmasked void intersectionFilter(const uniform RTCFilterFunctionNArguments* uniform const args);
+}@@
+
+@@{
 void EXPR intersectionFilter4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in)
 {
 =>
@@ -926,9 +1141,10 @@ void intersectionFilter4(const uniform RTCFilterFunctionNArguments* const unifor
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
-  COMMENT RTCRay4* ray_in = (RTCRay4*) args->ray;
+  COMMENT RTCRay4& ray_in = *(RTCRay4*) args->ray;
   RTCHit4* potentialHit = (RTCHit4*) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 4);
   if (none(valid)) return; // function may get called with zero mask
@@ -940,6 +1156,12 @@ potentialHit->
 }@@
 
 @@{
+void EXPR intersectionFilter4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in);
+=>
+void intersectionFilter4(const uniform RTCFilterFunctionNArguments* const uniform args);
+}@@
+
+@@{
 void EXPR intersectionFilter8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in)
 {
 =>
@@ -948,9 +1170,10 @@ void intersectionFilter8(const uniform RTCFilterFunctionNArguments* const unifor
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
-  COMMENT RTCRay8* ray_in = (RTCRay8*) args->ray;
+  COMMENT RTCRay8& ray_in = *(RTCRay8*) args->ray;
   RTCHit8* potentialHit = (RTCHit8*) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 8);
   if (none(valid)) return; // function may get called with zero mask
@@ -962,6 +1185,12 @@ potentialHit->
 }@@
 
 @@{
+void EXPR intersectionFilter8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in);
+=>
+void intersectionFilter8(const uniform RTCFilterFunctionNArguments* const uniform args);
+}@@
+
+@@{
 void EXPR intersectionFilter16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in)
 {
 =>
@@ -970,9 +1199,10 @@ void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const unifo
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
-  COMMENT RTCRay16* ray_in = (RTCRay16*) args->ray;
+  COMMENT RTCRay16& ray_in = *(RTCRay16*) args->ray;
   RTCHit16* potentialHit = (RTCHit16*) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 16);
   if (none(valid)) return; // function may get called with zero mask
@@ -981,6 +1211,12 @@ ray_in.
 =>
 potentialHit->
 }@@
+}@@
+
+@@{
+void EXPR intersectionFilter16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in);
+=>
+void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const uniform args);
 }@@
 
 @@{
@@ -995,9 +1231,15 @@ void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const unifor
   RTCRayN* uniform ray_in = args->ray;
   RTCHitN* uniform potentialHit_in = args->potentialHit;
   uniform unsigned int N_in = args->N;
-  // FIXME: function may get called with zero mask
+  #warning FIXME: function may get called with zero valid mask
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
 }@@
 
+@@{
+void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in);
+=>
+void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const uniform args);
+}@@
 
 ///////////////////////////////////////////////////////////////////////
 // convert displacement function callbacks
@@ -1020,19 +1262,19 @@ const float* ID u_in, const float* ID v_in, const float* ID nx_in, const float* 
 float* ID px_in, float* ID py_in, float* ID pz_in, size_t ID N_in)
 {
 =>
-void RTCDisplacementFunc(const uniform RTCDisplacementFunctionArguments* const uniform args)
+void RTCDisplacementFunc(const uniform RTCDisplacementFunctionNArguments* const uniform args)
 {
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform unsigned int geomID_in = args->geomID;
+  COMMENT uniform unsigned int geomID_in = args->geomID; // no longer available
   uniform unsigned int primID_in = args->primID;
   const float* uniform u_in = args->u;
   const float* uniform v_in = args->v;
-  const float* uniform nx_in = args->nx;
-  const float* uniform ny_in = args->ny;
-  const float* uniform nz_in = args->nz;
-  float* uniform px_in = args->px;
-  float* uniform py_in = args->py;
-  float* uniform pz_in = args->pz;
+  const float* uniform nx_in = args->Ng_x; // FIXME: negate Ng
+  const float* uniform ny_in = args->Ng_y;
+  const float* uniform nz_in = args->Ng_z;
+  float* uniform px_in = args->P_x;
+  float* uniform py_in = args->P_y;
+  float* uniform pz_in = args->P_z;
   size_t uniform N_in = args->N;
 }@@
 
@@ -1042,604 +1284,21 @@ const float* ID u_in, const float* ID v_in, const float* ID nx_in, const float* 
 float* ID px_in, float* ID py_in, float* ID pz_in, size_t ID N_in)
 {
 =>
-void RTCDisplacementFunc2(const uniform RTCDisplacementFunctionArguments* const uniform args)
+void RTCDisplacementFunc2(const uniform RTCDisplacementFunctionNArguments* const uniform args)
 {
   void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform unsigned int geomID_in = args->geomID;
+  COMMENT uniform unsigned int geomID_in = args->geomID; // no longer available
   uniform unsigned int primID_in = args->primID;
-  uniform unsigned int time_in = args->time;
+  uniform unsigned int time_in = args->timeStep;
   const float* uniform u_in = args->u;
   const float* uniform v_in = args->v;
-  const float* uniform nx_in = args->nx;
-  const float* uniform ny_in = args->ny;
-  const float* uniform nz_in = args->nz;
-  float* uniform px_in = args->px;
-  float* uniform py_in = args->py;
-  float* uniform pz_in = args->pz;
+  const float* uniform nx_in = args->Ng_x; // FIXME: negate Ng
+  const float* uniform ny_in = args->Ng_y;
+  const float* uniform nz_in = args->Ng_z;
+  float* uniform px_in = args->P_x;
+  float* uniform py_in = args->P_y;
+  float* uniform pz_in = args->P_z;
   uniform size_t N_in = args->N;
-}@@
-
-///////////////////////////////////////////////////////////////////////
-// convert user geometry callbacks
-
-@@{
-RTCBoundsFunc
-=>
-RTCBoundsFunction
-}@@
-
-@@{
-void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
-{
-=>
-void RTCBoundsFunc(const uniform RTCBoundsFunctionArguments* const uniform args)
-{
-  COMMENT void* uniform userPtr = args->userPtr;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t primID_in = args->primID;
-  COMMENT uniform unsigned int time = args->time;
-  uniform RTCBounds& bounds_out = *args->bounds_o;
-}@@
-
-@@{
-RTCBoundsFunc2
-=>
-RTCBoundsFunction
-}@@
-
-@@{
-void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
-{
-=>
-void RTCBoundsFunc2(const uniform RTCBoundsFunctionArguments* const uniform args)
-{
-  void* uniform userPtr_in = args->userPtr;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t primID_in = args->primID;
-  COMMENT uniform size_t time = args->time;
-  uniform RTCBounds& bounds_out = *args->bounds_o;
-}@@
-
-@@{
-RTCBoundsFunc3
-=>
-RTCBoundsFunction
-}@@
-
-@@{
-void EXPR RTCBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, size_t ID time_in, RTCBounds& ID bounds_out)
-{
-=>
-void RTCBoundsFunc3(const uniform RTCBoundsFunctionArguments* const uniform args)
-{
-  void* uniform userPtr_in = args->userPtr;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  uniform size_t primID_in = args->primID;
-  uniform size_t time_in = args->time;
-  uniform RTCBounds& bounds_out = *args->bounds_o;
-}@@
-
-@@{
-RTCIntersectFunc
-=>
-RTCIntersectFunctionN
-}@@
-
-@@{
-RTCOccludedFunc
-=>
-RTCOccludedFunctionN
-}@@
-
-@@{
-void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID primID_in)
-{
-=>
-unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
-{
-  void* uniform valid_in = args->valid;
-  varying int* uniform vvalid_in = (varying int* uniform ) valid_in;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* uniform context_in = args->context;
-  varying RTCRay* uniform ray_ptr_in = (varying RTCRay* uniform ) args->ray;
-  varying RTCRay& ray_in = *ray_ptr_in;
-  uniform unsigned int N_in = args->N;
-  uniform unsigned int primID_in = args->primID;
-  assert(N_in == __programCount);
-  if (*vvalid_in != -1) return;
-}@@
-
-@@{
-RTCIntersectFunc4
-=>
-RTCIntersectFunctionN
-}@@
-
-@@{
-RTCOccludedFunc4
-=>
-RTCOccludedFunctionN
-}@@
-
-@@{
-void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID primID_in)
-{
-=>
-void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
-{
-  const void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay4& ray_in = *(RTCRay4*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int primID_in = args->primID;
-  assert(N_in == 4);
-}@@
-
-@@{
-RTCIntersectFunc8
-=>
-RTCIntersectFunctionN
-}@@
-
-@@{
-RTCOccludedFunc8
-=>
-RTCOccludedFunctionN
-}@@
-
-@@{
-void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID primID_in)
-{
-=>
-void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
-{
-  const void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay8& ray_in = *(RTCRay8*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int primID_in = args->primID;
-  assert(N_in == 8);
-}@@
-
-@@{
-RTCIntersectFunc16
-=>
-RTCIntersectFunctionN
-}@@
-
-@@{
-RTCOccludedFunc16
-=>
-RTCOccludedFunctionN
-}@@
-
-@@{
-void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID primID_in)
-{
-=>
-void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
-{
-  const void* valid_in = args->valid;
-  void* geomUserPtr_in = args->geomUserPtr;
-  COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay16& ray_in = *(RTCRay16*) args->ray;
-  unsigned int N_in = args->N;
-  unsigned int primID_in = args->primID;
-  assert(N_in == 16);
-}@@
-
-@@{
-RTCIntersectFuncN
-=>
-RTCIntersectFunctionN
-}@@
-
-@@{
-RTCOccludedFuncN
-=>
-RTCOccludedFunctionN
-}@@
-
-@@{
-void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID primID_in)
-{
-=>
-void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
-{
-  const int* uniform valid_in = args->valid;
-  void* uniform geomUserPtr_in = args->geomUserPtr;
-  RTCIntersectContext* uniform context_in = args->context;
-  RTCRayN* uniform ray_in = args->ray;
-  uniform unsigned int N_in = args->N;
-  uniform unsigned int primID_in = args->primID;
-}@@
-
-////////////////////////////////////////////////////////////////////////////////////////
-// geometry modification functions
-
-@@{
-rtcSetTessellationRate(EXPR scene,EXPR geomID,EXPR rate)
-=>
-rtcSetGeometryTessellationRate(rtcGetGeometry(scene,geomID),rate)
-}@@
-
-@@{
-rtcSetMask(EXPR scene,EXPR geomID,EXPR mask)
-=>
-rtcSetGeometryMask(rtcGetGeometry(scene,geomID),mask)
-}@@
-
-@@{
-rtcSetBoundaryMode(EXPR scene,EXPR geomID,EXPR mode)
-=>
-rtcSetGeometrySubdivisionMode(rtcGetGeometry(scene,geomID),0,mode)
-}@@
-
-@@{
-rtcSetSubdivisionMode(EXPR scene,EXPR geomID,EXPR topology,EXPR mode)
-=>
-rtcSetGeometrySubdivisionMode(rtcGetGeometry(scene,geomID),topology,mode)
-}@@
-
-@@{
-rtcSetIndexBuffer(EXPR scene,EXPR geomID,EXPR buf0,EXPR buf1)
-=>
-rtcSetGeometryIndexBuffer(rtcGetGeometry(scene,geomID),buf0,buf1)
-}@@
-
-@@{
-rtcMapBuffer(EXPR scene,EXPR geomID,EXPR type)
-=>
-rtcMapBuffer(rtcGetGeometry(scene,geomID),type)
-}@@
-
-@@{
-rtcUnmapBuffer(EXPR scene,EXPR geomID,EXPR type)
-=>
-rtcUnmapBuffer(rtcGetGeometry(scene,geomID),type)
-}@@
-
-@@{
-rtcSetBuffer(EXPR scene,EXPR geomID,EXPR type,EXPR ptr,EXPR offset,EXPR stride)
-=>
-rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride)
-}@@
-
-@@{
-rtcSetBuffer2(EXPR scene,EXPR geomID,EXPR type,EXPR ptr,EXPR offset,EXPR stride,EXPR size)
-=>
-rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride,size)
-}@@
-
-@@{
-rtcEnable(EXPR scene,EXPR geomID)
-=>
-rtcEnableGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-@@{
-rtcDisable(EXPR scene,EXPR geomID)
-=>
-rtcDisableGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-@@{
-rtcUpdate(EXPR scene,EXPR geomID)
-=>
-rtcCommitGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-@@{
-rtcUpdateGeometryBuffer(EXPR scene,EXPR geomID,EXPR type)
-=>
-rtcUpdateGeometryBuffer(rtcGetGeometry(scene,geomID),type);
-rtcCommitGeometry(rtcGetGeometry(scene,geomID)) /* FIXME: do commit once after all updates */
-}@@
-
-@@{
-rtcSetDisplacementFunction(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
-=>
-rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
-}@@
-
-@@{
-rtcSetDisplacementFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
-=>
-rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
-}@@
-
-@@{
-rtcSetIntersectionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetIntersectionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetIntersectionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetIntersectionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetIntersectionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOcclusionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOcclusionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOcclusionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOcclusionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-@@{
-rtcSetOcclusionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
-}@@
-
-
-@@{
-rtcSetUserData(EXPR scene,EXPR geomID,EXPR ptr)
-=>
-rtcSetGeometryUserData(rtcGetGeometry(scene,geomID),ptr)
-}@@
-
-@@{
-rtcGetUserData(EXPR scene,EXPR geomID)
-=>
-rtcGetGeometryUserData(rtcGetGeometry(scene,geomID))
-}@@
-
-
-@@{
-rtcInterpolate(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR numFloats)
-=>
-rtcInterpolate1(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,numFloats)
-}@@
-
-@@{
-rtcInterpolate2(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
-=>
-rtcInterpolate2(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
-}@@
-
-
-@@{
-rtcInterpolateN(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EXPR v_in,EXPR numUVs_in,EXPR buffer_in,EXPR P_o,EXPR dPdu_o,EXPR dPdv_o,EXPR numFloats_in)
-=>
-{
-  RTCInterpolateNArguments args;
-  args.geometry = rtcGetGeometry(scene,geomID);
-  args.valid = valid_in;
-  args.primIDs = primID_in;
-  args.u = u_in;
-  args.v = v_in;
-  args.numUVs = numUVs_in;
-  args.buffer = buffer_in;
-  args.P = P_o;
-  args.dPdu = dPdu_o;
-  args.dPdv = dPdv_o;
-  args.ddPdudu = NULL;
-  args.ddPdvdv = NULL;
-  args.ddPdudv = NULL;
-  args.numFloats = numFloats_in;
-  rtcInterpolateN(&args)
-}
-}@@
-
-@@{
-rtcInterpolateN2(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EXPR v_in,EXPR numUVs_in,EXPR buffer_in,EXPR P_o,EXPR dPdu_o,EXPR dPdv_o,EXPR ddPdudu_o,EXPR ddPdvdv_o,EXPR ddPdudv_o,EXPR numFloats_in)
-=>
-{
-  RTCInterpolateNArguments args;
-  args.geometry = rtcGetGeometry(scene,geomID);
-  args.valid = valid_in;
-  args.primIDs = primID_in;
-  args.u = u_in;
-  args.v = v_in;
-  args.numUVs = numUVs_in;
-  args.buffer = buffer_in;
-  args.P = P_o;
-  args.dPdu = dPdu_o;
-  args.dPdv = dPdv_o;
-  args.ddPdudu = ddPdudu_o;
-  args.ddPdvdv = ddPdvdv_o;
-  args.ddPdudv = ddPdudv_o;
-  args.numFloats = numFloats_in;
-  rtcInterpolateN(&args)
-}
-}@@
-
-
-
-@@{
-rtcSetBoundsFunction(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,NULL)
-}@@
-
-@@{
-rtcSetBoundsFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
-=>
-rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
-}@@
-
-@@{
-rtcSetBoundsFunction3(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
-=>
-rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
-}@@
-
-@@{
-rtcSetBoundsFunctionX(EXPR geom,EXPR func,EXPR userPtr)
-=>
-rtcSetGeometryBoundsFunction(geom,func,userPtr)
-}@@
-
-@@{
-rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-=>
-COMMENT rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-}@@
-
-@@{
-REGEXPR(name,rtcSetIntersectFunction.*)(
-=>
-rtcSetGeometryIntersectFunction(
-}@@
-
-@@{
-rtcSetGeometryIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetGeometryIntersectFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-=>
-COMMENT rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-}@@
-
-@@{
-REGEXPR(name,rtcSetOccludedFunction.*)(
-=>
-rtcSetGeometryOccludedFunction(
-}@@
-
-@@{
-rtcSetGeometryOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetGeometryOccludedFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-rtcDeleteGeometry(EXPR scene,EXPR geomID)
-=>
-rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-
-////////////////////////////////////////////////////////////////////////////////////////
-// geometries
-
-@@{
-unsigned int ID geomID = REGEXPR(name,rtcNew.*)(
-=>
-uniform unsigned int geomID;
-geomID = name(
-}@@
-
-@@{
-int ID geomID = REGEXPR(name,rtcNew.*)(
-=>
-uniform int geomID;
-geomID = name(
-}@@
-
-
-////////////////////////////////////////////////////////////////////////////////////////
-// user geometry
-
-@@{
-rtcNewUserGeometry
-=>
-rtcNewUserGeometry2
-}@@
-
-@@{
-rtcNewUserGeometry2 (EXPR scene, EXPR numPrimitives)
-=>
-rtcNewUserGeometry2 (scene, numPrimitives, 1)
-}@@
-
-@@{
-rtcNewUserGeometry2 (EXPR scene, EXPR numPrimitives, EXPR numTimeSteps)
-=>
-rtcNewUserGeometry3 (scene, RTC_BUILD_QUALITY_MEDIUM, numPrimitives, numTimeSteps)
-}@@
-
-@@{
-rtcNewUserGeometry3 (EXPR scene, EXPR quality, EXPR numPrimitives)
-=>
-rtcNewUserGeometry3 (scene, quality, numPrimitives, 1)
-}@@
-
-@@{
-rtcNewUserGeometry3
-=>
-rtcNewUserGeometry4
-}@@
-
-@@{
-rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives)
-=>
-rtcNewUserGeometry4 (scene, quality, numPrimitives, 1)
-}@@
-
-@@{
-LHS geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
-=>
-uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
-geomID = rtcAttachGeometry(scene,geom);
-rtcReleaseGeometry(geom);
-}@@
-
-@@{
-rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
-=>
-uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
-rtcAttachGeometry(scene,geom);
-rtcReleaseGeometry(geom);
-}@@
-
-@@{
-rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps, EXPR geomID)
-=>
-uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
-rtcAttachGeometryById(scene,geom,geomID);
-rtcReleaseGeometry(geom);
-}@@
-
-@@{
-RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
-=>
-uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
-rtcSetGeometryBuildQuality(geom,quality);
-rtcSetGeometryPrimitiveCount(geom,numPrimitives);
-rtcSetGeometryTimeStepCount(geom,numTimeSteps);
 }@@
 
 
@@ -1696,6 +1355,19 @@ rtcSetGeometryInstancedScene(geom,source);
 rtcSetGeometryTimeStepCount(geom,numTimeSteps);
 }@@
 
+
+@@{
+LHS geomID = rtcNewGeometryInstance(EXPR scene, EXPR geomID);
+=>
+geomID = rtcNewGeometryInstance( scene, geomID); // FIXME: no longer supported
+}@@
+
+@@{
+LHS geomID = rtcNewGeometryGroup(EXPR scene, EXPR flags, EXPR geomIDs, EXPR N);
+=>
+geomID = rtcNewGeometryGroup(scene, flags, geomIDs, N); // FIXME: no longer supported
+}@@
+
 @@{
 rtcSetTransform
 =>
@@ -1711,7 +1383,7 @@ rtcSetTransform2(scene,geomID,layout,xfm,0)
 @@{
 rtcSetTransform2(EXPR scene,EXPR geomID,EXPR layout,EXPR xfm,EXPR timeStep)
 =>
-rtcSetGeometryTransform(rtcGetGeometry(scene,geomID),layout,xfm,timeStep)
+rtcSetGeometryTransform(rtcGetGeometry(scene,geomID),timeStep,layout,xfm)
 }@@
 
 
@@ -1986,13 +1658,13 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
 }@@
 
 
@@ -2026,6 +1698,735 @@ RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR
 uniform RTCGeometry geom = rtcNewCurveGeometry (device,type,flags,numPrimitives,numVertices,numTimeSteps);
 rtcSetGeometryBuildQuality(geom,flags);
 rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
+
+
+////////////////////////////////////////////////////////////////////////////////////////
+// geometry modification functions
+
+@@{
+rtcSetTessellationRate(EXPR scene,EXPR geomID,EXPR rate)
+=>
+rtcSetGeometryTessellationRate(rtcGetGeometry(scene,geomID),rate)
+}@@
+
+@@{
+rtcSetMask(EXPR scene,EXPR geomID,EXPR mask)
+=>
+rtcSetGeometryMask(rtcGetGeometry(scene,geomID),mask)
+}@@
+
+@@{
+rtcSetBoundaryMode(EXPR scene,EXPR geomID,EXPR mode)
+=>
+rtcSetGeometrySubdivisionMode(rtcGetGeometry(scene,geomID),0,mode)
+}@@
+
+@@{
+rtcSetSubdivisionMode(EXPR scene,EXPR geomID,EXPR topology,EXPR mode)
+=>
+rtcSetGeometrySubdivisionMode(rtcGetGeometry(scene,geomID),topology,mode)
+}@@
+
+@@{
+rtcSetIndexBuffer(EXPR scene,EXPR geomID,EXPR buf0,EXPR buf1)
+=>
+rtcSetIndexBuffer(rtcGetGeometry(scene,geomID),buf0,buf1)
+}@@
+
+@@{
+rtcSetIndexBuffer(EXPR geom, RTC_BUFFER(RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR vertexSlot) , RTC_BUFFER(RTC_BUFFER_TYPE_INDEX,EXPR indexSlot));
+=>
+rtcSetGeometryVertexAttributeTopology(geom, vertexSlot, indexSlot);
+}@@
+
+@@{
+rtcSetIndexBuffer(EXPR geom, EXPR vertexBuffer, EXPR indexBuffer);
+=>
+rtcSetGeometryVertexAttributeTopology(geom, vertexBuffer, indexBuffer);
+}@@
+
+@@{
+rtcMapBuffer(EXPR scene,EXPR geomID,EXPR type)
+=>
+rtcMapBuffer(rtcGetGeometry(scene,geomID),type)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER(EXPR type, EXPR slot))
+=>
+rtcMapBuffer(geom,type,slot,FIXME_COULD_NOT_INFER_FORMAT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,EXPR type)
+=>
+rtcMapBuffer(geom,type,FIXME_COULD_NOT_INFER_SLOT,FIXME_COULD_NOT_INFER_FORMAT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_FACE, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_FACE,slot,RTC_FORMAT_UINT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_LEVEL, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_LEVEL,slot,RTC_FORMAT_FLOAT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,slot,RTC_FORMAT_UINT2)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,slot,RTC_FORMAT_UINT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_HOLE, EXPR slot, EXPR format)
+=>
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,RTC_FORMAT_UINT)
+}@@
+
+@@{
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, EXPR slot, EXPR format);
+=>
+(rtcSetGeometryVertexAttributeCount(geom,slot+1), // FIXME: verify if this is correct
+ rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, slot, format));
+}@@
+
+@@{
+rtcUnmapBuffer(EXPR scene,EXPR geomID,EXPR type)
+=>
+rtcUnmapBuffer(rtcGetGeometry(scene,geomID),type)
+}@@
+
+@@{
+rtcUnmapBuffer(EXPR geom, EXPR type);
+=>
+}@@
+
+@@{
+rtcSetBuffer(EXPR scene,EXPR geomID,EXPR type,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetBuffer2(EXPR scene,EXPR geomID,EXPR type,EXPR ptr,EXPR offset,EXPR stride,EXPR size)
+=>
+rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride,size)
+}@@
+
+@@{
+rtcSetBuffer(EXPR geom,RTC_BUFFER(EXPR type, EXPR slot),EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,type,slot,FIXME_COULD_NOT_INFER_FORMAT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetBuffer(EXPR geom,EXPR type, EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,type,FIXME_COULD_NOT_INFER_SLOT,FIXME_COULD_NOT_INFER_FORMAT,ptr,offset,stride)
+}@@
+
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_FACE, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE,slot,RTC_FORMAT_UINT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_LEVEL, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_LEVEL,slot,RTC_FORMAT_FLOAT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,slot,RTC_FORMAT_UINT2,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,slot,RTC_FORMAT_UINT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_HOLE, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,RTC_FORMAT_UINT,ptr,offset,stride)
+}@@
+
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride);
+=>
+rtcSetGeometryVertexAttributeCount(geom,slot+1); // FIXME: verify if this is correct
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, slot, format, ptr, offset, stride);
+}@@
+
+
+
+@@{
+rtcEnable(EXPR scene,EXPR geomID)
+=>
+rtcEnableGeometry(rtcGetGeometry(scene,geomID))
+}@@
+
+@@{
+rtcUpdate(EXPR scene,EXPR geomID)
+=>
+rtcCommitGeometry(rtcGetGeometry(scene,geomID))
+}@@
+
+@@{
+rtcUpdateBuffer(EXPR scene,EXPR geomID,EXPR type)
+=>
+rtcUpdateGeometryBuffer(rtcGetGeometry(scene,geomID),type);
+rtcCommitGeometry(rtcGetGeometry(scene,geomID)) /* FIXME: do commit once after all updates */
+}@@
+
+@@{
+rtcUpdateGeometryBuffer(EXPR geom,RTC_BUFFER(EXPR bufty,EXPR slot))
+=>
+rtcUpdateGeometryBuffer(geom,bufty,slot)
+}@@
+
+@@{
+rtcUpdateGeometryBuffer(EXPR geom,EXPR bufty)
+=>
+rtcUpdateGeometryBuffer(geom,bufty,FIXME_COULD_NOT_INFER_SLOT)
+}@@
+
+@@{
+rtcDisable(EXPR scene,EXPR geomID)
+=>
+rtcDisableGeometry(rtcGetGeometry(scene,geomID))
+}@@
+
+@@{
+rtcSetDisplacementFunction(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
+=>
+rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetDisplacementFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
+=>
+rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetIntersectionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetIntersectionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetIntersectionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetIntersectionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetIntersectionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryIntersectFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetOcclusionFilterFunction(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetOcclusionFilterFunction4(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetOcclusionFilterFunction8(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetOcclusionFilterFunction16(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+@@{
+rtcSetOcclusionFilterFunctionN(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetGeometryOccludedFilterFunction(rtcGetGeometry(scene,geomID),func)
+}@@
+
+
+@@{
+rtcSetUserData(EXPR scene,EXPR geomID,EXPR ptr)
+=>
+rtcSetGeometryUserData(rtcGetGeometry(scene,geomID),ptr)
+}@@
+
+@@{
+rtcGetUserData(EXPR scene,EXPR geomID)
+=>
+rtcGetGeometryUserData(rtcGetGeometry(scene,geomID))
+}@@
+
+
+@@{
+rtcInterpolate(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR numFloats)
+=>
+rtcInterpolate1(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,numFloats)
+}@@
+
+@@{
+rtcInterpolate1(EXPR geom,EXPR primID,EXPR u,EXPR v,RTC_BUFFER(EXPR bufty,EXPR slot),EXPR P,EXPR dPdu,EXPR dPdv,EXPR numFloats)
+=>
+rtcInterpolate1(geom,primID,u,v,bufty,slot,P,dPdu,dPdv,numFloats)
+}@@
+
+@@{
+rtcInterpolate2(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
+=>
+rtcInterpolate2(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
+}@@
+
+@@{
+rtcInterpolate2(EXPR geom,EXPR primID,EXPR u,EXPR v,RTC_BUFFER(EXPR bufty,EXPR slot),EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
+=>
+rtcInterpolate2(rtcGetGeometry(scene,geomID),primID,u,v,bufty,slot,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
+}@@
+
+
+@@{
+rtcInterpolateN(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EXPR v_in,EXPR numUVs_in,EXPR buffer_in,EXPR P_o,EXPR dPdu_o,EXPR dPdv_o,EXPR numFloats_in)
+=>
+{
+  RTCInterpolateNArguments args;
+  args.geometry = rtcGetGeometry(scene,geomID);
+  args.valid = valid_in;
+  args.primIDs = primID_in;
+  args.u = u_in;
+  args.v = v_in;
+  args.N = numUVs_in;
+  args.bufferType = buffer_in;
+  args.bufferSlot = /* FIXME: put buffer slot here */;
+  args.P = P_o;
+  args.dPdu = dPdu_o;
+  args.dPdv = dPdv_o;
+  args.ddPdudu = NULL;
+  args.ddPdvdv = NULL;
+  args.ddPdudv = NULL;
+  args.valueCount = numFloats_in;
+  rtcInterpolateN(&args)
+}
+}@@
+
+@@{
+rtcInterpolateN2(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EXPR v_in,EXPR numUVs_in,EXPR buffer_in,EXPR P_o,EXPR dPdu_o,EXPR dPdv_o,EXPR ddPdudu_o,EXPR ddPdvdv_o,EXPR ddPdudv_o,EXPR numFloats_in)
+=>
+{
+  RTCInterpolateNArguments args;
+  args.geometry = rtcGetGeometry(scene,geomID);
+  args.valid = valid_in;
+  args.primIDs = primID_in;
+  args.u = u_in;
+  args.v = v_in;
+  args.N = numUVs_in;
+  args.bufferType = buffer_in;
+  args.bufferSlot = /* FIXME: put buffer slot here */;
+  args.P = P_o;
+  args.dPdu = dPdu_o;
+  args.dPdv = dPdv_o;
+  args.ddPdudu = ddPdudu_o;
+  args.ddPdvdv = ddPdvdv_o;
+  args.ddPdudv = ddPdudv_o;
+  args.valueCount = numFloats_in;
+  rtcInterpolateN(&args)
+}
+}@@
+
+@@{
+rtcDeleteGeometry(EXPR scene,EXPR geomID)
+=>
+rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
+}@@
+
+////////////////////////////////////////////////////////////////////////////////////////
+// rtcore_geometry_user.h
+
+
+@@{
+RTCBoundsFunc
+=>
+RTCBoundsFunction
+}@@
+
+@@{
+void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
+{
+=>
+void RTCBoundsFunc(const uniform RTCBoundsFunctionArguments* const uniform args)
+{
+  void* uniform geomUserPtr_in = args->geomUserPtr;
+  uniform size_t primID_in = args->primID;
+  COMMENT uniform unsigned int time = args->timeStep;
+  uniform RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+RTCBoundsFunc2
+=>
+RTCBoundsFunction
+}@@
+
+@@{
+void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds& ID bounds_out)
+{
+=>
+void RTCBoundsFunc2(const uniform RTCBoundsFunctionArguments* const uniform args)
+{
+  COMMENT void* uniform userPtr_in = args->userPtr; // no longer available
+  void* uniform geomUserPtr_in = args->geomUserPtr;
+  uniform size_t primID_in = args->primID;
+  COMMENT uniform size_t time = args->timeStep;
+  uniform RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+RTCBoundsFunc3
+=>
+RTCBoundsFunction
+}@@
+
+@@{
+void EXPR RTCBoundsFunc3(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID primID_in, size_t ID time_in, RTCBounds& ID bounds_out)
+{
+=>
+void RTCBoundsFunc3(const uniform RTCBoundsFunctionArguments* const uniform args)
+{
+  void* uniform userPtr_in = args->userPtr;
+  void* uniform geomUserPtr_in = args->geomUserPtr;
+  uniform size_t primID_in = args->primID;
+  uniform size_t time_in = args->time;
+  uniform RTCBounds& bounds_out = *args->bounds_o;
+}@@
+
+@@{
+RTCIntersectFunc
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc(void* ID geomUserPtr_in, RTCRay& ID ray_in, size_t ID primID_in)
+{
+=>
+unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
+{
+  void* uniform valid_in = args->valid;
+  varying int* uniform vvalid_in = (varying int* uniform ) valid_in;
+  void* uniform geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* uniform context_in = args->context;
+  varying RTCRay* uniform ray_ptr_in = (varying RTCRay* uniform ) args->ray;
+  varying RTCRay& ray_in = *ray_ptr_in;
+  uniform unsigned int N_in = args->N;
+  uniform unsigned int primID_in = args->primID;
+  assert(N_in == __programCount);
+  if (*vvalid_in != -1) return;
+}@@
+
+@@{
+RTCIntersectFunc4
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc4
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc4(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay4& ID ray_in, size_t ID primID_in)
+{
+=>
+void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay4& ray_in = *(RTCRay4*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int primID_in = args->primID;
+  assert(N_in == 4);
+}@@
+
+@@{
+RTCIntersectFunc8
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc8
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc8(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay8& ID ray_in, size_t ID primID_in)
+{
+=>
+void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay8& ray_in = *(RTCRay8*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int primID_in = args->primID;
+  assert(N_in == 8);
+}@@
+
+@@{
+RTCIntersectFunc16
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFunc16
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFunc16(const void* ID valid_in, void* ID geomUserPtr_in, RTCRay16& ID ray_in, size_t ID primID_in)
+{
+=>
+void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
+{
+  const void* valid_in = args->valid;
+  void* geomUserPtr_in = args->geomUserPtr;
+  COMMENT RTCIntersectContext* context_in = args->context;
+  RTCRay16& ray_in = *(RTCRay16*) args->ray;
+  unsigned int N_in = args->N;
+  unsigned int primID_in = args->primID;
+  assert(N_in == 16);
+}@@
+
+@@{
+RTCIntersectFuncN
+=>
+RTCIntersectFunctionN
+}@@
+
+@@{
+RTCOccludedFuncN
+=>
+RTCOccludedFunctionN
+}@@
+
+@@{
+void EXPR RTCIntersectFuncN(const int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, size_t ID N_in, size_t ID primID_in)
+{
+=>
+void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const uniform args) // FIXME: may also be RTCOccludedFunctionNArguments
+{
+  const int* uniform valid_in = args->valid;
+  void* uniform geomUserPtr_in = args->geomUserPtr;
+  RTCIntersectContext* uniform context_in = args->context;
+  RTCRayN* uniform ray_in = args->ray;
+  uniform unsigned int N_in = args->N;
+  uniform unsigned int primID_in = args->primID;
+}@@
+
+@@{
+rtcNewUserGeometry
+=>
+rtcNewUserGeometry2
+}@@
+
+@@{
+rtcNewUserGeometry2 (EXPR scene, EXPR numPrimitives)
+=>
+rtcNewUserGeometry2 (scene, numPrimitives, 1)
+}@@
+
+@@{
+rtcNewUserGeometry2 (EXPR scene, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+rtcNewUserGeometry3 (scene, RTC_BUILD_QUALITY_MEDIUM, numPrimitives, numTimeSteps)
+}@@
+
+@@{
+rtcNewUserGeometry3 (EXPR scene, EXPR quality, EXPR numPrimitives)
+=>
+rtcNewUserGeometry3 (scene, quality, numPrimitives, 1)
+}@@
+
+@@{
+rtcNewUserGeometry3
+=>
+rtcNewUserGeometry4
+}@@
+
+@@{
+rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives)
+=>
+rtcNewUserGeometry4 (scene, quality, numPrimitives, 1)
+}@@
+
+@@{
+LHS geomID = rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
+geomID = rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
+}@@
+
+@@{
+rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+=>
+uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
+rtcAttachGeometry(scene,geom);
+rtcReleaseGeometry(geom);
+}@@
+
+@@{
+rtcNewUserGeometry4 (EXPR scene, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps, EXPR geomID)
+=>
+uniform RTCGeometry VAR geom = rtcNewUserGeometry (g_device, quality, numPrimitives, numTimeSteps);
+rtcAttachGeometryById(scene,geom,geomID);
+rtcReleaseGeometry(geom);
+}@@
+
+@@{
+RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps);
+=>
+uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
+rtcSetGeometryBuildQuality(geom,quality);
+rtcSetGeometryUserPrimitiveCount(geom,numPrimitives);
+rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
+
+
+@@{
+rtcSetBoundsFunction(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,NULL)
+}@@
+
+@@{
+rtcSetBoundsFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
+=>
+rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
+}@@
+
+@@{
+rtcSetBoundsFunction3(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
+=>
+rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
+}@@
+
+@@{
+rtcSetBoundsFunctionX(EXPR geom,EXPR func,EXPR userPtr)
+=>
+rtcSetGeometryBoundsFunction(geom,func,userPtr)
+}@@
+
+@@{
+rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+=>
+COMMENT rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+}@@
+
+@@{
+REGEXPR(name,rtcSetIntersectFunction.*)(
+=>
+rtcSetGeometryIntersectFunction(
+}@@
+
+@@{
+rtcSetGeometryIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetGeometryIntersectFunction (rtcGetGeometry(scene,geomID), func)
+}@@
+
+@@{
+rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+=>
+COMMENT rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+}@@
+
+@@{
+REGEXPR(name,rtcSetOccludedFunction.*)(
+=>
+rtcSetGeometryOccludedFunction(
+}@@
+
+@@{
+rtcSetGeometryOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetGeometryOccludedFunction (rtcGetGeometry(scene,geomID), func)
 }@@
 
 
@@ -2069,92 +2470,42 @@ return e0;
 }@@
 }@@
 
-
 /////////////////////////////////
 // buffers
-
-@@{
-RTC_INDEX_BUFFER0
-=>
-RTC_INDEX_BUFFER
-}@@
-
-@@{
-(RTCBufferType)(RTC_INDEX_BUFFER+EXPR t)
-=>
-RTC_INDEX_BUFFER_(t)
-}@@
-
-@@{
-RTCBufferType(RTC_INDEX_BUFFER+EXPR t)
-=>
-RTC_INDEX_BUFFER_(t)
-}@@
-
-@@{
-RTC_VERTEX_BUFFER0
-=>
-RTC_VERTEX_BUFFER
-}@@
-
-@@{
-(RTCBufferType)(RTC_VERTEX_BUFFER+EXPR t)
-=>
-RTC_VERTEX_BUFFER_(t)
-}@@
-
-@@{
-RTCBufferType(RTC_VERTEX_BUFFER+EXPR t)
-=>
-RTC_VERTEX_BUFFER_(t)
-}@@
-
-@@{
-RTC_USER_VERTEX_BUFFER0
-=>
-RTC_USER_VERTEX_BUFFER
-}@@
-
-@@{
-(RTCBufferType)(RTC_USER_VERTEX_BUFFER+EXPR t)
-=>
-RTC_USER_VERTEX_BUFFER_(t)
-}@@
-
-@@{
-RTCBufferType(RTC_USER_VERTEX_BUFFER+EXPR t)
-=>
-RTC_USER_VERTEX_BUFFER_(t)
-}@@
 
 @@{
 RTCGeometry ID geom = rtcNewTriangleMesh(EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
 uniform RTCGeometry geom = rtcNewTriangleMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
-rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
+rtcMapBuffer(EXPR geom,EXPR bufty,EXPR slot,EXPR format)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,3*sizeof(uniform int),numPrimitives)
+rtcSetNewGeometryBuffer(geom,bufty,slot,format)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot,EXPR format)
 =>
-rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT3,3*sizeof(uniform int),numPrimitives)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT3,ptr,offset,stride,numPrimitives)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,4*sizeof(uniform float),numVertices)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(user_vertex_buffer,RTC_USER_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,ptr,offset,stride,numVertices)
+}@@
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR slot,EXPR format,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,slot,format,ptr,offset,stride,numVertices)
 }@@
 }@@
 
@@ -2163,29 +2514,34 @@ RTCGeometry ID geom = rtcNewQuadMesh(EXPR device,EXPR flags,EXPR numPrimitives,E
 =>
 uniform RTCGeometry geom = rtcNewQuadMesh(device,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
-rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
+rtcMapBuffer(EXPR geom,EXPR bufty,EXPR slot,EXPR format)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,4*sizeof(uniform int),numPrimitives)
+rtcSetNewGeometryBuffer(geom,bufty,slot,format)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT4,4*sizeof(uniform int),numPrimitives)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT4,ptr,offset,stride,numPrimitives)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,4*sizeof(uniform float),numVertices)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(user_vertex_buffer,RTC_USER_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,ptr,offset,stride,numVertices)
+}@@
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,slot,format,ptr,offset,stride,numVertices)
 }@@
 }@@
 
@@ -2194,99 +2550,104 @@ RTCGeometry ID geom = rtcNewSubdivisionMesh(EXPR device,EXPR flags,EXPR numPrimi
 =>
 uniform RTCGeometry geom = rtcNewSubdivisionMesh(device,flags,numPrimitives,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 @@{
-rtcMapBuffer(EXPR geom,RTC_FACE_BUFFER)
+rtcMapBuffer(EXPR geom,EXPR bufty,EXPR slot,EXPR format)
 =>
-rtcNewBuffer(geom,RTC_FACE_BUFFER,sizeof(uniform int),numPrimitives)
+rtcSetNewGeometryBuffer(geom,bufty,slot,format)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_FACE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_FACE,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_FACE_BUFFER,ptr,offset,stride,numPrimitives)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE,slot,RTC_FORMAT_UINT,sizeof(uniform int),numPrimitives)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_FACE,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform int),numEdges)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE,slot,RTC_FORMAT_UINT,ptr,offset,stride,numPrimitives)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numEdges)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT,sizeof(uniform int),numEdges)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT,ptr,offset,stride,numEdges)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,4*sizeof(uniform float),numVertices)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_LEVEL_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_LEVEL_BUFFER,sizeof(uniform int),numEdges)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,ptr,offset,stride,numVertices)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_LEVEL_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_LEVEL,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_LEVEL_BUFFER,ptr,offset,stride,numEdges)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_LEVEL,slot,format,sizeof(uniform int),numEdges)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_LEVEL,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,2*sizeof(uniform int),numEdgeCreases)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_LEVEL,slot,format,ptr,offset,stride,numEdges)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_EDGE_CREASE_INDEX_BUFFER,ptr,offset,stride,numEdgeCreases)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,slot,format,2*sizeof(uniform int),numEdgeCreases)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,sizeof(uniform float),numEdgeCreases)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,slot,format,ptr,offset,stride,numEdgeCreases)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_EDGE_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numEdgeCreases)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,slot,format,sizeof(uniform float),numEdgeCreases)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,sizeof(uniform int),numVertexCreases)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,slot,format,ptr,offset,stride,numEdgeCreases)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_VERTEX_CREASE_INDEX_BUFFER,ptr,offset,stride,numVertexCreases)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,slot,format,sizeof(uniform int),numVertexCreases)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,sizeof(uniform float),numVertexCreases)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,slot,format,ptr,offset,stride,numVertexCreases)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_VERTEX_CREASE_WEIGHT_BUFFER,ptr,offset,stride,numVertexCreases)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,slot,format,sizeof(uniform float),numVertexCreases)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,RTC_HOLE_BUFFER)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,RTC_HOLE_BUFFER,sizeof(uniform int),numPrimitives)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,slot,format,ptr,offset,stride,numVertexCreases)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_HOLE_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_HOLE,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_HOLE_BUFFER,ptr,offset,stride,numPrimitives)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,format,sizeof(uniform int),numPrimitives)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(user_vertex_buffer,RTC_USER_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_HOLE,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices) /* FIXME: verify size of this buffer! */
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,format,ptr,offset,stride,numPrimitives)
+}@@
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
+=>
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,slot,format,ptr,offset,stride,numVertices) /* FIXME: verify size of this buffer! */
 }@@
 }@@
 
@@ -2295,60 +2656,48 @@ RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR
 =>
 uniform RTCGeometry geom = rtcNewCurveGeometry (device,type,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
-rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
+rtcMapBuffer(EXPR geom,EXPR bufty,EXPR slot,EXPR format)
 =>
-rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform int),numPrimitives)
+rtcSetNewGeometryBuffer(geom,bufty,slot,format)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,RTC_INDEX_BUFFER,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,RTC_INDEX_BUFFER,ptr,offset,stride,numPrimitives)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT,sizeof(uniform int),numPrimitives)
 }@@
 @@{
-rtcMapBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*))
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_INDEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcNewBuffer(geom,vertex_buffer,4*sizeof(uniform float),numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,slot,RTC_FORMAT_UINT,ptr,offset,stride,numPrimitives)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(vertex_buffer,RTC_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetNewGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format)
 =>
-rtcSetBuffer(geom,vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT4,4*sizeof(uniform float),numVertices)
 }@@
 @@{
-rtcSetBuffer(EXPR geom,REGEXPR(user_vertex_buffer,RTC_USER_VERTEX_BUFFER.*),EXPR ptr,EXPR offset,EXPR stride)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT4,ptr,offset,stride,numVertices)
 }@@
-}@@
-
 @@{
-rtcSetBuffer(EXPR geom,EXPR type,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetBuffer(geom,type,ptr,offset,stride,/* put buffer size here */)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,slot,format,ptr,offset,stride,numVertices)
 }@@
-
-@@{
-rtcUnmapBuffer(EXPR geom, EXPR type);
-=>
-}@@
-
-@@{
-rtcMapBuffer(EXPR geom,EXPR type)
-=>
-rtcGetGeometryBufferData(geom,type) /* FIXME: check if this should be rtcNewBuffer */
 }@@
 
 
 @@{
-rtcSetIndexBuffer(EXPR geom, RTC_USER_VERTEX_BUFFER_(EXPR vertexSlot) , RTC_INDEX_BUFFER_(EXPR indexSlot));
+rtcSetSharedGeometryBuffer(EXPR geom,EXPR type,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetGeometryVertexAttributeTopology(geom, vertexSlot, indexSlot);
+rtcSetSharedGeometryBuffer(geom,type,slot,format,ptr,offset,stride,/* put buffer size here */)
 }@@
 
 @@{
-rtcSetIndexBuffer(EXPR geom, EXPR vertexBuffer, EXPR indexBuffer);
+rtcMapBuffer(EXPR geom,EXPR type,EXPR slot, EXPR format)
 =>
-rtcSetGeometryVertexAttributeTopology(geom, vertexBuffer, indexBuffer);
+rtcGetGeometryBufferData(geom,type,slot) /* FIXME: check if this should be rtcSetNewGeometryBuffer */
 }@@
 
 
@@ -2356,39 +2705,39 @@ rtcSetGeometryVertexAttributeTopology(geom, vertexBuffer, indexBuffer);
 // drop extra arguments of geometry creation
 
 @@{
-rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
+rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps);
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER); // FIXME: check if geometry gets properly committed
 }@@
 
 @@{
-rtcNewTriangleMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
+rtcNewTriangleMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE); // FIXME: check if geometry gets properly committed
 }@@
 
 @@{
-rtcNewQuadMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
+rtcNewQuadMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD); // FIXME: check if geometry gets properly committed
 }@@
 
 @@{
-rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps)
+rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps);
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION); // FIXME: check if geometry gets properly committed
 }@@
 
 @@{
-rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
+rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-rtcNewGeometry (device,type)
+rtcNewGeometry (device,type); // FIXME: check if geometry gets properly committed
 }@@
 
 @@{
 rtcNewInstance(EXPR device,EXPR source,EXPR numTimeSteps);
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE); // FIXME: check if geometry gets properly committed
 }@@
 
 
@@ -2399,17 +2748,17 @@ rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE)
 rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i,
             EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
 =>
-settings.bvh = bvh_i;
-settings.primitives = primitives_i;
-settings.numPrimitives = numPrimitives_i;
-settings.createNode = createNode_i;
-settings.setNodeChildren = setNodeChildren_i;
-settings.setNodeBounds = setNodeBounds_i;
-settings.createLeaf = createLeaf_i;
-settings.splitPrimitive = splitPrimitive_i;
-settings.buildProgress = buildProgress_i;
-settings.userPtr = userPtr_i;
-rtcBuildBVH(&settings);
+(settings.bvh = bvh_i,
+settings.primitives = primitives_i,
+settings.numPrimitives = numPrimitives_i,
+settings.createNode = createNode_i,
+settings.setNodeChildren = setNodeChildren_i,
+settings.setNodeBounds = setNodeBounds_i,
+settings.createLeaf = createLeaf_i,
+settings.splitPrimitive = splitPrimitive_i,
+settings.buildProgress = buildProgress_i,
+settings.userPtr = userPtr_i,
+rtcBuildBVH(&settings));
 }@@
 
 @@{
@@ -2461,7 +2810,7 @@ return true; // FIXME: you have to return true from this function
 rtcMakeStaticBVH(EXPR bvh)
 =>
 COMMENT rtcMakeStaticBVH(bvh)
-#pragma message ("set settings.flags = RTC_BUILD_FLAG_DYNAMIC instead")
+// FIXME: set settings.flags = RTC_BUILD_FLAG_DYNAMIC instead
 }@@
 
 @@{
@@ -2497,6 +2846,21 @@ myray.tfar()
 &ID myray
 =>
 RTCRay_(myray)
+}@@
+@@{
+ID myray.Ng_x
+=>
+myray.Ng.x
+}@@
+@@{
+ID myray.Ng_y
+=>
+myray.Ng.y
+}@@
+@@{
+ID myray.Ng_z
+=>
+myray.Ng.z
 }@@
 }@@
 
@@ -2626,6 +2990,12 @@ ray.Ng_z
 __programCount
 =>
 1
+}@@
+
+@@{
+RTCRayN_instID(EXPR ray, EXPR N, EXPR i)
+=>
+RTCRayN_instID(ray,N,i,0)
 }@@
 
 @@{ispc
