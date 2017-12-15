@@ -621,14 +621,14 @@ namespace embree
     case MODE_INTERSECT4:   return true;
     case MODE_INTERSECT8:   return true;
     case MODE_INTERSECT16:  return true;
-    case MODE_INTERSECT1M:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECT1Mp: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM1: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM3: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM4: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM8: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM16:return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
-    case MODE_INTERSECTNp:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED);
+    case MODE_INTERSECT1M:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECT1Mp: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM1: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM3: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM4: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM8: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECTNM16:return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
+    case MODE_INTERSECTNp:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
     }
     assert(false);
     return false;

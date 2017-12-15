@@ -425,9 +425,9 @@ namespace embree
 #endif
 
 #if defined(EMBREE_RAY_PACKETS)
-    case RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED:  return 1;
+    case RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED:  return 1;
 #else
-    case RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED:  return 0;
+    case RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED:  return 0;
 #endif
     
 #if defined(EMBREE_RAY_MASK)
