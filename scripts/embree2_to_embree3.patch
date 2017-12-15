@@ -2365,7 +2365,7 @@ RTCGeometry ID geom = rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPri
 =>
 uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, numTimeSteps);
 rtcSetGeometryBuildQuality(geom,quality);
-rtcSetGeometryPrimitiveCount(geom,numPrimitives);
+rtcSetGeometryUserPrimitiveCount(geom,numPrimitives);
 rtcSetGeometryTimeStepCount(geom,numTimeSteps);
 }@@
 
@@ -2972,6 +2972,12 @@ ray.Ng_z
 __programCount
 =>
 1
+}@@
+
+@@{
+RTCRayN_instID(EXPR ray, EXPR N, EXPR i)
+=>
+RTCRayN_instID(EXPR ray, EXPR N, EXPR i, 0)
 }@@
 
 @@{ispc
