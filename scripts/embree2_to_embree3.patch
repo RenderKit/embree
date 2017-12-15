@@ -1114,7 +1114,8 @@ unmasked void intersectionFilter(const uniform RTCFilterFunctionNArguments* unif
   COMMENT uniform RTCIntersectContext* uniform context = args->context;
   COMMENT varying RTCRay& ray_in = *(varying RTCRay* uniform ) args->ray;
   varying RTCHit* uniform potentialHit = (varying RTCHit* uniform ) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *vvalid = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   uniform unsigned int N = args->N;
   assert(N == __programCount);
   if (*vvalid != -1) return;
@@ -1142,7 +1143,8 @@ void intersectionFilter4(const uniform RTCFilterFunctionNArguments* const unifor
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay4& ray_in = *(RTCRay4*) args->ray;
   RTCHit4* potentialHit = (RTCHit4*) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 4);
   if (none(valid)) return; // function may get called with zero mask
@@ -1170,7 +1172,8 @@ void intersectionFilter8(const uniform RTCFilterFunctionNArguments* const unifor
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay8& ray_in = *(RTCRay8*) args->ray;
   RTCHit8* potentialHit = (RTCHit8*) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 8);
   if (none(valid)) return; // function may get called with zero mask
@@ -1198,7 +1201,8 @@ void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const unifo
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay16& ray_in = *(RTCRay16*) args->ray;
   RTCHit16* potentialHit = (RTCHit16*) args->potentialHit;
-  #warning use potentialHit to access hit
+  #warning FIXME: use potentialHit to access hit
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 16);
   if (none(valid)) return; // function may get called with zero mask
@@ -1227,7 +1231,8 @@ void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const unifor
   RTCRayN* uniform ray_in = args->ray;
   RTCHitN* uniform potentialHit_in = args->potentialHit;
   uniform unsigned int N_in = args->N;
-  // FIXME: function may get called with zero mask
+  #warning FIXME: function may get called with zero valid mask
+  #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
 }@@
 
 @@{
