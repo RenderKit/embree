@@ -172,14 +172,14 @@ RTCORE_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* uniform rays, uniform unsig
 RTCORE_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* uniform hits, uniform unsigned int N, uniform unsigned int i)
 {
   RTCHit hit;
-  hit.Ng_x    = RTCHitN_Ng_x(hits,N,i);
-  hit.Ng_y    = RTCHitN_Ng_y(hits,N,i);
-  hit.Ng_z    = RTCHitN_Ng_z(hits,N,i);
-  hit.t       = RTCHitN_t(hits,N,i);
-  hit.u       = RTCHitN_u(hits,N,i);
-  hit.v       = RTCHitN_v(hits,N,i);
-  hit.primID  = RTCHitN_primID(hits,N,i);
-  hit.geomID  = RTCHitN_geomID(hits,N,i);
+  hit.Ng_x   = RTCHitN_Ng_x(hits,N,i);
+  hit.Ng_y   = RTCHitN_Ng_y(hits,N,i);
+  hit.Ng_z   = RTCHitN_Ng_z(hits,N,i);
+  hit.t      = RTCHitN_t(hits,N,i);
+  hit.u      = RTCHitN_u(hits,N,i);
+  hit.v      = RTCHitN_v(hits,N,i);
+  hit.primID = RTCHitN_primID(hits,N,i);
+  hit.geomID = RTCHitN_geomID(hits,N,i);
   for (uniform unsigned int l = 0; l < RTC_MAX_INSTANCE_LEVELS; l++)
     hit.instID[l] = RTCHitN_instID(hits,N,i,l);
   return hit;
