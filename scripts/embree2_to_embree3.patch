@@ -1880,13 +1880,13 @@ rtcNewBezierHairGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBezierHairGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BEZIER_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBezierHairGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BEZIER_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,flags,numPrimitives,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,flags,numPrimitives,numVertices,numTimeSteps,geomID)
 }@@
 
 @@{
@@ -1904,13 +1904,13 @@ rtcNewBSplineHairGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBSplineHairGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBSplineHairGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,flags,numPrimitives,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,flags,numPrimitives,numVertices,numTimeSteps,geomID)
 }@@
 
 
@@ -1937,13 +1937,13 @@ rtcNewBezierCurveGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BEZIER_CURVE,RTC_GEOMETRY_SUBTYPE_ROUND,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBezierCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BEZIER_CURVE,RTC_GEOMETRY_SUBTYPE_ROUND,flags,numPrimitives,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,flags,numPrimitives,numVertices,numTimeSteps,geomID)
 }@@
 
 @@{
@@ -1961,13 +1961,13 @@ rtcNewBSplineCurveGeometry2(scene,flags,numPrimitives,numVertices,1)
 @@{
 rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_ROUND,flags,numPrimitives,numVertices,numTimeSteps)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,flags,numPrimitives,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewBSplineCurveGeometry2(EXPR scene,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,RTC_GEOMETRY_SUBTYPE_ROUND,flags,numPrimitives,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX(scene,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,flags,numPrimitives,numVertices,numTimeSteps,geomID)
 }@@
 
 
@@ -1986,44 +1986,44 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,flags,numSegments,numVertices,numTimeSteps)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,RTC_GEOMETRY_SUBTYPE_FLAT,flags,numSegments,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
 }@@
 
 
 @@{
-LHS geomID = rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+LHS geomID = rtcNewCurveGeometryX (EXPR scene,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,type,flags,numPrimitives,numVertices,numTimeSteps);
 geomID = rtcAttachGeometry(scene,geom);
 rtcReleaseGeometry(geom);
 }@@
 
 @@{
-rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+rtcNewCurveGeometryX (EXPR scene,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,type,flags,numPrimitives,numVertices,numTimeSteps);
 rtcAttachGeometry(scene,geom);
 rtcReleaseGeometry(geom);
 }@@
 
 @@{
-rtcNewCurveGeometryX (EXPR scene,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps,EXPR geomID);
+rtcNewCurveGeometryX (EXPR scene,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps,EXPR geomID);
 =>
-uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry VAR geom = rtcNewCurveGeometry (g_device,type,flags,numPrimitives,numVertices,numTimeSteps);
 rtcAttachGeometryById(scene,geom,geomID);
 rtcReleaseGeometry(geom);
 }@@
 
 @@{
-RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-uniform RTCGeometry geom = rtcNewCurveGeometry (device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewCurveGeometry (device,type,flags,numPrimitives,numVertices,numTimeSteps);
 rtcSetGeometryBuildQuality(geom,flags);
 rtcSetGeometryTimeStepCount(geom,numTimeSteps);
 }@@
@@ -2291,9 +2291,9 @@ rtcSetBuffer(geom,user_vertex_buffer,ptr,offset,stride,numVertices) /* FIXME: ve
 }@@
 
 @@{
-RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
+RTCGeometry ID geom = rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps);
 =>
-uniform RTCGeometry geom = rtcNewCurveGeometry (device,basis,subtype,flags,numPrimitives,numVertices,numTimeSteps);
+uniform RTCGeometry geom = rtcNewCurveGeometry (device,type,flags,numPrimitives,numVertices,numTimeSteps);
 @@{
 rtcMapBuffer(EXPR geom,RTC_INDEX_BUFFER)
 =>
@@ -2358,37 +2358,37 @@ rtcSetGeometryVertexAttributeTopology(geom, vertexBuffer, indexBuffer);
 @@{
 rtcNewUserGeometry (EXPR device, EXPR quality, EXPR numPrimitives, EXPR numTimeSteps)
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER, RTC_GEOMETRY_SUBTYPE_DEFAULT)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER)
 }@@
 
 @@{
 rtcNewTriangleMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE, RTC_GEOMETRY_SUBTYPE_DEFAULT)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE)
 }@@
 
 @@{
 rtcNewQuadMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD, RTC_GEOMETRY_SUBTYPE_DEFAULT)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD)
 }@@
 
 @@{
 rtcNewSubdivisionMesh (EXPR device,EXPR flags,EXPR numPrimitives,EXPR numEdges,EXPR numVertices,EXPR numEdgeCreases,EXPR numVertexCreases,EXPR numHoles,EXPR numTimeSteps)
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION, RTC_GEOMETRY_SUBTYPE_DEFAULT)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION)
 }@@
 
 @@{
-rtcNewCurveGeometry (EXPR device,EXPR basis,EXPR subtype,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
+rtcNewCurveGeometry (EXPR device,EXPR type,EXPR flags,EXPR numPrimitives,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewGeometry (device,basis,subtype)
+rtcNewGeometry (device,type)
 }@@
 
 @@{
 rtcNewInstance(EXPR device,EXPR source,EXPR numTimeSteps);
 =>
-rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE, RTC_GEOMETRY_SUBTYPE_DEFAULT)
+rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE)
 }@@
 
 
@@ -2562,19 +2562,19 @@ cont.context.flags
 @@{
 LINEAR_BASIS
 =>
-RTC_GEOMETRY_TYPE_LINEAR_CURVE
+RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_LINEAR_CURVE
 }@@
 
 @@{
 BEZIER_BASIS
 =>
-RTC_GEOMETRY_TYPE_BEZIER_CURVE
+RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_BEZIER_CURVE
 }@@
 
 @@{
 BSPLINE_BASIS
 =>
-RTC_GEOMETRY_TYPE_BSPLINE_CURVE
+RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_BSPLINE_CURVE
 }@@
 
 
