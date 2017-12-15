@@ -2668,17 +2668,17 @@ rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE)
 rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i,
             EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
 =>
-settings.bvh = bvh_i;
-settings.primitives = primitives_i;
-settings.numPrimitives = numPrimitives_i;
-settings.createNode = createNode_i;
-settings.setNodeChildren = setNodeChildren_i;
-settings.setNodeBounds = setNodeBounds_i;
-settings.createLeaf = createLeaf_i;
-settings.splitPrimitive = splitPrimitive_i;
-settings.buildProgress = buildProgress_i;
-settings.userPtr = userPtr_i;
-rtcBuildBVH(&settings);
+(settings.bvh = bvh_i,
+settings.primitives = primitives_i,
+settings.numPrimitives = numPrimitives_i,
+settings.createNode = createNode_i,
+settings.setNodeChildren = setNodeChildren_i,
+settings.setNodeBounds = setNodeBounds_i,
+settings.createLeaf = createLeaf_i,
+settings.splitPrimitive = splitPrimitive_i,
+settings.buildProgress = buildProgress_i,
+settings.userPtr = userPtr_i,
+rtcBuildBVH(&settings));
 }@@
 
 @@{
@@ -2730,7 +2730,7 @@ return true; // FIXME: you have to return true from this function
 rtcMakeStaticBVH(EXPR bvh)
 =>
 COMMENT rtcMakeStaticBVH(bvh)
-#pragma message ("set settings.flags = RTC_BUILD_FLAG_DYNAMIC instead")
+// FIXME: set settings.flags = RTC_BUILD_FLAG_DYNAMIC instead
 }@@
 
 @@{
