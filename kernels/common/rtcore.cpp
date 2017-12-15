@@ -1022,7 +1022,7 @@ namespace embree
 #endif
     }
     
-    case RTC_GEOMETRY_TYPE_LINEAR_CURVE:
+    case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:
     case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
@@ -1038,7 +1038,7 @@ namespace embree
       
       Geometry* geom;
       switch (type) {
-      case RTC_GEOMETRY_TYPE_LINEAR_CURVE       : geom = createLineSegments (device); break;
+      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE       : geom = createLineSegments (device); break;
       case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : geom = createCurvesBezier (device,ROUND_CURVE); break;
       case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE  : geom = createCurvesBezier (device,FLAT_CURVE); break;
       case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE: geom = createCurvesBSpline(device,ROUND_CURVE); break;

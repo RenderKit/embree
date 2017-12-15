@@ -453,7 +453,7 @@ namespace embree
     std::string str_subtype = "";
 
     switch (mesh->type) {
-    case RTC_GEOMETRY_TYPE_LINEAR_CURVE:
+    case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       str_type = "linear";
       break;
 

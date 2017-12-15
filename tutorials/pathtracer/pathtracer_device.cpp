@@ -1163,7 +1163,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     
-    if (mesh->type == RTC_GEOMETRY_TYPE_LINEAR_CURVE)
+    if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
     {
       materialID = mesh->geom.materialID;
       const Vec3fa dx = normalize(dg.Ng);

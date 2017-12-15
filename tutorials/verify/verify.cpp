@@ -816,7 +816,7 @@ namespace embree
       rtcSetGeometryUserData(geom1,(void*)2);
       RTCGeometry geom2 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
       rtcSetGeometryUserData(geom2,(void*)3);
-      RTCGeometry geom3 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_LINEAR_CURVE);
+      RTCGeometry geom3 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       rtcSetGeometryUserData(geom3,(void*)4);
       RTCGeometry geom4 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
       rtcSetGeometryUserData(geom4,(void*)5);

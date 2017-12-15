@@ -1231,7 +1231,7 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_LINEAR_CURVE);
+      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
       else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
       else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
@@ -1244,7 +1244,7 @@ namespace embree
         std::string str_subtype = xml->parm("type");
         if (str_type == "linear")
         {
-          type = RTC_GEOMETRY_TYPE_LINEAR_CURVE;
+          type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
         }
         else if (str_type == "bezier")
         {

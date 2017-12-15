@@ -428,7 +428,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_LINEAR_CURVE,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,material,mblur?2:1);
 
     mesh->hairs.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {

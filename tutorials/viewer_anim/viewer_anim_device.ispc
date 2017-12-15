@@ -102,7 +102,7 @@ void convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(uniform Vec3fa), hair->numVertices);
   for (unsigned int i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, hair->hairs, 0, sizeof(uniform ISPCHair), hair->numHairs);
-  if (hair->type != RTC_GEOMETRY_TYPE_LINEAR_CURVE)
+  if (hair->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
     rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   hair->geom.geometry = geom;
