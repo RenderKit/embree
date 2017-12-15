@@ -1915,6 +1915,18 @@ rtcCommitGeometry(rtcGetGeometry(scene,geomID)) /* FIXME: do commit once after a
 }@@
 
 @@{
+rtcUpdateGeometryBuffer(EXPR geom,RTC_BUFFER(EXPR bufty,EXPR slot))
+=>
+rtcUpdateGeometryBuffer(geom,bufty,slot)
+}@@
+
+@@{
+rtcUpdateGeometryBuffer(EXPR geom,EXPR bufty)
+=>
+rtcUpdateGeometryBuffer(geom,bufty,FIXME_COULD_NOT_INFER_SLOT)
+}@@
+
+@@{
 rtcDisable(EXPR scene,EXPR geomID)
 =>
 rtcDisableGeometry(rtcGetGeometry(scene,geomID))
