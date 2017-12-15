@@ -1658,13 +1658,13 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
 }@@
 
 
@@ -1755,13 +1755,13 @@ rtcMapBuffer(rtcGetGeometry(scene,geomID),type)
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER(EXPR type, EXPR slot))
 =>
-rtcMapBuffer(geom,type,slot,FIXME_COULD_NOT_DERIVE_FORMAT)
+rtcMapBuffer(geom,type,slot,FIXME_COULD_NOT_INFER_FORMAT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,EXPR type)
 =>
-rtcMapBuffer(geom,type,FIXME_COULD_NOT_DERIVE_SLOT,FIXME_COULD_NOT_DERIVE_FORMAT)
+rtcMapBuffer(geom,type,FIXME_COULD_NOT_INFER_SLOT,FIXME_COULD_NOT_INFER_FORMAT)
 }@@
 
 @@{
@@ -1839,13 +1839,13 @@ rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride,size)
 @@{
 rtcSetBuffer(EXPR geom,RTC_BUFFER(EXPR type, EXPR slot),EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,type,slot,FIXME_COULD_NOT_DERIVE_FORMAT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,type,slot,FIXME_COULD_NOT_INFER_FORMAT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetBuffer(EXPR geom,EXPR type, EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,type,FIXME_COULD_NOT_DERIVE_SLOT,FIXME_COULD_NOT_DERIVE_FORMAT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,type,FIXME_COULD_NOT_INFER_SLOT,FIXME_COULD_NOT_INFER_FORMAT,ptr,offset,stride)
 }@@
 
 
@@ -2118,10 +2118,9 @@ void EXPR RTCBoundsFunc(void* ID geomUserPtr_in, size_t ID primID_in, RTCBounds&
 =>
 void RTCBoundsFunc(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
-  COMMENT void* uniform userPtr = args->userPtr;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   uniform size_t primID_in = args->primID;
-  COMMENT uniform unsigned int time = args->time;
+  COMMENT uniform unsigned int time = args->timeStep;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
 
@@ -2137,10 +2136,10 @@ void EXPR RTCBoundsFunc2(void* ID userPtr_in, void* ID geomUserPtr_in, size_t ID
 =>
 void RTCBoundsFunc2(const uniform RTCBoundsFunctionArguments* const uniform args)
 {
-  void* uniform userPtr_in = args->userPtr;
+  COMMENT void* uniform userPtr_in = args->userPtr; // no longer available
   void* uniform geomUserPtr_in = args->geomUserPtr;
   uniform size_t primID_in = args->primID;
-  COMMENT uniform size_t time = args->time;
+  COMMENT uniform size_t time = args->timeStep;
   uniform RTCBounds& bounds_out = *args->bounds_o;
 }@@
 
