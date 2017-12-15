@@ -1769,10 +1769,10 @@ rtcMapBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,RTC_FORMAT_UINT)
 }@@
 
 @@{
-EXPR lhs = rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, EXPR slot, EXPR format);
+rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, EXPR slot, EXPR format);
 =>
-rtcSetGeometryVertexAttributeCount(geom,slot+1); // FIXME: verify if this is correct
-lhs = rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, slot, format);
+(rtcSetGeometryVertexAttributeCount(geom,slot+1), // FIXME: verify if this is correct
+ rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, slot, format));
 }@@
 
 @@{
