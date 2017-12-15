@@ -1378,7 +1378,7 @@ rtcSetTransform2(scene,geomID,layout,xfm,0)
 @@{
 rtcSetTransform2(EXPR scene,EXPR geomID,EXPR layout,EXPR xfm,EXPR timeStep)
 =>
-rtcSetGeometryTransform(rtcGetGeometry(scene,geomID),layout,xfm,timeStep)
+rtcSetGeometryTransform(rtcGetGeometry(scene,geomID),timeStep,layout,xfm)
 }@@
 
 
