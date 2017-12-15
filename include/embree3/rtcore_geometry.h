@@ -31,16 +31,19 @@ typedef struct RTCGeometryTy* RTCGeometry;
 /* Geometry type */
 enum RTCGeometryType
 {
-  RTC_GEOMETRY_TYPE_TRIANGLE,
-  RTC_GEOMETRY_TYPE_QUAD,
-  RTC_GEOMETRY_TYPE_SUBDIVISION,
-  RTC_GEOMETRY_TYPE_LINEAR_CURVE,
-  RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,
-  RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,
-  RTC_GEOMETRY_TYPE_USER,
-  RTC_GEOMETRY_TYPE_INSTANCE
+  RTC_GEOMETRY_TYPE_TRIANGLE = 0, // triangle mesh
+  RTC_GEOMETRY_TYPE_QUAD     = 1, // quad (triangle pair) mesh
+
+  RTC_GEOMETRY_TYPE_SUBDIVISION = 8, // Catmull-Clark subdivision surface
+
+  RTC_GEOMETRY_TYPE_LINEAR_CURVE        = 17, // linear curves
+  RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE  = 24, // round (tube-like) Bezier curves
+  RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE   = 25, // flat (ribbon-like) Bezier curves
+  RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE = 32, // round (tube-like) B-spline curves
+  RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE  = 33, // flat (ribbon-like) B-spline curves
+
+  RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
+  RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };
 
 /* Interpolation mode for subdivision surfaces. */
@@ -271,7 +274,7 @@ RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primI
 }
 
 RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
-                                         float* P, float* dPdu, float* dPdv, unsigned int valueCount)
+                                        float* P, float* dPdu, float* dPdv, unsigned int valueCount)
 {
   struct RTCInterpolateArguments args;
   args.geometry = geometry;
@@ -291,7 +294,7 @@ RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primI
 }
 
 RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
-                                         float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int valueCount)
+                                        float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int valueCount)
 {
   struct RTCInterpolateArguments args;
   args.geometry = geometry;
