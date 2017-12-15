@@ -182,6 +182,21 @@ struct RTCRayNp
   unsigned int* instID[RTC_MAX_INSTANCE_LEVELS];
 };
 
+struct RTCHit
+{
+  float Ng_x;
+  float Ng_y;
+  float Ng_z;
+
+  float t;
+  float u;
+  float v;
+
+  unsigned primID;
+  unsigned geomID;
+  unsigned instID[RTC_MAX_INSTANCE_LEVELS];
+};
+  
 struct RTCRayN;
 struct RTCHitN;
 
@@ -284,21 +299,6 @@ struct RTCHitNt
   unsigned primID[N];
   unsigned geomID[N];
   unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];
-};
-
-struct RTCHit
-{
-  float Ng_x;
-  float Ng_y;
-  float Ng_z;
-
-  float t;
-  float u;
-  float v;
-
-  unsigned primID;
-  unsigned geomID;
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS];
 };
 
 

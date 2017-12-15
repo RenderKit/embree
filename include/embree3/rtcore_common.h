@@ -154,6 +154,15 @@ enum RTCFormat
   RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR = 0xb44
 };
 
+/* Build quality levels */
+enum RTCBuildQuality
+{
+  RTC_BUILD_QUALITY_LOW    = 0,
+  RTC_BUILD_QUALITY_MEDIUM = 1,
+  RTC_BUILD_QUALITY_HIGH   = 2,
+  RTC_BUILD_QUALITY_REFIT  = 3,
+};
+  
 /* Axis aligned bounding box representation */
 struct RTCORE_ALIGN(16) RTCBounds
 {
@@ -168,6 +177,44 @@ struct RTCORE_ALIGN(16) RTCLinearBounds
   struct RTCBounds bounds1;
 };
 
+/* Intersection context flags */
+enum RTCIntersectContextFlags
+{
+  RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
+  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0),
+  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)
+};
+
+/* Arguments for RTCFilterFunctionN callback */
+struct RTCFilterFunctionNArguments
+{
+  int* valid;
+  void* geomUserPtr;
+  const struct RTCIntersectContext* context;
+  struct RTCRayN* ray;
+  struct RTCHitN* potentialHit;
+  unsigned int N;
+};
+  
+/* Filter callback function. */
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
+
+/* Intersection context passed to ray queries. */
+struct RTCIntersectContext
+{
+  enum RTCIntersectContextFlags flags;
+  RTCFilterFunctionN filter;
+  unsigned int instID;
+};
+
+/* initializes intersection context */
+RTCORE_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
+{
+  context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  context->filter = NULL;
+  context->instID = -1;
+}
+  
 #if defined(__cplusplus)
 }
 #endif

@@ -29,15 +29,6 @@ struct RTCRay8;
 struct RTCRay16;
 struct RTCRayNp;
 
-/* Build quality levels */
-enum RTCBuildQuality
-{
-  RTC_BUILD_QUALITY_LOW    = 0,
-  RTC_BUILD_QUALITY_MEDIUM = 1,
-  RTC_BUILD_QUALITY_HIGH   = 2,
-  RTC_BUILD_QUALITY_REFIT  = 3,
-};
-
 /* Scene flags */
 enum RTCSceneFlags
 {
@@ -48,50 +39,36 @@ enum RTCSceneFlags
   RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION = (1 << 3)
 };
 
-/* Intersection context flags */
-enum RTCIntersectContextFlags
-{
-  RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
-  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0),
-  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)
-};
-
-/* Arguments for RTCFilterFunctionN callback */
-struct RTCFilterFunctionNArguments
-{
-  int* valid;
-  void* geomUserPtr;
-  const struct RTCIntersectContext* context;
-  struct RTCRayN* ray;
-  struct RTCHitN* potentialHit;
-  unsigned int N;
-};
-  
-/* Filter callback function. */
-typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
-
-/* Intersection context passed to ray queries. */
-struct RTCIntersectContext
-{
-  enum RTCIntersectContextFlags flags;
-  RTCFilterFunctionN filter;
-  unsigned int instID;
-};
-
-/* initializes intersection context */
-RTCORE_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
-{
-  context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  context->filter = NULL;
-  context->instID = -1;
-}
-
-/* Defines an opaque scene type. */
-typedef struct RTCSceneTy* RTCScene;
-
 /* Creates a new scene. */
 RTCORE_API RTCScene rtcNewScene(RTCDevice device);
 
+/* Retains the scene (increments reference count). */
+RTCORE_API void rtcRetainScene(RTCScene scene);
+
+/* Releases the scene (decrements reference count). */
+RTCORE_API void rtcReleaseScene(RTCScene scene);
+
+  
+/* Attaches the geometry to some scene. */
+RTCORE_API unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);
+
+/* Attaches the geometry to some scene using the specified geometry ID. */
+RTCORE_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
+
+/* Detaches the geometry from the scene. */
+RTCORE_API void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
+
+/* Gets geometry handle from scene. */
+RTCORE_API RTCGeometry rtcGetGeometry(RTCScene scene, unsigned int geomID);
+
+
+/* Commits a scene. */
+RTCORE_API void rtcCommitScene(RTCScene scene);
+
+/* Commits a scene from multiple threads */
+RTCORE_API void rtcJoinCommitScene(RTCScene scene);
+
+  
 /* Type of progress monitor callback function. */
 typedef bool (*RTCProgressMonitorFunction)(void* ptr, const double n);
 
@@ -107,12 +84,6 @@ RTCORE_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags sflags);
 /* Returns the scene flags. */
 RTCORE_API enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
   
-/* Commits a scene. */
-RTCORE_API void rtcCommitScene(RTCScene scene);
-
-/* Commits a scene from multiple threads */
-RTCORE_API void rtcJoinCommitScene(RTCScene scene);
-
 /* Returns AABB of the scene. */
 RTCORE_API void rtcGetSceneBounds(RTCScene scene, struct RTCBounds* bounds_o);
 
@@ -166,12 +137,6 @@ RTCORE_API void rtcOccludedNM(RTCScene scene, struct RTCIntersectContext* contex
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
 RTCORE_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayNp* rays, const unsigned int N);
-
-/* Retains the scene (increments reference count). */
-RTCORE_API void rtcRetainScene(RTCScene scene);
-
-/* Releases the scene (decrements reference count). */
-RTCORE_API void rtcReleaseScene(RTCScene scene);
 
 #if defined(__cplusplus)
 

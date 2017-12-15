@@ -22,6 +22,12 @@
 extern "C" {
 #endif
 
+/* Defines an opaque scene type. */
+typedef struct RTCSceneTy* RTCScene;
+
+/* Defines an opaque geometry type */
+typedef struct RTCGeometryTy* RTCGeometry;
+
 /* Geometry type */
 enum RTCGeometryType
 {
@@ -94,15 +100,6 @@ struct RTCOccludedFunctionNArguments
 /* Type of occlusion callback function pointer. */
 typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* const args);
 
-/* Reports intersection from intersect callback function. */
-RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
-
-/* Reports intersection from occluded callback function. */
-RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
-
-/* Defines an opaque geometry type */
-typedef struct RTCGeometryTy* RTCGeometry;
-
 /* Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionNArguments
 {
@@ -127,26 +124,22 @@ typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArg
 /* Creates a new geometry of specified type. */
 RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, enum RTCGeometryType type);
 
-/* Sets the bounding callback function to calculate bounding boxes for user primitives. */
-RTCORE_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
+/* Retains the geometry (increments reference count). */
+RTCORE_API void rtcRetainGeometry(RTCGeometry geometry);
 
-/* Set intersect callback function for user geometries. */
-RTCORE_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectFunctionN intersect);
+/* Releases the geometry (decrements reference count) */
+RTCORE_API void rtcReleaseGeometry(RTCGeometry geometry);
 
-/* Set occlusion callback function for user geometries. */
-RTCORE_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, RTCOccludedFunctionN occluded);
+/* Commits the geometry. */
+RTCORE_API void rtcCommitGeometry(RTCGeometry geometry);
 
-/* Sets instanced scene of instance geometry. */
-RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
-/* Sets transformation of the instance for specified timestep */
-RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);
+/* Enable geometry. */
+RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);
 
-/* Returns transformation of the instance for specified time. */
-RTCORE_API void rtcGetGeometryTransform(RTCGeometry geometry, float time, enum RTCFormat format, void* xfm);
+/* Disable geometry. */
+RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
 
-/* Sets the number of primitives for user geometry. */
-RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimCount);
 
 /* Sets the number of time steps. */
 RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, unsigned int timeStepCount);
@@ -154,23 +147,12 @@ RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, unsigned int t
 /* Sets the number of vertex attributes. */
 RTCORE_API void rtcSetGeometryVertexAttributeCount(RTCGeometry geometry, unsigned int vertexAttributeCount);
 
-/* Sets the number of topologies for subdivision surfaces. */
-RTCORE_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, unsigned int topologyCount);
- 
-/* Sets a uniform tessellation rate */
-RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, float tessellationRate);
+/* Sets the ray mask of the geometry. */
+RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, unsigned int mask);
 
 /* Sets the build quality of the geometry. */
 RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuality quality);
 
-/* Sets the ray mask of the geometry. */
-RTCORE_API void rtcSetGeometryMask(RTCGeometry geometry, unsigned int mask);
-
-/* Sets subdivision interpolation mode. */
-RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned int topologyID, enum RTCSubdivisionMode mode);
-
-/* Binds a vertex attribute to some topology. */
-RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigned int vertexAttributeID, unsigned int topologyID);
 
 /* Sets geometry buffer. */
 RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
@@ -187,17 +169,9 @@ RTCORE_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferTyp
 /* Returns a pointer to the buffer data. */
 RTCORE_API void* rtcGetGeometryBufferData(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
-/* Enable geometry. */
-RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);
-
 /* Update geometry buffer. */
 RTCORE_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
-/* Disable geometry. */
-RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
-
-/* Sets the displacement callback function. */
-RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction func);
 
 /* Sets the intersection filter callback function. */
 RTCORE_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, RTCFilterFunctionN func);
@@ -210,6 +184,52 @@ RTCORE_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 
 /* Gets user defined data pointer of geometry. */
 RTCORE_API void* rtcGetGeometryUserData(RTCGeometry geometry);
+
+
+/* Sets the number of primitives for user geometry. */
+RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimCount);
+
+/* Sets the bounding callback function to calculate bounding boxes for user primitives. */
+RTCORE_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
+
+/* Set intersect callback function for user geometries. */
+RTCORE_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectFunctionN intersect);
+
+/* Set occlusion callback function for user geometries. */
+RTCORE_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, RTCOccludedFunctionN occluded);
+
+/* Reports intersection from intersect callback function. */
+RTCORE_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+
+/* Reports intersection from occluded callback function. */
+RTCORE_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+
+  
+/* Sets instanced scene of instance geometry. */
+RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
+
+/* Sets transformation of the instance for specified timestep */
+RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);
+
+/* Returns transformation of the instance for specified time. */
+RTCORE_API void rtcGetGeometryTransform(RTCGeometry geometry, float time, enum RTCFormat format, void* xfm);
+
+
+/* Sets a uniform tessellation rate */
+RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, float tessellationRate);
+
+/* Sets the number of topologies for subdivision surfaces. */
+RTCORE_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, unsigned int topologyCount);
+ 
+/* Sets subdivision interpolation mode. */
+RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned int topologyID, enum RTCSubdivisionMode mode);
+
+/* Binds a vertex attribute to some topology. */
+RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigned int vertexAttributeID, unsigned int topologyID);
+
+/* Sets the displacement callback function. */
+RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction func);
+
 
 struct RTCInterpolateArguments
 {
@@ -311,27 +331,6 @@ struct RTCInterpolateNArguments
 
 /* Interpolates vertex data to an array of u/v locations. */
 RTCORE_API void rtcInterpolateN(const struct RTCInterpolateNArguments* const args);
-
-/* Commits the geometry. */
-RTCORE_API void rtcCommitGeometry(RTCGeometry geometry);
-
-/* Attaches the geometry to some scene. */
-RTCORE_API unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);
-
-/* Attaches the geometry to some scene using the specified geometry ID. */
-RTCORE_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
-
-/* Detaches the geometry from the scene. */
-RTCORE_API void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
-
-/* Retains the geometry (increments reference count). */
-RTCORE_API void rtcRetainGeometry(RTCGeometry geometry);
-
-/* Releases the geometry (decrements reference count) */
-RTCORE_API void rtcReleaseGeometry(RTCGeometry geometry);
-
-/* Gets geometry handle from scene. */
-RTCORE_API RTCGeometry rtcGetGeometry(RTCScene scene, unsigned int geomID);
 
 #if defined(__cplusplus)
 }
