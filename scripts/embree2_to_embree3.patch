@@ -1980,9 +1980,21 @@ rtcInterpolate1(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,numFl
 }@@
 
 @@{
+rtcInterpolate1(EXPR geom,EXPR primID,EXPR u,EXPR v,RTC_BUFFER(EXPR bufty,EXPR slot),EXPR P,EXPR dPdu,EXPR dPdv,EXPR numFloats)
+=>
+rtcInterpolate1(geom,primID,u,v,bufty,slot,P,dPdu,dPdv,numFloats)
+}@@
+
+@@{
 rtcInterpolate2(EXPR scene,EXPR geomID,EXPR primID,EXPR u,EXPR v,EXPR buffer,EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
 =>
 rtcInterpolate2(rtcGetGeometry(scene,geomID),primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
+}@@
+
+@@{
+rtcInterpolate2(EXPR geom,EXPR primID,EXPR u,EXPR v,RTC_BUFFER(EXPR bufty,EXPR slot),EXPR P,EXPR dPdu,EXPR dPdv,EXPR ddPdudu,EXPR ddPdvdv,EXPR ddPdudv,EXPR numFloats)
+=>
+rtcInterpolate2(rtcGetGeometry(scene,geomID),primID,u,v,bufty,slot,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats)
 }@@
 
 
