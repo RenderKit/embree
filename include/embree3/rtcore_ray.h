@@ -346,7 +346,7 @@ RTCORE_FORCEINLINE RTCHit RTCHitNtoRTCHit(const RTCHitN* ptr, unsigned int N, un
 };
 
 
-RTCORE_FORCEINLINE void copyRTCHitToRTCRay(RTCRay *ray, RTCHit *hit)
+RTCORE_FORCEINLINE void rtcCopyRTCHitToRTCRay(RTCRay *ray, RTCHit *hit)
 {
   ray->Ng_x = hit->Ng_x;
   ray->Ng_y = hit->Ng_y;
@@ -360,7 +360,7 @@ RTCORE_FORCEINLINE void copyRTCHitToRTCRay(RTCRay *ray, RTCHit *hit)
     ray->instID[l] = hit->instID[l];
 }
 
-RTCORE_FORCEINLINE void copyRTCHitToRTCRayN(RTCRayN *rays,  RTCHit *hit, unsigned int N, unsigned int ui)
+RTCORE_FORCEINLINE void rtcCopyRTCHitToRTCRayN(RTCRayN *rays,  RTCHit *hit, unsigned int N, unsigned int ui)
 {
   RTCRayN_Ng_x(rays,N,ui)   = hit->Ng_x;
   RTCRayN_Ng_y(rays,N,ui)   = hit->Ng_y;
@@ -374,7 +374,7 @@ RTCORE_FORCEINLINE void copyRTCHitToRTCRayN(RTCRayN *rays,  RTCHit *hit, unsigne
     RTCRayN_instID(rays,N,ui,l) = hit->instID[l];
 }
 
-RTCORE_FORCEINLINE void copyHitFromRTCRayToRTCRayN(RTCRayN *rays, RTCRay *ray, unsigned int N, unsigned int ui)
+RTCORE_FORCEINLINE void rtcCopyHitFromRTCRayToRTCRayN(RTCRayN *rays, RTCRay *ray, unsigned int N, unsigned int ui)
 {
   RTCRayN_Ng_x(rays,N,ui)   = ray->Ng_x;
   RTCRayN_Ng_y(rays,N,ui)   = ray->Ng_y;

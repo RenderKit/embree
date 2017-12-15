@@ -176,7 +176,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    copyHitFromRTCRayToRTCRayN(rays,RTCRay_(ray),N,ui);
+    rtcCopyHitFromRTCRayToRTCRayN(rays,RTCRay_(ray),N,ui);
   }
 }
 
@@ -338,7 +338,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      copyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
+      rtcCopyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -365,7 +365,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      copyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
+      rtcCopyRTCHitToRTCRay((varying RTCRay *uniform)ray,&hit);
   }
 }
 
@@ -524,7 +524,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        copyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
+        rtcCopyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -552,7 +552,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 
       /* update for all accepted hits */
       if (imask == -1)
-        copyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
+        rtcCopyRTCHitToRTCRayN(rays,&potentialhit,N,ui);
     }
   }
 }
