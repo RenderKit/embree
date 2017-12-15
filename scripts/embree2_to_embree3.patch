@@ -523,12 +523,6 @@ return rtcDeviceNewScene(EXPR device,EXPR sflags,EXPR aflags);
 }@@
 
 @@{
-rtcDeleteScene(EXPR scene)
-=>
-rtcReleaseScene(scene)
-}@@
-
-@@{
 RTC_PROGRESS_MONITOR_FUNCTION
 =>
 RTCProgressMonitorFunction
@@ -749,6 +743,11 @@ rtcOccludedNp(EXPR scene,EXPR context,EXPR ray,EXPR N);
 rtcOccludedNp(scene,context,&ray,N);
 }@@
 
+@@{
+rtcDeleteScene(EXPR scene)
+=>
+rtcReleaseScene(scene)
+}@@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // geometries
@@ -1845,22 +1844,22 @@ rtcEnableGeometry(rtcGetGeometry(scene,geomID))
 }@@
 
 @@{
-rtcDisable(EXPR scene,EXPR geomID)
-=>
-rtcDisableGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-@@{
 rtcUpdate(EXPR scene,EXPR geomID)
 =>
 rtcCommitGeometry(rtcGetGeometry(scene,geomID))
 }@@
 
 @@{
-rtcUpdateGeometryBuffer(EXPR scene,EXPR geomID,EXPR type)
+rtcUpdateBuffer(EXPR scene,EXPR geomID,EXPR type)
 =>
 rtcUpdateGeometryBuffer(rtcGetGeometry(scene,geomID),type);
 rtcCommitGeometry(rtcGetGeometry(scene,geomID)) /* FIXME: do commit once after all updates */
+}@@
+
+@@{
+rtcDisable(EXPR scene,EXPR geomID)
+=>
+rtcDisableGeometry(rtcGetGeometry(scene,geomID))
 }@@
 
 @@{
@@ -1972,15 +1971,16 @@ rtcInterpolateN(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,EX
   args.primIDs = primID_in;
   args.u = u_in;
   args.v = v_in;
-  args.numUVs = numUVs_in;
-  args.buffer = buffer_in;
+  args.N = numUVs_in;
+  args.bufferType = buffer_in;
+  args.bufferSlot = /* FIXME: put buffer slot here */;
   args.P = P_o;
   args.dPdu = dPdu_o;
   args.dPdv = dPdv_o;
   args.ddPdudu = NULL;
   args.ddPdvdv = NULL;
   args.ddPdudv = NULL;
-  args.numFloats = numFloats_in;
+  args.valueCount = numFloats_in;
   rtcInterpolateN(&args)
 }
 }@@
@@ -1995,20 +1995,25 @@ rtcInterpolateN2(EXPR scene,EXPR geomID,EXPR valid_in,EXPR primID_in,EXPR u_in,E
   args.primIDs = primID_in;
   args.u = u_in;
   args.v = v_in;
-  args.numUVs = numUVs_in;
-  args.buffer = buffer_in;
+  args.N = numUVs_in;
+  args.bufferType = buffer_in;
+  args.bufferSlot = /* FIXME: put buffer slot here */;
   args.P = P_o;
   args.dPdu = dPdu_o;
   args.dPdv = dPdv_o;
   args.ddPdudu = ddPdudu_o;
   args.ddPdvdv = ddPdvdv_o;
   args.ddPdudv = ddPdudv_o;
-  args.numFloats = numFloats_in;
+  args.valueCount = numFloats_in;
   rtcInterpolateN(&args)
 }
 }@@
 
-
+@@{
+rtcDeleteGeometry(EXPR scene,EXPR geomID)
+=>
+rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
+}@@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // rtcore_geometry_user.h
@@ -2208,77 +2213,6 @@ void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const unifo
   uniform unsigned int primID_in = args->primID;
 }@@
 
-
-@@{
-rtcSetBoundsFunction(EXPR scene,EXPR geomID,EXPR func)
-=>
-rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,NULL)
-}@@
-
-@@{
-rtcSetBoundsFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
-=>
-rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
-}@@
-
-@@{
-rtcSetBoundsFunction3(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
-=>
-rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
-}@@
-
-@@{
-rtcSetBoundsFunctionX(EXPR geom,EXPR func,EXPR userPtr)
-=>
-rtcSetGeometryBoundsFunction(geom,func,userPtr)
-}@@
-
-@@{
-rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-=>
-COMMENT rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-}@@
-
-@@{
-REGEXPR(name,rtcSetIntersectFunction.*)(
-=>
-rtcSetGeometryIntersectFunction(
-}@@
-
-@@{
-rtcSetGeometryIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetGeometryIntersectFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-=>
-COMMENT rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
-}@@
-
-@@{
-REGEXPR(name,rtcSetOccludedFunction.*)(
-=>
-rtcSetGeometryOccludedFunction(
-}@@
-
-@@{
-rtcSetGeometryOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
-=>
-rtcSetGeometryOccludedFunction (rtcGetGeometry(scene,geomID), func)
-}@@
-
-@@{
-rtcDeleteGeometry(EXPR scene,EXPR geomID)
-=>
-rtcReleaseGeometry(rtcGetGeometry(scene,geomID))
-}@@
-
-
-////////////////////////////////////////////////////////////////////////////////////////
-// user geometry
-
 @@{
 rtcNewUserGeometry
 =>
@@ -2346,6 +2280,67 @@ uniform RTCGeometry geom = rtcNewUserGeometry (device, quality, numPrimitives, n
 rtcSetGeometryBuildQuality(geom,quality);
 rtcSetGeometryPrimitiveCount(geom,numPrimitives);
 rtcSetGeometryTimeStepCount(geom,numTimeSteps);
+}@@
+
+
+@@{
+rtcSetBoundsFunction(EXPR scene,EXPR geomID,EXPR func)
+=>
+rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,NULL)
+}@@
+
+@@{
+rtcSetBoundsFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
+=>
+rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
+}@@
+
+@@{
+rtcSetBoundsFunction3(EXPR scene,EXPR geomID,EXPR func,EXPR userPtr)
+=>
+rtcSetBoundsFunctionX(rtcGetGeometry(scene,geomID),func,userPtr)
+}@@
+
+@@{
+rtcSetBoundsFunctionX(EXPR geom,EXPR func,EXPR userPtr)
+=>
+rtcSetGeometryBoundsFunction(geom,func,userPtr)
+}@@
+
+@@{
+rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+=>
+COMMENT rtcSetIntersectFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+}@@
+
+@@{
+REGEXPR(name,rtcSetIntersectFunction.*)(
+=>
+rtcSetGeometryIntersectFunction(
+}@@
+
+@@{
+rtcSetGeometryIntersectFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetGeometryIntersectFunction (rtcGetGeometry(scene,geomID), func)
+}@@
+
+@@{
+rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+=>
+COMMENT rtcSetOccludedFunction1Mp(EXPR scene,EXPR geomID,EXPR func);
+}@@
+
+@@{
+REGEXPR(name,rtcSetOccludedFunction.*)(
+=>
+rtcSetGeometryOccludedFunction(
+}@@
+
+@@{
+rtcSetGeometryOccludedFunction (EXPR scene, EXPR geomID, EXPR func)
+=>
+rtcSetGeometryOccludedFunction (rtcGetGeometry(scene,geomID), func)
 }@@
 
 
