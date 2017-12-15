@@ -30,9 +30,6 @@ def parse_identifier(chars,tokens,parse_pattern):
   while chars and (chars[0] in identifier_cont_chars):
     id = id + chars.pop(0)
   if (id == "size_t" and ispc_mode): tokens.append("uintptr_t")
-  elif (id == "unsigned"): tokens.append("unsigned int")
-  elif (id == "int" and len(tokens) > 0 and tokens[-1] == "unsigned int"):
-    pass
   else: tokens.append(id)
   return True
 
@@ -240,10 +237,18 @@ def match(pattern,ppos,tokens,tpos,env,depth):
       env[var] = expr
       
     return (ppos,tpos,depth,b)
-    
+
   elif pattern[ppos] == tokens[tpos]:
+
     if tokens[tpos] == "{": depth = depth+1
     if tokens[tpos] == "}": depth = depth-1
+
+    # treat unsigned same as unsigned int
+    if tokens[tpos] == "unsigned" and tpos+2 < len(tokens) and tokens[tpos+2] == "int":
+      tpos+=2
+      if ppos+2 < len(pattern) and pattern[ppos+2] ==  "int":
+        ppos+=2
+    
     ppos+=1
     tpos+=1
     return (ppos,tpos,depth,True)
