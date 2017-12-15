@@ -577,7 +577,7 @@ rtcIntersect(EXPR scene, EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect1(scene,&context,&ray);
-  ray.Ng_x = -ray.Ng_x;
+  ray.Ng_x = -ray.Ng_x; // FIXME: only correct for triangles,quads, and subdivision surfaces
   ray.Ng_y = -ray.Ng_y;
   ray.Ng_z = -ray.Ng_z;
 }
@@ -590,7 +590,7 @@ rtcIntersect(EXPR scene, EXPR ray);
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect(scene,&context,&ray);
-  ray.Ng_x = -ray.Ng_x;
+  ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
   ray.Ng_y = -ray.Ng_y;
   ray.Ng_z = -ray.Ng_z;
 }
@@ -600,7 +600,7 @@ rtcIntersect(EXPR scene, EXPR ray);
 rtcIntersect1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect1(scene,context,&ray);
-ray.Ng_x = -ray.Ng_x;
+ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
 ray.Ng_y = -ray.Ng_y;
 ray.Ng_z = -ray.Ng_z;
 }@@
@@ -609,7 +609,7 @@ ray.Ng_z = -ray.Ng_z;
 rtcIntersectEx(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect(scene,context,&ray);
-ray.Ng_x = -ray.Ng_x;
+ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
 ray.Ng_y = -ray.Ng_y;
 ray.Ng_z = -ray.Ng_z;
 }@@
@@ -1890,13 +1890,13 @@ rtcDisableGeometry(rtcGetGeometry(scene,geomID))
 @@{
 rtcSetDisplacementFunction(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
 =>
-rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
+rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{
 rtcSetDisplacementFunction2(EXPR scene,EXPR geomID,EXPR func,EXPR bounds)
 =>
-rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func,bounds)
+rtcSetGeometryDisplacementFunction(rtcGetGeometry(scene,geomID),func)
 }@@
 
 @@{

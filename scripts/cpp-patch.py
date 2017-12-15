@@ -244,10 +244,11 @@ def match(pattern,ppos,tokens,tpos,env,depth):
     if tokens[tpos] == "}": depth = depth-1
 
     # treat unsigned same as unsigned int
-    if tokens[tpos] == "unsigned" and tpos+2 < len(tokens) and tokens[tpos+2] == "int":
-      tpos+=2
-      if ppos+2 < len(pattern) and pattern[ppos+2] ==  "int":
-        ppos+=2
+    if tokens[tpos] == "unsigned":
+      if tpos+2 < len(tokens) and tokens[tpos+2] == "int":
+        tpos+=2
+      if ppos+1 < len(pattern) and pattern[ppos+1] ==  "int":
+        ppos+=1
     
     ppos+=1
     tpos+=1
