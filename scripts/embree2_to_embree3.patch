@@ -2396,7 +2396,8 @@ rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE)
 // rtcore_builder.h
 
 @@{
-rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i, EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
+rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i,
+            EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
 =>
 settings.bvh = bvh_i;
 settings.primitives = primitives_i;
@@ -2440,17 +2441,6 @@ void EXPR RTCSplitPrimitiveFunc (const RTCBuildPrimitive& ID prim, unsigned ID d
 {
 =>
 void RTCSplitPrimitiveFunc (const RTCBuildPrimitive* _prim, unsigned int dim, float pos, RTCBounds* _lbounds, RTCBounds* _rbounds, void* userPtr)
-{
-  const RTCBuildPrimitive& prim = *_prim;
-  RTCBounds& lbounds = *_lbounds;
-  RTCBounds& rbounds = *_rbounds;
-}@@
-
-@@{
-void EXPR RTCSplitPrimitiveFunc (const RTCBuildPrimitive& ID prim, unsigned int ID dim, float ID pos, RTCBounds& ID lbounds, RTCBounds& ID rbounds, void* ID userPtr)
-{
-=>
-void RTCSplitPrimitiveFunc (const RTCBuildPrimitive* prim, unsigned int dim, float pos, RTCBounds* lbounds, RTCBounds* rbounds, void* userPtr)
 {
   const RTCBuildPrimitive& prim = *_prim;
   RTCBounds& lbounds = *_lbounds;

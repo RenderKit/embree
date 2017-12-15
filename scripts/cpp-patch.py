@@ -30,6 +30,9 @@ def parse_identifier(chars,tokens,parse_pattern):
   while chars and (chars[0] in identifier_cont_chars):
     id = id + chars.pop(0)
   if (id == "size_t" and ispc_mode): tokens.append("uintptr_t")
+  elif (id == "unsigned"): tokens.append("unsigned int")
+  elif (id == "int" and len(tokens) > 0 and tokens[-1] == "unsigned int"):
+    pass
   else: tokens.append(id)
   return True
 
