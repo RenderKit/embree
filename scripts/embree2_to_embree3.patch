@@ -1705,13 +1705,13 @@ rtcMapBuffer(rtcGetGeometry(scene,geomID),type)
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER(EXPR type, EXPR slot))
 =>
-rtcMapBuffer(geom,type,slot,/* FIXME: put proper format here */)
+rtcMapBuffer(geom,type,slot,FIXME_COULD_NOT_DERIVE_FORMAT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,EXPR type)
 =>
-rtcMapBuffer(geom,type,/* FIXME: put proper slot here */,/* FIXME: put proper format here */)
+rtcMapBuffer(geom,type,FIXME_COULD_NOT_DERIVE_SLOT,FIXME_COULD_NOT_DERIVE_FORMAT)
 }@@
 
 @@{
@@ -1782,13 +1782,13 @@ rtcSetBuffer(rtcGetGeometry(scene,geomID),type,ptr,offset,stride,size)
 @@{
 rtcSetBuffer(EXPR geom,RTC_BUFFER(EXPR type, EXPR slot),EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,type,slot,/* FIXME: put proper format here */,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,type,slot,FIXME_COULD_NOT_DERIVE_FORMAT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetBuffer(EXPR geom,EXPR type, EXPR ptr,EXPR offset,EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,type,/* FIXME: put proper slot here */,/* FIXME: put proper format here */,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,type,FIXME_COULD_NOT_DERIVE_SLOT,FIXME_COULD_NOT_DERIVE_FORMAT,ptr,offset,stride)
 }@@
 
 
@@ -2413,7 +2413,7 @@ rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX,EXPR slot, EXPR form
 rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,slot,RTC_FORMAT_FLOAT3,ptr,offset,stride,numVertices)
 }@@
 @@{
-rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR slot, EXPR format,EXPR ptr,EXPR offset,EXPR stride)
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,EXPR slot,EXPR format,EXPR ptr,EXPR offset,EXPR stride)
 =>
 rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,slot,format,ptr,offset,stride,numVertices)
 }@@
