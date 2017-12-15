@@ -577,6 +577,9 @@ rtcIntersect(EXPR scene, EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect1(scene,&context,&ray);
+  ray.Ng_x = -ray.Ng_x;
+  ray.Ng_y = -ray.Ng_y;
+  ray.Ng_z = -ray.Ng_z;
 }
 }@@
 
@@ -584,9 +587,12 @@ rtcIntersect(EXPR scene, EXPR ray);
 rtcIntersect(EXPR scene, EXPR ray);
 =>
 {
-  RTCIntersectContext context;
+  uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect(scene,&context,&ray);
+  ray.Ng_x = -ray.Ng_x;
+  ray.Ng_y = -ray.Ng_y;
+  ray.Ng_z = -ray.Ng_z;
 }
 }@@
 
@@ -594,12 +600,18 @@ rtcIntersect(EXPR scene, EXPR ray);
 rtcIntersect1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect1(scene,context,&ray);
+ray.Ng_x = -ray.Ng_x;
+ray.Ng_y = -ray.Ng_y;
+ray.Ng_z = -ray.Ng_z;
 }@@
 
 @@{ispc
 rtcIntersectEx(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcIntersect(scene,context,&ray);
+ray.Ng_x = -ray.Ng_x;
+ray.Ng_y = -ray.Ng_y;
+ray.Ng_z = -ray.Ng_z;
 }@@
 
 @@{
@@ -1717,43 +1729,50 @@ rtcMapBuffer(geom,type,FIXME_COULD_NOT_DERIVE_SLOT,FIXME_COULD_NOT_DERIVE_FORMAT
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_FACE, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_FACE,float,RTC_FORMAT_UINT)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_FACE,slot,RTC_FORMAT_UINT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_LEVEL, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_LEVEL,float,RTC_FORMAT_FLOAT)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_LEVEL,slot,RTC_FORMAT_FLOAT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,float,RTC_FORMAT_UINT2)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,slot,RTC_FORMAT_UINT2)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,float,RTC_FORMAT_FLOAT)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,float,RTC_FORMAT_UINT)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,slot,RTC_FORMAT_UINT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,float,RTC_FORMAT_FLOAT)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT)
 }@@
 
 @@{
 rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_HOLE, EXPR slot, EXPR format)
 =>
-rtcMapBuffer(geom,RTC_BUFFER_TYPE_HOLE,float,RTC_FORMAT_UINT)
+rtcMapBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,RTC_FORMAT_UINT)
+}@@
+
+@@{
+EXPR lhs = rtcMapBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, EXPR slot, EXPR format);
+=>
+rtcSetGeometryVertexAttributeCount(geom,slot+1); // FIXME: verify if this is correct
+lhs = rtcMapBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, slot, format);
 }@@
 
 @@{
@@ -1795,45 +1814,51 @@ rtcSetSharedGeometryBuffer(geom,type,FIXME_COULD_NOT_DERIVE_SLOT,FIXME_COULD_NOT
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_FACE, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE,float,RTC_FORMAT_UINT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE,slot,RTC_FORMAT_UINT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_LEVEL, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_LEVEL,float,RTC_FORMAT_FLOAT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_LEVEL,slot,RTC_FORMAT_FLOAT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,float,RTC_FORMAT_UINT2,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,slot,RTC_FORMAT_UINT2,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,float,RTC_FORMAT_FLOAT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,float,RTC_FORMAT_UINT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,slot,RTC_FORMAT_UINT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,float,RTC_FORMAT_FLOAT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,slot,RTC_FORMAT_FLOAT,ptr,offset,stride)
 }@@
 
 @@{
 rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_HOLE, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride)
 =>
-rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_HOLE,float,RTC_FORMAT_UINT,ptr,offset,stride)
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_HOLE,slot,RTC_FORMAT_UINT,ptr,offset,stride)
 }@@
 
+@@{
+rtcSetSharedGeometryBuffer(EXPR geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, EXPR slot, EXPR format, EXPR ptr, EXPR offset, EXPR stride);
+=>
+rtcSetGeometryVertexAttributeCount(geom,slot+1); // FIXME: verify if this is correct
+rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, slot, format, ptr, offset, stride);
+}@@
 
 
 
@@ -2741,6 +2766,21 @@ myray.tfar()
 &ID myray
 =>
 RTCRay_(myray)
+}@@
+@@{
+ID myray.Ng_x
+=>
+myray.Ng.x
+}@@
+@@{
+ID myray.Ng_y
+=>
+myray.Ng.y
+}@@
+@@{
+ID myray.Ng_z
+=>
+myray.Ng.z
 }@@
 }@@
 
