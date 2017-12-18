@@ -46,7 +46,7 @@ namespace embree
   public:
 
     Camera ()
-    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), handedness(LEFT_HANDED) {}
+    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), handedness(RIGHT_HANDED) {}
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov, Handedness handedness)
     : from(from), to(to), up(up), fov(fov), handedness(handedness) {}
