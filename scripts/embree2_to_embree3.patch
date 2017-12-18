@@ -1658,13 +1658,13 @@ rtcNewLineSegments2(scene,flags,numSegments,numVertices,1)
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps)
 }@@
 
 @@{
 rtcNewLineSegments2(EXPR scene,EXPR flags,EXPR numSegments,EXPR numVertices,EXPR numTimeSteps,EXPR geomID)
 =>
-rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
+rtcNewCurveGeometryX (scene,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,flags,numSegments,numVertices,numTimeSteps,geomID)
 }@@
 
 
