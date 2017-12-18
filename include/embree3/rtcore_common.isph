@@ -14,25 +14,25 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_COMMON_ISPH__
-#define __RTCORE_COMMON_ISPH__
+#ifndef __RTC_COMMON_ISPH__
+#define __RTC_COMMON_ISPH__
 
-#if !defined(RTCORE_API)
-#define RTCORE_API extern "C" unmasked
+#if !defined(RTC_API)
+#define RTC_API extern "C" unmasked
 #endif
 
 #ifdef _WIN32
-#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
+#  define RTC_ALIGN(...) // FIXME: need to specify alignment
 #else
-#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
+#  define RTC_ALIGN(...) // FIXME: need to specify alignment
 #endif
 
-#if !defined(RTCORE_DEPRECATED)
-#define RTCORE_DEPRECATED // FIXME: deprecation not supported by ISPC
+#if !defined(RTC_DEPRECATED)
+#define RTC_DEPRECATED // FIXME: deprecation not supported by ISPC
 #endif
 
-#if !defined(RTCORE_FORCEINLINE)
-#define RTCORE_FORCEINLINE inline
+#if !defined(RTC_FORCEINLINE)
+#define RTC_FORCEINLINE inline
 #endif
 
 /* invalid geometry ID */
@@ -137,14 +137,14 @@ enum RTCBuildQuality
 };
 
 /* Axis aligned bounding box representation */
-RTCORE_ALIGN(16) struct RTCBounds
+RTC_ALIGN(16) struct RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
 };
 
 /* Linear axis aligned bounding box representation */
-struct RTCORE_ALIGN(16) RTCLinearBounds
+struct RTC_ALIGN(16) RTCLinearBounds
 {
   RTCBounds bounds0;
   RTCBounds bounds1;
@@ -167,7 +167,7 @@ struct RTCIntersectContext
 };
 
 /* initializes intersection context */
-RTCORE_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* context)
+RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;

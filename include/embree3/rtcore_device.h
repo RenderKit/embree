@@ -26,13 +26,13 @@ extern "C" {
 typedef struct RTCDeviceTy* RTCDevice;
 
 /* Creates a new Embree device. */
-RTCORE_API RTCDevice rtcNewDevice(const char* cfg);
+RTC_API RTCDevice rtcNewDevice(const char* cfg);
 
 /* Retains the Embree device (increments reference count) */
-RTCORE_API void rtcRetainDevice(RTCDevice device);
+RTC_API void rtcRetainDevice(RTCDevice device);
   
 /* Releases an Embree device (decrements reference count) */
-RTCORE_API void rtcReleaseDevice(RTCDevice device);
+RTC_API void rtcReleaseDevice(RTCDevice device);
 
 /* Device properties */
 enum RTCDeviceProperty
@@ -65,10 +65,10 @@ enum RTCDeviceProperty
 };
 
 /* Sets a device property. */
-RTCORE_API void rtcSetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop, ssize_t value);
+RTC_API void rtcSetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop, ssize_t value);
 
 /* Gets a device property. */
-RTCORE_API ssize_t rtcGetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop);
+RTC_API ssize_t rtcGetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop);
 
 /* Error codes. */
 enum RTCError
@@ -83,19 +83,19 @@ enum RTCError
 };
 
 /* Returns the error code. */
-RTCORE_API enum RTCError rtcGetDeviceError(RTCDevice device);
+RTC_API enum RTCError rtcGetDeviceError(RTCDevice device);
 
 /* Type of error callback function. */
 typedef void (*RTCErrorFunction)(void* userPtr, const enum RTCError code, const char* str);
 
 /* Sets an error callback function */
-RTCORE_API void rtcSetDeviceErrorFunction(RTCDevice device, RTCErrorFunction func, void* userPtr);
+RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, RTCErrorFunction func, void* userPtr);
 
 /* Type of memory monitor callback function. */
 typedef bool (*RTCMemoryMonitorFunction)(void* ptr, const ssize_t bytes, const bool post);
 
 /* Sets the memory monitor callback function. */
-RTCORE_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* userPtr);
+RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* userPtr);
 
 #if defined(__cplusplus)
 }

@@ -44,19 +44,19 @@ enum RTCBufferType
 typedef struct RTCBufferTy* RTCBuffer;
 
 /* Creates a new buffer. */
-RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
+RTC_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
 
 /* Creates a new shared buffer. */
-RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
+RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
 
 /* Returns a pointer to the buffer data. */
-RTCORE_API void* rtcGetBufferData(RTCBuffer buffer);
+RTC_API void* rtcGetBufferData(RTCBuffer buffer);
 
 /* Retains the buffer (increments reference count). */
-RTCORE_API void rtcRetainBuffer(RTCBuffer buffer);
+RTC_API void rtcRetainBuffer(RTCBuffer buffer);
 
 /* Releases the buffer (decrements reference count). */
-RTCORE_API void rtcReleaseBuffer(RTCBuffer buffer);
+RTC_API void rtcReleaseBuffer(RTCBuffer buffer);
 
 #if defined(__cplusplus)
 }

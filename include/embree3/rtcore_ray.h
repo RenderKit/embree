@@ -23,7 +23,7 @@ extern "C" {
 #endif
   
 /* Ray structure for an individual ray */
-struct RTCORE_ALIGN(16) RTCRay
+struct RTC_ALIGN(16) RTCRay
 {
   /* ray data */
   float org_x;         // x coordinate of ray origin
@@ -55,7 +55,7 @@ struct RTCORE_ALIGN(16) RTCRay
 };
 
 /* Ray structure for packets of 4 rays. */
-struct RTCORE_ALIGN(16) RTCRay4
+struct RTC_ALIGN(16) RTCRay4
 {
   /* ray data */
   float org_x[4];
@@ -87,7 +87,7 @@ struct RTCORE_ALIGN(16) RTCRay4
 };
 
 /* Ray structure for packets of 8 rays. */
-struct RTCORE_ALIGN(32) RTCRay8
+struct RTC_ALIGN(32) RTCRay8
 {
   /* ray data */
   float org_x[8];
@@ -119,7 +119,7 @@ struct RTCORE_ALIGN(32) RTCRay8
 };
 
 /* Ray structure for packets of 16 rays. */
-struct RTCORE_ALIGN(64) RTCRay16
+struct RTC_ALIGN(64) RTCRay16
 {
   /* ray data */
   float org_x[16];
@@ -207,45 +207,45 @@ struct RTCHitN;
 #if defined(__cplusplus)
 
 /* Helper functions to access ray packets of runtime size N */
-RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[6*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[7*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[6*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[7*N+i]; }
 
-RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)   ptr)[8*N+i]; }
-RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[9*N+i]; }
+RTC_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)   ptr)[8*N+i]; }
+RTC_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[9*N+i]; }
 
-RTCORE_FORCEINLINE unsigned& RTCRayN_id   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[10*N+i]; }
-RTCORE_FORCEINLINE unsigned& RTCRayN_flags(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[11*N+i]; }
+RTC_FORCEINLINE unsigned& RTCRayN_id   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[10*N+i]; }
+RTC_FORCEINLINE unsigned& RTCRayN_flags(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[11*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[12*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[13*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[14*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[12*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[13*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[14*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCRayN_u(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[15*N+i]; }
-RTCORE_FORCEINLINE float& RTCRayN_v(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[16*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_u(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[15*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_v(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[16*N+i]; }
 
-RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }
-RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[18*N+i]; }
-RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N, unsigned int i, unsigned int level) { return ((unsigned*)ptr)[19*N+i+N*level]; }
+RTC_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[17*N+i]; }
+RTC_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[18*N+i]; }
+RTC_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, unsigned int N, unsigned int i, unsigned int level) { return ((unsigned*)ptr)[19*N+i+N*level]; }
 
 /* Helper functions to access hit packets of size N */
-RTCORE_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
-RTCORE_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
-RTCORE_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
 
-RTCORE_FORCEINLINE float& RTCHitN_t(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }
-RTCORE_FORCEINLINE float& RTCHitN_u(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }
-RTCORE_FORCEINLINE float& RTCHitN_v(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_t(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[3*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_u(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[4*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_v(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[5*N+i]; }
 
-RTCORE_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[6*N+i]; }
-RTCORE_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[7*N+i]; }
-RTCORE_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, unsigned int i, unsigned int l) { return ((unsigned*)ptr)[8*N+i+N*l]; }
+RTC_FORCEINLINE unsigned& RTCHitN_primID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[6*N+i]; }
+RTC_FORCEINLINE unsigned& RTCHitN_geomID(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[7*N+i]; }
+RTC_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, unsigned int i, unsigned int l) { return ((unsigned*)ptr)[8*N+i+N*l]; }
 
 
 /* Helper structure to create a ray packet of compile time size N */
@@ -301,7 +301,7 @@ struct RTCHitNt
   unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];
 };
 
-RTCORE_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsigned int i)
+RTC_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsigned int i)
 {
   RTCRay ray;
   ray.org_x  = RTCRayN_org_x(rays,N,i);
@@ -328,7 +328,7 @@ RTCORE_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsig
   return ray;
 };
 
-RTCORE_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* hits, unsigned int N, unsigned int i)
+RTC_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* hits, unsigned int N, unsigned int i)
 {
   RTCHit hit;
   hit.Ng_x   = RTCHitN_Ng_x(hits,N,i);
@@ -344,7 +344,7 @@ RTCORE_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* hits, unsigned int N, unsig
   return hit;
 };
 
-RTCORE_FORCEINLINE void rtcCopyHitToRay(RTCRay* ray, const RTCHit* hit)
+RTC_FORCEINLINE void rtcCopyHitToRay(RTCRay* ray, const RTCHit* hit)
 {
   ray->Ng_x = hit->Ng_x;
   ray->Ng_y = hit->Ng_y;
@@ -358,7 +358,7 @@ RTCORE_FORCEINLINE void rtcCopyHitToRay(RTCRay* ray, const RTCHit* hit)
     ray->instID[l] = hit->instID[l];
 }
 
-RTCORE_FORCEINLINE void rtcCopyHitToRayN(RTCRayN* rays, const RTCHit* hit, unsigned int N, unsigned int i)
+RTC_FORCEINLINE void rtcCopyHitToRayN(RTCRayN* rays, const RTCHit* hit, unsigned int N, unsigned int i)
 {
   RTCRayN_Ng_x(rays,N,i)   = hit->Ng_x;
   RTCRayN_Ng_y(rays,N,i)   = hit->Ng_y;
@@ -372,7 +372,7 @@ RTCORE_FORCEINLINE void rtcCopyHitToRayN(RTCRayN* rays, const RTCHit* hit, unsig
     RTCRayN_instID(rays,N,i,l) = hit->instID[l];
 }
 
-RTCORE_FORCEINLINE void rtcCopyHitFromRayToRayN(RTCRayN* rays, const RTCRay* ray, unsigned int N, unsigned int i)
+RTC_FORCEINLINE void rtcCopyHitFromRayToRayN(RTCRayN* rays, const RTCRay* ray, unsigned int N, unsigned int i)
 {
   RTCRayN_Ng_x(rays,N,i)   = ray->Ng_x;
   RTCRayN_Ng_y(rays,N,i)   = ray->Ng_y;

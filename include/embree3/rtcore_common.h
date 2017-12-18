@@ -32,34 +32,34 @@ typedef int ssize_t;
 #endif
 #endif
 
-#ifndef RTCORE_API
+#ifndef RTC_API
 #if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
-#  define RTCORE_API __declspec(dllimport) 
+#  define RTC_API __declspec(dllimport) 
 #else
-#  define RTCORE_API 
+#  define RTC_API 
 #endif
 #endif
 
 #ifdef _WIN32
-#  define RTCORE_ALIGN(...) __declspec(align(__VA_ARGS__))
+#  define RTC_ALIGN(...) __declspec(align(__VA_ARGS__))
 #else
-#  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
+#  define RTC_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
 #endif
 
-#if !defined (RTCORE_DEPRECATED)
+#if !defined (RTC_DEPRECATED)
 #ifdef __GNUC__
-  #define RTCORE_DEPRECATED __attribute__((deprecated))
+  #define RTC_DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
-  #define RTCORE_DEPRECATED __declspec(deprecated)
+  #define RTC_DEPRECATED __declspec(deprecated)
 #else
-  #define RTCORE_DEPRECATED
+  #define RTC_DEPRECATED
 #endif
 #endif
 
 #if defined(_WIN32) 
-#  define RTCORE_FORCEINLINE __forceinline
+#  define RTC_FORCEINLINE __forceinline
 #else
-#  define RTCORE_FORCEINLINE inline __attribute__((always_inline))
+#  define RTC_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
 /* invalid geometry ID */
@@ -164,14 +164,14 @@ enum RTCBuildQuality
 };
   
 /* Axis aligned bounding box representation */
-struct RTCORE_ALIGN(16) RTCBounds
+struct RTC_ALIGN(16) RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
 };
 
 /* Linear axis aligned bounding box representation */
-struct RTCORE_ALIGN(16) RTCLinearBounds
+struct RTC_ALIGN(16) RTCLinearBounds
 {
   struct RTCBounds bounds0;
   struct RTCBounds bounds1;
@@ -208,7 +208,7 @@ struct RTCIntersectContext
 };
 
 /* initializes intersection context */
-RTCORE_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
+RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;

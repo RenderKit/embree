@@ -37,9 +37,9 @@ namespace embree
 #endif
 
 /*! Makros used in the rtcore API implementation */
-#define RTCORE_CATCH_BEGIN try {
+#define RTC_CATCH_BEGIN try {
   
-#define RTCORE_CATCH_END(device)                                                \
+#define RTC_CATCH_END(device)                                                \
   } catch (std::bad_alloc&) {                                                   \
     Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
   } catch (rtcore_error& e) {                                                   \
@@ -50,7 +50,7 @@ namespace embree
     Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
   }
   
-#define RTCORE_CATCH_END2(scene)                                                \
+#define RTC_CATCH_END2(scene)                                                \
   } catch (std::bad_alloc&) {                                                   \
     Device* device = scene ? scene->device : nullptr;                           \
     Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
@@ -65,29 +65,29 @@ namespace embree
     Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
   }
 
-#define RTCORE_VERIFY_HANDLE(handle)                               \
+#define RTC_VERIFY_HANDLE(handle)                               \
   if (handle == nullptr) {                                         \
     throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \
   }
 
-#define RTCORE_VERIFY_GEOMID(id)                                   \
+#define RTC_VERIFY_GEOMID(id)                                   \
   if (id == RTC_INVALID_GEOMETRY_ID) {                             \
     throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \
   }
 
-#define RTCORE_VERIFY_UPPER(id,upper)                              \
+#define RTC_VERIFY_UPPER(id,upper)                              \
   if (id > upper) {                                                \
     throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \
   }
 
-#define RTCORE_VERIFY_RANGE(id,lower,upper)	\
+#define RTC_VERIFY_RANGE(id,lower,upper)	\
   if (id < lower || id > upper)						  \
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"argument out of bounds");
   
 #if 0 // enable to debug print all API calls
-#define RTCORE_TRACE(x) std::cout << #x << std::endl;
+#define RTC_TRACE(x) std::cout << #x << std::endl;
 #else
-#define RTCORE_TRACE(x) 
+#define RTC_TRACE(x) 
 #endif
 
   /*! used to throw embree API errors */
