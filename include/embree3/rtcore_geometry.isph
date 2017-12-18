@@ -122,113 +122,113 @@ struct RTCDisplacementFunctionNArguments
 typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* uniform const args);
 
 /* Creates a new geometry of specified type. */
-RTCORE_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);
+RTC_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);
 
 /* Retains the geometry (increments reference count). */
-RTCORE_API void rtcRetainGeometry(RTCGeometry geometry);
+RTC_API void rtcRetainGeometry(RTCGeometry geometry);
 
 /* Releases the geometry handle (decrements refence count). */
-RTCORE_API void rtcReleaseGeometry(RTCGeometry geometry);
+RTC_API void rtcReleaseGeometry(RTCGeometry geometry);
 
 /* Commits the geometry. */
-RTCORE_API void rtcCommitGeometry(RTCGeometry geometry);
+RTC_API void rtcCommitGeometry(RTCGeometry geometry);
 
 
 /* Enable geometry. */
-RTCORE_API void rtcEnableGeometry(RTCGeometry geometry);
+RTC_API void rtcEnableGeometry(RTCGeometry geometry);
 
 /* Disable geometry. */
-RTCORE_API void rtcDisableGeometry(RTCGeometry geometry);
+RTC_API void rtcDisableGeometry(RTCGeometry geometry);
 
 
 /* Sets the number of time steps. */
-RTCORE_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int timeStepCount);
+RTC_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, uniform unsigned int timeStepCount);
 
 /* Sets the number of vertex attributes. */
-RTCORE_API void rtcSetGeometryVertexAttributeCount(RTCGeometry geometry, uniform unsigned int vertexAttributeCount);
+RTC_API void rtcSetGeometryVertexAttributeCount(RTCGeometry geometry, uniform unsigned int vertexAttributeCount);
 
 /* Sets the ray mask of the geometry. */
-RTCORE_API void rtcSetGeometryMask (RTCGeometry geometry, uniform unsigned int mask);
+RTC_API void rtcSetGeometryMask (RTCGeometry geometry, uniform unsigned int mask);
 
 /* Sets the build quality of the geometry. */
-RTCORE_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, uniform RTCBuildQuality quality);
+RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, uniform RTCBuildQuality quality);
 
 
 /* Sets geometry buffer. */
-RTCORE_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
+RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
                                      uniform RTCBuffer buffer, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform unsigned int itemCount);
 
 /* Sets shared geometry buffer. */
-RTCORE_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
+RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
                                            const void* uniform ptr, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform unsigned int itemCount);
 
 /* Sets new geometry buffer. */
-RTCORE_API void* uniform rtcSetNewGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
+RTC_API void* uniform rtcSetNewGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
                                                  uniform uintptr_t byteStride, uniform unsigned int itemCount);
 
 /* Returns a pointer to the buffer data. */
-RTCORE_API void* uniform rtcGetGeometryBufferData(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);
+RTC_API void* uniform rtcGetGeometryBufferData(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);
 
 /* Update geometry buffer. */
-RTCORE_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);
+RTC_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);
 
 
 /* Sets the intersection filter callback function. */
-RTCORE_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
+RTC_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
 
 /* Sets the occlusion filter callback function. */
-RTCORE_API  void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
+RTC_API  void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
 
 /* Sets user defined data pointer of geometry. */
-RTCORE_API void rtcSetGeometryUserData(RTCGeometry geometry, void* uniform ptr);
+RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* uniform ptr);
 
 /* Gets user defined data pointer of geometry. */
-RTCORE_API void* uniform rtcGetGeometryUserData(RTCGeometry geometry);
+RTC_API void* uniform rtcGetGeometryUserData(RTCGeometry geometry);
 
 
 /* Sets the number of primitives for user geometry. */
-RTCORE_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int userPrimCount);
+RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int userPrimCount);
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
-RTCORE_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, uniform RTCBoundsFunction bounds, void* uniform userPtr);
+RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, uniform RTCBoundsFunction bounds, void* uniform userPtr);
 
 /* Set intersect callback function for user geometries. */
-RTCORE_API  void rtcSetGeometryIntersectFunction(RTCGeometry geometry, uniform RTCIntersectFunctionN intersect);
+RTC_API  void rtcSetGeometryIntersectFunction(RTCGeometry geometry, uniform RTCIntersectFunctionN intersect);
 
 /* Set occlusion callback function for user geometries. */
-RTCORE_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTCOccludedFunctionN occluded);
+RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTCOccludedFunctionN occluded);
 
 /* Reports intersection from intersect callback function. */
-RTCORE_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
+RTC_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 /* Reports intersection from occluded callback function. */
-RTCORE_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
+RTC_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 
 /* Sets instanced scene of instance geometry. */
-RTCORE_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
+RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
 /* Sets transformation of the instance for specified timestep */
-RTCORE_API void rtcSetGeometryTransform(RTCGeometry geometry, uniform unsigned int timeStep, uniform RTCFormat format, const void* uniform xfm);
+RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, uniform unsigned int timeStep, uniform RTCFormat format, const void* uniform xfm);
 
 /* Returns transformation of the instance for specified time. */
-RTCORE_API void rtcGetGeometryTransform(RTCGeometry geometry, uniform float time, uniform RTCFormat format, void* uniform xfm);
+RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, uniform float time, uniform RTCFormat format, void* uniform xfm);
 
 
 /* Sets a uniform tessellation rate */
-RTCORE_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, uniform float tessellationRate);
+RTC_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, uniform float tessellationRate);
 
 /* Sets the number of topologies for subdivision surfaces. */
-RTCORE_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, uniform unsigned int topologyCount);
+RTC_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, uniform unsigned int topologyCount);
 
 /* Sets subdivision interpolation mode. */
-RTCORE_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
+RTC_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
 /* Binds a vertex attribute to some topology. */
-RTCORE_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform unsigned int vertexAttributeID, uniform unsigned int topologyID);
+RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform unsigned int vertexAttributeID, uniform unsigned int topologyID);
 
 /* Sets the displacement callback function. */
-RTCORE_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func);
+RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func);
 
 
 struct RTCInterpolateNArguments
@@ -251,9 +251,9 @@ struct RTCInterpolateNArguments
 };
 
 /* Interpolates vertex data to an array of u/v locations. */
-RTCORE_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
+RTC_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
 
-RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P,
                                         uniform unsigned int valueCount)
@@ -281,7 +281,7 @@ RTCORE_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned i
   rtcInterpolateN(&args);
 }
 
-RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                                         uniform unsigned int valueCount)
@@ -309,7 +309,7 @@ RTCORE_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned i
   rtcInterpolateN(&args);
 }
 
-RTCORE_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+RTC_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                                         varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,

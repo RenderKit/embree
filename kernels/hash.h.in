@@ -14,4 +14,4 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTCORE_HASH "@EMBREE_HASH@"
+#define RTC_HASH "@EMBREE_HASH@"

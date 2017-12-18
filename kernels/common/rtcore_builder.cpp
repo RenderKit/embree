@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #ifdef _WIN32
-#  define RTCORE_API extern "C" __declspec(dllexport)
+#  define RTC_API extern "C" __declspec(dllexport)
 #else
-#  define RTCORE_API extern "C" __attribute__ ((visibility ("default")))
+#  define RTC_API extern "C" __attribute__ ((visibility ("default")))
 #endif
 
 #include "default.h"
@@ -52,14 +52,14 @@ namespace embree
       mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
     };
 
-    RTCORE_API RTCBVH rtcNewBVH(RTCDevice device)
+    RTC_API RTCBVH rtcNewBVH(RTCDevice device)
     {
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcNewAllocator);
-      RTCORE_VERIFY_HANDLE(device);
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcNewAllocator);
+      RTC_VERIFY_HANDLE(device);
       BVH* bvh = new BVH((Device*)device);
       return (RTCBVH) bvh->refInc();
-      RTCORE_CATCH_END((Device*)device);
+      RTC_CATCH_END((Device*)device);
       return nullptr;
     }
 
@@ -334,17 +334,17 @@ namespace embree
       return root;
     }
 
-    RTCORE_API void* rtcBuildBVH(const RTCBuildSettings* settings)
+    RTC_API void* rtcBuildBVH(const RTCBuildSettings* settings)
     {
       BVH* bvh = (BVH*) settings->bvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBuildBVH);
-      RTCORE_VERIFY_HANDLE(bvh);
-      RTCORE_VERIFY_HANDLE(settings);
-      RTCORE_VERIFY_HANDLE(settings->createNode);
-      RTCORE_VERIFY_HANDLE(settings->setNodeChildren);
-      RTCORE_VERIFY_HANDLE(settings->setNodeBounds);
-      RTCORE_VERIFY_HANDLE(settings->createLeaf);
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcBuildBVH);
+      RTC_VERIFY_HANDLE(bvh);
+      RTC_VERIFY_HANDLE(settings);
+      RTC_VERIFY_HANDLE(settings->createNode);
+      RTC_VERIFY_HANDLE(settings->setNodeChildren);
+      RTC_VERIFY_HANDLE(settings->setNodeBounds);
+      RTC_VERIFY_HANDLE(settings->createLeaf);
 
       /* initialize the allocator */
       bvh->allocator.init_estimate(settings->numPrimitives*sizeof(BBox3fa));
@@ -371,51 +371,51 @@ namespace embree
         bvh->morton_tmp.clear();
       }
 
-      RTCORE_CATCH_END(bvh->device);
+      RTC_CATCH_END(bvh->device);
       return nullptr;
     }
 
-    RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
+    RTC_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
     {
       FastAllocator::CachedAllocator* alloc = (FastAllocator::CachedAllocator*) localAllocator;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcThreadLocalAlloc);
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcThreadLocalAlloc);
       return alloc->malloc0(bytes,align);
-      RTCORE_CATCH_END(alloc->alloc->getDevice());
+      RTC_CATCH_END(alloc->alloc->getDevice());
       return nullptr;
     }
 
-    RTCORE_API void rtcMakeStaticBVH(RTCBVH hbvh)
+    RTC_API void rtcMakeStaticBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcStaticBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcStaticBVH);
+      RTC_VERIFY_HANDLE(hbvh);
       bvh->morton_src.clear();
       bvh->morton_tmp.clear();
-      RTCORE_CATCH_END(bvh->device);
+      RTC_CATCH_END(bvh->device);
     }
 
-    RTCORE_API void rtcRetainBVH(RTCBVH hbvh)
+    RTC_API void rtcRetainBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcRetainBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcRetainBVH);
+      RTC_VERIFY_HANDLE(hbvh);
       bvh->refInc();
-      RTCORE_CATCH_END(device);
+      RTC_CATCH_END(device);
     }
     
-    RTCORE_API void rtcReleaseBVH(RTCBVH hbvh)
+    RTC_API void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcReleaseBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcReleaseBVH);
+      RTC_VERIFY_HANDLE(hbvh);
       bvh->refDec();
-      RTCORE_CATCH_END(device);
+      RTC_CATCH_END(device);
     }
   }
 }

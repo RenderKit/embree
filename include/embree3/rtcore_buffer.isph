@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_BUFFER_ISPH__
-#define __RTCORE_BUFFER_ISPH__
+#ifndef __RTC_BUFFER_ISPH__
+#define __RTC_BUFFER_ISPH__
 
 #include "rtcore_device.isph"
 
@@ -41,18 +41,18 @@ enum RTCBufferType
 typedef uniform struct RTCBufferTy* uniform RTCBuffer;
 
 /* Creates a new buffer. */
-RTCORE_API RTCBuffer rtcNewBuffer(RTCDevice device, uniform uintptr_t byteSize);
+RTC_API RTCBuffer rtcNewBuffer(RTCDevice device, uniform uintptr_t byteSize);
 
 /* Creates a new shared buffer. */
-RTCORE_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* uniform ptr, uniform uintptr_t byteSize);
+RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* uniform ptr, uniform uintptr_t byteSize);
 
 /* Returns a pointer to the buffer data. */
-RTCORE_API void* uniform rtcGetBufferData(RTCBuffer buffer);
+RTC_API void* uniform rtcGetBufferData(RTCBuffer buffer);
 
 /* Retains the buffer (increments reference count). */
-RTCORE_API void rtcRetainBuffer(RTCBuffer buffer);
+RTC_API void rtcRetainBuffer(RTCBuffer buffer);
 
 /* Releases the buffer handle (decrements reference count). */
-RTCORE_API void rtcReleaseBuffer(RTCBuffer buffer);
+RTC_API void rtcReleaseBuffer(RTCBuffer buffer);
 
 #endif

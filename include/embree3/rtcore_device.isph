@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_DEVICE_ISPH__
-#define __RTCORE_DEVICE_ISPH__
+#ifndef __RTC_DEVICE_ISPH__
+#define __RTC_DEVICE_ISPH__
 
 #include "rtcore_common.isph"
 
@@ -23,13 +23,13 @@
 typedef uniform struct RTCDeviceTy* uniform RTCDevice;
 
 /* Creates a new Embree device. */
-RTCORE_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg);
+RTC_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg);
 
 /* Retains the Embree device (increments reference count) */
-RTCORE_API void rtcRetainDevice(RTCDevice device);
+RTC_API void rtcRetainDevice(RTCDevice device);
   
 /* Releases an Embree device (decrements reference count) */
-RTCORE_API void rtcReleaseDevice(RTCDevice device);
+RTC_API void rtcReleaseDevice(RTCDevice device);
 
 /* Device properties */
 enum RTCDeviceProperty
@@ -62,10 +62,10 @@ enum RTCDeviceProperty
 };
 
 /* Sets a device property. */
-RTCORE_API void rtcSetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop, uniform intptr_t value);
+RTC_API void rtcSetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop, uniform intptr_t value);
 
 /* Gets a device property. */
-RTCORE_API uniform intptr_t rtcGetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop);
+RTC_API uniform intptr_t rtcGetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop);
 
 /* Error codes. */
 enum RTCError
@@ -80,18 +80,18 @@ enum RTCError
 };
 
 /* Returns the error code */
-RTCORE_API uniform RTCError rtcGetDeviceError(RTCDevice device);
+RTC_API uniform RTCError rtcGetDeviceError(RTCDevice device);
 
 /* Type of error callback function. */
 typedef unmasked void (*uniform RTCErrorFunction)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
 
 /* Sets an error callback function */
-RTCORE_API void rtcSetDeviceErrorFunction(RTCDevice device, uniform RTCErrorFunction func, void* uniform userPtr);
+RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, uniform RTCErrorFunction func, void* uniform userPtr);
 
 /* Type of memory monitor callback function. */
 typedef uniform bool (*uniform RTCMemoryMonitorFunction)(const uniform intptr_t bytes, const uniform bool post);
 
 /* Sets the memory monitor callback function */
-RTCORE_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* uniform userPtr);
+RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* uniform userPtr);
 
 #endif

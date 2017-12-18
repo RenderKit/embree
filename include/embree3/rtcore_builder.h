@@ -26,7 +26,7 @@ extern "C" {
 typedef struct RTCBVHTy* RTCBVH;
 
 /* Input build primitives for the builder. */
-struct RTCORE_ALIGN(32) RTCBuildPrimitive
+struct RTC_ALIGN(32) RTCBuildPrimitive
 {
   float lower_x, lower_y, lower_z; 
   int geomID;
@@ -87,7 +87,7 @@ struct RTCBuildSettings
 };
 
 /* Creates default build settings.  */
-RTCORE_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
+RTC_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
 {
   struct RTCBuildSettings settings;
   settings.size = sizeof(settings);
@@ -115,19 +115,19 @@ RTCORE_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
 }
 
 /* Creates a new BVH. */
-RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
+RTC_API RTCBVH rtcNewBVH(RTCDevice device);
 
 /* Builds a BVH. */
-RTCORE_API void* rtcBuildBVH(const struct RTCBuildSettings* settings);
+RTC_API void* rtcBuildBVH(const struct RTCBuildSettings* settings);
 
 /* Allocates memory using the thread local allocator. */
-RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
+RTC_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
 
 /* Retains the BVH (increments reference count). */
-RTCORE_API void rtcRetainBVH(RTCBVH bvh);
+RTC_API void rtcRetainBVH(RTCBVH bvh);
 
 /* Releases the BVH (decrements reference count). */
-RTCORE_API void rtcReleaseBVH(RTCBVH bvh);
+RTC_API void rtcReleaseBVH(RTCBVH bvh);
 
 #if defined(__cplusplus)
 }
