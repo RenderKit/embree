@@ -370,7 +370,7 @@ namespace embree
       scene->intersectors.intersect((RTCRay&)ray1,&context);
       ray8->set(i,ray1);
     }
-#elif defined(EMBREE_TARGET_SIMD8)
+#else
     if (likely(scene->intersectors.intersector8))
       scene->intersectors.intersect8(valid,*ray,&context);
     else
