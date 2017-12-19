@@ -835,11 +835,24 @@ namespace embree
     {
       vector_t<RTCRay,aligned_allocator<RTCRay,16>> rays2(N);
       for (size_t i=0; i<N; i++) rays2[i] = rays[i];
-      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N);
-      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N);
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays,N);
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays2.data(),N);
       for (size_t i=0; i<N; i++)
-        if ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
+      {
+        /* PRINT(i);  */
+        /* PRINT(rays[i].geomID);  */
+        /* PRINT(rays2[i].geomID);  */
+        /* PRINT(rays[i].tfar);  */
+        /* PRINT(rays2[i].tfar);  */
+
+        //if ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
+        if ((rays2[i].tfar >= 0.0f) != (rays[i].geomID == RTC_INVALID_GEOMETRY_ID))
+        {
+          PING;
+          exit(0);
           throw std::runtime_error("Intersect/Occluded mismatch");
+        }
+      }
     }
     else
       IntersectWithModeInternal(mode,ivariant,scene,rays,N);

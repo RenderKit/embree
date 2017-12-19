@@ -581,7 +581,7 @@ namespace embree
 
           size_t lazy_node = 0;
           if (PrimitiveIntersectorK::occluded(pre, ray, k, context, prim, num, lazy_node)) {
-	    ray.geomID[k] = 0;
+	    ray.tfar()[k] = neg_inf;
 	    return true;
 	  }
 
@@ -600,7 +600,6 @@ namespace embree
                                                                                               IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*)This->ptr;
-      
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
@@ -611,7 +610,7 @@ namespace embree
 #endif
 
       /* filter out already occluded and invalid rays */
-      vbool<K> valid = (*valid_i == -1) & (ray.geomID != 0);
+      vbool<K> valid = (*valid_i == -1) & (ray.tfar() >= 0.0f);
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
@@ -765,7 +764,7 @@ namespace embree
         }
       }
 
-      vint<K>::store(valid & terminated, &ray.geomID, 0);
+      vfloat<K>::store(valid & terminated, &ray.tfar(), neg_inf);
     }
 
 
@@ -899,7 +898,7 @@ namespace embree
         }
       } while(valid_bits);
 
-      vint<K>::store(valid & terminated, &ray.geomID, 0);
+      vfloat<K>::store(valid & terminated, &ray.tfar(), neg_inf);
     }
   }
 }

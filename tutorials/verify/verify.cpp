@@ -1628,11 +1628,32 @@ namespace embree
         const unsigned int maxRays = 100;
         RTCRay rays[maxRays];
         for (unsigned int numRays=1; numRays<maxRays; numRays++) {
-          for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
+          for (size_t i=0; i<numRays; i++) 
+          {
+            rays[i] = testRays[i%4];
+          }
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
           for (size_t i=0; i<numRays; i++)
-            if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
-              return VerifyApplication::FAILED;
+#if 1
+            if (ivariant & VARIANT_OCCLUDED)
+            {
+              if (rays[i].tfar >= 0.0f)
+              {
+                PING;
+                exit(0);
+                return VerifyApplication::FAILED;
+              }
+            }
+            else
+#endif
+            {
+              if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+              {
+                PING;
+                exit(0);
+                return VerifyApplication::FAILED;
+              }
+            }
         }
       }
       AssertNoError(device);
