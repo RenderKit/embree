@@ -2822,114 +2822,114 @@ rtcReleaseBVH(bvh)
 ////////////////////////////////////////////////
 // special rules for tutorials
 
-@@{
-RTCRay
-=>
-varying Ray
-}@@
-
-@@{
-Ray ID myray
-=>
-varying Ray myray
-@@{cpp
-ID myray.tnear
-=>
-myray.tnear()
-}@@
-@@{cpp
-ID myray.tfar
-=>
-myray.tfar()
-}@@
-@@{
-&ID myray
-=>
-RTCRay_(myray)
-}@@
-@@{
-ID myray.Ng_x
-=>
-myray.Ng.x
-}@@
-@@{
-ID myray.Ng_y
-=>
-myray.Ng.y
-}@@
-@@{
-ID myray.Ng_z
-=>
-myray.Ng.z
-}@@
-}@@
-
-@@{
-Ray& ID myray =
-=>
-varying Ray& myray =
-@@{cpp
-ID myray.tnear
-=>
-myray.tnear()
-}@@
-@@{cpp
-ID myray.tfar
-=>
-myray.tfar()
-}@@
-@@{
-&ID myray
-=>
-RTCRay_(myray)
-}@@
-}@@
-
-@@{
-RTCIntersectContext* ID context_in = args->context;
-=>
-uniform IntersectContext* uniform context_in = (uniform IntersectContext* uniform ) args->context;
-}@@
-
-@@{
-RTCIntersectContext
-=>
-IntersectContext
-}@@
-
-@@{
-IntersectContext ID cont;
-=>
-uniform IntersectContext cont;
-@@{
-ID cont.flags
-=>
-cont.context.flags
-}@@
-@@{
-&ID cont
-=>
-&cont.context
-}@@
-}@@
-
-@@{
-LINEAR_BASIS
-=>
-RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_LINEAR_CURVE
-}@@
-
-@@{
-BEZIER_BASIS
-=>
-RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_BEZIER_CURVE
-}@@
-
-@@{
-BSPLINE_BASIS
-=>
-RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_BSPLINE_CURVE
-}@@
+//@@{
+//RTCRay
+//=>
+//varying Ray
+//}@@
+//
+//@@{
+//Ray ID myray
+//=>
+//varying Ray myray
+//@@{cpp
+//ID myray.tnear
+//=>
+//myray.tnear()
+//}@@
+//@@{cpp
+//ID myray.tfar
+//=>
+//myray.tfar()
+//}@@
+//@@{
+//&ID myray
+//=>
+//RTCRay_(myray)
+//}@@
+//@@{
+//ID myray.Ng_x
+//=>
+//myray.Ng.x
+//}@@
+//@@{
+//ID myray.Ng_y
+//=>
+//myray.Ng.y
+//}@@
+//@@{
+//ID myray.Ng_z
+//=>
+//myray.Ng.z
+//}@@
+//}@@
+//
+//@@{
+//Ray& ID myray =
+//=>
+//varying Ray& myray =
+//@@{cpp
+//ID myray.tnear
+//=>
+//myray.tnear()
+//}@@
+//@@{cpp
+//ID myray.tfar
+//=>
+//myray.tfar()
+//}@@
+//@@{
+//&ID myray
+//=>
+//RTCRay_(myray)
+//}@@
+//}@@
+//
+//@@{
+//RTCIntersectContext* ID context_in = args->context;
+//=>
+//uniform IntersectContext* uniform context_in = (uniform IntersectContext* uniform ) args->context;
+//}@@
+//
+//@@{
+//RTCIntersectContext
+//=>
+//IntersectContext
+//}@@
+//
+//@@{
+//IntersectContext ID cont;
+//=>
+//uniform IntersectContext cont;
+//@@{
+//ID cont.flags
+//=>
+//cont.context.flags
+//}@@
+//@@{
+//&ID cont
+//=>
+//&cont.context
+//}@@
+//}@@
+//
+//@@{
+//LINEAR_BASIS
+//=>
+//RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_LINEAR_CURVE
+//}@@
+//
+//@@{
+//BEZIER_BASIS
+//=>
+//RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_BEZIER_CURVE
+//}@@
+//
+//@@{
+//BSPLINE_BASIS
+//=>
+//RTC_GEOMETRY_TYPE_ROUND_OR_FLAT_BSPLINE_CURVE
+//}@@
 
 
 ////////////////////////////////////////////////
