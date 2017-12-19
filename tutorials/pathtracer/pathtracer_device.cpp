@@ -1189,6 +1189,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
                mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
       {
+        if (reduce_max(abs(dg.Ng)) < 1E-6f) dg.Ng = Vec3fa(1,1,1);
         const Vec3fa dx = normalize(dg.Ng);
         const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
         const Vec3fa dz = normalize(cross(dy,dx));
@@ -1218,7 +1219,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     assert(false);
 
   if (max(max(abs(dg.Ns.x), abs(dg.Ns.y)), abs(dg.Ns.z)) < 1E-4f)
-	dg.Ns = Vec3fa(1, 0, 0);
+    dg.Ns = Vec3fa(1, 0, 0);
 }
 
 AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)

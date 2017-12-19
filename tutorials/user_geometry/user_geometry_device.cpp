@@ -494,7 +494,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);
+    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);    
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;
