@@ -839,17 +839,17 @@ namespace embree
       IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays2.data(),N);
       for (size_t i=0; i<N; i++)
       {
-        /* PRINT(i);  */
-        /* PRINT(rays[i].geomID);  */
-        /* PRINT(rays2[i].geomID);  */
-        /* PRINT(rays[i].tfar);  */
-        /* PRINT(rays2[i].tfar);  */
-
+#if 0
+        PRINT(ivariant);
+        PRINT(i);  
+        PRINT(rays[i].geomID);  
+        PRINT(rays2[i].geomID);  
+        PRINT(rays[i].tfar);  
+        PRINT(rays2[i].tfar);  
+#endif
         //if ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
-        if ((rays2[i].tfar >= 0.0f) != (rays[i].geomID == RTC_INVALID_GEOMETRY_ID))
+        if ((rays[i].tfar >= 0.0f) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
         {
-          PING;
-          exit(0);
           throw std::runtime_error("Intersect/Occluded mismatch");
         }
       }

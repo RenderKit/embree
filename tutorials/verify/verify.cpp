@@ -1634,25 +1634,15 @@ namespace embree
           }
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
           for (size_t i=0; i<numRays; i++)
-#if 1
             if (ivariant & VARIANT_OCCLUDED)
             {
               if (rays[i].tfar >= 0.0f)
-              {
-                PING;
-                exit(0);
                 return VerifyApplication::FAILED;
-              }
             }
             else
-#endif
             {
               if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
-              {
-                PING;
-                exit(0);
                 return VerifyApplication::FAILED;
-              }
             }
         }
       }
@@ -2193,10 +2183,14 @@ namespace embree
 
       for (size_t i=0; i<256; i++)
       {
-        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
         
-        if (ivariant & VARIANT_OCCLUDED) continue;
+        if (ivariant & VARIANT_OCCLUDED) 
+        {
+          if (rays[i].tfar >= 0.0f) return VerifyApplication::FAILED;          
+          continue;
+        }
 
+        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
         if (rays[i].primID != 0) return VerifyApplication::FAILED;
         if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
@@ -2270,8 +2264,11 @@ namespace embree
 
       for (size_t i=0; i<256; i++)
       {
-        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
-        if (ivariant & VARIANT_OCCLUDED) continue;
+        if (ivariant & VARIANT_OCCLUDED) 
+        {
+          if (rays[i].tfar >= 0.0f) return VerifyApplication::FAILED;          
+          continue;
+        }
         if (rays[i].primID != 0) return VerifyApplication::FAILED;
         if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
@@ -2565,8 +2562,10 @@ namespace embree
           unsigned int primID = iy*4+ix;
           if (!subdiv) primID *= 2;
           RTCRay& ray = rays[iy*4+ix];
-          bool ok = (primID & 2) ? (ray.geomID == RTC_INVALID_GEOMETRY_ID) : (ray.geomID == 0);
-          if (!ok) { passed = false; }
+          bool ok = true;
+          if (ivariant == VARIANT_INTERSECT) // SVEN
+            ok = (primID & 2) ? (ray.geomID == RTC_INVALID_GEOMETRY_ID) : (ray.geomID == 0);
+          if (!ok) { passed = false; PRINT(ivariant); }
         }
       }
       AssertNoError(device);
@@ -2602,7 +2601,7 @@ namespace embree
 
       RTCRay invalid_ray; clearRay(invalid_ray);
       invalid_ray.tnear = pos_inf;
-      invalid_ray.tfar  = neg_inf;
+      invalid_ray.tfar  = 0.0f; // SVEN, < 0.0f would indicate occluded ray
       invalid_ray = invalid_ray;
       
       size_t numFailures = 0;
@@ -2698,7 +2697,8 @@ namespace embree
           IntersectWithMode(imode,ivariant,scene,rays,M);
           for (unsigned int j=0; j<M; j++) {
             numTests++;
-            numFailures += rays[j].geomID == RTC_INVALID_GEOMETRY_ID;            
+            if (!(ivariant & VARIANT_INTERSECT_OCCLUDED)) // SVEN
+              numFailures += rays[j].geomID == RTC_INVALID_GEOMETRY_ID;            
           }
         }
       }
