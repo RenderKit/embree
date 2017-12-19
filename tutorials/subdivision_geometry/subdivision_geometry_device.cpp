@@ -239,7 +239,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (shadow.tfar() >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
   }
   return color;

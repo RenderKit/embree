@@ -131,7 +131,7 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   ray->org    = ray_org;
   ray->dir    = ray_dir;
   ray->tnear()  = ray_tnear;
-  ray->tfar()   = ray_tfar;
+  //ray->tfar()   = ray_tfar;
 }
 
 void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
@@ -223,10 +223,11 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     context->instID = instance->userID;
     rtcOccluded1(instance->object,context,RTCRay_(ray));
     context->instID = -1;
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
+    if (ray.tfar() >= 0.0f) continue;
 
     /* update hit */
-    RTCRayN_geomID(rays,N,ui) = ray.geomID;
+    //RTCRayN_geomID(rays,N,ui) = ray.geomID;
+    RTCRayN_tfar(rays,N,ui) = ray.tfar();
   }
 }
 
@@ -245,8 +246,16 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
-  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
+  {
+    rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
+    rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFunc);
+  }
+  else
+  {
+    rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+    rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  }
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
@@ -494,7 +503,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);
+    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);    
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;
@@ -1011,7 +1020,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID)
+    if (shadow.tfar() >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
@@ -1179,7 +1188,7 @@ void renderTileStandardStream(int taskIndex,
     else if (primary.instID == -1) diffuse = colors[4][primary.primID];      
     else                           diffuse = colors[primary.instID][primary.geomID];
     Ray& shadow = shadow_stream[N];
-    if (shadow.geomID) {
+    if (shadow.tfar() >= 0.0f) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
     }
   }
