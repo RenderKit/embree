@@ -244,7 +244,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device) && 0) // deactivate for now
   {
     rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
     rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFunc);

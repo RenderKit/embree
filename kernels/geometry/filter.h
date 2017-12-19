@@ -212,7 +212,7 @@ namespace embree
 #endif
 
       RayK<K>* ray = (RayK<K>*) args->ray;
-      ray->geomID = select(valid_o, vint<K>(zero), ray->geomID);
+      ray->tfar() = select(valid_o, vfloat<K>(neg_inf), ray->tfar());
       return valid_o;
     }
 
