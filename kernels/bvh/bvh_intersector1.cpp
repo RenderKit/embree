@@ -129,7 +129,7 @@ namespace embree
                                                                              IntersectContext* __restrict__ context)
     {
       /* early out for already occluded rays */
-      if (unlikely(ray.geomID == 0))
+      if (unlikely(ray.tfar() < 0.0f))
         return;
 
       /* perform per ray precalculations required by the primitive intersector */
@@ -194,7 +194,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
         if (PrimitiveIntersector1::occluded(pre, ray, context, prim, num, lazy_node)) {
-          ray.geomID = 0;
+          ray.tfar() = neg_inf;
           break;
         }
 

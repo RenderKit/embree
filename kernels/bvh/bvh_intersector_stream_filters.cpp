@@ -92,7 +92,7 @@ namespace embree
             const Ray& ray = rayN.getRayByOffset(inputRayID * stride);
 
             /* skip invalid rays */
-            if (unlikely(ray.tnear() > ray.tfar() || ray.geomID == 0)) { inputRayID++; continue; } // ignore invalid or already occluded rays
+            if (unlikely(ray.tnear() > ray.tfar() || ray.tfar() < 0.0f)) { inputRayID++; continue; } // ignore invalid or already occluded rays
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
@@ -174,7 +174,6 @@ namespace embree
     __forceinline void RayStreamFilter::filterAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context, bool intersect)
     {
       RayStreamAOP rayN(_rayN);
-
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
@@ -199,7 +198,6 @@ namespace embree
             rays[packetIndex] = ray;
             rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
           }
-
           /* trace stream */
           if (intersect)
             scene->intersectors.intersectN(rayPtrs, size, context);
@@ -239,7 +237,7 @@ namespace embree
             const Ray& ray = rayN.getRayByIndex(inputRayID);
 
             /* skip invalid rays */
-            if (unlikely(ray.tnear() > ray.tfar() || ray.geomID == 0)) { inputRayID++; continue; } // ignore invalid or already occluded rays
+            if (unlikely(ray.tnear() > ray.tfar() || ray.tfar() < 0.0f)) { inputRayID++; continue; } // ignore invalid or already occluded rays
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
@@ -552,7 +550,6 @@ namespace embree
           for (; inputRayID < N;)
           {
             const size_t offset = inputRayID * sizeof(float);
-
             /* skip invalid rays */
             if (unlikely(!rayN.isValidByOffset(offset))) { inputRayID++; continue; } // ignore invalid or already occluded rays
 #if defined(EMBREE_IGNORE_INVALID_RAYS)

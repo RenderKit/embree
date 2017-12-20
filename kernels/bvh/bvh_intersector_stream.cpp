@@ -258,7 +258,7 @@ namespace embree
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);
+          inputPackets[i]->tfar() = select(m_hit & m_valid, vfloat<K>(neg_inf), inputPackets[i]->tfar());
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         }
 
@@ -374,7 +374,7 @@ namespace embree
           const size_t k = rayID % K;
           if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
           {
-            ray.geomID[k] = 0;
+            ray.tfar()[k] = neg_inf;
             terminated |= (size_t)1 << rayID;
           }
 

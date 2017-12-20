@@ -126,10 +126,11 @@ unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform 
   context->instID = instance->userID;
   rtcOccluded(instance->object,context,RTCRay_(*ray));
   context->instID = -1;
+  const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
   ray->dir    = ray_dir;
   ray->tnear  = ray_tnear;
-  ray->tfar   = ray_tfar;
+  ray->tfar   = updated_tfar;
 }
 
 unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
@@ -221,10 +222,10 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
     context->instID = instance->userID;
     rtcOccluded(instance->object,context,RTCRay_(ray));
     context->instID = -1;
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
+    if (ray.tfar >= 0.0f) continue;
 
     /* update hit */
-    RTCRayN_geomID(rays,N,ui) = ray.geomID;
+    RTCRayN_tfar(rays,N,ui) = ray.tfar;
   }
 }
 
@@ -243,8 +244,16 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
-  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
-  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device)) 
+  {
+    rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
+    rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFunc);
+  }
+  else
+  {
+    rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+    rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  }
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
@@ -424,7 +433,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
-      ray->geomID = 0;
+      ray->tfar = neg_inf;
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -451,7 +460,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
-      ray->geomID = 0;
+      ray->tfar = neg_inf;
 
   }
 }
@@ -626,11 +635,11 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
 
       /* update for all accepted hits */
       if (imask == -1)
-        RTCRayN_geomID(rays,N,ui) = 0;
+        RTCRayN_tfar(rays,N,ui) = neg_inf;
     }
 
     /* ignore rays that have just found a hit */
-    if (RTCRayN_geomID(rays,N,ui) == 0)
+    if (RTCRayN_tfar(rays,N,ui) < 0.0f)
       continue;
  
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -658,7 +667,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
 
       /* update for all accepted hits */
       if (imask == -1)
-        RTCRayN_geomID(rays,N,ui) = 0;
+        RTCRayN_tfar(rays,N,ui) = neg_inf;
     }
   }
 }
@@ -1009,7 +1018,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
@@ -1177,7 +1186,7 @@ void renderTileStandardStream(uniform int taskIndex,
     else if (primary.instID == -1) diffuse = colors[4][primary.primID];      
     else                           diffuse = colors[primary.instID][primary.geomID];
     Ray& shadow = shadow_stream[N];
-    if (shadow.geomID) {
+    if (shadow.tfar >= 0.0f) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
     }
   }

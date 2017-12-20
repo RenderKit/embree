@@ -181,7 +181,7 @@ Vec3f ambientOcclusionShading(int x, int y, Ray& ray, uniform RayStats& stats)
 
   /* accumulate illumination */
   for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
-    if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+    if (rays[i].tfar >= 0.0f)
       intensity += 1.0f;
   }
 

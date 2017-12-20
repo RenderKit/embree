@@ -403,7 +403,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID) {
+    if (shadow.tfar() >= 0.0f) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
       float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
       float d = clamp(-dot(lightDir,Ng),0.0f,1.0f);

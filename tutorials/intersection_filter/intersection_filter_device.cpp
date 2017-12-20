@@ -109,7 +109,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.ray.geomID) {
+    if (shadow.ray.tfar() >= 0.0f) {
       Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
       color = color + weight*opacity*Ll;
     }
@@ -541,7 +541,7 @@ void renderTileStandardStream(int taskIndex,
       float opacity = 1.0f-primary.transparency;
       Vec3fa diffuse = colors[primary.ray.primID];
       Ray2& shadow = shadow_stream[N];
-      if (shadow.ray.geomID) {
+      if (shadow.ray.tfar() >= 0.0f) {
         Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
         color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
       }

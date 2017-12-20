@@ -333,7 +333,7 @@ void renderTileStandard(uniform int taskIndex,
 #endif
         /* modify pixel color based on occlusion */
         for (uniform unsigned int n=0;n<N;n++)
-          if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
+          if (rays[n].tfar >= 0.0f)
             colors[n] = colors[n] * 0.1f;
 
       }

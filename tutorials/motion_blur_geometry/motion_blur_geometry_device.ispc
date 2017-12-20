@@ -467,10 +467,10 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
   if ((ray->tnear < t0) & (t0 < ray->tfar)) {
-    ray->geomID = 0;
+    ray->tfar = neg_inf;
   }
   if ((ray->tnear < t1) & (t1 < ray->tfar)) {
-    ray->geomID = 0;
+    ray->tfar = neg_inf;
   }
 }
 
@@ -631,7 +631,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
   return color;
