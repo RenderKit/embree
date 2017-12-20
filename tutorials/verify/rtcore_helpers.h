@@ -513,8 +513,8 @@ namespace embree
     VARIANT_INTERSECT_INCOHERENT = 5,
     VARIANT_OCCLUDED_INCOHERENT = 6,
     VARIANT_INTERSECT_OCCLUDED = 3,
-    VARIANT_INTERSECT_OCCLUDED_COHERENT = 3,
-    VARIANT_INTERSECT_OCCLUDED_INCOHERENT = 7,
+    VARIANT_INTERSECT_OCCLUDED_COHERENT = 3, // intersect but verify if occluded also finds hit or not
+    VARIANT_INTERSECT_OCCLUDED_INCOHERENT = 7, // intersect but verify if occluded also finds hit or not
   };
 
   inline std::string to_string(IntersectVariant ivariant)
@@ -833,23 +833,17 @@ namespace embree
     /* verify occluded result against intersect */
     if ((ivariant & VARIANT_INTERSECT_OCCLUDED) == VARIANT_INTERSECT_OCCLUDED)
     {
+      vector<bool> valid(N);
       vector_t<RTCRay,aligned_allocator<RTCRay,16>> rays2(N);
-      for (size_t i=0; i<N; i++) rays2[i] = rays[i];
-      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays,N);
-      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays2.data(),N);
+      for (size_t i=0; i<N; i++) {
+        valid[i] = rays[i].tnear <= rays[i].tfar;
+        rays2[i] = rays[i];
+      }
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N);
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N);
       for (size_t i=0; i<N; i++)
       {
-#if 0
-        PRINT(ivariant);
-        PRINT(i);  
-        PRINT(rays[i].geomID);  
-        PRINT(rays2[i].geomID);  
-        PRINT(rays[i].tfar);  
-        PRINT(rays2[i].tfar);  
-#endif
-        //if ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
-        if ((rays[i].tfar >= 0.0f) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
-        {
+        if (valid[i] && ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].tfar != float(neg_inf)))) {
           throw std::runtime_error("Intersect/Occluded mismatch");
         }
       }
