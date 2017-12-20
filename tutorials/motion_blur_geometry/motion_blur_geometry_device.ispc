@@ -467,10 +467,10 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
   if ((ray->tnear < t0) & (t0 < ray->tfar)) {
-    ray->geomID = 0;
+    ray->tfar = neg_inf;
   }
   if ((ray->tnear < t1) & (t1 < ray->tfar)) {
-    ray->geomID = 0;
+    ray->tfar = neg_inf;
   }
 }
 
