@@ -59,8 +59,12 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-              HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
-              return runIntersectionFilter1(geometry,ray,context,h);
+              HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.Ng);
+              const float old_t = ray.tfar();
+              ray.tfar() = hit.t;
+              bool found = runIntersectionFilter1(geometry,ray,context,h);
+              if (!found) ray.tfar() = old_t;
+              return found;
             }
           }
 #endif
@@ -107,8 +111,12 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
-              HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.t,hit.Ng);
-              return runOcclusionFilter1(geometry,ray,context,h);
+              HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.Ng);
+              const float old_t = ray.tfar();
+              ray.tfar() = hit.t;
+              const bool found = runOcclusionFilter1(geometry,ray,context,h);
+              if (!found) ray.tfar() = old_t;
+              return found;
             }
           }
 #endif
@@ -147,8 +155,12 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-              HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
-              return any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+              HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
+              const float old_t = ray.tfar()[k];
+              ray.tfar()[k] = hit.t;
+              const bool found = any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+              if (!found) ray.tfar()[k] = old_t;
+              return found;              
             }
           }
 #endif
@@ -198,8 +210,12 @@ namespace embree
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
               hit.finalize();
-              HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.t,hit.Ng);
-              return any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+              HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
+              const float old_t = ray.tfar()[k];
+              ray.tfar()[k] = hit.t;
+              const bool found = any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+              if (!found) ray.tfar()[k] = old_t;
+              return found;
             }
           }
 #endif 
@@ -258,8 +274,12 @@ namespace embree
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
                 const Vec2f uv = hit.uv(i);
-                HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
-                foundhit |= runIntersectionFilter1(geometry,ray,context,h);
+                HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+                const float old_t = ray.tfar();
+                ray.tfar() = hit.t(i);               
+                const bool found = runIntersectionFilter1(geometry,ray,context,h);
+                if (!found) ray.tfar() = old_t;
+                foundhit |= found;
                 clear(valid,i);
                 valid &= hit.vt <= ray.tfar(); // intersection filters may modify tfar value
                 continue;
@@ -340,8 +360,12 @@ namespace embree
             if (filter) {
               if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
                 const Vec2f uv = hit.uv(i);
-                HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
-                foundhit |= runIntersectionFilter1(geometry,ray,context,h);
+                HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+                const float old_t = ray.tfar();
+                ray.tfar() = hit.t(i);               
+                const bool found = runIntersectionFilter1(geometry,ray,context,h);
+                if (!found) ray.tfar() = old_t;                
+                foundhit |= found;
                 clear(valid,i);
                 valid &= hit.vt <= ray.tfar(); // intersection filters may modify tfar value
                 continue;
@@ -413,8 +437,11 @@ namespace embree
               if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
               {
                 const Vec2f uv = hit.uv(i);
-                HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
+                HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+                const float old_t = ray.tfar();
+                ray.tfar() = hit.t(i);               
                 if (runOcclusionFilter1(geometry,ray,context,h)) return true;
+                ray.tfar() = old_t;
                 m=__btc(m,i);
                 continue;
               }
@@ -467,8 +494,12 @@ namespace embree
             {
               /* call intersection filter function */
               Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,geomID,primID,uv.x,uv.y,hit.t(i),hit.Ng(i));
-              foundhit |= runIntersectionFilter1(geometry,ray,context,h);
+              const float old_t = ray.tfar();
+              ray.tfar() = hit.t(i);
+              HitK<1> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
+              const bool found = runIntersectionFilter1(geometry,ray,context,h);
+              if (!found) ray.tfar() = old_t;
+              foundhit |= found;
               clear(valid,i);
               valid &= hit.vt <= ray.tfar(); // intersection filters may modify tfar value
               if (unlikely(none(valid))) break;
@@ -482,7 +513,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u = uv.x;
           ray.v = uv.y;
-          ray.tfar() = hit.vt[i];
+          ray.tfar() = hit.t(i);
           const Vec3fa Ng = hit.Ng(i);
           ray.Ng.x = Ng.x;
           ray.Ng.y = Ng.y;
@@ -526,8 +557,11 @@ namespace embree
             for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) 
             {  
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,geomID,primID,uv.x,uv.y,hit.t(i),hit.Ng(i));
+              const float old_t = ray.tfar();
+              ray.tfar() = hit.t(i);
+              HitK<1> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
               if (runOcclusionFilter1(geometry,ray,context,h)) return true;
+              ray.tfar() = old_t;
             }
             return false;
           }
@@ -577,8 +611,12 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-              HitK<K> h(context->instID,geomID,primID,u,v,t,Ng);
-              return runIntersectionFilter(valid,geometry,ray,context,h);
+              HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+              const vfloat<K> old_t = ray.tfar();
+              ray.tfar() = select(valid,t,ray.tfar());
+              const vbool<K> m_accept = runIntersectionFilter(valid,geometry,ray,context,h);
+              ray.tfar() = select(m_accept,ray.tfar(),old_t);
+              return m_accept;
             }
           }
 #endif
@@ -638,8 +676,11 @@ namespace embree
               vfloat<K> u, v, t; 
               Vec3vf<K> Ng;
               std::tie(u,v,t,Ng) = hit();
-              HitK<K> h(context->instID,geomID,primID,u,v,t,Ng);
+              HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+              const vfloat<K> old_t = ray.tfar();
+              ray.tfar() = select(valid,t,ray.tfar());
               valid = runOcclusionFilter(valid,geometry,ray,context,h);
+              ray.tfar() = select(valid,ray.tfar(),old_t);
             }
           }
 #endif
@@ -685,8 +726,12 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-              HitK<K> h(context->instID,geomID,primID,u,v,t,Ng);
-              return runIntersectionFilter(valid,geometry,ray,context,h);
+              HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+              const vfloat<K> old_t = ray.tfar();
+              ray.tfar() = select(valid,t,ray.tfar());
+              const vbool<K> m_accept = runIntersectionFilter(valid,geometry,ray,context,h);
+              ray.tfar() = select(m_accept,ray.tfar(),old_t);
+              return m_accept;
             }
           }
 #endif
@@ -741,8 +786,11 @@ namespace embree
               vfloat<K> u, v, t; 
               Vec3vf<K> Ng;
               std::tie(u,v,t,Ng) = hit();
-              HitK<K> h(context->instID,geomID,primID,u,v,t,Ng);
+              HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+              const vfloat<K> old_t = ray.tfar();
+              ray.tfar() = select(valid,t,ray.tfar());
               valid = runOcclusionFilter(valid,geometry,ray,context,h);
+              ray.tfar() = select(valid,ray.tfar(),old_t);
             }
           }
 #endif
@@ -808,8 +856,12 @@ namespace embree
               if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
                 assert(i<M);
                 const Vec2f uv = hit.uv(i);
-                HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
-                foundhit = foundhit | any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+                HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+                const float old_t = ray.tfar()[k];                
+                ray.tfar()[k] = hit.t(i);
+                const bool found = any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+                if (!found) ray.tfar()[k] = old_t;
+                foundhit = foundhit | found;
                 clear(valid,i);
                 valid &= hit.vt <= ray.tfar()[k]; // intersection filters may modify tfar value
                 continue;
@@ -828,7 +880,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
           ray.v[k] = uv.y;
-          ray.tfar()[k] = hit.vt[i];
+          ray.tfar()[k] = hit.t(i);
           ray.Ng.x[k] = hit.vNg.x[i];
           ray.Ng.y[k] = hit.vNg.y[i];
           ray.Ng.z[k] = hit.vNg.z[i];
@@ -892,8 +944,11 @@ namespace embree
               if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) 
               {
                 const Vec2f uv = hit.uv(i);
-                HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.t(i),hit.Ng(i));
+                const float old_t = ray.tfar()[k];
+                ray.tfar()[k] = hit.t(i);
+                HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
                 if (any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h))) return true;
+                ray.tfar()[k] = old_t;
                 m=__btc(m,i);
                 continue;
               }
@@ -947,8 +1002,12 @@ namespace embree
               while (true) 
               {
                 const Vec2f uv = hit.uv(i);
-                HitK<K> h(context->instID,geomID,primID,uv.x,uv.y,hit.t(i),hit.Ng(i));
-                foundhit = foundhit | any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+                const float old_t = ray.tfar()[k];
+                ray.tfar()[k] = hit.t(i);
+                HitK<K> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
+                const bool found = any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
+                if (!found) ray.tfar()[k] = old_t;
+                foundhit = foundhit | found;
                 clear(valid,i);
                 valid &= hit.vt <= ray.tfar()[k]; // intersection filters may modify tfar value
                 if (unlikely(none(valid))) break;
@@ -968,7 +1027,7 @@ namespace embree
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
           ray.v[k] = uv.y;
-          ray.tfar()[k] = hit.vt[i];
+          ray.tfar()[k] = hit.t(i);
           const Vec3fa Ng = hit.Ng(i);
           ray.Ng.x[k] = Ng.x;
           ray.Ng.y[k] = Ng.y;
@@ -1016,8 +1075,11 @@ namespace embree
               for (size_t m=movemask(valid_i), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
               {  
                 const Vec2f uv = hit.uv(i);
-                HitK<K> h(context->instID,geomID,primID,uv.x,uv.y,hit.t(i),hit.Ng(i));
+                const float old_t = ray.tfar()[k];
+                ray.tfar()[k] = hit.t(i);
+                HitK<K> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
                 if (any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h))) return true;
+                ray.tfar()[k] = old_t;
               }
               return false;
             }

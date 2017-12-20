@@ -29,15 +29,14 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const vfloat<K>& t, const Vec3vf<K>& Ng)
-      : Ng(Ng), t(t), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
+    __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const Vec3vf<K>& Ng)
+      : Ng(Ng), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return K; }
 
   public:
     Vec3vf<K> Ng;  // geometry normal
-    vfloat<K> t;         // hit distance
     vfloat<K> u;         // barycentric u coordinate of hit
     vfloat<K> v;         // barycentric v coordinate of hit
     vint<K> primID;      // primitive ID
@@ -53,15 +52,14 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(int instID, int geomID, int primID, float u, float v, float t, const Vec3fa& Ng)
-      : Ng(Ng.x,Ng.y,Ng.z), t(t), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
+    __forceinline HitK(int instID, int geomID, int primID, float u, float v, const Vec3fa& Ng)
+      : Ng(Ng.x,Ng.y,Ng.z), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return 1; }
 
   public:
     Vec3<float> Ng;  // geometry normal
-    float t;         // hit distance
     float u;         // barycentric u coordinate of hit
     float v;         // barycentric v coordinate of hit
     int primID;      // primitive ID
@@ -85,7 +83,6 @@ namespace embree
                 << "  instID = " << ray.instID << std::endl
                 << "  u = " << ray.u <<  std::endl
                 << "  v = " << ray.v << std::endl
-                << "  t = " << ray.v << std::endl
                 << "  Ng = " << ray.Ng
                 << "}";
   }
@@ -98,7 +95,6 @@ namespace embree
     ray.instID = hit.instID;
     ray.u    = hit.u;
     ray.v    = hit.v;
-    ray.tfar() = hit.t;
   }
 
   template<int K>
@@ -112,6 +108,5 @@ namespace embree
     vint<K>::storeu(mask,&ray.instID, hit.instID);
     vfloat<K>::storeu(mask,&ray.u, hit.u);
     vfloat<K>::storeu(mask,&ray.v, hit.v);
-    vfloat<K>::storeu(mask,&ray._tfar, hit.t);
   }
 }

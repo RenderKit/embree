@@ -334,7 +334,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     }
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
-    hit.t = t0;
+    //hit.t = t0;
     hit.Ng_x = Ng.x;
     hit.Ng_y = Ng.y;
     hit.Ng_z = Ng.z;
@@ -349,7 +349,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyHitToRay((RTCRay *)ray,&hit);
+      rtcCopyHitToRay((RTCRay *)ray,&hit,t0);
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -361,7 +361,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     }
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
-    hit.t = t1;
+    //hit.t = t1;
     hit.Ng_x = Ng.x;
     hit.Ng_y = Ng.y;
     hit.Ng_z = Ng.z;
@@ -376,7 +376,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyHitToRay((RTCRay *)ray,&hit);
+      rtcCopyHitToRay((RTCRay *)ray,&hit,t1);
   }
 }
 
@@ -420,7 +420,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     }
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
-    hit.t = t0;
+    //hit.t = t0;
     hit.Ng_x = Ng.x;
     hit.Ng_y = Ng.y;
     hit.Ng_z = Ng.z;
@@ -447,7 +447,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     }
     
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
-    hit.t = t1;
+    //hit.t = t1;
     hit.Ng_x = Ng.x;
     hit.Ng_y = Ng.y;
     hit.Ng_z = Ng.z;
@@ -519,7 +519,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
         imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
-      potentialhit.t = t0;
+      //potentialhit.t = t0;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
       potentialhit.Ng_z = Ng.z;
@@ -535,7 +535,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyHitToRayN(rays,&potentialhit,N,ui);
+        rtcCopyHitToRayN(rays,&potentialhit,t0,N,ui);
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -546,7 +546,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
         imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t1*ray_dir-sphere.p;
-      potentialhit.t = t1;
+      //potentialhit.t = t1;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
       potentialhit.Ng_z = Ng.z;
@@ -563,7 +563,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyHitToRayN(rays,&potentialhit,N,ui);
+        rtcCopyHitToRayN(rays,&potentialhit,t1,N,ui);
     }
   }
 }
@@ -620,7 +620,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
         imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
-      potentialhit.t = t0;
+      //potentialhit.t = t0;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
       potentialhit.Ng_z = Ng.z;
@@ -652,7 +652,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
         imask = mask ? -1 : 0;
       }
       const Vec3fa Ng = ray_org+t1*ray_dir-sphere.p;
-      potentialhit.t = t1;
+      //potentialhit.t = t1;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
       potentialhit.Ng_z = Ng.z;
@@ -694,7 +694,7 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* const args)
   if (valid[0] != -1) return;
   
   /* carve out parts of the sphere */
-  const Vec3fa h = ray->org+hit->t*ray->dir;
+  const Vec3fa h = ray->org+ray->tfar()*ray->dir;
   float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
   float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
 
@@ -707,7 +707,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct RTCRayN* ray = args->ray;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  //struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
                
   /* avoid crashing when debug visualizations are used */
@@ -727,7 +727,8 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
     /* calculate hit point */
     Vec3fa ray_org = Vec3fa(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    float hit_t = RTCHitN_t(potentialHit,N,ui);
+    //float hit_t = RTCHitN_t(potentialHit,N,ui);
+    float hit_t = RTCRayN_tfar(ray,N,ui);
 
     /* carve out parts of the sphere */
     const Vec3fa h = ray_org+hit_t*ray_dir;
