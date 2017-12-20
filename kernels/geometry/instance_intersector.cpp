@@ -79,7 +79,7 @@ namespace embree
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
       user_context->instID = -1;
       ray.org = ray_org;
-      ray.dir = ray_dir;
+      ray.dir = Vec3fa(ray_dir,ray.tfar());
     }
 
     template<int K>

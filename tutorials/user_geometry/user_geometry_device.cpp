@@ -246,7 +246,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device) && 0) // deactivate for now
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
     rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
     rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFunc);
