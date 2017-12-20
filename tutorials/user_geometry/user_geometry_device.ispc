@@ -692,7 +692,7 @@ unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform co
   if (valid[programIndex] != -1) return;
   
   /* carve out parts of the sphere */
-  const Vec3f h = ray->org+ray->tfar*ray->dir;
+  const Vec3f h = ray->org+ray->dir*ray->tfar;
   float v = abs(sin(10.0f*h.x)*cos(10.0f*h.y)*sin(10.0f*h.z));
   float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
 

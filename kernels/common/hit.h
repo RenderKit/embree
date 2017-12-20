@@ -78,23 +78,23 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const HitK<K>& ray)
   {
     return cout << "{ " << std::endl
+                << "  Ng = " << ray.Ng <<  std::endl
+                << "  u = " << ray.u <<  std::endl
+                << "  v = " << ray.v << std::endl
                 << "  primID = " << ray.primID <<  std::endl
                 << "  geomID = " << ray.geomID << std::endl
                 << "  instID = " << ray.instID << std::endl
-                << "  u = " << ray.u <<  std::endl
-                << "  v = " << ray.v << std::endl
-                << "  Ng = " << ray.Ng
                 << "}";
   }
 
   __forceinline void copyHitToRay(Ray &ray, const Hit& hit)
   {
     ray.Ng   = hit.Ng;
+    ray.u    = hit.u;
+    ray.v    = hit.v;
     ray.primID = hit.primID;
     ray.geomID = hit.geomID;
     ray.instID = hit.instID;
-    ray.u    = hit.u;
-    ray.v    = hit.v;
   }
 
   template<int K>
@@ -103,10 +103,10 @@ namespace embree
     vfloat<K>::storeu(mask,&ray.Ng.x, hit.Ng.x);
     vfloat<K>::storeu(mask,&ray.Ng.y, hit.Ng.y);
     vfloat<K>::storeu(mask,&ray.Ng.z, hit.Ng.z);
+    vfloat<K>::storeu(mask,&ray.u, hit.u);
+    vfloat<K>::storeu(mask,&ray.v, hit.v);
     vint<K>::storeu(mask,&ray.primID, hit.primID);
     vint<K>::storeu(mask,&ray.geomID, hit.geomID);
     vint<K>::storeu(mask,&ray.instID, hit.instID);
-    vfloat<K>::storeu(mask,&ray.u, hit.u);
-    vfloat<K>::storeu(mask,&ray.v, hit.v);
   }
 }
