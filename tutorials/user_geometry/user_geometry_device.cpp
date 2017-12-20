@@ -128,10 +128,11 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   context->instID = instance->userID;
   rtcOccluded1(instance->object,context,RTCRay_(*ray));
   context->instID = -1;
+  const float updated_tfar = ray->tfar();
   ray->org    = ray_org;
   ray->dir    = ray_dir;
   ray->tnear()  = ray_tnear;
-  //ray->tfar()   = ray_tfar;
+  ray->tfar()   = updated_tfar;
 }
 
 void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
@@ -226,7 +227,6 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     if (ray.tfar() >= 0.0f) continue;
 
     /* update hit */
-    //RTCRayN_geomID(rays,N,ui) = ray.geomID;
     RTCRayN_tfar(rays,N,ui) = ray.tfar();
   }
 }
@@ -246,7 +246,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
+  if (g_mode == MODE_NORMAL && nativePacketSupported(g_device)) 
   {
     rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
     rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFunc);
@@ -435,7 +435,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
-      ray->geomID = 0;
+      ray->tfar() = neg_inf;
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -462,7 +462,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
-      ray->geomID = 0;
+      ray->tfar() = neg_inf;
 
   }
 }
@@ -637,11 +637,11 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
       /* update for all accepted hits */
       if (imask == -1)
-        RTCRayN_geomID(rays,N,ui) = 0;
+        RTCRayN_tfar(rays,N,ui) = neg_inf;
     }
 
     /* ignore rays that have just found a hit */
-    if (RTCRayN_geomID(rays,N,ui) == 0)
+    if (RTCRayN_tfar(rays,N,ui) < 0.0f)
       continue;
  
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -669,7 +669,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
       /* update for all accepted hits */
       if (imask == -1)
-        RTCRayN_geomID(rays,N,ui) = 0;
+        RTCRayN_tfar(rays,N,ui) = neg_inf;
     }
   }
 }
