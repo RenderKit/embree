@@ -346,10 +346,15 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
+
+    const float old_t = ray->tfar();
+    ray->tfar() = t0;
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       rtcCopyHitToRay((RTCRay *)ray,&hit,t0);
+    else
+      ray->tfar() = old_t;
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -373,10 +378,15 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
+
+    const float old_t = ray->tfar();
+    ray->tfar() = t1;
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       rtcCopyHitToRay((RTCRay *)ray,&hit,t1);
+    else
+      ray->tfar() = old_t;
   }
 }
 
@@ -393,7 +403,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   
   if (!valid[0])
     return;
-  
+
   const Vec3fa v = ray->org-sphere.p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -432,10 +442,14 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
-    rtcFilterOcclusion(args,&fargs);
 
+    const float old_t = ray->tfar();
+    ray->tfar() = t0;
+    rtcFilterOcclusion(args,&fargs);
     if (imask == -1)
       ray->tfar() = neg_inf;
+    else
+      ray->tfar() = old_t;
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar()))
@@ -459,11 +473,15 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
+
+    const float old_t = ray->tfar();
+    ray->tfar() = t1;
     rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
       ray->tfar() = neg_inf;
-
+    else
+      ray->tfar() = old_t;
   }
 }
 

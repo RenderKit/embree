@@ -344,10 +344,15 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
+
+    const float old_t = ray->tfar;
+    ray->tfar = t0;
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       rtcCopyHitToRay((varying RTCRay *uniform)ray,&hit,t0);
+    else
+      ray->tfar = old_t;
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -371,10 +376,15 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
+
+    const float old_t = ray->tfar;
+    ray->tfar = t1;
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
       rtcCopyHitToRay((varying RTCRay *uniform)ray,&hit,t1);
+    else
+      ray->tfar = old_t;
   }
 }
 
@@ -391,7 +401,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   
   if (!valid[programIndex])
     return;
-  
+
   const Vec3f v = ray->org-sphere.p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -430,10 +440,14 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
-    rtcFilterOcclusion(args,&fargs);
 
+    const float old_t = ray->tfar;
+    ray->tfar = t0;
+    rtcFilterOcclusion(args,&fargs);
     if (imask == -1)
       ray->tfar = neg_inf;
+    else
+      ray->tfar = old_t;
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
@@ -457,11 +471,15 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     fargs.ray = args->ray;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
+
+    const float old_t = ray->tfar;
+    ray->tfar = t1;
     rtcFilterOcclusion(args,&fargs);
 
     if (imask == -1)
       ray->tfar = neg_inf;
-
+    else
+      ray->tfar = old_t;
   }
 }
 
