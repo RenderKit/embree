@@ -157,7 +157,7 @@ namespace embree
               if (IntersectorK::occluded(pre,ray,k,context,prim[i]))
               {
                 m_occluded |= (size_t)1 << rayID;
-                ray.geomID[k] = 0; 
+                ray.tfar[k] = neg_inf; 
               }
             }
           }

@@ -679,7 +679,6 @@ namespace embree
 #endif
     STAT3(shadow.travs,M,M,M);
     IntersectContext context(scene,user_context);
-
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
       if (likely(rays->tnear <= rays->tfar)) 

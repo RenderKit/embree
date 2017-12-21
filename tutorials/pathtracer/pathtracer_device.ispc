@@ -1291,7 +1291,8 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  const float tfar          = ray->tfar;
   DifferentialGeometry dg;
   dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
   dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
@@ -1364,7 +1365,9 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  const float tfar          = ray->tfar;
+
   DifferentialGeometry dg;
   dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
   dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);

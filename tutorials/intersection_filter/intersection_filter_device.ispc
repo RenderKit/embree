@@ -198,18 +198,14 @@ unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform cons
   assert(args->N == programCount);
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
-  varying RTCRay* uniform ray = (varying RTCRay* uniform)args->ray;
-  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
+  varying Ray* uniform ray = (varying Ray* uniform)args->ray;
+  //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
 
-  /* read ray/hit from ray structure */
-  const Vec3f ray_org = make_Vec3f(ray->org_x,ray->org_y,ray->org_z);
-  const Vec3f ray_dir = make_Vec3f(ray->dir_x,ray->dir_y,ray->dir_z);
-
   /* calculate transparency */
-  Vec3f h = ray_org + ray_dir  * hit->t;
+  Vec3f h = ray->org + ray->dir  * ray->tfar;
   float T = transparencyFunction(h);
 
   /* ignore hit if completely transparent */
@@ -229,7 +225,7 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayN* uniform rayN = args->ray;
-  struct RTCHitN* uniform hitN = args->potentialHit;
+  //struct RTCHitN* uniform hitN = args->potentialHit;
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
@@ -246,13 +242,11 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRay ray = rtcGetRayFromRayN(rayN,N,ui);
-    RTCHit hit = rtcGetHitFromHitN(hitN,N,ui);
-    const Vec3f ray_org = make_Vec3f(ray.org_x,ray.org_y,ray.org_z);
-    const Vec3f ray_dir = make_Vec3f(ray.dir_x,ray.dir_y,ray.dir_z);
+    RTCRay rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    varying Ray* uniform ray = (varying Ray* uniform)&rtc_ray;
 
     /* calculate transparency */
-    Vec3f h = ray_org + ray_dir  * hit.t;
+    Vec3f h = ray->org + ray->dir  * ray->tfar;
     float T = transparencyFunction(h);
 
     /* ignore hit if completely transparent */
@@ -262,8 +256,8 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
     else
     {
     /* decode ray IDs */
-      const unsigned int pid = (ray.mask & 0xFFFF) / programCount;
-      const unsigned int rid = (ray.mask & 0xFFFF) % programCount;
+      const unsigned int pid = (ray->mask & 0xFFFF) / programCount;
+      const unsigned int rid = (ray->mask & 0xFFFF) % programCount;
       varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
       assert(ray2);
       scatter(ray2->transparency,sizeof(Ray2),pid,rid,T);
@@ -280,15 +274,11 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   assert(args->N == programCount);
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
-  varying RTCRay* uniform ray = (varying RTCRay* uniform)args->ray;
+  varying Ray* uniform ray = (varying Ray* uniform)args->ray;
   varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
-
-  /* read ray/hit from ray structure */
-  const Vec3f ray_org = make_Vec3f(ray->org_x,ray->org_y,ray->org_z);
-  const Vec3f ray_dir = make_Vec3f(ray->dir_x,ray->dir_y,ray->dir_z);
 
   varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
   assert(ray2);
@@ -307,7 +297,7 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
     ray2->firstHit++;
 
-  Vec3f h = ray_org + ray_dir * hit->t;
+  Vec3f h = ray->org + ray->dir * ray->tfar;
 
   /* calculate and accumulate transparency */
   float T = transparencyFunction(h);
@@ -340,16 +330,16 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRay ray = rtcGetRayFromRayN(rayN,N,ui);
+    RTCRay rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    varying Ray* uniform ray = (varying Ray* uniform)&rtc_ray;
+
     RTCHit hit = rtcGetHitFromHitN(hitN,N,ui);
-    const Vec3f ray_org = make_Vec3f(ray.org_x,ray.org_y,ray.org_z);
-    const Vec3f ray_dir = make_Vec3f(ray.dir_x,ray.dir_y,ray.dir_z);
     const unsigned int hit_geomID = hit.geomID;
     const unsigned int hit_primID = hit.primID;
 
     /* decode ray IDs */
-    const unsigned int pid = (ray.mask & 0xFFFF) / programCount;
-    const unsigned int rid = (ray.mask & 0xFFFF) % programCount;
+    const unsigned int pid = (ray->mask & 0xFFFF) / programCount;
+    const unsigned int rid = (ray->mask & 0xFFFF) % programCount;
     varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
     assert(ray2);
 
@@ -383,7 +373,7 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
       scatter(ray2->firstHit,sizeof(Ray2),pid,rid,ray2_firstHit+1);
 
     /* calculate transparency */
-    Vec3f h = ray_org + ray_dir * hit.t;
+    Vec3f h = ray->org + ray->dir * ray->tfar;
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */

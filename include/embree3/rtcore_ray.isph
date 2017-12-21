@@ -120,7 +120,6 @@ struct RTCHit
   float Ng_y;
   float Ng_z;
 
-  float t;
   float u;
   float v;
 
@@ -135,12 +134,11 @@ struct RTCHitN;
 RTC_FORCEINLINE varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }
 RTC_FORCEINLINE varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }
 RTC_FORCEINLINE varying float& RTCHitN_Ng_z(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[2*N+i]); }
-RTC_FORCEINLINE varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[3*N+i]); }
-RTC_FORCEINLINE varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[4*N+i]); }
-RTC_FORCEINLINE varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[5*N+i]); }
-RTC_FORCEINLINE varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )ptr)[6*N+i]); }
-RTC_FORCEINLINE varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )ptr)[7*N+i]); }
-RTC_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((unsigned int* uniform)ptr)[8*N+i+l*N]); }
+RTC_FORCEINLINE varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[3*N+i]); }
+RTC_FORCEINLINE varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[4*N+i]); }
+RTC_FORCEINLINE varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )ptr)[5*N+i]); }
+RTC_FORCEINLINE varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )ptr)[6*N+i]); }
+RTC_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((unsigned int* uniform)ptr)[7*N+i+l*N]); }
 
 RTC_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* uniform rays, uniform unsigned int N, uniform unsigned int i)
 {
@@ -175,7 +173,6 @@ RTC_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* uniform hits, uniform unsigned
   hit.Ng_x   = RTCHitN_Ng_x(hits,N,i);
   hit.Ng_y   = RTCHitN_Ng_y(hits,N,i);
   hit.Ng_z   = RTCHitN_Ng_z(hits,N,i);
-  hit.t      = RTCHitN_t(hits,N,i);
   hit.u      = RTCHitN_u(hits,N,i);
   hit.v      = RTCHitN_v(hits,N,i);
   hit.primID = RTCHitN_primID(hits,N,i);
@@ -185,12 +182,12 @@ RTC_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* uniform hits, uniform unsigned
   return hit;
 };
 
-RTC_FORCEINLINE void rtcCopyHitToRay(varying RTCRay* uniform ray, const varying RTCHit* uniform hit)
+RTC_FORCEINLINE void rtcCopyHitToRay(varying RTCRay* uniform ray, const varying RTCHit* uniform hit, const varying t)
 {
   ray->Ng_x   = hit->Ng_x;
   ray->Ng_y   = hit->Ng_y;
   ray->Ng_z   = hit->Ng_z;  
-  ray->tfar   = hit->t;
+  ray->tfar   = t;
   ray->u      = hit->u;
   ray->v      = hit->v;
   ray->primID = hit->primID;
@@ -199,12 +196,12 @@ RTC_FORCEINLINE void rtcCopyHitToRay(varying RTCRay* uniform ray, const varying 
     ray->instID[l] = hit->instID[l];
 }
 
-RTC_FORCEINLINE void rtcCopyHitToRayN(RTCRayN* uniform rays, const varying RTCHit* uniform hit, uniform unsigned int N, uniform unsigned int i)
+RTC_FORCEINLINE void rtcCopyHitToRayN(RTCRayN* uniform rays, const varying RTCHit* uniform hit, const varying t, uniform unsigned int N, uniform unsigned int i)
 {
   RTCRayN_Ng_x(rays,N,i)   = hit->Ng_x;
   RTCRayN_Ng_y(rays,N,i)   = hit->Ng_y;
   RTCRayN_Ng_z(rays,N,i)   = hit->Ng_z;
-  RTCRayN_tfar(rays,N,i)   = hit->t;
+  RTCRayN_tfar(rays,N,i)   = t;
   RTCRayN_u(rays,N,i)      = hit->u;
   RTCRayN_v(rays,N,i)      = hit->v;
   RTCRayN_primID(rays,N,i) = hit->primID;

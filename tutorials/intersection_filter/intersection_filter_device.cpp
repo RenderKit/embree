@@ -200,18 +200,14 @@ void intersectionFilter(const RTCFilterFunctionNArguments* const args)
   assert(args->N == 1);
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  RTCRay* ray = (RTCRay*)args->ray;
-  RTCHit* hit = (RTCHit*)args->potentialHit;
+  Ray* ray = (Ray*)args->ray;
+  //RTCHit* hit = (RTCHit*)args->potentialHit;
 
   /* ignore inactive rays */
   if (valid[0] != -1) return;
 
-  /* read ray/hit from ray structure */
-  const Vec3fa ray_org = Vec3fa(ray->org_x,ray->org_y,ray->org_z);
-  const Vec3fa ray_dir = Vec3fa(ray->dir_x,ray->dir_y,ray->dir_z);
-
   /* calculate transparency */
-  Vec3fa h = ray_org + ray_dir  * hit->t;
+  Vec3fa h = ray->org + ray->dir  * ray->tfar();
   float T = transparencyFunction(h);
 
   /* ignore hit if completely transparent */
@@ -231,7 +227,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct RTCRayN* rayN = args->ray;
-  struct RTCHitN* hitN = args->potentialHit;
+  //struct RTCHitN* hitN = args->potentialHit;
   const unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
@@ -248,13 +244,11 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRay ray = rtcGetRayFromRayN(rayN,N,ui);
-    RTCHit hit = rtcGetHitFromHitN(hitN,N,ui);
-    const Vec3fa ray_org = Vec3fa(ray.org_x,ray.org_y,ray.org_z);
-    const Vec3fa ray_dir = Vec3fa(ray.dir_x,ray.dir_y,ray.dir_z);
+    RTCRay rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    Ray* ray = (Ray*)&rtc_ray;
 
     /* calculate transparency */
-    Vec3fa h = ray_org + ray_dir  * hit.t;
+    Vec3fa h = ray->org + ray->dir  * ray->tfar();
     float T = transparencyFunction(h);
 
     /* ignore hit if completely transparent */
@@ -264,8 +258,8 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     else
     {
     /* decode ray IDs */
-      const unsigned int pid = (ray.mask & 0xFFFF) / 1;
-      const unsigned int rid = (ray.mask & 0xFFFF) % 1;
+      const unsigned int pid = (ray->mask & 0xFFFF) / 1;
+      const unsigned int rid = (ray->mask & 0xFFFF) % 1;
       Ray2* ray2 = (Ray2*) context->userRayExt;
       assert(ray2);
       scatter(ray2->transparency,sizeof(Ray2),pid,rid,T);
@@ -282,15 +276,11 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   assert(args->N == 1);
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  RTCRay* ray = (RTCRay*)args->ray;
+  Ray* ray = (Ray*)args->ray;
   RTCHit* hit = (RTCHit*)args->potentialHit;
 
   /* ignore inactive rays */
   if (valid[0] != -1) return;
-
-  /* read ray/hit from ray structure */
-  const Vec3fa ray_org = Vec3fa(ray->org_x,ray->org_y,ray->org_z);
-  const Vec3fa ray_dir = Vec3fa(ray->dir_x,ray->dir_y,ray->dir_z);
 
   Ray2* ray2 = (Ray2*) context->userRayExt;
   assert(ray2);
@@ -309,7 +299,7 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
     ray2->firstHit++;
 
-  Vec3fa h = ray_org + ray_dir * hit->t;
+  Vec3fa h = ray->org + ray->dir * ray->tfar();
 
   /* calculate and accumulate transparency */
   float T = transparencyFunction(h);
@@ -342,16 +332,16 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRay ray = rtcGetRayFromRayN(rayN,N,ui);
+    RTCRay rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    Ray* ray = (Ray*)&rtc_ray;
+
     RTCHit hit = rtcGetHitFromHitN(hitN,N,ui);
-    const Vec3fa ray_org = Vec3fa(ray.org_x,ray.org_y,ray.org_z);
-    const Vec3fa ray_dir = Vec3fa(ray.dir_x,ray.dir_y,ray.dir_z);
     const unsigned int hit_geomID = hit.geomID;
     const unsigned int hit_primID = hit.primID;
 
     /* decode ray IDs */
-    const unsigned int pid = (ray.mask & 0xFFFF) / 1;
-    const unsigned int rid = (ray.mask & 0xFFFF) % 1;
+    const unsigned int pid = (ray->mask & 0xFFFF) / 1;
+    const unsigned int rid = (ray->mask & 0xFFFF) % 1;
     Ray2* ray2 = (Ray2*) context->userRayExt;
     assert(ray2);
 
@@ -385,7 +375,7 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
       scatter(ray2->firstHit,sizeof(Ray2),pid,rid,ray2_firstHit+1);
 
     /* calculate transparency */
-    Vec3fa h = ray_org + ray_dir * hit.t;
+    Vec3fa h = ray->org + ray->dir * ray->tfar();
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */
