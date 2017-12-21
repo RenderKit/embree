@@ -144,7 +144,7 @@ namespace embree
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
             const vintx offset = *(vintx*)&rayIDs[j] * int(stride);
-            rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);
+            rayN.setHitByOffset(valid, offset, rays[j/VSIZEX], intersect);            
           }
 
           raysInOctant[curOctant] = 0;

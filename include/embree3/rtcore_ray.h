@@ -373,6 +373,7 @@ RTC_FORCEINLINE void rtcCopyHitFromRayToRayN(RTCRayN* rays, const RTCRay* ray, u
   RTCRayN_Ng_x(rays,N,i)   = ray->Ng_x;
   RTCRayN_Ng_y(rays,N,i)   = ray->Ng_y;
   RTCRayN_Ng_z(rays,N,i)   = ray->Ng_z;
+  RTCRayN_tfar(rays,N,i)   = ray->tfar;
   RTCRayN_u(rays,N,i)      = ray->u;
   RTCRayN_v(rays,N,i)      = ray->v;
   RTCRayN_primID(rays,N,i) = ray->primID;

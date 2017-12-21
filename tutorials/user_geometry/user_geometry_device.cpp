@@ -1166,7 +1166,7 @@ void renderTileStandardStream(int taskIndex,
     if (valid_stream[N] == false) continue;
 
     /* terminate rays that hit nothing */
-    if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID || primary.tfar() >= (float)pos_inf) {
+    if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID) {
       valid_stream[N] = false;
       continue;
     }
