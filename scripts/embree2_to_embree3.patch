@@ -611,101 +611,101 @@ rtcGetSceneLinearBounds(scene,bounds)
 }@@
 
 @@{cpp
-rtcIntersect(EXPR scene, EXPR ray);
+rtcIntersect(EXPR scene, EXPR query);
 =>
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect1(scene,&context,&ray);
-  ray.Ng_x = -ray.Ng_x; // FIXME: only correct for triangles,quads, and subdivision surfaces
-  ray.Ng_y = -ray.Ng_y;
-  ray.Ng_z = -ray.Ng_z;
+  rtcIntersect1(scene,&context,&query);
+  query.hit.Ng_x = -query.hit.Ng_x; // FIXME: only correct for triangles,quads, and subdivision surfaces
+  query.hit.Ng_y = -query.hit.Ng_y;
+  query.hit.Ng_z = -query.hit.Ng_z;
 }
 }@@
 
 @@{ispc
-rtcIntersect(EXPR scene, EXPR ray);
+rtcIntersect(EXPR scene, EXPR query);
 =>
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(scene,&context,&ray);
-  ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
-  ray.Ng_y = -ray.Ng_y;
-  ray.Ng_z = -ray.Ng_z;
+  rtcIntersect(scene,&context,&query);
+  query.hit.Ng_x = -query.hit.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
+  query.hit.Ng_y = -query.hit.Ng_y;
+  query.hit.Ng_z = -query.hit.Ng_z;
 }
 }@@
 
 @@{cpp
-rtcIntersect1Ex(EXPR scene,EXPR context,EXPR ray);
+rtcIntersect1Ex(EXPR scene,EXPR context,EXPR query);
 =>
-rtcIntersect1(scene,context,&ray);
-ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
-ray.Ng_y = -ray.Ng_y;
-ray.Ng_z = -ray.Ng_z;
+rtcIntersect1(scene,context,&query);
+query.hit.Ng_x = -query.hit.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
+query.hit.Ng_y = -query.hit.Ng_y;
+query.hit.Ng_z = -query.hit.Ng_z;
 }@@
 
 @@{ispc
-rtcIntersectEx(EXPR scene,EXPR context,EXPR ray);
+rtcIntersectEx(EXPR scene,EXPR context,EXPR query);
 =>
-rtcIntersect(scene,context,&ray);
-ray.Ng_x = -ray.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
-ray.Ng_y = -ray.Ng_y;
-ray.Ng_z = -ray.Ng_z;
+rtcIntersect(scene,context,&query);
+query.hit.Ng_x = -query.hit.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
+query.hit.Ng_y = -query.hit.Ng_y;
+query.hit.Ng_z = -query.hit.Ng_z;
 }@@
 
 @@{
-rtcIntersect4(EXPR valid,EXPR scene,EXPR ray);
+rtcIntersect4(EXPR valid,EXPR scene,EXPR query);
 =>
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect4(valid,scene,&context,&ray);
+  rtcIntersect4(valid,scene,&context,&query);
 }
 }@@
 
 @@{
-rtcIntersect4Ex(EXPR valid,EXPR scene,EXPR context,EXPR ray);
+rtcIntersect4Ex(EXPR valid,EXPR scene,EXPR context,EXPR query);
 =>
-rtcIntersect4(valid,scene,context,&ray);
+rtcIntersect4(valid,scene,context,&query);
 }@@
 
 @@{
-rtcIntersect8(EXPR valid,EXPR scene,EXPR ray);
+rtcIntersect8(EXPR valid,EXPR scene,EXPR query);
 =>
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect8(valid,scene,&context,&ray);
+  rtcIntersect8(valid,scene,&context,&query);
 }
 }@@
 
 @@{
-rtcIntersect8Ex(EXPR valid,EXPR scene,EXPR context,EXPR ray);
+rtcIntersect8Ex(EXPR valid,EXPR scene,EXPR context,EXPR query);
 =>
-rtcIntersect8(valid,scene,context,&ray);
+rtcIntersect8(valid,scene,context,&query);
 }@@
 
 @@{
-rtcIntersect16(EXPR valid,EXPR scene,EXPR ray);
+rtcIntersect16(EXPR valid,EXPR scene,EXPR query);
 =>
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect16(valid,scene,&context,&ray);
+  rtcIntersect16(valid,scene,&context,&query);
 }
 }@@
 
 @@{
-rtcIntersect16Ex(EXPR valid,EXPR scene,EXPR context,EXPR ray);
+rtcIntersect16Ex(EXPR valid,EXPR scene,EXPR context,EXPR query);
 =>
-rtcIntersect16(valid,scene,context,&ray);
+rtcIntersect16(valid,scene,context,&query);
 }@@
 
 @@{
-rtcIntersectNp(EXPR scene,EXPR context,EXPR ray,EXPR N);
+rtcIntersectNp(EXPR scene,EXPR context,EXPR query,EXPR N);
 =>
-rtcIntersectNp(scene,context,&ray,N);
+rtcIntersectNp(scene,context,&query,N);
 }@@
 
 
@@ -716,6 +716,7 @@ rtcOccluded(EXPR scene,EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcOccluded1(scene,&context,&ray);
+  COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }
 }@@
 
@@ -726,6 +727,7 @@ rtcOccluded(EXPR scene,EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcOccluded(scene,&context,&ray);
+  COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }
 }@@
 
@@ -733,12 +735,14 @@ rtcOccluded(EXPR scene,EXPR ray);
 rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded1(scene,context,&ray);
+COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
 @@{ispc
 rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded(scene,context,&ray);
+COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
 @@{
@@ -748,6 +752,7 @@ rtcOccluded4(EXPR valid,EXPR scene,EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcOccluded4(valid,scene,&context,&ray);
+  COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }
 }@@
 
@@ -755,6 +760,7 @@ rtcOccluded4(EXPR valid,EXPR scene,EXPR ray);
 rtcOccluded4Ex(EXPR valid,EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded4(valid,scene,context,&ray);
+COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
 @@{
@@ -764,6 +770,7 @@ rtcOccluded8(EXPR valid,EXPR scene,EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcOccluded8(valid,scene,&context,&ray);
+  COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }
 }@@
 
@@ -771,6 +778,7 @@ rtcOccluded8(EXPR valid,EXPR scene,EXPR ray);
 rtcOccluded8Ex(EXPR valid,EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded8(valid,scene,context,&ray);
+COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
 @@{
@@ -780,6 +788,7 @@ rtcOccluded16(EXPR valid,EXPR scene,EXPR ray);
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcOccluded16(valid,scene,&context,&ray);
+  COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }
 }@@
 
@@ -787,12 +796,14 @@ rtcOccluded16(EXPR valid,EXPR scene,EXPR ray);
 rtcOccluded16Ex(EXPR valid,EXPR scene,EXPR context,EXPR ray);
 =>
 rtcOccluded16(valid,scene,context,&ray);
+COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
 @@{
 rtcOccludedNp(EXPR scene,EXPR context,EXPR ray,EXPR N);
 =>
 rtcOccludedNp(scene,context,&ray,N);
+COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
 @@{
@@ -2224,8 +2235,8 @@ unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* con
   varying int* uniform vvalid_in = (varying int* uniform ) valid_in;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* uniform context_in = args->context;
-  varying RTCRay* uniform ray_ptr_in = (varying RTCRay* uniform ) args->ray;
-  varying RTCRay& ray_in = *ray_ptr_in;
+  varying RTCRayHit* uniform ray_ptr_in = (varying RTCRayHit* uniform ) args->ray;
+  varying RTCRayHit& ray_in = *ray_ptr_in;
   uniform unsigned int N_in = args->N;
   uniform unsigned int primID_in = args->primID;
   assert(N_in == __programCount);
@@ -2253,7 +2264,7 @@ void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const unifo
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay4& ray_in = *(RTCRay4*) args->ray;
+  RTCRayHit4& ray_in = *(RTCRayHit4*) args->ray;
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 4);
@@ -2280,7 +2291,7 @@ void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const unifo
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay8& ray_in = *(RTCRay8*) args->ray;
+  RTCRayHit8& ray_in = *(RTCRayHit8*) args->ray;
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 8);
@@ -2307,7 +2318,7 @@ void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const unif
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRay16& ray_in = *(RTCRay16*) args->ray;
+  RTCRayHit16& ray_in = *(RTCRayHit16*) args->ray;
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 16);
@@ -2334,7 +2345,7 @@ void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const unifo
   const int* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   RTCIntersectContext* uniform context_in = args->context;
-  RTCRayN* uniform ray_in = args->ray;
+  RTCRayHitN* uniform ray_in = args->ray;
   uniform unsigned int N_in = args->N;
   uniform unsigned int primID_in = args->primID;
 }@@
@@ -2976,53 +2987,99 @@ rtcReleaseBVH(bvh)
 // rtcore_ray.h
 
 @@{
-RTCRay ID ray;
+RTCRay ID query;
 =>
-varying RTCRay ray;
+varying RTCRayHit query; // FIXME: use RTCRay for occlusion rays
+query.ray.flags = 0;
 @@{
-ray.orgx
+query.orgx
 =>
-ray.org_x
+query.ray.org_x
 }@@
 @@{
-ray.orgy
+query.orgy
 =>
-ray.org_y
+query.ray.org_y
 }@@
 @@{
-ray.orgz
+query.orgz
 =>
-ray.org_z
+query.ray.org_z
 }@@
 @@{
-ray.dirx
+query.tnear
 =>
-ray.dir_x
+query.ray.tnear
 }@@
 @@{
-ray.diry
+query.dirx
 =>
-ray.dir_y
+query.ray.dir_x
 }@@
 @@{
-ray.dirz
+query.diry
 =>
-ray.dir_z
+query.ray.dir_y
 }@@
 @@{
-ray.Ngx
+query.dirz
 =>
-ray.Ng_x
+query.ray.dir_z
 }@@
 @@{
-ray.Ngy
+query.tfar
 =>
-ray.Ng_y
+query.ray.tfar
 }@@
 @@{
-ray.Ngz
+query.time
 =>
-ray.Ng_z
+query.ray.time
+}@@
+@@{
+query.mask
+=>
+query.ray.mask
+}@@
+@@{
+query.Ngx
+=>
+query.hit.Ng_x
+}@@
+@@{
+query.Ngy
+=>
+query.hit.Ng_y
+}@@
+@@{
+query.Ngz
+=>
+query.hit.Ng_z
+}@@
+@@{
+query.u
+=>
+query.hit.u
+}@@
+@@{
+query.v
+=>
+query.hit.v
+}@@
+@@{
+query.primID
+=>
+query.hit.primID
+}@@
+@@{
+query.geomID
+=>
+query.hit.geomID
+}@@
+@@{
+query.instID
+=>
+query.hit.instID[0]
 }@@
 }@@
 
