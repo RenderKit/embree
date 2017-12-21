@@ -26,7 +26,6 @@ namespace embree
     __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
       RayStreamAOS rayN(_rayN);
-
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
@@ -96,6 +95,8 @@ namespace embree
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
+
+            if (unlikely(!ray.valid())) { PRINT("INVALID INPUT"); PRINT(ray); exit(0); }
 
             const unsigned int octantID = movemask(vfloat4(Vec3fa(ray.dir)) < 0.0f) & 0x7;
 

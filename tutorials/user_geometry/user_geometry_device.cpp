@@ -1160,17 +1160,18 @@ void renderTileStandardStream(int taskIndex,
       shadow.tfar()  = (float)(neg_inf);
     }
 
+    Ray& primary = primary_stream[N];
+
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
 
     /* terminate rays that hit nothing */
-    if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID) {
+    if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID || primary.tfar() >= (float)pos_inf) {
       valid_stream[N] = false;
       continue;
     }
 
     /* calculate diffuse color of geometries */
-    Ray& primary = primary_stream[N];
     Vec3fa diffuse = Vec3fa(0.0f);
     if      (primary.instID ==  0) diffuse = colors[primary.instID][primary.primID];
     else if (primary.instID == -1) diffuse = colors[4][primary.primID];      
