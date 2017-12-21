@@ -8,6 +8,46 @@ embree3
 }@@
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// rtcore_version.h
+
+@@{
+RTCORE_VERSION_MAJOR
+=>
+RTC_VERSION_MAJOR
+}@@
+
+@@{
+RTCORE_VERSION_MINOR
+=>
+RTC_VERSION_MINOR
+}@@
+
+@@{
+RTCORE_VERSION_PATCH
+=>
+RTC_VERSION_PATCH
+}@@
+
+@@{
+RTCORE_VERSION
+=>
+RTC_VERSION
+}@@
+
+@@{
+RTCORE_VERSION_STRING
+=>
+RTC_VERSION_STRING
+}@@
+
+@@{
+RTCORE_FORCEINLINE
+=>
+RTC_FORCEINLINE
+}@@
+
+
+////////////////////////////////////////////////////////////////////////////////////////
 // rtcore_device.h
 
 @@{
