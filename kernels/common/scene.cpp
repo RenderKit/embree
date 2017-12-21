@@ -577,11 +577,15 @@ namespace embree
   unsigned Scene::bind(unsigned geomID, Ref<Geometry> geometry) 
   {
     Lock<SpinLock> lock(geometriesMutex);
-    if (geomID == RTC_INVALID_GEOMETRY_ID)
+    if (geomID == RTC_INVALID_GEOMETRY_ID) {
       geomID = id_pool.allocate();
-    else {
+      if (geomID == RTC_INVALID_GEOMETRY_ID)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"too many geometries inside scene");
+    }
+    else
+    {
       if (!id_pool.add(geomID))
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"provided geometry ID already assigned to a geometry");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry ID provided");
     }
     if (geomID >= geometries.size()) {
       geometries.resize(geomID+1);

@@ -216,7 +216,7 @@ namespace embree
     __forceinline bool isBuild() const { return is_build; }
 
   public:
-    IDPool<unsigned> id_pool;
+    IDPool<unsigned,0xFFFFFFFE> id_pool;
     std::vector<Ref<Geometry>> geometries; //!< list of all user geometries
     vector<int*> vertices;
     

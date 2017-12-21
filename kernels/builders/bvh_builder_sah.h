@@ -474,7 +474,7 @@ namespace embree
               for (size_t i=r.begin(); i<r.end(); i++)
               {
                 PrimRef& prim = prims[i];
-                assert((prim.lower.a & 0xFF000000) == 0);
+                assert((prim.lower.a & SPLITS_MASK) == 0);
                 const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
                 // FIXME: is there a better general heuristic ?
                 size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
