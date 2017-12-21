@@ -148,6 +148,7 @@ namespace embree
 #endif
 
       /* verify correct input */
+      if (!ray.valid()) PRINT(ray);
       assert(ray.valid());
       assert(ray.tnear() >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));

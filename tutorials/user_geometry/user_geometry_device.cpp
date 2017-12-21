@@ -521,14 +521,19 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);    
+    RTCRay rtc_ray = rtcGetRayFromRayN(args->ray,N,ui);
+    Ray *ray = (Ray*)&rtc_ray;
+
     RTCHit potentialhit;
+
+    
 
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
     potentialhit.instID[0] = args->context->instID;
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
+
     if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       int imask;
@@ -536,7 +541,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       {
         imask = mask ? -1 : 0;
       }
-      const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
+      const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
       //potentialhit.t = t0;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
@@ -546,14 +551,16 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayN*)&ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
-  
+
+      ray->tfar() = t0;
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
         rtcCopyHitToRayN(rays,&potentialhit,t0,N,ui);
+      ray->tfar() = ray_tfar;
     }
 
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -563,7 +570,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       {
         imask = mask ? -1 : 0;
       }
-      const Vec3fa Ng = ray_org+t1*ray_dir-sphere.p;
+      const Vec3fa Ng = ray->org+t1*ray->dir-sphere.p;
       //potentialhit.t = t1;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
@@ -573,15 +580,16 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayN*)&ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
-  
-      rtcFilterIntersection(args,&fargs);
 
+      ray->tfar() = t1; 
+      rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
         rtcCopyHitToRayN(rays,&potentialhit,t1,N,ui);
+      ray->tfar() = ray_tfar;
     }
   }
 }
@@ -622,7 +630,9 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRay ray = rtcGetRayFromRayN(args->ray,N,ui);
+    RTCRay rtc_ray = rtcGetRayFromRayN(args->ray,N,ui);
+    Ray *ray = (Ray*)&rtc_ray;
+
     RTCHit potentialhit;
 
     potentialhit.u = 0.0f;
@@ -637,7 +647,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       {
         imask = mask ? -1 : 0;
       }
-      const Vec3fa Ng = ray_org+t0*ray_dir-sphere.p;
+      const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
       //potentialhit.t = t0;
       potentialhit.Ng_x = Ng.x;
       potentialhit.Ng_y = Ng.y;
@@ -647,10 +657,11 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayN*)&ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
-  
+
+      ray->tfar() = t0;  
       rtcFilterOcclusion(args,&fargs);
 
       /* update for all accepted hits */
@@ -679,10 +690,11 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayN*)&ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
-  
+
+      ray->tfar() = t1;    
       rtcFilterOcclusion(args,&fargs);
 
       /* update for all accepted hits */
