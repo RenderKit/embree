@@ -80,7 +80,7 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
                                     
   assert(args->N == 1);
   if (!valid[0])
@@ -110,7 +110,7 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);
   if (!valid[0])
     return;
@@ -144,7 +144,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   unsigned int N = args->N;
   const Instance* instance = (const Instance*) ptr;
 
@@ -179,7 +179,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    rtcCopyHitFromRayToRayN(rays,RTCRayHit_(ray),N,ui);
+    rtcCopyHitFromRayHitToRayHitN(rays,RTCRayHit_(ray),N,ui);
   }
 }
 
@@ -192,7 +192,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   unsigned int N = args->N;
   const Instance* instance = (const Instance*) ptr;
 
@@ -352,7 +352,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyHitToRay((RTCRayHit *)ray,&hit,t0);
+      rtcCopyHitToRayHit((RTCRayHit *)ray,&hit,t0);
     else
       ray->tfar() = old_t;
   }
@@ -384,7 +384,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     rtcFilterIntersection(args,&fargs);
 
     if (imask == -1)
-      rtcCopyHitToRay((RTCRayHit *)ray,&hit,t1);
+      rtcCopyHitToRayHit((RTCRayHit *)ray,&hit,t1);
     else
       ray->tfar() = old_t;
   }
@@ -489,7 +489,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   int* valid = (int*) args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   unsigned int N = args->N;
   unsigned int primID = args->primID;
   const Sphere* spheres = (const Sphere*) ptr;
@@ -521,7 +521,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRayHit rtc_ray = rtcGetRayFromRayN(args->ray,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rays,N,ui);
     Ray *ray = (Ray*)&rtc_ray;
 
     RTCHit potentialhit;
@@ -551,7 +551,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayHitN*)ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
@@ -559,7 +559,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyHitToRayN(rays,&potentialhit,t0,N,ui);
+        rtcCopyHitToRayHitN(rays,&potentialhit,t0,N,ui);
       ray->tfar() = ray_tfar;
     }
 
@@ -580,7 +580,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayHitN*)ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
@@ -588,7 +588,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyHitToRayN(rays,&potentialhit,t1,N,ui);
+        rtcCopyHitToRayHitN(rays,&potentialhit,t1,N,ui);
       ray->tfar() = ray_tfar;
     }
   }
@@ -598,7 +598,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 {
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   unsigned int N = args->N;
   unsigned int primID = args->primID;
   const Sphere* spheres = (const Sphere*) ptr;
@@ -630,7 +630,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRayHit rtc_ray = rtcGetRayFromRayN(args->ray,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rays,N,ui);
     Ray *ray = (Ray*)&rtc_ray;
 
     RTCHit potentialhit;
@@ -657,7 +657,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayHitN*)ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
@@ -690,7 +690,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.valid = (int*)&imask;
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
-      fargs.ray = (RTCRayHitN*)ray;
+      fargs.ray = (RTCRayN*)ray;
       fargs.potentialHit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
@@ -736,7 +736,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  struct RTCRayHitN* ray = args->ray;
+  struct RTCRayHitN* ray = (RTCRayHitN*)args->ray;
   //struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
                

@@ -166,7 +166,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 
@@ -192,7 +192,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
    RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = args->ray;
+   RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 

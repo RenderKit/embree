@@ -101,6 +101,10 @@ __forceinline RTCRayHit* RTCRayHit_(Ray& ray) {
   return (RTCRayHit*)&ray;
 }
 
+__forceinline RTCRayHit* RTCRayHit1_(Ray& ray) {
+  return (RTCRayHit*)&ray;
+}
+
   /*! Outputs ray to stream. */ 
   inline std::ostream& operator<<(std::ostream& cout, const Ray& ray) {
     return cout << "{ " << 

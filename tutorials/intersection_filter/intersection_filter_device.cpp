@@ -226,7 +226,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  struct RTCRayHitN* rayN = args->ray;
+  struct RTCRayHitN* rayN = (struct RTCRayHitN*)args->ray;
   //struct RTCHitN* hitN = args->potentialHit;
   const unsigned int N = args->N;
                                   
@@ -244,7 +244,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRayHit rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rayN,N,ui);
     Ray* ray = (Ray*)&rtc_ray;
 
     /* calculate transparency */
@@ -314,7 +314,7 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  struct RTCRayHitN* rayN = args->ray;
+  struct RTCRayHitN* rayN = (struct RTCRayHitN*)args->ray;
   struct RTCHitN* hitN = args->potentialHit;
   const unsigned int N = args->N;
                                   
@@ -332,7 +332,7 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRayHit rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rayN,N,ui);
     Ray* ray = (Ray*)&rtc_ray;
 
     RTCHit hit = rtcGetHitFromHitN(hitN,N,ui);

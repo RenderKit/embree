@@ -1281,7 +1281,7 @@ void intersectionFilterReject(const RTCFilterFunctionNArguments* const args)
 void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 {
   int* valid_i = args->valid;
-  struct RTCRayHitN* _ray = args->ray;
+  struct RTCRayHitN* _ray = (struct RTCRayHitN*)args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
   
@@ -1355,7 +1355,7 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   if (!transparency) return;
   
   int* valid_i = args->valid;
-  struct RTCRayHitN* _ray = args->ray;
+  struct RTCRayHitN* _ray = (struct RTCRayHitN*)args->ray;
   struct RTCHitN* potentialHit = args->potentialHit;
   const unsigned int N = args->N;
   
