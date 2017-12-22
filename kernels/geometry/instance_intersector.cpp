@@ -56,7 +56,7 @@ namespace embree
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
       user_context->instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
-      instance->object->intersectors.intersect((RTCRay&)ray,&context);
+      instance->object->intersectors.intersect((RTCRayHit&)ray,&context);
       user_context->instID = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
@@ -76,7 +76,7 @@ namespace embree
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
       user_context->instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
-      instance->object->intersectors.occluded((RTCRay&)ray,&context);
+      instance->object->intersectors.occluded((RTCRayHit&)ray,&context);
       user_context->instID = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
@@ -88,16 +88,16 @@ namespace embree
     __forceinline void occludedObject(vint<K>* valid, Scene* object, IntersectContext* context, RayK<K>& ray);
         
 #if defined (__SSE__)
-    template<> __forceinline void intersectObject<4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.intersect4(valid,(RTCRay4&)ray,context); }
-    template<> __forceinline void occludedObject <4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.occluded4 (valid,(RTCRay4&)ray,context); }
+    template<> __forceinline void intersectObject<4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.intersect4(valid,(RTCRayHit4&)ray,context); }
+    template<> __forceinline void occludedObject <4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.occluded4 (valid,(RTCRayHit4&)ray,context); }
 #endif
 #if defined (__AVX__)
-    template<> __forceinline void intersectObject<8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.intersect8(valid,(RTCRay8&)ray,context); }
-    template<> __forceinline void occludedObject <8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.occluded8 (valid,(RTCRay8&)ray,context); }
+    template<> __forceinline void intersectObject<8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.intersect8(valid,(RTCRayHit8&)ray,context); }
+    template<> __forceinline void occludedObject <8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.occluded8 (valid,(RTCRayHit8&)ray,context); }
 #endif
 #if defined (__AVX512F__)
-    template<> __forceinline void intersectObject<16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.intersect16(valid,(RTCRay16&)ray,context); }
-    template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.occluded16 (valid,(RTCRay16&)ray,context); }
+    template<> __forceinline void intersectObject<16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.intersect16(valid,(RTCRayHit16&)ray,context); }
+    template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.occluded16 (valid,(RTCRayHit16&)ray,context); }
 #endif
 
     template<int N>

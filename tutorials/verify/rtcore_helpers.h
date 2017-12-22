@@ -127,318 +127,318 @@ namespace embree
     }
   };
 
-  __forceinline void clearRay(RTCRay& ray)
+  __forceinline void clearRay(RTCRayHit& rh)
   {
-    ray.org_x = zero;
-    ray.org_y = zero;
-    ray.org_z = zero;
-    ray.dir_x = zero;
-    ray.dir_y = zero;
-    ray.dir_z = zero;
-    ray.tnear = pos_inf;
-    ray.tfar = neg_inf;
-    ray.time = 0;
-    ray.mask = -1;
-    ray.Ng_x = 0.0f;
-    ray.Ng_y = 0.0f;
-    ray.Ng_z = 0.0f;
-    ray.u = 0.0f;
-    ray.v = 0.0f;
-    ray.geomID = -1;
-    ray.primID = -1;
-    ray.instID[0] = -1;
+    rh.ray.org_x = zero;
+    rh.ray.org_y = zero;
+    rh.ray.org_z = zero;
+    rh.ray.dir_x = zero;
+    rh.ray.dir_y = zero;
+    rh.ray.dir_z = zero;
+    rh.ray.tnear = pos_inf;
+    rh.ray.tfar = neg_inf;
+    rh.ray.time = 0;
+    rh.ray.mask = -1;
+    rh.hit.Ng_x = 0.0f;
+    rh.hit.Ng_y = 0.0f;
+    rh.hit.Ng_z = 0.0f;
+    rh.hit.u = 0.0f;
+    rh.hit.v = 0.0f;
+    rh.hit.geomID = -1;
+    rh.hit.primID = -1;
+    rh.hit.instID[0] = -1;
   }
 
-  __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
+  __forceinline RTCRayHit makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
-    RTCRay ray; clearRay(ray);
-    ray.org_x = org.x; ray.org_y = org.y; ray.org_z = org.z;
-    ray.dir_x = dir.x; ray.dir_y = dir.y; ray.dir_z = dir.z;
-    ray.tnear = 0.0f; ray.tfar = inf;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID[0] = -1;
-    return ray;
+    RTCRayHit rh; clearRay(rh);
+    rh.ray.org_x = org.x; rh.ray.org_y = org.y; rh.ray.org_z = org.z;
+    rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
+    rh.ray.tnear = 0.0f; rh.ray.tfar = inf;
+    rh.ray.time = 0; rh.ray.mask = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    return rh;
   }
 
-  __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
+  __forceinline RTCRayHit makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
   {
-    RTCRay ray; clearRay(ray);
-    ray.org_x = org.x; ray.org_y = org.y; ray.org_z = org.z;
-    ray.dir_x = dir.x; ray.dir_y = dir.y; ray.dir_z = dir.z;
-    ray.tnear = tnear; ray.tfar = tfar;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID[0] = -1;
-    return ray;
+    RTCRayHit rh; clearRay(rh);
+    rh.ray.org_x = org.x; rh.ray.org_y = org.y; rh.ray.org_z = org.z;
+    rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
+    rh.ray.tnear = tnear; rh.ray.tfar = tfar;
+    rh.ray.time = 0; rh.ray.mask = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    return rh;
   }
 
-  __forceinline RTCRay fastMakeRay(const Vec3fa& org, const Vec3fa& dir) 
+  __forceinline RTCRayHit fastMakeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
-    RTCRay ray;
-    *(Vec3fa*)&ray.org_x = org;
-    *(Vec3fa*)&ray.dir_x = dir;
-    ray.tnear = 0.0f; 
-    ray.tfar = inf;
-    ray.time = 0; 
-    ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID[0] = -1;
-    return ray;
+    RTCRayHit rh;
+    *(Vec3fa*)&rh.ray.org_x = org;
+    *(Vec3fa*)&rh.ray.dir_x = dir;
+    rh.ray.tnear = 0.0f; 
+    rh.ray.tfar = inf;
+    rh.ray.time = 0; 
+    rh.ray.mask = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    return rh;
   }
 
-  __forceinline RTCRay fastMakeRay(const Vec3fa& org, RandomSampler& sampler)
+  __forceinline RTCRayHit fastMakeRay(const Vec3fa& org, RandomSampler& sampler)
   {
     return fastMakeRay(org, 2.0f*RandomSampler_get3D(sampler)-Vec3fa(1.0f));
   }
 
-  __forceinline void fastMakeRay(RTCRay& ray, const Vec3fa& org, const Vec3fa& dir) 
+  __forceinline void fastMakeRay(RTCRayHit& rh, const Vec3fa& org, const Vec3fa& dir) 
   {
-    *(Vec3fa*)&ray.org_x = org;
-    *(Vec3fa*)&ray.dir_x = dir;
-    ray.tnear = 0.0f; 
-    ray.tfar = inf;
-    ray.time = 0; 
-    ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID[0] = -1;
+    *(Vec3fa*)&rh.ray.org_x = org;
+    *(Vec3fa*)&rh.ray.dir_x = dir;
+    rh.ray.tnear = 0.0f; 
+    rh.ray.tfar = inf;
+    rh.ray.time = 0; 
+    rh.ray.mask = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
   }
 
-  __forceinline void fastMakeRay(RTCRay& ray, const Vec3fa& org, RandomSampler& sampler)
+  __forceinline void fastMakeRay(RTCRayHit& ray, const Vec3fa& org, RandomSampler& sampler)
   {
     fastMakeRay(ray, org, 2.0f*RandomSampler_get3D(sampler)-Vec3fa(1.0f));
   }
 
-  __forceinline RTCRay fastMakeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
+  __forceinline RTCRayHit fastMakeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
   {
-    RTCRay ray;
-    ray.org_x = org.x; ray.org_y = org.y; ray.org_z = org.z; // FIXME: optimize
-    ray.dir_x = dir.x; ray.dir_y = dir.y; ray.dir_z = dir.z;
-    ray.tnear = tnear; ray.tfar = tfar;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID[0] = -1;
-    return ray;
+    RTCRayHit rh;
+    rh.ray.org_x = org.x; rh.ray.org_y = org.y; rh.ray.org_z = org.z; // FIXME: optimize
+    rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
+    rh.ray.tnear = tnear; rh.ray.tfar = tfar;
+    rh.ray.time = 0; rh.ray.mask = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    return rh;
   }
 
-  __forceinline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
+  __forceinline bool neq_ray_special (const RTCRayHit& ray0, const RTCRayHit& ray1)
   {
-    if (*(int*)&ray0.org_x != *(int*)&ray1.org_x) return true;
-    if (*(int*)&ray0.org_y != *(int*)&ray1.org_y) return true;
-    if (*(int*)&ray0.org_z != *(int*)&ray1.org_z) return true;
-    if (*(int*)&ray0.dir_x != *(int*)&ray1.dir_x) return true;
-    if (*(int*)&ray0.dir_y != *(int*)&ray1.dir_y) return true;
-    if (*(int*)&ray0.dir_z != *(int*)&ray1.dir_z) return true;
-    if (*(int*)&ray0.tnear  != *(int*)&ray1.tnear ) return true;
-    if (*(int*)&ray0.tfar   != *(int*)&ray1.tfar  ) return true;
-    if (*(int*)&ray0.time   != *(int*)&ray1.time  ) return true;
-    if (*(int*)&ray0.mask   != *(int*)&ray1.mask  ) return true;
-    if (*(int*)&ray0.u      != *(int*)&ray1.u     ) return true;
-    if (*(int*)&ray0.v      != *(int*)&ray1.v     ) return true;
-    if (*(int*)&ray0.instID[0] != *(int*)&ray1.instID[0]) return true;
-    if (*(int*)&ray0.geomID != *(int*)&ray1.geomID) return true;
-    if (*(int*)&ray0.primID != *(int*)&ray1.primID) return true;
-    if (*(int*)&ray0.Ng_x  != *(int*)&ray1.Ng_x ) return true;
-    if (*(int*)&ray0.Ng_y  != *(int*)&ray1.Ng_y ) return true;
-    if (*(int*)&ray0.Ng_z  != *(int*)&ray1.Ng_z ) return true;
+    if (*(int*)&ray0.ray.org_x != *(int*)&ray1.ray.org_x) return true;
+    if (*(int*)&ray0.ray.org_y != *(int*)&ray1.ray.org_y) return true;
+    if (*(int*)&ray0.ray.org_z != *(int*)&ray1.ray.org_z) return true;
+    if (*(int*)&ray0.ray.dir_x != *(int*)&ray1.ray.dir_x) return true;
+    if (*(int*)&ray0.ray.dir_y != *(int*)&ray1.ray.dir_y) return true;
+    if (*(int*)&ray0.ray.dir_z != *(int*)&ray1.ray.dir_z) return true;
+    if (*(int*)&ray0.ray.tnear  != *(int*)&ray1.ray.tnear ) return true;
+    if (*(int*)&ray0.ray.tfar   != *(int*)&ray1.ray.tfar  ) return true;
+    if (*(int*)&ray0.ray.time   != *(int*)&ray1.ray.time  ) return true;
+    if (*(int*)&ray0.ray.mask   != *(int*)&ray1.ray.mask  ) return true;
+    if (*(int*)&ray0.hit.u      != *(int*)&ray1.hit.u     ) return true;
+    if (*(int*)&ray0.hit.v      != *(int*)&ray1.hit.v     ) return true;
+    if (*(int*)&ray0.hit.instID[0] != *(int*)&ray1.hit.instID[0]) return true;
+    if (*(int*)&ray0.hit.geomID != *(int*)&ray1.hit.geomID) return true;
+    if (*(int*)&ray0.hit.primID != *(int*)&ray1.hit.primID) return true;
+    if (*(int*)&ray0.hit.Ng_x  != *(int*)&ray1.hit.Ng_x ) return true;
+    if (*(int*)&ray0.hit.Ng_y  != *(int*)&ray1.hit.Ng_y ) return true;
+    if (*(int*)&ray0.hit.Ng_z  != *(int*)&ray1.hit.Ng_z ) return true;
     return false;
   }
 
   /* Outputs ray to stream */
-  __forceinline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
+  __forceinline std::ostream& operator<<(std::ostream& cout, const RTCRayHit& rh)
   {
     return cout << "Ray { " << std::endl
-                << "  org = " << ray.org_x << " " << ray.org_y << " " << ray.org_z << std::endl
-                << "  dir = " << ray.dir_x << " " << ray.dir_y << " " << ray.dir_z << std::endl
-                << "  near = " << ray.tnear << std::endl
-                << "  far = " << ray.tfar << std::endl
-                << "  time = " << ray.time << std::endl
-                << "  mask = " << ray.mask << std::endl
-                << "  instID = " << ray.instID[0] << std::endl
-                << "  geomID = " << ray.geomID << std::endl
-                << "  primID = " << ray.primID <<  std::endl
-                << "  u = " << ray.u <<  std::endl
-                << "  v = " << ray.v << std::endl
-                << "  Ng = " << ray.Ng_x << " " << ray.Ng_y << " " << ray.Ng_z << std::endl
+                << "  org = " << rh.ray.org_x << " " << rh.ray.org_y << " " << rh.ray.org_z << std::endl
+                << "  dir = " << rh.ray.dir_x << " " << rh.ray.dir_y << " " << rh.ray.dir_z << std::endl
+                << "  near = " << rh.ray.tnear << std::endl
+                << "  far = " << rh.ray.tfar << std::endl
+                << "  time = " << rh.ray.time << std::endl
+                << "  mask = " << rh.ray.mask << std::endl
+                << "  instID = " << rh.hit.instID[0] << std::endl
+                << "  geomID = " << rh.hit.geomID << std::endl
+                << "  primID = " << rh.hit.primID <<  std::endl
+                << "  u = " << rh.hit.u <<  std::endl
+                << "  v = " << rh.hit.v << std::endl
+                << "  Ng = " << rh.hit.Ng_x << " " << rh.hit.Ng_y << " " << rh.hit.Ng_z << std::endl
                 << "}";
   }
 
-  __forceinline void setRay(RTCRay4& ray_o, size_t i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayHit4& ray_o, size_t i, const RTCRayHit& ray_i)
   {
-    ray_o.org_x[i] = ray_i.org_x;
-    ray_o.org_y[i] = ray_i.org_y;
-    ray_o.org_z[i] = ray_i.org_z;
-    ray_o.dir_x[i] = ray_i.dir_x;
-    ray_o.dir_y[i] = ray_i.dir_y;
-    ray_o.dir_z[i] = ray_i.dir_z;
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.instID[0][i] = ray_i.instID[0];
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.u[i] = ray_i.u;
-    ray_o.v[i] = ray_i.v;
-    ray_o.Ng_x[i] = ray_i.Ng_x;
-    ray_o.Ng_y[i] = ray_i.Ng_y;
-    ray_o.Ng_z[i] = ray_i.Ng_z;
+    ray_o.ray.org_x[i] = ray_i.ray.org_x;
+    ray_o.ray.org_y[i] = ray_i.ray.org_y;
+    ray_o.ray.org_z[i] = ray_i.ray.org_z;
+    ray_o.ray.dir_x[i] = ray_i.ray.dir_x;
+    ray_o.ray.dir_y[i] = ray_i.ray.dir_y;
+    ray_o.ray.dir_z[i] = ray_i.ray.dir_z;
+    ray_o.ray.tnear[i] = ray_i.ray.tnear;
+    ray_o.ray.tfar[i] = ray_i.ray.tfar;
+    ray_o.ray.time[i] = ray_i.ray.time;
+    ray_o.ray.mask[i] = ray_i.ray.mask;
+    ray_o.hit.instID[0][i] = ray_i.hit.instID[0];
+    ray_o.hit.geomID[i] = ray_i.hit.geomID;
+    ray_o.hit.primID[i] = ray_i.hit.primID;
+    ray_o.hit.u[i] = ray_i.hit.u;
+    ray_o.hit.v[i] = ray_i.hit.v;
+    ray_o.hit.Ng_x[i] = ray_i.hit.Ng_x;
+    ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
+    ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
   }
 
-  __forceinline void setRay(RTCRay8& ray_o, size_t i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayHit8& ray_o, size_t i, const RTCRayHit& ray_i)
   {
-    ray_o.org_x[i] = ray_i.org_x;
-    ray_o.org_y[i] = ray_i.org_y;
-    ray_o.org_z[i] = ray_i.org_z;
-    ray_o.dir_x[i] = ray_i.dir_x;
-    ray_o.dir_y[i] = ray_i.dir_y;
-    ray_o.dir_z[i] = ray_i.dir_z;
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.instID[0][i] = ray_i.instID[0];
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.u[i] = ray_i.u;
-    ray_o.v[i] = ray_i.v;
-    ray_o.Ng_x[i] = ray_i.Ng_x;
-    ray_o.Ng_y[i] = ray_i.Ng_y;
-    ray_o.Ng_z[i] = ray_i.Ng_z;
+    ray_o.ray.org_x[i] = ray_i.ray.org_x;
+    ray_o.ray.org_y[i] = ray_i.ray.org_y;
+    ray_o.ray.org_z[i] = ray_i.ray.org_z;
+    ray_o.ray.dir_x[i] = ray_i.ray.dir_x;
+    ray_o.ray.dir_y[i] = ray_i.ray.dir_y;
+    ray_o.ray.dir_z[i] = ray_i.ray.dir_z;
+    ray_o.ray.tnear[i] = ray_i.ray.tnear;
+    ray_o.ray.tfar[i] = ray_i.ray.tfar;
+    ray_o.ray.time[i] = ray_i.ray.time;
+    ray_o.ray.mask[i] = ray_i.ray.mask;
+    ray_o.hit.instID[0][i] = ray_i.hit.instID[0];
+    ray_o.hit.geomID[i] = ray_i.hit.geomID;
+    ray_o.hit.primID[i] = ray_i.hit.primID;
+    ray_o.hit.u[i] = ray_i.hit.u;
+    ray_o.hit.v[i] = ray_i.hit.v;
+    ray_o.hit.Ng_x[i] = ray_i.hit.Ng_x;
+    ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
+    ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
   }
 
-  __forceinline void setRay(RTCRay16& ray_o, size_t i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayHit16& ray_o, size_t i, const RTCRayHit& ray_i)
   {
-    ray_o.org_x[i] = ray_i.org_x;
-    ray_o.org_y[i] = ray_i.org_y;
-    ray_o.org_z[i] = ray_i.org_z;
-    ray_o.dir_x[i] = ray_i.dir_x;
-    ray_o.dir_y[i] = ray_i.dir_y;
-    ray_o.dir_z[i] = ray_i.dir_z;
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.instID[0][i] = ray_i.instID[0];
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.u[i] = ray_i.u;
-    ray_o.v[i] = ray_i.v;
-    ray_o.Ng_x[i] = ray_i.Ng_x;
-    ray_o.Ng_y[i] = ray_i.Ng_y;
-    ray_o.Ng_z[i] = ray_i.Ng_z;
+    ray_o.ray.org_x[i] = ray_i.ray.org_x;
+    ray_o.ray.org_y[i] = ray_i.ray.org_y;
+    ray_o.ray.org_z[i] = ray_i.ray.org_z;
+    ray_o.ray.dir_x[i] = ray_i.ray.dir_x;
+    ray_o.ray.dir_y[i] = ray_i.ray.dir_y;
+    ray_o.ray.dir_z[i] = ray_i.ray.dir_z;
+    ray_o.ray.tnear[i] = ray_i.ray.tnear;
+    ray_o.ray.tfar[i] = ray_i.ray.tfar;
+    ray_o.ray.time[i] = ray_i.ray.time;
+    ray_o.ray.mask[i] = ray_i.ray.mask;
+    ray_o.hit.instID[0][i] = ray_i.hit.instID[0];
+    ray_o.hit.geomID[i] = ray_i.hit.geomID;
+    ray_o.hit.primID[i] = ray_i.hit.primID;
+    ray_o.hit.u[i] = ray_i.hit.u;
+    ray_o.hit.v[i] = ray_i.hit.v;
+    ray_o.hit.Ng_x[i] = ray_i.hit.Ng_x;
+    ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
+    ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
   }
 
-  __forceinline void setRay(RTCRayN* ray_o, unsigned int N, unsigned int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayHitN* ray_o, unsigned int N, unsigned int i, const RTCRayHit& ray_i)
   {
-    RTCRayN_org_x(ray_o,N,i) = ray_i.org_x;
-    RTCRayN_org_y(ray_o,N,i) = ray_i.org_y;
-    RTCRayN_org_z(ray_o,N,i) = ray_i.org_z;
-    RTCRayN_dir_x(ray_o,N,i) = ray_i.dir_x;
-    RTCRayN_dir_y(ray_o,N,i) = ray_i.dir_y;
-    RTCRayN_dir_z(ray_o,N,i) = ray_i.dir_z;
-    RTCRayN_tnear(ray_o,N,i) = ray_i.tnear;
-    RTCRayN_tfar(ray_o,N,i) = ray_i.tfar;
-    RTCRayN_time(ray_o,N,i) = ray_i.time;
-    RTCRayN_mask(ray_o,N,i) = ray_i.mask;
-    RTCRayN_instID(ray_o,N,i,0) = ray_i.instID[0];
-    RTCRayN_geomID(ray_o,N,i) = ray_i.geomID;
-    RTCRayN_primID(ray_o,N,i) = ray_i.primID;
-    RTCRayN_u(ray_o,N,i) = ray_i.u;
-    RTCRayN_v(ray_o,N,i) = ray_i.v;
-    RTCRayN_Ng_x(ray_o,N,i) = ray_i.Ng_x;
-    RTCRayN_Ng_y(ray_o,N,i) = ray_i.Ng_y;
-    RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ng_z;
+    RTCRayHitN_org_x(ray_o,N,i) = ray_i.ray.org_x;
+    RTCRayHitN_org_y(ray_o,N,i) = ray_i.ray.org_y;
+    RTCRayHitN_org_z(ray_o,N,i) = ray_i.ray.org_z;
+    RTCRayHitN_dir_x(ray_o,N,i) = ray_i.ray.dir_x;
+    RTCRayHitN_dir_y(ray_o,N,i) = ray_i.ray.dir_y;
+    RTCRayHitN_dir_z(ray_o,N,i) = ray_i.ray.dir_z;
+    RTCRayHitN_tnear(ray_o,N,i) = ray_i.ray.tnear;
+    RTCRayHitN_tfar(ray_o,N,i) = ray_i.ray.tfar;
+    RTCRayHitN_time(ray_o,N,i) = ray_i.ray.time;
+    RTCRayHitN_mask(ray_o,N,i) = ray_i.ray.mask;
+    RTCRayHitN_instID(ray_o,N,i,0) = ray_i.hit.instID[0];
+    RTCRayHitN_geomID(ray_o,N,i) = ray_i.hit.geomID;
+    RTCRayHitN_primID(ray_o,N,i) = ray_i.hit.primID;
+    RTCRayHitN_u(ray_o,N,i) = ray_i.hit.u;
+    RTCRayHitN_v(ray_o,N,i) = ray_i.hit.v;
+    RTCRayHitN_Ng_x(ray_o,N,i) = ray_i.hit.Ng_x;
+    RTCRayHitN_Ng_y(ray_o,N,i) = ray_i.hit.Ng_y;
+    RTCRayHitN_Ng_z(ray_o,N,i) = ray_i.hit.Ng_z;
   }
 
-  __forceinline RTCRay getRay(RTCRay4& ray_i, size_t i)
+  __forceinline RTCRayHit getRay(RTCRayHit4& ray_i, size_t i)
   {
-    RTCRay ray_o;
-    ray_o.org_x = ray_i.org_x[i];
-    ray_o.org_y = ray_i.org_y[i];
-    ray_o.org_z = ray_i.org_z[i];
-    ray_o.dir_x = ray_i.dir_x[i];
-    ray_o.dir_y = ray_i.dir_y[i];
-    ray_o.dir_z = ray_i.dir_z[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.instID[0] = ray_i.instID[0][i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.u = ray_i.u[i];
-    ray_o.v = ray_i.v[i];
-    ray_o.Ng_x = ray_i.Ng_x[i];
-    ray_o.Ng_y = ray_i.Ng_y[i];
-    ray_o.Ng_z = ray_i.Ng_z[i];
+    RTCRayHit ray_o;
+    ray_o.ray.org_x = ray_i.ray.org_x[i];
+    ray_o.ray.org_y = ray_i.ray.org_y[i];
+    ray_o.ray.org_z = ray_i.ray.org_z[i];
+    ray_o.ray.dir_x = ray_i.ray.dir_x[i];
+    ray_o.ray.dir_y = ray_i.ray.dir_y[i];
+    ray_o.ray.dir_z = ray_i.ray.dir_z[i];
+    ray_o.ray.tnear = ray_i.ray.tnear[i];
+    ray_o.ray.tfar = ray_i.ray.tfar[i];
+    ray_o.ray.time = ray_i.ray.time[i];
+    ray_o.ray.mask = ray_i.ray.mask[i];
+    ray_o.hit.instID[0] = ray_i.hit.instID[0][i];
+    ray_o.hit.geomID = ray_i.hit.geomID[i];
+    ray_o.hit.primID = ray_i.hit.primID[i];
+    ray_o.hit.u = ray_i.hit.u[i];
+    ray_o.hit.v = ray_i.hit.v[i];
+    ray_o.hit.Ng_x = ray_i.hit.Ng_x[i];
+    ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
+    ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
     return ray_o;
   }
 
-  __forceinline RTCRay getRay(RTCRay8& ray_i, size_t i)
+  __forceinline RTCRayHit getRay(RTCRayHit8& ray_i, size_t i)
   {
-    RTCRay ray_o;
-    ray_o.org_x = ray_i.org_x[i];
-    ray_o.org_y = ray_i.org_y[i];
-    ray_o.org_z = ray_i.org_z[i];
-    ray_o.dir_x = ray_i.dir_x[i];
-    ray_o.dir_y = ray_i.dir_y[i];
-    ray_o.dir_z = ray_i.dir_z[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.instID[0] = ray_i.instID[0][i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.u = ray_i.u[i];
-    ray_o.v = ray_i.v[i];
-    ray_o.Ng_x = ray_i.Ng_x[i];
-    ray_o.Ng_y = ray_i.Ng_y[i];
-    ray_o.Ng_z = ray_i.Ng_z[i];
+    RTCRayHit ray_o;
+    ray_o.ray.org_x = ray_i.ray.org_x[i];
+    ray_o.ray.org_y = ray_i.ray.org_y[i];
+    ray_o.ray.org_z = ray_i.ray.org_z[i];
+    ray_o.ray.dir_x = ray_i.ray.dir_x[i];
+    ray_o.ray.dir_y = ray_i.ray.dir_y[i];
+    ray_o.ray.dir_z = ray_i.ray.dir_z[i];
+    ray_o.ray.tnear = ray_i.ray.tnear[i];
+    ray_o.ray.tfar = ray_i.ray.tfar[i];
+    ray_o.ray.time = ray_i.ray.time[i];
+    ray_o.ray.mask = ray_i.ray.mask[i];
+    ray_o.hit.instID[0] = ray_i.hit.instID[0][i];
+    ray_o.hit.geomID = ray_i.hit.geomID[i];
+    ray_o.hit.primID = ray_i.hit.primID[i];
+    ray_o.hit.u = ray_i.hit.u[i];
+    ray_o.hit.v = ray_i.hit.v[i];
+    ray_o.hit.Ng_x = ray_i.hit.Ng_x[i];
+    ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
+    ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
     return ray_o;
   }
 
-  __forceinline RTCRay getRay(RTCRay16& ray_i, size_t i)
+  __forceinline RTCRayHit getRay(RTCRayHit16& ray_i, size_t i)
   {
-    RTCRay ray_o;
-    ray_o.org_x = ray_i.org_x[i];
-    ray_o.org_y = ray_i.org_y[i];
-    ray_o.org_z = ray_i.org_z[i];
-    ray_o.dir_x = ray_i.dir_x[i];
-    ray_o.dir_y = ray_i.dir_y[i];
-    ray_o.dir_z = ray_i.dir_z[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.instID[0] = ray_i.instID[0][i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.u = ray_i.u[i];
-    ray_o.v = ray_i.v[i];
-    ray_o.Ng_x = ray_i.Ng_x[i];
-    ray_o.Ng_y = ray_i.Ng_y[i];
-    ray_o.Ng_z = ray_i.Ng_z[i];
+    RTCRayHit ray_o;
+    ray_o.ray.org_x = ray_i.ray.org_x[i];
+    ray_o.ray.org_y = ray_i.ray.org_y[i];
+    ray_o.ray.org_z = ray_i.ray.org_z[i];
+    ray_o.ray.dir_x = ray_i.ray.dir_x[i];
+    ray_o.ray.dir_y = ray_i.ray.dir_y[i];
+    ray_o.ray.dir_z = ray_i.ray.dir_z[i];
+    ray_o.ray.tnear = ray_i.ray.tnear[i];
+    ray_o.ray.tfar = ray_i.ray.tfar[i];
+    ray_o.ray.time = ray_i.ray.time[i];
+    ray_o.ray.mask = ray_i.ray.mask[i];
+    ray_o.hit.instID[0] = ray_i.hit.instID[0][i];
+    ray_o.hit.geomID = ray_i.hit.geomID[i];
+    ray_o.hit.primID = ray_i.hit.primID[i];
+    ray_o.hit.u = ray_i.hit.u[i];
+    ray_o.hit.v = ray_i.hit.v[i];
+    ray_o.hit.Ng_x = ray_i.hit.Ng_x[i];
+    ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
+    ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
     return ray_o;
   }
 
-  __forceinline RTCRay getRay(RTCRayN* ray_i, unsigned int N, unsigned int i)
+  __forceinline RTCRayHit getRay(RTCRayHitN* ray_i, unsigned int N, unsigned int i)
   {
-    RTCRay ray_o;
-    ray_o.org_x = RTCRayN_org_x(ray_i,N,i);
-    ray_o.org_y = RTCRayN_org_y(ray_i,N,i);
-    ray_o.org_z = RTCRayN_org_z(ray_i,N,i);
-    ray_o.dir_x = RTCRayN_dir_x(ray_i,N,i);
-    ray_o.dir_y = RTCRayN_dir_y(ray_i,N,i);
-    ray_o.dir_z = RTCRayN_dir_z(ray_i,N,i);
-    ray_o.tnear = RTCRayN_tnear(ray_i,N,i);
-    ray_o.tfar  = RTCRayN_tfar(ray_i,N,i);
-    ray_o.time = RTCRayN_time(ray_i,N,i);
-    ray_o.mask = RTCRayN_mask(ray_i,N,i);
-    ray_o.instID[0] = RTCRayN_instID(ray_i,N,i,0);
-    ray_o.geomID = RTCRayN_geomID(ray_i,N,i);
-    ray_o.primID = RTCRayN_primID(ray_i,N,i);
-    ray_o.u = RTCRayN_u(ray_i,N,i);
-    ray_o.v = RTCRayN_v(ray_i,N,i);
-    ray_o.Ng_x = RTCRayN_Ng_x(ray_i,N,i);
-    ray_o.Ng_y = RTCRayN_Ng_y(ray_i,N,i);
-    ray_o.Ng_z = RTCRayN_Ng_z(ray_i,N,i);
+    RTCRayHit ray_o;
+    ray_o.ray.org_x = RTCRayHitN_org_x(ray_i,N,i);
+    ray_o.ray.org_y = RTCRayHitN_org_y(ray_i,N,i);
+    ray_o.ray.org_z = RTCRayHitN_org_z(ray_i,N,i);
+    ray_o.ray.dir_x = RTCRayHitN_dir_x(ray_i,N,i);
+    ray_o.ray.dir_y = RTCRayHitN_dir_y(ray_i,N,i);
+    ray_o.ray.dir_z = RTCRayHitN_dir_z(ray_i,N,i);
+    ray_o.ray.tnear = RTCRayHitN_tnear(ray_i,N,i);
+    ray_o.ray.tfar  = RTCRayHitN_tfar(ray_i,N,i);
+    ray_o.ray.time = RTCRayHitN_time(ray_i,N,i);
+    ray_o.ray.mask = RTCRayHitN_mask(ray_i,N,i);
+    ray_o.hit.instID[0] = RTCRayHitN_instID(ray_i,N,i,0);
+    ray_o.hit.geomID = RTCRayHitN_geomID(ray_i,N,i);
+    ray_o.hit.primID = RTCRayHitN_primID(ray_i,N,i);
+    ray_o.hit.u = RTCRayHitN_u(ray_i,N,i);
+    ray_o.hit.v = RTCRayHitN_v(ray_i,N,i);
+    ray_o.hit.Ng_x = RTCRayHitN_Ng_x(ray_i,N,i);
+    ray_o.hit.Ng_y = RTCRayHitN_Ng_y(ray_i,N,i);
+    ray_o.hit.Ng_z = RTCRayHitN_Ng_z(ray_i,N,i);
     return ray_o;
   }
 
@@ -635,64 +635,64 @@ namespace embree
   }
 
   template<int N>
-    __noinline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
+    __noinline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRayHit* rays, size_t Nrays)
   {
     assert(Nrays<1024);
     const size_t alignment = size_t(rays) % 64;
-    __aligned(64) char data[1024*sizeof(RTCRay)+64];
+    __aligned(64) char data[1024*sizeof(RTCRayHit)+64];
     assert((size_t)data % 64 == 0);
     for (size_t i=0; i<Nrays; i+=N) 
     {
       unsigned int L = (unsigned int)min(size_t(N),Nrays-i);
-      RTCRayN* ray = (RTCRayN*) &data[alignment+i*sizeof(RTCRay)];
+      RTCRayHitN* ray = (RTCRayHitN*) &data[alignment+i*sizeof(RTCRayHit)];
       for (unsigned int j=0; j<L; j++) setRay(ray,N,j,rays[i+j]);
       for (unsigned int j=L; j<N; j++) setRay(ray,N,j,makeRay(zero,zero,pos_inf,neg_inf));
     }
     
     unsigned int M = ((unsigned int)Nrays+N-1)/N;
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-    case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
-    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
+    case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayHitN*)&data[alignment],N,M,N*sizeof(RTCRayHit)); break;
+    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayHitN*)&data[alignment],N,M,N*sizeof(RTCRayHit)); break;
     default: assert(false);
     }
     
     for (size_t i=0; i<Nrays; i+=N) 
     {
       size_t L = min(size_t(N),Nrays-i);
-      RTCRayN* ray = (RTCRayN*) &data[alignment+i*sizeof(RTCRay)];
+      RTCRayHitN* ray = (RTCRayHitN*) &data[alignment+i*sizeof(RTCRayHit)];
       for (unsigned int j=0; j<L; j++) rays[i+j] = getRay(ray,N,j);
     }
   }
 	
-  __noinline void IntersectWithNpMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, unsigned int N)
+  __noinline void IntersectWithNpMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRayHit* rays, unsigned int N)
   {
     assert(N < 1024);
     const size_t alignment = size_t(rays) % 64;
-    __aligned(64) char data[1024 * sizeof(RTCRay) + 64];
-    RTCRayN* ray = (RTCRayN*)&data[alignment];
+    __aligned(64) char data[1024 * sizeof(RTCRayHit) + 64];
+    RTCRayHitN* ray = (RTCRayHitN*)&data[alignment];
     for (unsigned int j = 0; j < N; j++) setRay(ray, N, j, rays[j]);
     
-    RTCRayNp rayp;
-    rayp.org_x = &RTCRayN_org_x(ray, N, 0);
-    rayp.org_y = &RTCRayN_org_y(ray, N, 0);
-    rayp.org_z = &RTCRayN_org_z(ray, N, 0);
-    rayp.dir_x = &RTCRayN_dir_x(ray, N, 0);
-    rayp.dir_y = &RTCRayN_dir_y(ray, N, 0);
-    rayp.dir_z = &RTCRayN_dir_z(ray, N, 0);
-    rayp.tnear = &RTCRayN_tnear(ray, N, 0);
-    rayp.tfar = &RTCRayN_tfar(ray, N, 0);
-    rayp.time = &RTCRayN_time(ray, N, 0);
-    rayp.mask = &RTCRayN_mask(ray, N, 0);
-    rayp.id = &RTCRayN_id(ray, N, 0);
-    rayp.flags = &RTCRayN_flags(ray, N, 0);
-    rayp.instID[0] = &RTCRayN_instID(ray, N, 0, 0);
-    rayp.geomID = &RTCRayN_geomID(ray, N, 0);
-    rayp.primID = &RTCRayN_primID(ray, N, 0);
-    rayp.u = &RTCRayN_u(ray, N, 0);
-    rayp.v = &RTCRayN_v(ray, N, 0);
-    rayp.Ng_x = &RTCRayN_Ng_x(ray, N, 0);
-    rayp.Ng_y = &RTCRayN_Ng_y(ray, N, 0);
-    rayp.Ng_z = &RTCRayN_Ng_z(ray, N, 0);
+    RTCRayHitNp rayp;
+    rayp.ray.org_x = &RTCRayHitN_org_x(ray, N, 0);
+    rayp.ray.org_y = &RTCRayHitN_org_y(ray, N, 0);
+    rayp.ray.org_z = &RTCRayHitN_org_z(ray, N, 0);
+    rayp.ray.dir_x = &RTCRayHitN_dir_x(ray, N, 0);
+    rayp.ray.dir_y = &RTCRayHitN_dir_y(ray, N, 0);
+    rayp.ray.dir_z = &RTCRayHitN_dir_z(ray, N, 0);
+    rayp.ray.tnear = &RTCRayHitN_tnear(ray, N, 0);
+    rayp.ray.tfar = &RTCRayHitN_tfar(ray, N, 0);
+    rayp.ray.time = &RTCRayHitN_time(ray, N, 0);
+    rayp.ray.mask = &RTCRayHitN_mask(ray, N, 0);
+    rayp.ray.id = &RTCRayHitN_id(ray, N, 0);
+    rayp.ray.flags = &RTCRayHitN_flags(ray, N, 0);
+    rayp.hit.instID[0] = &RTCRayHitN_instID(ray, N, 0, 0);
+    rayp.hit.geomID = &RTCRayHitN_geomID(ray, N, 0);
+    rayp.hit.primID = &RTCRayHitN_primID(ray, N, 0);
+    rayp.hit.u = &RTCRayHitN_u(ray, N, 0);
+    rayp.hit.v = &RTCRayHitN_v(ray, N, 0);
+    rayp.hit.Ng_x = &RTCRayHitN_Ng_x(ray, N, 0);
+    rayp.hit.Ng_y = &RTCRayHitN_Ng_y(ray, N, 0);
+    rayp.hit.Ng_z = &RTCRayHitN_Ng_z(ray, N, 0);
     
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNp(scene, context, &rayp, N); break;
@@ -703,7 +703,7 @@ namespace embree
     for (unsigned int j = 0; j < N; j++) rays[j] = getRay(ray, N, j);
   }
 	
-  __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, unsigned int N)
+  __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N)
   {
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
@@ -729,8 +729,8 @@ namespace embree
       {
         size_t M = min(size_t(4),N-i);
         __aligned(16) int valid[4];
-        __aligned(16) RTCRay4 ray4;
-        for (size_t j=0; j<4; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
+        __aligned(16) RTCRayHit4 ray4;
+        for (size_t j=0; j<4; j++) valid[j] = (j<M && rays[i+j].ray.tnear <= rays[i+j].ray.tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray4,j,rays[i+j]);
         for (size_t j=M; j<4; j++) setRay(ray4,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -748,8 +748,8 @@ namespace embree
       {
         size_t M = min(size_t(8),N-i);
         __aligned(32) int valid[8];
-        __aligned(32) RTCRay8 ray8;
-        for (size_t j=0; j<8; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
+        __aligned(32) RTCRayHit8 ray8;
+        for (size_t j=0; j<8; j++) valid[j] = (j<M && rays[i+j].ray.tnear <= rays[i+j].ray.tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray8,j,rays[i+j]);
         for (size_t j=M; j<8; j++) setRay(ray8,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -767,8 +767,8 @@ namespace embree
       {
         size_t M = min(size_t(16),N-i);
         __aligned(64) int valid[16];
-        __aligned(64) RTCRay16 ray16;
-        for (size_t j=0; j<16; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
+        __aligned(64) RTCRayHit16 ray16;
+        for (size_t j=0; j<16; j++) valid[j] = (j<M && rays[i+j].ray.tnear <= rays[i+j].ray.tfar) ? -1 : 0;
         for (size_t j=0; j<M ; j++) setRay(ray16,j,rays[i+j]);
         for (size_t j=M; j<16; j++) setRay(ray16,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -783,8 +783,8 @@ namespace embree
     case MODE_INTERSECT1M: 
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
-      case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRay)); break;
+      case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRayHit)); break;
+      case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRayHit)); break;
       default: assert(false);
       }
       break;
@@ -792,7 +792,7 @@ namespace embree
     case MODE_INTERSECT1Mp: 
     {
       assert(N<1024);
-      RTCRay* rptrs[1024];
+      RTCRayHit* rptrs[1024];
       for (size_t i=0; i<N; i++) rptrs[i] = &rays[i];
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: rtcIntersect1Mp(scene,&context,rptrs,N); break;
@@ -828,22 +828,22 @@ namespace embree
     }
   }
 
-  void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, unsigned int N)
+  void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N)
   {
     /* verify occluded result against intersect */
     if ((ivariant & VARIANT_INTERSECT_OCCLUDED) == VARIANT_INTERSECT_OCCLUDED)
     {
       vector<bool> valid(N);
-      vector_t<RTCRay,aligned_allocator<RTCRay,16>> rays2(N);
+      vector_t<RTCRayHit,aligned_allocator<RTCRayHit,16>> rays2(N);
       for (size_t i=0; i<N; i++) {
-        valid[i] = rays[i].tnear <= rays[i].tfar;
+        valid[i] = rays[i].ray.tnear <= rays[i].ray.tfar;
         rays2[i] = rays[i];
       }
       IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N);
       IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N);
       for (size_t i=0; i<N; i++)
       {
-        if (valid[i] && ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].tfar != float(neg_inf)))) {
+        if (valid[i] && ((rays[i].hit.geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].ray.tfar != float(neg_inf)))) {
           throw std::runtime_error("Intersect/Occluded mismatch");
         }
       }

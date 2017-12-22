@@ -385,7 +385,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayN* rays = args->ray;
+  RTCRayHitN* rays = args->ray;
   unsigned int primID = args->primID;
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
@@ -438,7 +438,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayN* rays = args->ray;
+  RTCRayHitN* rays = args->ray;
   unsigned int primID = args->primID;
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
@@ -598,7 +598,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, time);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRay_(ray));
+  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -629,7 +629,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf, time);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded1(g_scene,&context,RTCRayHit_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

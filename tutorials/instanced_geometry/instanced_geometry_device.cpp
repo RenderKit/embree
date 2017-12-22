@@ -209,7 +209,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRay_(ray));
+  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -233,7 +233,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded1(g_scene,&context,RTCRayHit_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -328,7 +328,7 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext primary_context;
   rtcInitIntersectContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
-  rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(Ray));
+  rtcIntersect1M(g_scene,&primary_context,(RTCRayHit*)&primary_stream,N,sizeof(Ray));
 
   /* terminate rays and update color */
   N = -1;
@@ -382,7 +382,7 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext shadow_context;
   rtcInitIntersectContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
-  rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));
+  rtcOccluded1M(g_scene,&shadow_context,(RTCRayHit*)&shadow_stream,N,sizeof(Ray));
 
   /* add light contribution */
   N = -1;

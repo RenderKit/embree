@@ -276,7 +276,7 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccluded(scene,&context->context,RTCRay_(ray));
+  rtcOccluded(scene,&context->context,RTCRayHit_(ray));
 
   return transparency;
 }
@@ -307,7 +307,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,&context.context,RTCRay_(ray));
+    rtcIntersect(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */

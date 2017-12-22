@@ -37,9 +37,9 @@ struct Ray1
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
-inline uniform RTCRay* uniform RTCRay1_(uniform Ray1& ray)
+inline uniform RTCRayHit* uniform RTCRayHit1_(uniform Ray1& ray)
 {
-  uniform RTCRay* uniform ray_ptr = (uniform RTCRay* uniform)&ray;
+  uniform RTCRayHit* uniform ray_ptr = (uniform RTCRayHit* uniform)&ray;
   return ray_ptr;
 }
 
@@ -63,9 +63,9 @@ struct Ray
   int instID;    //!< instance ID
 };
 
-inline varying RTCRay* uniform RTCRay_(varying Ray& ray)
+inline varying RTCRayHit* uniform RTCRayHit_(varying Ray& ray)
 {
-  varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
+  varying RTCRayHit* uniform ray_ptr = (varying RTCRayHit* uniform)&ray;
   return ray_ptr;
 }
 

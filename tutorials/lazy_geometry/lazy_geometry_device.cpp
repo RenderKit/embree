@@ -166,7 +166,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayN* rays = args->ray;
+  RTCRayHitN* rays = args->ray;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 
@@ -182,7 +182,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   /* trace ray inside object */
   const int geomID = ray->geomID;
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersect1(instance->object,context,RTCRay_(*ray));
+  rtcIntersect1(instance->object,context,RTCRayHit_(*ray));
   if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
   else ray->instID = instance->userID;
 }
@@ -192,7 +192,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
    RTCIntersectContext* context = args->context;
-  RTCRayN* rays = args->ray;
+  RTCRayHitN* rays = args->ray;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 
@@ -205,7 +205,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     lazyCreate(instance);
   
   /* trace ray inside object */
-  rtcOccluded1(instance->object,context,RTCRay_(*ray));
+  rtcOccluded1(instance->object,context,RTCRayHit_(*ray));
 }
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
@@ -297,7 +297,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, 4);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRay_(ray));
+  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -312,7 +312,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded1(g_scene,&context,RTCRayHit_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
