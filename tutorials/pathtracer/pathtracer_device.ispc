@@ -1279,7 +1279,7 @@ unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* unifor
 unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
 {
   uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
+  struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
   
@@ -1353,7 +1353,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
+  struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
   struct RTCHitN* uniform potentialHit = args->potentialHit;
   const uniform unsigned int N = args->N;
   
@@ -1462,7 +1462,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     uniform IntersectContext context;
     InitIntersectionContext(&context);
     context.context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect(g_scene,&context.context,RTCRay_(ray));
+    rtcIntersect(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1523,7 +1523,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
+      rtcOccluded(g_scene,&context.context,RTCRayHit_(shadow));
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)

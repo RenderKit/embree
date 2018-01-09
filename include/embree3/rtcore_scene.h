@@ -23,11 +23,11 @@ extern "C" {
 #endif
   
 /* Forward declarations for ray structures */
-struct RTCRay;
-struct RTCRay4;
-struct RTCRay8;
-struct RTCRay16;
-struct RTCRayNp;
+struct RTCRayHit;
+struct RTCRayHit4;
+struct RTCRayHit8;
+struct RTCRayHit16;
+struct RTCRayHitNp;
 
 /* Scene flags */
 enum RTCSceneFlags
@@ -91,52 +91,52 @@ RTC_API void rtcGetSceneBounds(RTCScene scene, struct RTCBounds* bounds_o);
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bounds_o);
 
 /* Intersects a single ray with the scene. */
-RTC_API void rtcIntersect1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray);
+RTC_API void rtcIntersect1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* ray);
 
 /* Intersects a packet of 4 rays with the scene. */
-RTC_API void rtcIntersect4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay4* ray);
+RTC_API void rtcIntersect4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit4* ray);
 
 /* Intersects a packet of 8 rays with the scene. */
-RTC_API void rtcIntersect8(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay8* ray);
+RTC_API void rtcIntersect8(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit8* ray);
 
 /* Intersects a packet of 16 rays with the scene. */
-RTC_API void rtcIntersect16(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay16* ray);
+RTC_API void rtcIntersect16(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit16* ray);
 
 /* Intersects a stream of M rays with the scene. */
-RTC_API void rtcIntersect1M(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* rays, const unsigned int M, const size_t stride);
+RTC_API void rtcIntersect1M(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rays, const unsigned int M, const size_t stride);
 
 /* Intersects a stream of pointers to M rays with the scene. */
-RTC_API void rtcIntersect1Mp(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay** rays, const unsigned int M);
+RTC_API void rtcIntersect1Mp(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit** rays, const unsigned int M);
 
 /* Intersects a stream of M ray packets of size N in SOA format with the scene. */
-RTC_API void rtcIntersectNM(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride);
+RTC_API void rtcIntersectNM(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHitN* rays, const unsigned int N, const unsigned int M, const size_t stride);
 
 /* Intersects a stream of M ray packets of size N in SOA format with the scene. */
-RTC_API void rtcIntersectNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayNp* rays, const unsigned int N);
+RTC_API void rtcIntersectNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayHitNp* rays, const unsigned int N);
 
 /* Tests a single ray for occlusion with the scene. */
-RTC_API void rtcOccluded1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray);
+RTC_API void rtcOccluded1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* ray);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay4* ray);
+RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit4* ray);
 
 /* Tests a packet of 8 rays for occlusion with the scene. */
-RTC_API void rtcOccluded8(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay8* ray);
+RTC_API void rtcOccluded8(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit8* ray);
 
 /* Tests a packet of 16 rays for occlusion with the scene. */
-RTC_API void rtcOccluded16(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay16* ray);
+RTC_API void rtcOccluded16(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit16* ray);
 
 /* Tests a stream of M rays for occlusion with the scene. */
-RTC_API void rtcOccluded1M(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* rays, const unsigned int M, const size_t stride);
+RTC_API void rtcOccluded1M(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rays, const unsigned int M, const size_t stride);
 
 /* Tests a stream of pointers to M rays for occlusion with the scene. */
-RTC_API void rtcOccluded1Mp(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay** rays, const unsigned int M);
+RTC_API void rtcOccluded1Mp(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit** rays, const unsigned int M);
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
-RTC_API void rtcOccludedNM(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayN* rays, const unsigned int N, const unsigned int M, const size_t stride);
+RTC_API void rtcOccludedNM(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHitN* rays, const unsigned int N, const unsigned int M, const size_t stride);
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
-RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayNp* rays, const unsigned int N);
+RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayHitNp* rays, const unsigned int N);
 
 #if defined(__cplusplus)
 

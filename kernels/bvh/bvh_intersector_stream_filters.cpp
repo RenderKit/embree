@@ -23,7 +23,7 @@ namespace embree
   {
     MAYBE_UNUSED static const size_t MAX_INTERNAL_PACKET_STREAM_SIZE = MAX_INTERNAL_STREAM_SIZE / VSIZEX;
 
-    __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
+    __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
       RayStreamAOS rayN(_rayN);
       /* use fast path for coherent ray mode */
@@ -172,7 +172,7 @@ namespace embree
       }
     }
 
-    __forceinline void RayStreamFilter::filterAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context, bool intersect)
+    __forceinline void RayStreamFilter::filterAOP(Scene* scene, RTCRayHit** _rayN, size_t N, IntersectContext* context, bool intersect)
     {
       RayStreamAOP rayN(_rayN);
       /* use fast path for coherent ray mode */
@@ -483,7 +483,7 @@ namespace embree
       }
     }
 
-    void RayStreamFilter::filterSOP(Scene* scene, const RTCRayNp& _rayN, size_t N, IntersectContext* context, bool intersect)
+    void RayStreamFilter::filterSOP(Scene* scene, const RTCRayHitNp& _rayN, size_t N, IntersectContext* context, bool intersect)
     { 
       RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 

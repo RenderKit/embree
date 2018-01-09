@@ -97,8 +97,12 @@ __forceinline void init_Ray(Ray &ray,
 
 typedef Ray Ray1;
 
-__forceinline RTCRay* RTCRay_(Ray& ray) {
-  return (RTCRay*)&ray;
+__forceinline RTCRayHit* RTCRayHit_(Ray& ray) {
+  return (RTCRayHit*)&ray;
+}
+
+__forceinline RTCRayHit* RTCRayHit1_(Ray& ray) {
+  return (RTCRayHit*)&ray;
 }
 
   /*! Outputs ray to stream. */ 

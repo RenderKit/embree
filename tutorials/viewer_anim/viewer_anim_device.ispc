@@ -267,7 +267,7 @@ void renderTileStandard(uniform int taskIndex,
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
-  rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&rays,N,sizeof(Ray));
+  rtcIntersectVM(g_scene,&context,(varying RTCRayHit* uniform)&rays,N,sizeof(Ray));
 
   /* shade stream of rays */
   Vec3f colors[TILE_SIZE_X*TILE_SIZE_Y];
@@ -327,9 +327,9 @@ void renderTileStandard(uniform int taskIndex,
         /* trace shadow rays */
 #if 0
         for (uniform unsigned int n=0;n<N;n++)
-          rtcOccluded(g_scene,&context,RTCRay_(rays[n]));
+          rtcOccluded(g_scene,&context,RTCRayHit_(rays[n]));
 #else
-        rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,N,sizeof(Ray));
+        rtcOccludedVM(g_scene,&context,(varying RTCRayHit* uniform)&rays,N,sizeof(Ray));
 #endif
         /* modify pixel color based on occlusion */
         for (uniform unsigned int n=0;n<N;n++)

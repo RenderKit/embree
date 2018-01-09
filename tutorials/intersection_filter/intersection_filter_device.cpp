@@ -45,9 +45,9 @@ struct Ray2
   unsigned int hit_primIDs[HIT_LIST_LENGTH];
 };
 
-inline RTCRay* RTCRay_(Ray2& ray)
+inline RTCRayHit* RTCRayHit_(Ray2& ray)
 {
-  RTCRay* ray_ptr = (RTCRay*)&ray;
+  RTCRayHit* ray_ptr = (RTCRayHit*)&ray;
   return ray_ptr;
 }
 
@@ -82,7 +82,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-    rtcIntersect1(g_scene,&context.context,RTCRay_(primary));
+    rtcIntersect1(g_scene,&context.context,RTCRayHit_(primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -105,7 +105,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context.context,RTCRay_(shadow));
+    rtcOccluded1(g_scene,&context.context,RTCRayHit_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -226,7 +226,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  struct RTCRayN* rayN = args->ray;
+  struct RTCRayHitN* rayN = (struct RTCRayHitN*)args->ray;
   //struct RTCHitN* hitN = args->potentialHit;
   const unsigned int N = args->N;
                                   
@@ -244,7 +244,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRay rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rayN,N,ui);
     Ray* ray = (Ray*)&rtc_ray;
 
     /* calculate transparency */
@@ -314,7 +314,7 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
-  struct RTCRayN* rayN = args->ray;
+  struct RTCRayHitN* rayN = (struct RTCRayHitN*)args->ray;
   struct RTCHitN* hitN = args->potentialHit;
   const unsigned int N = args->N;
                                   
@@ -332,7 +332,7 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
     if (valid[vi] != -1) continue;
 
     /* read ray/hit from ray structure */
-    RTCRay rtc_ray = rtcGetRayFromRayN(rayN,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rayN,N,ui);
     Ray* ray = (Ray*)&rtc_ray;
 
     RTCHit hit = rtcGetHitFromHitN(hitN,N,ui);
@@ -452,7 +452,7 @@ void renderTileStandardStream(int taskIndex,
     InitIntersectionContext(&primary_context);
     primary_context.context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersect1M(g_scene,&primary_context.context,(RTCRay*)&primary_stream,N,sizeof(Ray2));
+    rtcIntersect1M(g_scene,&primary_context.context,(RTCRayHit*)&primary_stream,N,sizeof(Ray2));
 
     /* terminate rays and update color */
     N = -1;
@@ -504,7 +504,7 @@ void renderTileStandardStream(int taskIndex,
     InitIntersectionContext(&shadow_context);
     shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccluded1M(g_scene,&shadow_context.context,(RTCRay*)&shadow_stream,N,sizeof(Ray2));
+    rtcOccluded1M(g_scene,&shadow_context.context,(RTCRayHit*)&shadow_stream,N,sizeof(Ray2));
 
     /* add light contribution and generate transmission ray */
     N = -1;
