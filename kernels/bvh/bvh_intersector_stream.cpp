@@ -46,7 +46,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
-                                                                                                       RayK<K>** inputPackets,
+                                                                                                       RayHitK<K>** inputPackets,
                                                                                                        size_t numOctantRays,
                                                                                                        IntersectContext* context)
     {
@@ -151,7 +151,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
-                                                                                                      RayK<K>** inputPackets,
+                                                                                                      RayHitK<K>** inputPackets,
                                                                                                       size_t numOctantRays,
                                                                                                       IntersectContext* context)
     {
@@ -268,7 +268,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedIncoherent(Accel::Intersectors* __restrict__ This,
-                                                                                                                RayK<K>** inputPackets,
+                                                                                                                RayHitK<K>** inputPackets,
                                                                                                                 size_t numOctantRays,
                                                                                                                 IntersectContext* context)
     {
@@ -370,7 +370,7 @@ namespace embree
         {
           const size_t rayID = __bscf(bits);
 
-          RayK<K> &ray = *inputPackets[rayID / K];
+          RayHitK<K> &ray = *inputPackets[rayID / K];
           const size_t k = rayID % K;
           if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
           {
@@ -413,7 +413,7 @@ namespace embree
 
     template<int N, int Nx, int K>
     void BVHNIntersectorStreamPacketFallback<N, Nx, K>::intersect(Accel::Intersectors* __restrict__ This,
-                                                                  RayK<K>** inputRays,
+                                                                  RayHitK<K>** inputRays,
                                                                   size_t numTotalRays,
                                                                   IntersectContext* context)
     {
@@ -422,7 +422,7 @@ namespace embree
       {
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
+        RayHitK<K>& ray = *(inputRays[i / K]);
         valid &= ray.tnear() <= ray.tfar();
         This->intersect(valid, ray, context);
       }
@@ -430,7 +430,7 @@ namespace embree
 
     template<int N, int Nx, int K>
     void BVHNIntersectorStreamPacketFallback<N, Nx, K>::occluded(Accel::Intersectors* __restrict__ This,
-                                                                 RayK<K>** inputRays,
+                                                                 RayHitK<K>** inputRays,
                                                                  size_t numTotalRays,
                                                                  IntersectContext* context)
     {
@@ -439,7 +439,7 @@ namespace embree
       {
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
+        RayHitK<K>& ray = *(inputRays[i / K]);
         valid &= ray.tnear() <= ray.tfar();
         This->occluded(valid, ray, context);
       }

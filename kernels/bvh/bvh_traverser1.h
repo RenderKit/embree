@@ -691,7 +691,7 @@ namespace embree
 
       /* If a transform node is passed, traverses the node and returns true. */
       __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
+                                           RayHit& ray,
                                            TravRayBase<N,Nx,robust>& tray,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
@@ -758,7 +758,7 @@ namespace embree
 
       /* If a transform node is passed, traverses the node and returns true. */
       __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
+                                           RayHit& ray,
                                            TravRayBase<N,Nx,robust>& tray,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
@@ -844,7 +844,7 @@ namespace embree
       __forceinline explicit BVHNNodeTraverser1Transform(const TravRayBase<N,Nx,robust>& tray) {}
 
       __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
+                                           RayHit& ray,
                                            TravRayBase<N,Nx,robust>& tray,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
@@ -854,7 +854,7 @@ namespace embree
       }
 
       __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
+                                           RayHit& ray,
                                            TravRayBase<N,Nx,robust>& tray,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,

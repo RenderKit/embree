@@ -47,11 +47,11 @@ namespace embree
       if (args->valid[0] == 0)
         return false;
 #endif
-      copyHitToRay(*(Ray*)args->ray,*(Hit*)args->potentialHit);
+      copyHitToRay(*(RayHit*)args->ray,*(Hit*)args->potentialHit);
       return true;
     }
     
-    __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
+    __forceinline bool runIntersectionFilter1(const Geometry* const geometry, RayHit& ray, IntersectContext* context, Hit& hit)
     {
       RTCFilterFunctionNArguments args;
       int mask = -1;
@@ -108,7 +108,7 @@ namespace embree
       return args->valid[0] != 0;
     }
 
-    __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
+    __forceinline bool runOcclusionFilter1(const Geometry* const geometry, RayHit& ray, IntersectContext* context, Hit& hit)
     {
       RTCFilterFunctionNArguments args;
       int mask = -1;
@@ -168,12 +168,12 @@ namespace embree
       if (none(valid_o)) return valid_o;
 #endif
       
-      copyHitToRay(valid_o,*(RayK<K>*)args->ray,*(HitK<K>*)args->potentialHit);
+      copyHitToRay(valid_o,*(RayHitK<K>*)args->ray,*(HitK<K>*)args->potentialHit);
       return valid_o;
     }
     
     template<int K>
-    __forceinline vbool<K> runIntersectionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, IntersectContext* context, HitK<K>& hit)
+    __forceinline vbool<K> runIntersectionFilter(const vbool<K>& valid, const Geometry* const geometry, RayHitK<K>& ray, IntersectContext* context, HitK<K>& hit)
     {
       RTCFilterFunctionNArguments args;
       vint<K> mask = valid.mask32();
@@ -211,13 +211,13 @@ namespace embree
       valid_o = *mask != vint<K>(zero);
 #endif
 
-      RayK<K>* ray = (RayK<K>*) args->ray;
+      RayHitK<K>* ray = (RayHitK<K>*) args->ray;
       ray->tfar() = select(valid_o, vfloat<K>(neg_inf), ray->tfar());
       return valid_o;
     }
 
     template<int K>
-      __forceinline vbool<K> runOcclusionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, IntersectContext* context, HitK<K>& hit)
+      __forceinline vbool<K> runOcclusionFilter(const vbool<K>& valid, const Geometry* const geometry, RayHitK<K>& ray, IntersectContext* context, HitK<K>& hit)
     {
       RTCFilterFunctionNArguments args;
       vint<K> mask = valid.mask32();

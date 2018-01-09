@@ -70,11 +70,11 @@ namespace embree
 
       __forceinline Hair1Intersector1() {}
 
-      __forceinline Hair1Intersector1(const Ray& ray, const void* ptr) 
+      __forceinline Hair1Intersector1(const RayHit& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
       template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
+      __forceinline bool intersect(RayHit& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
@@ -152,7 +152,7 @@ namespace embree
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
 
-      __forceinline Hair1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
+      __forceinline Hair1IntersectorK(const vbool<K>& valid, const RayHitK<K>& ray) 
       {
         size_t mask = movemask(valid);
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -162,7 +162,7 @@ namespace embree
         }
       }
 
-      __forceinline Hair1IntersectorK (const RayK<K>& ray, size_t k)
+      __forceinline Hair1IntersectorK (const RayHitK<K>& ray, size_t k)
       {
         Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
@@ -170,7 +170,7 @@ namespace embree
       }
       
       template<typename Epilog>
-      __forceinline bool intersect(RayK<K>& ray, size_t k,
+      __forceinline bool intersect(RayHitK<K>& ray, size_t k,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {

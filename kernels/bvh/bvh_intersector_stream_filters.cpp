@@ -29,8 +29,8 @@ namespace embree
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
         for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
@@ -44,7 +44,7 @@ namespace embree
             const vintx offset = vij * int(stride);
             const size_t packetIndex = j / VSIZEX;
 
-            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            RayHitK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
 
@@ -73,8 +73,8 @@ namespace embree
       {
         /* octant sorting for occlusion rays */
         __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
         unsigned int raysInOctant[8];
         for (unsigned int i = 0; i < 8; i++)
@@ -88,7 +88,7 @@ namespace embree
           /* sort rays into octants */
           for (; inputRayID < N;)
           {
-            const Ray& ray = rayN.getRayByOffset(inputRayID * stride);
+            const RayHit& ray = rayN.getRayByOffset(inputRayID * stride);
 
             /* skip invalid rays */
             if (unlikely(ray.tnear() > ray.tfar() || ray.tfar() < 0.0f)) { inputRayID++; continue; } // ignore invalid or already occluded rays
@@ -130,7 +130,7 @@ namespace embree
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
             const vintx offset = *(vintx*)&rayIDs[j] * int(stride);
-            RayK<VSIZEX>& ray = rays[j/VSIZEX];
+            RayHitK<VSIZEX>& ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
             ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
@@ -159,7 +159,7 @@ namespace embree
           vboolx valid = vi < vintx(int(N));
           const vintx offset = vi * int(stride);
 
-          RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+          RayHitK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
           valid &= ray.tnear() <= ray.tfar();
 
           if (intersect)
@@ -178,8 +178,8 @@ namespace embree
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
         for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
@@ -192,7 +192,7 @@ namespace embree
             const vboolx valid = vij < vintx(int(N));
             const size_t packetIndex = j / VSIZEX;
 
-            RayK<VSIZEX> ray = rayN.getRayByIndex(valid, vij);
+            RayHitK<VSIZEX> ray = rayN.getRayByIndex(valid, vij);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
 
@@ -220,8 +220,8 @@ namespace embree
       {
         /* octant sorting for occlusion rays */
         __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
         unsigned int raysInOctant[8];
         for (unsigned int i = 0; i < 8; i++)
@@ -235,7 +235,7 @@ namespace embree
           /* sort rays into octants */
           for (; inputRayID < N;)
           {
-            const Ray& ray = rayN.getRayByIndex(inputRayID);
+            const RayHit& ray = rayN.getRayByIndex(inputRayID);
 
             /* skip invalid rays */
             if (unlikely(ray.tnear() > ray.tfar() || ray.tfar() < 0.0f)) { inputRayID++; continue; } // ignore invalid or already occluded rays
@@ -275,7 +275,7 @@ namespace embree
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
             const vintx index = *(vintx*)&rayIDs[j];
-            RayK<VSIZEX>& ray = rays[j/VSIZEX];
+            RayHitK<VSIZEX>& ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
             ray = rayN.getRayByIndex(valid, index);
             ray.tnear() = select(valid, ray.tnear(), zero);
@@ -303,7 +303,7 @@ namespace embree
           const vintx vi = vintx(int(i)) + vintx(step);
           vboolx valid = vi < vintx(int(N));
 
-          RayK<VSIZEX> ray = rayN.getRayByIndex(valid, vi);
+          RayHitK<VSIZEX> ray = rayN.getRayByIndex(valid, vi);
           valid &= ray.tnear() <= ray.tfar();
 
           if (intersect)
@@ -328,13 +328,13 @@ namespace embree
       {
         if (unlikely(isCoherent(context->user->flags)))
         {
-          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
+          __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
 
           size_t packetIndex = 0;
           for (size_t i = 0; i < numPackets; i++)
           {
             const size_t offset = i * stride;
-            RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
+            RayHitK<VSIZEX>& ray = *(RayHitK<VSIZEX>*)(rayData + offset);
             rayPtrs[packetIndex++] = &ray;
 
             /* trace as stream */
@@ -365,8 +365,8 @@ namespace embree
           RayStreamSOA rayN(rayData, VSIZEX);
 
           __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-          __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+          __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+          __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
           unsigned int raysInOctant[8];
           for (unsigned int i = 0; i < 8; i++)
@@ -385,7 +385,7 @@ namespace embree
               /* skip invalid rays */
               if (unlikely(!rayN.isValidByOffset(offset))) { inputRayID++; continue; } // ignore invalid or already occluded rays
   #if defined(EMBREE_IGNORE_INVALID_RAYS)
-              __aligned(64) Ray ray = rayN.getRayByOffset(offset);
+              __aligned(64) RayHit ray = rayN.getRayByOffset(offset);
               if (unlikely(!ray.valid())) { inputRayID++; continue; }
   #endif
 
@@ -421,7 +421,7 @@ namespace embree
               const vintx vi = vintx(int(j)) + vintx(step);
               const vboolx valid = vi < vintx(int(numOctantRays));
               const vintx offset = *(vintx*)&rayOffsets[j];
-              RayK<VSIZEX>& ray = rays[j/VSIZEX];
+              RayHitK<VSIZEX>& ray = rays[j/VSIZEX];
               rayPtrs[j/VSIZEX] = &ray;
               ray = rayN.getRayByOffset(valid, offset);
               ray.tnear() = select(valid, ray.tnear(), zero);
@@ -446,7 +446,7 @@ namespace embree
           for (size_t i = 0; i < numPackets; i++)
           {
             const size_t offset = i * stride;
-            RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
+            RayHitK<VSIZEX>& ray = *(RayHitK<VSIZEX>*)(rayData + offset);
             const vboolx valid = ray.tnear() <= ray.tfar();
 
             if (intersect)
@@ -469,7 +469,7 @@ namespace embree
             const size_t offset = j * sizeof(float);
             vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(int(N));
 
-            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            RayHitK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             valid &= ray.tnear() <= ray.tfar();
 
             if (intersect)
@@ -490,8 +490,8 @@ namespace embree
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
         for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
@@ -505,7 +505,7 @@ namespace embree
             const size_t offset = (i+j) * sizeof(float);
             const size_t packetIndex = j / VSIZEX;
 
-            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            RayHitK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
 
@@ -535,8 +535,8 @@ namespace embree
       {
         /* octant sorting for occlusion rays */
         __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayHitK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
 
         unsigned int raysInOctant[8];
         for (unsigned int i = 0; i < 8; i++)
@@ -554,7 +554,7 @@ namespace embree
             /* skip invalid rays */
             if (unlikely(!rayN.isValidByOffset(offset))) { inputRayID++; continue; } // ignore invalid or already occluded rays
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-            __aligned(64) Ray ray = rayN.getRayByOffset(offset);
+            __aligned(64) RayHit ray = rayN.getRayByOffset(offset);
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
 
@@ -590,7 +590,7 @@ namespace embree
             const vintx vi = vintx(int(j)) + vintx(step);
             const vboolx valid = vi < vintx(int(numOctantRays));
             const vintx offset = *(vintx*)&rayOffsets[j];
-            RayK<VSIZEX>& ray = rays[j/VSIZEX];
+            RayHitK<VSIZEX>& ray = rays[j/VSIZEX];
             rayPtrs[j/VSIZEX] = &ray;
             ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
@@ -619,7 +619,7 @@ namespace embree
           vboolx valid = vi < vintx(int(N));
           const size_t offset = i * sizeof(float);
 
-          RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+          RayHitK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
           valid &= ray.tnear() <= ray.tfar();
 
           if (intersect)

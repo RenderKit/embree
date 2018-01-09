@@ -46,7 +46,7 @@ namespace embree
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      Ray& ray = *(Ray*)args->ray;
+      RayHit& ray = *(RayHit*)args->ray;
       
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
@@ -66,7 +66,7 @@ namespace embree
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      Ray& ray = *(Ray*)args->ray;
+      RayHit& ray = *(RayHit*)args->ray;
       
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
@@ -83,21 +83,21 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void intersectObject(vint<K>* valid, Scene* object, IntersectContext* context, RayK<K>& ray);
+    __forceinline void intersectObject(vint<K>* valid, Scene* object, IntersectContext* context, RayHitK<K>& ray);
     template<int K>
-    __forceinline void occludedObject(vint<K>* valid, Scene* object, IntersectContext* context, RayK<K>& ray);
+    __forceinline void occludedObject(vint<K>* valid, Scene* object, IntersectContext* context, RayHitK<K>& ray);
         
 #if defined (__SSE__)
-    template<> __forceinline void intersectObject<4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.intersect4(valid,(RTCRayHit4&)ray,context); }
-    template<> __forceinline void occludedObject <4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.occluded4 (valid,(RTCRay4&)ray,context); }
+    template<> __forceinline void intersectObject<4>(vint4* valid, Scene* object, IntersectContext* context, RayHit4& ray) { object->intersectors.intersect4(valid,(RTCRayHit4&)ray,context); }
+    template<> __forceinline void occludedObject <4>(vint4* valid, Scene* object, IntersectContext* context, RayHit4& ray) { object->intersectors.occluded4 (valid,(RTCRay4&)ray,context); }
 #endif
 #if defined (__AVX__)
-    template<> __forceinline void intersectObject<8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.intersect8(valid,(RTCRayHit8&)ray,context); }
-    template<> __forceinline void occludedObject <8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.occluded8 (valid,(RTCRay8&)ray,context); }
+    template<> __forceinline void intersectObject<8>(vint8* valid, Scene* object, IntersectContext* context, RayHit8& ray) { object->intersectors.intersect8(valid,(RTCRayHit8&)ray,context); }
+    template<> __forceinline void occludedObject <8>(vint8* valid, Scene* object, IntersectContext* context, RayHit8& ray) { object->intersectors.occluded8 (valid,(RTCRay8&)ray,context); }
 #endif
 #if defined (__AVX512F__)
-    template<> __forceinline void intersectObject<16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.intersect16(valid,(RTCRayHit16&)ray,context); }
-    template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.occluded16 (valid,(RTCRay16&)ray,context); }
+    template<> __forceinline void intersectObject<16>(vint16* valid, Scene* object, IntersectContext* context, RayHit16& ray) { object->intersectors.intersect16(valid,(RTCRayHit16&)ray,context); }
+    template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, RayHit16& ray) { object->intersectors.occluded16 (valid,(RTCRay16&)ray,context); }
 #endif
 
     template<int N>
@@ -106,7 +106,7 @@ namespace embree
       const vint<N>* validi = (const vint<N>*) args->valid;
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayK<N>& ray = *(RayK<N>*)args->ray;
+      RayHitK<N>& ray = *(RayHitK<N>*)args->ray;
       
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
@@ -131,7 +131,7 @@ namespace embree
       const vint<N>* validi = (const vint<N>*) args->valid;
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayK<N>& ray = *(RayK<N>*)args->ray;
+      RayHitK<N>& ray = *(RayHitK<N>*)args->ray;
       
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);

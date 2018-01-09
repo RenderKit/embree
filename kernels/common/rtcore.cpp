@@ -310,7 +310,7 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.intersect(*ray,&context);
 #if defined(DEBUG)
-    ((Ray*)ray)->verifyHit();
+    ((RayHit*)ray)->verifyHit();
 #endif
     RTC_CATCH_END2(scene);
   }
@@ -332,10 +332,10 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray4* ray4 = (Ray4*) ray;
+    RayHit4* ray4 = (RayHit4*) ray;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray4->get(i,ray1);
+      RayHit ray1; ray4->get(i,ray1);
       scene->intersectors.intersect((RTCRayHit&)ray1,&context);
       ray4->set(i,ray1);
     }
@@ -363,10 +363,10 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray8* ray8 = (Ray8*) ray;
+    RayHit8* ray8 = (RayHit8*) ray;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray8->get(i,ray1);
+      RayHit ray1; ray8->get(i,ray1);
       scene->intersectors.intersect((RTCRayHit&)ray1,&context);
       ray8->set(i,ray1);
     }
@@ -396,10 +396,10 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray16* ray16 = (Ray16*) ray;
+    RayHit16* ray16 = (RayHit16*) ray;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray16->get(i,ray1);
+      RayHit ray1; ray16->get(i,ray1);
       scene->intersectors.intersect((RTCRayHit&)ray1,&context);
       ray16->set(i,ray1);
     }
@@ -583,10 +583,10 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray4* ray4 = (Ray4*) ray;
+    RayHit4* ray4 = (RayHit4*) ray;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray4->get(i,ray1);
+      RayHit ray1; ray4->get(i,ray1);
       scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray4->geomID[i] = ray1.geomID; 
     }
@@ -614,10 +614,10 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray8* ray8 = (Ray8*) ray;
+    RayHit8* ray8 = (RayHit8*) ray;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray8->get(i,ray1);
+      RayHit ray1; ray8->get(i,ray1);
       scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray8->set(i,ray1);
     }
@@ -648,10 +648,10 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray16* ray16 = (Ray16*) ray;
+    RayHit16* ray16 = (RayHit16*) ray;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray16->get(i,ray1);
+      RayHit ray1; ray16->get(i,ray1);
       scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray16->set(i,ray1);
     }

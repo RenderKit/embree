@@ -50,7 +50,7 @@ namespace embree
         {
           __forceinline Precalculations() {}
 
-          __forceinline Precalculations(const Ray& ray, const void* ptr)
+          __forceinline Precalculations(const RayHit& ray, const void* ptr)
           {
             const float s = rsqrt(dot(ray.dir,ray.dir));
             depth_scale = s;
@@ -63,7 +63,7 @@ namespace embree
         
         template<typename Epilog>
         static __forceinline bool intersect(const vbool<M>& valid_i,
-                                            Ray& ray, const Precalculations& pre,
+                                            RayHit& ray, const Precalculations& pre,
                                             const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                             const Epilog& epilog)
         {
@@ -103,7 +103,7 @@ namespace embree
       {
         struct Precalculations 
         {
-          __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray)
+          __forceinline Precalculations (const vbool<K>& valid, const RayHitK<K>& ray)
           {
             size_t mask = movemask(valid);
             depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -119,7 +119,7 @@ namespace embree
         
         template<typename Epilog>
         static __forceinline bool intersect(const vbool<M>& valid_i,
-                                            RayK<K>& ray, size_t k, const Precalculations& pre,
+                                            RayHitK<K>& ray, size_t k, const Precalculations& pre,
                                             const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                             const Epilog& epilog)
         {

@@ -180,7 +180,7 @@ namespace embree
       
       __forceinline Ribbon1Intersector1() {}
 
-      __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr) 
+      __forceinline Ribbon1Intersector1(const RayHit& ray, const void* ptr) 
       {
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
         ray_space = frame(depth_scale*ray.dir);
@@ -189,7 +189,7 @@ namespace embree
       }
 
       template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
+      __forceinline bool intersect(RayHit& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
@@ -206,7 +206,7 @@ namespace embree
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
 
-      __forceinline Ribbon1IntersectorK(const vbool<K>& valid, const RayK<K>& ray)
+      __forceinline Ribbon1IntersectorK(const vbool<K>& valid, const RayHitK<K>& ray)
       {
         size_t mask = movemask(valid);
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -220,7 +220,7 @@ namespace embree
       }
 
       template<typename Epilog>
-      __forceinline bool intersect(RayK<K>& ray, size_t k,
+      __forceinline bool intersect(RayHitK<K>& ray, size_t k,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {

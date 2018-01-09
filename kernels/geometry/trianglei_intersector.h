@@ -31,14 +31,14 @@ namespace embree
       typedef TriangleMi<M> Primitive;
       typedef MoellerTrumboreIntersector1<Mx> Precalculations;
 
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
         pre.intersect(ray,v0,v1,v2,/*UVIdentity<Mx>(),*/Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
 
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline bool occluded(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
@@ -53,13 +53,13 @@ namespace embree
       typedef TriangleMi<M> Primitive;
       typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& tri)
       {
         const Scene* scene = context->scene;
         for (size_t i=0; i<Primitive::max_size(); i++)
         {
           if (!tri.valid(i)) break;
-          STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
+          STAT3(normal.trav_prims,1,popcnt(valid_i),RayHitK<K>::size());
           const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
           const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
           const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
@@ -67,7 +67,7 @@ namespace embree
         }
       }
 
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& tri)
       {
         vbool<K> valid0 = valid_i;
         const Scene* scene = context->scene;
@@ -75,7 +75,7 @@ namespace embree
         for (size_t i=0; i<Primitive::max_size(); i++)
         {
           if (!tri.valid(i)) break;
-          STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
+          STAT3(shadow.trav_prims,1,popcnt(valid_i),RayHitK<K>::size());
           const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
           const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
           const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
@@ -85,14 +85,14 @@ namespace embree
         return !valid0;
       }
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
         pre.intersect(ray,k,v0,v1,v2,/*UVIdentity<Mx>(),*/Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomID(),tri.primID()));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
+      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
@@ -107,14 +107,14 @@ namespace embree
       typedef TriangleMi<M> Primitive;
       typedef PlueckerIntersector1<Mx> Precalculations;
 
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
         pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
 
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline bool occluded(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
@@ -129,13 +129,13 @@ namespace embree
       typedef TriangleMi<M> Primitive;
       typedef PlueckerIntersectorK<Mx,K> Precalculations;
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& tri)
       {
         const Scene* scene = context->scene;
         for (size_t i=0; i<Primitive::max_size(); i++)
         {
           if (!tri.valid(i)) break;
-          STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
+          STAT3(normal.trav_prims,1,popcnt(valid_i),RayHitK<K>::size());
           const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
           const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
           const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
@@ -143,7 +143,7 @@ namespace embree
         }
       }
 
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& tri)
       {
         vbool<K> valid0 = valid_i;
         const Scene* scene = context->scene;
@@ -151,7 +151,7 @@ namespace embree
         for (size_t i=0; i<Primitive::max_size(); i++)
         {
           if (!tri.valid(i)) break;
-          STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
+          STAT3(shadow.trav_prims,1,popcnt(valid_i),RayHitK<K>::size());
           const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
           const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
           const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
@@ -161,14 +161,14 @@ namespace embree
         return !valid0;
       }
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
         pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomID(),tri.primID()));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
+      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0, v1, v2; tri.gather(v0,v1,v2,context->scene);
@@ -184,7 +184,7 @@ namespace embree
       typedef MoellerTrumboreIntersector1<Mx> Precalculations;
 
       /*! Intersect a ray with the M triangles and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time);
@@ -192,7 +192,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by one of M triangles. */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline bool occluded(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time);
@@ -208,7 +208,7 @@ namespace embree
       typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
 
       /*! Intersects K rays with M triangles. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
       {
         for (size_t i=0; i<TriangleMi<M>::max_size(); i++)
         {
@@ -220,7 +220,7 @@ namespace embree
       }
 
       /*! Test for K rays if they are occluded by any of the M triangles. */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
       {
         vbool<K> valid0 = valid_i;
         for (size_t i=0; i<TriangleMi<M>::max_size(); i++)
@@ -235,7 +235,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M triangles and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time[k]);
@@ -243,7 +243,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by one of the M triangles. */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time[k]);
@@ -259,7 +259,7 @@ namespace embree
       typedef PlueckerIntersector1<Mx> Precalculations;
 
       /*! Intersect a ray with the M triangles and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time);
@@ -267,7 +267,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by one of M triangles. */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      static __forceinline bool occluded(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time);
@@ -283,7 +283,7 @@ namespace embree
       typedef PlueckerIntersectorK<Mx,K> Precalculations;
 
       /*! Intersects K rays with M triangles. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
       {
         for (size_t i=0; i<TriangleMi<M>::max_size(); i++)
         {
@@ -295,7 +295,7 @@ namespace embree
       }
 
       /*! Test for K rays if they are occluded by any of the M triangles. */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const TriangleMi<M>& tri)
       {
         vbool<K> valid0 = valid_i;
         for (size_t i=0; i<TriangleMi<M>::max_size(); i++)
@@ -310,7 +310,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M triangles and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time[k]);
@@ -318,7 +318,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by one of the M triangles. */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
+      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMi<M>& tri)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2; tri.gather(v0,v1,v2,context->scene,ray.time[k]);
