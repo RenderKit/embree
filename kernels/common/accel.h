@@ -95,25 +95,25 @@ namespace embree
     
     /*! Type of occlusion function pointer for single rays. */
     typedef void (*OccludedFunc) (Intersectors* This,  /*!< this pointer to accel */ 
-                                  RTCRayHit& ray,         /*!< ray to test occlusion */
+                                  RTCRay& ray,         /*!< ray to test occlusion */
                                   IntersectContext* context);
     
     /*! Type of occlusion function pointer for ray packets of size 4. */
     typedef void (*OccludedFunc4) (const void* valid,  /*! pointer to valid mask */
                                    Intersectors* This, /*!< this pointer to accel */
-                                   RTCRayHit4& ray,       /*!< Ray packet to test occlusion. */
+                                   RTCRay4& ray,       /*!< Ray packet to test occlusion. */
                                    IntersectContext* context);
     
     /*! Type of occlusion function pointer for ray packets of size 8. */
     typedef void (*OccludedFunc8) (const void* valid,  /*! pointer to valid mask */
                                    Intersectors* This, /*!< this pointer to accel */
-                                   RTCRayHit8& ray,       /*!< Ray packet to test occlusion. */
+                                   RTCRay8& ray,       /*!< Ray packet to test occlusion. */
                                    IntersectContext* context);
     
     /*! Type of occlusion function pointer for ray packets of size 16. */
     typedef void (*OccludedFunc16) (const void* valid, /*! pointer to valid mask */
                                     Intersectors* This,/*!< this pointer to accel */
-                                    RTCRayHit16& ray,     /*!< Ray packet to test occlusion. */
+                                    RTCRay16& ray,     /*!< Ray packet to test occlusion. */
                                     IntersectContext* context);
 
     /*! Type of intersect function pointer for ray packets of size N. */
@@ -312,25 +312,25 @@ namespace embree
       
       
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (RTCRayHit& ray, IntersectContext* context) {
+      __forceinline void occluded (RTCRay& ray, IntersectContext* context) {
         assert(intersector1.occluded);
         intersector1.occluded(this,ray,context);
       }
       
       /*! Tests if a packet of 4 rays is occluded by the scene. */
-      __forceinline void occluded4 (const void* valid, RTCRayHit4& ray, IntersectContext* context) {
+      __forceinline void occluded4 (const void* valid, RTCRay4& ray, IntersectContext* context) {
         assert(intersector4.occluded);
         intersector4.occluded(valid,this,ray,context);
       }
       
       /*! Tests if a packet of 8 rays is occluded by the scene. */
-      __forceinline void occluded8 (const void* valid, RTCRayHit8& ray, IntersectContext* context) {
+      __forceinline void occluded8 (const void* valid, RTCRay8& ray, IntersectContext* context) {
         assert(intersector8.occluded);
         intersector8.occluded(valid,this,ray,context);
       }
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
-      __forceinline void occluded16 (const void* valid, RTCRayHit16& ray, IntersectContext* context) {
+      __forceinline void occluded16 (const void* valid, RTCRay16& ray, IntersectContext* context) {
         assert(intersector16.occluded);
         intersector16.occluded(valid,this,ray,context);
       }
@@ -356,19 +356,19 @@ namespace embree
 #if defined(__SSE__)
       __forceinline void occluded(const vbool4& valid, RayK<4>& ray, IntersectContext* context) {
         const vint<4> mask = valid.mask32();
-        occluded4(&mask,(RTCRayHit4&)ray,context);
+        occluded4(&mask,(RTCRay4&)ray,context);
       }
 #endif
 #if defined(__AVX__)
       __forceinline void occluded(const vbool8& valid, RayK<8>& ray, IntersectContext* context) {
         const vint<8> mask = valid.mask32();
-        occluded8(&mask,(RTCRayHit8&)ray,context);
+        occluded8(&mask,(RTCRay8&)ray,context);
       }
 #endif
 #if defined(__AVX512F__)
       __forceinline void occluded(const vbool16& valid, RayK<16>& ray, IntersectContext* context) {
         const vint<16> mask = valid.mask32();
-        occluded16(&mask,(RTCRayHit16&)ray,context);
+        occluded16(&mask,(RTCRay16&)ray,context);
       }
 #endif
       

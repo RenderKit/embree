@@ -69,6 +69,12 @@ inline varying RTCRayHit* uniform RTCRayHit_(varying Ray& ray)
   return ray_ptr;
 }
 
+inline varying RTCRay* uniform RTCRay_(varying Ray& ray)
+{
+  varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
+  return ray_ptr;
+}
+
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
 inline Ray make_Ray(const Vec3f org, 

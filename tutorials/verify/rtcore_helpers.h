@@ -652,7 +652,7 @@ namespace embree
     unsigned int M = ((unsigned int)Nrays+N-1)/N;
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayHitN*)&data[alignment],N,M,N*sizeof(RTCRayHit)); break;
-    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayHitN*)&data[alignment],N,M,N*sizeof(RTCRayHit)); break;
+    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRayHit)); break;
     default: assert(false);
     }
     
@@ -696,7 +696,7 @@ namespace embree
     
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNp(scene, context, &rayp, N); break;
-    case VARIANT_OCCLUDED: rtcOccludedNp(scene, context, &rayp, N); break;
+    case VARIANT_OCCLUDED:  rtcOccludedNp(scene, context, (RTCRayNp*)&rayp, N); break;
     default: assert(false);
     }
     
@@ -717,7 +717,7 @@ namespace embree
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,&context,&rays[i]); break;
-      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,&context,&rays[i]); break;
+      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,&context,(RTCRay*)&rays[i]); break;
       default: assert(false);
       }
       break;
@@ -735,7 +735,7 @@ namespace embree
         for (size_t j=M; j<4; j++) setRay(ray4,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect4(valid,scene,&context,&ray4); break;
-        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,&context,&ray4); break;
+        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,&context,(RTCRay4*)&ray4); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
@@ -754,7 +754,7 @@ namespace embree
         for (size_t j=M; j<8; j++) setRay(ray8,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect8(valid,scene,&context,&ray8); break;
-        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,&context,&ray8); break;
+        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,&context,(RTCRay8*)&ray8); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
@@ -773,7 +773,7 @@ namespace embree
         for (size_t j=M; j<16; j++) setRay(ray16,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect16(valid,scene,&context,&ray16); break;
-        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,&context,&ray16); break;
+        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,&context,(RTCRay16*)&ray16); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);
@@ -784,7 +784,7 @@ namespace embree
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRayHit)); break;
-      case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRayHit)); break;
+      case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,(RTCRay*)rays,N,sizeof(RTCRayHit)); break;
       default: assert(false);
       }
       break;
@@ -796,7 +796,7 @@ namespace embree
       for (size_t i=0; i<N; i++) rptrs[i] = &rays[i];
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: rtcIntersect1Mp(scene,&context,rptrs,N); break;
-      case VARIANT_OCCLUDED : rtcOccluded1Mp (scene,&context,rptrs,N); break;
+      case VARIANT_OCCLUDED : rtcOccluded1Mp (scene,&context,(RTCRay**)rptrs,N); break;
       default: assert(false);
       }
       break;

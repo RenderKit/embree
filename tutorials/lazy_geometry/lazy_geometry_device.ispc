@@ -203,7 +203,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
     lazyCreate(instance);
   
   /* trace ray inside object */
-  rtcOccluded(instance->object,context,RTCRayHit_(*ray));
+  rtcOccluded(instance->object,context,RTCRay_(*ray));
 }
 
 uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)
@@ -310,7 +310,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,RTCRayHit_(shadow));
+    rtcOccluded(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

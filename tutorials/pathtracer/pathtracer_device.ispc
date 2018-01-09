@@ -1523,7 +1523,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded(g_scene,&context.context,RTCRayHit_(shadow));
+      rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)

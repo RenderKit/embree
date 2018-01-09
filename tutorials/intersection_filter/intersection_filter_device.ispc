@@ -49,6 +49,12 @@ inline varying RTCRayHit* uniform RTCRayHit_(varying Ray2& ray)
   return ray_ptr;
 }
 
+inline varying RTCRay* uniform RTCRay_(varying Ray2& ray)
+{
+  varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
+  return ray_ptr;
+}
+
 /* 3D procedural transparency */
 inline float transparencyFunction(Vec3f& h)
 {
@@ -103,7 +109,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context.context,RTCRayHit_(shadow));
+    rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -502,7 +508,7 @@ void renderTileStandardStream(uniform int taskIndex,
     InitIntersectionContext(&shadow_context);
     shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccludedVM(g_scene,&shadow_context.context,(varying RTCRayHit* uniform)&shadow_stream,N,sizeof(Ray2));
+    rtcOccludedVM(g_scene,&shadow_context.context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2));
 
     /* add light contribution and generate transmission ray */
     N = -1;

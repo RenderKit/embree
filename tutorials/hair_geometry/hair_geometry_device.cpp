@@ -278,7 +278,7 @@ Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccluded1(scene,&context->context,RTCRayHit_(ray));
+  rtcOccluded1(scene,&context->context,RTCRay_(ray));
 
   return transparency;
 }
