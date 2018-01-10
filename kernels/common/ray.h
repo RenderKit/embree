@@ -599,30 +599,32 @@ namespace embree
       ray.dir.z   = vfloat<K>::loadu(valid, dir_z(offset));
       ray.tfar()  = vfloat<K>::loadu(valid, tfar(offset));
       ray.time    = vfloat<K>::loadu(valid, time(offset));
-      ray.mask    = vint<K>::loadu(valid, mask(offset));
-      ray.id      = vint<K>::loadu(valid, id(offset));
-      ray.flags   = vint<K>::loadu(valid, flags(offset));
 #if !defined(__AVX__)
       /* SSE: some ray members must be loaded with scalar instructions to ensure that we don't cause memory faults,
          because the SSE masked loads always access the entire vector */
-      /*
       if (unlikely(!all(valid)))
       {
-        ray.instID = zero;
+        ray.mask  = zero;
+        ray.id    = zero;
+        ray.flags = zero;
+
         for (size_t k = 0; k < K; k++)
         {
           if (likely(valid[k]))
-            ray.instID[k] = instID(offset)[k];
+          {
+            ray.mask[k]  = mask(offset)[k];
+            ray.id[k]    = id(offset)[k];
+            ray.flags[k] = flags(offset)[k];
+          }
         }
       }
       else
-      */
 #endif
-      /*
       {
-        ray.instID = vint<K>::loadu(valid, instID(offset));
+        ray.mask  = vint<K>::loadu(valid, mask(offset));
+        ray.id    = vint<K>::loadu(valid, id(offset));
+        ray.flags = vint<K>::loadu(valid, flags(offset));
       }
-      */
 
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
