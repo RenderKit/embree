@@ -114,28 +114,28 @@ namespace embree
     prims.resize(prims_i.size());
 
     /* settings for BVH build */
-    RTCBuildSettings settings = rtcDefaultBuildSettings();
-    settings.size = sizeof(settings);
-    settings.flags = RTC_BUILD_FLAG_DYNAMIC;
-    settings.quality = quality;
-    settings.maxBranchingFactor = 2;
-    settings.maxDepth = 1024;
-    settings.sahBlockSize = 1;
-    settings.minLeafSize = 1;
-    settings.maxLeafSize = 1;
-    settings.travCost = 1.0f;
-    settings.intCost = 1.0f;
-    settings.extraSpace = (unsigned int)extraSpace;
-    settings.bvh = bvh;
-    settings.primitives = prims.data();
-    settings.numPrimitives = prims.size();
-    settings.createNode = InnerNode::create;
-    settings.setNodeChildren = InnerNode::setChildren;
-    settings.setNodeBounds = InnerNode::setBounds;
-    settings.createLeaf = LeafNode::create;
-    settings.splitPrimitive = splitPrimitive;
-    settings.buildProgress = buildProgress;
-    settings.userPtr = nullptr;
+    RTCBuildArguments arguments = rtcDefaultBuildArguments();
+    arguments.size = sizeof(arguments);
+    arguments.flags = RTC_BUILD_FLAG_DYNAMIC;
+    arguments.quality = quality;
+    arguments.maxBranchingFactor = 2;
+    arguments.maxDepth = 1024;
+    arguments.sahBlockSize = 1;
+    arguments.minLeafSize = 1;
+    arguments.maxLeafSize = 1;
+    arguments.travCost = 1.0f;
+    arguments.intCost = 1.0f;
+    arguments.extraSpace = (unsigned int)extraSpace;
+    arguments.bvh = bvh;
+    arguments.primitives = prims.data();
+    arguments.numPrimitives = prims.size();
+    arguments.createNode = InnerNode::create;
+    arguments.setNodeChildren = InnerNode::setChildren;
+    arguments.setNodeBounds = InnerNode::setBounds;
+    arguments.createLeaf = LeafNode::create;
+    arguments.splitPrimitive = splitPrimitive;
+    arguments.buildProgress = buildProgress;
+    arguments.userPtr = nullptr;
     
     for (size_t i=0; i<10; i++)
     {
@@ -144,7 +144,7 @@ namespace embree
 
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(&settings);
+      Node* root = (Node*) rtcBuildBVH(&arguments);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;

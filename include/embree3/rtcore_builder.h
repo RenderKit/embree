@@ -87,7 +87,7 @@ struct RTCBuildArguments
 };
 
 /* Creates default build settings.  */
-RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildSettings()
+RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildArguments()
 {
   struct RTCBuildArguments settings;
   settings.size = sizeof(settings);
@@ -118,7 +118,7 @@ RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildSettings()
 RTC_API RTCBVH rtcNewBVH(RTCDevice device);
 
 /* Builds a BVH. */
-RTC_API void* rtcBuildBVH(const struct RTCBuildArguments* settings);
+RTC_API void* rtcBuildBVH(const struct RTCBuildArguments* arguments);
 
 /* Allocates memory using the thread local allocator. */
 RTC_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
