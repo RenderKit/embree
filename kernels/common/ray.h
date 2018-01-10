@@ -562,7 +562,6 @@ namespace embree
       ray.mask    = mask(offset)[0];
       ray.id      = id(offset)[0];
       ray.flags   = flags(offset)[0];
-      ray.instID  = instID(offset)[0];
       ray.geomID  = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -583,7 +582,6 @@ namespace embree
       ray.mask   = vint<K>::loadu(mask(offset));
       ray.id     = vint<K>::loadu(id(offset));
       ray.flags  = vint<K>::loadu(flags(offset));
-      ray.instID = vint<K>::loadu(instID(offset));
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -607,6 +605,7 @@ namespace embree
 #if !defined(__AVX__)
       /* SSE: some ray members must be loaded with scalar instructions to ensure that we don't cause memory faults,
          because the SSE masked loads always access the entire vector */
+      /*
       if (unlikely(!all(valid)))
       {
         ray.instID = zero;
@@ -617,10 +616,13 @@ namespace embree
         }
       }
       else
+      */
 #endif
+      /*
       {
         ray.instID = vint<K>::loadu(valid, instID(offset));
       }
+      */
 
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
@@ -642,7 +644,6 @@ namespace embree
       ray.mask[index_dest]   = mask(offset)[0];
       ray.id[index_dest]     = id(offset)[0];
       ray.flags[index_dest]  = flags(offset)[0];
-      ray.instID[index_dest] = instID(offset)[0];
       ray.geomID[index_dest] = RTC_INVALID_GEOMETRY_ID;
     }
 
@@ -773,8 +774,6 @@ namespace embree
       ray.mask    = vint<K>::template gather<1>(valid, mask(), offset);
       ray.id      = vint<K>::template gather<1>(valid, id(), offset);
       ray.flags   = vint<K>::template gather<1>(valid, flags(), offset);
-
-      ray.instID  = vint<K>::template gather<1>(valid, instID(), offset);
 #else
       ray.org     = zero;
       ray.dir     = zero;
@@ -784,8 +783,6 @@ namespace embree
       ray.mask    = zero;
       ray.id      = zero;
       ray.flags   = zero;
-
-      ray.instID  = zero;
 
       for (size_t k = 0; k < K; k++)
       {
@@ -805,13 +802,11 @@ namespace embree
           ray.mask[k]    = *mask(ofs);
           ray.id[k]      = *id(ofs);
           ray.flags[k]   = *flags(ofs);
-          ray.instID[k]  = *instID(ofs);
         }
       }
 #endif
 
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
-
       return ray;
     }
 
@@ -916,8 +911,6 @@ namespace embree
       ray.mask    = mask ? *(unsigned int* __restrict__)((char*)mask + offset) : -1;
       ray.id      = id ? *(unsigned int* __restrict__)((char*)id + offset) : -1;
       ray.flags   = flags ? *(unsigned int* __restrict__)((char*)flags + offset) : -1;
-
-      ray.instID  = instID ? *(unsigned int* __restrict__)((char*)instID + offset) : -1;
       ray.geomID  = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -938,8 +931,6 @@ namespace embree
       ray.mask    = mask ? vint<K>::loadu(valid, (const void* __restrict__)((char*)mask + offset)) : -1;
       ray.id      = id ? vint<K>::loadu(valid, (const void* __restrict__)((char*)id + offset)) : -1;
       ray.flags   = flags ? vint<K>::loadu(valid, (const void* __restrict__)((char*)flags + offset)) : -1;
-
-      ray.instID  = instID ? vint<K>::loadu(valid, (const void* __restrict__)((char*)instID + offset)) : -1;
       ray.geomID  = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -1042,8 +1033,6 @@ namespace embree
       ray.mask    = mask ? vint<K>::template gather<1>(valid, (int*)mask, offset) : vint<K>(-1);
       ray.id      = id ? vint<K>::template gather<1>(valid, (int*)id, offset) : vint<K>(-1);
       ray.flags   = flags ? vint<K>::template gather<1>(valid, (int*)flags, offset) : vint<K>(-1);
-
-      ray.instID  = instID ? vint<K>::template gather<1>(valid, (int*)instID, offset) : vint<K>(-1);
 #else
       ray.org     = zero;
       ray.dir     = zero;
@@ -1053,8 +1042,6 @@ namespace embree
       ray.mask    = zero;
       ray.id      = zero;
       ray.flags   = zero;
-
-      ray.instID  = zero;
 
       for (size_t k = 0; k < K; k++)
       {
@@ -1072,11 +1059,8 @@ namespace embree
           ray.tnear()[k] = tnear ? *(float* __restrict__)((char*)tnear + ofs) : 0.0f;
           ray.time[k]    = time ? *(float* __restrict__)((char*)time + ofs) : 0.0f;
           ray.mask[k]    = mask ? *(unsigned int* __restrict__)((char*)mask + ofs) : -1;
-
           ray.id[k]      = id ? *(unsigned int* __restrict__)((char*)id + ofs) : -1;
           ray.flags[k]   = flags ? *(unsigned int* __restrict__)((char*)flags + ofs) : -1;
-
-          ray.instID[k]  = instID ? *(unsigned int* __restrict__)((char*)instID + ofs) : -1;
         }
       }
 #endif
@@ -1232,8 +1216,6 @@ namespace embree
   __forceinline RayHit4 RayStreamAOS::getRayByOffset(const vint4& offset)
   {
     RayHit4 ray;
-    /* gather: instID */
-    ray.instID = vint4::gather<1>((int*)&ptr->instID, offset);
 
     /* load and transpose: org.x, org.y, org.z */
     const vfloat4 a0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->org);
@@ -1273,9 +1255,6 @@ namespace embree
   {
     RayHit8 ray;
 
-    /* gather: instID */
-    ray.instID = vint8::gather<1>((int*)&ptr->instID, offset);
-
     /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[0]))->org);
     const vfloat8 ab1 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[1]))->org);
@@ -1314,9 +1293,6 @@ namespace embree
   __forceinline RayHit16 RayStreamAOS::getRayByOffset(const vint16& offset)
   {
     RayHit16 ray;
-
-    /* gather: instID */
-    ray.instID = vint16::gather<1>((int*)&ptr->instID, offset);
 
     /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 0]))->org);
@@ -1428,10 +1404,6 @@ namespace embree
   {
     RayHit4 ray;
 
-    /* gather: instID */
-    for (size_t k = 0; k < 4; k++)
-      ray.instID[k] = ptr[index[k]]->instID;
-
     /* load and transpose: org.x, org.y, org.z */
     const vfloat4 a0 = vfloat4::loadu(&ptr[index[0]]->org);
     const vfloat4 a1 = vfloat4::loadu(&ptr[index[1]]->org);
@@ -1469,10 +1441,6 @@ namespace embree
   __forceinline RayHit8 RayStreamAOP::getRayByIndex(const vint8& index)
   {
     RayHit8 ray;
-
-    /* gather: instID */
-    for (size_t k = 0; k < 8; k++)
-      ray.instID[k] = ptr[index[k]]->instID;
 
     /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0 = vfloat8::loadu(&ptr[index[0]]->org);
@@ -1512,10 +1480,6 @@ namespace embree
   __forceinline RayHit16 RayStreamAOP::getRayByIndex(const vint16& index)
   {
     RayHit16 ray;
-
-    /* gather: instID */
-    for (size_t k = 0; k < 16; k++)
-      ray.instID[k] = ptr[index[k]]->instID;
 
     /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0  = vfloat8::loadu(&ptr[index[0]]->org);
