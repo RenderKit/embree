@@ -109,7 +109,7 @@ namespace embree
                           const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                           const vfloat<K>& time = zero, const vint<K>& mask = -1, const vint<K>& id = 0, const vint<K>& flags = 0)
       : RayK(org, dir, tnear, tfar, time, mask, id, flags),
-        primID(-1), geomID(-1), instID(-1) {}
+        geomID(RTC_INVALID_GEOMETRY_ID) {}
 
     /* Calculates if the hit is valid */
     __forceinline void verifyHit(const vbool<K>& valid0) const
@@ -280,7 +280,7 @@ namespace embree
      *  has to be smaller than far */
     __forceinline RayHitK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1, int id = 0, int flags = 0)
       : RayK(org, dir, tnear, tfar, time, mask, id, flags),
-        primID(-1), geomID(-1), instID(-1) {}
+        geomID(RTC_INVALID_GEOMETRY_ID) {}
 
     /* Calculates if the hit is valid */
     __forceinline void verifyHit() const
