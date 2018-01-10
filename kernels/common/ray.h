@@ -41,9 +41,6 @@ namespace embree
     /* Returns the size of the ray */
     static __forceinline size_t size() { return K; }
 
-    /* Tests if we hit something */
-    //__forceinline operator vbool<K>() const { return geomID != vint<K>(-1); }
-
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline vbool<K> valid() const
     {
@@ -236,9 +233,6 @@ namespace embree
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1, int id = 0, int flags = 0)
       : org(org,tnear), dir(dir,tfar), time(time), mask(mask), id(id), flags(flags) {}
-
-    /* Tests if we hit something */
-    //__forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
@@ -483,7 +477,7 @@ namespace embree
 
   /* Outputs ray to stream */
   template<int K>
-  inline std::ostream& operator<<(std::ostream& cout, const RayK<K>& ray)
+  inline std::ostream& operator <<(std::ostream& cout, const RayK<K>& ray)
   {
     return cout << "{ " << std::endl
                 << "  org = " << ray.org << std::endl
@@ -498,7 +492,7 @@ namespace embree
   }
 
   template<int K>
-  inline std::ostream& operator<<(std::ostream& cout, const RayHitK<K>& ray)
+  inline std::ostream& operator <<(std::ostream& cout, const RayHitK<K>& ray)
   {
     return cout << "{ " << std::endl
                 << "  org = " << ray.org << std::endl

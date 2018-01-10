@@ -354,19 +354,19 @@ namespace embree
       }
       
 #if defined(__SSE__)
-      __forceinline void occluded(const vbool4& valid, RayHitK<4>& ray, IntersectContext* context) {
+      __forceinline void occluded(const vbool4& valid, RayK<4>& ray, IntersectContext* context) {
         const vint<4> mask = valid.mask32();
         occluded4(&mask,(RTCRay4&)ray,context);
       }
 #endif
 #if defined(__AVX__)
-      __forceinline void occluded(const vbool8& valid, RayHitK<8>& ray, IntersectContext* context) {
+      __forceinline void occluded(const vbool8& valid, RayK<8>& ray, IntersectContext* context) {
         const vint<8> mask = valid.mask32();
         occluded8(&mask,(RTCRay8&)ray,context);
       }
 #endif
 #if defined(__AVX512F__)
-      __forceinline void occluded(const vbool16& valid, RayHitK<16>& ray, IntersectContext* context) {
+      __forceinline void occluded(const vbool16& valid, RayK<16>& ray, IntersectContext* context) {
         const vint<16> mask = valid.mask32();
         occluded16(&mask,(RTCRay16&)ray,context);
       }
