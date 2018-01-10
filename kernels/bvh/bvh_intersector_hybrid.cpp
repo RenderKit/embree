@@ -533,7 +533,7 @@ namespace embree
                                                                                                NodeRef root,
                                                                                                size_t k,
                                                                                                Precalculations& pre,
-                                                                                               RayHitK<K>& ray,
+                                                                                               RayK<K>& ray,
                                                                                                const TravRayK<K, robust>& tray,
                                                                                                IntersectContext* context)
       {
@@ -596,7 +596,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, single>::occluded(vint<K>* __restrict__ valid_i,
                                                                                               Accel::Intersectors* __restrict__ This,
-                                                                                              RayHitK<K>& __restrict__ ray,
+                                                                                              RayK<K>& __restrict__ ray,
                                                                                               IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*)This->ptr;
@@ -771,7 +771,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, single>::occludedCoherent(vint<K>* __restrict__ valid_i,
                                                                                                       Accel::Intersectors* __restrict__ This,
-                                                                                                      RayHitK<K>& __restrict__ ray,
+                                                                                                      RayK<K>& __restrict__ ray,
                                                                                                       IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*)This->ptr;

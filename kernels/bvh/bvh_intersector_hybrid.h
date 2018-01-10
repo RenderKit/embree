@@ -56,14 +56,14 @@ namespace embree
       static void intersect1(const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
                              RayHitK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
       static bool occluded1(const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
-                            RayHitK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
+                            RayK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
 
     public:
       static void intersect(vint<K>* valid, Accel::Intersectors* This, RayHitK<K>& ray, IntersectContext* context);
-      static void occluded (vint<K>* valid, Accel::Intersectors* This, RayHitK<K>& ray, IntersectContext* context);
+      static void occluded (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
       static void intersectCoherent(vint<K>* valid, Accel::Intersectors* This, RayHitK<K>& ray, IntersectContext* context);
-      static void occludedCoherent (vint<K>* valid, Accel::Intersectors* This, RayHitK<K>& ray, IntersectContext* context);
+      static void occludedCoherent (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
     };
 

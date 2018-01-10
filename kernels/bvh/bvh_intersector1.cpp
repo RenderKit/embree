@@ -125,7 +125,7 @@ namespace embree
 
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
     void BVHNIntersector1<N, types, robust, PrimitiveIntersector1>::occluded(const Accel::Intersectors* __restrict__ This,
-                                                                             RayHit& __restrict__ ray,
+                                                                             Ray& __restrict__ ray,
                                                                              IntersectContext* __restrict__ context)
     {
       /* early out for already occluded rays */

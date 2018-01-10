@@ -388,12 +388,12 @@ namespace embree
     template<int M, int Mx, bool filter>
       struct Occluded1EpilogM
       {
-        RayHit& ray;
+        Ray& ray;
         IntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         
-        __forceinline Occluded1EpilogM(RayHit& ray,
+        __forceinline Occluded1EpilogM(Ray& ray,
                                        IntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs)
@@ -639,14 +639,14 @@ namespace embree
       struct OccludedKEpilogM
       {
         vbool<K>& valid0;
-        RayHitK<K>& ray;
+        RayK<K>& ray;
         IntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         const size_t i;
         
         __forceinline OccludedKEpilogM(vbool<K>& valid0,
-                                       RayHitK<K>& ray,
+                                       RayK<K>& ray,
                                        IntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
@@ -895,13 +895,13 @@ namespace embree
     template<int M, int Mx, int K, bool filter>
       struct Occluded1KEpilogM
       {
-        RayHitK<K>& ray;
+        RayK<K>& ray;
         size_t k;
         IntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         
-        __forceinline Occluded1KEpilogM(RayHitK<K>& ray, size_t k,
+        __forceinline Occluded1KEpilogM(RayK<K>& ray, size_t k,
                                         IntersectContext* context, 
                                         const vint<M>& geomIDs, 
                                         const vint<M>& primIDs)

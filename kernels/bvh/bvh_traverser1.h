@@ -823,6 +823,64 @@ namespace embree
         return false;
       }
 
+      __forceinline bool traverseTransform(NodeRef& cur,
+                                           Ray& ray,
+                                           TravRayBase<N,Nx,robust>& tray,
+                                           IntersectContext* context,
+                                           NodeRef*& stackPtr,
+                                           NodeRef* stackEnd)
+      {
+        /*! process transformation node */
+        if (unlikely(cur.isTransformNode(types)))
+        {
+          STAT3(shadow.trav_xfm_nodes,1,1,1);
+          const TransformNode* node = cur.transformNode();
+#if defined(EMBREE_RAY_MASK)
+          if (unlikely((ray.mask & node->mask) == 0)) return true;
+#endif
+          //context->geomID_to_instID = &node->instID;
+
+#if ENABLE_TRANSFORM_CACHE
+          const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
+          if (likely(any(xfm_hit))) {
+            const int slot = __bsf(movemask(xfm_hit));
+            tray = cacheEntry[slot];
+            ray.org = Vec3fa(tray.org_xyz,ray.tnear());
+            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar());
+          }
+          else
+#endif
+            //if (likely(!node->identity))
+          {
+            const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
+            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar());
+            new (&tray) TravRayBase<N,Nx,robust>(ray_org, ray_dir);
+            ray.org = ray_org;
+            ray.dir = ray_dir;
+#if ENABLE_TRANSFORM_CACHE
+            cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
+            cacheEntry[cacheSlot&(VSIZEX-1)] = tray;
+            cacheSlot++;
+#endif
+          }
+          *stackPtr = BVH::popRay; stackPtr++;
+          *stackPtr = node->child; stackPtr++;
+          return true;
+        }
+
+        /*! restore toplevel ray */
+        if (cur == BVH::popRay)
+        {
+          //context->geomID_to_instID = nullptr;
+          tray = (TravRayBase<N,Nx,robust>&)topRay;
+          ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
+          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar());
+          return true;
+        }
+
+        return false;
+      }
+
     private:
       TravRayBase<N,Nx,robust> topRay;
 
@@ -844,7 +902,7 @@ namespace embree
       __forceinline explicit BVHNNodeTraverser1Transform(const TravRayBase<N,Nx,robust>& tray) {}
 
       __forceinline bool traverseTransform(NodeRef& cur,
-                                           RayHit& ray,
+                                           Ray& ray,
                                            TravRayBase<N,Nx,robust>& tray,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
@@ -854,7 +912,7 @@ namespace embree
       }
 
       __forceinline bool traverseTransform(NodeRef& cur,
-                                           RayHit& ray,
+                                           Ray& ray,
                                            TravRayBase<N,Nx,robust>& tray,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,

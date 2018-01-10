@@ -43,7 +43,7 @@ namespace embree
 
     public:
       static void intersect(const Accel::Intersectors* This, RayHit& ray, IntersectContext* context);
-      static void occluded (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context);
+      static void occluded (const Accel::Intersectors* This, Ray& ray, IntersectContext* context);
     };
   }
 }
