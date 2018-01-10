@@ -329,8 +329,8 @@ public:
   float time[N];
   unsigned mask[N];
   
-  unsigned id[N];
-  unsigned flags[N];
+  unsigned int id[N];
+  unsigned int flags[N];
 };
 
 /* Helper structure to create a hit packet of compile time size N */
@@ -344,9 +344,9 @@ struct RTCHitNt
   float u[N];
   float v[N];
 
-  unsigned primID[N];
-  unsigned geomID[N];
-  unsigned instID[RTC_MAX_INSTANCE_LEVELS][N];
+  unsigned int primID[N];
+  unsigned int geomID[N];
+  unsigned int instID[RTC_MAX_INSTANCE_LEVELS][N];
 };
 
 RTC_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsigned int i)

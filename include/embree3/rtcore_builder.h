@@ -29,9 +29,9 @@ typedef struct RTCBVHTy* RTCBVH;
 struct RTC_ALIGN(32) RTCBuildPrimitive
 {
   float lower_x, lower_y, lower_z; 
-  int geomID;
+  unsigned int geomID;
   float upper_x, upper_y, upper_z;
-  int primID;
+  unsigned int primID;
 };
 
 /* Defines an opaque thread local allocator type */
@@ -60,7 +60,7 @@ enum RTCBuildFlags
 };
   
 /* Input for builders */
-struct RTCBuildSettings
+struct RTCBuildArguments
 {
   unsigned int size;
   enum RTCBuildQuality quality;
@@ -87,9 +87,9 @@ struct RTCBuildSettings
 };
 
 /* Creates default build settings.  */
-RTC_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
+RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildSettings()
 {
-  struct RTCBuildSettings settings;
+  struct RTCBuildArguments settings;
   settings.size = sizeof(settings);
   settings.quality = RTC_BUILD_QUALITY_MEDIUM;
   settings.flags = RTC_BUILD_FLAG_NONE;
@@ -118,7 +118,7 @@ RTC_FORCEINLINE struct RTCBuildSettings rtcDefaultBuildSettings()
 RTC_API RTCBVH rtcNewBVH(RTCDevice device);
 
 /* Builds a BVH. */
-RTC_API void* rtcBuildBVH(const struct RTCBuildSettings* settings);
+RTC_API void* rtcBuildBVH(const struct RTCBuildArguments* settings);
 
 /* Allocates memory using the thread local allocator. */
 RTC_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
