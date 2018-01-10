@@ -43,7 +43,7 @@ namespace embree
     static void occluded4 (const void* valid, Accel::Intersectors* This, RTCRay4& ray, IntersectContext* context);
     static void occluded8 (const void* valid, Accel::Intersectors* This, RTCRay8& ray, IntersectContext* context);
     static void occluded16 (const void* valid, Accel::Intersectors* This, RTCRay16& ray, IntersectContext* context);
-    static void occludedN (Accel::Intersectors* This, RayHitK<VSIZEX>** ray, const size_t N, IntersectContext* context);
+    static void occludedN (Accel::Intersectors* This, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context);
 
   public:
     void print(size_t ident);

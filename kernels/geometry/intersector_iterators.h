@@ -113,7 +113,7 @@ namespace embree
           }
         }
         
-        static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayHitK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
+        static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
           PrecalculationsK pre(valid,ray); // FIXME: might cause trouble
           vbool<K> valid0 = valid;
@@ -132,7 +132,7 @@ namespace embree
           }
         }
         
-        static __forceinline bool occluded(RayHitK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node) 
+        static __forceinline bool occluded(RayK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
           PrecalculationsK pre(ray.tnear() <= ray.tfar(),ray); // FIXME: might cause trouble
           for (size_t i=0; i<num; i++) {
@@ -143,7 +143,7 @@ namespace embree
         }
 
 
-        static __forceinline size_t occluded(size_t cur_mask, RayHitK<K>** __restrict__ inputPackets, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node) 
+        static __forceinline size_t occluded(size_t cur_mask, RayK<K>** __restrict__ inputPackets, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
           size_t m_occluded = 0;
           for (size_t i=0; i<num; i++) {

@@ -56,7 +56,7 @@ namespace embree
           if (intersect)
             scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->intersectors.occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, size, context);
 
           /* convert from SOA to AOS */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -137,7 +137,7 @@ namespace embree
             ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
           }
 
-          scene->intersectors.occludedN(rayPtrs, numOctantRays, context);          
+          scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, numOctantRays, context);
 
           for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
           {
@@ -203,7 +203,7 @@ namespace embree
           if (intersect)
             scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->intersectors.occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, size, context);
 
           /* convert from SOA to AOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -282,7 +282,7 @@ namespace embree
             ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
           }
 
-          scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
+          scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, numOctantRays, context);
 
           for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
           {
@@ -344,7 +344,7 @@ namespace embree
               if (intersect)
                 scene->intersectors.intersectN(rayPtrs, size, context);
               else
-                scene->intersectors.occludedN(rayPtrs, size, context);
+                scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, size, context);
               packetIndex = 0;
             }
           }
@@ -356,7 +356,7 @@ namespace embree
             if (intersect)
               scene->intersectors.intersectN(rayPtrs, size, context);
             else
-              scene->intersectors.occludedN(rayPtrs, size, context);
+              scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, size, context);
           }
         }
         else if (unlikely(!intersect))
@@ -428,7 +428,7 @@ namespace embree
               ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
             }
 
-            scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
+            scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, numOctantRays, context);
 
             for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
             {
@@ -517,7 +517,7 @@ namespace embree
           if (intersect)
             scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->intersectors.occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, size, context);
 
           /* convert from SOA to SOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -597,7 +597,7 @@ namespace embree
             ray.tfar()  = select(valid, ray.tfar(),  neg_inf);
           }
 
-          scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
+          scene->intersectors.occludedN((RayK<VSIZEX>**)rayPtrs, numOctantRays, context);
 
           for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
           {

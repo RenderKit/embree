@@ -58,7 +58,7 @@ namespace embree
       __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
-      const size_t m_active = initPacketsAndFrustum<false>(inputPackets, numOctantRays, packets, frustum, commonOctant);
+      const size_t m_active = initPacketsAndFrustum((RayK<K>**)inputPackets, numOctantRays, packets, frustum, commonOctant);
       if (unlikely(m_active == 0)) return;
 
       /* case of non-common origin */
@@ -151,7 +151,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
-                                                                                                      RayHitK<K>** inputPackets,
+                                                                                                      RayK<K>** inputPackets,
                                                                                                       size_t numOctantRays,
                                                                                                       IntersectContext* context)
     {
@@ -171,7 +171,7 @@ namespace embree
       __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
-      size_t m_active = initPacketsAndFrustum<true>(inputPackets, numOctantRays, packets, frustum, commonOctant);
+      size_t m_active = initPacketsAndFrustum(inputPackets, numOctantRays, packets, frustum, commonOctant);
 
       /* valid rays */
       if (unlikely(m_active == 0)) return;
@@ -268,7 +268,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedIncoherent(Accel::Intersectors* __restrict__ This,
-                                                                                                                RayHitK<K>** inputPackets,
+                                                                                                                RayK<K>** inputPackets,
                                                                                                                 size_t numOctantRays,
                                                                                                                 IntersectContext* context)
     {
@@ -370,7 +370,7 @@ namespace embree
         {
           const size_t rayID = __bscf(bits);
 
-          RayHitK<K> &ray = *inputPackets[rayID / K];
+          RayK<K> &ray = *inputPackets[rayID / K];
           const size_t k = rayID % K;
           if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
           {
@@ -430,7 +430,7 @@ namespace embree
 
     template<int N, int Nx, int K>
     void BVHNIntersectorStreamPacketFallback<N, Nx, K>::occluded(Accel::Intersectors* __restrict__ This,
-                                                                 RayHitK<K>** inputRays,
+                                                                 RayK<K>** inputRays,
                                                                  size_t numTotalRays,
                                                                  IntersectContext* context)
     {
@@ -439,7 +439,7 @@ namespace embree
       {
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayHitK<K>& ray = *(inputRays[i / K]);
+        RayK<K>& ray = *(inputRays[i / K]);
         valid &= ray.tnear() <= ray.tfar();
         This->occluded(valid, ray, context);
       }

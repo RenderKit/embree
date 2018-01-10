@@ -139,7 +139,7 @@ namespace embree
     }
   }
 
-  void AccelN::occludedN (Accel::Intersectors* This_in, RayHitK<VSIZEX>** ray, const size_t N, IntersectContext* context)
+  void AccelN::occludedN (Accel::Intersectors* This_in, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)This_in->ptr;
     size_t M = N;

@@ -118,7 +118,7 @@ namespace embree
 
     /*! Type of intersect function pointer for ray packets of size N. */
     typedef void (*OccludedFuncN)(Intersectors* This,  /*!< this pointer to accel */
-                                  RayHitK<VSIZEX>** ray,  /*!< ray stream to intersect */
+                                  RayK<VSIZEX>** ray,  /*!< ray stream to intersect */
                                   const size_t N,      /*!< number of rays in stream */
                                   IntersectContext* context   /*!< layout flags */);
     typedef void (*ErrorFunc) ();
@@ -336,7 +336,7 @@ namespace embree
       }
       
       /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
-      __forceinline void occludedN (RayHitK<VSIZEX>** rayN, const size_t N, IntersectContext* context)
+      __forceinline void occludedN (RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context)
       {
         //assert(intersectorN.occluded);
         if (intersectorN.occluded)
@@ -346,7 +346,7 @@ namespace embree
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {
-            RayHitK<VSIZEX> &ray = *rayN[i];
+            RayK<VSIZEX> &ray = *rayN[i];
             vbool<VSIZEX> valid = ray.tnear() <= ray.tfar();
             occluded(valid,ray,context);
           }      
