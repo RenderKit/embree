@@ -69,7 +69,7 @@ typedef int ssize_t;
 #define RTC_MAX_TIME_STEP_COUNT 129
 
 /* maximal number of instancing levels */
-#define RTC_MAX_INSTANCE_LEVELS 1
+#define RTC_MAX_INSTANCE_LEVEL_COUNT 1
   
 /* Specifies the format of buffers and other data structures */
 enum RTCFormat
