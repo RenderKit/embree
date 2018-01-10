@@ -629,25 +629,6 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void getRayByIndex(size_t index, RayHitK<K>& ray, size_t index_dest)
-    {
-      const size_t offset = index * sizeof(float);
-      ray.org.x[index_dest]  = org_x(offset)[0];
-      ray.org.y[index_dest]  = org_y(offset)[0];
-      ray.org.z[index_dest]  = org_z(offset)[0];
-      ray.tnear[index_dest]  = tnear(offset)[0];
-      ray.dir.x[index_dest]  = dir_x(offset)[0];
-      ray.dir.y[index_dest]  = dir_y(offset)[0];
-      ray.dir.z[index_dest]  = dir_z(offset)[0];
-      ray.tfar[index_dest]   = tfar(offset)[0];
-      ray.time[index_dest]   = time(offset)[0];
-      ray.mask[index_dest]   = mask(offset)[0];
-      ray.id[index_dest]     = id(offset)[0];
-      ray.flags[index_dest]  = flags(offset)[0];
-      ray.geomID[index_dest] = RTC_INVALID_GEOMETRY_ID;
-    }
-
-    template<int K>
     __forceinline void setHitByIndex(size_t index, const RayHitK<K>& ray, size_t index_source, bool intersect = true)
     {
       const size_t offset = index * sizeof(float);
