@@ -199,7 +199,7 @@ unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform cons
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
-  //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
+  //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
@@ -225,7 +225,7 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayHitN* uniform rayN = (struct RTCRayHitN* uniform)args->ray;
-  //struct RTCHitN* uniform hitN = args->potentialHit;
+  //struct RTCHitN* uniform hitN = args->hit;
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
@@ -275,7 +275,7 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
-  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
+  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
@@ -313,7 +313,7 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const 
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayHitN* uniform rayN = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform hitN = args->potentialHit;
+  struct RTCHitN* uniform hitN = args->hit;
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */

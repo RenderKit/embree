@@ -248,14 +248,14 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   if (!transparency) return;
     
   int* valid_i = args->valid;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
+  unsigned int geomID = RTCHitN_geomID(hit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = Vec3fa(0.0f);

@@ -47,7 +47,7 @@ namespace embree
       if (args->valid[0] == 0)
         return false;
 #endif
-      copyHitToRay(*(Ray*)args->ray,*(Hit*)args->potentialHit);
+      copyHitToRay(*(Ray*)args->ray,*(Hit*)args->hit);
       return true;
     }
     
@@ -59,7 +59,7 @@ namespace embree
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
-      args.potentialHit = (RTCHitN*)&hit;
+      args.hit = (RTCHitN*)&hit;
       args.N = 1;
       return runIntersectionFilter1Helper(&args,geometry,context);
     }
@@ -116,7 +116,7 @@ namespace embree
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
-      args.potentialHit = (RTCHitN*)&hit;
+      args.hit = (RTCHitN*)&hit;
       args.N = 1;
       return runOcclusionFilter1Helper(&args,geometry,context);
     }
@@ -168,7 +168,7 @@ namespace embree
       if (none(valid_o)) return valid_o;
 #endif
       
-      copyHitToRay(valid_o,*(RayK<K>*)args->ray,*(HitK<K>*)args->potentialHit);
+      copyHitToRay(valid_o,*(RayK<K>*)args->ray,*(HitK<K>*)args->hit);
       return valid_o;
     }
     
@@ -181,7 +181,7 @@ namespace embree
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
-      args.potentialHit = (RTCHitN*)&hit;
+      args.hit = (RTCHitN*)&hit;
       args.N = K;
       return runIntersectionFilterHelper<K>(&args,geometry,context);
     }
@@ -225,7 +225,7 @@ namespace embree
       args.geomUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
-      args.potentialHit = (RTCHitN*)&hit;
+      args.hit = (RTCHitN*)&hit;
       args.N = K;
       return runOcclusionFilterHelper<K>(&args,geometry,context);
     }

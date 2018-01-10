@@ -192,7 +192,7 @@ struct RTCFilterFunctionNArguments
   void* uniform geomUserPtr;
   const RTCIntersectContext* uniform context;
   struct RTCRayN* uniform ray;
-  struct RTCHitN* uniform potentialHit;
+  struct RTCHitN* uniform hit;
   uniform unsigned int N;
 };
 

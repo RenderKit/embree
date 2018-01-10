@@ -246,14 +246,14 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   if (!transparency) return;
     
   uniform int* uniform valid_i = args->valid;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
+  varying unsigned int geomID = RTCHitN_geomID(hit,N,0);
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = make_Vec3f(0.0f);

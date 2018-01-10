@@ -344,7 +344,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = (RTCRayN *)args->rayhit;
-    fargs.potentialHit = (RTCHitN*)&hit;
+    fargs.hit = (RTCHitN*)&hit;
     fargs.N = 1;
 
     const float old_t = ray->tfar();
@@ -376,7 +376,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = (RTCRayN *)args->rayhit;
-    fargs.potentialHit = (RTCHitN*)&hit;
+    fargs.hit = (RTCHitN*)&hit;
     fargs.N = 1;
 
     const float old_t = ray->tfar();
@@ -440,7 +440,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = args->ray;
-    fargs.potentialHit = (RTCHitN*)&hit;
+    fargs.hit = (RTCHitN*)&hit;
     fargs.N = 1;
 
     const float old_t = ray->tfar();
@@ -471,7 +471,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = args->ray;
-    fargs.potentialHit = (RTCHitN*)&hit;
+    fargs.hit = (RTCHitN*)&hit;
     fargs.N = 1;
 
     const float old_t = ray->tfar();
@@ -552,7 +552,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
-      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.hit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
       ray->tfar() = t0;
@@ -581,7 +581,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
-      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.hit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
       ray->tfar() = t1; 
@@ -658,7 +658,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
-      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.hit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
       ray->tfar() = t0;  
@@ -691,7 +691,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
-      fargs.potentialHit = (RTCHitN*)&potentialhit;
+      fargs.hit = (RTCHitN*)&potentialhit;
       fargs.N = 1;
 
       ray->tfar() = t1;    
@@ -711,7 +711,7 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
-  //struct RTCHit* hit = (struct RTCHit*)args->potentialHit;
+  //struct RTCHit* hit = (struct RTCHit*)args->hit;
   const unsigned int N = args->N;
   assert(N == 1);
 
@@ -737,7 +737,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct RTCRayHitN* ray = (RTCRayHitN*)args->ray;
-  //struct RTCHitN* potentialHit = args->potentialHit;
+  //struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
                
   /* avoid crashing when debug visualizations are used */
@@ -757,7 +757,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
     /* calculate hit point */
     Vec3fa ray_org = Vec3fa(RTCRayHitN_org_x(ray,N,ui),RTCRayHitN_org_y(ray,N,ui),RTCRayHitN_org_z(ray,N,ui));
     Vec3fa ray_dir = Vec3fa(RTCRayHitN_dir_x(ray,N,ui),RTCRayHitN_dir_y(ray,N,ui),RTCRayHitN_dir_z(ray,N,ui));
-    //float hit_t = RTCHitN_t(potentialHit,N,ui);
+    //float hit_t = RTCHitN_t(hit,N,ui);
     float hit_t = RTCRayHitN_tfar(ray,N,ui);
 
     /* carve out parts of the sphere */

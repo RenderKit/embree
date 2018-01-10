@@ -73,7 +73,7 @@ RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonit
 RTC_API void rtcSetSceneBuildQuality(RTCScene scene, uniform RTCBuildQuality quality);
 
 /* Sets the scene flags. */
-RTC_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags sflags);
+RTC_API void rtcSetSceneFlags(RTCScene scene, uniform RTCSceneFlags flags);
 
 /* Returns the scene flags. */
 RTC_API uniform RTCSceneFlags rtcGetSceneFlags(RTCScene scene);

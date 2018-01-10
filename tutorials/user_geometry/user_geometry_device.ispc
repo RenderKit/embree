@@ -342,7 +342,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = (RTCRayN *uniform)args->rayhit;
-    fargs.potentialHit = (RTCHitN* uniform)&hit;
+    fargs.hit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
 
     const float old_t = ray->tfar;
@@ -374,7 +374,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = (RTCRayN *uniform)args->rayhit;
-    fargs.potentialHit = (RTCHitN* uniform)&hit;
+    fargs.hit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
 
     const float old_t = ray->tfar;
@@ -438,7 +438,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = args->ray;
-    fargs.potentialHit = (RTCHitN* uniform)&hit;
+    fargs.hit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
 
     const float old_t = ray->tfar;
@@ -469,7 +469,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = args->ray;
-    fargs.potentialHit = (RTCHitN* uniform)&hit;
+    fargs.hit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
 
     const float old_t = ray->tfar;
@@ -550,7 +550,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN* uniform)ray;
-      fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
+      fargs.hit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
 
       ray->tfar = t0;
@@ -579,7 +579,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN* uniform)ray;
-      fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
+      fargs.hit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
 
       ray->tfar = t1; 
@@ -656,7 +656,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN* uniform)ray;
-      fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
+      fargs.hit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
 
       ray->tfar = t0;  
@@ -689,7 +689,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
       fargs.geomUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN* uniform)ray;
-      fargs.potentialHit = (RTCHitN* uniform)&potentialhit;
+      fargs.hit = (RTCHitN* uniform)&potentialhit;
       fargs.N = programCount;
 
       ray->tfar = t1;    
@@ -709,7 +709,7 @@ unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform co
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying struct Ray* uniform ray    = (varying struct Ray* uniform)args->ray;
-  //varying struct RTCHit* uniform hit = (varying struct RTCHit* uniform)args->potentialHit;
+  //varying struct RTCHit* uniform hit = (varying struct RTCHit* uniform)args->hit;
   const uniform unsigned int N = args->N;
   assert(N == programCount);
 
@@ -735,7 +735,7 @@ unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform c
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayHitN* uniform ray = (RTCRayHitN* uniform)args->ray;
-  //struct RTCHitN* uniform potentialHit = args->potentialHit;
+  //struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
                
   /* avoid crashing when debug visualizations are used */
@@ -755,7 +755,7 @@ unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform c
     /* calculate hit point */
     Vec3f ray_org = make_Vec3f(RTCRayHitN_org_x(ray,N,ui),RTCRayHitN_org_y(ray,N,ui),RTCRayHitN_org_z(ray,N,ui));
     Vec3f ray_dir = make_Vec3f(RTCRayHitN_dir_x(ray,N,ui),RTCRayHitN_dir_y(ray,N,ui),RTCRayHitN_dir_z(ray,N,ui));
-    //float hit_t = RTCHitN_t(potentialHit,N,ui);
+    //float hit_t = RTCHitN_t(hit,N,ui);
     float hit_t = RTCRayHitN_tfar(ray,N,ui);
 
     /* carve out parts of the sphere */

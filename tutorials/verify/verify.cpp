@@ -2475,24 +2475,24 @@ namespace embree
 	if (args->valid[i] != -1) continue;
 
         /* reject hit */
-        //PRINT( RTCHitN_primID(potentialHit,N,i) & 2 );
-        if (RTCHitN_primID(args->potentialHit,args->N,i) & 2) {
+        //PRINT( RTCHitN_primID(hit,N,i) & 2 );
+        if (RTCHitN_primID(args->hit,args->N,i) & 2) {
           args->valid[i] = 0;
         }
 
         /* accept hit */
         else {
           /*
-          RTCRayHitN_instID(ray,N,i) = RTCHitN_instID(potentialHit,N,i);
-          RTCRayHitN_geomID(ray,N,i) = RTCHitN_geomID(potentialHit,N,i);
-          RTCRayHitN_primID(ray,N,i) = RTCHitN_primID(potentialHit,N,i);
-          RTCRayHitN_u(ray,N,i) = RTCHitN_u(potentialHit,N,i);
-          RTCRayHitN_v(ray,N,i) = RTCHitN_v(potentialHit,N,i);
-          RTCRayHitN_tfar(ray,N,i) = RTCHitN_t(potentialHit,N,i);
+          RTCRayHitN_instID(ray,N,i) = RTCHitN_instID(hit,N,i);
+          RTCRayHitN_geomID(ray,N,i) = RTCHitN_geomID(hit,N,i);
+          RTCRayHitN_primID(ray,N,i) = RTCHitN_primID(hit,N,i);
+          RTCRayHitN_u(ray,N,i) = RTCHitN_u(hit,N,i);
+          RTCRayHitN_v(ray,N,i) = RTCHitN_v(hit,N,i);
+          RTCRayHitN_tfar(ray,N,i) = RTCHitN_t(hit,N,i);
           
-          RTCRayHitN_Ng_x(ray,N,i) = RTCHitN_Ng_x(potentialHit,N,i);
-          RTCRayHitN_Ng_y(ray,N,i) = RTCHitN_Ng_y(potentialHit,N,i);
-          RTCRayHitN_Ng_z(ray,N,i) = RTCHitN_Ng_z(potentialHit,N,i);
+          RTCRayHitN_Ng_x(ray,N,i) = RTCHitN_Ng_x(hit,N,i);
+          RTCRayHitN_Ng_y(ray,N,i) = RTCHitN_Ng_y(hit,N,i);
+          RTCRayHitN_Ng_z(ray,N,i) = RTCHitN_Ng_z(hit,N,i);
           */
         }
       }

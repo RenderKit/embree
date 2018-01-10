@@ -206,13 +206,13 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags sflags) 
+  RTC_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneFlags);
     RTC_VERIFY_HANDLE(hscene);
-    scene->setSceneFlags(sflags);
+    scene->setSceneFlags(flags);
     RTC_CATCH_END2(scene);
   }
 

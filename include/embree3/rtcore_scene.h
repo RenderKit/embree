@@ -79,7 +79,7 @@ RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonit
 RTC_API void rtcSetSceneBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
 
 /* Sets the scene flags. */
-RTC_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags sflags);
+RTC_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags flags);
 
 /* Returns the scene flags. */
 RTC_API enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);

@@ -1280,7 +1280,7 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
 {
   uniform int* uniform valid_i = args->valid;
   struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
@@ -1291,17 +1291,17 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  //const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1354,7 +1354,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   
   uniform int* uniform valid_i = args->valid;
   struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
@@ -1365,18 +1365,18 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  //const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
 
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1406,7 +1406,7 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
@@ -1415,7 +1415,7 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
   
   const uniform unsigned int rayID = 0;
   
-  unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  unsigned int hit_geomID = RTCHitN_geomID(hit,N,rayID);
   Vec3f Kt = make_Vec3f(0.0f);
   foreach_unique(geomID in hit_geomID)
   {

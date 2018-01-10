@@ -201,7 +201,7 @@ void intersectionFilter(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   Ray* ray = (Ray*)args->ray;
-  //RTCHit* hit = (RTCHit*)args->potentialHit;
+  //RTCHit* hit = (RTCHit*)args->hit;
 
   /* ignore inactive rays */
   if (valid[0] != -1) return;
@@ -227,7 +227,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct RTCRayHitN* rayN = (struct RTCRayHitN*)args->ray;
-  //struct RTCHitN* hitN = args->potentialHit;
+  //struct RTCHitN* hitN = args->hit;
   const unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
@@ -277,7 +277,7 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   Ray* ray = (Ray*)args->ray;
-  RTCHit* hit = (RTCHit*)args->potentialHit;
+  RTCHit* hit = (RTCHit*)args->hit;
 
   /* ignore inactive rays */
   if (valid[0] != -1) return;
@@ -315,7 +315,7 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct RTCRayHitN* rayN = (struct RTCRayHitN*)args->ray;
-  struct RTCHitN* hitN = args->potentialHit;
+  struct RTCHitN* hitN = args->hit;
   const unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
