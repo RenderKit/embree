@@ -1184,8 +1184,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
-                                       RTCBuffer hbuffer, size_t byteOffset, size_t byteStride, unsigned int itemCount)
+  RTC_API void rtcSetGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, RTCBuffer hbuffer, size_t byteOffset, size_t byteStride, size_t itemCount)
   {
     Ref<Geometry> geometry = (Geometry*)hgeometry;
     Ref<Buffer> buffer = (Buffer*)hbuffer;
@@ -1199,8 +1198,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
-                                             const void* ptr, size_t byteOffset, size_t byteStride, unsigned int itemCount)
+  RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, size_t byteOffset, size_t byteStride, size_t itemCount)
   {
     Ref<Geometry> geometry = (Geometry*)hgeometry;
     RTC_CATCH_BEGIN;
@@ -1211,8 +1209,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format,
-                                           size_t byteStride, unsigned int itemCount)
+  RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount)
   {
     Ref<Geometry> geometry = (Geometry*)hgeometry;
     RTC_CATCH_BEGIN;

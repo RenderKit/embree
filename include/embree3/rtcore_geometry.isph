@@ -155,16 +155,13 @@ RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, uniform RTCBuildQu
 
 
 /* Sets geometry buffer. */
-RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                     uniform RTCBuffer buffer, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform unsigned int itemCount);
+RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format, uniform RTCBuffer buffer, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform uintptr_t itemCount);
 
 /* Sets shared geometry buffer. */
-RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                           const void* uniform ptr, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform unsigned int itemCount);
+RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format, const void* uniform ptr, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform uintptr_t itemCount);
 
 /* Sets new geometry buffer. */
-RTC_API void* uniform rtcSetNewGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format,
-                                                 uniform uintptr_t byteStride, uniform unsigned int itemCount);
+RTC_API void* uniform rtcSetNewGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format, uniform uintptr_t byteStride, uniform uintptr_t itemCount);
 
 /* Returns a pointer to the buffer data. */
 RTC_API void* uniform rtcGetGeometryBufferData(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot);

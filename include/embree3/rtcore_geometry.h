@@ -158,16 +158,13 @@ RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuali
 
 
 /* Sets geometry buffer. */
-RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
-                                     RTCBuffer buffer, size_t byteOffset, size_t byteStride, unsigned int itemCount);
+RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, RTCBuffer buffer, size_t byteOffset, size_t byteStride, size_t itemCount);
 
 /* Sets shared geometry buffer. */
-RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
-                                           const void* ptr, size_t byteOffset, size_t byteStride, unsigned int itemCount);
+RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, const void* ptr, size_t byteOffset, size_t byteStride, size_t itemCount);
 
 /* Sets new geometry buffer. */
-RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
-                                         size_t byteStride, unsigned int itemCount);
+RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, size_t byteStride, size_t itemCount);
 
 /* Returns a pointer to the buffer data. */
 RTC_API void* rtcGetGeometryBufferData(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
