@@ -385,7 +385,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   unsigned int primID = args->primID;
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;

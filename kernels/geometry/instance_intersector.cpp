@@ -46,7 +46,7 @@ namespace embree
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      Ray& ray = *(Ray*)args->ray;
+      Ray& ray = *(Ray*)args->rayhit;
       
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
@@ -106,7 +106,7 @@ namespace embree
       const vint<N>* validi = (const vint<N>*) args->valid;
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayK<N>& ray = *(RayK<N>*)args->ray;
+      RayK<N>& ray = *(RayK<N>*)args->rayhit;
       
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);

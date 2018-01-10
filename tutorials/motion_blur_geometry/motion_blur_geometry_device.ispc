@@ -383,7 +383,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
+  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int primID = args->primID;
   assert(args->N == programCount);
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;

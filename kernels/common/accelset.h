@@ -171,7 +171,7 @@ namespace embree
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.ray = (RTCRayN*)&ray;
+        args.rayhit = (RTCRayHitN*)&ray;
         args.N = 1;
         args.primID = (unsigned int)primID;
         args.internal_context = context;
@@ -214,7 +214,7 @@ namespace embree
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.ray = (RTCRayN*)&ray;
+        args.rayhit = (RTCRayHitN*)&ray;
         args.N = K;
         args.primID = (unsigned int)primID;
         args.internal_context = context;

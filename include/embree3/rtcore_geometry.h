@@ -82,7 +82,7 @@ struct RTCIntersectFunctionNArguments
   void* geomUserPtr;
   unsigned int primID;
   struct RTCIntersectContext* context;
-  struct RTCRayN* ray;
+  struct RTCRayHitN* rayhit;
   unsigned int N;
 };
 

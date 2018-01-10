@@ -78,7 +78,7 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   uniform RTCIntersectContext* uniform context = args->context;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
+  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
                                     
   assert(args->N == programCount);
   if (!valid[programIndex])
@@ -142,7 +142,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   uniform RTCIntersectContext* uniform context = args->context;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
+  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int N = args->N;
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
@@ -297,7 +297,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
 {
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  varying Ray *uniform ray = (varying Ray*uniform)args->ray;
+  varying Ray *uniform ray = (varying Ray*uniform)args->rayhit;
   uniform unsigned int primID = args->primID;
   
   assert(args->N == programCount);
@@ -341,7 +341,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.valid = (int* uniform)&imask;
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
-    fargs.ray = args->ray;
+    fargs.ray = (RTCRayN *uniform)args->rayhit;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
 
@@ -373,7 +373,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     fargs.valid = (int* uniform)&imask;
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
-    fargs.ray = args->ray;
+    fargs.ray = (RTCRayN *uniform)args->rayhit;
     fargs.potentialHit = (RTCHitN* uniform)&hit;
     fargs.N = programCount;
 
@@ -487,7 +487,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 {
   uniform int* uniform valid = (uniform int*) args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
+  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int N = args->N;
   uniform unsigned int primID = args->primID;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
@@ -709,7 +709,7 @@ unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform co
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying struct Ray* uniform ray    = (varying struct Ray* uniform)args->ray;
-  varying struct RTCHit* uniform hit = (varying struct RTCHit* uniform)args->potentialHit;
+  //varying struct RTCHit* uniform hit = (varying struct RTCHit* uniform)args->potentialHit;
   const uniform unsigned int N = args->N;
   assert(N == programCount);
 

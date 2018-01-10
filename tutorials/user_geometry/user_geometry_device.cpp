@@ -80,7 +80,7 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
                                     
   assert(args->N == 1);
   if (!valid[0])
@@ -144,7 +144,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   unsigned int N = args->N;
   const Instance* instance = (const Instance*) ptr;
 
@@ -299,7 +299,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
 {
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  Ray *ray = (Ray*)args->ray;
+  Ray *ray = (Ray*)args->rayhit;
   unsigned int primID = args->primID;
   
   assert(args->N == 1);
@@ -343,7 +343,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.valid = (int*)&imask;
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
-    fargs.ray = args->ray;
+    fargs.ray = (RTCRayN *)args->rayhit;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
 
@@ -375,7 +375,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
     fargs.valid = (int*)&imask;
     fargs.geomUserPtr = ptr;
     fargs.context = args->context;
-    fargs.ray = args->ray;
+    fargs.ray = (RTCRayN *)args->rayhit;
     fargs.potentialHit = (RTCHitN*)&hit;
     fargs.N = 1;
 
@@ -489,7 +489,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 {
   int* valid = (int*) args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   unsigned int N = args->N;
   unsigned int primID = args->primID;
   const Sphere* spheres = (const Sphere*) ptr;
@@ -711,7 +711,7 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* const args)
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
-  struct RTCHit* hit = (struct RTCHit*)args->potentialHit;
+  //struct RTCHit* hit = (struct RTCHit*)args->potentialHit;
   const unsigned int N = args->N;
   assert(N == 1);
 
