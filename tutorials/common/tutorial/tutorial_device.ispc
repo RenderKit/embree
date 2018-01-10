@@ -56,7 +56,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, un
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -115,7 +115,7 @@ Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, u
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcOccluded(g_scene,&context,RTCRayHit_(ray));
+  rtcOccludedV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
@@ -172,7 +172,7 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -229,7 +229,7 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, u
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -299,7 +299,7 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera, uniform 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -364,7 +364,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera, unif
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -419,7 +419,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -475,7 +475,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera, unif
   uniform int64 c0 = get_tsc();
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   uniform int64 c1 = get_tsc();
   RayStats_addRay(stats);
 
@@ -530,7 +530,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -565,8 +565,8 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
     /* trace shadow ray */
     uniform RTCIntersectContext context;
     rtcInitIntersectContext(&context);
-    rtcOccluded(g_scene,&context,RTCRayHit_(shadow));
-    //rtcIntersect(g_scene,&context,shadow);
+    rtcOccludedV(g_scene,&context,RTCRayHit_(shadow));
+    //rtcIntersectV(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -627,7 +627,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixel */

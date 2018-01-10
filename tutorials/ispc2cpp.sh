@@ -117,11 +117,11 @@ sed -i.backup  's/RTCRay1/RTCRay/g' $2
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
 
-sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
-sed -i.backup  's/rtcOccluded1/rtcOccluded/g' $2
+#sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
+#sed -i.backup  's/rtcOccluded1/rtcOccluded/g' $2
 
-sed -i.backup  's/rtcIntersect/rtcIntersect1/g' $2
-sed -i.backup  's/rtcOccluded/rtcOccluded1/g' $2
+sed -i.backup  's/rtcIntersectV/rtcIntersect1/g' $2
+sed -i.backup  's/rtcOccludedV/rtcOccluded1/g' $2
 
 sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
 sed -i.backup  's/Texture_RGBA8/Texture::RGBA8/g' $2

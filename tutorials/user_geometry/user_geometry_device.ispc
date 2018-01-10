@@ -95,7 +95,7 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   ray->tnear = ray_tnear;
   ray->tfar  = ray_tfar;
   context->instID = instance->userID;
-  rtcIntersect(instance->object,context,RTCRayHit_(*ray));
+  rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
   context->instID = -1;
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
@@ -124,7 +124,7 @@ unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform 
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
   context->instID = instance->userID;
-  rtcOccluded(instance->object,context,RTCRayHit_(*ray));
+  rtcOccludedV(instance->object,context,RTCRayHit_(*ray));
   context->instID = -1;
   const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
@@ -172,7 +172,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
 
     /* trace ray through object */
     context->instID = instance->userID;
-    rtcIntersect(instance->object,context,RTCRayHit_(ray));
+    rtcIntersectV(instance->object,context,RTCRayHit_(ray));
     context->instID = -1;
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
@@ -220,7 +220,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
 
     /* trace ray through object */
     context->instID = instance->userID;
-    rtcOccluded(instance->object,context,RTCRayHit_(ray));
+    rtcOccludedV(instance->object,context,RTCRayHit_(ray));
     context->instID = -1;
     if (ray.tfar >= 0.0f) continue;
 
@@ -1018,7 +1018,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -1045,7 +1045,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,RTCRayHit_(shadow));
+    rtcOccludedV(g_scene,&context,RTCRayHit_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

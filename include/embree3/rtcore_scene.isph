@@ -92,17 +92,16 @@ RTC_API void rtcIntersect8 (const int* uniform valid, RTCScene scene, const RTCI
 RTC_API void rtcIntersect16(const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
 /* Intersects a varying ray with the scene. */
-RTC_FORCEINLINE void rtcIntersect(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform ray) 
+RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform ray) 
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-
-  if (sizeof(varying float) == 16)
-    rtcIntersect4((uniform int* uniform)&imask, scene, context, ray);
-  else if (sizeof(varying float) == 32)
+  if (sizeof(varying float) == 32)
     rtcIntersect8((uniform int* uniform)&imask, scene, context, ray);
+  else if (sizeof(varying float) == 16)
+    rtcIntersect4((uniform int* uniform)&imask, scene, context, ray);
   else if (sizeof(varying float) == 64)
     rtcIntersect16((uniform int* uniform)&imask, scene, context, ray);
 }
@@ -132,17 +131,17 @@ RTC_API void rtcOccluded8 (const uniform int* uniform valid, RTCScene scene, con
 RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
 /* Tests a varying ray for occlusion with the scene. */
-RTC_FORCEINLINE void rtcOccluded(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform ray)
+RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform ray)
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
 
-  if (sizeof(varying float) == 16)
-    rtcOccluded4((uniform int* uniform)&imask, scene, context, ray);
-  else if (sizeof(varying float) == 32)
+  if (sizeof(varying float) == 32)
     rtcOccluded8((uniform int* uniform)&imask, scene, context, ray);
+  else if (sizeof(varying float) == 16)
+    rtcOccluded4((uniform int* uniform)&imask, scene, context, ray);
   else if (sizeof(varying float) == 64)
     rtcOccluded16((uniform int* uniform)&imask, scene, context, ray);
 }
