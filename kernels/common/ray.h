@@ -100,6 +100,18 @@ namespace embree
   template<int K>
   struct RayHitK : RayK<K>
   {
+    using RayK<K>::org;
+    using RayK<K>::_tnear;
+    using RayK<K>::dir;
+    using RayK<K>::_tfar;
+    using RayK<K>::time;
+    using RayK<K>::mask;
+    using RayK<K>::id;
+    using RayK<K>::flags;
+
+    using RayK<K>::tnear;
+    using RayK<K>::tfar;
+
     /* Default construction does nothing */
     __forceinline RayHitK() {}
 
@@ -108,7 +120,7 @@ namespace embree
     __forceinline RayHitK(const Vec3vf<K>& org, const Vec3vf<K>& dir,
                           const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                           const vfloat<K>& time = zero, const vint<K>& mask = -1, const vint<K>& id = 0, const vint<K>& flags = 0)
-      : RayK(org, dir, tnear, tfar, time, mask, id, flags),
+      : RayK<K>(org, dir, tnear, tfar, time, mask, id, flags),
         geomID(RTC_INVALID_GEOMETRY_ID) {}
 
     /* Calculates if the hit is valid */
@@ -279,7 +291,7 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayHitK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1, int id = 0, int flags = 0)
-      : RayK(org, dir, tnear, tfar, time, mask, id, flags),
+      : RayK<1>(org, dir, tnear, tfar, time, mask, id, flags),
         geomID(RTC_INVALID_GEOMETRY_ID) {}
 
     /* Calculates if the hit is valid */
