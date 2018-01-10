@@ -59,13 +59,8 @@ enum RTCDeviceProperty
   RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED        = 100,
 
   RTC_DEVICE_PROPERTY_TASKING_SYSTEM        = 128,
-  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129,
-
-  RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE = 256
+  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129
 };
-
-/* Sets a device property. */
-RTC_API void rtcSetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop, ssize_t value);
 
 /* Gets a device property. */
 RTC_API ssize_t rtcGetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop);

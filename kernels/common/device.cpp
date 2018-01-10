@@ -373,7 +373,7 @@ namespace embree
     }
 
     switch (prop) {
-    case RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
+      //case RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown writable property"); break;
     };
   }

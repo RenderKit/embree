@@ -1034,8 +1034,7 @@ namespace embree
       
       for (size_t i = 0; i < 1024*1024; ++i)
       {
-        //if (i%100 == 0) PRINT(i);
-        rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000000, i);
+        //rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000000, i);
         
         RTCScene scene = rtcNewScene(device);
         rtcSetSceneFlags(scene,sflags.sflags);

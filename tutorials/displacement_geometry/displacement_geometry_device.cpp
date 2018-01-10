@@ -173,9 +173,6 @@ extern "C" void device_init (char* cfg)
   g_device = rtcNewDevice(cfg);
   error_handler(nullptr,rtcGetDeviceError(g_device));
 
-  /* configure the size of the software cache used for subdivision geometry */
-  rtcSetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE,100*1024*1024);
-
   /* set error handler */
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
