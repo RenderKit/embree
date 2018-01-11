@@ -629,7 +629,7 @@ rtcIntersect(EXPR scene, EXPR query);
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersect(scene,&context,&query);
+  rtcIntersectV(scene,&context,&query);
   query.hit.Ng_x = -query.hit.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
   query.hit.Ng_y = -query.hit.Ng_y;
   query.hit.Ng_z = -query.hit.Ng_z;
@@ -648,7 +648,7 @@ query.hit.Ng_z = -query.hit.Ng_z;
 @@{ispc
 rtcIntersectEx(EXPR scene,EXPR context,EXPR query);
 =>
-rtcIntersect(scene,context,&query);
+rtcIntersectV(scene,context,&query);
 query.hit.Ng_x = -query.hit.Ng_x;  // FIXME: only correct for triangles,quads, and subdivision surfaces
 query.hit.Ng_y = -query.hit.Ng_y;
 query.hit.Ng_z = -query.hit.Ng_z;
@@ -726,7 +726,7 @@ rtcOccluded(EXPR scene,EXPR ray);
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcOccluded(scene,&context,&ray);
+  rtcOccludedV(scene,&context,&ray);
   COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }
 }@@
@@ -741,7 +741,7 @@ COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 @@{ispc
 rtcOccluded1Ex(EXPR scene,EXPR context,EXPR ray);
 =>
-rtcOccluded(scene,context,&ray);
+rtcOccludedV(scene,context,&ray);
 COMMENT FIXME: ray is occluded when ray.tfar < 0.0f
 }@@
 
