@@ -1317,6 +1317,7 @@ void RTCDisplacementFunc(const uniform RTCDisplacementFunctionNArguments* const 
 {
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT uniform unsigned int geomID_in = args->geomID; // no longer available
+  RTCGeometry geomID_in = args->geom; 
   uniform unsigned int primID_in = args->primID;
   const float* uniform u_in = args->u;
   const float* uniform v_in = args->v;
@@ -1339,6 +1340,7 @@ void RTCDisplacementFunc2(const uniform RTCDisplacementFunctionNArguments* const
 {
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT uniform unsigned int geomID_in = args->geomID; // no longer available
+  RTCGeometry geomID_in = args->geom; 
   uniform unsigned int primID_in = args->primID;
   uniform unsigned int time_in = args->timeStep;
   const float* uniform u_in = args->u;
