@@ -2796,6 +2796,12 @@ rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE); // FIXME: check if geometry
 // rtcore_builder.h
 
 @@{
+RTCBuildSettings
+=>
+RTCBuildArguments
+}@@
+
+@@{
 rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i,
             EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
 =>
