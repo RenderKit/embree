@@ -1164,8 +1164,8 @@ unmasked void intersectionFilter(const uniform RTCFilterFunctionNArguments* unif
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT uniform RTCIntersectContext* uniform context = args->context;
   COMMENT varying RTCRay& ray_in = *(varying RTCRay* uniform ) args->ray;
-  varying RTCHit* uniform potentialHit = (varying RTCHit* uniform ) args->potentialHit;
-  #warning FIXME: use potentialHit to access hit
+  varying RTCHit* uniform hit = (varying RTCHit* uniform ) args->hit;
+  #warning FIXME: use hit to access hit
   #warning FIXME: reject hit through *vvalid = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   uniform unsigned int N = args->N;
   assert(N == __programCount);
@@ -1173,7 +1173,7 @@ unmasked void intersectionFilter(const uniform RTCFilterFunctionNArguments* unif
 @@{
 ray_in.
 =>
-potentialHit->
+hit->
 }@@
 }@@
 
@@ -1193,8 +1193,8 @@ void intersectionFilter4(const uniform RTCFilterFunctionNArguments* const unifor
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay4& ray_in = *(RTCRay4*) args->ray;
-  RTCHit4* potentialHit = (RTCHit4*) args->potentialHit;
-  #warning FIXME: use potentialHit to access hit
+  RTCHit4* hit = (RTCHit4*) args->hit;
+  #warning FIXME: use hit to access hit
   #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 4);
@@ -1202,7 +1202,7 @@ void intersectionFilter4(const uniform RTCFilterFunctionNArguments* const unifor
 @@{
 ray_in.
 =>
-potentialHit->
+hit->
 }@@
 }@@
 
@@ -1222,8 +1222,8 @@ void intersectionFilter8(const uniform RTCFilterFunctionNArguments* const unifor
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay8& ray_in = *(RTCRay8*) args->ray;
-  RTCHit8* potentialHit = (RTCHit8*) args->potentialHit;
-  #warning FIXME: use potentialHit to access hit
+  RTCHit8* hit = (RTCHit8*) args->hit;
+  #warning FIXME: use hit to access hit
   #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 8);
@@ -1231,7 +1231,7 @@ void intersectionFilter8(const uniform RTCFilterFunctionNArguments* const unifor
 @@{
 ray_in.
 =>
-potentialHit->
+hit->
 }@@
 }@@
 
@@ -1251,8 +1251,8 @@ void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const unifo
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context = args->context;
   COMMENT RTCRay16& ray_in = *(RTCRay16*) args->ray;
-  RTCHit16* potentialHit = (RTCHit16*) args->potentialHit;
-  #warning FIXME: use potentialHit to access hit
+  RTCHit16* hit = (RTCHit16*) args->hit;
+  #warning FIXME: use hit to access hit
   #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
   unsigned int N = args->N;
   assert(N == 16);
@@ -1260,7 +1260,7 @@ void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const unifo
 @@{
 ray_in.
 =>
-potentialHit->
+hit->
 }@@
 }@@
 
@@ -1271,7 +1271,7 @@ void intersectionFilter16(const uniform RTCFilterFunctionNArguments* const unifo
 }@@
 
 @@{
-void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in)
+void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID hit_in, const size_t ID N_in)
 {
 =>
 void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const uniform args)
@@ -1280,14 +1280,14 @@ void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const unifor
   void* uniform geomUserPtr_in = args->geomUserPtr;
   RTCIntersectContext* uniform context_in = args->context;
   RTCRayN* uniform ray_in = args->ray;
-  RTCHitN* uniform potentialHit_in = args->potentialHit;
+  RTCHitN* uniform hit_in = args->hit;
   uniform unsigned int N_in = args->N;
   #warning FIXME: function may get called with zero valid mask
   #warning FIXME: reject hit through *valid_in = 0 instead of ray_in.geomID = RTC_INVALID_GEOMETRY_ID;
 }@@
 
 @@{
-void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID potentialHit_in, const size_t ID N_in);
+void EXPR intersectionFilterN(int* ID valid_in, void* ID geomUserPtr_in, const RTCIntersectContext* ID context_in, RTCRayN* ID ray_in, const RTCHitN* ID hit_in, const size_t ID N_in);
 =>
 void intersectionFilterN(const uniform RTCFilterFunctionNArguments* const uniform args);
 }@@
@@ -2235,7 +2235,7 @@ unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* con
   varying int* uniform vvalid_in = (varying int* uniform ) valid_in;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* uniform context_in = args->context;
-  varying RTCRayHit* uniform ray_ptr_in = (varying RTCRayHit* uniform ) args->ray;
+  varying RTCRayHit* uniform ray_ptr_in = (varying RTCRayHit* uniform ) args->rayhit;
   varying RTCRayHit& ray_in = *ray_ptr_in;
   uniform unsigned int N_in = args->N;
   uniform unsigned int primID_in = args->primID;
@@ -2264,7 +2264,7 @@ void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* const unifo
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRayHit4& ray_in = *(RTCRayHit4*) args->ray;
+  RTCRayHit4& ray_in = *(RTCRayHit4*) args->rayhit;
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 4);
@@ -2291,7 +2291,7 @@ void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* const unifo
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRayHit8& ray_in = *(RTCRayHit8*) args->ray;
+  RTCRayHit8& ray_in = *(RTCRayHit8*) args->rayhit;
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 8);
@@ -2318,7 +2318,7 @@ void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* const unif
   const void* valid_in = args->valid;
   void* geomUserPtr_in = args->geomUserPtr;
   COMMENT RTCIntersectContext* context_in = args->context;
-  RTCRayHit16& ray_in = *(RTCRayHit16*) args->ray;
+  RTCRayHit16& ray_in = *(RTCRayHit16*) args->rayhit;
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 16);
@@ -2345,7 +2345,7 @@ void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* const unifo
   const int* uniform valid_in = args->valid;
   void* uniform geomUserPtr_in = args->geomUserPtr;
   RTCIntersectContext* uniform context_in = args->context;
-  RTCRayHitN* uniform ray_in = args->ray;
+  RTCRayHitN* uniform ray_in = args->rayhit;
   uniform unsigned int N_in = args->N;
   uniform unsigned int primID_in = args->primID;
 }@@
