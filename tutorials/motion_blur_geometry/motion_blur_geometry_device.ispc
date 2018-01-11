@@ -363,7 +363,7 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform const args)
+unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform args)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
@@ -379,7 +379,7 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
   bounds_o->upper_z = p.z+sphere.r;
 }
 
-unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
+unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
@@ -432,7 +432,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
   }
 }
 
-unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
+unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;

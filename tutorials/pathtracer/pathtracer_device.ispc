@@ -865,15 +865,15 @@ extern uniform int g_spp;
 extern uniform bool g_accumulate;
 
 /* occlusion filter function */
-unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args);
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -1269,14 +1269,14 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args)
 {
   assert(args->N == programCount);
   bool valid = *((varying int* uniform) args->valid);
   if (!valid) return;
 }
 
-unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid_i = args->valid;
   struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
@@ -1331,7 +1331,7 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
     valid_i[programIndex] = 0;
 }
 
-unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
@@ -1346,7 +1346,7 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
   *transparency = make_Vec3f(0.0f);
 }
 
-unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
@@ -1399,7 +1399,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;

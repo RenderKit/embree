@@ -48,7 +48,7 @@ struct Instance
   Vec3f upper;
 };
 
-unmasked void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* uniform const args)
+unmasked void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* uniform args)
 {
   const uniform Instance* uniform instance = (const uniform Instance* uniform) args->geomUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
@@ -72,7 +72,7 @@ unmasked void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* unifor
   bounds_o->upper_z = upper.z;
 }
 
-unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* uniform const args)
+unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* uniform args)
 {
   
   const uniform int* uniform valid = args->valid;
@@ -103,7 +103,7 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   ray->tfar = updated_tfar;
 }
 
-unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
+unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
@@ -133,7 +133,7 @@ unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform 
   ray->tfar   = updated_tfar;
 }
 
-unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
+unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == NULL)
@@ -181,7 +181,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
   }
 }
 
-unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
+unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == NULL)
@@ -280,7 +280,7 @@ struct Sphere
   uniform unsigned int geomID;
 };
 
-unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform const args)
+unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform args)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
@@ -293,7 +293,7 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
   bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
-unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform const args)
+unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
@@ -388,7 +388,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   }
 }
 
-unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform const args)
+unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
@@ -483,7 +483,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform co
   }
 }
 
-unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform const args)
+unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = (uniform int*) args->valid;
   void* uniform ptr  = args->geomUserPtr;
@@ -592,7 +592,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
   }
 }
 
-unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform const args)
+unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
@@ -704,7 +704,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform c
 
 /* intersection filter function */
 
-unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
@@ -730,7 +730,7 @@ unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform co
   if (T < 0.5f) valid[programIndex] = 0;
 }
 
-unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;

@@ -32,10 +32,10 @@ extern uniform float g_debug;
 /* stores pointer to currently used rendePixel function */
 renderTileFunc renderTile;
 
-extern "C" unmasked void tutorial_error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
+extern "C" unmasked void tutorial_error_handler(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str);
 
 /* error reporting function */
-unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str) {
+unmasked void error_handler(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str) {
   tutorial_error_handler(userPtr,code,str);
 }
 
