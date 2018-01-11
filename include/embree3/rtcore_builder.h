@@ -72,11 +72,11 @@ struct RTCBuildArguments
   unsigned int maxLeafSize;
   float travCost;
   float intCost;
-  unsigned int extraSpace;
-
+  
   RTCBVH bvh;
   struct RTCBuildPrimitive* primitives;
   size_t primitiveCount;
+  size_t extraSpace;
   RTCCreateNodeFunction createNode;
   RTCSetNodeChildrenFunction setNodeChildren;
   RTCSetNodeBoundsFunction setNodeBounds;
@@ -100,10 +100,10 @@ RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildArguments()
   settings.maxLeafSize = 32;
   settings.travCost = 1.0f;
   settings.intCost = 1.0f;
-  settings.extraSpace = 0;
   settings.bvh = NULL;
   settings.primitives = NULL;
   settings.primitiveCount = 0;
+  settings.extraSpace = 0;
   settings.createNode = NULL;
   settings.setNodeChildren = NULL;
   settings.setNodeBounds = NULL;
