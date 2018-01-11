@@ -54,10 +54,10 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.intersect((RTCRayHit&)ray,&context);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
     }
@@ -74,10 +74,10 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRayHit&)ray,&context);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
     }
@@ -117,10 +117,10 @@ namespace embree
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context); 
       intersectObject((vint<N>*)validi,instance->object,&context,ray);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
@@ -142,10 +142,10 @@ namespace embree
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       occludedObject((vint<N>*)validi,instance->object,&context,ray);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }

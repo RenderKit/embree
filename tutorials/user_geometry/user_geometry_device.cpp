@@ -96,9 +96,9 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   ray->dir = xfmVector(instance->world2local,ray_dir);
   ray->tnear() = ray_tnear;
   ray->tfar()  = ray_tfar;
-  context->instID = instance->userID;
+  context->instID[0] = instance->userID;
   rtcIntersect1(instance->object,context,RTCRayHit_(*ray));
-  context->instID = -1;
+  context->instID[0] = -1;
   const float updated_tfar = ray->tfar();
   ray->org = ray_org;
   ray->dir = ray_dir;
@@ -125,9 +125,9 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   ray->dir    = xfmVector(instance->world2local,ray_dir);
   ray->tnear()  = ray_tnear;
   ray->tfar()   = ray_tfar;
-  context->instID = instance->userID;
+  context->instID[0] = instance->userID;
   rtcOccluded1(instance->object,context,RTCRayHit_(*ray));
-  context->instID = -1;
+  context->instID[0] = -1;
   const float updated_tfar = ray->tfar();
   ray->org    = ray_org;
   ray->dir    = ray_dir;
@@ -173,9 +173,9 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    context->instID = instance->userID;
+    context->instID[0] = instance->userID;
     rtcIntersect1(instance->object,context,RTCRayHit_(ray));
-    context->instID = -1;
+    context->instID[0] = -1;
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
@@ -221,9 +221,9 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    context->instID = instance->userID;
+    context->instID[0] = instance->userID;
     rtcOccluded1(instance->object,context,RTCRayHit_(ray));
-    context->instID = -1;
+    context->instID[0] = -1;
     if (ray.tfar() >= 0.0f) continue;
 
     /* update hit */
@@ -322,7 +322,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
-  hit.instID[0] = args->context->instID;
+  hit.instID[0] = args->context->instID[0];
   hit.geomID = sphere.geomID;
   hit.primID = primID;
   if ((ray->tnear() < t0) & (t0 < ray->tfar()))
@@ -418,7 +418,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   RTCHit hit;
   hit.u = 0.0f;
   hit.v = 0.0f;
-  hit.instID[0] = args->context->instID;
+  hit.instID[0] = args->context->instID[0];
   hit.geomID = sphere.geomID;
   hit.primID = primID;
   if ((ray->tnear() < t0) & (t0 < ray->tfar()))
@@ -530,7 +530,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
 
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
-    potentialhit.instID[0] = args->context->instID;
+    potentialhit.instID[0] = args->context->instID[0];
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
 
@@ -637,7 +637,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
-    potentialhit.instID[0] = args->context->instID;
+    potentialhit.instID[0] = args->context->instID[0];
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))

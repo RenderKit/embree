@@ -38,16 +38,16 @@ struct RTC_ALIGN(32) RTCBuildPrimitive
 typedef struct RTCThreadLocalAllocatorTy* RTCThreadLocalAllocator;
 
 /* Callback to create a node. */
-typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int numChildren, void* userPtr);
+typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int childrenCount, void* userPtr);
 
 /* Callback to set the pointer to all children. */
-typedef void  (*RTCSetNodeChildrenFunction) (void* nodePtr, void** children, unsigned int numChildren, void* userPtr);
+typedef void  (*RTCSetNodeChildrenFunction) (void* nodePtr, void** children, unsigned int childrenCount, void* userPtr);
 
 /* Callback to set the bounds of all children. */
-typedef void  (*RTCSetNodeBoundsFunction) (void* nodePtr, const struct RTCBounds** bounds, unsigned int numChildren, void* userPtr);
+typedef void  (*RTCSetNodeBoundsFunction) (void* nodePtr, const struct RTCBounds** bounds, unsigned int childrenCount, void* userPtr);
 
 /* Callback to create a leaf node. */
-typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const struct RTCBuildPrimitive* prims, size_t numPrims, void* userPtr);
+typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const struct RTCBuildPrimitive* prims, size_t primitiveCount, void* userPtr);
 
 /* Callback to split a build primitive. */
 typedef void  (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* prim, unsigned int dim, float pos, struct RTCBounds* lbounds, struct RTCBounds* rbounds, void* userPtr);
@@ -76,7 +76,7 @@ struct RTCBuildArguments
 
   RTCBVH bvh;
   struct RTCBuildPrimitive* primitives;
-  size_t numPrimitives;
+  size_t primitiveCount;
   RTCCreateNodeFunction createNode;
   RTCSetNodeChildrenFunction setNodeChildren;
   RTCSetNodeBoundsFunction setNodeBounds;
@@ -103,7 +103,7 @@ RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildArguments()
   settings.extraSpace = 0;
   settings.bvh = NULL;
   settings.primitives = NULL;
-  settings.numPrimitives = 0;
+  settings.primitiveCount = 0;
   settings.createNode = NULL;
   settings.setNodeChildren = NULL;
   settings.setNodeBounds = NULL;

@@ -213,9 +213,9 @@ typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* con
 /* Intersection context passed to ray queries. */
 struct RTCIntersectContext
 {
-  enum RTCIntersectContextFlags flags;
-  RTCFilterFunctionN filter;
-  unsigned int instID;
+  enum RTCIntersectContextFlags flags;               // intersection flags
+  RTCFilterFunctionN filter;                         // filter function to execute
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
 };
 
 /* initializes intersection context */
@@ -223,7 +223,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
-  context->instID = -1;
+  context->instID[0] = -1;
 }
   
 #if defined(__cplusplus)

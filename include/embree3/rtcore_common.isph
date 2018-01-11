@@ -172,9 +172,9 @@ enum RTCIntersectContextFlags
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
-  RTCIntersectContextFlags flags; // intersection flags
-  void* filter;                   // filter function to execute
-  unsigned int instID;            // will be set to geomID of instance when instance is entered
+  RTCIntersectContextFlags flags;                    // intersection flags
+  void* filter;                                      // filter function to execute
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
 };
 
 /* initializes intersection context */
@@ -182,7 +182,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* contex
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
-  context->instID = -1;
+  context->instID[0] = -1;
 }
 
 /* Arguments for RTCFilterFunctionN callback */
