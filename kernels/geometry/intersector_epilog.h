@@ -84,12 +84,12 @@ namespace embree
     template<bool filter>
       struct Occluded1Epilog1
       {
-        RayHit& ray;
+        Ray& ray;
         IntersectContext* context;
         const int geomID;
         const int primID;
         
-        __forceinline Occluded1Epilog1(RayHit& ray,
+        __forceinline Occluded1Epilog1(Ray& ray,
                                        IntersectContext* context, 
                                        const int geomID, 
                                        const int primID)
@@ -182,13 +182,13 @@ namespace embree
     template<int K, bool filter>
       struct Occluded1KEpilog1
       {
-        RayHitK<K>& ray;
+        RayK<K>& ray;
         size_t k;
         IntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         
-        __forceinline Occluded1KEpilog1(RayHitK<K>& ray, size_t k,
+        __forceinline Occluded1KEpilog1(RayK<K>& ray, size_t k,
                                         IntersectContext* context, 
                                         const unsigned int geomID, 
                                         const unsigned int primID)
@@ -528,12 +528,12 @@ namespace embree
     template<int M, bool filter>
       struct Occluded1EpilogMU
       {
-        RayHit& ray;
+        Ray& ray;
         IntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         
-        __forceinline Occluded1EpilogMU(RayHit& ray,
+        __forceinline Occluded1EpilogMU(Ray& ray,
                                         IntersectContext* context, 
                                         const unsigned int geomID, 
                                         const unsigned int primID)
@@ -754,13 +754,13 @@ namespace embree
       struct OccludedKEpilogMU
       {
         vbool<K>& valid0;
-        RayHitK<K>& ray;
+        RayK<K>& ray;
         IntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         
         __forceinline OccludedKEpilogMU(vbool<K>& valid0,
-                                        RayHitK<K>& ray,
+                                        RayK<K>& ray,
                                         IntersectContext* context, 
                                         const unsigned int geomID, 
                                         const unsigned int primID)
@@ -1043,13 +1043,13 @@ namespace embree
     template<int M, int K, bool filter>
       struct Occluded1KEpilogMU
       {
-        RayHitK<K>& ray;
+        RayK<K>& ray;
         size_t k;
         IntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         
-        __forceinline Occluded1KEpilogMU(RayHitK<K>& ray, size_t k,
+        __forceinline Occluded1KEpilogMU(RayK<K>& ray, size_t k,
                                          IntersectContext* context, 
                                          const unsigned int geomID, 
                                          const unsigned int primID)

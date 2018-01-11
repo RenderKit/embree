@@ -224,10 +224,10 @@ namespace embree
     {
       __forceinline BezierCurve1Intersector1() {}
 
-      __forceinline BezierCurve1Intersector1(const RayHit& ray, const void* ptr) {}
+      __forceinline BezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
-      __noinline bool intersect(RayHit& ray, 
+      __noinline bool intersect(Ray& ray,
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Epilog& epilog) const
       {
@@ -251,7 +251,7 @@ namespace embree
     {
       struct Ray1
       {
-        __forceinline Ray1(RayHitK<K>& ray, size_t k) 
+        __forceinline Ray1(RayK<K>& ray, size_t k)
           : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), _tnear(ray.tnear()[k]), _tfar(ray.tfar()[k]) {}
 
         Vec3fa org;
@@ -259,18 +259,18 @@ namespace embree
         float _tnear;
         float& _tfar;
 
-        __forceinline float &tnear() { return _tnear; }
-        __forceinline float &tfar()  { return _tfar; }
-        __forceinline const float &tnear() const { return _tnear; }
-        __forceinline const float &tfar()  const { return _tfar; }
+        __forceinline float& tnear() { return _tnear; }
+        __forceinline float& tfar()  { return _tfar; }
+        __forceinline const float& tnear() const { return _tnear; }
+        __forceinline const float& tfar()  const { return _tfar; }
         
       };
 
-      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayHitK<K>& ray) {
+      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {
       }
       
       template<typename Epilog>
-      __forceinline bool intersect(RayHitK<K>& vray, size_t k,
+      __forceinline bool intersect(RayK<K>& vray, size_t k,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog) const
       {

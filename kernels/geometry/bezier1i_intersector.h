@@ -33,7 +33,7 @@ namespace embree
       {
         __forceinline Precalculations() {}
 
-        __forceinline Precalculations(const RayHit& ray, const void* ptr)
+        __forceinline Precalculations(const Ray& ray, const void* ptr)
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
         Bezier1Intersector1<Curve3fa> intersectorHair;
@@ -51,7 +51,7 @@ namespace embree
           pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
@@ -72,10 +72,10 @@ namespace embree
       {
         __forceinline Precalculations() {}
 
-        __forceinline Precalculations(const vbool<K>& valid, const RayHitK<K>& ray)
+        __forceinline Precalculations(const vbool<K>& valid, const RayK<K>& ray)
           : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
 
-        __forceinline Precalculations(const RayHitK<K>& ray, size_t k)
+        __forceinline Precalculations(const RayK<K>& ray, size_t k)
           : intersectorHair(ray,k), intersectorCurve(ray,k) {}
 
         Bezier1IntersectorK<Curve3fa,K> intersectorHair;
@@ -99,7 +99,7 @@ namespace embree
         while (mask) intersect(pre,ray,__bscf(mask),context,prim);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
@@ -110,7 +110,7 @@ namespace embree
           return pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         vbool<K> valid_o = false;
         size_t mask = movemask(valid_i);
@@ -131,7 +131,7 @@ namespace embree
       {
         __forceinline Precalculations() {}
 
-        __forceinline Precalculations(const RayHit& ray, const void* ptr)
+        __forceinline Precalculations(const Ray& ray, const void* ptr)
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
         Bezier1Intersector1<Curve3fa> intersectorHair;
@@ -149,7 +149,7 @@ namespace embree
           pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
@@ -170,10 +170,10 @@ namespace embree
       {
         __forceinline Precalculations() {}
 
-        __forceinline Precalculations(const vbool<K>& valid, const RayHitK<K>& ray)
+        __forceinline Precalculations(const vbool<K>& valid, const RayK<K>& ray)
           : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
 
-        __forceinline Precalculations(const RayHitK<K>& ray, size_t k)
+        __forceinline Precalculations(const RayK<K>& ray, size_t k)
           : intersectorHair(ray,k), intersectorCurve(ray,k) {}
 
         Bezier1IntersectorK<Curve3fa,K> intersectorHair;
@@ -197,7 +197,7 @@ namespace embree
         while (mask) intersect(pre,ray,__bscf(mask),context,prim);
       }
 
-      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
@@ -208,7 +208,7 @@ namespace embree
           return pre.intersectorCurve.intersect(ray,k,p0,p1,p2,p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
 
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         vbool<K> valid_o = false;
         size_t mask = movemask(valid_i);
