@@ -107,7 +107,7 @@ typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments*
 struct RTCDisplacementFunctionNArguments
 {
   void* geomUserPtr;
-  RTCGeometry geometry;
+  RTCGeometry geom;
   unsigned int primID;
   unsigned int timeStep;
   const float* u;

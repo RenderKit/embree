@@ -104,7 +104,7 @@ typedef unmasked void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNA
 struct RTCDisplacementFunctionNArguments
 {
   void* uniform geomUserPtr;
-  RTCGeometry geometry;
+  RTCGeometry geom;
   uniform unsigned int primID;
   uniform unsigned int timeStep;
   uniform const float* uniform u;
