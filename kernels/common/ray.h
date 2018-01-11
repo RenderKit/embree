@@ -678,55 +678,6 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByIndex(size_t index, const RayHitK<K>& ray, size_t index_source, bool intersect = true)
-    {
-      const size_t offset = index * sizeof(float);
-
-      if (intersect)
-      {
-        if (ray.geomID[index_source] != RTC_INVALID_GEOMETRY_ID)
-        {
-          tfar(offset)[0]   = ray.tfar[index_source];
-          geomID(offset)[0] = ray.geomID[index_source];
-          u(offset)[0]      = ray.u[index_source];
-          v(offset)[0]      = ray.v[index_source];
-          primID(offset)[0] = ray.primID[index_source];
-          Ng_x(offset)[0]   = ray.Ng.x[index_source];
-          Ng_y(offset)[0]   = ray.Ng.y[index_source];
-          Ng_z(offset)[0]   = ray.Ng.z[index_source];
-          instID(offset)[0] = ray.instID[index_source];
-        }
-      }
-      else
-      {
-        tfar(offset)[0] = ray.tfar[index_source];
-      }
-    }
-
-    __forceinline void setHitByOffset(size_t offset, const RayHit& ray, bool intersect = true)
-    {
-      if (intersect)
-      {
-        if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-        {
-          geomID(offset)[0] = ray.geomID;
-          tfar(offset)[0]   = ray.tfar();
-          u(offset)[0]      = ray.u;
-          v(offset)[0]      = ray.v;
-          primID(offset)[0] = ray.primID;
-          Ng_x(offset)[0]   = ray.Ng.x;
-          Ng_y(offset)[0]   = ray.Ng.y;
-          Ng_z(offset)[0]   = ray.Ng.z;
-          instID(offset)[0] = ray.instID;
-        }
-      }
-      else
-      {
-        tfar(offset)[0] = ray.tfar();
-      }
-    }
-
-    template<int K>
     __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayHitK<K>& ray, bool intersect = true)
     {
       vbool<K> valid = valid_i;
