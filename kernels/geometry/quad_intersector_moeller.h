@@ -24,98 +24,98 @@ namespace embree
   namespace isa
   {
     template<int M>
-      struct QuadHitM 
+    struct QuadHitM
+    {
+      __forceinline QuadHitM(const vbool<M>& valid,
+                             const vfloat<M>& U,
+                             const vfloat<M>& V,
+                             const vfloat<M>& T,
+                             const vfloat<M>& absDen,
+                             const Vec3vf<M>& Ng,
+                             const vbool<M>& flags)
+        : U(U), V(V), T(T), absDen(absDen), tri_Ng(Ng), valid(valid), flags(flags) {}
+
+      __forceinline void finalize()
       {
-        __forceinline QuadHitM(const vbool<M>& valid,
-                               const vfloat<M>& U, 
-                               const vfloat<M>& V, 
-                               const vfloat<M>& T, 
-                               const vfloat<M>& absDen, 
-                               const Vec3vf<M>& Ng,
-                               const vbool<M>& flags)
-          : U(U), V(V), T(T), absDen(absDen), tri_Ng(Ng), valid(valid), flags(flags) {}
-      
-        __forceinline void finalize() 
-        {
-          const vfloat<M> rcpAbsDen = rcp(absDen);
-          vt = T * rcpAbsDen;
-          const vfloat<M> u = U * rcpAbsDen;
-          const vfloat<M> v = V * rcpAbsDen;
-          const vfloat<M> u1 = vfloat<M>(1.0f) - u;
-          const vfloat<M> v1 = vfloat<M>(1.0f) - v;
+        const vfloat<M> rcpAbsDen = rcp(absDen);
+        vt = T * rcpAbsDen;
+        const vfloat<M> u = U * rcpAbsDen;
+        const vfloat<M> v = V * rcpAbsDen;
+        const vfloat<M> u1 = vfloat<M>(1.0f) - u;
+        const vfloat<M> v1 = vfloat<M>(1.0f) - v;
 #if !defined(__AVX__) || defined(EMBREE_BACKFACE_CULLING)
-          vu = select(flags,u1,u); 
-          vv = select(flags,v1,v);
-          vNg = Vec3vf<M>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
+        vu = select(flags,u1,u);
+        vv = select(flags,v1,v);
+        vNg = Vec3vf<M>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
 #else
-          const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
-          vv = select(flags,u1,v);
-          vu = select(flags,v1,u);
-          vNg = Vec3vf<M>(flip*tri_Ng.x,flip*tri_Ng.y,flip*tri_Ng.z);
+        const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
+        vv = select(flags,u1,v);
+        vu = select(flags,v1,u);
+        vNg = Vec3vf<M>(flip*tri_Ng.x,flip*tri_Ng.y,flip*tri_Ng.z);
 #endif
-        }
+      }
 
-        __forceinline Vec2f uv(const size_t i) 
-        { 
-          const float u = vu[i];
-          const float v = vv[i];
-          return Vec2f(u,v);
-        }
+      __forceinline Vec2f uv(const size_t i)
+      {
+        const float u = vu[i];
+        const float v = vv[i];
+        return Vec2f(u,v);
+      }
 
-        __forceinline float   t(const size_t i) { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-      
-      private:
-        vfloat<M> U;
-        vfloat<M> V;
-        vfloat<M> T;
-        vfloat<M> absDen;
-        Vec3vf<M> tri_Ng;
-      
-      public:
-        vbool<M> valid;
-        vfloat<M> vu;
-        vfloat<M> vv;
-        vfloat<M> vt;
-        Vec3vf<M> vNg;
+      __forceinline float   t(const size_t i) { return vt[i]; }
+      __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
 
-      public:
-        const vbool<M> flags;
-      };
+    private:
+      vfloat<M> U;
+      vfloat<M> V;
+      vfloat<M> T;
+      vfloat<M> absDen;
+      Vec3vf<M> tri_Ng;
+
+    public:
+      vbool<M> valid;
+      vfloat<M> vu;
+      vfloat<M> vv;
+      vfloat<M> vt;
+      Vec3vf<M> vNg;
+
+    public:
+      const vbool<M> flags;
+    };
 
     template<int K>
-      struct QuadHitK
-      {
-        __forceinline QuadHitK(const vfloat<K>& U, 
-                               const vfloat<K>& V, 
-                               const vfloat<K>& T, 
-                               const vfloat<K>& absDen, 
-                               const Vec3vf<K>& Ng,
-                               const vbool<K>& flags)
-          : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng) {}
-      
-        __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
-        {
-          const vfloat<K> rcpAbsDen = rcp(absDen);
-          const vfloat<K> t = T * rcpAbsDen;
-          const vfloat<K> u0 = U * rcpAbsDen;
-          const vfloat<K> v0 = V * rcpAbsDen;
-          const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
-          const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
-          const vfloat<K> u = select(flags,u1,u0); 
-          const vfloat<K> v = select(flags,v1,v0);
-          const Vec3vf<K> Ng(tri_Ng.x,tri_Ng.y,tri_Ng.z);
-          return std::make_tuple(u,v,t,Ng);
-        }
+    struct QuadHitK
+    {
+      __forceinline QuadHitK(const vfloat<K>& U,
+                             const vfloat<K>& V,
+                             const vfloat<K>& T,
+                             const vfloat<K>& absDen,
+                             const Vec3vf<K>& Ng,
+                             const vbool<K>& flags)
+        : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng) {}
 
-      private:
-        const vfloat<K> U;
-        const vfloat<K> V;
-        const vfloat<K> T;
-        const vfloat<K> absDen;
-        const vbool<K> flags;
-        const Vec3vf<K> tri_Ng;
-      };
+      __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
+      {
+        const vfloat<K> rcpAbsDen = rcp(absDen);
+        const vfloat<K> t = T * rcpAbsDen;
+        const vfloat<K> u0 = U * rcpAbsDen;
+        const vfloat<K> v0 = V * rcpAbsDen;
+        const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
+        const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
+        const vfloat<K> u = select(flags,u1,u0);
+        const vfloat<K> v = select(flags,v1,v0);
+        const Vec3vf<K> Ng(tri_Ng.x,tri_Ng.y,tri_Ng.z);
+        return std::make_tuple(u,v,t,Ng);
+      }
+
+    private:
+      const vfloat<K> U;
+      const vfloat<K> V;
+      const vfloat<K> T;
+      const vfloat<K> absDen;
+      const vbool<K> flags;
+      const Vec3vf<K> tri_Ng;
+    };
 
     /* ----------------------------- */
     /* -- single ray intersectors -- */
@@ -123,11 +123,11 @@ namespace embree
 
 
     template<int M, bool filter>
-      struct QuadMIntersector1MoellerTrumbore;
+    struct QuadMIntersector1MoellerTrumbore;
 
     /*! Intersects M quads with 1 ray */
     template<int M, bool filter>
-      struct QuadMIntersector1MoellerTrumbore
+    struct QuadMIntersector1MoellerTrumbore
     {
       __forceinline QuadMIntersector1MoellerTrumbore() {}
 
@@ -185,14 +185,14 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<bool filter>
-      struct QuadMIntersector1MoellerTrumbore<4,filter>
+    struct QuadMIntersector1MoellerTrumbore<4,filter>
     {
       __forceinline QuadMIntersector1MoellerTrumbore() {}
 
       __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
-        __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
+      __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
@@ -248,14 +248,14 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX */
     template<bool filter>
-      struct QuadMIntersector1MoellerTrumbore<4,filter>
+    struct QuadMIntersector1MoellerTrumbore<4,filter>
     {
       __forceinline QuadMIntersector1MoellerTrumbore() {}
 
       __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
-        __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
+      __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
 #if !defined(EMBREE_BACKFACE_CULLING)
@@ -312,14 +312,14 @@ namespace embree
     {
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<int M, int K, typename Epilog>
-       static  __forceinline bool intersect(RayK<K>& ray,
-                                            size_t k,
-                                            const Vec3vf<M>& tri_v0,
-                                            const Vec3vf<M>& tri_e1,
-                                            const Vec3vf<M>& tri_e2,
-                                            const Vec3vf<M>& tri_Ng,
-                                            const vbool<M>& flags,
-                                            const Epilog& epilog)
+      static  __forceinline bool intersect(RayK<K>& ray,
+                                           size_t k,
+                                           const Vec3vf<M>& tri_v0,
+                                           const Vec3vf<M>& tri_e1,
+                                           const Vec3vf<M>& tri_e2,
+                                           const Vec3vf<M>& tri_Ng,
+                                           const vbool<M>& flags,
+                                           const Epilog& epilog)
       {
         /* calculate denominator */
         const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
@@ -353,13 +353,13 @@ namespace embree
       }
       
       template<int M, int K, typename Epilog>
-        static __forceinline bool intersect1(RayK<K>& ray,
-                                             size_t k,
-                                             const Vec3vf<M>& v0,
-                                             const Vec3vf<M>& v1,
-                                             const Vec3vf<M>& v2,
-                                             const vbool<M>& flags,
-                                             const Epilog& epilog)
+      static __forceinline bool intersect1(RayK<K>& ray,
+                                           size_t k,
+                                           const Vec3vf<M>& v0,
+                                           const Vec3vf<M>& v1,
+                                           const Vec3vf<M>& v2,
+                                           const vbool<M>& flags,
+                                           const Epilog& epilog)
       {
         const Vec3vf<M> e1 = v0-v1;
         const Vec3vf<M> e2 = v2-v0;
@@ -375,14 +375,14 @@ namespace embree
             
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
-        __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                          RayK<K>& ray,
-                                          const Vec3vf<K>& tri_v0,
-                                          const Vec3vf<K>& tri_e1,
-                                          const Vec3vf<K>& tri_e2,
-                                          const Vec3vf<K>& tri_Ng,
-                                          const vbool<K>& flags,
-                                          const Epilog& epilog) const
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0,
+                                        RayK<K>& ray,
+                                        const Vec3vf<K>& tri_v0,
+                                        const Vec3vf<K>& tri_e1,
+                                        const Vec3vf<K>& tri_e2,
+                                        const Vec3vf<K>& tri_Ng,
+                                        const vbool<K>& flags,
+                                        const Epilog& epilog) const
       { 
         /* calculate denominator */
         vbool<K> valid = valid0;
@@ -460,7 +460,7 @@ namespace embree
     };
 
     template<int M, int K, bool filter>
-      struct QuadMIntersectorKMoellerTrumbore : public QuadMIntersectorKMoellerTrumboreBase<M,K,filter>
+    struct QuadMIntersectorKMoellerTrumbore : public QuadMIntersectorKMoellerTrumboreBase<M,K,filter>
     {
       __forceinline QuadMIntersectorKMoellerTrumbore(const vbool<K>& valid, const RayK<K>& ray)
         : QuadMIntersectorKMoellerTrumboreBase<M,K,filter>(valid,ray) {}
@@ -490,14 +490,14 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<int K, bool filter>
-      struct QuadMIntersectorKMoellerTrumbore<4,K,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
+    struct QuadMIntersectorKMoellerTrumbore<4,K,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
     {
       __forceinline QuadMIntersectorKMoellerTrumbore(const vbool<K>& valid, const RayK<K>& ray)
         : QuadMIntersectorKMoellerTrumboreBase<4,K,filter>(valid,ray) {}
 
       template<typename Epilog>
-        __forceinline bool intersect1(RayK<K>& ray, size_t k,
-                                      const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
+      __forceinline bool intersect1(RayK<K>& ray, size_t k,
+                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
@@ -535,15 +535,15 @@ namespace embree
 #elif defined (__AVX__)
 
     /*! Intersects 4 quads with 1 ray using AVX */
-     template<int K, bool filter>
-       struct QuadMIntersectorKMoellerTrumbore<4,K,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
+    template<int K, bool filter>
+    struct QuadMIntersectorKMoellerTrumbore<4,K,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
     {
       __forceinline QuadMIntersectorKMoellerTrumbore(const vbool<K>& valid, const RayK<K>& ray)
         : QuadMIntersectorKMoellerTrumboreBase<4,K,filter>(valid,ray) {}
       
       template<typename Epilog>
-        __forceinline bool intersect1(RayK<K>& ray, size_t k,
-                                      const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
+      __forceinline bool intersect1(RayK<K>& ray, size_t k,
+                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
 #if !defined(EMBREE_BACKFACE_CULLING)
