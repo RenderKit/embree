@@ -142,10 +142,12 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   uniform RTCIntersectContext* uniform context = args->context;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int N = args->N;
+  RTCRayHitN* uniform rayhit = (RTCRayHitN* uniform)args->rayhit;
+  RTCRayN* uniform rays = RTCRayHitN_RayN(rayhit,N);
+  //RTCHitN* uniform hits = RTCRayHitN_HitN(rayhit,N);
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
-
+  
   /* iterate over all rays in ray packet */
   for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
@@ -158,16 +160,16 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
 
     /* create transformed ray */
     Ray ray;
-    const Vec3f ray_org = make_Vec3f(RTCRayHitN_org_x(rays,N,ui),RTCRayHitN_org_y(rays,N,ui),RTCRayHitN_org_z(rays,N,ui));
-    const Vec3f ray_dir = make_Vec3f(RTCRayHitN_dir_x(rays,N,ui),RTCRayHitN_dir_y(rays,N,ui),RTCRayHitN_dir_z(rays,N,ui));
+    const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
+    const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     bool mask = __mask; unmasked {
-      ray.tnear = mask ? RTCRayHitN_tnear(rays,N,ui) : (float)(pos_inf);
-      ray.tfar  = mask ? RTCRayHitN_tfar(rays,N,ui ) : (float)(neg_inf);
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
     }
-    ray.time  = RTCRayHitN_time(rays,N,ui);
-    ray.mask  = RTCRayHitN_mask(rays,N,ui);
+    ray.time  = RTCRayN_time(rays,N,ui);
+    ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
@@ -177,7 +179,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    rtcCopyHitFromRayHitToRayHitN(rays,RTCRayHit_(ray),N,ui);
+    rtcCopyHitFromRayHitToRayHitN(rayhit,RTCRayHit_(ray),N,ui);
   }
 }
 
@@ -190,7 +192,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   uniform RTCIntersectContext* uniform context = args->context;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
+  RTCRayN* uniform rays = (RTCRayN* uniform)args->ray;
   uniform unsigned int N = args->N;
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
@@ -206,16 +208,16 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
 
     /* create transformed ray */
     Ray ray;
-    const Vec3f ray_org = make_Vec3f(RTCRayHitN_org_x(rays,N,ui),RTCRayHitN_org_y(rays,N,ui),RTCRayHitN_org_z(rays,N,ui));
-    const Vec3f ray_dir = make_Vec3f(RTCRayHitN_dir_x(rays,N,ui),RTCRayHitN_dir_y(rays,N,ui),RTCRayHitN_dir_z(rays,N,ui));
+    const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
+    const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     bool mask = __mask; unmasked {
-      ray.tnear = mask ? RTCRayHitN_tnear(rays,N,ui) : (float)(pos_inf);
-      ray.tfar  = mask ? RTCRayHitN_tfar(rays,N,ui)  : (float)(neg_inf);
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : (float)(neg_inf);
     }
-    ray.time  = RTCRayHitN_time(rays,N,ui);
-    ray.mask  = RTCRayHitN_mask(rays,N,ui);
+    ray.time  = RTCRayN_time(rays,N,ui);
+    ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
@@ -225,7 +227,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
     if (ray.tfar >= 0.0f) continue;
 
     /* update hit */
-    RTCRayHitN_tfar(rays,N,ui) = ray.tfar;
+    RTCRayN_tfar(rays,N,ui) = ray.tfar;
   }
 }
 
@@ -487,8 +489,10 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 {
   uniform int* uniform valid = (uniform int*) args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int N = args->N;
+  RTCRayHitN* uniform rayhit = (RTCRayHitN* uniform)args->rayhit;
+  RTCRayN* uniform rays = RTCRayHitN_RayN(rayhit,N);
+  //RTCHitN* uniform hits = RTCRayHitN_HitN(rayhit,N);
   uniform unsigned int primID = args->primID;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
@@ -502,10 +506,10 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
 
-    const Vec3f ray_org = make_Vec3f(RTCRayHitN_org_x(rays,N,ui),RTCRayHitN_org_y(rays,N,ui),RTCRayHitN_org_z(rays,N,ui));
-    const Vec3f ray_dir = make_Vec3f(RTCRayHitN_dir_x(rays,N,ui),RTCRayHitN_dir_y(rays,N,ui),RTCRayHitN_dir_z(rays,N,ui));
-    float& ray_tnear = RTCRayHitN_tnear(rays,N,ui);
-    float& ray_tfar = RTCRayHitN_tfar(rays,N,ui);
+    const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
+    const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
+    float& ray_tnear = RTCRayN_tnear(rays,N,ui);
+    float& ray_tfar = RTCRayN_tfar(rays,N,ui);
 
     const uniform Sphere& sphere = spheres[primID];
     const Vec3f v = ray_org-sphere.p;
@@ -519,13 +523,10 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rays,N,ui);
+    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rayhit,N,ui);
     varying Ray *uniform ray = (varying Ray*uniform)&rtc_ray;
 
     RTCHit potentialhit;
-
-    
-
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
     potentialhit.instID[0] = args->context->instID[0];
@@ -557,7 +558,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyHitToRayHitN(rays,&potentialhit,t0,N,ui);
+        rtcCopyHitToRayHitN(rayhit,&potentialhit,t0,N,ui);
       ray->tfar = ray_tfar;
     }
 
@@ -586,7 +587,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
       if (imask == -1)
-        rtcCopyHitToRayHitN(rays,&potentialhit,t1,N,ui);
+        rtcCopyHitToRayHitN(rayhit,&potentialhit,t1,N,ui);
       ray->tfar = ray_tfar;
     }
   }
@@ -596,7 +597,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
 {
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
-  RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
+  RTCRayN* uniform rays = (RTCRayN* uniform)args->ray;
   uniform unsigned int N = args->N;
   uniform unsigned int primID = args->primID;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
@@ -611,10 +612,10 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
 
-    const Vec3f ray_org = make_Vec3f(RTCRayHitN_org_x(rays,N,ui),RTCRayHitN_org_y(rays,N,ui),RTCRayHitN_org_z(rays,N,ui));
-    const Vec3f ray_dir = make_Vec3f(RTCRayHitN_dir_x(rays,N,ui),RTCRayHitN_dir_y(rays,N,ui),RTCRayHitN_dir_z(rays,N,ui));
-    float& ray_tnear = RTCRayHitN_tnear(rays,N,ui);
-    float& ray_tfar = RTCRayHitN_tfar(rays,N,ui);
+    const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
+    const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
+    float& ray_tnear = RTCRayN_tnear(rays,N,ui);
+    float& ray_tfar = RTCRayN_tfar(rays,N,ui);
 
     const uniform Sphere& sphere = spheres[primID];
     const Vec3f v = ray_org-sphere.p;
@@ -628,7 +629,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    RTCRayHit rtc_ray = rtcGetRayHitFromRayHitN(rays,N,ui);
+    RTCRay rtc_ray = rtcGetRayFromRayN(rays,N,ui);
     varying Ray *uniform ray = (varying Ray*uniform)&rtc_ray;
 
     RTCHit potentialhit;
@@ -664,11 +665,11 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
 
       /* update for all accepted hits */
       if (imask == -1)
-        RTCRayHitN_tfar(rays,N,ui) = neg_inf;
+        RTCRayN_tfar(rays,N,ui) = neg_inf;
     }
 
     /* ignore rays that have just found a hit */
-    if (RTCRayHitN_tfar(rays,N,ui) < 0.0f)
+    if (RTCRayN_tfar(rays,N,ui) < 0.0f)
       continue;
  
     if ((ray_tnear < t1) & (t1 < ray_tfar))
@@ -697,7 +698,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
 
       /* update for all accepted hits */
       if (imask == -1)
-        RTCRayHitN_tfar(rays,N,ui) = neg_inf;
+        RTCRayN_tfar(rays,N,ui) = neg_inf;
     }
   }
 }
@@ -734,7 +735,7 @@ unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform a
 {
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
-  struct RTCRayHitN* uniform ray = (RTCRayHitN* uniform)args->ray;
+  struct RTCRayN* uniform ray = (RTCRayN* uniform)args->ray;
   //struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
                
@@ -753,10 +754,9 @@ unmasked void sphereFilterFunctionN(const RTCFilterFunctionNArguments* uniform a
     if (valid[vi] != -1) continue;
     
     /* calculate hit point */
-    Vec3f ray_org = make_Vec3f(RTCRayHitN_org_x(ray,N,ui),RTCRayHitN_org_y(ray,N,ui),RTCRayHitN_org_z(ray,N,ui));
-    Vec3f ray_dir = make_Vec3f(RTCRayHitN_dir_x(ray,N,ui),RTCRayHitN_dir_y(ray,N,ui),RTCRayHitN_dir_z(ray,N,ui));
-    //float hit_t = RTCHitN_t(hit,N,ui);
-    float hit_t = RTCRayHitN_tfar(ray,N,ui);
+    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
+    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
+    float hit_t = RTCRayN_tfar(ray,N,ui);
 
     /* carve out parts of the sphere */
     const Vec3f h = ray_org+hit_t*ray_dir;
