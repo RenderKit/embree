@@ -83,7 +83,7 @@ rtcReleaseDevice (g_device)
 @@{
 RTC_SOFTWARE_CACHE_SIZE
 =>
-RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE
+/*RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE*/
 }@@
 
 @@{
@@ -227,7 +227,7 @@ RTC_CONFIG_COMMIT_THREAD
 @@{
 rtcSetParameter1i (EXPR parm,EXPR val)
 =>
-rtcSetDeviceProperty (g_device,parm,val)
+COMMENT rtcSetDeviceProperty (g_device,parm,val) // FIXME: not supported
 }@@
 
 @@{
@@ -239,7 +239,7 @@ rtcGetDeviceProperty (g_device,parm)
 @@{
 rtcDeviceSetParameter1i (EXPR device,EXPR parm,EXPR val)
 =>
-rtcSetDeviceProperty (device,parm,val)
+COMMENT rtcSetDeviceProperty (device,parm,val) // FIXME: not supported
 }@@
 
 @@{
