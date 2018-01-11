@@ -182,13 +182,13 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction func, void* ptr) 
+  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneProgressMonitorFunction);
     RTC_VERIFY_HANDLE(hscene);
-    scene->setProgressMonitorFunction(func,ptr);
+    scene->setProgressMonitorFunction(progress,ptr);
     RTC_CATCH_END2(scene);
   }
 
