@@ -178,6 +178,7 @@ namespace embree
             LinearSpace3fa uspace;
             float unalignedObjectSAH = inf;
             if (bestSAH > 0.7f*leafSAH) {
+              alignedHeuristic.deterministic_order(pinfo); // otherwise build is non deterministic
               uspace = unalignedHeuristic.computeAlignedSpace(pinfo);
               const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
               unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);
@@ -189,6 +190,7 @@ namespace embree
             HeuristicStrandSplitSAH::Split strandSplit;
             float strandSAH = inf;
             if (bestSAH > 0.7f*leafSAH) {
+              alignedHeuristic.deterministic_order(pinfo); // otherwise build is non deterministic
               strandSplit = strandHeuristic.find(pinfo);
               strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
               bestSAH = min(strandSAH,bestSAH);
