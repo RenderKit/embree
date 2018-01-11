@@ -96,8 +96,6 @@ namespace embree
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
 
-            if (unlikely(!ray.valid())) { PRINT("INVALID INPUT"); PRINT(ray); exit(0); }
-
             const unsigned int octantID = movemask(vfloat4(Vec3fa(ray.dir)) < 0.0f) & 0x7;
 
             assert(octantID < 8);
