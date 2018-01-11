@@ -277,12 +277,6 @@ namespace embree
     {
       vfloat16::storeu_compact_single(m_mask, &tfar(), new_t);
     }
-
-    __forceinline void update(const vbool16& m_mask,
-                              const vfloat16& new_t)
-    {
-      vfloat16::storeu_compact_single(m_mask, &tfar(), new_t);
-    }
 #endif
 
     /* Ray data */
