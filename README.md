@@ -58,16 +58,17 @@ transparently transitioning to 2MB pages.
 Embree is optimized for Intel CPUs supporting SSE, AVX, AVX2, and
 AVX-512 instructions, and requires at least a CPU with support for
 SSE2.
+
 Contributing to Embree
 ----------------------
 
 To contribute code to the Embree repository you need to sign a
 Contributor License Agreement (CLA). Individuals need to fill out the
-[Individual Contributor License Agreement (ICLA)]. Corporations need to
-fill out the [Corporate Contributor License Agreement (CCLA)] and each
-employee that wants to contribute has to fill out an [Individual
-Contributor License Agreement (ICLA)]. Please follow the instructions of
-the CLA forms to send them.
+[Individual Contributor License Agreement (ICLA)](https://embree.github.io/data/Embree-ICLA.pdf).
+Corporations need to fill out the 
+[Corporate Contributor License Agreement (CCLA)](https://embree.github.io/data/Embree-CCLA.pdf) 
+and each employee that wants to contribute has to fill out an ICLA.
+Please follow the instructions of the CLA forms to send them.
 
 Embree Support and Contact
 --------------------------
