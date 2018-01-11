@@ -448,27 +448,41 @@ namespace embree
   }
 
   /* ray stream filter interface */
-  typedef void (*filterAOS_func)(Scene *scene, RTCRayHit*  _rayN, const size_t N, const size_t stride, IntersectContext* context, const bool intersect);
-  typedef void (*filterAOP_func)(Scene *scene, RTCRayHit** _rayN, const size_t N, IntersectContext* context, const bool intersect);
-  typedef void (*filterSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect);
-  typedef void (*filterSOP_func)(Scene *scene, const RTCRayHitNp& rayN, const size_t N, IntersectContext* context, const bool intersect);
+  typedef void (*intersectStreamAOS_func)(Scene *scene, RTCRayHit*  _rayN, const size_t N, const size_t stride, IntersectContext* context);
+  typedef void (*intersectStreamAOP_func)(Scene *scene, RTCRayHit** _rayN, const size_t N, IntersectContext* context);
+  typedef void (*intersectStreamSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context);
+  typedef void (*intersectStreamSOP_func)(Scene *scene, const RTCRayHitNp& rayN, const size_t N, IntersectContext* context);
+
+  typedef void (*occludedStreamAOS_func)(Scene *scene, RTCRayHit*  _rayN, const size_t N, const size_t stride, IntersectContext* context);
+  typedef void (*occludedStreamAOP_func)(Scene *scene, RTCRayHit** _rayN, const size_t N, IntersectContext* context);
+  typedef void (*occludedStreamSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context);
+  typedef void (*occludedStreamSOP_func)(Scene *scene, const RTCRayHitNp& rayN, const size_t N, IntersectContext* context);
 
   struct RayStreamFilterFuncs
   {
     RayStreamFilterFuncs()
-    : filterAOS(nullptr), filterSOA(nullptr), filterSOP(nullptr) {}
+    : intersectAOS(nullptr), intersectAOP(nullptr), intersectSOA(nullptr), intersectSOP(nullptr),
+      occludedAOS(nullptr),  occludedAOP(nullptr),  occludedSOA(nullptr),  occludedSOP(nullptr) {}
 
     RayStreamFilterFuncs(void (*ptr) ())
-    : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
+    : intersectAOS((intersectStreamAOS_func) ptr), intersectAOP((intersectStreamAOP_func) ptr), intersectSOA((intersectStreamSOA_func) ptr), intersectSOP((intersectStreamSOP_func) ptr),
+      occludedAOS((occludedStreamAOS_func) ptr),   occludedAOP((occludedStreamAOP_func) ptr),   occludedSOA((occludedStreamSOA_func) ptr),   occludedSOP((occludedStreamSOP_func) ptr) {}
 
-    RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop)
-    : filterAOS(aos), filterAOP(aop), filterSOA(soa), filterSOP(sop) {}
+    RayStreamFilterFuncs(intersectStreamAOS_func intersectAOS, intersectStreamAOP_func intersectAOP, intersectStreamSOA_func intersectSOA, intersectStreamSOP_func intersectSOP,
+                         occludedStreamAOS_func  occludedAOS,  occludedStreamAOP_func  occludedAOP,  occludedStreamSOA_func  occludedSOA,  occludedStreamSOP_func  occludedSOP)
+    : intersectAOS(intersectAOS), intersectAOP(intersectAOP), intersectSOA(intersectSOA), intersectSOP(intersectSOP),
+      occludedAOS(occludedAOS),   occludedAOP(occludedAOP),   occludedSOA(occludedSOA),   occludedSOP(occludedSOP) {}
 
   public:
-    filterAOS_func filterAOS;
-    filterAOP_func filterAOP;
-    filterSOA_func filterSOA;
-    filterSOP_func filterSOP;
+    intersectStreamAOS_func intersectAOS;
+    intersectStreamAOP_func intersectAOP;
+    intersectStreamSOA_func intersectSOA;
+    intersectStreamSOP_func intersectSOP;
+
+    occludedStreamAOS_func occludedAOS;
+    occludedStreamAOP_func occludedAOP;
+    occludedStreamSOA_func occludedSOA;
+    occludedStreamSOP_func occludedSOP;
   }; 
 
   typedef RayStreamFilterFuncs (*RayStreamFilterFuncsType)();

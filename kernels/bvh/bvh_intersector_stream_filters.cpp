@@ -23,6 +23,48 @@ namespace embree
   {
     MAYBE_UNUSED static const size_t MAX_INTERNAL_PACKET_STREAM_SIZE = MAX_INTERNAL_STREAM_SIZE / VSIZEX;
 
+
+    void RayStreamFilter::intersectAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context)
+    {
+      filterAOS(scene, _rayN, N, stride, context, true);
+    }
+
+    void RayStreamFilter::occludedAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context)
+    {
+      filterAOS(scene, _rayN, N, stride, context, false);
+    }
+
+    void RayStreamFilter::intersectAOP(Scene* scene, RTCRayHit** _rayN, size_t N, IntersectContext* context)
+    {
+      filterAOP(scene, _rayN, N, context, true);
+    }
+
+    void RayStreamFilter::occludedAOP(Scene* scene, RTCRayHit** _rayN, size_t N, IntersectContext* context)
+    {
+      filterAOP(scene, _rayN, N, context, false);
+    }
+
+    void RayStreamFilter::intersectSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context)
+    {
+      filterSOA(scene, rayData, N, numPackets, stride, context, true);
+    }
+
+    void RayStreamFilter::occludedSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context)
+    {
+      filterSOA(scene, rayData, N, numPackets, stride, context, false);
+    }
+
+    void RayStreamFilter::intersectSOP(Scene* scene, const RTCRayHitNp& _rayN, size_t N, IntersectContext* context)
+    {
+      filterSOP(scene, _rayN, N, context, true);
+    }
+
+    void RayStreamFilter::occludedSOP(Scene* scene, const RTCRayHitNp& _rayN, size_t N, IntersectContext* context)
+    {
+      filterSOP(scene, _rayN, N, context, false);
+    }
+
+
     __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
       RayStreamAOS rayN(_rayN);
@@ -483,7 +525,7 @@ namespace embree
       }
     }
 
-    void RayStreamFilter::filterSOP(Scene* scene, const RTCRayHitNp& _rayN, size_t N, IntersectContext* context, bool intersect)
+    __forceinline void RayStreamFilter::filterSOP(Scene* scene, const RTCRayHitNp& _rayN, size_t N, IntersectContext* context, bool intersect)
     { 
       RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 
@@ -633,7 +675,8 @@ namespace embree
     }
 
     RayStreamFilterFuncs rayStreamFilterFuncs() {
-      return RayStreamFilterFuncs(RayStreamFilter::filterAOS, RayStreamFilter::filterAOP, RayStreamFilter::filterSOA, RayStreamFilter::filterSOP);
+      return RayStreamFilterFuncs(RayStreamFilter::intersectAOS, RayStreamFilter::intersectAOP, RayStreamFilter::intersectSOA, RayStreamFilter::intersectSOP,
+                                  RayStreamFilter::occludedAOS,  RayStreamFilter::occludedAOP,  RayStreamFilter::occludedSOA,  RayStreamFilter::occludedSOP);
     }
   };
 };

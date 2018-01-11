@@ -374,7 +374,7 @@ namespace embree
     if (likely(scene->intersectors.intersector8))
       scene->intersectors.intersect8(valid,*ray,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRayHit8),&context,true);
+      scene->device->rayStreamFilters.intersectSOA(scene,(char*)ray,8,1,sizeof(RTCRayHit8),&context);
 #endif
     RTC_CATCH_END2(scene);
   }
@@ -407,7 +407,7 @@ namespace embree
     if (likely(scene->intersectors.intersector16))
       scene->intersectors.intersect16(valid,*ray,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRayHit16),&context,true);
+      scene->device->rayStreamFilters.intersectSOA(scene,(char*)ray,16,1,sizeof(RTCRayHit16),&context);
 #endif
     RTC_CATCH_END2(scene);
   }
@@ -435,7 +435,7 @@ namespace embree
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,rh,M,stride,&context,true);   
+      scene->device->rayStreamFilters.intersectAOS(scene,rh,M,stride,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect1M not supported");
@@ -466,7 +466,7 @@ namespace embree
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOP(scene,rn,M,&context,true);   
+      scene->device->rayStreamFilters.intersectAOP(scene,rn,M,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect1Mp not supported");
@@ -499,12 +499,12 @@ namespace embree
       } 
       /* normal codepath for single ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,(RTCRayHit*)rh,M,stride,&context,true);
+        scene->device->rayStreamFilters.intersectAOS(scene,(RTCRayHit*)rh,M,stride,&context);
       }
     }
     /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rh,N,M,stride,&context,true);
+      scene->device->rayStreamFilters.intersectSOA(scene,(char*)rh,N,M,stride,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersectNM not supported");
@@ -543,7 +543,7 @@ namespace embree
 #endif
     STAT3(normal.travs,N,N,N);
     IntersectContext context(scene,user_context);
-    scene->device->rayStreamFilters.filterSOP(scene,*rh,N,&context,true);
+    scene->device->rayStreamFilters.intersectSOP(scene,*rh,N,&context);
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersectNp not supported");
 #endif
@@ -625,7 +625,7 @@ namespace embree
     if (likely(scene->intersectors.intersector8))
       scene->intersectors.occluded8(valid,*ray,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context,false);
+      scene->device->rayStreamFilters.occludedSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context);
 #endif
 
     RTC_CATCH_END2(scene);
@@ -659,7 +659,7 @@ namespace embree
     if (likely(scene->intersectors.intersector16))
       scene->intersectors.occluded16(valid,*ray,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context,false);
+      scene->device->rayStreamFilters.occludedSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context);
 #endif
 
     RTC_CATCH_END2(scene);
@@ -686,7 +686,7 @@ namespace embree
     } 
     /* codepath for normal streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,(RTCRayHit*)ray,M,stride,&context,false); // FIXME
+      scene->device->rayStreamFilters.occludedAOS(scene,(RTCRayHit*)ray,M,stride,&context); // FIXME
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded1M not supported");
@@ -716,7 +716,7 @@ namespace embree
     } 
     /* codepath for normal streams */
     else {
-      scene->device->rayStreamFilters.filterAOP(scene,(RTCRayHit**)ray,M,&context,false); // FIXME
+      scene->device->rayStreamFilters.occludedAOP(scene,(RTCRayHit**)ray,M,&context); // FIXME
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded1Mp not supported");
@@ -750,12 +750,12 @@ namespace embree
       } 
       /* codepath for normal ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,(RTCRayHit*)ray,M,stride,&context,false);
+        scene->device->rayStreamFilters.occludedAOS(scene,(RTCRayHit*)ray,M,stride,&context);
       }
     }
     /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,N,M,stride,&context,false);
+      scene->device->rayStreamFilters.occludedSOA(scene,(char*)ray,N,M,stride,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccludedNM not supported");
@@ -794,7 +794,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,N,N,N);
     IntersectContext context(scene,user_context);
-    scene->device->rayStreamFilters.filterSOP(scene,*(RTCRayHitNp*)ray,N,&context,false);
+    scene->device->rayStreamFilters.occludedSOP(scene,*(RTCRayHitNp*)ray,N,&context);
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccludedNp not supported");
 #endif
