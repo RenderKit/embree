@@ -98,10 +98,10 @@ RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, uniform RTCIntersectContext* 
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  if (sizeof(varying float) == 32)
-    rtcIntersect8((uniform int* uniform)&imask, scene, context, rayhit);
-  else if (sizeof(varying float) == 16)
+  if (sizeof(varying float) == 16)
     rtcIntersect4((uniform int* uniform)&imask, scene, context, rayhit);
+  else if (sizeof(varying float) == 32)
+    rtcIntersect8((uniform int* uniform)&imask, scene, context, rayhit);
   else if (sizeof(varying float) == 64)
     rtcIntersect16((uniform int* uniform)&imask, scene, context, rayhit);
 }
@@ -138,10 +138,10 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* u
     varying int imask = mask ? -1 : 0;
   }
 
-  if (sizeof(varying float) == 32)
-    rtcOccluded8((uniform int* uniform)&imask, scene, context, ray);
-  else if (sizeof(varying float) == 16)
+  if (sizeof(varying float) == 16)
     rtcOccluded4((uniform int* uniform)&imask, scene, context, ray);
+  else if (sizeof(varying float) == 32)
+    rtcOccluded8((uniform int* uniform)&imask, scene, context, ray);
   else if (sizeof(varying float) == 64)
     rtcOccluded16((uniform int* uniform)&imask, scene, context, ray);
 }
