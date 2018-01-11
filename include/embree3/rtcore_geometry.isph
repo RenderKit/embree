@@ -171,10 +171,10 @@ RTC_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType
 
 
 /* Sets the intersection filter callback function. */
-RTC_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
+RTC_API  void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN filter);
 
 /* Sets the occlusion filter callback function. */
-RTC_API  void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN func);
+RTC_API  void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN filter);
 
 /* Sets user defined data pointer of geometry. */
 RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* uniform ptr);
@@ -225,7 +225,7 @@ RTC_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigne
 RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform unsigned int vertexAttributeID, uniform unsigned int topologyID);
 
 /* Sets the displacement callback function. */
-RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction func);
+RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction displacement);
 
 
 struct RTCInterpolateNArguments
