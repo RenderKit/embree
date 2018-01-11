@@ -41,11 +41,11 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAIntersector1::occluded(pre,ray,context,prim,lazy_node);
       }
-      static __forceinline bool occluded(Precalculations& pre, RayHit& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
         return occluded(pre,ray,context,prim,ty,lazy_node);
       }
     };
@@ -66,11 +66,11 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAMBIntersector1::occluded(pre,ray,context,prim,lazy_node);
       }
-      static __forceinline bool occluded(Precalculations& pre, RayHit& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
         return occluded(pre,ray,context,prim,ty,lazy_node);
       }
     };
@@ -86,7 +86,7 @@ namespace embree
         GridSOAIntersectorK<K>::intersect(valid,pre,ray,context,prim,lazy_node);
       }
       
-      static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAIntersectorK<K>::occluded(valid,pre,ray,context,prim,lazy_node);
       }
@@ -96,7 +96,7 @@ namespace embree
         GridSOAIntersectorK<K>::intersect(pre,ray,k,context,prim,lazy_node);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         GridSOAIntersectorK<K>::occluded(pre,ray,k,context,prim,lazy_node);
       }
@@ -118,7 +118,7 @@ namespace embree
         GridSOAMBIntersectorK<K>::intersect(valid,pre,ray,context,prim,lazy_node);
       }
 
-      static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAMBIntersectorK<K>::occluded(valid,pre,ray,context,prim,lazy_node);
       }
@@ -128,7 +128,7 @@ namespace embree
         GridSOAMBIntersectorK<K>::intersect(pre,ray,k,context,prim,lazy_node);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAMBIntersectorK<K>::occluded(pre,ray,k,context,prim,lazy_node);
       }
