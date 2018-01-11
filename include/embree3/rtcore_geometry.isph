@@ -267,9 +267,10 @@ struct RTCInterpolateNArguments
   unsigned int valueCount;
 };
 
-/* Interpolates vertex data to an array of u/v locations. */
+/* Interpolates vertex data to an array of u/v locations and calculates all derivatives. */
 RTC_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
 
+/* Interpolates vertex data to an array of u/v locations. */
 RTC_FORCEINLINE void rtcInterpolateV0(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P,
@@ -298,6 +299,7 @@ RTC_FORCEINLINE void rtcInterpolateV0(RTCGeometry geometry, varying unsigned int
   rtcInterpolateN(&args);
 }
 
+/* Interpolates vertex data to an array of u/v locations and calculates first order derivatives. */
 RTC_FORCEINLINE void rtcInterpolateV1(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
@@ -326,6 +328,7 @@ RTC_FORCEINLINE void rtcInterpolateV1(RTCGeometry geometry, varying unsigned int
   rtcInterpolateN(&args);
 }
 
+/* Interpolates vertex data to an array of u/v locations and calculates first and second order derivatives. */
 RTC_FORCEINLINE void rtcInterpolateV2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,

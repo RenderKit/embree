@@ -248,9 +248,10 @@ struct RTCInterpolateArguments
   unsigned int valueCount;
 };
 
-/* Interpolates vertex data to some u/v location. */
+/* Interpolates vertex data to some u/v location and optionally calculates all derivatives. */
 RTC_API void rtcInterpolate(const struct RTCInterpolateArguments* const args);
 
+/* Interpolates vertex data to some u/v location. */
 RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot, float* P, unsigned int valueCount)
 {
   struct RTCInterpolateArguments args;
@@ -270,6 +271,7 @@ RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, 
   rtcInterpolate(&args);
 }
 
+/* Interpolates vertex data to some u/v location and calculates first order derivatives. */
 RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
                                         float* P, float* dPdu, float* dPdv, unsigned int valueCount)
 {
@@ -290,6 +292,7 @@ RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, 
   rtcInterpolate(&args);
 }
 
+/* Interpolates vertex data to some u/v location and calculates first and second order derivatives. */
 RTC_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
                                         float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int valueCount)
 {
