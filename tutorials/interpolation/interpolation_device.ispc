@@ -373,7 +373,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.geomID > 0)
     {
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate0(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
+        rtcInterpolateV0(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
@@ -384,7 +384,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
+        rtcInterpolateV1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;
       Ng = cross(dPdu,dPdv);

@@ -250,7 +250,7 @@ struct RTCInterpolateNArguments
 /* Interpolates vertex data to an array of u/v locations. */
 RTC_API void rtcInterpolateN(const RTCInterpolateNArguments* uniform args);
 
-RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+RTC_FORCEINLINE void rtcInterpolateV0(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P,
                                         uniform unsigned int valueCount)
@@ -278,7 +278,7 @@ RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, varying unsigned int 
   rtcInterpolateN(&args);
 }
 
-RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+RTC_FORCEINLINE void rtcInterpolateV1(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                                         uniform unsigned int valueCount)
@@ -306,7 +306,7 @@ RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, varying unsigned int 
   rtcInterpolateN(&args);
 }
 
-RTC_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
+RTC_FORCEINLINE void rtcInterpolateV2(RTCGeometry geometry, varying unsigned int primID, varying float u, varying float v, 
                                         uniform RTCBufferType bufferType, uniform unsigned int bufferSlot,
                                         varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                                         varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
