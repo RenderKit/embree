@@ -227,6 +227,26 @@ RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform
 /* Sets the displacement callback function. */
 RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction displacement);
 
+struct RTCInterpolateArguments
+{
+  RTCGeometry geometry;
+  unsigned int primID;
+  float u;
+  float v;
+  RTCBufferType bufferType;
+  unsigned int bufferSlot;
+  float* P;
+  float* dPdu;
+  float* dPdv;
+  float* ddPdudu;
+  float* ddPdvdv;
+  float* ddPdudv;
+  unsigned int valueCount;
+};
+
+/* Interpolates vertex data to some u/v location. */
+RTC_API void rtcInterpolate(const RTCInterpolateArguments* uniform const args);
+
 
 struct RTCInterpolateNArguments
 {
