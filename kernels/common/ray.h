@@ -525,6 +525,27 @@ namespace embree
   typedef RayHitK<8>  RayHit8;
   typedef RayHitK<16> RayHit16;
 
+  template<int K, bool intersect>
+  struct RayTypeHelper;
+
+  template<int K>
+  struct RayTypeHelper<K, true>
+  {
+    typedef RayHitK<K> Ty;
+  };
+
+  template<int K>
+  struct RayTypeHelper<K, false>
+  {
+    typedef RayK<K> Ty;
+  };
+
+  template<bool intersect>
+  using RayType = typename RayTypeHelper<1, intersect>::Ty;
+
+  template<int K, bool intersect>
+  using RayTypeK = typename RayTypeHelper<K, intersect>::Ty;
+
   /* Outputs ray to stream */
   template<int K>
   inline std::ostream& operator <<(std::ostream& cout, const RayK<K>& ray)
@@ -678,47 +699,54 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayHitK<K>& ray, bool intersect = true)
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayHitK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= intersect ? (ray.geomID != RTC_INVALID_GEOMETRY_ID) : (ray.tfar() < 0.0f);
+      valid &= (ray.geomID != RTC_INVALID_GEOMETRY_ID);
 
       if (likely(any(valid)))
       {
         vfloat<K>::storeu(valid, tfar(offset), ray.tfar());
 
-        if (intersect)
-        {
+        vfloat<K>::storeu(valid, Ng_x(offset), ray.Ng.x);
+        vfloat<K>::storeu(valid, Ng_y(offset), ray.Ng.y);
+        vfloat<K>::storeu(valid, Ng_z(offset), ray.Ng.z);
+        vfloat<K>::storeu(valid, u(offset), ray.u);
+        vfloat<K>::storeu(valid, v(offset), ray.v);
+
 #if !defined(__AVX__)
-          /* SSE: some ray members must be stored with scalar instructions to ensure that we don't cause memory faults,
-             because the SSE masked stores always access the entire vector */
-          if (unlikely(!all(valid_i)))
+        /* SSE: some ray members must be stored with scalar instructions to ensure that we don't cause memory faults,
+           because the SSE masked stores always access the entire vector */
+        if (unlikely(!all(valid_i)))
+        {
+          for (size_t k = 0; k < K; k++)
           {
-            for (size_t k = 0; k < K; k++)
+            if (likely(valid[k]))
             {
-              if (likely(valid[k]))
-              {
-                geomID(offset)[k] = ray.geomID[k];
-                primID(offset)[k] = ray.primID[k];
-                instID(offset)[k] = ray.instID[k];
-              }
+              geomID(offset)[k] = ray.geomID[k];
+              primID(offset)[k] = ray.primID[k];
+              instID(offset)[k] = ray.instID[k];
             }
           }
-          else
+        }
+        else
 #endif
-          {
-            vint<K>::storeu(valid, geomID(offset), ray.geomID);
-            vint<K>::storeu(valid, primID(offset), ray.primID);
-            vint<K>::storeu(valid, instID(offset), ray.instID);
-          }
-
-          vfloat<K>::storeu(valid, Ng_x(offset), ray.Ng.x);
-          vfloat<K>::storeu(valid, Ng_y(offset), ray.Ng.y);
-          vfloat<K>::storeu(valid, Ng_z(offset), ray.Ng.z);
-          vfloat<K>::storeu(valid, u(offset), ray.u);
-          vfloat<K>::storeu(valid, v(offset), ray.v);
+        {
+          vint<K>::storeu(valid, geomID(offset), ray.geomID);
+          vint<K>::storeu(valid, primID(offset), ray.primID);
+          vint<K>::storeu(valid, instID(offset), ray.instID);
         }
       }
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray)
+    {
+      vbool<K> valid = valid_i;
+      valid &= (ray.tfar() < 0.0f);
+
+      if (likely(any(valid)))
+        vfloat<K>::storeu(valid, tfar(offset), ray.tfar());
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -791,25 +819,24 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayHitK<K>& ray, bool intersect = true)
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayHitK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= intersect ? (ray.geomID != RTC_INVALID_GEOMETRY_ID) : (ray.tfar() < 0.0f);
+      valid &= (ray.geomID != RTC_INVALID_GEOMETRY_ID);
+
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
         vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar());
-        if (intersect)
-        {
-          vint<K>::template scatter<1>(valid, geomID(), offset, ray.geomID);
-          vfloat<K>::template scatter<1>(valid, u(), offset, ray.u);
-          vfloat<K>::template scatter<1>(valid, v(), offset, ray.v);
-          vint<K>::template scatter<1>(valid, primID(), offset, ray.primID);
-          vfloat<K>::template scatter<1>(valid, Ng_x(), offset, ray.Ng.x);
-          vfloat<K>::template scatter<1>(valid, Ng_y(), offset, ray.Ng.y);
-          vfloat<K>::template scatter<1>(valid, Ng_z(), offset, ray.Ng.z);
-          vint<K>::template scatter<1>(valid, instID(), offset, ray.instID);
-        }
+
+        vfloat<K>::template scatter<1>(valid, Ng_x(), offset, ray.Ng.x);
+        vfloat<K>::template scatter<1>(valid, Ng_y(), offset, ray.Ng.y);
+        vfloat<K>::template scatter<1>(valid, Ng_z(), offset, ray.Ng.z);
+        vfloat<K>::template scatter<1>(valid, u(), offset, ray.u);
+        vfloat<K>::template scatter<1>(valid, v(), offset, ray.v);
+        vint<K>::template scatter<1>(valid, geomID(), offset, ray.geomID);
+        vint<K>::template scatter<1>(valid, primID(), offset, ray.primID);
+        vint<K>::template scatter<1>(valid, instID(), offset, ray.instID);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
@@ -818,17 +845,38 @@ namespace embree
           const size_t ofs = offset[k];
 
           *tfar(ofs) = ray.tfar()[k];
-          if (intersect)
-          {
-            *geomID(ofs) = ray.geomID[k];
-            *u(ofs)      = ray.u[k];
-            *v(ofs)      = ray.v[k];
-            *primID(ofs) = ray.primID[k];
-            *Ng_x(ofs)   = ray.Ng.x[k];
-            *Ng_y(ofs)   = ray.Ng.y[k];
-            *Ng_z(ofs)   = ray.Ng.z[k];
-            *instID(ofs) = ray.instID[k];
-          }
+
+          *Ng_x(ofs)   = ray.Ng.x[k];
+          *Ng_y(ofs)   = ray.Ng.y[k];
+          *Ng_z(ofs)   = ray.Ng.z[k];
+          *u(ofs)      = ray.u[k];
+          *v(ofs)      = ray.v[k];
+          *geomID(ofs) = ray.geomID[k];
+          *primID(ofs) = ray.primID[k];
+          *instID(ofs) = ray.instID[k];
+        }
+#endif
+      }
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray)
+    {
+      vbool<K> valid = valid_i;
+      valid &= (ray.tfar() < 0.0f);
+
+      if (likely(any(valid)))
+      {
+#if defined(__AVX512F__)
+        vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar());
+#else
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
+        {
+          const size_t k = __bscf(valid_bits);
+          const size_t ofs = offset[k];
+
+          *tfar(ofs) = ray.tfar()[k];
         }
 #endif
       }
@@ -923,50 +971,57 @@ namespace embree
       return dir;
     }
 
-    __forceinline void setHitByOffset(size_t offset, const RayHit& ray, bool intersect = true)
+    __forceinline void setHitByOffset(size_t offset, const RayHit& ray)
     {
-      if (intersect)
-      {
-        if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-        {
-          *(unsigned int* __restrict__)((char*)geomID + offset) = ray.geomID;
-          *(float* __restrict__)((char*)tfar + offset) = ray.tfar();
-          *(float* __restrict__)((char*)u + offset) = ray.u;
-          *(float* __restrict__)((char*)v + offset) = ray.v;
-          *(unsigned int* __restrict__)((char*)primID + offset) = ray.primID;
-          if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + offset) = ray.Ng.x;
-          if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + offset) = ray.Ng.y;
-          if (likely(Ng_z)) *(float* __restrict__)((char*)Ng_z + offset) = ray.Ng.z;
-          if (likely(instID)) *(unsigned int* __restrict__)((char*)instID + offset) = ray.instID;
-        }
-      }
-      else
+      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
       {
         *(float* __restrict__)((char*)tfar + offset) = ray.tfar();
+
+        if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + offset) = ray.Ng.x;
+        if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + offset) = ray.Ng.y;
+        if (likely(Ng_z)) *(float* __restrict__)((char*)Ng_z + offset) = ray.Ng.z;
+        *(float* __restrict__)((char*)u + offset) = ray.u;
+        *(float* __restrict__)((char*)v + offset) = ray.v;
+        *(unsigned int* __restrict__)((char*)geomID + offset) = ray.geomID;
+        *(unsigned int* __restrict__)((char*)primID + offset) = ray.primID;
+        if (likely(instID)) *(unsigned int* __restrict__)((char*)instID + offset) = ray.instID;
       }
     }
 
+    __forceinline void setHitByOffset(size_t offset, const Ray& ray)
+    {
+      *(float* __restrict__)((char*)tfar + offset) = ray.tfar();
+    }
+
     template<int K>
-    __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayHitK<K>& ray, bool intersect = true)
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayHitK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= intersect ? (ray.geomID != RTC_INVALID_GEOMETRY_ID) : (ray.tfar() < 0.0f);
+      valid &= (ray.geomID != RTC_INVALID_GEOMETRY_ID);
 
       if (likely(any(valid)))
       {
         vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar());
-        if (intersect)
-        {
-          vint<K>::storeu(valid, (int* __restrict__)((char*)geomID + offset), ray.geomID);
-          vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
-          vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
-          vint<K>::storeu(valid, (int* __restrict__)((char*)primID + offset), ray.primID);
-          if (likely(Ng_x)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_x + offset), ray.Ng.x);
-          if (likely(Ng_y)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_y + offset), ray.Ng.y);
-          if (likely(Ng_z)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_z + offset), ray.Ng.z);
-          if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
-        }
+
+        if (likely(Ng_x)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_x + offset), ray.Ng.x);
+        if (likely(Ng_y)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_y + offset), ray.Ng.y);
+        if (likely(Ng_z)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_z + offset), ray.Ng.z);
+        vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
+        vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
+        vint<K>::storeu(valid, (int* __restrict__)((char*)geomID + offset), ray.geomID);
+        vint<K>::storeu(valid, (int* __restrict__)((char*)primID + offset), ray.primID);
+        if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
       }
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray)
+    {
+      vbool<K> valid = valid_i;
+      valid &= (ray.tfar() < 0.0f);
+
+      if (likely(any(valid)))
+        vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar());
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -1047,44 +1102,64 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayHitK<K>& ray, bool intersect = true)
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayHitK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= intersect ? (ray.geomID != RTC_INVALID_GEOMETRY_ID) : (ray.tfar() < 0.0f);
+      valid &= (ray.geomID != RTC_INVALID_GEOMETRY_ID);
 
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
         vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar());
-        if (intersect)
-        {
-          vint<K>::template scatter<1>(valid, (int*)geomID, offset, ray.geomID);
-          vfloat<K>::template scatter<1>(valid, u, offset, ray.u);
-          vfloat<K>::template scatter<1>(valid, v, offset, ray.v);
-          vint<K>::template scatter<1>(valid, (int*)primID, offset, ray.primID);
-          if (likely(Ng_x)) vfloat<K>::template scatter<1>(valid, Ng_x, offset, ray.Ng.x);
-          if (likely(Ng_y)) vfloat<K>::template scatter<1>(valid, Ng_y, offset, ray.Ng.y);
-          if (likely(Ng_z)) vfloat<K>::template scatter<1>(valid, Ng_z, offset, ray.Ng.z);
-          if (likely(instID)) vint<K>::template scatter<1>(valid, (int*)instID, offset, ray.instID);
-        }
+
+        if (likely(Ng_x)) vfloat<K>::template scatter<1>(valid, Ng_x, offset, ray.Ng.x);
+        if (likely(Ng_y)) vfloat<K>::template scatter<1>(valid, Ng_y, offset, ray.Ng.y);
+        if (likely(Ng_z)) vfloat<K>::template scatter<1>(valid, Ng_z, offset, ray.Ng.z);
+        vfloat<K>::template scatter<1>(valid, u, offset, ray.u);
+        vfloat<K>::template scatter<1>(valid, v, offset, ray.v);
+        vint<K>::template scatter<1>(valid, (int*)geomID, offset, ray.geomID);
+        vint<K>::template scatter<1>(valid, (int*)primID, offset, ray.primID);
+        if (likely(instID)) vint<K>::template scatter<1>(valid, (int*)instID, offset, ray.instID);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
           const size_t k = __bscf(valid_bits);
           const size_t ofs = offset[k];
+
           *(float* __restrict__)((char*)tfar + ofs) = ray.tfar()[k];
-          if (intersect)
-          {
-            *(unsigned int* __restrict__)((char*)geomID + ofs) = ray.geomID[k];
-            *(float* __restrict__)((char*)u + ofs) = ray.u[k];
-            *(float* __restrict__)((char*)v + ofs) = ray.v[k];
-            *(unsigned int* __restrict__)((char*)primID + ofs) = ray.primID[k];
-            if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + ofs) = ray.Ng.x[k];
-            if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + ofs) = ray.Ng.y[k];
-            if (likely(Ng_z)) *(float* __restrict__)((char*)Ng_z + ofs) = ray.Ng.z[k];
-            if (likely(instID)) *(unsigned int* __restrict__)((char*)instID + ofs) = ray.instID[k];
-          }
+
+          if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + ofs) = ray.Ng.x[k];
+          if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + ofs) = ray.Ng.y[k];
+          if (likely(Ng_z)) *(float* __restrict__)((char*)Ng_z + ofs) = ray.Ng.z[k];
+          *(float* __restrict__)((char*)u + ofs) = ray.u[k];
+          *(float* __restrict__)((char*)v + ofs) = ray.v[k];
+          *(unsigned int* __restrict__)((char*)geomID + ofs) = ray.geomID[k];
+          *(unsigned int* __restrict__)((char*)primID + ofs) = ray.primID[k];
+          if (likely(instID)) *(unsigned int* __restrict__)((char*)instID + ofs) = ray.instID[k];
+        }
+#endif
+      }
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray)
+    {
+      vbool<K> valid = valid_i;
+      valid &= (ray.tfar() < 0.0f);
+
+      if (likely(any(valid)))
+      {
+#if defined(__AVX512F__)
+        vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar());
+#else
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
+        {
+          const size_t k = __bscf(valid_bits);
+          const size_t ofs = offset[k];
+
+          *(float* __restrict__)((char*)tfar + ofs) = ray.tfar()[k];
         }
 #endif
       }
@@ -1142,51 +1217,64 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayHitK<K>& ray, bool intersect = true)
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayHitK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= intersect ? (ray.geomID != RTC_INVALID_GEOMETRY_ID) : (ray.tfar() < 0.0f);
+      valid &= (ray.geomID != RTC_INVALID_GEOMETRY_ID);
 
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
         vfloat<K>::template scatter<1>(valid, &ptr->tfar(), offset, ray.tfar());
-        if (intersect)
-        {
-          vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->geomID, offset, ray.geomID);
-          vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.x, offset, ray.Ng.x);
-          vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.y, offset, ray.Ng.y);
-          vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.z, offset, ray.Ng.z);
-          vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->u, offset, ray.u);
-          vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->v, offset, ray.v);
-          vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->primID, offset, ray.primID);
-          vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->instID, offset, ray.instID);
-        }
+
+        vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.x, offset, ray.Ng.x);
+        vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.y, offset, ray.Ng.y);
+        vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.z, offset, ray.Ng.z);
+        vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->u, offset, ray.u);
+        vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->v, offset, ray.v);
+        vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->geomID, offset, ray.geomID);
+        vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->primID, offset, ray.primID);
+        vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->instID, offset, ray.instID);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
           const size_t k = __bscf(valid_bits);
+          RayHit* __restrict__ ray_k = (RayHit*)((char*)ptr + offset[k]);
 
-          if (intersect)
-          {
-            RayHit* __restrict__ ray_k = (RayHit*)((char*)ptr + offset[k]);
-            ray_k->tfar() = ray.tfar()[k];
+          ray_k->tfar() = ray.tfar()[k];
 
-            ray_k->geomID = ray.geomID[k];
-            ray_k->Ng.x   = ray.Ng.x[k];
-            ray_k->Ng.y   = ray.Ng.y[k];
-            ray_k->Ng.z   = ray.Ng.z[k];
-            ray_k->u      = ray.u[k];
-            ray_k->v      = ray.v[k];
-            ray_k->primID = ray.primID[k];
-            ray_k->instID = ray.instID[k];
-          }
-          else
-          {
-            Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
-            ray_k->tfar() = ray.tfar()[k];
-          }
+          ray_k->Ng.x   = ray.Ng.x[k];
+          ray_k->Ng.y   = ray.Ng.y[k];
+          ray_k->Ng.z   = ray.Ng.z[k];
+          ray_k->u      = ray.u[k];
+          ray_k->v      = ray.v[k];
+          ray_k->geomID = ray.geomID[k];
+          ray_k->primID = ray.primID[k];
+          ray_k->instID = ray.instID[k];
+        }
+#endif
+      }
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray)
+    {
+      vbool<K> valid = valid_i;
+      valid &= (ray.tfar() < 0.0f);
+
+      if (likely(any(valid)))
+      {
+#if defined(__AVX512F__)
+        vfloat<K>::template scatter<1>(valid, &ptr->tfar(), offset, ray.tfar());
+#else
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
+        {
+          const size_t k = __bscf(valid_bits);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
+
+          ray_k->tfar() = ray.tfar()[k];
         }
 #endif
       }
@@ -1347,10 +1435,10 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByIndex(const vbool<K>& valid_i, const vint<K>& index, const RayHitK<K>& ray, bool intersect = true)
+    __forceinline void setHitByIndex(const vbool<K>& valid_i, const vint<K>& index, const RayHitK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= intersect ? (ray.geomID != RTC_INVALID_GEOMETRY_ID) : (ray.tfar() < 0.0f);
+      valid &= (ray.geomID != RTC_INVALID_GEOMETRY_ID);
 
       if (likely(any(valid)))
       {
@@ -1358,26 +1446,37 @@ namespace embree
         while (valid_bits != 0)
         {
           const size_t k = __bscf(valid_bits);
+          RayHit* __restrict__ ray_k = (RayHit*)ptr[index[k]];
 
-          if (intersect)
-          {
-            RayHit* __restrict__ ray_k = (RayHit*)ptr[index[k]];
-            ray_k->tfar() = ray.tfar()[k];
+          ray_k->tfar() = ray.tfar()[k];
 
-            ray_k->geomID = ray.geomID[k];
-            ray_k->Ng.x   = ray.Ng.x[k];
-            ray_k->Ng.y   = ray.Ng.y[k];
-            ray_k->Ng.z   = ray.Ng.z[k];
-            ray_k->u      = ray.u[k];
-            ray_k->v      = ray.v[k];
-            ray_k->primID = ray.primID[k];
-            ray_k->instID = ray.instID[k];
-          }
-          else
-          {
-            Ray* __restrict__ ray_k = ptr[index[k]];
-            ray_k->tfar() = ray.tfar()[k];
-          }
+          ray_k->Ng.x   = ray.Ng.x[k];
+          ray_k->Ng.y   = ray.Ng.y[k];
+          ray_k->Ng.z   = ray.Ng.z[k];
+          ray_k->u      = ray.u[k];
+          ray_k->v      = ray.v[k];
+          ray_k->geomID = ray.geomID[k];
+          ray_k->primID = ray.primID[k];
+          ray_k->instID = ray.instID[k];
+        }
+      }
+    }
+
+    template<int K>
+    __forceinline void setHitByIndex(const vbool<K>& valid_i, const vint<K>& index, const RayK<K>& ray)
+    {
+      vbool<K> valid = valid_i;
+      valid &= (ray.tfar() < 0.0f);
+
+      if (likely(any(valid)))
+      {
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
+        {
+          const size_t k = __bscf(valid_bits);
+          Ray* __restrict__ ray_k = ptr[index[k]];
+
+          ray_k->tfar() = ray.tfar()[k];
         }
       }
     }

@@ -310,7 +310,7 @@ namespace embree
       }
 #endif
       
-      
+
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (RTCRay& ray, IntersectContext* context) {
         assert(intersector1.occluded);
@@ -371,6 +371,22 @@ namespace embree
         occluded16(&mask,(RTCRay16&)ray,context);
       }
 #endif
+
+      /*! Tests if single ray is occluded by the scene. */
+      __forceinline void intersect(RTCRay& ray, IntersectContext* context) {
+        occluded(ray, context);
+      }
+
+      /*! Tests if a packet of K rays is occluded by the scene. */
+      template<int K>
+      __forceinline void intersect(const vbool<K>& valid, RayK<K>& ray, IntersectContext* context) {
+        occluded(valid, ray, context);
+      }
+
+      /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
+      __forceinline void intersectN(RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context) {
+        occludedN(rayN, N, context);
+      }
       
     public:
       AccelData* ptr;
@@ -448,15 +464,15 @@ namespace embree
   }
 
   /* ray stream filter interface */
-  typedef void (*intersectStreamAOS_func)(Scene *scene, RTCRayHit*  _rayN, const size_t N, const size_t stride, IntersectContext* context);
-  typedef void (*intersectStreamAOP_func)(Scene *scene, RTCRayHit** _rayN, const size_t N, IntersectContext* context);
-  typedef void (*intersectStreamSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context);
-  typedef void (*intersectStreamSOP_func)(Scene *scene, const RTCRayHitNp& rayN, const size_t N, IntersectContext* context);
+  typedef void (*intersectStreamAOS_func)(Scene* scene, RTCRayHit*  _rayN, const size_t N, const size_t stride, IntersectContext* context);
+  typedef void (*intersectStreamAOP_func)(Scene* scene, RTCRayHit** _rayN, const size_t N, IntersectContext* context);
+  typedef void (*intersectStreamSOA_func)(Scene* scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context);
+  typedef void (*intersectStreamSOP_func)(Scene* scene, const RTCRayHitNp* rayN, const size_t N, IntersectContext* context);
 
-  typedef void (*occludedStreamAOS_func)(Scene *scene, RTCRayHit*  _rayN, const size_t N, const size_t stride, IntersectContext* context);
-  typedef void (*occludedStreamAOP_func)(Scene *scene, RTCRayHit** _rayN, const size_t N, IntersectContext* context);
-  typedef void (*occludedStreamSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context);
-  typedef void (*occludedStreamSOP_func)(Scene *scene, const RTCRayHitNp& rayN, const size_t N, IntersectContext* context);
+  typedef void (*occludedStreamAOS_func)(Scene* scene, RTCRay*  _rayN, const size_t N, const size_t stride, IntersectContext* context);
+  typedef void (*occludedStreamAOP_func)(Scene* scene, RTCRay** _rayN, const size_t N, IntersectContext* context);
+  typedef void (*occludedStreamSOA_func)(Scene* scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context);
+  typedef void (*occludedStreamSOP_func)(Scene* scene, const RTCRayNp* rayN, const size_t N, IntersectContext* context);
 
   struct RayStreamFilterFuncs
   {
