@@ -103,7 +103,7 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(const struct RTCDisplacementFunctionNArguments* const args)
+void displacementFunction(const struct RTCDisplacementFunctionNArguments* args)
 {
   const float* nx = args->Ng_x;
   const float* ny = args->Ng_y;

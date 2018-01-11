@@ -50,7 +50,7 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
+void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
   const Instance* instance = (const Instance*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
@@ -74,7 +74,7 @@ void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
   bounds_o->upper_z = upper.z;
 }
 
-void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
+void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   
   const int* valid = args->valid;
@@ -105,7 +105,7 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   ray->tfar() = updated_tfar;
 }
 
-void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
+void instanceOccludedFunc(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
@@ -135,7 +135,7 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   ray->tfar()   = updated_tfar;
 }
 
-void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
+void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr)
@@ -183,7 +183,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   }
 }
 
-void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
+void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr)
@@ -282,7 +282,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
+void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
   const Sphere* spheres = (const Sphere*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
@@ -295,7 +295,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
   bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
+void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
@@ -390,7 +390,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* const args)
   }
 }
 
-void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
+void sphereOccludedFunc(const RTCOccludedFunctionNArguments* args)
 {
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
@@ -485,7 +485,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* const args)
   }
 }
 
-void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
+void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = (int*) args->valid;
   void* ptr  = args->geomUserPtr;
@@ -594,7 +594,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   }
 }
 
-void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
+void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
@@ -706,7 +706,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
 
 /* intersection filter function */
 
-void sphereFilterFunction(const RTCFilterFunctionNArguments* const args)
+void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
@@ -732,7 +732,7 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* const args)
   if (T < 0.5f) valid[0] = 0;
 }
 
-void sphereFilterFunctionN(const RTCFilterFunctionNArguments* const args)
+void sphereFilterFunctionN(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;

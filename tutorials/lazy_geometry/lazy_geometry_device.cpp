@@ -47,7 +47,7 @@ struct LazyGeometry
 
 LazyGeometry* g_objects[numSpheres];
 
-void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
+void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
   const LazyGeometry* instance = (const LazyGeometry*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
@@ -161,7 +161,7 @@ void eagerCreate(LazyGeometry* instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
+void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
@@ -187,7 +187,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   else ray->instID = instance->userID;
 }
 
-void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
+void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;

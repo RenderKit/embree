@@ -44,7 +44,7 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void occlusionFilter(const RTCFilterFunctionNArguments* const args);
+void occlusionFilter(const RTCFilterFunctionNArguments* args);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -240,7 +240,7 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 }
 
 /* occlusion filter function */
-void occlusionFilter(const RTCFilterFunctionNArguments* const args)
+void occlusionFilter(const RTCFilterFunctionNArguments* args)
 
 {
   IntersectContext* context = (IntersectContext*) args->context;

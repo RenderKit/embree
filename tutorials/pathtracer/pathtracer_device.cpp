@@ -867,15 +867,15 @@ extern "C" int g_spp;
 extern "C" bool g_accumulate;
 
 /* occlusion filter function */
-void intersectionFilterReject(const RTCFilterFunctionNArguments* const args);
+void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
 
-void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args);
+void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args);
 
-void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args);
+void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
 
-void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args);
+void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args);
 
-void occlusionFilterHair(const RTCFilterFunctionNArguments* const args);
+void occlusionFilterHair(const RTCFilterFunctionNArguments* args);
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
@@ -1271,14 +1271,14 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-void intersectionFilterReject(const RTCFilterFunctionNArguments* const args)
+void intersectionFilterReject(const RTCFilterFunctionNArguments* args)
 {
   assert(args->N == 1);
   bool valid = *((int*) args->valid);
   if (!valid) return;
 }
 
-void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
+void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
 {
   int* valid_i = args->valid;
   struct RTCRayHitN* _ray = (struct RTCRayHitN*)args->ray;
@@ -1333,7 +1333,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
     valid_i[0] = 0;
 }
 
-void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args)
 {
   IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
@@ -1348,7 +1348,7 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
   *transparency = Vec3fa(0.0f);
 }
 
-void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args)
 {
   IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
@@ -1401,7 +1401,7 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 }
 
 /* occlusion filter function */
-void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterHair(const RTCFilterFunctionNArguments* args)
 {
   IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;

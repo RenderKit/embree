@@ -192,7 +192,7 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const unsigned in
 
 
 /* intersection filter function for single rays and packets */
-void intersectionFilter(const RTCFilterFunctionNArguments* const args)
+void intersectionFilter(const RTCFilterFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr) return;
@@ -222,7 +222,7 @@ void intersectionFilter(const RTCFilterFunctionNArguments* const args)
 }
 
 /* intersection filter function for streams of general packets */
-void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
+void intersectionFilterN(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
@@ -268,7 +268,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
 }
 
 /* occlusion filter function for single rays and packets */
-void occlusionFilter(const RTCFilterFunctionNArguments* const args)
+void occlusionFilter(const RTCFilterFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr) return;
@@ -310,7 +310,7 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
 }
 
 /* intersection filter function for streams of general packets */
-void occlusionFilterN(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterN(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
