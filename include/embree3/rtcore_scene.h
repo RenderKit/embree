@@ -73,7 +73,7 @@ RTC_API void rtcJoinCommitScene(RTCScene scene);
 typedef bool (*RTCProgressMonitorFunction)(void* ptr, const double n);
 
 /* Sets the progress monitor callback function. */
-RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction func, void* ptr);
+RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction progress, void* ptr);
 
 /* Sets the build quality of a scene. */
 RTC_API void rtcSetSceneBuildQuality(RTCScene scene, enum RTCBuildQuality quality);

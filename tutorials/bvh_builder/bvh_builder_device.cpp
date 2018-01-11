@@ -128,7 +128,7 @@ namespace embree
     arguments.extraSpace = (unsigned int)extraSpace;
     arguments.bvh = bvh;
     arguments.primitives = prims.data();
-    arguments.numPrimitives = prims.size();
+    arguments.primitiveCount = prims.size();
     arguments.createNode = InnerNode::create;
     arguments.setNodeChildren = InnerNode::setChildren;
     arguments.setNodeBounds = InnerNode::setBounds;

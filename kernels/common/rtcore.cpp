@@ -182,13 +182,13 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction func, void* ptr) 
+  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneProgressMonitorFunction);
     RTC_VERIFY_HANDLE(hscene);
-    scene->setProgressMonitorFunction(func,ptr);
+    scene->setProgressMonitorFunction(progress,ptr);
     RTC_CATCH_END2(scene);
   }
 
@@ -1304,13 +1304,13 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction func)
+  RTC_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction displacement)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryDisplacementFunction);
     RTC_VERIFY_HANDLE(hgeometry);
-    geometry->setDisplacementFunction(func);
+    geometry->setDisplacementFunction(displacement);
     RTC_CATCH_END2(geometry);
   }
 
@@ -1334,23 +1334,23 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryIntersectFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
+  RTC_API void rtcSetGeometryIntersectFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN filter) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryIntersectFilterFunction);
     RTC_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunctionN(intersect);
+    geometry->setIntersectionFilterFunctionN(filter);
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryOccludedFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN intersect) 
+  RTC_API void rtcSetGeometryOccludedFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN filter) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryOccludedFilterFunction);
     RTC_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunctionN(intersect);
+    geometry->setOcclusionFilterFunctionN(filter);
     RTC_CATCH_END2(geometry);
   }
 

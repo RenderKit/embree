@@ -67,7 +67,7 @@ namespace embree
     {
       BVH* bvh = (BVH*) arguments->bvh;
       RTCBuildPrimitive* prims_i =  arguments->primitives;
-      size_t numPrimitives = arguments->numPrimitives;
+      size_t primitiveCount = arguments->primitiveCount;
       RTCCreateNodeFunction createNode = arguments->createNode;
       RTCSetNodeChildrenFunction setNodeChildren = arguments->setNodeChildren;
       RTCSetNodeBoundsFunction setNodeBounds = arguments->setNodeBounds;
@@ -81,11 +81,11 @@ namespace embree
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
       mvector<BVHBuilderMorton::BuildPrim>& morton_tmp = bvh->morton_tmp;
-      morton_src.resize(numPrimitives);
-      morton_tmp.resize(numPrimitives);
+      morton_src.resize(primitiveCount);
+      morton_tmp.resize(primitiveCount);
 
       /* compute centroid bounds */
-      const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa {
+      const BBox3fa centBounds = parallel_reduce ( size_t(0), primitiveCount, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa {
 
           BBox3fa bounds(empty);
           for (size_t i=r.begin(); i<r.end(); i++) 
@@ -95,7 +95,7 @@ namespace embree
       
       /* compute morton codes */
       BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
-      parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) {
+      parallel_for ( size_t(0), primitiveCount, [&](const range<size_t>& r) {
           BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton_src[r.begin()]);
           for (size_t i=r.begin(); i<r.end(); i++) {
             generator(prims[i].bounds(),(unsigned) i);
@@ -149,11 +149,11 @@ namespace embree
         [&] (size_t dn) {
           if (!buildProgress) return true;
           const size_t n = progress.fetch_add(dn)+dn;
-          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          const double f = std::min(1.0,double(n)/double(primitiveCount));
           return buildProgress(userPtr,f);
         },
         
-        morton_src.data(),morton_tmp.data(),numPrimitives,
+        morton_src.data(),morton_tmp.data(),primitiveCount,
         *arguments);
 
       bvh->allocator.cleanup();
@@ -164,7 +164,7 @@ namespace embree
     {
       BVH* bvh = (BVH*) arguments->bvh;
       RTCBuildPrimitive* prims =  arguments->primitives;
-      size_t numPrimitives = arguments->numPrimitives;
+      size_t primitiveCount = arguments->primitiveCount;
       RTCCreateNodeFunction createNode = arguments->createNode;
       RTCSetNodeChildrenFunction setNodeChildren = arguments->setNodeChildren;
       RTCSetNodeBoundsFunction setNodeBounds = arguments->setNodeBounds;
@@ -183,9 +183,9 @@ namespace embree
           return bounds;
         };
       const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrimitives,bounds);
+      const PrimInfo pinfo(0,primitiveCount,bounds);
       
       /* build BVH */
       void* root = BVHBuilderBinnedSAH::build<void*>(
@@ -220,7 +220,7 @@ namespace embree
         [&] (size_t dn) {
           if (!buildProgress) return true;
           const size_t n = progress.fetch_add(dn)+dn;
-          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          const double f = std::min(1.0,double(n)/double(primitiveCount));
           return buildProgress(userPtr,f);
         },
         
@@ -234,7 +234,7 @@ namespace embree
     {
       BVH* bvh = (BVH*) arguments->bvh;
       RTCBuildPrimitive* prims =  arguments->primitives;
-      size_t numPrimitives = arguments->numPrimitives;
+      size_t primitiveCount = arguments->primitiveCount;
       RTCCreateNodeFunction createNode = arguments->createNode;
       RTCSetNodeChildrenFunction setNodeChildren = arguments->setNodeChildren;
       RTCSetNodeBoundsFunction setNodeBounds = arguments->setNodeBounds;
@@ -254,9 +254,9 @@ namespace embree
           return bounds;
         };
       const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrimitives,bounds);
+      const PrimInfo pinfo(0,primitiveCount,bounds);
 
       /* function that splits a build primitive */
       struct Splitter
@@ -322,7 +322,7 @@ namespace embree
         [&] (size_t dn) {
           if (!buildProgress) return true;
           const size_t n = progress.fetch_add(dn)+dn;
-          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          const double f = std::min(1.0,double(n)/double(primitiveCount));
           return buildProgress(userPtr,f);
         },
         
@@ -347,7 +347,7 @@ namespace embree
       RTC_VERIFY_HANDLE(arguments->createLeaf);
 
       /* initialize the allocator */
-      bvh->allocator.init_estimate(arguments->numPrimitives*sizeof(BBox3fa));
+      bvh->allocator.init_estimate(arguments->primitiveCount*sizeof(BBox3fa));
       bvh->allocator.reset();
 
       /* switch between differnet builders based on quality level */
