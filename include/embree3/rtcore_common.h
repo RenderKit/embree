@@ -208,7 +208,7 @@ struct RTCFilterFunctionNArguments
 };
   
 /* Filter callback function. */
-typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* args);
 
 /* Intersection context passed to ray queries. */
 struct RTCIntersectContext

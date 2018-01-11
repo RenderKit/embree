@@ -197,6 +197,6 @@ struct RTCFilterFunctionNArguments
 };
 
 /* Filter callback function. */
-typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform const args);
+typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform args);
 
 #endif

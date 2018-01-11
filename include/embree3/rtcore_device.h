@@ -63,7 +63,7 @@ enum RTCDeviceProperty
 };
 
 /* Gets a device property. */
-RTC_API ssize_t rtcGetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop);
+RTC_API ssize_t rtcGetDeviceProperty(RTCDevice device, enum RTCDeviceProperty prop);
 
 /* Error codes. */
 enum RTCError
@@ -81,13 +81,13 @@ enum RTCError
 RTC_API enum RTCError rtcGetDeviceError(RTCDevice device);
 
 /* Type of error callback function. */
-typedef void (*RTCErrorFunction)(void* userPtr, const enum RTCError code, const char* str);
+typedef void (*RTCErrorFunction)(void* userPtr, enum RTCError code, const char* str);
 
 /* Sets an error callback function */
 RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, RTCErrorFunction func, void* userPtr);
 
 /* Type of memory monitor callback function. */
-typedef bool (*RTCMemoryMonitorFunction)(void* ptr, const ssize_t bytes, const bool post);
+typedef bool (*RTCMemoryMonitorFunction)(void* ptr, ssize_t bytes, bool post);
 
 /* Sets the memory monitor callback function. */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* userPtr);

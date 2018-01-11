@@ -64,19 +64,7 @@ namespace embree
     RTC_CATCH_END(nullptr);
   }
   
-  RTC_API void rtcSetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop, ssize_t val)
-  {
-    Device* device = (Device*) hdevice;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetDeviceProperty);
-    const bool internal_prop = (size_t)prop >= 1000000 && (size_t)prop < 1000004;
-    if (!internal_prop) RTC_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
-    Lock<MutexSys> lock(g_mutex);
-    device->setProperty(prop,val);
-    RTC_CATCH_END(device);
-  }
-
-  RTC_API ssize_t rtcGetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop)
+  RTC_API ssize_t rtcGetDeviceProperty(RTCDevice hdevice, RTCDeviceProperty prop)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -412,7 +400,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect1M (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit, const unsigned int M, const size_t byteStride) 
+  RTC_API void rtcIntersect1M (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -443,7 +431,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect1Mp (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** rn, const unsigned int M) 
+  RTC_API void rtcIntersect1Mp (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** rn, unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -474,7 +462,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersectNM (RTCScene hscene, RTCIntersectContext* user_context, struct RTCRayHitN* rayhit, const unsigned int N, const unsigned int M, const size_t byteStride) 
+  RTC_API void rtcIntersectNM (RTCScene hscene, RTCIntersectContext* user_context, struct RTCRayHitN* rayhit, unsigned int N, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -512,7 +500,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersectNp (RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* rayhit, const unsigned int N) 
+  RTC_API void rtcIntersectNp (RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* rayhit, unsigned int N) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -665,7 +653,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded1M(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* ray, const unsigned int M, const size_t byteStride) 
+  RTC_API void rtcOccluded1M(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* ray, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -694,7 +682,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded1Mp(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** ray, const unsigned int M) 
+  RTC_API void rtcOccluded1Mp(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** ray, unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -724,7 +712,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccludedNM(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHitN* ray, const unsigned int N, const unsigned int M, const size_t byteStride)
+  RTC_API void rtcOccludedNM(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHitN* ray, unsigned int N, unsigned int M, size_t byteStride)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -763,7 +751,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccludedNp(RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* ray, const unsigned int N)
+  RTC_API void rtcOccludedNp(RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* ray, unsigned int N)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;

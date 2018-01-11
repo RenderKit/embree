@@ -70,7 +70,7 @@ struct RTCBoundsFunctionArguments
 };
 
 /* Type of bounding function. */
-typedef unmasked void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* uniform const args);
+typedef unmasked void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* uniform args);
 
 /* Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments
@@ -84,7 +84,7 @@ struct RTCIntersectFunctionNArguments
 };
 
 /* Type of intersect callback function */
-typedef unmasked void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* uniform const args);
+typedef unmasked void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* uniform args);
 
 /* Arguments for RTCOccludedFunctionN */
 struct RTCOccludedFunctionNArguments
@@ -98,7 +98,7 @@ struct RTCOccludedFunctionNArguments
 };
 
 /* Type of occlusion callback function pointer. */
-typedef unmasked void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* uniform const args);
+typedef unmasked void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* uniform args);
 
 /* Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionNArguments
@@ -119,7 +119,7 @@ struct RTCDisplacementFunctionNArguments
 };
 
 /* Type of displacement mapping callback function. */
-typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* uniform const args);
+typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* uniform args);
 
 /* Creates a new geometry of specified type. */
 RTC_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);
@@ -196,10 +196,10 @@ RTC_API  void rtcSetGeometryIntersectFunction(RTCGeometry geometry, uniform RTCI
 RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTCOccludedFunctionN occluded);
 
 /* Reports intersection from intersect callback function. */
-RTC_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
+RTC_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 /* Reports intersection from occluded callback function. */
-RTC_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform const args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
+RTC_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 
 /* Sets instanced scene of instance geometry. */
@@ -245,7 +245,7 @@ struct RTCInterpolateArguments
 };
 
 /* Interpolates vertex data to some u/v location. */
-RTC_API void rtcInterpolate(const RTCInterpolateArguments* uniform const args);
+RTC_API void rtcInterpolate(const RTCInterpolateArguments* uniform args);
 
 
 struct RTCInterpolateNArguments

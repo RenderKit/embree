@@ -234,7 +234,7 @@ RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* uniform rays, unif
 };
 
 
-RTC_FORCEINLINE void rtcCopyHitToRayHit(varying RTCRayHit* uniform rh, const varying RTCHit* uniform hit, const varying t)
+RTC_FORCEINLINE void rtcCopyHitToRayHit(varying RTCRayHit* uniform rh, const varying RTCHit* uniform hit, varying float t)
 {
   rh->ray.tfar = t;
   rh->hit.Ng_x = hit->Ng_x;
@@ -248,7 +248,7 @@ RTC_FORCEINLINE void rtcCopyHitToRayHit(varying RTCRayHit* uniform rh, const var
     rh->hit.instID[l] = hit->instID[l];
 }
 
-RTC_FORCEINLINE void rtcCopyHitToRayHitN(RTCRayHitN* uniform rayn, const varying RTCHit* uniform hit, const varying t, uniform unsigned int N, uniform unsigned int i)
+RTC_FORCEINLINE void rtcCopyHitToRayHitN(RTCRayHitN* uniform rayn, const varying RTCHit* uniform hit, varying float t, uniform unsigned int N, uniform unsigned int i)
 {
   RTCRayHitN_tfar(rayn,N,i)   = t;
   RTCRayHitN_Ng_x(rayn,N,i)   = hit->Ng_x;
