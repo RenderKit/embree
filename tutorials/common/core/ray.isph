@@ -69,6 +69,12 @@ inline varying RTCRayHit* uniform RTCRayHit_(varying Ray& ray)
   return ray_ptr;
 }
 
+inline varying RTCHit* uniform RTCHit_(varying Ray& ray)
+{
+  varying RTCHit* uniform hit_ptr = (varying RTCHit* uniform)&(ray.Ng.x);
+  return hit_ptr;
+}
+
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
 inline Ray make_Ray(const Vec3f org, 

@@ -325,7 +325,7 @@ RTC_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsigned
   ray.id     = RTCRayN_id(rays,N,i);
   ray.flags  = RTCRayN_flags(rays,N,i);
   return ray;
-};
+}
 
 RTC_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* hits, unsigned int N, unsigned int i)
 {
@@ -340,7 +340,20 @@ RTC_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* hits, unsigned int N, unsigned
   for (size_t l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
     hit.instID[l] = RTCHitN_instID(hits,N,i,l);
   return hit;
-};
+}
+
+RTC_FORCEINLINE void rtcCopyHitToHitN(RTCHitN* hitn, const RTCHit* hit, unsigned int N, unsigned int i)
+{
+  RTCHitN_Ng_x(hitn,N,i)   = hit->Ng_x;
+  RTCHitN_Ng_y(hitn,N,i)   = hit->Ng_y;
+  RTCHitN_Ng_z(hitn,N,i)   = hit->Ng_z;
+  RTCHitN_u(hitn,N,i)      = hit->u;
+  RTCHitN_v(hitn,N,i)      = hit->v;
+  RTCHitN_primID(hitn,N,i) = hit->primID;
+  RTCHitN_geomID(hitn,N,i) = hit->geomID;
+  for (size_t l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
+    RTCHitN_instID(hitn,N,i,l) = hit->instID[l];
+}
 
 RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* rayhit, unsigned int N, unsigned int i)
 {
@@ -369,52 +382,6 @@ RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* rayhit, unsigned i
   for (size_t l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
     rh.hit.instID[l] = RTCHitN_instID(hit,N,i,l);
   return rh;
-};
-
-RTC_FORCEINLINE void rtcCopyHitToRayHit(RTCRayHit* rh, const RTCHit* hit, float t)
-{
-  rh->ray.tfar = t;
-  rh->hit.Ng_x = hit->Ng_x;
-  rh->hit.Ng_y = hit->Ng_y;
-  rh->hit.Ng_z = hit->Ng_z;  
-  rh->hit.u = hit->u;
-  rh->hit.v = hit->v;
-  rh->hit.primID = hit->primID;
-  rh->hit.geomID = hit->geomID;
-  for (size_t l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
-    rh->hit.instID[l] = hit->instID[l];
-}
-
-RTC_FORCEINLINE void rtcCopyHitToRayHitN(RTCRayHitN* rayhit, const RTCHit* hit, float t, unsigned int N, unsigned int i)
-{
-  RTCRayN* rayn  = RTCRayHitN_RayN(rayhit,N);
-  RTCRayN_tfar(rayn,N,i)   = t;
-  RTCHitN* hitn  = RTCRayHitN_HitN(rayhit,N);
-  RTCHitN_Ng_x(hitn,N,i)   = hit->Ng_x;
-  RTCHitN_Ng_y(hitn,N,i)   = hit->Ng_y;
-  RTCHitN_Ng_z(hitn,N,i)   = hit->Ng_z;
-  RTCHitN_u(hitn,N,i)      = hit->u;
-  RTCHitN_v(hitn,N,i)      = hit->v;
-  RTCHitN_primID(hitn,N,i) = hit->primID;
-  RTCHitN_geomID(hitn,N,i) = hit->geomID;
-  for (size_t l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
-    RTCHitN_instID(hitn,N,i,l) = hit->instID[l];
-}
-
-RTC_FORCEINLINE void rtcCopyHitFromRayHitToRayHitN(RTCRayHitN* rayhitn, const RTCRayHit* rh, unsigned int N, unsigned int i)
-{
-  RTCRayN* rayn  = RTCRayHitN_RayN(rayhitn,N);
-  RTCRayN_tfar(rayn,N,i)   = rh->ray.tfar;
-  RTCHitN* hitn  = RTCRayHitN_HitN(rayhitn,N);
-  RTCHitN_Ng_x(hitn,N,i)   = rh->hit.Ng_x;
-  RTCHitN_Ng_y(hitn,N,i)   = rh->hit.Ng_y;
-  RTCHitN_Ng_z(hitn,N,i)   = rh->hit.Ng_z;
-  RTCHitN_u(hitn,N,i)      = rh->hit.u;
-  RTCHitN_v(hitn,N,i)      = rh->hit.v;
-  RTCHitN_primID(hitn,N,i) = rh->hit.primID;
-  RTCHitN_geomID(hitn,N,i) = rh->hit.geomID;
-  for (size_t l = 0 ; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
-    RTCHitN_instID(hitn,N,i,l) = rh->hit.instID[l];
 }
 
 #endif

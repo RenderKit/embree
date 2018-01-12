@@ -145,7 +145,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
   uniform unsigned int N = args->N;
   RTCRayHitN* uniform rayhit = (RTCRayHitN* uniform)args->rayhit;
   RTCRayN* uniform rays = RTCRayHitN_RayN(rayhit,N);
-  //RTCHitN* uniform hits = RTCRayHitN_HitN(rayhit,N);
+  RTCHitN* uniform hits = RTCRayHitN_HitN(rayhit,N);
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
   
   /* iterate over all rays in ray packet */
@@ -179,7 +179,8 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
-    rtcCopyHitFromRayHitToRayHitN(rayhit,RTCRayHit_(ray),N,ui);
+    RTCRayN_tfar(rays,N,ui) = ray.tfar;
+    rtcCopyHitToHitN(hits,RTCHit_(ray),N,ui);
   }
 }
 
@@ -300,6 +301,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geomUserPtr;
   varying Ray *uniform ray = (varying Ray*uniform)args->rayhit;
+  varying RTCHit* uniform ray_hit = (varying RTCHit *uniform)&ray->Ng.x;
   uniform unsigned int primID = args->primID;
   
   assert(args->N == programCount);
@@ -351,8 +353,10 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     ray->tfar = t0;
     rtcFilterIntersection(args,&fargs);
 
-    if (imask == -1)
-      rtcCopyHitToRayHit((varying RTCRayHit *uniform)ray,&hit,t0);
+    if (imask == -1) {
+      ray->tfar = t0;
+      *ray_hit = hit;
+    }
     else
       ray->tfar = old_t;
   }
@@ -383,8 +387,10 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
     ray->tfar = t1;
     rtcFilterIntersection(args,&fargs);
 
-    if (imask == -1)
-      rtcCopyHitToRayHit((varying RTCRayHit *uniform)ray,&hit,t1);
+    if (imask == -1) {
+      ray->tfar = t1;
+      *ray_hit = hit;
+    }
     else
       ray->tfar = old_t;
   }
@@ -492,7 +498,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
   uniform unsigned int N = args->N;
   RTCRayHitN* uniform rayhit = (RTCRayHitN* uniform)args->rayhit;
   RTCRayN* uniform rays = RTCRayHitN_RayN(rayhit,N);
-  //RTCHitN* uniform hits = RTCRayHitN_HitN(rayhit,N);
+  RTCHitN* uniform hits = RTCRayHitN_HitN(rayhit,N);
   uniform unsigned int primID = args->primID;
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
@@ -557,8 +563,10 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       ray->tfar = t0;
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
-      if (imask == -1)
-        rtcCopyHitToRayHitN(rayhit,&potentialhit,t0,N,ui);
+      if (imask == -1) {
+        ray_tfar = t0;
+        rtcCopyHitToHitN(hits,&potentialhit,N,ui);
+      }
       ray->tfar = ray_tfar;
     }
 
@@ -586,8 +594,10 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
       ray->tfar = t1; 
       rtcFilterIntersection(args,&fargs);
       /* update for all accepted hits */
-      if (imask == -1)
-        rtcCopyHitToRayHitN(rayhit,&potentialhit,t1,N,ui);
+      if (imask == -1) {
+        ray_tfar = t1;
+        rtcCopyHitToHitN(hits,&potentialhit,N,ui);
+      }
       ray->tfar = ray_tfar;
     }
   }
