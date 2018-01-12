@@ -37,7 +37,7 @@ namespace embree
   {
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
     void BVHNIntersector1<N, types, robust, PrimitiveIntersector1>::intersect(const Accel::Intersectors* __restrict__ This,
-                                                                              Ray& __restrict__ ray,
+                                                                              RayHit& __restrict__ ray,
                                                                               IntersectContext* __restrict__ context)
     {
       /* perform per ray precalculations required by the primitive intersector */

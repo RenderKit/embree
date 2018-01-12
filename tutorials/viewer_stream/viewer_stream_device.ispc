@@ -170,13 +170,13 @@ Vec3f ambientOcclusionShading(int x, int y, Ray& ray, uniform RayStats& stats)
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccludedVM(g_scene,&context,(varying RTCRayHit* uniform)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
+  rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (uniform unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccludedV(g_scene,RTCRayHit_(rays[i]));
+    rtcOccludedV(g_scene,RTCRay_(rays[i]));
 #else
   for (uniform unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccludedVM(g_scene,&context,(varying RTCRayHit* uniform)&rays[i],1,sizeof(Ray));
+    rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays[i],1,sizeof(Ray));
 #endif
 
   /* accumulate illumination */

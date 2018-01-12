@@ -124,7 +124,7 @@ unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform 
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
   context->instID[0] = instance->userID;
-  rtcOccludedV(instance->object,context,RTCRayHit_(*ray));
+  rtcOccludedV(instance->object,context,RTCRay_(*ray));
   context->instID[0] = -1;
   const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
@@ -223,7 +223,7 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
 
     /* trace ray through object */
     context->instID[0] = instance->userID;
-    rtcOccludedV(instance->object,context,RTCRayHit_(ray));
+    rtcOccludedV(instance->object,context,RTCRay_(ray));
     context->instID[0] = -1;
     if (ray.tfar >= 0.0f) continue;
 
@@ -1040,7 +1040,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRayHit_(shadow));
+    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -1186,7 +1186,7 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext shadow_context;
   rtcInitIntersectContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
-  rtcOccludedVM(g_scene,&shadow_context,(varying RTCRayHit* uniform)&shadow_stream,N,sizeof(Ray));
+  rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
 
   /* add light contribution */
   N = -1;

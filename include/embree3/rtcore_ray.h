@@ -309,6 +309,14 @@ struct RTCHitNt
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][N];
 };
 
+/* Helper structure to create a ray+hit packet of compile time size N */
+template<int N>
+struct RTCRayHitNt
+{
+  RTCRayNt<N> ray;
+  RTCHitNt<N> hit;
+};
+
 RTC_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsigned int i)
 {
   RTCRay ray;

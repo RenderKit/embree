@@ -124,14 +124,14 @@ RTC_FORCEINLINE void rtcIntersectVM(RTCScene scene, uniform RTCIntersectContext*
 RTC_API void rtcIntersectNp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHitNp* uniform rayhit, uniform unsigned int N);
 
 /* Tests a single ray for occlusion with the scene. */
-RTC_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit* uniform ray);
+RTC_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray);
 
 RTC_API void rtcOccluded4 (const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 RTC_API void rtcOccluded8 (const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
 
 /* Tests a varying ray for occlusion with the scene. */
-RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform ray)
+RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray)
 {
   varying bool mask = __mask;
   unmasked {
@@ -147,20 +147,20 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* u
 }
 
 /* Tests a stream of M rays for occlusion with the scene. */
-RTC_API void rtcOccluded1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit* uniform ray, uniform unsigned int M, uniform uintptr_t byteStride);
+RTC_API void rtcOccluded1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray, uniform unsigned int M, uniform uintptr_t byteStride);
 
 /* Tests a stream of pointers to M rays for occlusion with the scene. */
-RTC_API void rtcOccluded1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit** uniform ray, uniform unsigned int M);
+RTC_API void rtcOccluded1Mp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay** uniform ray, uniform unsigned int M);
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
-RTC_API void rtcOccludedNM(RTCScene scene, uniform RTCIntersectContext* uniform context, struct RTCRayHitN* uniform ray, uniform unsigned int N, uniform unsigned int M, uniform uintptr_t byteStride);
+RTC_API void rtcOccludedNM(RTCScene scene, uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform ray, uniform unsigned int N, uniform unsigned int M, uniform uintptr_t byteStride);
 
 /* Tests a stream of M ray packets of native size in SOA format for occlusion with the scene. */
-RTC_FORCEINLINE void rtcOccludedVM(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform ray, uniform unsigned int M, uniform uintptr_t byteStride) {
-  rtcOccludedNM(scene, context, (struct RTCRayHitN*)ray, sizeof(varying float)/4, M, byteStride);
+RTC_FORCEINLINE void rtcOccludedVM(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray, uniform unsigned int M, uniform uintptr_t byteStride) {
+  rtcOccludedNM(scene, context, (struct RTCRayN*)ray, sizeof(varying float)/4, M, byteStride);
 }
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
-RTC_API void rtcOccludedNp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHitNp* uniform ray, uniform unsigned int N);
+RTC_API void rtcOccludedNp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayNp* uniform ray, uniform unsigned int N);
 
 #endif

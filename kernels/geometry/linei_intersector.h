@@ -30,7 +30,7 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
+      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
@@ -53,7 +53,7 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
+      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time);
@@ -76,7 +76,7 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
@@ -84,7 +84,7 @@ namespace embree
         LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         size_t mask = movemask(valid_i);
         while (mask) intersect(pre,ray,__bscf(mask),context,prim);
@@ -117,7 +117,7 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
@@ -125,7 +125,7 @@ namespace embree
         LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         size_t mask = movemask(valid_i);
         while (mask) intersect(pre,ray,__bscf(mask),context,prim);

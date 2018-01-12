@@ -35,7 +35,7 @@ namespace embree
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim) 
       {
         AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
 
@@ -48,7 +48,7 @@ namespace embree
         accel->intersect(ray,prim.primID(),context,reportIntersection1);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
         /* perform ray mask test */
@@ -62,7 +62,7 @@ namespace embree
       }
       
       template<int K>
-      static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+      static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
       {
         assert(false);
       }
@@ -84,7 +84,7 @@ namespace embree
         __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray) {}
       };
       
-      static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
+      static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         vbool<K> valid = valid_i;
         AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
@@ -111,7 +111,7 @@ namespace embree
         return ray.tfar() < 0.0f;
       }
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
         intersect(vbool<K>(1<<int(k)),pre,ray,context,prim);
       }
       

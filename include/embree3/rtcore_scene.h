@@ -115,28 +115,28 @@ RTC_API void rtcIntersectNM(RTCScene scene, struct RTCIntersectContext* context,
 RTC_API void rtcIntersectNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayHitNp* rayhit, unsigned int N);
 
 /* Tests a single ray for occlusion with the scene. */
-RTC_API void rtcOccluded1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* ray);
+RTC_API void rtcOccluded1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit4* ray);
+RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay4* ray);
 
 /* Tests a packet of 8 rays for occlusion with the scene. */
-RTC_API void rtcOccluded8(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit8* ray);
+RTC_API void rtcOccluded8(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay8* ray);
 
 /* Tests a packet of 16 rays for occlusion with the scene. */
-RTC_API void rtcOccluded16(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit16* ray);
+RTC_API void rtcOccluded16(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay16* ray);
 
 /* Tests a stream of M rays for occlusion with the scene. */
-RTC_API void rtcOccluded1M(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* ray, unsigned int M, size_t byteStride);
+RTC_API void rtcOccluded1M(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray, unsigned int M, size_t byteStride);
 
 /* Tests a stream of pointers to M rays for occlusion with the scene. */
-RTC_API void rtcOccluded1Mp(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit** ray, unsigned int M);
+RTC_API void rtcOccluded1Mp(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay** ray, unsigned int M);
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
-RTC_API void rtcOccludedNM(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHitN* ray, unsigned int N, unsigned int M, size_t byteStride);
+RTC_API void rtcOccludedNM(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayN* ray, unsigned int N, unsigned int M, size_t byteStride);
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
-RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayHitNp* ray, unsigned int N);
+RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayNp* ray, unsigned int N);
 
 #if defined(__cplusplus)
 

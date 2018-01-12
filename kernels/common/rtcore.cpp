@@ -298,7 +298,7 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.intersect(*rayhit,&context);
 #if defined(DEBUG)
-    ((Ray*)rayhit)->verifyHit();
+    ((RayHit*)rayhit)->verifyHit();
 #endif
     RTC_CATCH_END2(scene);
   }
@@ -323,7 +323,7 @@ namespace embree
     Ray4* ray4 = (Ray4*) rayhit;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray4->get(i,ray1);
+      RayHit ray1; ray4->get(i,ray1);
       scene->intersectors.intersect((RTCRayHit&)ray1,&context);
       ray4->set(i,ray1);
     }
@@ -354,7 +354,7 @@ namespace embree
     Ray8* ray8 = (Ray8*) rayhit;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray8->get(i,ray1);
+      RayHit ray1; ray8->get(i,ray1);
       scene->intersectors.intersect((RTCRayHit&)ray1,&context);
       ray8->set(i,ray1);
     }
@@ -362,7 +362,7 @@ namespace embree
     if (likely(scene->intersectors.intersector8))
       scene->intersectors.intersect8(valid,*rayhit,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayhit,8,1,sizeof(RTCRayHit8),&context,true);
+      scene->device->rayStreamFilters.intersectSOA(scene,(char*)rayhit,8,1,sizeof(RTCRayHit8),&context);
 #endif
     RTC_CATCH_END2(scene);
   }
@@ -387,7 +387,7 @@ namespace embree
     Ray16* ray16 = (Ray16*) rayhit;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray16->get(i,ray1);
+      RayHit ray1; ray16->get(i,ray1);
       scene->intersectors.intersect((RTCRayHit&)ray1,&context);
       ray16->set(i,ray1);
     }
@@ -395,7 +395,7 @@ namespace embree
     if (likely(scene->intersectors.intersector16))
       scene->intersectors.intersect16(valid,*rayhit,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayhit,16,1,sizeof(RTCRayHit16),&context,true);
+      scene->device->rayStreamFilters.intersectSOA(scene,(char*)rayhit,16,1,sizeof(RTCRayHit16),&context);
 #endif
     RTC_CATCH_END2(scene);
   }
@@ -423,7 +423,7 @@ namespace embree
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,rayhit,M,byteStride,&context,true);   
+      scene->device->rayStreamFilters.intersectAOS(scene,rayhit,M,byteStride,&context);   
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect1M not supported");
@@ -454,7 +454,7 @@ namespace embree
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOP(scene,rn,M,&context,true);   
+      scene->device->rayStreamFilters.intersectAOP(scene,rn,M,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect1Mp not supported");
@@ -487,12 +487,12 @@ namespace embree
       } 
       /* normal codepath for single ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,(RTCRayHit*)rayhit,M,byteStride,&context,true);
+        scene->device->rayStreamFilters.intersectAOS(scene,(RTCRayHit*)rayhit,M,byteStride,&context);
       }
     }
     /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayhit,N,M,byteStride,&context,true);
+      scene->device->rayStreamFilters.intersectSOA(scene,(char*)rayhit,N,M,byteStride,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersectNM not supported");
@@ -531,14 +531,14 @@ namespace embree
 #endif
     STAT3(normal.travs,N,N,N);
     IntersectContext context(scene,user_context);
-    scene->device->rayStreamFilters.filterSOP(scene,*rayhit,N,&context,true);
+    scene->device->rayStreamFilters.intersectSOP(scene,rayhit,N,&context);
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersectNp not supported");
 #endif
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* ray) 
+  RTC_API void rtcOccluded1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -554,7 +554,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit4* ray) 
+  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay4* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -571,11 +571,11 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray4* ray4 = (Ray4*) ray;
+    RayHit4* ray4 = (RayHit4*) ray;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray4->get(i,ray1);
-      scene->intersectors.occluded((RTCRayHit&)ray1,&context);
+      RayHit ray1; ray4->get(i,ray1);
+      scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray4->geomID[i] = ray1.geomID; 
     }
 #else
@@ -585,7 +585,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
  
-  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit8* ray) 
+  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay8* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -602,24 +602,24 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray8* ray8 = (Ray8*) ray;
+    RayHit8* ray8 = (RayHit8*) ray;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray8->get(i,ray1);
-      scene->intersectors.occluded((RTCRayHit&)ray1,&context);
+      RayHit ray1; ray8->get(i,ray1);
+      scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray8->set(i,ray1);
     }
 #else
     if (likely(scene->intersectors.intersector8))
       scene->intersectors.occluded8(valid,*ray,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,8,1,sizeof(RTCRayHit8),&context,false);
+      scene->device->rayStreamFilters.occludedSOA(scene,(char*)ray,8,1,sizeof(RTCRay8),&context);
 #endif
 
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit16* ray) 
+  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay16* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -636,24 +636,24 @@ namespace embree
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray16* ray16 = (Ray16*) ray;
+    RayHit16* ray16 = (RayHit16*) ray;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
-      Ray ray1; ray16->get(i,ray1);
-      scene->intersectors.occluded((RTCRayHit&)ray1,&context);
+      RayHit ray1; ray16->get(i,ray1);
+      scene->intersectors.occluded((RTCRay&)ray1,&context);
       ray16->set(i,ray1);
     }
 #else
     if (likely(scene->intersectors.intersector16))
       scene->intersectors.occluded16(valid,*ray,&context);
     else
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,16,1,sizeof(RTCRayHit16),&context,false);
+      scene->device->rayStreamFilters.occludedSOA(scene,(char*)ray,16,1,sizeof(RTCRay16),&context);
 #endif
 
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded1M(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* ray, unsigned int M, size_t byteStride) 
+  RTC_API void rtcOccluded1M(RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -669,12 +669,12 @@ namespace embree
     IntersectContext context(scene,user_context);
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
-      if (likely(ray->ray.tnear <= ray->ray.tfar)) 
+      if (likely(ray->tnear <= ray->tfar)) 
         scene->intersectors.occluded (*ray,&context);
     } 
     /* codepath for normal streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,ray,M,byteStride,&context,false);
+      scene->device->rayStreamFilters.occludedAOS(scene,ray,M,byteStride,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded1M not supported");
@@ -682,7 +682,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded1Mp(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** ray, unsigned int M) 
+  RTC_API void rtcOccluded1Mp(RTCScene hscene, RTCIntersectContext* user_context, RTCRay** ray, unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -699,12 +699,12 @@ namespace embree
 
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
-      if (likely(ray[0]->ray.tnear <= ray[0]->ray.tfar)) 
+      if (likely(ray[0]->tnear <= ray[0]->tfar)) 
         scene->intersectors.occluded (*ray[0],&context);
     } 
     /* codepath for normal streams */
     else {
-      scene->device->rayStreamFilters.filterAOP(scene,ray,M,&context,false);
+      scene->device->rayStreamFilters.occludedAOP(scene,ray,M,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccluded1Mp not supported");
@@ -712,7 +712,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccludedNM(RTCScene hscene, RTCIntersectContext* user_context, RTCRayHitN* ray, unsigned int N, unsigned int M, size_t byteStride)
+  RTC_API void rtcOccludedNM(RTCScene hscene, RTCIntersectContext* user_context, RTCRayN* ray, unsigned int N, unsigned int M, size_t byteStride)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -733,17 +733,17 @@ namespace embree
     {
       /* fast path for streams of size 1 */
       if (likely(M == 1)) {
-        if (likely(((RTCRayHit*)ray)->ray.tnear <= ((RTCRayHit*)ray)->ray.tfar))
-          scene->intersectors.occluded (*(RTCRayHit*)ray,&context);
+        if (likely(((RTCRay*)ray)->tnear <= ((RTCRay*)ray)->tfar))
+          scene->intersectors.occluded (*(RTCRay*)ray,&context);
       } 
       /* codepath for normal ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,(RTCRayHit*)ray,M,byteStride,&context,false);
+        scene->device->rayStreamFilters.occludedAOS(scene,(RTCRay*)ray,M,byteStride,&context);
       }
     }
     /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)ray,N,M,byteStride,&context,false);
+      scene->device->rayStreamFilters.occludedSOA(scene,(char*)ray,N,M,byteStride,&context);
     }
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccludedNM not supported");
@@ -751,7 +751,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccludedNp(RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* ray, unsigned int N)
+  RTC_API void rtcOccludedNp(RTCScene hscene, RTCIntersectContext* user_context, const RTCRayNp* ray, unsigned int N)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -761,16 +761,16 @@ namespace embree
 #if defined(DEBUG)
     RTC_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)ray->ray.org_x ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "org_x not aligned to 4 bytes");   
-    if (((size_t)ray->ray.org_y ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "org_y not aligned to 4 bytes");   
-    if (((size_t)ray->ray.org_z ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "org_z not aligned to 4 bytes");   
-    if (((size_t)ray->ray.dir_x ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_x not aligned to 4 bytes");   
-    if (((size_t)ray->ray.dir_y ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_y not aligned to 4 bytes");   
-    if (((size_t)ray->ray.dir_z ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_z not aligned to 4 bytes");   
-    if (((size_t)ray->ray.tnear ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_x not aligned to 4 bytes");   
-    if (((size_t)ray->ray.tfar  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "tnear not aligned to 4 bytes");   
-    if (((size_t)ray->ray.time  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "time not aligned to 4 bytes");   
-    if (((size_t)ray->ray.mask  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "mask not aligned to 4 bytes");   
+    if (((size_t)ray->org_x ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "org_x not aligned to 4 bytes");   
+    if (((size_t)ray->org_y ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "org_y not aligned to 4 bytes");   
+    if (((size_t)ray->org_z ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "org_z not aligned to 4 bytes");   
+    if (((size_t)ray->dir_x ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_x not aligned to 4 bytes");   
+    if (((size_t)ray->dir_y ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_y not aligned to 4 bytes");   
+    if (((size_t)ray->dir_z ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_z not aligned to 4 bytes");   
+    if (((size_t)ray->tnear ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "dir_x not aligned to 4 bytes");   
+    if (((size_t)ray->tfar  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "tnear not aligned to 4 bytes");   
+    if (((size_t)ray->time  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "time not aligned to 4 bytes");   
+    if (((size_t)ray->mask  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "mask not aligned to 4 bytes");   
     // if (((size_t)ray->hit.Ng_x  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "Ng_x not aligned to 4 bytes");   
     // if (((size_t)ray->hit.Ng_y  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "Ng_y not aligned to 4 bytes");   
     // if (((size_t)ray->hit.Ng_z  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "Ng_z not aligned to 4 bytes");   
@@ -782,7 +782,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,N,N,N);
     IntersectContext context(scene,user_context);
-    scene->device->rayStreamFilters.filterSOP(scene,*ray,N,&context,false);
+    scene->device->rayStreamFilters.occludedSOP(scene,ray,N,&context);
 #else
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcOccludedNp not supported");
 #endif

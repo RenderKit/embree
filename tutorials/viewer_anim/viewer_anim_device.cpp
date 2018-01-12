@@ -333,9 +333,9 @@ void renderTileStandard(int taskIndex,
         /* trace shadow rays */
 #if 0
         for (unsigned int n=0;n<N;n++)
-          rtcOccluded1(g_scene,&context,RTCRayHit_(rays[n]));
+          rtcOccluded1(g_scene,&context,RTCRay_(rays[n]));
 #else
-        rtcOccluded1M(g_scene,&context,(RTCRayHit*)&rays,N,sizeof(Ray));
+        rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,N,sizeof(Ray));
 #endif
         /* modify pixel color based on occlusion */
         for (unsigned int n=0;n<N;n++)

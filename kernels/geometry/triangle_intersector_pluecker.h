@@ -77,7 +77,7 @@ namespace embree
         __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
         
         template<typename UVMapper, typename Epilog>
-          __forceinline bool intersect(Ray& ray, 
+          __forceinline bool intersect(Ray& ray,
                                        const Vec3vf<M>& tri_v0,
                                        const Vec3vf<M>& tri_v1,
                                        const Vec3vf<M>& tri_v2,
@@ -169,7 +169,7 @@ namespace embree
         /*! Intersects K rays with one of M triangles. */
         template<typename UVMapper, typename Epilog>
           __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                            RayK<K>& ray, 
+                                            RayK<K>& ray,
                                             const Vec3vf<K>& tri_v0,
                                             const Vec3vf<K>& tri_v1,
                                             const Vec3vf<K>& tri_v2,

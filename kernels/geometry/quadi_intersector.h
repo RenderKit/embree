@@ -32,7 +32,7 @@ namespace embree
       typedef QuadMIntersector1MoellerTrumbore<M,filter> Precalculations;
 
       /*! Intersect a ray with the M quads and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene);
@@ -56,7 +56,7 @@ namespace embree
       typedef QuadMIntersectorKMoellerTrumbore<M,K,filter> Precalculations;
 
       /*! Intersects K rays with M triangles. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
       {
         Scene* scene = context->scene;
         for (size_t i=0; i<QuadMi<M>::max_size(); i++)
@@ -91,7 +91,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M triangles and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf4 v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene);
@@ -115,7 +115,7 @@ namespace embree
       typedef QuadMIntersector1Pluecker<M,filter> Precalculations;
 
       /*! Intersect a ray with the M quads and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene);
@@ -139,7 +139,7 @@ namespace embree
       typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
 
       /*! Intersects K rays with M triangles. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
       {
         Scene* scene = context->scene;
         for (size_t i=0; i<QuadMi<M>::max_size(); i++)
@@ -174,7 +174,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M triangles and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf4 v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene);
@@ -198,7 +198,7 @@ namespace embree
       typedef QuadMIntersector1MoellerTrumbore<M,filter> Precalculations;
 
       /*! Intersect a ray with the M quads and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene,ray.time);
@@ -222,7 +222,7 @@ namespace embree
       typedef QuadMIntersectorKMoellerTrumbore<M,K,filter> Precalculations;
 
       /*! Intersects K rays with M quads. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
       {
         for (size_t i=0; i<QuadMi<M>::max_size(); i++)
         {
@@ -249,7 +249,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M quads and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene,ray.time[k]);
@@ -273,7 +273,7 @@ namespace embree
       typedef QuadMIntersector1Pluecker<M,filter> Precalculations;
 
       /*! Intersect a ray with the M quads and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene,ray.time);
@@ -297,7 +297,7 @@ namespace embree
       typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
 
       /*! Intersects K rays with M quads. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const QuadMi<M>& quad)
       {
         for (size_t i=0; i<QuadMi<M>::max_size(); i++)
         {
@@ -324,7 +324,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M quads and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMi<M>& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene,ray.time[k]);

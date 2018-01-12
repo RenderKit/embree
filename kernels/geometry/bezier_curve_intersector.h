@@ -52,7 +52,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-      __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3fa& curve, size_t i, 
+      __forceinline bool intersect_bezier_iterative_debug(const RayHit& ray, const float dt, const NativeCurve3fa& curve, size_t i, 
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -125,7 +125,7 @@ namespace embree
     }
 
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-      bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve, 
+      bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
                                                const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
@@ -227,7 +227,7 @@ namespace embree
       __forceinline BezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
-      __noinline bool intersect(Ray& ray, 
+      __noinline bool intersect(Ray& ray,
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Epilog& epilog) const
       {
@@ -251,7 +251,7 @@ namespace embree
     {
       struct Ray1
       {
-        __forceinline Ray1(RayK<K>& ray, size_t k) 
+        __forceinline Ray1(RayK<K>& ray, size_t k)
           : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), _tnear(ray.tnear()[k]), _tfar(ray.tfar()[k]) {}
 
         Vec3fa org;
@@ -259,10 +259,10 @@ namespace embree
         float _tnear;
         float& _tfar;
 
-        __forceinline float &tnear() { return _tnear; }
-        __forceinline float &tfar()  { return _tfar; }
-        __forceinline const float &tnear() const { return _tnear; }
-        __forceinline const float &tfar()  const { return _tfar; }
+        __forceinline float& tnear() { return _tnear; }
+        __forceinline float& tfar()  { return _tfar; }
+        __forceinline const float& tnear() const { return _tnear; }
+        __forceinline const float& tfar()  const { return _tfar; }
         
       };
 

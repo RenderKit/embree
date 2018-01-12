@@ -161,7 +161,7 @@ namespace embree
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (Ray& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
+      __forceinline void intersect (RayHit& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
       {
         assert(primID < size());
         assert(intersectors.intersectorN.intersect);
@@ -182,7 +182,7 @@ namespace embree
       }
 
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (Ray& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report) 
+      __forceinline void occluded (Ray& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report)
       {
         assert(primID < size());
         assert(intersectors.intersectorN.occluded);
@@ -204,7 +204,7 @@ namespace embree
    
       /*! Intersects a packet of K rays with the scene. */
       template<int K>
-        __forceinline void intersect (const vbool<K>& valid, RayK<K>& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
+        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
       {
         assert(primID < size());
         assert(intersectors.intersectorN.intersect);
@@ -226,7 +226,7 @@ namespace embree
 
       /*! Tests if a packet of K rays is occluded by the scene. */
       template<int K>
-        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report) 
+        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report)
       {
         assert(primID < size());
         assert(intersectors.intersectorN.occluded);

@@ -92,7 +92,7 @@ namespace embree
       };
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -158,7 +158,7 @@ namespace embree
       }
 
       template<typename Loader>
-        static __forceinline void intersect(RayK<K>& ray, size_t k,
+        static __forceinline void intersect(RayHitK<K>& ray, size_t k,
                                             IntersectContext* context,
                                             const float* const grid_x,
                                             const size_t line_offset,
@@ -192,7 +192,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -232,7 +232,7 @@ namespace embree
       typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
         vint<K> vitime = getTimeSegment(ray.time, vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
@@ -248,7 +248,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -358,7 +358,7 @@ namespace embree
       }
 
       template<typename Loader>
-        static __forceinline void intersect(RayK<K>& ray, size_t k,
+        static __forceinline void intersect(RayHitK<K>& ray, size_t k,
                                             const float ftime,
                                             IntersectContext* context,
                                             const float* const grid_x,
@@ -416,7 +416,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       { 
         float ftime;
         int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);

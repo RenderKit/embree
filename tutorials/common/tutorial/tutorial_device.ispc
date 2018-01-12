@@ -115,7 +115,7 @@ Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, u
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcOccludedV(g_scene,&context,RTCRayHit_(ray));
+  rtcOccludedV(g_scene,&context,RTCRay_(ray));
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
@@ -565,7 +565,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
     /* trace shadow ray */
     uniform RTCIntersectContext context;
     rtcInitIntersectContext(&context);
-    rtcOccludedV(g_scene,&context,RTCRayHit_(shadow));
+    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
     //rtcIntersectV(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 

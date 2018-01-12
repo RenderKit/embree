@@ -87,7 +87,7 @@ namespace embree
                 << "}";
   }
 
-  __forceinline void copyHitToRay(Ray &ray, const Hit& hit)
+  __forceinline void copyHitToRay(RayHit& ray, const Hit& hit)
   {
     ray.Ng   = hit.Ng;
     ray.u    = hit.u;
@@ -98,7 +98,7 @@ namespace embree
   }
 
   template<int K>
-    __forceinline void copyHitToRay(const vbool<K> &mask, RayK<K> &ray, const HitK<K> &hit)
+    __forceinline void copyHitToRay(const vbool<K> &mask, RayHitK<K> &ray, const HitK<K> &hit)
   {
     vfloat<K>::storeu(mask,&ray.Ng.x, hit.Ng.x);
     vfloat<K>::storeu(mask,&ray.Ng.y, hit.Ng.y);

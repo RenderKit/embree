@@ -105,8 +105,8 @@ namespace embree
         const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
         const Vec3vfx nn0 = normalize(n0);
         const Vec3vfx nn1 = normalize(n1);
-        const Vec3vfx lp0 =  madd(p0.w,nn0,Vec3vfx(p0));
-        const Vec3vfx lp1 =  madd(p1.w,nn1,Vec3vfx(p1));
+        const Vec3vfx lp0 = madd(p0.w,nn0,Vec3vfx(p0));
+        const Vec3vfx lp1 = madd(p1.w,nn1,Vec3vfx(p1));
         const Vec3vfx up0 = nmadd(p0.w,nn0,Vec3vfx(p0));
         const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
         
@@ -146,8 +146,8 @@ namespace embree
           const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
           const Vec3vfx nn0 = normalize(n0);
           const Vec3vfx nn1 = normalize(n1);
-          const Vec3vfx lp0 =  madd(p0.w,nn0,Vec3vfx(p0));
-          const Vec3vfx lp1 =  madd(p1.w,nn1,Vec3vfx(p1));
+          const Vec3vfx lp0 = madd(p0.w,nn0,Vec3vfx(p0));
+          const Vec3vfx lp1 = madd(p1.w,nn1,Vec3vfx(p1));
           const Vec3vfx up0 = nmadd(p0.w,nn0,Vec3vfx(p0));
           const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
           
@@ -180,7 +180,7 @@ namespace embree
       
       __forceinline Ribbon1Intersector1() {}
 
-      __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr) 
+      __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr)
       {
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
         ray_space = frame(depth_scale*ray.dir);

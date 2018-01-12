@@ -105,10 +105,18 @@ __forceinline RTCRayHit* RTCRayHit1_(Ray& ray) {
   return (RTCRayHit*)&ray;
 }
 
+__forceinline RTCRay* RTCRay_(Ray& ray) {
+  return (RTCRay*)&ray;
+}
+
 __forceinline RTCHit* RTCHit_(Ray& ray)
 {
   RTCHit* hit_ptr = (RTCHit*)&(ray.Ng.x);
   return hit_ptr;
+}
+
+__forceinline RTCRay* RTCRay1_(Ray& ray) {
+  return (RTCRay*)&ray;
 }
 
   /*! Outputs ray to stream. */ 
