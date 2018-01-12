@@ -2804,12 +2804,54 @@ RTCBuildArguments
 }@@
 
 @@{
+rtcDefaultBuildSettings
+=>
+rtcDefaultBuildArguments
+}@@
+
+@@{
+RTCBuildArguments ID args
+=>
+uniform RTCBuildArguments args
+@@{
+args.size
+=>
+args.byteSize
+}@@
+@@{
+args.quality
+=>
+args.buildQuality
+}@@
+@@{
+args.flags
+=>
+args.buildFlags
+}@@
+@@{
+args.travCost
+=>
+args.traversalCost
+}@@
+@@{
+args.intCost
+=>
+args.intersectionCost
+}@@
+@@{
+args.extraSpace
+=>
+args.primitiveArrayCapacity // FIXME: calculate capacity properly
+}@@
+}@@
+
+@@{
 rtcBuildBVH(EXPR bvh_i, EXPR settings, EXPR primitives_i, EXPR numPrimitives_i, EXPR createNode_i, EXPR setNodeChildren_i,
             EXPR setNodeBounds_i, EXPR createLeaf_i, EXPR splitPrimitive_i, EXPR buildProgress_i, EXPR userPtr_i);
 =>
 (settings.bvh = bvh_i,
 settings.primitives = primitives_i,
-settings.numPrimitives = numPrimitives_i,
+settings.primitiveCount = numPrimitives_i,
 settings.createNode = createNode_i,
 settings.setNodeChildren = setNodeChildren_i,
 settings.setNodeBounds = setNodeBounds_i,

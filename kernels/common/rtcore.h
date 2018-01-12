@@ -115,5 +115,5 @@ namespace embree
 #endif
 
 #define RTC_BUILD_ARGUMENTS_HAS(settings,member) \
-  (settings.size > (offsetof(RTCBuildArguments,member)+sizeof(settings.member))) 
+  (settings.byteSize > (offsetof(RTCBuildArguments,member)+sizeof(settings.member))) 
 }

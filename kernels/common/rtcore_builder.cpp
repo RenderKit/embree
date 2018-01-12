@@ -327,7 +327,7 @@ namespace embree
         },
         
         (PrimRef*)prims,
-        pinfo.size()+arguments->extraSpace,
+        arguments->primitiveArrayCapacity,
         pinfo,*arguments);
         
       bvh->allocator.cleanup();
@@ -346,17 +346,20 @@ namespace embree
       RTC_VERIFY_HANDLE(arguments->setNodeBounds);
       RTC_VERIFY_HANDLE(arguments->createLeaf);
 
+      if (arguments->primitiveArrayCapacity < arguments->primitiveCount)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"primitiveArrayCapacity must be greater or equal to primitiveCount")
+
       /* initialize the allocator */
       bvh->allocator.init_estimate(arguments->primitiveCount*sizeof(BBox3fa));
       bvh->allocator.reset();
 
       /* switch between differnet builders based on quality level */
-      if (arguments->quality == RTC_BUILD_QUALITY_LOW)
+      if (arguments->buildQuality == RTC_BUILD_QUALITY_LOW)
         return rtcBuildBVHMorton(arguments);
-      else if (arguments->quality == RTC_BUILD_QUALITY_MEDIUM)
+      else if (arguments->buildQuality == RTC_BUILD_QUALITY_MEDIUM)
         return rtcBuildBVHBinnedSAH(arguments);
-      else if (arguments->quality == RTC_BUILD_QUALITY_HIGH) {
-        if (arguments->splitPrimitive == nullptr || arguments->extraSpace == 0)
+      else if (arguments->buildQuality == RTC_BUILD_QUALITY_HIGH) {
+        if (arguments->splitPrimitive == nullptr || arguments->primitiveArrayCapacity <= arguments->primitiveCount)
           return rtcBuildBVHBinnedSAH(arguments);
         else
           return rtcBuildBVHSpatialSAH(arguments);
@@ -365,7 +368,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid build quality");
 
       /* if we are in dynamic mode, then do not clear temporary data */
-      if (!(arguments->flags & RTC_BUILD_FLAG_DYNAMIC))
+      if (!(arguments->buildFlags & RTC_BUILD_FLAG_DYNAMIC))
       {
         bvh->morton_src.clear();
         bvh->morton_tmp.clear();

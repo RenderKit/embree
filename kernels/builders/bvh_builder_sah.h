@@ -55,8 +55,8 @@ namespace embree
           if (RTC_BUILD_ARGUMENTS_HAS(settings,sahBlockSize      )) logBlockSize    = __bsr(settings.sahBlockSize);
           if (RTC_BUILD_ARGUMENTS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
-          if (RTC_BUILD_ARGUMENTS_HAS(settings,travCost          )) travCost        = settings.travCost;
-          if (RTC_BUILD_ARGUMENTS_HAS(settings,intCost           )) intCost         = settings.intCost;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,traversalCost     )) travCost        = settings.traversalCost;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,intersectionCost  )) intCost         = settings.intersectionCost;
         }
 
         Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)

@@ -115,20 +115,20 @@ namespace embree
 
     /* settings for BVH build */
     RTCBuildArguments arguments = rtcDefaultBuildArguments();
-    arguments.size = sizeof(arguments);
-    arguments.flags = RTC_BUILD_FLAG_DYNAMIC;
-    arguments.quality = quality;
+    arguments.byteSize = sizeof(arguments);
+    arguments.buildFlags = RTC_BUILD_FLAG_DYNAMIC;
+    arguments.buildQuality = quality;
     arguments.maxBranchingFactor = 2;
     arguments.maxDepth = 1024;
     arguments.sahBlockSize = 1;
     arguments.minLeafSize = 1;
     arguments.maxLeafSize = 1;
-    arguments.travCost = 1.0f;
-    arguments.intCost = 1.0f;
-    arguments.extraSpace = (unsigned int)extraSpace;
+    arguments.traversalCost = 1.0f;
+    arguments.intersectionCost = 1.0f;
     arguments.bvh = bvh;
     arguments.primitives = prims.data();
     arguments.primitiveCount = prims.size();
+    arguments.primitiveArrayCapacity = prims.capacity();
     arguments.createNode = InnerNode::create;
     arguments.setNodeChildren = InnerNode::setChildren;
     arguments.setNodeBounds = InnerNode::setBounds;
