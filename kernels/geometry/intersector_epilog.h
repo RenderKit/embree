@@ -70,12 +70,12 @@ namespace embree
 #endif
 
         /* update hit information */
-        ray.u = hit.u;
-        ray.v = hit.v;
         ray.tfar() = hit.t;
         ray.Ng = hit.Ng;
-        ray.geomID = instID;
+        ray.u = hit.u;
+        ray.v = hit.v;
         ray.primID = primID;
+        ray.geomID = instID;
         ray.instID = context->instID;
         return true;
       }
@@ -166,15 +166,15 @@ namespace embree
 #endif
 
         /* update hit information */
-        ray.u[k] = hit.u;
-        ray.v[k] = hit.v;
         ray.tfar()[k] = hit.t;
         ray.Ng.x[k] = hit.Ng.x;
         ray.Ng.y[k] = hit.Ng.y;
         ray.Ng.z[k] = hit.Ng.z;
-        ray.instID[k] = context->instID;
-        ray.geomID[k] = geomID;
+        ray.u[k] = hit.u;
+        ray.v[k] = hit.v;
         ray.primID[k] = primID;
+        ray.geomID[k] = geomID;
+        ray.instID[k] = context->instID;
         return true;
       }
     };
@@ -292,15 +292,15 @@ namespace embree
 
         /* update hit information */
         const Vec2f uv = hit.uv(i);
-        ray.u = uv.x;
-        ray.v = uv.y;
         ray.tfar() = hit.vt[i];
         ray.Ng.x = hit.vNg.x[i];
         ray.Ng.y = hit.vNg.y[i];
         ray.Ng.z = hit.vNg.z[i];
-        ray.instID = context->instID;
-        ray.geomID = instID;
+        ray.u = uv.x;
+        ray.v = uv.y;
         ray.primID = primIDs[i];
+        ray.geomID = instID;
+        ray.instID = context->instID;
         return true;
 
       }
@@ -511,16 +511,16 @@ namespace embree
 
         /* update hit information */
         const Vec2f uv = hit.uv(i);
-        ray.u = uv.x;
-        ray.v = uv.y;
-        ray.tfar() = hit.t(i);
         const Vec3fa Ng = hit.Ng(i);
+        ray.tfar() = hit.t(i);
         ray.Ng.x = Ng.x;
         ray.Ng.y = Ng.y;
         ray.Ng.z = Ng.z;
-        ray.instID = context->instID;
-        ray.geomID = geomID;
+        ray.u = uv.x;
+        ray.v = uv.y;
         ray.primID = primID;
+        ray.geomID = geomID;
+        ray.instID = context->instID;
         return true;
       }
     };
@@ -622,15 +622,15 @@ namespace embree
 #endif
 
         /* update hit information */
-        vfloat<K>::store(valid,&ray.u,u);
-        vfloat<K>::store(valid,&ray.v,v);
         vfloat<K>::store(valid,&ray.tfar(),t);
-        vint<K>::store(valid,&ray.geomID,geomID);
-        vint<K>::store(valid,&ray.primID,primID);
-        vint<K>::store(valid,&ray.instID,context->instID);
         vfloat<K>::store(valid,&ray.Ng.x,Ng.x);
         vfloat<K>::store(valid,&ray.Ng.y,Ng.y);
         vfloat<K>::store(valid,&ray.Ng.z,Ng.z);
+        vfloat<K>::store(valid,&ray.u,u);
+        vfloat<K>::store(valid,&ray.v,v);
+        vint<K>::store(valid,&ray.primID,primID);
+        vint<K>::store(valid,&ray.geomID,geomID);
+        vint<K>::store(valid,&ray.instID,context->instID);
         return valid;
       }
     };
@@ -737,15 +737,15 @@ namespace embree
 #endif
 
         /* update hit information */
-        vfloat<K>::store(valid,&ray.u,u);
-        vfloat<K>::store(valid,&ray.v,v);
         vfloat<K>::store(valid,&ray.tfar(),t);
-        vint<K>::store(valid,&ray.geomID,geomID);
-        vint<K>::store(valid,&ray.primID,primID);
-        vint<K>::store(valid,&ray.instID,context->instID);
         vfloat<K>::store(valid,&ray.Ng.x,Ng.x);
         vfloat<K>::store(valid,&ray.Ng.y,Ng.y);
         vfloat<K>::store(valid,&ray.Ng.z,Ng.z);
+        vfloat<K>::store(valid,&ray.u,u);
+        vfloat<K>::store(valid,&ray.v,v);
+        vint<K>::store(valid,&ray.primID,primID);
+        vint<K>::store(valid,&ray.geomID,geomID);
+        vint<K>::store(valid,&ray.instID,context->instID);
         return valid;
       }
     };
@@ -876,14 +876,14 @@ namespace embree
         ray.instID[k] = context->instID;
 #else
         const Vec2f uv = hit.uv(i);
-        ray.u[k] = uv.x;
-        ray.v[k] = uv.y;
         ray.tfar()[k] = hit.t(i);
         ray.Ng.x[k] = hit.vNg.x[i];
         ray.Ng.y[k] = hit.vNg.y[i];
         ray.Ng.z[k] = hit.vNg.z[i];
-        ray.geomID[k] = geomID;
+        ray.u[k] = uv.x;
+        ray.v[k] = uv.y;
         ray.primID[k] = primIDs[i];
+        ray.geomID[k] = geomID;
         ray.instID[k] = context->instID;
 #endif
         return true;
@@ -1022,15 +1022,15 @@ namespace embree
         ray.instID[k] = context->instID;
 #else
         const Vec2f uv = hit.uv(i);
-        ray.u[k] = uv.x;
-        ray.v[k] = uv.y;
-        ray.tfar()[k] = hit.t(i);
         const Vec3fa Ng = hit.Ng(i);
+        ray.tfar()[k] = hit.t(i);
         ray.Ng.x[k] = Ng.x;
         ray.Ng.y[k] = Ng.y;
         ray.Ng.z[k] = Ng.z;
-        ray.geomID[k] = geomID;
+        ray.u[k] = uv.x;
+        ray.v[k] = uv.y;
         ray.primID[k] = primID;
+        ray.geomID[k] = geomID;
         ray.instID[k] = context->instID;
 #endif
         return true;
