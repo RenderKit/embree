@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -47,7 +47,7 @@ struct LazyGeometry
 
 LazyGeometry* g_objects[numSpheres];
 
-void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
+void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
   const LazyGeometry* instance = (const LazyGeometry*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
@@ -161,12 +161,12 @@ void eagerCreate(LazyGeometry* instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
+void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
   RTCIntersectContext* context = args->context;
-  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   assert(args->N == 1);
   LazyGeometry* instance = (LazyGeometry*)ptr;
 
@@ -187,7 +187,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   else ray->instID = instance->userID;
 }
 
-void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
+void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;

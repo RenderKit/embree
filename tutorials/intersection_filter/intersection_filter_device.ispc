@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -86,7 +86,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-    rtcIntersect(g_scene,&context.context,RTCRayHit_(primary));
+    rtcIntersectV(g_scene,&context.context,RTCRayHit_(primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -109,7 +109,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
+    rtcOccludedV(g_scene,&context.context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -196,7 +196,7 @@ inline void scatter(varying unsigned int& ptr, const varying unsigned int idx, c
 
 
 /* intersection filter function for single rays and packets */
-unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == NULL) return;
@@ -205,7 +205,7 @@ unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform cons
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
-  //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
+  //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
@@ -226,12 +226,12 @@ unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform cons
 }
 
 /* intersection filter function for streams of general packets */
-unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayHitN* uniform rayN = (struct RTCRayHitN* uniform)args->ray;
-  //struct RTCHitN* uniform hitN = args->potentialHit;
+  //struct RTCHitN* uniform hitN = args->hit;
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */
@@ -272,7 +272,7 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform con
 }
 
 /* occlusion filter function for single rays and packets */
-unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == NULL) return;
@@ -281,7 +281,7 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
-  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->potentialHit;
+  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
@@ -314,12 +314,12 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
 }
 
 /* intersection filter function for streams of general packets */
-unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   struct RTCRayHitN* uniform rayN = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform hitN = args->potentialHit;
+  struct RTCHitN* uniform hitN = args->hit;
   const uniform unsigned int N = args->N;
                                   
   /* avoid crashing when debug visualizations are used */

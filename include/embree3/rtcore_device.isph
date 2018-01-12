@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -56,16 +56,11 @@ enum RTCDeviceProperty
   RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED        = 100,
 
   RTC_DEVICE_PROPERTY_TASKING_SYSTEM        = 128,
-  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129,
-
-  RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE = 256
+  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129
 };
 
-/* Sets a device property. */
-RTC_API void rtcSetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop, uniform intptr_t value);
-
 /* Gets a device property. */
-RTC_API uniform intptr_t rtcGetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop);
+RTC_API uniform intptr_t rtcGetDeviceProperty(RTCDevice device, uniform RTCDeviceProperty prop);
 
 /* Error codes. */
 enum RTCError
@@ -83,13 +78,13 @@ enum RTCError
 RTC_API uniform RTCError rtcGetDeviceError(RTCDevice device);
 
 /* Type of error callback function. */
-typedef unmasked void (*uniform RTCErrorFunction)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
+typedef unmasked void (*uniform RTCErrorFunction)(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str);
 
 /* Sets an error callback function */
 RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, uniform RTCErrorFunction func, void* uniform userPtr);
 
 /* Type of memory monitor callback function. */
-typedef uniform bool (*uniform RTCMemoryMonitorFunction)(const uniform intptr_t bytes, const uniform bool post);
+typedef uniform bool (*uniform RTCMemoryMonitorFunction)(uniform intptr_t bytes, uniform bool post);
 
 /* Sets the memory monitor callback function */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* uniform userPtr);

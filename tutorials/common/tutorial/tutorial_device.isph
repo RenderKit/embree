@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -51,7 +51,7 @@ extern uniform RTCIntersectContextFlags g_iflags_coherent;
 extern uniform RTCIntersectContextFlags g_iflags_incoherent;
 
 /* error reporting function */
-unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str = NULL);
+unmasked void error_handler(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str = NULL);
 
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -42,7 +42,7 @@ uniform Vec3f hair_dK;
 uniform Vec3f hair_Kr;    //!< reflectivity of hair
 uniform Vec3f hair_Kt;    //!< transparency of hair
 
-unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -238,7 +238,7 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
 
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
@@ -246,14 +246,14 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform const a
   if (!transparency) return;
     
   uniform int* uniform valid_i = args->valid;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  varying unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
+  varying unsigned int geomID = RTCHitN_geomID(hit,N,0);
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = make_Vec3f(0.0f);
@@ -276,7 +276,7 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccluded(scene,&context->context,RTCRay_(ray));
+  rtcOccludedV(scene,&context->context,RTCRay_(ray));
 
   return transparency;
 }
@@ -307,7 +307,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,&context.context,RTCRayHit_(ray));
+    rtcIntersectV(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */

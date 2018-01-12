@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -27,7 +27,7 @@ namespace embree
   {
   public:
     __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context)
-      : scene(scene), user(user_context), geomID_to_instID(nullptr), instID(user_context->instID) {}
+      : scene(scene), user(user_context), geomID_to_instID(nullptr), instID(user_context->instID[0]) {}
 
     __forceinline bool hasContextFilter() const {
 #if defined(EMBREE_FILTER_FUNCTION_CONTEXT)

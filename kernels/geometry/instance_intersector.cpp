@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -46,7 +46,7 @@ namespace embree
     {
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayHit& ray = *(RayHit*)args->ray;
+      Ray& ray = *(Ray*)args->rayhit;
       
       const AffineSpace3fa world2local = 
         likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
@@ -54,10 +54,10 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.intersect((RTCRayHit&)ray,&context);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
     }
@@ -74,10 +74,10 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
       ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = Vec3fa(ray_dir,ray.tfar());
     }
@@ -106,7 +106,7 @@ namespace embree
       const vint<N>* validi = (const vint<N>*) args->valid;
       const Instance* instance = (const Instance*) args->geomUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayHitK<N>& ray = *(RayHitK<N>*)args->ray;
+      RayHitK<N>& ray = *(RayHitK<N>*)args->rayhit;
       
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
@@ -117,10 +117,10 @@ namespace embree
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context); 
       intersectObject((vint<N>*)validi,instance->object,&context,ray);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
@@ -142,10 +142,10 @@ namespace embree
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       occludedObject((vint<N>*)validi,instance->object,&context,ray);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }

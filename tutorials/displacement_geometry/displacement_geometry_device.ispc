@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -101,7 +101,7 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-unmasked void displacementFunction(const struct RTCDisplacementFunctionNArguments* uniform const args)
+unmasked void displacementFunction(const struct RTCDisplacementFunctionNArguments* uniform args)
 {
   const uniform float* uniform nx = args->Ng_x;
   const uniform float* uniform ny = args->Ng_y;
@@ -171,9 +171,6 @@ export void device_init (uniform int8* uniform cfg)
   g_device = rtcNewDevice(cfg);
   error_handler(NULL,rtcGetDeviceError(g_device));
 
-  /* configure the size of the software cache used for subdivision geometry */
-  rtcSetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE,100*1024*1024);
-
   /* set error handler */
   rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
@@ -205,7 +202,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -235,7 +232,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

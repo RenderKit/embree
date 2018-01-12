@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -171,7 +171,7 @@ namespace embree
         args.valid = &mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.ray = (RTCRayN*)&ray;
+        args.rayhit = (RTCRayHitN*)&ray;
         args.N = 1;
         args.primID = (unsigned int)primID;
         args.internal_context = context;
@@ -214,7 +214,7 @@ namespace embree
         args.valid = (int*)&mask;
         args.geomUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.ray = (RTCRayN*)&ray;
+        args.rayhit = (RTCRayHitN*)&ray;
         args.N = K;
         args.primID = (unsigned int)primID;
         args.internal_context = context;

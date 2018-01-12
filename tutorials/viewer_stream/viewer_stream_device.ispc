@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -173,7 +173,7 @@ Vec3f ambientOcclusionShading(int x, int y, Ray& ray, uniform RayStats& stats)
   rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (uniform unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded(g_scene,RTCRay_(rays[i]));
+    rtcOccludedV(g_scene,RTCRay_(rays[i]));
 #else
   for (uniform unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays[i],1,sizeof(Ray));
@@ -325,7 +325,7 @@ void renderTileStandard(uniform int taskIndex,
   rtcIntersectVM(g_scene,&context,(varying RTCRayHit* uniform)&rays[0],N,sizeof(Ray));
 #elif USE_INTERFACE == 1
   for (uniform unsigned int i=0; i<N; i++)
-    rtcIntersect(g_scene,&context,RTCRayHit_(rays[i]));
+    rtcIntersectV(g_scene,&context,RTCRayHit_(rays[i]));
 #else
   for (uniform unsigned int i=0; i<N; i++)
     rtcIntersectVM(g_scene,&context,(varying RTCRayHit* uniform)&rays[i],1,sizeof(Ray));

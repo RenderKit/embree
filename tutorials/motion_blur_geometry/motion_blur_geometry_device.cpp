@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -365,7 +365,7 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
+void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
   const Sphere* spheres = (const Sphere*) args->geomUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
@@ -381,11 +381,11 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* const args)
   bounds_o->upper_z = p.z+sphere.r;
 }
 
-void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
+void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;
-  RTCRayHitN* rays = (RTCRayHitN*)args->ray;
+  RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   unsigned int primID = args->primID;
   assert(args->N == 1);
   const Sphere* spheres = (const Sphere*)ptr;
@@ -434,7 +434,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* const args)
   }
 }
 
-void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* const args)
+void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geomUserPtr;

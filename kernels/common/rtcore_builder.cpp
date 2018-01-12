@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -63,17 +63,17 @@ namespace embree
       return nullptr;
     }
 
-    void* rtcBuildBVHMorton(const RTCBuildSettings* settings)
+    void* rtcBuildBVHMorton(const RTCBuildArguments* arguments)
     {
-      BVH* bvh = (BVH*) settings->bvh;
-      RTCBuildPrimitive* prims_i =  settings->primitives;
-      size_t numPrimitives = settings->numPrimitives;
-      RTCCreateNodeFunction createNode = settings->createNode;
-      RTCSetNodeChildrenFunction setNodeChildren = settings->setNodeChildren;
-      RTCSetNodeBoundsFunction setNodeBounds = settings->setNodeBounds;
-      RTCCreateLeafFunction createLeaf = settings->createLeaf;
-      RTCProgressMonitorFunction buildProgress = settings->buildProgress;
-      void* userPtr = settings->userPtr;
+      BVH* bvh = (BVH*) arguments->bvh;
+      RTCBuildPrimitive* prims_i =  arguments->primitives;
+      size_t primitiveCount = arguments->primitiveCount;
+      RTCCreateNodeFunction createNode = arguments->createNode;
+      RTCSetNodeChildrenFunction setNodeChildren = arguments->setNodeChildren;
+      RTCSetNodeBoundsFunction setNodeBounds = arguments->setNodeBounds;
+      RTCCreateLeafFunction createLeaf = arguments->createLeaf;
+      RTCProgressMonitorFunction buildProgress = arguments->buildProgress;
+      void* userPtr = arguments->userPtr;
         
       std::atomic<size_t> progress(0);
       
@@ -81,11 +81,11 @@ namespace embree
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
       mvector<BVHBuilderMorton::BuildPrim>& morton_tmp = bvh->morton_tmp;
-      morton_src.resize(numPrimitives);
-      morton_tmp.resize(numPrimitives);
+      morton_src.resize(primitiveCount);
+      morton_tmp.resize(primitiveCount);
 
       /* compute centroid bounds */
-      const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa {
+      const BBox3fa centBounds = parallel_reduce ( size_t(0), primitiveCount, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa {
 
           BBox3fa bounds(empty);
           for (size_t i=r.begin(); i<r.end(); i++) 
@@ -95,7 +95,7 @@ namespace embree
       
       /* compute morton codes */
       BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
-      parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) {
+      parallel_for ( size_t(0), primitiveCount, [&](const range<size_t>& r) {
           BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton_src[r.begin()]);
           for (size_t i=r.begin(); i<r.end(); i++) {
             generator(prims[i].bounds(),(unsigned) i);
@@ -149,28 +149,28 @@ namespace embree
         [&] (size_t dn) {
           if (!buildProgress) return true;
           const size_t n = progress.fetch_add(dn)+dn;
-          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          const double f = std::min(1.0,double(n)/double(primitiveCount));
           return buildProgress(userPtr,f);
         },
         
-        morton_src.data(),morton_tmp.data(),numPrimitives,
-        *settings);
+        morton_src.data(),morton_tmp.data(),primitiveCount,
+        *arguments);
 
       bvh->allocator.cleanup();
       return root.first;
     }
 
-    void* rtcBuildBVHBinnedSAH(const RTCBuildSettings* settings)
+    void* rtcBuildBVHBinnedSAH(const RTCBuildArguments* arguments)
     {
-      BVH* bvh = (BVH*) settings->bvh;
-      RTCBuildPrimitive* prims =  settings->primitives;
-      size_t numPrimitives = settings->numPrimitives;
-      RTCCreateNodeFunction createNode = settings->createNode;
-      RTCSetNodeChildrenFunction setNodeChildren = settings->setNodeChildren;
-      RTCSetNodeBoundsFunction setNodeBounds = settings->setNodeBounds;
-      RTCCreateLeafFunction createLeaf = settings->createLeaf;
-      RTCProgressMonitorFunction buildProgress = settings->buildProgress;
-      void* userPtr = settings->userPtr;
+      BVH* bvh = (BVH*) arguments->bvh;
+      RTCBuildPrimitive* prims =  arguments->primitives;
+      size_t primitiveCount = arguments->primitiveCount;
+      RTCCreateNodeFunction createNode = arguments->createNode;
+      RTCSetNodeChildrenFunction setNodeChildren = arguments->setNodeChildren;
+      RTCSetNodeBoundsFunction setNodeBounds = arguments->setNodeBounds;
+      RTCCreateLeafFunction createLeaf = arguments->createLeaf;
+      RTCProgressMonitorFunction buildProgress = arguments->buildProgress;
+      void* userPtr = arguments->userPtr;
       
       std::atomic<size_t> progress(0);
   
@@ -183,9 +183,9 @@ namespace embree
           return bounds;
         };
       const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrimitives,bounds);
+      const PrimInfo pinfo(0,primitiveCount,bounds);
       
       /* build BVH */
       void* root = BVHBuilderBinnedSAH::build<void*>(
@@ -220,28 +220,28 @@ namespace embree
         [&] (size_t dn) {
           if (!buildProgress) return true;
           const size_t n = progress.fetch_add(dn)+dn;
-          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          const double f = std::min(1.0,double(n)/double(primitiveCount));
           return buildProgress(userPtr,f);
         },
         
-        (PrimRef*)prims,pinfo,*settings);
+        (PrimRef*)prims,pinfo,*arguments);
         
       bvh->allocator.cleanup();
       return root;
     }
 
-    void* rtcBuildBVHSpatialSAH(const RTCBuildSettings* settings)
+    void* rtcBuildBVHSpatialSAH(const RTCBuildArguments* arguments)
     {
-      BVH* bvh = (BVH*) settings->bvh;
-      RTCBuildPrimitive* prims =  settings->primitives;
-      size_t numPrimitives = settings->numPrimitives;
-      RTCCreateNodeFunction createNode = settings->createNode;
-      RTCSetNodeChildrenFunction setNodeChildren = settings->setNodeChildren;
-      RTCSetNodeBoundsFunction setNodeBounds = settings->setNodeBounds;
-      RTCCreateLeafFunction createLeaf = settings->createLeaf;
-      RTCSplitPrimitiveFunction splitPrimitive = settings->splitPrimitive;
-      RTCProgressMonitorFunction buildProgress = settings->buildProgress;
-      void* userPtr = settings->userPtr;
+      BVH* bvh = (BVH*) arguments->bvh;
+      RTCBuildPrimitive* prims =  arguments->primitives;
+      size_t primitiveCount = arguments->primitiveCount;
+      RTCCreateNodeFunction createNode = arguments->createNode;
+      RTCSetNodeChildrenFunction setNodeChildren = arguments->setNodeChildren;
+      RTCSetNodeBoundsFunction setNodeBounds = arguments->setNodeBounds;
+      RTCCreateLeafFunction createLeaf = arguments->createLeaf;
+      RTCSplitPrimitiveFunction splitPrimitive = arguments->splitPrimitive;
+      RTCProgressMonitorFunction buildProgress = arguments->buildProgress;
+      void* userPtr = arguments->userPtr;
       
       std::atomic<size_t> progress(0);
   
@@ -254,9 +254,9 @@ namespace embree
           return bounds;
         };
       const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrimitives,bounds);
+      const PrimInfo pinfo(0,primitiveCount,bounds);
 
       /* function that splits a build primitive */
       struct Splitter
@@ -322,50 +322,53 @@ namespace embree
         [&] (size_t dn) {
           if (!buildProgress) return true;
           const size_t n = progress.fetch_add(dn)+dn;
-          const double f = std::min(1.0,double(n)/double(numPrimitives));
+          const double f = std::min(1.0,double(n)/double(primitiveCount));
           return buildProgress(userPtr,f);
         },
         
         (PrimRef*)prims,
-        pinfo.size()+settings->extraSpace,
-        pinfo,*settings);
+        arguments->primitiveArrayCapacity,
+        pinfo,*arguments);
         
       bvh->allocator.cleanup();
       return root;
     }
 
-    RTC_API void* rtcBuildBVH(const RTCBuildSettings* settings)
+    RTC_API void* rtcBuildBVH(const RTCBuildArguments* arguments)
     {
-      BVH* bvh = (BVH*) settings->bvh;
+      BVH* bvh = (BVH*) arguments->bvh;
       RTC_CATCH_BEGIN;
       RTC_TRACE(rtcBuildBVH);
       RTC_VERIFY_HANDLE(bvh);
-      RTC_VERIFY_HANDLE(settings);
-      RTC_VERIFY_HANDLE(settings->createNode);
-      RTC_VERIFY_HANDLE(settings->setNodeChildren);
-      RTC_VERIFY_HANDLE(settings->setNodeBounds);
-      RTC_VERIFY_HANDLE(settings->createLeaf);
+      RTC_VERIFY_HANDLE(arguments);
+      RTC_VERIFY_HANDLE(arguments->createNode);
+      RTC_VERIFY_HANDLE(arguments->setNodeChildren);
+      RTC_VERIFY_HANDLE(arguments->setNodeBounds);
+      RTC_VERIFY_HANDLE(arguments->createLeaf);
+
+      if (arguments->primitiveArrayCapacity < arguments->primitiveCount)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"primitiveArrayCapacity must be greater or equal to primitiveCount")
 
       /* initialize the allocator */
-      bvh->allocator.init_estimate(settings->numPrimitives*sizeof(BBox3fa));
+      bvh->allocator.init_estimate(arguments->primitiveCount*sizeof(BBox3fa));
       bvh->allocator.reset();
 
       /* switch between differnet builders based on quality level */
-      if (settings->quality == RTC_BUILD_QUALITY_LOW)
-        return rtcBuildBVHMorton(settings);
-      else if (settings->quality == RTC_BUILD_QUALITY_MEDIUM)
-        return rtcBuildBVHBinnedSAH(settings);
-      else if (settings->quality == RTC_BUILD_QUALITY_HIGH) {
-        if (settings->splitPrimitive == nullptr || settings->extraSpace == 0)
-          return rtcBuildBVHBinnedSAH(settings);
+      if (arguments->buildQuality == RTC_BUILD_QUALITY_LOW)
+        return rtcBuildBVHMorton(arguments);
+      else if (arguments->buildQuality == RTC_BUILD_QUALITY_MEDIUM)
+        return rtcBuildBVHBinnedSAH(arguments);
+      else if (arguments->buildQuality == RTC_BUILD_QUALITY_HIGH) {
+        if (arguments->splitPrimitive == nullptr || arguments->primitiveArrayCapacity <= arguments->primitiveCount)
+          return rtcBuildBVHBinnedSAH(arguments);
         else
-          return rtcBuildBVHSpatialSAH(settings);
+          return rtcBuildBVHSpatialSAH(arguments);
       }
       else
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid build quality");
 
       /* if we are in dynamic mode, then do not clear temporary data */
-      if (!(settings->flags & RTC_BUILD_FLAG_DYNAMIC))
+      if (!(arguments->buildFlags & RTC_BUILD_FLAG_DYNAMIC))
       {
         bvh->morton_src.clear();
         bvh->morton_tmp.clear();

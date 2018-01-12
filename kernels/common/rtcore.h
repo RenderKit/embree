@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -114,6 +114,6 @@ namespace embree
     throw rtcore_error(error,str);
 #endif
 
-#define RTC_BUILD_SETTINGS_HAS(settings,member) \
-  (settings.size > (offsetof(RTCBuildSettings,member)+sizeof(settings.member))) 
+#define RTC_BUILD_ARGUMENTS_HAS(settings,member) \
+  (settings.byteSize > (offsetof(RTCBuildArguments,member)+sizeof(settings.member))) 
 }

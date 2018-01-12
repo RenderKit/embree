@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -327,7 +327,7 @@ void renderTileStandard(uniform int taskIndex,
         /* trace shadow rays */
 #if 0
         for (uniform unsigned int n=0;n<N;n++)
-          rtcOccluded(g_scene,&context,RTCRay_(rays[n]));
+          rtcOccludedV(g_scene,&context,RTCRay_(rays[n]));
 #else
         rtcOccludedVM(g_scene,&context,(varying RTCRay* uniform)&rays,N,sizeof(Ray));
 #endif

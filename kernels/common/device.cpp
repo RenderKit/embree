@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -373,7 +373,7 @@ namespace embree
     }
 
     switch (prop) {
-    case RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
+      //case RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown writable property"); break;
     };
   }

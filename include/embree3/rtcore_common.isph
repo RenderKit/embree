@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -42,7 +42,7 @@
 #define RTC_MAX_TIME_STEP_COUNT 129
 
 /* maximal number of instancing levels */
-#define RTC_MAX_INSTANCE_LEVELS 1
+#define RTC_MAX_INSTANCE_LEVEL_COUNT 1
 
 /* Specifies the format of buffers and other data structures */
 enum RTCFormat
@@ -172,9 +172,9 @@ enum RTCIntersectContextFlags
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
-  RTCIntersectContextFlags flags; // intersection flags
-  void* filter;                   // filter function to execute
-  unsigned int instID;            // will be set to geomID of instance when instance is entered
+  RTCIntersectContextFlags flags;                    // intersection flags
+  void* filter;                                      // filter function to execute
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
 };
 
 /* initializes intersection context */
@@ -182,7 +182,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* contex
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
-  context->instID = -1;
+  context->instID[0] = -1;
 }
 
 /* Arguments for RTCFilterFunctionN callback */
@@ -192,11 +192,11 @@ struct RTCFilterFunctionNArguments
   void* uniform geomUserPtr;
   const RTCIntersectContext* uniform context;
   struct RTCRayN* uniform ray;
-  struct RTCHitN* uniform potentialHit;
+  struct RTCHitN* uniform hit;
   uniform unsigned int N;
 };
 
 /* Filter callback function. */
-typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform const args);
+typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform args);
 
 #endif

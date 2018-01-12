@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -865,15 +865,15 @@ extern uniform int g_spp;
 extern uniform bool g_accumulate;
 
 /* occlusion filter function */
-unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args);
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -1149,7 +1149,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     if (g_use_smooth_normals)
     {
       Vec3f dPdu,dPdv;
-      rtcInterpolate1(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
+      rtcInterpolateV1(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
     
@@ -1269,18 +1269,18 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args)
 {
   assert(args->N == programCount);
   bool valid = *((varying int* uniform) args->valid);
   if (!valid) return;
 }
 
-unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid_i = args->valid;
   struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
@@ -1291,17 +1291,17 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  //const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1331,7 +1331,7 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
     valid_i[programIndex] = 0;
 }
 
-unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
@@ -1346,7 +1346,7 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
   *transparency = make_Vec3f(0.0f);
 }
 
-unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
@@ -1354,7 +1354,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   
   uniform int* uniform valid_i = args->valid;
   struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
@@ -1365,18 +1365,18 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  //const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
 
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID,0);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1399,14 +1399,14 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
@@ -1415,7 +1415,7 @@ unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform con
   
   const uniform unsigned int rayID = 0;
   
-  unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  unsigned int hit_geomID = RTCHitN_geomID(hit,N,rayID);
   Vec3f Kt = make_Vec3f(0.0f);
   foreach_unique(geomID in hit_geomID)
   {
@@ -1462,7 +1462,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     uniform IntersectContext context;
     InitIntersectionContext(&context);
     context.context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect(g_scene,&context.context,RTCRayHit_(ray));
+    rtcIntersectV(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1523,7 +1523,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
+      rtcOccludedV(g_scene,&context.context,RTCRay_(shadow));
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)

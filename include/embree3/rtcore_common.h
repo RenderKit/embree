@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -69,7 +69,7 @@ typedef int ssize_t;
 #define RTC_MAX_TIME_STEP_COUNT 129
 
 /* maximal number of instancing levels */
-#define RTC_MAX_INSTANCE_LEVELS 1
+#define RTC_MAX_INSTANCE_LEVEL_COUNT 1
   
 /* Specifies the format of buffers and other data structures */
 enum RTCFormat
@@ -203,19 +203,19 @@ struct RTCFilterFunctionNArguments
   void* geomUserPtr;
   const struct RTCIntersectContext* context;
   struct RTCRayN* ray;
-  struct RTCHitN* potentialHit;
+  struct RTCHitN* hit;
   unsigned int N;
 };
   
 /* Filter callback function. */
-typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* const args);
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* args);
 
 /* Intersection context passed to ray queries. */
 struct RTCIntersectContext
 {
-  enum RTCIntersectContextFlags flags;
-  RTCFilterFunctionN filter;
-  unsigned int instID;
+  enum RTCIntersectContextFlags flags;               // intersection flags
+  RTCFilterFunctionN filter;                         // filter function to execute
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
 };
 
 /* initializes intersection context */
@@ -223,7 +223,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
-  context->instID = -1;
+  context->instID[0] = -1;
 }
   
 #if defined(__cplusplus)

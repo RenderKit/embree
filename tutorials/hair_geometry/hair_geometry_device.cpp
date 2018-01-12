@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -44,7 +44,7 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void occlusionFilter(const RTCFilterFunctionNArguments* const args);
+void occlusionFilter(const RTCFilterFunctionNArguments* args);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -240,7 +240,7 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 }
 
 /* occlusion filter function */
-void occlusionFilter(const RTCFilterFunctionNArguments* const args)
+void occlusionFilter(const RTCFilterFunctionNArguments* args)
 
 {
   IntersectContext* context = (IntersectContext*) args->context;
@@ -248,14 +248,14 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   if (!transparency) return;
     
   int* valid_i = args->valid;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
+  unsigned int geomID = RTCHitN_geomID(hit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = Vec3fa(0.0f);

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -34,10 +34,10 @@ extern "C" float g_debug;
 /* stores pointer to currently used rendePixel function */
 renderTileFunc renderTile;
 
-extern "C" void tutorial_error_handler(void* userPtr, const RTCError code, const char* str);
+extern "C" void tutorial_error_handler(void* userPtr, RTCError code, const char* str);
 
 /* error reporting function */
-void error_handler(void* userPtr, const RTCError code, const char* str) {
+void error_handler(void* userPtr, RTCError code, const char* str) {
   tutorial_error_handler(userPtr,code,str);
 }
 

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -59,16 +59,11 @@ enum RTCDeviceProperty
   RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED        = 100,
 
   RTC_DEVICE_PROPERTY_TASKING_SYSTEM        = 128,
-  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129,
-
-  RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE = 256
+  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129
 };
 
-/* Sets a device property. */
-RTC_API void rtcSetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop, ssize_t value);
-
 /* Gets a device property. */
-RTC_API ssize_t rtcGetDeviceProperty(RTCDevice device, const enum RTCDeviceProperty prop);
+RTC_API ssize_t rtcGetDeviceProperty(RTCDevice device, enum RTCDeviceProperty prop);
 
 /* Error codes. */
 enum RTCError
@@ -86,13 +81,13 @@ enum RTCError
 RTC_API enum RTCError rtcGetDeviceError(RTCDevice device);
 
 /* Type of error callback function. */
-typedef void (*RTCErrorFunction)(void* userPtr, const enum RTCError code, const char* str);
+typedef void (*RTCErrorFunction)(void* userPtr, enum RTCError code, const char* str);
 
 /* Sets an error callback function */
 RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, RTCErrorFunction func, void* userPtr);
 
 /* Type of memory monitor callback function. */
-typedef bool (*RTCMemoryMonitorFunction)(void* ptr, const ssize_t bytes, const bool post);
+typedef bool (*RTCMemoryMonitorFunction)(void* ptr, ssize_t bytes, bool post);
 
 /* Sets the memory monitor callback function. */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* userPtr);

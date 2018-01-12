@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -103,7 +103,7 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(const struct RTCDisplacementFunctionNArguments* const args)
+void displacementFunction(const struct RTCDisplacementFunctionNArguments* args)
 {
   const float* nx = args->Ng_x;
   const float* ny = args->Ng_y;
@@ -172,9 +172,6 @@ extern "C" void device_init (char* cfg)
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
   error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* configure the size of the software cache used for subdivision geometry */
-  rtcSetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE,100*1024*1024);
 
   /* set error handler */
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -73,7 +73,7 @@ struct RTCBoundsFunctionArguments
 };
   
 /* Type of bounding function */
-typedef void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* const args);
+typedef void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* args);
 
 /* Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments
@@ -82,12 +82,12 @@ struct RTCIntersectFunctionNArguments
   void* geomUserPtr;
   unsigned int primID;
   struct RTCIntersectContext* context;
-  struct RTCRayN* ray;
+  struct RTCRayHitN* rayhit;
   unsigned int N;
 };
 
 /* Type of intersect callback function */
-typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* const args);
+typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* args);
 
 /* Arguments for RTCOccludedFunctionN */
 struct RTCOccludedFunctionNArguments
@@ -101,13 +101,13 @@ struct RTCOccludedFunctionNArguments
 };
   
 /* Type of occlusion callback function pointer. */
-typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* const args);
+typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
 /* Arguments for RTCDisplacementFunction callback */
 struct RTCDisplacementFunctionNArguments
 {
   void* geomUserPtr;
-  RTCGeometry geometry;
+  RTCGeometry geom;
   unsigned int primID;
   unsigned int timeStep;
   const float* u;
@@ -122,7 +122,7 @@ struct RTCDisplacementFunctionNArguments
 };
  
 /* Type of displacement mapping callback function. */
-typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* const args);
+typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* args);
 
 /* Creates a new geometry of specified type. */
 RTC_API RTCGeometry rtcNewGeometry(RTCDevice device, enum RTCGeometryType type);
@@ -158,16 +158,13 @@ RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuali
 
 
 /* Sets geometry buffer. */
-RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
-                                     RTCBuffer buffer, size_t byteOffset, size_t byteStride, unsigned int itemCount);
+RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, RTCBuffer buffer, size_t byteOffset, size_t byteStride, size_t itemCount);
 
 /* Sets shared geometry buffer. */
-RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
-                                           const void* ptr, size_t byteOffset, size_t byteStride, unsigned int itemCount);
+RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, const void* ptr, size_t byteOffset, size_t byteStride, size_t itemCount);
 
 /* Sets new geometry buffer. */
-RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format,
-                                         size_t byteStride, unsigned int itemCount);
+RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, size_t byteStride, size_t itemCount);
 
 /* Returns a pointer to the buffer data. */
 RTC_API void* rtcGetGeometryBufferData(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
@@ -177,10 +174,10 @@ RTC_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, enum RTCBufferType ty
 
 
 /* Sets the intersection filter callback function. */
-RTC_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, RTCFilterFunctionN func);
+RTC_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, RTCFilterFunctionN filter);
 
 /* Sets the occlusion filter callback function. */
-RTC_API void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, RTCFilterFunctionN func);
+RTC_API void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, RTCFilterFunctionN filter);
 
 /* Sets user defined data pointer of geometry. */
 RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
@@ -202,10 +199,10 @@ RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectF
 RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, RTCOccludedFunctionN occluded);
 
 /* Reports intersection from intersect callback function. */
-RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /* Reports intersection from occluded callback function. */
-RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
 
   
 /* Sets instanced scene of instance geometry. */
@@ -231,7 +228,7 @@ RTC_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned int to
 RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigned int vertexAttributeID, unsigned int topologyID);
 
 /* Sets the displacement callback function. */
-RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction func);
+RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction displacement);
 
 
 struct RTCInterpolateArguments
@@ -251,9 +248,10 @@ struct RTCInterpolateArguments
   unsigned int valueCount;
 };
 
-/* Interpolates vertex data to some u/v location. */
-RTC_API void rtcInterpolate(const struct RTCInterpolateArguments* const args);
+/* Interpolates vertex data to some u/v location and optionally calculates all derivatives. */
+RTC_API void rtcInterpolate(const struct RTCInterpolateArguments* args);
 
+/* Interpolates vertex data to some u/v location. */
 RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot, float* P, unsigned int valueCount)
 {
   struct RTCInterpolateArguments args;
@@ -273,6 +271,7 @@ RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, 
   rtcInterpolate(&args);
 }
 
+/* Interpolates vertex data to some u/v location and calculates first order derivatives. */
 RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
                                         float* P, float* dPdu, float* dPdv, unsigned int valueCount)
 {
@@ -293,6 +292,7 @@ RTC_FORCEINLINE void rtcInterpolate1(RTCGeometry geometry, unsigned int primID, 
   rtcInterpolate(&args);
 }
 
+/* Interpolates vertex data to some u/v location and calculates first and second order derivatives. */
 RTC_FORCEINLINE void rtcInterpolate2(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot,
                                         float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int valueCount)
 {
@@ -333,7 +333,7 @@ struct RTCInterpolateNArguments
 };
 
 /* Interpolates vertex data to an array of u/v locations. */
-RTC_API void rtcInterpolateN(const struct RTCInterpolateNArguments* const args);
+RTC_API void rtcInterpolateN(const struct RTCInterpolateNArguments* args);
 
 #if defined(__cplusplus)
 }

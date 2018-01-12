@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -94,8 +94,6 @@ namespace embree
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
             if (unlikely(!ray.valid())) { inputRayID++; continue; }
 #endif
-
-            if (unlikely(!ray.valid())) { PRINT("INVALID INPUT"); PRINT(ray); exit(0); }
 
             const unsigned int octantID = movemask(vfloat4(Vec3fa(ray.dir)) < 0.0f) & 0x7;
 
