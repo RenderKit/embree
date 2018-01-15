@@ -527,7 +527,7 @@ RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT
 @@{
 RTCIntersectContext ID context;
 =>
-RTCIntersectContext context;
+uniform RTCIntersectContext context;
 rtcInitIntersectContext(&context);
 }@@
 
@@ -3042,92 +3042,92 @@ RTCRay ID query;
 varying RTCRayHit query; // EMBREE_FIXME: use RTCRay for occlusion rays
 query.ray.flags = 0;
 @@{
-query.orgx
+ID query.orgx
 =>
 query.ray.org_x
 }@@
 @@{
-query.orgy
+ID query.orgy
 =>
 query.ray.org_y
 }@@
 @@{
-query.orgz
+ID query.orgz
 =>
 query.ray.org_z
 }@@
 @@{
-query.tnear
+ID query.tnear
 =>
 query.ray.tnear
 }@@
 @@{
-query.dirx
+ID query.dirx
 =>
 query.ray.dir_x
 }@@
 @@{
-query.diry
+ID query.diry
 =>
 query.ray.dir_y
 }@@
 @@{
-query.dirz
+ID query.dirz
 =>
 query.ray.dir_z
 }@@
 @@{
-query.tfar
+ID query.tfar
 =>
 query.ray.tfar
 }@@
 @@{
-query.time
+ID query.time
 =>
 query.ray.time
 }@@
 @@{
-query.mask
+ID query.mask
 =>
 query.ray.mask
 }@@
 @@{
-query.Ngx
+ID query.Ngx
 =>
 query.hit.Ng_x
 }@@
 @@{
-query.Ngy
+ID query.Ngy
 =>
 query.hit.Ng_y
 }@@
 @@{
-query.Ngz
+ID query.Ngz
 =>
 query.hit.Ng_z
 }@@
 @@{
-query.u
+ID query.u
 =>
 query.hit.u
 }@@
 @@{
-query.v
+ID query.v
 =>
 query.hit.v
 }@@
 @@{
-query.primID
+ID query.primID
 =>
 query.hit.primID
 }@@
 @@{
-query.geomID
+ID query.geomID
 =>
 query.hit.geomID
 }@@
 @@{
-query.instID
+ID query.instID
 =>
 query.hit.instID[0]
 }@@
