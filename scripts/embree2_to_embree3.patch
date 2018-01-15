@@ -724,7 +724,7 @@ rtcOccluded(EXPR scene,EXPR ray);
 rtcOccluded(EXPR scene,EXPR ray);
 =>
 {
-  RTCIntersectContext context;
+  uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcOccludedV(scene,&context,&ray);
   COMMENT EMBREE_FIXME: ray is occluded when ray.tfar < 0.0f
@@ -1008,7 +1008,7 @@ RTC_BUFFER(RTC_BUFFER_TYPE_HOLE,0)
 @@{
 RTCMatrixType
 =>
-RTCFormat
+uniform RTCFormat
 }@@
 
 @@{
@@ -1033,7 +1033,7 @@ RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR
 @@{
 RTCGeometryFlags
 =>
-RTCBuildQuality
+uniform RTCBuildQuality
 }@@
 
 @@{
@@ -1059,7 +1059,7 @@ RTC_BUILD_QUALITY_LOW
 @@{
 RTCBoundaryMode
 =>
-RTCSubdivisionMode
+uniform RTCSubdivisionMode
 }@@
 
 @@{
