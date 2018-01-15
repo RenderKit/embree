@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -210,6 +210,7 @@ namespace embree
             LinearSpace3fa uspace;
             float unalignedObjectSAH = inf;
             if (alignedObjectSAH > 0.7f*leafSAH) {
+              current.prims.deterministic_order(); // otherwise build is non deterministic
               uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims);
               const SetMB sset = current.prims.primInfo(recalculatePrimRef,uspace);
               unalignedObjectSplit = unalignedHeuristic.find(sset,0,uspace);

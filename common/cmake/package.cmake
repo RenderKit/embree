@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2017 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -223,7 +223,11 @@ ELSE()
     SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
     SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
     SET(CPACK_RPM_CHANGELOG_FILE ${CMAKE_BINARY_DIR}/rpm_changelog.txt) # ChangeLog of the RPM
-    STRING(TIMESTAMP CHANGELOG_DATE "%a %b %d %Y")
+    IF (CMAKE_VERSION VERSION_LESS "3.7.0")
+      EXECUTE_PROCESS(COMMAND date "+%a %b %d %Y" OUTPUT_VARIABLE CHANGELOG_DATE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    ELSE()
+      STRING(TIMESTAMP CHANGELOG_DATE "%a %b %d %Y")
+    ENDIF()
     SET(RPM_CHANGELOG "* ${CHANGELOG_DATE} Johannes Günther <johannes.guenther@intel.com> - ${EMBREE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}\n- First package")
     FILE(WRITE ${CPACK_RPM_CHANGELOG_FILE} ${RPM_CHANGELOG})
     SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)

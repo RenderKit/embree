@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -3324,7 +3324,7 @@ namespace embree
         }
         
         /* entirely delete all objects at the end */
-        if (j == numIterations-1) {
+        /*if (j == numIterations-1) {
           for (size_t i=0; i<numSlots; i++) {
             if (geom[i].first != -1) {
               rtcDeleteGeometry(*task->scene,geom[i].first);
@@ -3333,7 +3333,7 @@ namespace embree
               geom[i].second = nullptr;
             }
           }
-        }
+          }*/
       }
 
       if (thread->threadCount) {
@@ -4434,20 +4434,20 @@ namespace embree
       /**************************************************************************/
       
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
+      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,30));
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_THREAD)) {
 	groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
-	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,30));
       }
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_JOIN)) {
 	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
-	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,30));
       }
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
-      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,300));
+      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
 
       /**************************************************************************/
       /*                           Benchmarks                                   */
