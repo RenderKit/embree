@@ -2243,6 +2243,7 @@ unmasked void RTCIntersectFunc(const uniform RTCIntersectFunctionNArguments* uni
   uniform unsigned int primID_in = args->primID;
   assert(N_in == __programCount);
   if (*vvalid_in != -1) return;
+  // EMBREE_FIXME: on hit copy context_in->instID[0] to ray_in.hit.instID[0]
 }@@
 
 @@{
@@ -2270,6 +2271,7 @@ void RTCIntersectFunc4(const uniform RTCIntersectFunctionNArguments* uniform arg
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 4);
+  // EMBREE_FIXME: on hit copy context_in->instID[0] to ray_in.hit.instID[0]
 }@@
 
 @@{
@@ -2297,6 +2299,7 @@ void RTCIntersectFunc8(const uniform RTCIntersectFunctionNArguments* uniform arg
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 8);
+  // EMBREE_FIXME: on hit copy context_in->instID[0] to ray_in.hit.instID[0]
 }@@
 
 @@{
@@ -2324,6 +2327,7 @@ void RTCIntersectFunc16(const uniform RTCIntersectFunctionNArguments* uniform ar
   unsigned int N_in = args->N;
   unsigned int primID_in = args->primID;
   assert(N_in == 16);
+  // EMBREE_FIXME: on hit copy context_in->instID[0] to ray_in.hit.instID[0]
 }@@
 
 @@{
@@ -2350,6 +2354,7 @@ void RTCIntersectFuncN(const uniform RTCIntersectFunctionNArguments* uniform arg
   RTCRayHitN* uniform ray_in = args->rayhit;
   uniform unsigned int N_in = args->N;
   uniform unsigned int primID_in = args->primID;
+  // EMBREE_FIXME: on hit copy context_in->instID[0] to ray_in.hit.instID[0]
 }@@
 
 @@{
