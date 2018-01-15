@@ -2814,32 +2814,32 @@ RTCBuildArguments ID args
 =>
 uniform RTCBuildArguments args
 @@{
-args.size
+ID args.size
 =>
 args.byteSize
 }@@
 @@{
-args.quality
+ID args.quality
 =>
 args.buildQuality
 }@@
 @@{
-args.flags
+ID args.flags
 =>
 args.buildFlags
 }@@
 @@{
-args.travCost
+ID args.travCost
 =>
 args.traversalCost
 }@@
 @@{
-args.intCost
+ID args.intCost
 =>
 args.intersectionCost
 }@@
 @@{
-args.extraSpace
+ID args.extraSpace
 =>
 args.primitiveArrayCapacity // EMBREE_FIXME: calculate capacity properly
 }@@
