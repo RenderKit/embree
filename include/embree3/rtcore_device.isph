@@ -19,16 +19,16 @@
 
 #include "rtcore_common.isph"
 
-/* Defines an opaque device type */
+/* Opaque device type */
 typedef uniform struct RTCDeviceTy* uniform RTCDevice;
 
 /* Creates a new Embree device. */
 RTC_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg);
 
-/* Retains the Embree device (increments reference count) */
+/* Retains the Embree device (increments the reference count). */
 RTC_API void rtcRetainDevice(RTCDevice device);
   
-/* Releases an Embree device (decrements reference count) */
+/* Releases an Embree device (decrements the reference count). */
 RTC_API void rtcReleaseDevice(RTCDevice device);
 
 /* Device properties */
@@ -62,7 +62,7 @@ enum RTCDeviceProperty
 /* Gets a device property. */
 RTC_API uniform intptr_t rtcGetDeviceProperty(RTCDevice device, uniform RTCDeviceProperty prop);
 
-/* Error codes. */
+/* Error codes */
 enum RTCError
 {
   RTC_ERROR_NONE              = 0,
@@ -74,19 +74,19 @@ enum RTCError
   RTC_ERROR_CANCELLED         = 6
 };
 
-/* Returns the error code */
+/* Returns the error code. */
 RTC_API uniform RTCError rtcGetDeviceError(RTCDevice device);
 
-/* Type of error callback function. */
+/* Error callback function */
 typedef unmasked void (*uniform RTCErrorFunction)(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str);
 
-/* Sets an error callback function */
-RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, uniform RTCErrorFunction func, void* uniform userPtr);
+/* Sets the error callback function. */
+RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, uniform RTCErrorFunction error, void* uniform userPtr);
 
-/* Type of memory monitor callback function. */
+/* Memory monitor callback function */
 typedef uniform bool (*uniform RTCMemoryMonitorFunction)(uniform intptr_t bytes, uniform bool post);
 
-/* Sets the memory monitor callback function */
-RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction func, void* uniform userPtr);
+/* Sets the memory monitor callback function. */
+RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction memoryMonitor, void* uniform userPtr);
 
 #endif

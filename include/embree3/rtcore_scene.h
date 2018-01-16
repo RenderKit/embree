@@ -42,40 +42,40 @@ enum RTCSceneFlags
 /* Creates a new scene. */
 RTC_API RTCScene rtcNewScene(RTCDevice device);
 
-/* Retains the scene (increments reference count). */
+/* Retains the scene (increments the reference count). */
 RTC_API void rtcRetainScene(RTCScene scene);
 
-/* Releases the scene (decrements reference count). */
+/* Releases the scene (decrements the reference count). */
 RTC_API void rtcReleaseScene(RTCScene scene);
 
-  
-/* Attaches the geometry to some scene. */
+
+/* Attaches the geometry to a scene. */
 RTC_API unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);
 
-/* Attaches the geometry to some scene using the specified geometry ID. */
+/* Attaches the geometry to a scene using the specified geometry ID. */
 RTC_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigned int geomID);
 
 /* Detaches the geometry from the scene. */
 RTC_API void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
 
-/* Gets geometry handle from scene. */
+/* Gets a geometry handle from the scene. */
 RTC_API RTCGeometry rtcGetGeometry(RTCScene scene, unsigned int geomID);
 
 
-/* Commits a scene. */
+/* Commits the scene. */
 RTC_API void rtcCommitScene(RTCScene scene);
 
-/* Commits a scene from multiple threads */
+/* Commits the scene from multiple threads. */
 RTC_API void rtcJoinCommitScene(RTCScene scene);
 
-  
-/* Type of progress monitor callback function. */
+
+/* Progress monitor callback function */
 typedef bool (*RTCProgressMonitorFunction)(void* ptr, double n);
 
-/* Sets the progress monitor callback function. */
+/* Sets the progress monitor callback function of the scene. */
 RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction progress, void* ptr);
 
-/* Sets the build quality of a scene. */
+/* Sets the build quality of the scene. */
 RTC_API void rtcSetSceneBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
 
 /* Sets the scene flags. */
@@ -83,11 +83,11 @@ RTC_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags flags);
 
 /* Returns the scene flags. */
 RTC_API enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
-  
-/* Returns AABB of the scene. */
+
+/* Returns the axis-aligned bounds of the scene. */
 RTC_API void rtcGetSceneBounds(RTCScene scene, struct RTCBounds* bounds_o);
 
-/* Returns linear AABBs of the scene. */
+/* Returns the linear axis-aligned bounds of the scene. */
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bounds_o);
 
 /* Intersects a single ray with the scene. */
@@ -140,7 +140,7 @@ RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, 
 
 #if defined(__cplusplus)
 
-/* Helper to easily combing scene flags */
+/* Helper for easily combining scene flags */
 inline RTCSceneFlags operator|(RTCSceneFlags a, RTCSceneFlags b) {
   return (RTCSceneFlags)((size_t)a | (size_t)b);
 }

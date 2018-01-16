@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-/* Specifies the type of buffers */
+/* Types of buffers */
 enum RTCBufferType
 {
   RTC_BUFFER_TYPE_INDEX            = 0,
@@ -40,7 +40,7 @@ enum RTCBufferType
   RTC_BUFFER_TYPE_FLAGS = 32
 };
 
-/* Defines an opaque buffer type */
+/* Opaque buffer type */
 typedef struct RTCBufferTy* RTCBuffer;
 
 /* Creates a new buffer. */
@@ -52,10 +52,10 @@ RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSiz
 /* Returns a pointer to the buffer data. */
 RTC_API void* rtcGetBufferData(RTCBuffer buffer);
 
-/* Retains the buffer (increments reference count). */
+/* Retains the buffer (increments the reference count). */
 RTC_API void rtcRetainBuffer(RTCBuffer buffer);
 
-/* Releases the buffer (decrements reference count). */
+/* Releases the buffer (decrements the reference count). */
 RTC_API void rtcReleaseBuffer(RTCBuffer buffer);
 
 #if defined(__cplusplus)

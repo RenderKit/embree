@@ -22,10 +22,10 @@
 extern "C" {
 #endif
   
-/* Defines an opaque BVH type */
+/* Opaque BVH type */
 typedef struct RTCBVHTy* RTCBVH;
 
-/* Input build primitives for the builder. */
+/* Input build primitives for the builder */
 struct RTC_ALIGN(32) RTCBuildPrimitive
 {
   float lower_x, lower_y, lower_z; 
@@ -34,23 +34,23 @@ struct RTC_ALIGN(32) RTCBuildPrimitive
   unsigned int primID;
 };
 
-/* Defines an opaque thread local allocator type */
+/* Opaque thread local allocator type */
 typedef struct RTCThreadLocalAllocatorTy* RTCThreadLocalAllocator;
 
-/* Callback to create a node. */
-typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int childrenCount, void* userPtr);
+/* Callback to create a node */
+typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int childCount, void* userPtr);
 
-/* Callback to set the pointer to all children. */
-typedef void  (*RTCSetNodeChildrenFunction) (void* nodePtr, void** children, unsigned int childrenCount, void* userPtr);
+/* Callback to set the pointer to all children */
+typedef void  (*RTCSetNodeChildrenFunction) (void* nodePtr, void** children, unsigned int childCount, void* userPtr);
 
-/* Callback to set the bounds of all children. */
-typedef void  (*RTCSetNodeBoundsFunction) (void* nodePtr, const struct RTCBounds** bounds, unsigned int childrenCount, void* userPtr);
+/* Callback to set the bounds of all children */
+typedef void  (*RTCSetNodeBoundsFunction) (void* nodePtr, const struct RTCBounds** bounds, unsigned int childCount, void* userPtr);
 
-/* Callback to create a leaf node. */
-typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const struct RTCBuildPrimitive* prims, size_t primitiveCount, void* userPtr);
+/* Callback to create a leaf node */
+typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const struct RTCBuildPrimitive* primitives, size_t primitiveCount, void* userPtr);
 
-/* Callback to split a build primitive. */
-typedef void  (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* prim, unsigned int dim, float pos, struct RTCBounds* lbounds, struct RTCBounds* rbounds, void* userPtr);
+/* Callback to split a build primitive */
+typedef void  (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* primitive, unsigned int dimension, float position, struct RTCBounds* leftBounds, struct RTCBounds* rightBounds, void* userPtr);
 
 /* Build flags */
 enum RTCBuildFlags
@@ -88,7 +88,7 @@ struct RTCBuildArguments
   void* userPtr;
 };
 
-/* Creates default build settings.  */
+/* Returns the default build settings.  */
 RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildArguments()
 {
   struct RTCBuildArguments args;

@@ -62,16 +62,16 @@ typedef int ssize_t;
 #  define RTC_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
-/* invalid geometry ID */
+/* Invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((unsigned int)-1)
 
-/* maximal number of time steps */
+/* Maximal number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
 
-/* maximal number of instancing levels */
+/* Maximal number of instancing levels */
 #define RTC_MAX_INSTANCE_LEVEL_COUNT 1
-  
-/* Specifies the format of buffers and other data structures */
+
+/* Formats of buffers and other data structures */
 enum RTCFormat
 {
   RTC_FORMAT_UNDEFINED = 0,
@@ -173,15 +173,15 @@ enum RTCBuildQuality
   RTC_BUILD_QUALITY_HIGH   = 2,
   RTC_BUILD_QUALITY_REFIT  = 3,
 };
-  
-/* Axis aligned bounding box representation */
+
+/* Axis-aligned bounding box representation */
 struct RTC_ALIGN(16) RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
 };
 
-/* Linear axis aligned bounding box representation */
+/* Linear axis-aligned bounding box representation */
 struct RTC_ALIGN(16) RTCLinearBounds
 {
   struct RTCBounds bounds0;
@@ -192,11 +192,11 @@ struct RTC_ALIGN(16) RTCLinearBounds
 enum RTCIntersectContextFlags
 {
   RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
-  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0),
-  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)
+  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0), // optimize for incoherent rays
+  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)  // optimize for coherent rays
 };
 
-/* Arguments for RTCFilterFunctionN callback */
+/* Arguments for RTCFilterFunctionN */
 struct RTCFilterFunctionNArguments
 {
   int* valid;
@@ -206,11 +206,11 @@ struct RTCFilterFunctionNArguments
   struct RTCHitN* hit;
   unsigned int N;
 };
-  
-/* Filter callback function. */
+
+/* Filter callback function */
 typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* args);
 
-/* Intersection context passed to ray queries. */
+/* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
   enum RTCIntersectContextFlags flags;               // intersection flags
@@ -218,7 +218,7 @@ struct RTCIntersectContext
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
 };
 
-/* initializes intersection context */
+/* Initializes an intersection context. */
 RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;

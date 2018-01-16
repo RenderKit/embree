@@ -35,16 +35,16 @@
 #define RTC_FORCEINLINE inline
 #endif
 
-/* invalid geometry ID */
+/* Invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((uniform unsigned int)-1)
 
-/* maximal number of time steps */
+/* Maximal number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
 
-/* maximal number of instancing levels */
+/* Maximal number of instancing levels */
 #define RTC_MAX_INSTANCE_LEVEL_COUNT 1
 
-/* Specifies the format of buffers and other data structures */
+/* Formats of buffers and other data structures */
 enum RTCFormat
 {
   RTC_FORMAT_UNDEFINED = 0,
@@ -147,14 +147,14 @@ enum RTCBuildQuality
   RTC_BUILD_QUALITY_REFIT  = 3,
 };
 
-/* Axis aligned bounding box representation */
-RTC_ALIGN(16) struct RTCBounds
+/* Axis-aligned bounding box representation */
+struct RTC_ALIGN(16) RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
 };
 
-/* Linear axis aligned bounding box representation */
+/* Linear axis-aligned bounding box representation */
 struct RTC_ALIGN(16) RTCLinearBounds
 {
   RTCBounds bounds0;
@@ -177,7 +177,7 @@ struct RTCIntersectContext
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
 };
 
-/* initializes intersection context */
+/* Initializes an intersection context. */
 RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* context)
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
@@ -185,7 +185,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* contex
   context->instID[0] = -1;
 }
 
-/* Arguments for RTCFilterFunctionN callback */
+/* Arguments for RTCFilterFunctionN */
 struct RTCFilterFunctionNArguments
 {
   uniform int* uniform valid;
@@ -196,7 +196,7 @@ struct RTCFilterFunctionNArguments
   uniform unsigned int N;
 };
 
-/* Filter callback function. */
+/* Filter callback function */
 typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform args);
 
 #endif

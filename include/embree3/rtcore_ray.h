@@ -25,7 +25,6 @@ extern "C" {
 /* Ray structure for an individual ray */
 struct RTC_ALIGN(16) RTCRay
 {
-  /* ray data */
   float org_x;         // x coordinate of ray origin
   float org_y;         // y coordinate of ray origin
   float org_z;         // z coordinate of ray origin
@@ -42,9 +41,9 @@ struct RTC_ALIGN(16) RTCRay
   unsigned int flags;  // ray flags
 };
 
+/* Hit structure for an individual ray */
 struct RTCHit
 {
-  /* hit data */
   float Ng_x;          // x coordinate of geometry normal
   float Ng_y;          // y coordinate of geometry normal
   float Ng_z;          // z coordinate of geometry normal
@@ -54,19 +53,19 @@ struct RTCHit
 
   unsigned int primID; // geometry ID
   unsigned int geomID; // primitive ID
-  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];   // instance ID
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // instance ID
 };
 
+/* Combined ray-hit structure for an individual ray */
 struct RTCRayHit
 {
   struct RTCRay ray;
   struct RTCHit hit;
 };
 
-/* Ray structure for packets of 4 rays. */
+/* Ray structure for a packet of 4 rays */
 struct RTC_ALIGN(16) RTCRay4
 {
-  /* ray data */
   float org_x[4];
   float org_y[4];
   float org_z[4];
@@ -83,9 +82,9 @@ struct RTC_ALIGN(16) RTCRay4
   unsigned int flags[4];
 };
 
+/* Hit structure for a packet of 4 rays */
 struct RTC_ALIGN(16) RTCHit4
 {
-  /* hit data */
   float Ng_x[4];
   float Ng_y[4];
   float Ng_z[4];
@@ -98,16 +97,16 @@ struct RTC_ALIGN(16) RTCHit4
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][4];
 };
 
+/* Combined ray-hit structure for a packet of 4 rays */
 struct RTCRayHit4
 {
   struct RTCRay4 ray;
   struct RTCHit4 hit;
 };
 
-/* Ray structure for packets of 8 rays. */
+/* Ray structure for a packet of 8 rays */
 struct RTC_ALIGN(32) RTCRay8
 {
-  /* ray data */
   float org_x[8];
   float org_y[8];
   float org_z[8];
@@ -124,9 +123,9 @@ struct RTC_ALIGN(32) RTCRay8
   unsigned int flags[8];
 };
 
+/* Hit structure for a packet of 8 rays */
 struct RTC_ALIGN(32) RTCHit8
 {
-  /* hit data */
   float Ng_x[8];
   float Ng_y[8];
   float Ng_z[8];
@@ -139,16 +138,16 @@ struct RTC_ALIGN(32) RTCHit8
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][8];
 };
 
+/* Combined ray-hit structure for a packet of 8 rays */
 struct RTCRayHit8
 {
   struct RTCRay8 ray;
   struct RTCHit8 hit;
 };
 
-/* Ray structure for packets of 16 rays. */
+/* Ray structure for a packet of 16 rays */
 struct RTC_ALIGN(64) RTCRay16
 {
-  /* ray data */
   float org_x[16];
   float org_y[16];
   float org_z[16];
@@ -165,9 +164,9 @@ struct RTC_ALIGN(64) RTCRay16
   unsigned int flags[16];
 };
 
+/* Hit structure for a packet of 16 rays */
 struct RTC_ALIGN(64) RTCHit16
 {
-  /* hit data */
   float Ng_x[16];
   float Ng_y[16];
   float Ng_z[16];
@@ -180,16 +179,16 @@ struct RTC_ALIGN(64) RTCHit16
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
 };
 
+/* Combined ray-hit structure for a packet of 16 rays */
 struct RTCRayHit16
 {
   struct RTCRay16 ray;
   struct RTCHit16 hit;
 };
 
-/* Ray structure template for packets of N rays in pointer SOA layout. */
+/* Ray structure for a packet/stream of N rays in pointer SOA layout */
 struct RTCRayNp
 {
-  /* ray data */
   float* org_x;
   float* org_y;
   float* org_z;
@@ -206,9 +205,9 @@ struct RTCRayNp
   unsigned int* flags;
 };
 
+/* Hit structure for a packet/stream of N rays in pointer SOA layout */
 struct RTCHitNp
 {
-  /* hit data */
   float* Ng_x;
   float* Ng_y;
   float* Ng_z;
@@ -221,6 +220,7 @@ struct RTCHitNp
   unsigned int* instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
 };
 
+/* Combined ray-hit structure for a packet/stream of N rays in pointer SOA layout */
 struct RTCRayHitNp
 {
   struct RTCRayNp ray;
@@ -254,7 +254,7 @@ RTC_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, unsigned int N, unsigned in
 RTC_FORCEINLINE unsigned& RTCRayN_id   (RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[10*N+i]; }
 RTC_FORCEINLINE unsigned& RTCRayN_flags(RTCRayN* ptr, unsigned int N, unsigned int i) { return ((unsigned*)ptr)[11*N+i]; }
 
-/* Helper functions to access hit packets of size N */
+/* Helper functions to access hit packets of runtime size N */
 RTC_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[0*N+i]; }
 RTC_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[1*N+i]; }
 RTC_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* ptr, unsigned int N, unsigned int i) { return ((float*)ptr)[2*N+i]; }
@@ -270,12 +270,10 @@ RTC_FORCEINLINE unsigned& RTCHitN_instID(const RTCHitN* ptr, unsigned int N, uns
 RTC_FORCEINLINE RTCRayN* RTCRayHitN_RayN(RTCRayHitN* ptr, unsigned int N) { return (RTCRayN*)&((float*)ptr)[0*N]; }
 RTC_FORCEINLINE RTCHitN* RTCRayHitN_HitN(RTCRayHitN* ptr, unsigned int N) { return (RTCHitN*)&((float*)ptr)[12*N]; }
 
-/* Helper structure to create a ray packet of compile time size N */
+/* Helper structure for a ray packet of compile-time size N */
 template<int N>
 struct RTCRayNt
 {
-  /* ray data */
-public:
   float org_x[N];
   float org_y[N];
   float org_z[N];
@@ -293,7 +291,7 @@ public:
   unsigned int flags[N];
 };
 
-/* Helper structure to create a hit packet of compile time size N */
+/* Helper structure for a hit packet of compile-time size N */
 template<int N>
 struct RTCHitNt
 {
@@ -309,7 +307,7 @@ struct RTCHitNt
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][N];
 };
 
-/* Helper structure to create a ray+hit packet of compile time size N */
+/* Helper structure for a combined ray-hit packet of compile-time size N */
 template<int N>
 struct RTCRayHitNt
 {
