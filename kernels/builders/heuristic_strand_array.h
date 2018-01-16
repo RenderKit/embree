@@ -64,13 +64,6 @@ namespace embree
       __forceinline HeuristicStrandSplit (Scene* scene, PrimRef* prims)
         : scene(scene), prims(prims) {}
       
-      /*! finds the best split */
-      const Split find(const range<size_t>& set)
-      {
-        if (likely(set.size() < PARALLEL_THRESHOLD)) return sequential_find(set);
-        else                                         return   parallel_find(set);
-      }
-      
       __forceinline const Vec3fa direction(const PrimRef& prim)
       {
         const Curve3fa curve = scene->get<NativeCurves>(prim.geomID())->getCurve(prim.primID());
@@ -90,7 +83,7 @@ namespace embree
       }
 
       /*! finds the best split */
-      const Split sequential_find(const range<size_t>& set)
+      const Split find(const range<size_t>& set)
       {
         /* first curve determines first axis */
         Vec3fa axis0 = normalize(direction(prims[set.begin()]));
@@ -134,108 +127,8 @@ namespace embree
         return Split(sah,axis0,axis1);
       }
 
-      /*! finds the best split */
-      const Split parallel_find(const range<size_t>& set)
-      {
-        /* first curve determines first axis */
-        const Vec3fa axis0 = normalize(direction(prims[set.begin()]));
-      
-        /* find 2nd axis that is most misaligned with first axis */
-        struct __aligned(16) BestAxis
-        {
-          __forceinline BestAxis () 
-            : cos(inf), axis(Vec3fa(1.0f,0.0f,0.0f)) {}
-
-          __forceinline BestAxis (float otherCos, const Vec3fa& otherAxis) 
-            : cos(otherCos), axis(otherAxis) {}
-
-        public:
-          float cos;
-          Vec3fa axis;
-        };
-        
-        const BestAxis best = parallel_reduce
-          (set.begin(),set.end(),size_t(1024),BestAxis(inf,axis0),
-           [&] (const range<size_t>& r) -> BestAxis
-           {
-             BestAxis best(inf,axis0);
-             for (size_t i=r.begin(); i<r.end(); i++)
-             {
-               Vec3fa axisi = direction(prims[i]);
-               float leni = length(axisi);
-               if (leni == 0.0f) continue;
-               axisi /= leni;
-               float cos = abs(dot(axisi,axis0));
-               if (cos < best.cos) { best.cos = cos; best.axis = axisi; }
-             }
-             return best;
-           }, [] (const BestAxis& axis0, const BestAxis& axis1) -> BestAxis {
-            if (axis0.cos < axis1.cos) return axis0; else return axis1;
-          });
-        const Vec3fa axis1 = best.axis;
-        
-        /* partition the two strands */
-        struct __aligned(16) Info
-        {
-          __forceinline Info() 
-            : lnum(0), rnum(0), lbounds(empty), rbounds(empty) {}
-
-		  __forceinline static Info merge(const Info& a, const Info& b) 
-          {
-            Info c;
-            c.lnum = a.lnum+b.lnum;
-            c.rnum = a.rnum+b.rnum;
-            c.lbounds = embree::merge(a.lbounds,b.lbounds);
-            c.rbounds = embree::merge(a.rbounds,b.rbounds);
-            return c;
-          }
-          size_t lnum, rnum;
-          BBox3fa lbounds, rbounds;
-        };
-        const LinearSpace3fa space0 = frame(axis0).transposed();
-        const LinearSpace3fa space1 = frame(axis1).transposed();
-        
-        Info info = parallel_reduce
-          (set.begin(), set.end(), size_t(1024), Info(), 
-           [&] (const range<size_t>& r) -> Info
-           {
-             Info info;
-             for (size_t i=r.begin(); i<r.end(); i++)
-             {
-               PrimRef& prim = prims[i];
-               const Vec3fa axisi = normalize(direction(prim));
-               const float cos0 = abs(dot(axisi,axis0));
-               const float cos1 = abs(dot(axisi,axis1));
-               
-               if (cos0 > cos1) { info.lnum++; info.lbounds.extend(bounds(space0,prim)); }
-               else             { info.rnum++; info.rbounds.extend(bounds(space1,prim)); }
-             }
-             return info;
-           },
-           [] (const Info& info0, const Info& info1) {
-             return Info::merge(info0,info1);
-           });
-      
-        /*! return an invalid split if we do not partition */
-        if (info.lnum == 0 || info.rnum == 0) 
-          return Split(inf,axis0,axis1);
-      
-        /*! calculate sah for the split */
-        const float sah = madd(float(info.lnum),halfArea(info.lbounds),float(info.rnum)*halfArea(info.rbounds));
-        return Split(sah,axis0,axis1);
-      }
-      
       /*! array partitioning */
-      void split(const Split& spliti, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset) 
-      {
-        if (likely(set.size() < PARALLEL_THRESHOLD)) 
-          sequential_split(spliti,set,lset,rset);
-        else
-          parallel_split(spliti,set,lset,rset);
-      }
-      
-      /*! array partitioning */
-      void sequential_split(const Split& split, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset) 
+      void split(const Split& split, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset) 
       {
         if (!split.valid()) {
           deterministic_order(set);
@@ -266,36 +159,6 @@ namespace embree
         assert(area(rset.geomBounds) >= 0.0f);
       }
 
-      /*! array partitioning */
-      void parallel_split(const Split& split, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset)
-      {
-        if (!split.valid()) {
-          deterministic_order(set);
-          return splitFallback(set,lset,rset);
-        }
-        
-        const size_t begin = set.begin();
-        const size_t end   = set.end();
-
-        auto primOnLeftSide = [&] (const PrimRef& prim) -> bool { 
-          const Vec3fa axisi = normalize(direction(prim));
-          const float cos0 = abs(dot(axisi,split.axis0));
-          const float cos1 = abs(dot(axisi,split.axis1));
-          return cos0 > cos1;
-        };
-
-        CentGeomBBox3fa linfo(empty); // FIXME: use CentGeomBBox3fa
-        CentGeomBBox3fa rinfo(empty);
-        const size_t center = parallel_partitioning(
-          prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
-          [this] (CentGeomBBox3fa& pinfo, const PrimRef& ref) { pinfo.extend(bounds(ref)); },
-          [] (CentGeomBBox3fa& pinfo0, const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
-          PARALLEL_PARTITION_BLOCK_SIZE);
-        
-        new (&lset) PrimInfoRange(begin,center,linfo);
-        new (&rset) PrimInfoRange(center,end,rinfo);
-      }
-      
       void deterministic_order(const Set& set) 
       {
         /* required as parallel partition destroys original primitive order */
