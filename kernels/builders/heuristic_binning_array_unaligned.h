@@ -39,12 +39,18 @@ namespace embree
 
         const LinearSpace3fa computeAlignedSpace(const range<size_t>& set)
         {
-          /*! find first curve that defines valid direction */
           Vec3fa axis(0,0,1);
+          uint64_t bestGeomPrimID = -1;
+
+          /*! find curve with minimal ID that defines valid direction */
           for (size_t i=set.begin(); i<set.end(); i++)
           {
-            NativeCurves* mesh = (NativeCurves*) scene->get(prims[i].geomID());
-            const unsigned vtxID = mesh->curve(prims[i].primID());
+            const unsigned int geomID = prims[i].geomID();
+            const unsigned int primID = prims[i].primID();
+            const uint64_t geomprimID = prims[i].ID64();
+            if (geomprimID >= bestGeomPrimID) continue;
+            NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+            const unsigned vtxID = mesh->curve(primID);
             const Vec3fa v0 = mesh->vertex(vtxID+0);
             const Vec3fa v1 = mesh->vertex(vtxID+1);
             const Vec3fa v2 = mesh->vertex(vtxID+2);
@@ -55,12 +61,12 @@ namespace embree
             const Vec3fa axis1 = normalize(p3 - p0);
             if (sqr_length(p3-p0) > 1E-18f) {
               axis = axis1;
-              break;
+              bestGeomPrimID = geomprimID;
             }
           }
           return frame(axis).transposed();
         }
-
+        
         const PrimInfo computePrimInfo(const range<size_t>& set, const LinearSpace3fa& space)
         {
           auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
@@ -216,15 +222,18 @@ namespace embree
         const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
         {
           Vec3fa axis0(0,0,1);
+          uint64_t bestGeomPrimID = -1;
 
-          /*! find first curve that defines valid direction */
+          /*! find curve with minimal ID that defines valid direction */
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
           {
             const PrimRefMB& prim = (*set.prims)[i];
-            const size_t geomID = prim.geomID();
-            const size_t primID = prim.primID();
+            const unsigned int geomID = prim.geomID();
+            const unsigned int primID = prim.primID();
+            const uint64_t geomprimID = prim.ID64();
+            if (geomprimID >= bestGeomPrimID) continue;
+            
             const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
-
             const unsigned num_time_segments = mesh->numTimeSegments();
             const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
             if (tbounds.size() == 0) continue;
@@ -236,7 +245,7 @@ namespace embree
             
             if (sqr_length(a3 - a0) > 1E-18f) {
               axis0 = normalize(a3 - a0);
-              break;
+              bestGeomPrimID = geomprimID;
             }
           }
 
