@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 2.17.2
+-   Made BVH build of curve geometry deterministic.
+
 ### New Features in Embree 2.17.1
 -   Improved performance of occlusion ray packets by up to 50%.
 -   Fixed detection of Clang for CMake 3 under MacOSX
