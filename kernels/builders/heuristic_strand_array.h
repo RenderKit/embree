@@ -85,20 +85,37 @@ namespace embree
       /*! finds the best split */
       const Split find(const range<size_t>& set)
       {
-        /* first curve determines first axis */
-        Vec3fa axis0 = normalize(direction(prims[set.begin()]));
+        Vec3fa axis0(0,0,1);
+        uint64_t bestGeomPrimID = -1;
+
+        /* curve with minimal ID determines first axis */
+        for (size_t i=set.begin(); i<set.end(); i++)
+        {
+          const uint64_t geomprimID = prims[i].ID64();
+          if (geomprimID >= bestGeomPrimID) continue;
+          const Vec3fa axis = direction(prims[i]);
+          if (sqr_length(axis) > 1E-18f) {
+            axis0 = normalize(axis);
+            bestGeomPrimID = geomprimID;
+          }
+        }
       
-        /* find 2nd axis that is most misaligned with first axis */
+        /* find 2nd axis that is most misaligned with first axis and has minimal ID */
         float bestCos = 1.0f;
         Vec3fa axis1 = axis0;
+        bestGeomPrimID = -1;
         for (size_t i=set.begin(); i<set.end(); i++) 
         {
+          const uint64_t geomprimID = prims[i].ID64();
           Vec3fa axisi = direction(prims[i]);
           float leni = length(axisi);
           if (leni == 0.0f) continue;
           axisi /= leni;
           float cos = abs(dot(axisi,axis0));
-          if (cos < bestCos) { bestCos = cos; axis1 = axisi; }
+          if ((cos == bestCos && (geomprimID < bestGeomPrimID)) || cos < bestCos) {
+            bestCos = cos; axis1 = axisi;
+            bestGeomPrimID = geomprimID;
+          }
         }
       
         /* partition the two strands */
