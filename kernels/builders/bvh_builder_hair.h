@@ -188,7 +188,7 @@ namespace embree
             /* try splitting into two strands */
             HeuristicStrandSplitSAH::Split strandSplit;
             float strandSAH = inf;
-            if (bestSAH > 0.7f*leafSAH) {
+            if (bestSAH > 0.7f*leafSAH && pinfo.size() <= 256) {
               strandSplit = strandHeuristic.find(pinfo);
               strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
               bestSAH = min(strandSAH,bestSAH);
