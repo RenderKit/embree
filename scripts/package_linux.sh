@@ -45,6 +45,7 @@ function check_symbols
 #EMBREE_VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h`
 #EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
 EMBREE_VERSION=$2
+EMBREE_VERSION_MAJOR=$3
 
 # create package
 make -j 16 preinstall
