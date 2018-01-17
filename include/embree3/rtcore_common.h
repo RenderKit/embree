@@ -200,7 +200,7 @@ enum RTCIntersectContextFlags
 struct RTCFilterFunctionNArguments
 {
   int* valid;
-  void* geomUserPtr;
+  void* geometryUserPtr;
   const struct RTCIntersectContext* context;
   struct RTCRayN* ray;
   struct RTCHitN* hit;

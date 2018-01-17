@@ -23,7 +23,7 @@ namespace embree
   {
     void InstanceBoundsFunction(const struct RTCBoundsFunctionArguments* const args)
     {
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       unsigned int itime = args->timeStep;
 
       assert(itime < instance->numTimeSteps);
@@ -44,7 +44,7 @@ namespace embree
 
     __forceinline void FastInstanceIntersectorN::intersect1(const struct RTCIntersectFunctionNArguments* const args)
     {
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
       Ray& ray = *(Ray*)args->rayhit;
       
@@ -64,7 +64,7 @@ namespace embree
     
     __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
     {
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
       RayHit& ray = *(RayHit*)args->ray;
       
@@ -104,7 +104,7 @@ namespace embree
     __noinline void FastInstanceIntersectorN::intersectN(const struct RTCIntersectFunctionNArguments* const args)
     {
       const vint<N>* validi = (const vint<N>*) args->valid;
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
       RayHitK<N>& ray = *(RayHitK<N>*)args->rayhit;
       
@@ -129,7 +129,7 @@ namespace embree
     __noinline void FastInstanceIntersectorN::occludedN(const struct RTCOccludedFunctionNArguments* const args)
     {
       const vint<N>* validi = (const vint<N>*) args->valid;
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
       RayHitK<N>& ray = *(RayHitK<N>*)args->ray;
       

@@ -367,7 +367,7 @@ struct Sphere
 
 void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
-  const Sphere* spheres = (const Sphere*) args->geomUserPtr;
+  const Sphere* spheres = (const Sphere*) args->geometryUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
   const unsigned int time = args->timeStep;
   const Sphere& sphere = spheres[args->primID];
@@ -384,7 +384,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   unsigned int primID = args->primID;
   assert(args->N == 1);
@@ -437,7 +437,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   unsigned int primID = args->primID;
   assert(args->N == 1);

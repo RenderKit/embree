@@ -63,7 +63,7 @@ enum RTCCurveFlags
 /* Arguments for RTCBoundsFunction */
 struct RTCBoundsFunctionArguments
 {
-  void* uniform geomUserPtr;
+  void* uniform geometryUserPtr;
   uniform unsigned int primID;
   uniform unsigned int timeStep;
   uniform RTCBounds* uniform bounds_o;
@@ -76,7 +76,7 @@ typedef unmasked void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArgumen
 struct RTCIntersectFunctionNArguments
 {
   uniform int* uniform valid;
-  void* uniform geomUserPtr;
+  void* uniform geometryUserPtr;
   uniform unsigned int primID;
   uniform RTCIntersectContext* uniform context;
   RTCRayHitN* uniform rayhit;
@@ -90,7 +90,7 @@ typedef unmasked void (*RTCIntersectFunctionN)(const struct RTCIntersectFunction
 struct RTCOccludedFunctionNArguments
 {
   uniform int* uniform valid;
-  void* uniform geomUserPtr;
+  void* uniform geometryUserPtr;
   uniform unsigned int primID;
   uniform RTCIntersectContext* uniform context;
   RTCRayN* uniform ray;
@@ -103,8 +103,8 @@ typedef unmasked void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNA
 /* Arguments for RTCDisplacementFunction */
 struct RTCDisplacementFunctionNArguments
 {
-  void* uniform geomUserPtr;
-  RTCGeometry geom;
+  void* uniform geometryUserPtr;
+  RTCGeometry geometry;
   uniform unsigned int primID;
   uniform unsigned int timeStep;
   uniform const float* uniform u;

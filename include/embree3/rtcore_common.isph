@@ -189,7 +189,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* contex
 struct RTCFilterFunctionNArguments
 {
   uniform int* uniform valid;
-  void* uniform geomUserPtr;
+  void* uniform geometryUserPtr;
   const RTCIntersectContext* uniform context;
   struct RTCRayN* uniform ray;
   struct RTCHitN* uniform hit;

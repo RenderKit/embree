@@ -52,7 +52,7 @@ struct Instance
 
 void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
-  const Instance* instance = (const Instance*) args->geomUserPtr;
+  const Instance* instance = (const Instance*) args->geometryUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
   Vec3fa l = instance->lower;
   Vec3fa u = instance->upper;
@@ -78,7 +78,7 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
                                     
@@ -108,7 +108,7 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
 void instanceOccludedFunc(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);
@@ -142,7 +142,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
     return;
 
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCIntersectContext* context = args->context;
   unsigned int N = args->N;
   RTCRayHitN* rayhit = (RTCRayHitN*)args->rayhit;
@@ -193,7 +193,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
     return;
   
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCIntersectContext* context = args->context;
   RTCRayN* rays = (RTCRayN*)args->ray;
   unsigned int N = args->N;
@@ -287,7 +287,7 @@ struct Sphere
 
 void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
-  const Sphere* spheres = (const Sphere*) args->geomUserPtr;
+  const Sphere* spheres = (const Sphere*) args->geometryUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
   const Sphere& sphere = spheres[args->primID];
   bounds_o->lower_x = sphere.p.x-sphere.r;
@@ -301,7 +301,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   Ray *ray = (Ray*)args->rayhit;
   RTCHit* hit = (RTCHit *)&ray->Ng.x;
   unsigned int primID = args->primID;
@@ -344,7 +344,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
-    fargs.geomUserPtr = ptr;
+    fargs.geometryUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = (RTCRayN *)args->rayhit;
     fargs.hit = (RTCHitN*)&potentialHit;
@@ -375,7 +375,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
-    fargs.geomUserPtr = ptr;
+    fargs.geometryUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = (RTCRayN *)args->rayhit;
     fargs.hit = (RTCHitN*)&potentialHit;
@@ -395,7 +395,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 void sphereOccludedFunc(const RTCOccludedFunctionNArguments* args)
 {
   int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   Ray *ray = (Ray*)args->ray;
   unsigned int primID = args->primID;
   
@@ -438,7 +438,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* args)
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
-    fargs.geomUserPtr = ptr;
+    fargs.geometryUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = args->ray;
     fargs.hit = (RTCHitN*)&potentialHit;
@@ -469,7 +469,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* args)
 
     RTCFilterFunctionNArguments fargs;
     fargs.valid = (int*)&imask;
-    fargs.geomUserPtr = ptr;
+    fargs.geometryUserPtr = ptr;
     fargs.context = args->context;
     fargs.ray = args->ray;
     fargs.hit = (RTCHitN*)&potentialHit;
@@ -489,7 +489,7 @@ void sphereOccludedFunc(const RTCOccludedFunctionNArguments* args)
 void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = (int*) args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   unsigned int N = args->N;
   RTCRayHitN* rayhit = (RTCRayHitN*)args->rayhit;
   RTCRayN* rays = RTCRayHitN_RayN(rayhit,N);
@@ -548,7 +548,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 
       RTCFilterFunctionNArguments fargs;
       fargs.valid = (int*)&imask;
-      fargs.geomUserPtr = ptr;
+      fargs.geometryUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
       fargs.hit = (RTCHitN*)&potentialhit;
@@ -577,7 +577,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 
       RTCFilterFunctionNArguments fargs;
       fargs.valid = (int*)&imask;
-      fargs.geomUserPtr = ptr;
+      fargs.geometryUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
       fargs.hit = (RTCHitN*)&potentialhit;
@@ -597,7 +597,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCRayN* rays = (RTCRayN*)args->ray;
   unsigned int N = args->N;
   unsigned int primID = args->primID;
@@ -654,7 +654,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
       RTCFilterFunctionNArguments fargs;
       fargs.valid = (int*)&imask;
-      fargs.geomUserPtr = ptr;
+      fargs.geometryUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
       fargs.hit = (RTCHitN*)&potentialhit;
@@ -685,7 +685,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
       RTCFilterFunctionNArguments fargs;
       fargs.valid = (int*)&imask;
-      fargs.geomUserPtr = ptr;
+      fargs.geometryUserPtr = ptr;
       fargs.context = args->context;
       fargs.ray = (RTCRayN*)ray;
       fargs.hit = (RTCHitN*)&potentialhit;

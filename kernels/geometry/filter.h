@@ -56,7 +56,7 @@ namespace embree
       RTCFilterFunctionNArguments args;
       int mask = -1;
       args.valid = &mask;
-      args.geomUserPtr = geometry->userPtr;
+      args.geometryUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.hit = (RTCHitN*)&hit;
@@ -113,7 +113,7 @@ namespace embree
       RTCFilterFunctionNArguments args;
       int mask = -1;
       args.valid = &mask;
-      args.geomUserPtr = geometry->userPtr;
+      args.geometryUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.hit = (RTCHitN*)&hit;
@@ -178,7 +178,7 @@ namespace embree
       RTCFilterFunctionNArguments args;
       vint<K> mask = valid.mask32();
       args.valid = (int*)&mask;
-      args.geomUserPtr = geometry->userPtr;
+      args.geometryUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.hit = (RTCHitN*)&hit;
@@ -222,7 +222,7 @@ namespace embree
       RTCFilterFunctionNArguments args;
       vint<K> mask = valid.mask32();
       args.valid = (int*)&mask;
-      args.geomUserPtr = geometry->userPtr;
+      args.geometryUserPtr = geometry->userPtr;
       args.context = context->user;
       args.ray = (RTCRayN*)&ray;
       args.hit = (RTCHitN*)&hit;

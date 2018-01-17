@@ -49,7 +49,7 @@ LazyGeometry* g_objects[numSpheres];
 
 void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
-  const LazyGeometry* instance = (const LazyGeometry*) args->geomUserPtr;
+  const LazyGeometry* instance = (const LazyGeometry*) args->geometryUserPtr;
   RTCBounds* bounds_o = args->bounds_o;
   Vec3fa lower = instance->center-Vec3fa(instance->radius);
   Vec3fa upper = instance->center+Vec3fa(instance->radius);
@@ -164,7 +164,7 @@ void eagerCreate(LazyGeometry* instance)
 void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
   RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
   assert(args->N == 1);
@@ -190,7 +190,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   const int* valid = args->valid;
-  void* ptr  = args->geomUserPtr;
+  void* ptr  = args->geometryUserPtr;
    RTCIntersectContext* context = args->context;
    RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);

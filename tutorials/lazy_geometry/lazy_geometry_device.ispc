@@ -47,7 +47,7 @@ uniform LazyGeometry* uniform g_objects[numSpheres];
 
 unmasked void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* uniform args)
 {
-  const uniform LazyGeometry* uniform instance = (const uniform LazyGeometry* uniform) args->geomUserPtr;
+  const uniform LazyGeometry* uniform instance = (const uniform LazyGeometry* uniform) args->geometryUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
   uniform Vec3f lower = instance->center-make_Vec3f(instance->radius);
   uniform Vec3f upper = instance->center+make_Vec3f(instance->radius);
@@ -162,7 +162,7 @@ void eagerCreate(uniform LazyGeometry* uniform instance)
 unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
-  void* uniform ptr  = args->geomUserPtr;
+  void* uniform ptr  = args->geometryUserPtr;
   uniform RTCIntersectContext* uniform context = args->context;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   assert(args->N == programCount);
@@ -188,7 +188,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
 unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
-  void* uniform ptr  = args->geomUserPtr;
+  void* uniform ptr  = args->geometryUserPtr;
    uniform RTCIntersectContext* uniform context = args->context;
    RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
   assert(args->N == programCount);

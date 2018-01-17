@@ -41,16 +41,16 @@ typedef struct RTCThreadLocalAllocatorTy* RTCThreadLocalAllocator;
 typedef void* (*RTCCreateNodeFunction) (RTCThreadLocalAllocator allocator, unsigned int childCount, void* userPtr);
 
 /* Callback to set the pointer to all children */
-typedef void  (*RTCSetNodeChildrenFunction) (void* nodePtr, void** children, unsigned int childCount, void* userPtr);
+typedef void (*RTCSetNodeChildrenFunction) (void* nodePtr, void** children, unsigned int childCount, void* userPtr);
 
 /* Callback to set the bounds of all children */
-typedef void  (*RTCSetNodeBoundsFunction) (void* nodePtr, const struct RTCBounds** bounds, unsigned int childCount, void* userPtr);
+typedef void (*RTCSetNodeBoundsFunction) (void* nodePtr, const struct RTCBounds** bounds, unsigned int childCount, void* userPtr);
 
 /* Callback to create a leaf node */
 typedef void* (*RTCCreateLeafFunction) (RTCThreadLocalAllocator allocator, const struct RTCBuildPrimitive* primitives, size_t primitiveCount, void* userPtr);
 
 /* Callback to split a build primitive */
-typedef void  (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* primitive, unsigned int dimension, float position, struct RTCBounds* leftBounds, struct RTCBounds* rightBounds, void* userPtr);
+typedef void (*RTCSplitPrimitiveFunction) (const struct RTCBuildPrimitive* primitive, unsigned int dimension, float position, struct RTCBounds* leftBounds, struct RTCBounds* rightBounds, void* userPtr);
 
 /* Build flags */
 enum RTCBuildFlags

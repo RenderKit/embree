@@ -318,18 +318,18 @@ struct RTCRayHitNt
 RTC_FORCEINLINE RTCRay rtcGetRayFromRayN(RTCRayN* rays, unsigned int N, unsigned int i)
 {
   RTCRay ray;
-  ray.org_x  = RTCRayN_org_x(rays,N,i);
-  ray.org_y  = RTCRayN_org_y(rays,N,i);
-  ray.org_z  = RTCRayN_org_z(rays,N,i);
-  ray.tnear  = RTCRayN_tnear(rays,N,i);
-  ray.dir_x  = RTCRayN_dir_x(rays,N,i);
-  ray.dir_y  = RTCRayN_dir_y(rays,N,i);
-  ray.dir_z  = RTCRayN_dir_z(rays,N,i);
-  ray.tfar   = RTCRayN_tfar(rays,N,i);
-  ray.time   = RTCRayN_time(rays,N,i);
-  ray.mask   = RTCRayN_mask(rays,N,i);
-  ray.id     = RTCRayN_id(rays,N,i);
-  ray.flags  = RTCRayN_flags(rays,N,i);
+  ray.org_x = RTCRayN_org_x(rays,N,i);
+  ray.org_y = RTCRayN_org_y(rays,N,i);
+  ray.org_z = RTCRayN_org_z(rays,N,i);
+  ray.tnear = RTCRayN_tnear(rays,N,i);
+  ray.dir_x = RTCRayN_dir_x(rays,N,i);
+  ray.dir_y = RTCRayN_dir_y(rays,N,i);
+  ray.dir_z = RTCRayN_dir_z(rays,N,i);
+  ray.tfar  = RTCRayN_tfar(rays,N,i);
+  ray.time  = RTCRayN_time(rays,N,i);
+  ray.mask  = RTCRayN_mask(rays,N,i);
+  ray.id    = RTCRayN_id(rays,N,i);
+  ray.flags = RTCRayN_flags(rays,N,i);
   return ray;
 }
 
@@ -364,19 +364,21 @@ RTC_FORCEINLINE void rtcCopyHitToHitN(RTCHitN* hitn, const RTCHit* hit, unsigned
 RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* rayhit, unsigned int N, unsigned int i)
 {
   RTCRayHit rh;
-  RTCRayN* ray  = RTCRayHitN_RayN(rayhit,N);
-  rh.ray.org_x  = RTCRayN_org_x(ray,N,i);
-  rh.ray.org_y  = RTCRayN_org_y(ray,N,i);
-  rh.ray.org_z  = RTCRayN_org_z(ray,N,i);
-  rh.ray.tnear  = RTCRayN_tnear(ray,N,i);
-  rh.ray.dir_x  = RTCRayN_dir_x(ray,N,i);
-  rh.ray.dir_y  = RTCRayN_dir_y(ray,N,i);
-  rh.ray.dir_z  = RTCRayN_dir_z(ray,N,i);
-  rh.ray.tfar   = RTCRayN_tfar(ray,N,i);
-  rh.ray.time   = RTCRayN_time(ray,N,i);
-  rh.ray.mask   = RTCRayN_mask(ray,N,i);
-  rh.ray.id     = RTCRayN_id(ray,N,i);
-  rh.ray.flags  = RTCRayN_flags(ray,N,i);
+
+  RTCRayN* ray = RTCRayHitN_RayN(rayhit,N);
+  rh.ray.org_x = RTCRayN_org_x(ray,N,i);
+  rh.ray.org_y = RTCRayN_org_y(ray,N,i);
+  rh.ray.org_z = RTCRayN_org_z(ray,N,i);
+  rh.ray.tnear = RTCRayN_tnear(ray,N,i);
+  rh.ray.dir_x = RTCRayN_dir_x(ray,N,i);
+  rh.ray.dir_y = RTCRayN_dir_y(ray,N,i);
+  rh.ray.dir_z = RTCRayN_dir_z(ray,N,i);
+  rh.ray.tfar  = RTCRayN_tfar(ray,N,i);
+  rh.ray.time  = RTCRayN_time(ray,N,i);
+  rh.ray.mask  = RTCRayN_mask(ray,N,i);
+  rh.ray.id    = RTCRayN_id(ray,N,i);
+  rh.ray.flags = RTCRayN_flags(ray,N,i);
+
   RTCHitN* hit  = RTCRayHitN_HitN(rayhit,N);
   rh.hit.Ng_x   = RTCHitN_Ng_x(hit,N,i);
   rh.hit.Ng_y   = RTCHitN_Ng_y(hit,N,i);
@@ -387,6 +389,7 @@ RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* rayhit, unsigned i
   rh.hit.geomID = RTCHitN_geomID(hit,N,i);
   for (size_t l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
     rh.hit.instID[l] = RTCHitN_instID(hit,N,i,l);
+
   return rh;
 }
 

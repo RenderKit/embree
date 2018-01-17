@@ -141,7 +141,7 @@ namespace embree
 
   void BoundsFunc(const struct RTCBoundsFunctionArguments* const args)
   {
-    Sphere* sphere = (Sphere*) args->geomUserPtr;
+    Sphere* sphere = (Sphere*) args->geometryUserPtr;
     BBox3fa* bounds_o = (BBox3fa*)args->bounds_o;
     bounds_o->lower.x = sphere->pos.x-sphere->r;
     bounds_o->lower.y = sphere->pos.y-sphere->r;
@@ -2467,7 +2467,7 @@ namespace embree
     
     static void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     {
-      if ((size_t)args->geomUserPtr != 123) 
+      if ((size_t)args->geometryUserPtr != 123) 
         return;
 
       for (unsigned int i=0; i<args->N; i++)

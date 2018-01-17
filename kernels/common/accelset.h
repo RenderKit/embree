@@ -97,7 +97,7 @@ namespace embree
         BBox3fa box;
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
@@ -111,7 +111,7 @@ namespace embree
         BBox3fa box[2];
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
@@ -169,7 +169,7 @@ namespace embree
         int mask = -1;
         IntersectFunctionNArguments args;
         args.valid = &mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
         args.N = 1;
@@ -190,7 +190,7 @@ namespace embree
         int mask = -1;
         OccludedFunctionNArguments args;
         args.valid = &mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
         args.N = 1;
@@ -212,7 +212,7 @@ namespace embree
         vint<K> mask = valid.mask32();
         IntersectFunctionNArguments args;
         args.valid = (int*)&mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
         args.N = K;
@@ -234,7 +234,7 @@ namespace embree
         vint<K> mask = valid.mask32();
         OccludedFunctionNArguments args;
         args.valid = (int*)&mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
         args.N = K;

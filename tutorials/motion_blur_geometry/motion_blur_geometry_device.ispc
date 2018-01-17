@@ -365,7 +365,7 @@ struct Sphere
 
 unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform args)
 {
-  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geomUserPtr;
+  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geometryUserPtr;
   uniform RTCBounds* uniform bounds_o = args->bounds_o;
   const uniform unsigned int time = args->timeStep;
   const uniform Sphere& sphere = spheres[args->primID];
@@ -382,7 +382,7 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
 unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
-  void* uniform ptr  = args->geomUserPtr;
+  void* uniform ptr  = args->geometryUserPtr;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int primID = args->primID;
   assert(args->N == programCount);
@@ -435,7 +435,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
 unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
 {
   const uniform int* uniform valid = args->valid;
-  void* uniform ptr  = args->geomUserPtr;
+  void* uniform ptr  = args->geometryUserPtr;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
   uniform unsigned int primID = args->primID;
   assert(args->N == programCount);
