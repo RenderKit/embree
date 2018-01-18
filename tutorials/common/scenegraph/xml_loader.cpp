@@ -1080,7 +1080,7 @@ namespace embree
         mesh->normals.push_back(loadVec3faArray(animation->child(i)));
       }
     } else if (Ref<XML> normals = xml->childOpt("normals")) {
-      mesh->normals.push_back(loadVec4fArray(normals));
+      mesh->normals.push_back(loadVec3faArray(normals));
     }
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
