@@ -182,9 +182,17 @@ namespace embree
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
 
-    for (const auto& n : normals) 
-      if (n.size() != N) 
-        THROW_RUNTIME_ERROR("incompatible normal array size");
+    if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE || type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE)
+    {
+      for (const auto& n : normals) 
+        if (n.size() != N) 
+          THROW_RUNTIME_ERROR("incompatible normal array size");
+    }
+    else
+    {
+      if (normals.size())
+        THROW_RUNTIME_ERROR("normal array not supported for this geometry type");
+    }
 
     for (auto hair : hairs)
       if (size_t(hair.vertex) >= N)

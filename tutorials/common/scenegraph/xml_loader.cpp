@@ -1257,19 +1257,23 @@ namespace embree
         }
         else if (str_type == "bezier")
         {
-          if (str_subtype == "ribbon")
+          if (str_subtype == "flat" || str_subtype == "ribbon")
             type = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
-          else if (str_subtype == "surface")
+          else if (str_subtype == "round" || str_subtype == "surface")
             type = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;
+          else if (str_subtype == "normal_oriented")
+            type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE;
           else
             THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
         }
         else if (str_type == "bspline")
         {
-          if (str_subtype == "ribbon")
+          if (str_subtype == "flat" || str_subtype == "ribbon")
             type = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;
-          else if (str_subtype == "surface")
+          else if (str_subtype == "round" ||str_subtype == "surface")
             type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
+          else if (str_subtype == "normal_oriented")
+            type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE;
           else
             THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
         }

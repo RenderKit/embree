@@ -48,6 +48,8 @@ namespace embree
   void NativeCurves::setNumTimeSteps (unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
+    if (subtype == NORMAL_ORIENTED_CURVE)
+      normals.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   
@@ -73,6 +75,20 @@ namespace embree
       
       vertices[slot].set(buffer, offset, stride, num, format);
       vertices[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (subtype != NORMAL_ORIENTED_CURVE)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+        
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal buffer format");
+
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal buffer slot");
+      
+      normals[slot].set(buffer, offset, stride, num, format);
+      normals[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -155,6 +171,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertices[slot].setModified(true);
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      normals[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -183,8 +205,14 @@ namespace embree
   bool NativeCurves::verify () 
   {
     /*! verify consistent size of vertex arrays */
-    if (vertices.size() == 0) return false;
+    if (vertices.size() == 0)
+      return false;
+    
     for (const auto& buffer : vertices)
+      if (vertices[0].size() != buffer.size())
+        return false;
+
+    for (const auto& buffer : normals)
       if (vertices[0].size() != buffer.size())
         return false;
 
@@ -213,21 +241,31 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     native_curves = (BufferView<unsigned>) curves;
+    
     if (native_vertices.size() != vertices.size())
       native_vertices.resize(vertices.size());
 
     native_vertices0 = vertices[0];
     for (size_t i=0; i<vertices.size(); i++)
       native_vertices[i] = (BufferView<Vec3fa>) vertices[i];
+
+    if (normals.size())
+    {
+      if (native_normals.size() != normals.size())
+        native_normals.resize(normals.size());
+      
+      native_normals0 = normals[0];
+      for (size_t i=0; i<normals.size(); i++)
+        native_normals[i] = (BufferView<Vec3fa>) normals[i];
+    }
   }
 
   void NativeCurves::postCommit() 
   {
     curves.setModified(false);
-    for (auto& buf : vertices)
-      buf.setModified(false);
-    for (auto& attrib : vertexAttribs)
-      attrib.setModified(false);
+    for (auto& buf : vertices) buf.setModified(false);
+    for (auto& buf : normals)  buf.setModified(false);
+    for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
     Geometry::postCommit();
@@ -321,6 +359,32 @@ namespace embree
             });
         });
       native_vertices0 = native_vertices[0];
+
+      parallel_for(normals.size(), [&] (const size_t i) {
+          
+          if (native_normals[i].size() != 4*size())
+            native_normals[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT4);
+          
+          parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
+              
+              for (size_t j=rj.begin(); j<rj.end(); j++)
+              {
+                const unsigned id = curves[j];
+                if (id+3 >= numVertices()) continue; // ignore invalid curves
+                const Vec3fa v0 = normals[i][id+0];
+                const Vec3fa v1 = normals[i][id+1];
+                const Vec3fa v2 = normals[i][id+2];
+                const Vec3fa v3 = normals[i][id+3];
+                const InputCurve3fa icurve(v0,v1,v2,v3);
+                OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
+                native_normals[i].store(4*j+0,ocurve.v0);
+                native_normals[i].store(4*j+1,ocurve.v1);
+                native_normals[i].store(4*j+2,ocurve.v2);
+                native_normals[i].store(4*j+3,ocurve.v3);
+              }
+            });
+        });
+      native_normals0 = native_normals[0];
     }
     
     NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype) {

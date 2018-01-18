@@ -36,7 +36,8 @@ namespace embree
   enum CurveSubtype
   {
     ROUND_CURVE,
-    FLAT_CURVE
+    FLAT_CURVE,
+    NORMAL_ORIENTED_CURVE,
   };
 
   /*! represents an array of bicubic bezier curves */
@@ -298,6 +299,7 @@ namespace embree
   public:
     BufferView<unsigned int> curves;        //!< array of curve indices
     vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
     CurveType type;                         //!< basis of user provided vertices
@@ -305,8 +307,10 @@ namespace embree
     int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
     BufferView<Vec3fa> native_vertices0;        //!< fast access to first vertex buffer
+    BufferView<Vec3fa> native_normals0;         //!< fast access to first normal buffer
     BufferView<unsigned int> native_curves;     //!< array of curve indices
     vector<BufferView<Vec3fa>> native_vertices; //!< vertex array for each timestep
+    vector<BufferView<Vec3fa>> native_normals;  //!< normal array for each timestep
   };
 
   namespace isa
