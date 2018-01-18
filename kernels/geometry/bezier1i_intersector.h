@@ -20,6 +20,7 @@
 #include "bezier_hair_intersector.h"
 #include "bezier_ribbon_intersector.h"
 #include "bezier_curve_intersector.h"
+#include "oriented_curve_intersector.h"
 
 namespace embree
 {
@@ -37,6 +38,7 @@ namespace embree
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
         Bezier1Intersector1<Curve3fa> intersectorHair;
+        OrientedBezierCurve1Intersector1 intersectorOrientedCurve;
         BezierCurve1Intersector1<Curve3fa> intersectorCurve;
       };
 
@@ -47,6 +49,10 @@ namespace embree
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == FLAT_CURVE))
           pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
+        else if (likely(geom->subtype == NORMAL_ORIENTED_CURVE)) {
+          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,prim.vertexID);
+          pre.intersectorOrientedCurve.intersect(ray,a0,a1,a2,a3,n0,n1,n2,n3,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
+        }
         else 
           pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
