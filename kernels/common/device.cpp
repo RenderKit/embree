@@ -372,10 +372,7 @@ namespace embree
     case 1000003: debug_int3 = val; return;
     }
 
-    switch (prop) {
-      //case RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
-    default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown writable property"); break;
-    };
+    throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown writable property");
   }
 
   ssize_t Device::getProperty(const RTCDeviceProperty prop)
