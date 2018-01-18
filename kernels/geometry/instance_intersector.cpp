@@ -53,13 +53,13 @@ namespace embree
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
-      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar);      
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.time());      
       user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.intersect((RTCRayHit&)ray,&context);
       user_context->instID[0] = -1;
       ray.org = ray_org;
-      ray.dir = Vec3fa(ray_dir,ray.tfar);
+      ray.dir = ray_dir;
     }
     
     __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
@@ -73,13 +73,13 @@ namespace embree
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
-      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar);
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.time());
       user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
       user_context->instID[0] = -1;
       ray.org = ray_org;
-      ray.dir = Vec3fa(ray_dir,ray.tfar);
+      ray.dir = ray_dir;
     }
 
     template<int K>
