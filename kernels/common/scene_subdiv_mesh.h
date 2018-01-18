@@ -134,7 +134,7 @@ namespace embree
 
   public:
     RTCDisplacementFunction displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for maximal displacement 
+    BBox3fa             displBounds;  //!< bounds for maximum displacement 
 
     /*! all buffers in this section are provided by the application */
   public:

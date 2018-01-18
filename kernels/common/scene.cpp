@@ -74,7 +74,7 @@ namespace embree
   
   void Scene::printStatistics()
   {
-    /* calculate maximal number of time segments */
+    /* calculate maximum number of time segments */
     unsigned max_time_steps = 0;
     for (size_t i=0; i<size(); i++)
       max_time_steps = max(max_time_steps,get(i)->numTimeSteps);

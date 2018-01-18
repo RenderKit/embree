@@ -4659,7 +4659,7 @@ namespace embree
 
     registerOption("benchmark-tolerance", [this] (Ref<ParseStream> cin, const FileName& path) {
         benchmark_tolerance = cin->getFloat();
-      }, "--benchmark-tolerance: maximal relative slowdown to let a test pass");
+      }, "--benchmark-tolerance: maximum relative slowdown to let a test pass");
     registerOptionAlias("benchmark-tolerance","tolerance");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {

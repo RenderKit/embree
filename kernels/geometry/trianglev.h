@@ -34,7 +34,7 @@ namespace embree
 
   public:
 
-    /* Returns maximal number of stored triangles */
+    /* Returns maximum number of stored triangles */
     static __forceinline size_t max_size() { return M; }
     
     /* Returns required number of primitive blocks for N primitives */

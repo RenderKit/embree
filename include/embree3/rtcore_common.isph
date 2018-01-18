@@ -38,10 +38,10 @@
 /* Invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((uniform unsigned int)-1)
 
-/* Maximal number of time steps */
+/* Maximum number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
 
-/* Maximal number of instancing levels */
+/* Maximum number of instancing levels */
 #define RTC_MAX_INSTANCE_LEVEL_COUNT 1
 
 /* Formats of buffers and other data structures */

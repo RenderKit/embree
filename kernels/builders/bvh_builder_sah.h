@@ -34,8 +34,8 @@ namespace embree
   {
     struct GeneralBVHBuilder
     {
-      static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximum tree depth
 
       /*! settings for SAH builder */
       struct Settings
@@ -65,10 +65,10 @@ namespace embree
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t maxDepth;         //!< maximum depth of BVH to build
         size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t minLeafSize;      //!< minimum size of a leaf
+        size_t maxLeafSize;      //!< maximum size of a leaf
         float travCost;          //!< estimated cost of one traversal step
         float intCost;           //!< estimated cost of one primitive intersection
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
@@ -466,7 +466,7 @@ namespace embree
               return A;
             },std::plus<double>());
 
-          /* calculate maximal number of spatial splits per primitive */
+          /* calculate maximum number of spatial splits per primitive */
           const float f = 10.0f;
           const float invA = 1.0f / A;
           parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {

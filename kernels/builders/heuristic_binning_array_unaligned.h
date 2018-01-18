@@ -42,7 +42,7 @@ namespace embree
           Vec3fa axis(0,0,1);
           uint64_t bestGeomPrimID = -1;
 
-          /*! find curve with minimal ID that defines valid direction */
+          /*! find curve with minimum ID that defines valid direction */
           for (size_t i=set.begin(); i<set.end(); i++)
           {
             const unsigned int geomID = prims[i].geomID();
@@ -224,7 +224,7 @@ namespace embree
           Vec3fa axis0(0,0,1);
           uint64_t bestGeomPrimID = -1;
 
-          /*! find curve with minimal ID that defines valid direction */
+          /*! find curve with minimum ID that defines valid direction */
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
           {
             const PrimRefMB& prim = (*set.prims)[i];
