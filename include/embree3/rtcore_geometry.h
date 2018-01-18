@@ -198,10 +198,10 @@ RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectF
 /* Set the occlusion callback function of a user geometry. */
 RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, RTCOccludedFunctionN occluded);
 
-/* Filters the intersection from the intersection callback function. */
+/* Invokes the intersection filter from the intersection callback function. */
 RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
 
-/* Filters the occlusion from the occlusion callback function. */
+/* Invokes the occlusion filter from the occlusion callback function. */
 RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 
