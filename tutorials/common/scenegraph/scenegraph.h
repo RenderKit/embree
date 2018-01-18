@@ -769,7 +769,7 @@ namespace embree
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)), normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {

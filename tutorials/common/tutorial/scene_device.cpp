@@ -233,7 +233,7 @@ namespace embree
   }
   
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
-    : geom(CURVES), type(type), normals(nullptr)
+    : geom(CURVES), normals(nullptr), type(type)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)

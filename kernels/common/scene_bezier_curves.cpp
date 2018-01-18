@@ -360,32 +360,38 @@ namespace embree
         });
       native_vertices0 = native_vertices[0];
 
-      parallel_for(normals.size(), [&] (const size_t i) {
-          
-          if (native_normals[i].size() != 4*size())
-            native_normals[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT3);
-          
-          parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
-              
-              for (size_t j=rj.begin(); j<rj.end(); j++)
-              {
-                const unsigned id = curves[j];
-                if (id+3 >= numVertices()) continue; // ignore invalid curves
-                const Vec3fa v0 = normals[i][id+0];
-                const Vec3fa v1 = normals[i][id+1];
-                const Vec3fa v2 = normals[i][id+2];
-                const Vec3fa v3 = normals[i][id+3];
-                const InputCurve3fa icurve(v0,v1,v2,v3);
-                OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
-                native_normals[i].store(4*j+0,ocurve.v0);
-                native_normals[i].store(4*j+1,ocurve.v1);
-                native_normals[i].store(4*j+2,ocurve.v2);
-                native_normals[i].store(4*j+3,ocurve.v3);
-              }
-            });
-        });
-      if (native_normals.size())
-        native_normals0 = native_normals[0];
+      if (subtype == NORMAL_ORIENTED_CURVE)
+      {
+        if (native_normals.size() != normals.size())
+          native_normals.resize(normals.size());
+        
+        parallel_for(normals.size(), [&] (const size_t i) {
+            
+            if (native_normals[i].size() != 4*size())
+              native_normals[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT3);
+            
+            parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
+                
+                for (size_t j=rj.begin(); j<rj.end(); j++)
+                {
+                  const unsigned id = curves[j];
+                  if (id+3 >= numVertices()) continue; // ignore invalid curves
+                  const Vec3fa v0 = normals[i][id+0];
+                  const Vec3fa v1 = normals[i][id+1];
+                  const Vec3fa v2 = normals[i][id+2];
+                  const Vec3fa v3 = normals[i][id+3];
+                  const InputCurve3fa icurve(v0,v1,v2,v3);
+                  OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
+                  native_normals[i].store(4*j+0,ocurve.v0);
+                  native_normals[i].store(4*j+1,ocurve.v1);
+                  native_normals[i].store(4*j+2,ocurve.v2);
+                  native_normals[i].store(4*j+3,ocurve.v3);
+                }
+              });
+          });
+        if (native_normals.size())
+          native_normals0 = native_normals[0];
+      }
     }
     
     NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype) {
