@@ -363,7 +363,7 @@ namespace embree
       parallel_for(normals.size(), [&] (const size_t i) {
           
           if (native_normals[i].size() != 4*size())
-            native_normals[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT4);
+            native_normals[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT3);
           
           parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
               
@@ -384,7 +384,8 @@ namespace embree
               }
             });
         });
-      native_normals0 = native_normals[0];
+      if (native_normals.size())
+        native_normals0 = native_normals[0];
     }
     
     NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype) {
