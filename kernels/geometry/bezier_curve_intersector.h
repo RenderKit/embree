@@ -34,13 +34,15 @@ namespace embree
     static const size_t numBezierSubdivisions = 3;
 #endif
 
-    template<typename NativeCurve3fa>
-      struct BezierCurveHit
+    struct BezierCurveHit
     {
       __forceinline BezierCurveHit() {}
 
       __forceinline BezierCurveHit(const float t, const float u, const Vec3fa& Ng)
         : t(t), u(u), v(0.0f), Ng(Ng) {}
+
+      __forceinline BezierCurveHit(const float t, const float u, const float v, const Vec3fa& Ng)
+        : t(t), u(u), v(v), Ng(Ng) {}
       
       __forceinline void finalize() {}
       
@@ -61,7 +63,7 @@ namespace embree
       Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-      BezierCurveHit<NativeCurve3fa> hit(tp.lower[i]+dt,u[i],Ng_o);
+      BezierCurveHit hit(tp.lower[i]+dt,u[i],Ng_o);
       return epilog(hit);
     }
 
@@ -117,7 +119,7 @@ namespace embree
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
           const Vec3fa V = cross(dPdu,R);
-          BezierCurveHit<NativeCurve3fa> hit(t,u,cross(V,U));
+          BezierCurveHit hit(t,u,cross(V,U));
           return epilog(hit);
         }
       }
