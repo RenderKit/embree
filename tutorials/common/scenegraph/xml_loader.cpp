@@ -1079,8 +1079,8 @@ namespace embree
       for (size_t i=0; i<animation->size(); i++) {
         mesh->normals.push_back(loadVec3faArray(animation->child(i)));
       }
-    } else {
-      mesh->normals.push_back(loadVec4fArray(xml->childOpt("normals")));
+    } else if (Ref<XML> normals = xml->childOpt("normals")) {
+      mesh->normals.push_back(loadVec4fArray(normals));
     }
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
