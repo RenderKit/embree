@@ -98,7 +98,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Vec3f La = diffuse*0.5f;
     color = color + weight*opacity*La;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    const Vec3f Ng = normalize(primary.ray.Ng);
 
     /* initialize shadow ray */
     Ray2 shadow;
@@ -115,7 +114,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* add light contribution */
     if (shadow.ray.tfar >= 0.0f) {
-      Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,Ng),0.0f,1.0f);
+      Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
       color = color + weight*opacity*Ll;
     }
 
