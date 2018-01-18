@@ -36,7 +36,7 @@ namespace embree
     __forceinline RayK(const Vec3vf<K>& org, const Vec3vf<K>& dir,
                        const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                        const vfloat<K>& time = zero, const vint<K>& mask = -1, const vint<K>& id = 0, const vint<K>& flags = 0)
-      : org(org), dir(dir), _tnear(tnear), _tfar(tfar), time(time), mask(mask), id(id), flags(flags) {}
+      : org(org), dir(dir), _tnear(tnear), tfar(tfar), _time(time), mask(mask), id(id), flags(flags) {}
 
     /* Returns the size of the ray */
     static __forceinline size_t size() { return K; }
@@ -48,7 +48,7 @@ namespace embree
       const vbool<K> vy = (abs(org.y) <= vfloat<K>(FLT_LARGE)) & (abs(dir.y) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vz = (abs(org.z) <= vfloat<K>(FLT_LARGE)) & (abs(dir.z) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vn = abs(tnear()) <= vfloat<K>(inf);
-      const vbool<K> vf = abs(tfar()) <= vfloat<K>(inf);
+      const vbool<K> vf = abs(tfar) <= vfloat<K>(inf);
       return vx & vy & vz & vn & vf;
     }
 
@@ -70,7 +70,7 @@ namespace embree
                                size_t rayIndex,
                                const vfloat<M>& new_t)
     {
-      tfar()[rayIndex] = new_t[i];
+      tfar[rayIndex] = new_t[i];
     }
 
     __forceinline vint<K> octant() const
@@ -84,16 +84,16 @@ namespace embree
     Vec3vf<K> org;    // ray origin
     vfloat<K> _tnear; // start of ray segment
     Vec3vf<K> dir;    // ray direction
-    vfloat<K> _tfar;  // end of ray segment
-    vfloat<K> time;   // time of this ray for motion blur.
+    vfloat<K> _time;   // time of this ray for motion blur.
+    vfloat<K> tfar;  // end of ray segment
     vint<K> mask;     // used to mask out objects during traversal
     vint<K> id;      
     vint<K> flags;  
 
     __forceinline vfloat<K>& tnear() { return _tnear; }
-    __forceinline vfloat<K>& tfar()  { return _tfar; }
+    __forceinline vfloat<K>& time()  { return _time; }
     __forceinline const vfloat<K>& tnear() const { return _tnear; }
-    __forceinline const vfloat<K>& tfar()  const { return _tfar; }
+    __forceinline const vfloat<K>& time()  const { return _time; }
   };
 
   /* Ray+hit structure for K rays */
@@ -103,14 +103,14 @@ namespace embree
     using RayK<K>::org;
     using RayK<K>::_tnear;
     using RayK<K>::dir;
-    using RayK<K>::_tfar;
-    using RayK<K>::time;
+    using RayK<K>::_time;
+    using RayK<K>::tfar;
     using RayK<K>::mask;
     using RayK<K>::id;
     using RayK<K>::flags;
 
     using RayK<K>::tnear;
-    using RayK<K>::tfar;
+    using RayK<K>::time;
 
     /* Default construction does nothing */
     __forceinline RayHitK() {}
@@ -132,8 +132,8 @@ namespace embree
       org    = ray.org;
       _tnear = ray._tnear;
       dir    = ray.dir;
-      _tfar  = ray._tfar;
-      time   = ray.time;
+      _time   = ray._time;
+      tfar  = ray.tfar;
       mask   = ray.mask;
       id     = ray.id;
       flags  = ray.flags;
@@ -147,7 +147,7 @@ namespace embree
     __forceinline void verifyHit(const vbool<K>& valid0) const
     {
       vbool<K> valid = valid0 & geomID != vint<K>(RTC_INVALID_GEOMETRY_ID);
-      const vbool<K> vt = (abs(tfar()) <= vfloat<K>(FLT_LARGE)) | (tfar() == vfloat<K>(neg_inf));
+      const vbool<K> vt = (abs(tfar) <= vfloat<K>(FLT_LARGE)) | (tfar == vfloat<K>(neg_inf));
       const vbool<K> vu = (abs(u) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vv = (abs(u) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vnx = abs(Ng.x) <= vfloat<K>(FLT_LARGE);
@@ -200,7 +200,7 @@ namespace embree
                                int new_geomID,
                                const vint<M> &new_primID)
     {
-      tfar()[rayIndex] = new_t[i];
+      tfar[rayIndex] = new_t[i];
       Ng.x[rayIndex] = new_gnormalx[i];
       Ng.y[rayIndex] = new_gnormaly[i];
       Ng.z[rayIndex] = new_gnormalz[i];
@@ -226,7 +226,7 @@ namespace embree
                                            const vfloat16& new_t)
   {
     const vbool16 m_mask((unsigned int)1 << i);
-    vfloat16::storeu_compact_single(m_mask, &tfar()[rayIndex], new_t);
+    vfloat16::storeu_compact_single(m_mask, &tfar[rayIndex], new_t);
   }
 
   template<> template<>
@@ -242,7 +242,7 @@ namespace embree
                                               const vint16& new_primID)
   {
     const vbool16 m_mask((unsigned int)1 << i);
-    vfloat16::storeu_compact_single(m_mask, &tfar()[rayIndex], new_t);
+    vfloat16::storeu_compact_single(m_mask, &tfar[rayIndex], new_t);
     vfloat16::storeu_compact_single(m_mask, &Ng.x[rayIndex], new_gnormalx);
     vfloat16::storeu_compact_single(m_mask, &Ng.y[rayIndex], new_gnormaly);
     vfloat16::storeu_compact_single(m_mask, &Ng.z[rayIndex], new_gnormalz);
@@ -264,36 +264,37 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1, int id = 0, int flags = 0)
-      : org(org,tnear), dir(dir,tfar), time(time), mask(mask), id(id), flags(flags) {}
+      : org(org,tnear), dir(dir,time), tfar(tfar), mask(mask), id(id), flags(flags) {}
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(le_mask(abs(Vec3fa(org,0.0f)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir,0.0f)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar()) <= float(inf);
+      return all(le_mask(abs(Vec3fa(org,0.0f)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir,0.0f)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar) <= float(inf);
     }
 
 #if defined(__AVX512F__)
     __forceinline void update(const vbool16& m_mask,
                               const vfloat16& new_t)
     {
-      vfloat16::storeu_compact_single(m_mask, &tfar(), new_t);
+      vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
     }
 #endif
 
     /* Ray data */
     Vec3fa org;  // 3 floats for ray origin, 1 float for tnear
     //float tnear; // start of ray segment
-    Vec3fa dir;  // 3 floats for ray direction, 1 float for tfar
-    //float tfar;  // end of ray segment
-    float time;  // time of this ray for motion blur.
+    Vec3fa dir;  // 3 floats for ray direction, 1 float for time
+    // float time; 
+    float tfar;  // end of ray segment
     int mask;    // used to mask out objects during traversal
-
     int id;      // ray ID
     int flags;   // ray flags
 
     __forceinline float& tnear() { return org.w; };
-    __forceinline float& tfar()  { return dir.w; };
     __forceinline const float& tnear() const { return org.w; };
-    __forceinline const float& tfar()  const { return dir.w; };
+
+    __forceinline float& time() { return dir.w; };
+    __forceinline const float& time() const { return dir.w; };
+
   };
 
   template<>
@@ -316,7 +317,7 @@ namespace embree
     {
       org    = ray.org;
       dir    = ray.dir;
-      time   = ray.time;
+      tfar   = ray.tfar;
       mask   = ray.mask;
       id     = ray.id;
       flags  = ray.flags;
@@ -330,7 +331,7 @@ namespace embree
     __forceinline void verifyHit() const
     {
       if (geomID == RTC_INVALID_GEOMETRY_ID) return;
-      const bool vt = (abs(tfar()) <= FLT_LARGE) || (tfar() == float(neg_inf));
+      const bool vt = (abs(tfar) <= FLT_LARGE) || (tfar == float(neg_inf));
       const bool vu = (abs(u) <= FLT_LARGE);
       const bool vv = (abs(u) <= FLT_LARGE);
       const bool vnx = abs(Ng.x) <= FLT_LARGE;
@@ -355,7 +356,7 @@ namespace embree
                               const int new_geomID,
                               const int new_primID)
     {
-      vfloat16::storeu_compact_single(m_mask, &tfar(), new_t);
+      vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
       vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
       vfloat16::storeu_compact_single(m_mask, &Ng.y, new_gnormaly);
       vfloat16::storeu_compact_single(m_mask, &Ng.z, new_gnormalz);
@@ -375,7 +376,7 @@ namespace embree
                               const vint16& new_geomID,
                               const vint16& new_primID)
     {
-      vfloat16::storeu_compact_single(m_mask, &tfar(), new_t);
+      vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
       vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
       vfloat16::storeu_compact_single(m_mask, &Ng.y, new_gnormaly);
       vfloat16::storeu_compact_single(m_mask, &Ng.z, new_gnormalz);
@@ -402,8 +403,8 @@ namespace embree
     for (size_t i = 0; i < K; i++) // FIXME: use SIMD transpose
     {
       ray[i].org.x = org.x[i]; ray[i].org.y = org.y[i]; ray[i].org.z = org.z[i]; ray[i].tnear() = tnear()[i];
-      ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i]; ray[i].tfar()  = tfar()[i]; 
-      ray[i].time  = time[i]; ray[i].mask = mask[i]; ray[i].id = id[i]; ray[i].flags = flags[i];
+      ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i]; ray[i].time()  = time()[i];
+      ray[i].tfar  = tfar[i];  ray[i].mask = mask[i]; ray[i].id = id[i]; ray[i].flags = flags[i];
     }
   }
 
@@ -413,8 +414,8 @@ namespace embree
     for (size_t i = 0; i < K; i++) // FIXME: use SIMD transpose
     {
       ray[i].org.x = org.x[i]; ray[i].org.y = org.y[i]; ray[i].org.z = org.z[i]; ray[i].tnear() = tnear()[i];
-      ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i]; ray[i].tfar()  = tfar()[i];
-      ray[i].time  = time[i]; ray[i].mask = mask[i]; ray[i].id = id[i]; ray[i].flags = flags[i];
+      ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i]; ray[i].time()  = time()[i]; 
+      ray[i].tfar  = tfar[i]; ray[i].mask = mask[i]; ray[i].id = id[i]; ray[i].flags = flags[i];
       ray[i].Ng.x = Ng.x[i]; ray[i].Ng.y = Ng.y[i]; ray[i].Ng.z = Ng.z[i];
       ray[i].u = u[i]; ray[i].v = v[i];
       ray[i].primID = primID[i]; ray[i].geomID = geomID[i]; ray[i].instID = instID[i];
@@ -426,16 +427,16 @@ namespace embree
   __forceinline void RayK<K>::get(size_t i, RayK<1>& ray) const
   {
     ray.org.x = org.x[i]; ray.org.y = org.y[i]; ray.org.z = org.z[i]; ray.tnear() = tnear()[i]; 
-    ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i]; ray.tfar()  = tfar()[i]; 
-    ray.time  = time[i];  ray.mask = mask[i];  ray.id = id[i]; ray.flags = flags[i];
+    ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i]; ray.time()  = time()[i];  
+    ray.tfar  = tfar[i]; ray.mask = mask[i];  ray.id = id[i]; ray.flags = flags[i];
   }
 
   template<int K>
   __forceinline void RayHitK<K>::get(size_t i, RayHitK<1>& ray) const
   {
     ray.org.x = org.x[i]; ray.org.y = org.y[i]; ray.org.z = org.z[i]; ray.tnear() = tnear()[i];
-    ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i]; ray.tfar()  = tfar()[i];
-    ray.time  = time[i];  ray.mask = mask[i];  ray.id = id[i]; ray.flags = flags[i];
+    ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i]; ray.tfar  = tfar[i]; ray.time()  = time()[i]; 
+    ray.mask = mask[i];  ray.id = id[i]; ray.flags = flags[i];
     ray.Ng.x = Ng.x[i]; ray.Ng.y = Ng.y[i]; ray.Ng.z = Ng.z[i];
     ray.u = u[i]; ray.v = v[i];
     ray.primID = primID[i]; ray.geomID = geomID[i]; ray.instID = instID[i];
@@ -448,8 +449,8 @@ namespace embree
     for (size_t i = 0; i < K; i++)
     {
       org.x[i] = ray[i].org.x; org.y[i] = ray[i].org.y; org.z[i] = ray[i].org.z; tnear()[i] = ray[i].tnear();
-      dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z; tfar()[i] = ray[i].tfar();  
-      time[i] = ray[i].time; mask[i] = ray[i].mask; id[i] = ray[i].id; flags[i] = ray[i].flags;
+      dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z; time()[i] = ray[i].time(); 
+      tfar[i] = ray[i].tfar;  mask[i] = ray[i].mask; id[i] = ray[i].id; flags[i] = ray[i].flags;
     }
   }
 
@@ -459,8 +460,8 @@ namespace embree
     for (size_t i = 0; i < K; i++)
     {
       org.x[i] = ray[i].org.x; org.y[i] = ray[i].org.y; org.z[i] = ray[i].org.z; tnear()[i] = ray[i].tnear();
-      dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z; tfar()[i] = ray[i].tfar();
-      time[i] = ray[i].time; mask[i] = ray[i].mask; id[i] = ray[i].id; flags[i] = ray[i].flags;
+      dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z; time()[i] = ray[i].time();
+      tfar[i] = ray[i].tfar; mask[i] = ray[i].mask; id[i] = ray[i].id; flags[i] = ray[i].flags;
       Ng.x[i] = ray[i].Ng.x; Ng.y[i] = ray[i].Ng.y; Ng.z[i] = ray[i].Ng.z;
       u[i] = ray[i].u; v[i] = ray[i].v;
       primID[i] = ray[i].primID; geomID[i] = ray[i].geomID;  instID[i] = ray[i].instID;
@@ -472,16 +473,16 @@ namespace embree
   __forceinline void RayK<K>::set(size_t i, const RayK<1>& ray)
   {
     org.x[i] = ray.org.x; org.y[i] = ray.org.y; org.z[i] = ray.org.z; tnear()[i] = ray.tnear();
-    dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z; tfar()[i] = ray.tfar();  
-    time[i] = ray.time; mask[i] = ray.mask; id[i] = ray.id; flags[i] = ray.flags;
+    dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z; time()[i] = ray.time();
+    tfar[i] = ray.tfar; mask[i] = ray.mask; id[i] = ray.id; flags[i] = ray.flags;
   }
 
   template<int K>
   __forceinline void RayHitK<K>::set(size_t i, const RayHitK<1>& ray)
   {
     org.x[i] = ray.org.x; org.y[i] = ray.org.y; org.z[i] = ray.org.z; tnear()[i] = ray.tnear();
-    dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z; tfar()[i] = ray.tfar();
-    time[i] = ray.time; mask[i] = ray.mask; id[i] = ray.id; flags[i] = ray.flags;
+    dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z; time()[i] = ray.time();
+    tfar[i] = ray.tfar; mask[i] = ray.mask; id[i] = ray.id; flags[i] = ray.flags;
     Ng.x[i] = ray.Ng.x; Ng.y[i] = ray.Ng.y; Ng.z[i] = ray.Ng.z;
     u[i] = ray.u; v[i] = ray.v;
     primID[i] = ray.primID; geomID[i] = ray.geomID; instID[i] = ray.instID;
@@ -492,16 +493,16 @@ namespace embree
   __forceinline void RayK<K>::copy(size_t dest, size_t source)
   {
     org.x[dest] = org.x[source]; org.y[dest] = org.y[source]; org.z[dest] = org.z[source]; tnear()[dest] = tnear()[source];
-    dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source]; tfar() [dest] = tfar()[source];  
-    time[dest] = time[source]; mask[dest] = mask[source]; id[dest] = id[source]; flags[dest] = flags[source]; 
+    dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source]; time()[dest] = time()[source]; 
+    tfar [dest] = tfar[source]; mask[dest] = mask[source]; id[dest] = id[source]; flags[dest] = flags[source]; 
   }
 
   template<int K>
   __forceinline void RayHitK<K>::copy(size_t dest, size_t source)
   {
     org.x[dest] = org.x[source]; org.y[dest] = org.y[source]; org.z[dest] = org.z[source]; tnear()[dest] = tnear()[source];
-    dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source]; tfar() [dest] = tfar()[source];
-    time[dest] = time[source]; mask[dest] = mask[source]; id[dest] = id[source]; flags[dest] = flags[source];
+    dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source]; time()[dest] = time()[source]; 
+    tfar [dest] = tfar[source]; mask[dest] = mask[source]; id[dest] = id[source]; flags[dest] = flags[source];
     Ng.x[dest] = Ng.x[source]; Ng.y[dest] = Ng.y[source]; Ng.z[dest] = Ng.z[source];
     u[dest] = u[source]; v[dest] = v[source];
     primID[dest] = primID[source]; geomID[dest] = geomID[source];  instID[dest] = instID[source];
@@ -547,8 +548,8 @@ namespace embree
                 << "  org = " << ray.org << std::endl
                 << "  dir = " << ray.dir << std::endl
                 << "  near = " << ray.tnear() << std::endl
-                << "  far = " << ray.tfar() << std::endl
-                << "  time = " << ray.time << std::endl
+                << "  far = " << ray.tfar << std::endl
+                << "  time = " << ray.time() << std::endl
                 << "  mask = " << ray.mask << std::endl
                 << "  id = " << ray.id << std::endl
                 << "  flags = " << ray.flags << std::endl
@@ -562,8 +563,8 @@ namespace embree
                 << "  org = " << ray.org << std::endl
                 << "  dir = " << ray.dir << std::endl
                 << "  near = " << ray.tnear() << std::endl
-                << "  far = " << ray.tfar() << std::endl
-                << "  time = " << ray.time << std::endl
+                << "  far = " << ray.tfar << std::endl
+                << "  time = " << ray.time() << std::endl
                 << "  mask = " << ray.mask << std::endl
                 << "  id = " << ray.id << std::endl
                 << "  flags = " << ray.flags << std::endl
@@ -591,11 +592,10 @@ namespace embree
     __forceinline float* dir_x(size_t offset = 0) { return (float*)&ptr[4*4*N+offset]; }; //!< x coordinate of ray direction
     __forceinline float* dir_y(size_t offset = 0) { return (float*)&ptr[5*4*N+offset]; }; //!< y coordinate of ray direction
     __forceinline float* dir_z(size_t offset = 0) { return (float*)&ptr[6*4*N+offset]; }; //!< z coordinate of ray direction
-    __forceinline float* tfar (size_t offset = 0) { return (float*)&ptr[7*4*N+offset]; }; //!< end of ray segment (set to hit distance)
-
     __forceinline float* time(size_t offset = 0) { return (float*)&ptr[8*4*N+offset]; };  //!< time of this ray for motion blur
-    __forceinline int*   mask(size_t offset = 0) { return (int*)  &ptr[9*4*N+offset]; };  //!< used to mask out objects during traversal (optional)
 
+    __forceinline float* tfar (size_t offset = 0) { return (float*)&ptr[7*4*N+offset]; }; //!< end of ray segment (set to hit distance)
+    __forceinline int*   mask(size_t offset = 0) { return (int*)  &ptr[9*4*N+offset]; };  //!< used to mask out objects during traversal (optional)
     __forceinline int*   id   (size_t offset = 0) { return (int*)&ptr[10*4*N+offset]; };  //!< id
     __forceinline int*   flags(size_t offset = 0) { return (int*)&ptr[11*4*N+offset]; };  //!< flags
 
@@ -621,8 +621,8 @@ namespace embree
       ray.dir.x   = dir_x(offset)[0];
       ray.dir.y   = dir_y(offset)[0];
       ray.dir.z   = dir_z(offset)[0];
-      ray.tfar()  = tfar(offset)[0];
-      ray.time    = time(offset)[0];
+      ray.time()  = time(offset)[0];
+      ray.tfar    = tfar(offset)[0];
       ray.mask    = mask(offset)[0];
       ray.id      = id(offset)[0];
       ray.flags   = flags(offset)[0];
@@ -640,8 +640,8 @@ namespace embree
       ray.dir.x  = vfloat<K>::loadu(dir_x(offset));
       ray.dir.y  = vfloat<K>::loadu(dir_y(offset));
       ray.dir.z  = vfloat<K>::loadu(dir_z(offset));
-      ray.tfar   = vfloat<K>::loadu(tfar(offset));
       ray.time   = vfloat<K>::loadu(time(offset));
+      ray.tfar   = vfloat<K>::loadu(tfar(offset));
       ray.mask   = vint<K>::loadu(mask(offset));
       ray.id     = vint<K>::loadu(id(offset));
       ray.flags  = vint<K>::loadu(flags(offset));
@@ -659,8 +659,8 @@ namespace embree
       ray.dir.x   = vfloat<K>::loadu(valid, dir_x(offset));
       ray.dir.y   = vfloat<K>::loadu(valid, dir_y(offset));
       ray.dir.z   = vfloat<K>::loadu(valid, dir_z(offset));
-      ray.tfar()  = vfloat<K>::loadu(valid, tfar(offset));
-      ray.time    = vfloat<K>::loadu(valid, time(offset));
+      ray.time()  = vfloat<K>::loadu(valid, time(offset));
+      ray.tfar  = vfloat<K>::loadu(valid, tfar(offset));
 #if !defined(__AVX__)
       /* SSE: some ray members must be loaded with scalar instructions to ensure that we don't cause memory faults,
          because the SSE masked loads always access the entire vector */
@@ -699,7 +699,7 @@ namespace embree
 
       if (likely(any(valid)))
       {
-        vfloat<K>::storeu(valid, tfar(offset), ray.tfar());
+        vfloat<K>::storeu(valid, tfar(offset), ray.tfar);
         vfloat<K>::storeu(valid, Ng_x(offset), ray.Ng.x);
         vfloat<K>::storeu(valid, Ng_y(offset), ray.Ng.y);
         vfloat<K>::storeu(valid, Ng_z(offset), ray.Ng.z);
@@ -735,10 +735,10 @@ namespace embree
     __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= (ray.tfar() < 0.0f);
+      valid &= (ray.tfar < 0.0f);
 
       if (likely(any(valid)))
-        vfloat<K>::storeu(valid, tfar(offset), ray.tfar());
+        vfloat<K>::storeu(valid, tfar(offset), ray.tfar);
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -770,17 +770,17 @@ namespace embree
       ray.dir.x   = vfloat<K>::template gather<1>(valid, dir_x(), offset);
       ray.dir.y   = vfloat<K>::template gather<1>(valid, dir_y(), offset);
       ray.dir.z   = vfloat<K>::template gather<1>(valid, dir_z(), offset);
-      ray.tfar()  = vfloat<K>::template gather<1>(valid, tfar(), offset);
-      ray.time    = vfloat<K>::template gather<1>(valid, time(), offset);
+      ray.time()  = vfloat<K>::template gather<1>(valid, time(), offset);
+      ray.tfar    = vfloat<K>::template gather<1>(valid, tfar(), offset);
       ray.mask    = vint<K>::template gather<1>(valid, mask(), offset);
       ray.id      = vint<K>::template gather<1>(valid, id(), offset);
       ray.flags   = vint<K>::template gather<1>(valid, flags(), offset);
 #else
       ray.org     = zero;
-      ray.dir     = zero;
       ray.tnear() = zero;
-      ray.tfar()  = zero;
-      ray.time    = zero;
+      ray.dir     = zero;
+      ray.time()  = zero;
+      ray.tfar    = zero;
       ray.mask    = zero;
       ray.id      = zero;
       ray.flags   = zero;
@@ -794,12 +794,12 @@ namespace embree
           ray.org.x[k]   = *org_x(ofs);
           ray.org.y[k]   = *org_y(ofs);
           ray.org.z[k]   = *org_z(ofs);
+          ray.tnear()[k] = *tnear(ofs);
           ray.dir.x[k]   = *dir_x(ofs);
           ray.dir.y[k]   = *dir_y(ofs);
           ray.dir.z[k]   = *dir_z(ofs);
-          ray.tnear()[k] = *tnear(ofs);
-          ray.tfar()[k]  = *tfar(ofs);
-          ray.time[k]    = *time(ofs);
+          ray.time()[k]  = *time(ofs);
+          ray.tfar[k]    = *tfar(ofs);
           ray.mask[k]    = *mask(ofs);
           ray.id[k]      = *id(ofs);
           ray.flags[k]   = *flags(ofs);
@@ -819,7 +819,7 @@ namespace embree
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
-        vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar());
+        vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar);
         vfloat<K>::template scatter<1>(valid, Ng_x(), offset, ray.Ng.x);
         vfloat<K>::template scatter<1>(valid, Ng_y(), offset, ray.Ng.y);
         vfloat<K>::template scatter<1>(valid, Ng_z(), offset, ray.Ng.z);
@@ -835,7 +835,7 @@ namespace embree
           const size_t k = __bscf(valid_bits);
           const size_t ofs = offset[k];
 
-          *tfar(ofs) = ray.tfar()[k];
+          *tfar(ofs) = ray.tfar[k];
 
           *Ng_x(ofs)   = ray.Ng.x[k];
           *Ng_y(ofs)   = ray.Ng.y[k];
@@ -854,12 +854,12 @@ namespace embree
     __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= (ray.tfar() < 0.0f);
+      valid &= (ray.tfar < 0.0f);
 
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
-        vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar());
+        vfloat<K>::template scatter<1>(valid, tfar(), offset, ray.tfar);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
@@ -867,7 +867,7 @@ namespace embree
           const size_t k = __bscf(valid_bits);
           const size_t ofs = offset[k];
 
-          *tfar(ofs) = ray.tfar()[k];
+          *tfar(ofs) = ray.tfar[k];
         }
 #endif
       }
@@ -899,8 +899,8 @@ namespace embree
       dir_x  = (float*)&t.dir.x;
       dir_y  = (float*)&t.dir.y;
       dir_z  = (float*)&t.dir.z;
-      tfar   = (float*)&t.tfar;
       time   = (float*)&t.time;
+      tfar   = (float*)&t.tfar;
       mask   = (unsigned int*)&t.mask;
       id     = (unsigned int*)&t.id;
       flags  = (unsigned int*)&t.flags;
@@ -924,9 +924,9 @@ namespace embree
       ray.dir.x   = *(float* __restrict__)((char*)dir_x + offset);
       ray.dir.y   = *(float* __restrict__)((char*)dir_y + offset);
       ray.dir.z   = *(float* __restrict__)((char*)dir_z + offset);
-      ray.tfar()  = *(float* __restrict__)((char*)tfar + offset);
+      ray.tfar  = *(float* __restrict__)((char*)tfar + offset);
       ray.tnear() = tnear ? *(float* __restrict__)((char*)tnear + offset) : 0.0f;
-      ray.time    = time ? *(float* __restrict__)((char*)time + offset) : 0.0f;
+      ray.time()  = time ? *(float* __restrict__)((char*)time + offset) : 0.0f;
       ray.mask    = mask ? *(unsigned int* __restrict__)((char*)mask + offset) : -1;
       ray.id      = id ? *(unsigned int* __restrict__)((char*)id + offset) : -1;
       ray.flags   = flags ? *(unsigned int* __restrict__)((char*)flags + offset) : -1;
@@ -943,9 +943,9 @@ namespace embree
       ray.dir.x   = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_x + offset));
       ray.dir.y   = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_y + offset));
       ray.dir.z   = vfloat<K>::loadu(valid, (float* __restrict__)((char*)dir_z + offset));
-      ray.tfar()  = vfloat<K>::loadu(valid, (float* __restrict__)((char*)tfar + offset));
+      ray.tfar    = vfloat<K>::loadu(valid, (float* __restrict__)((char*)tfar + offset));
       ray.tnear() = tnear ? vfloat<K>::loadu(valid, (float* __restrict__)((char*)tnear + offset)) : 0.0f;
-      ray.time    = time ? vfloat<K>::loadu(valid, (float* __restrict__)((char*)time + offset)) : 0.0f;
+      ray.time()  = time ? vfloat<K>::loadu(valid, (float* __restrict__)((char*)time + offset)) : 0.0f;
       ray.mask    = mask ? vint<K>::loadu(valid, (const void* __restrict__)((char*)mask + offset)) : -1;
       ray.id      = id ? vint<K>::loadu(valid, (const void* __restrict__)((char*)id + offset)) : -1;
       ray.flags   = flags ? vint<K>::loadu(valid, (const void* __restrict__)((char*)flags + offset)) : -1;
@@ -966,7 +966,7 @@ namespace embree
     {
       if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
       {
-        *(float* __restrict__)((char*)tfar + offset) = ray.tfar();
+        *(float* __restrict__)((char*)tfar + offset) = ray.tfar;
 
         if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + offset) = ray.Ng.x;
         if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + offset) = ray.Ng.y;
@@ -981,7 +981,7 @@ namespace embree
 
     __forceinline void setHitByOffset(size_t offset, const Ray& ray)
     {
-      *(float* __restrict__)((char*)tfar + offset) = ray.tfar();
+      *(float* __restrict__)((char*)tfar + offset) = ray.tfar;
     }
 
     template<int K>
@@ -992,7 +992,7 @@ namespace embree
 
       if (likely(any(valid)))
       {
-        vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar());
+        vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar);
 
         if (likely(Ng_x)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_x + offset), ray.Ng.x);
         if (likely(Ng_y)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_y + offset), ray.Ng.y);
@@ -1009,10 +1009,10 @@ namespace embree
     __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= (ray.tfar() < 0.0f);
+      valid &= (ray.tfar < 0.0f);
 
       if (likely(any(valid)))
-        vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar());
+        vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar);
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -1051,18 +1051,18 @@ namespace embree
       ray.dir.x   = vfloat<K>::template gather<1>(valid, dir_x, offset);
       ray.dir.y   = vfloat<K>::template gather<1>(valid, dir_y, offset);
       ray.dir.z   = vfloat<K>::template gather<1>(valid, dir_z, offset);
-      ray.tfar()  = vfloat<K>::template gather<1>(valid, tfar, offset);
+      ray.tfar    = vfloat<K>::template gather<1>(valid, tfar, offset);
       ray.tnear() = tnear ? vfloat<K>::template gather<1>(valid, tnear, offset) : vfloat<K>(zero);
-      ray.time    = time ? vfloat<K>::template gather<1>(valid, time, offset) : vfloat<K>(zero);
+      ray.time()  = time ? vfloat<K>::template gather<1>(valid, time, offset) : vfloat<K>(zero);
       ray.mask    = mask ? vint<K>::template gather<1>(valid, (int*)mask, offset) : vint<K>(-1);
       ray.id      = id ? vint<K>::template gather<1>(valid, (int*)id, offset) : vint<K>(-1);
       ray.flags   = flags ? vint<K>::template gather<1>(valid, (int*)flags, offset) : vint<K>(-1);
 #else
       ray.org     = zero;
-      ray.dir     = zero;
       ray.tnear() = zero;
-      ray.tfar()  = zero;
-      ray.time    = zero;
+      ray.dir     = zero;
+      ray.tfar    = zero;
+      ray.time()  = zero;
       ray.mask    = zero;
       ray.id      = zero;
       ray.flags   = zero;
@@ -1079,9 +1079,9 @@ namespace embree
           ray.dir.x[k]   = *(float* __restrict__)((char*)dir_x + ofs);
           ray.dir.y[k]   = *(float* __restrict__)((char*)dir_y + ofs);
           ray.dir.z[k]   = *(float* __restrict__)((char*)dir_z + ofs);
-          ray.tfar()[k]  = *(float* __restrict__)((char*)tfar + ofs);
+          ray.tfar[k]  = *(float* __restrict__)((char*)tfar + ofs);
           ray.tnear()[k] = tnear ? *(float* __restrict__)((char*)tnear + ofs) : 0.0f;
-          ray.time[k]    = time ? *(float* __restrict__)((char*)time + ofs) : 0.0f;
+          ray.time()[k]  = time ? *(float* __restrict__)((char*)time + ofs) : 0.0f;
           ray.mask[k]    = mask ? *(unsigned int* __restrict__)((char*)mask + ofs) : -1;
           ray.id[k]      = id ? *(unsigned int* __restrict__)((char*)id + ofs) : -1;
           ray.flags[k]   = flags ? *(unsigned int* __restrict__)((char*)flags + ofs) : -1;
@@ -1101,7 +1101,7 @@ namespace embree
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
-        vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar());
+        vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar);
 
         if (likely(Ng_x)) vfloat<K>::template scatter<1>(valid, Ng_x, offset, ray.Ng.x);
         if (likely(Ng_y)) vfloat<K>::template scatter<1>(valid, Ng_y, offset, ray.Ng.y);
@@ -1118,7 +1118,7 @@ namespace embree
           const size_t k = __bscf(valid_bits);
           const size_t ofs = offset[k];
 
-          *(float* __restrict__)((char*)tfar + ofs) = ray.tfar()[k];
+          *(float* __restrict__)((char*)tfar + ofs) = ray.tfar[k];
 
           if (likely(Ng_x)) *(float* __restrict__)((char*)Ng_x + ofs) = ray.Ng.x[k];
           if (likely(Ng_y)) *(float* __restrict__)((char*)Ng_y + ofs) = ray.Ng.y[k];
@@ -1137,12 +1137,12 @@ namespace embree
     __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= (ray.tfar() < 0.0f);
+      valid &= (ray.tfar < 0.0f);
 
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
-        vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar());
+        vfloat<K>::template scatter<1>(valid, tfar, offset, ray.tfar);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
@@ -1150,7 +1150,7 @@ namespace embree
           const size_t k = __bscf(valid_bits);
           const size_t ofs = offset[k];
 
-          *(float* __restrict__)((char*)tfar + ofs) = ray.tfar()[k];
+          *(float* __restrict__)((char*)tfar + ofs) = ray.tfar[k];
         }
 #endif
       }
@@ -1165,11 +1165,10 @@ namespace embree
     float* __restrict__ dir_x; //!< x coordinate of ray direction
     float* __restrict__ dir_y; //!< y coordinate of ray direction
     float* __restrict__ dir_z; //!< z coordinate of ray direction
-    float* __restrict__ tfar;  //!< end of ray segment (set to hit distance)
-
     float* __restrict__ time;         //!< time of this ray for motion blur (optional)
-    unsigned int* __restrict__ mask;  //!< used to mask out objects during traversal (optional)
 
+    float* __restrict__ tfar;  //!< end of ray segment (set to hit distance)
+    unsigned int* __restrict__ mask;  //!< used to mask out objects during traversal (optional)
     unsigned int* __restrict__ id;    //!< ray ID
     unsigned int* __restrict__ flags; //!< ray flags
 
@@ -1216,8 +1215,7 @@ namespace embree
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
-        vfloat<K>::template scatter<1>(valid, &ptr->tfar(), offset, ray.tfar());
-
+        vfloat<K>::template scatter<1>(valid, &ptr->tfar, offset, ray.tfar);
         vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.x, offset, ray.Ng.x);
         vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.y, offset, ray.Ng.y);
         vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.z, offset, ray.Ng.z);
@@ -1232,8 +1230,7 @@ namespace embree
         {
           const size_t k = __bscf(valid_bits);
           RayHit* __restrict__ ray_k = (RayHit*)((char*)ptr + offset[k]);
-
-          ray_k->tfar() = ray.tfar()[k];
+          ray_k->tfar   = ray.tfar[k];
           ray_k->Ng.x   = ray.Ng.x[k];
           ray_k->Ng.y   = ray.Ng.y[k];
           ray_k->Ng.z   = ray.Ng.z[k];
@@ -1251,20 +1248,19 @@ namespace embree
     __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= (ray.tfar() < 0.0f);
+      valid &= (ray.tfar < 0.0f);
 
       if (likely(any(valid)))
       {
 #if defined(__AVX512F__)
-        vfloat<K>::template scatter<1>(valid, &ptr->tfar(), offset, ray.tfar());
+        vfloat<K>::template scatter<1>(valid, &ptr->tfar, offset, ray.tfar);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
           const size_t k = __bscf(valid_bits);
           Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
-
-          ray_k->tfar() = ray.tfar()[k];
+          ray_k->tfar = ray.tfar[k];
         }
 #endif
       }
@@ -1292,16 +1288,16 @@ namespace embree
     const vfloat4 b2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->dir);
     const vfloat4 b3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->dir);
 
-    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
+    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.time());
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->time);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->time);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->time);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->time);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tfar);
 
     vfloat4 maskf, idf, flagsf;
-    transpose(c0,c1,c2,c3, ray.time, maskf, idf, flagsf);
+    transpose(c0,c1,c2,c3, ray.tfar, maskf, idf, flagsf);
     ray.mask  = asInt(maskf);
     ray.id    = asInt(idf);
     ray.flags = asInt(flagsf);
@@ -1315,7 +1311,7 @@ namespace embree
   {
     Ray8 ray;
 
-    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
+    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, time */
     const vfloat8 ab0 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[0]))->org);
     const vfloat8 ab1 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[1]))->org);
     const vfloat8 ab2 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[2]))->org);
@@ -1325,20 +1321,20 @@ namespace embree
     const vfloat8 ab6 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[6]))->org);
     const vfloat8 ab7 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[7]))->org);
 
-    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.time());
 
     /* load and transpose: time, mask, id, flags */
-    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->time);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->time);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->time);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->time);
-    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->time);
-    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->time);
-    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->time);
-    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->time);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tfar);
+    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->tfar);
+    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->tfar);
+    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->tfar);
+    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->tfar);
 
     vfloat8 maskf, idf, flagsf;
-    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.time, maskf, idf, flagsf);
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tfar, maskf, idf, flagsf);
     ray.mask  = asInt(maskf);
     ray.id    = asInt(idf);
     ray.flags = asInt(flagsf);
@@ -1353,7 +1349,7 @@ namespace embree
   {
     Ray16 ray;
 
-    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
+    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, time */
     const vfloat8 ab0  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 0]))->org);
     const vfloat8 ab1  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 1]))->org);
     const vfloat8 ab2  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 2]))->org);
@@ -1372,29 +1368,29 @@ namespace embree
     const vfloat8 ab15 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[15]))->org);
 
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
-              ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
+              ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.time());
 
     /* load and transpose: time, mask, id, flags */
-    const vfloat4 c0  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 0]))->time);
-    const vfloat4 c1  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 1]))->time);
-    const vfloat4 c2  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 2]))->time);
-    const vfloat4 c3  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 3]))->time);
-    const vfloat4 c4  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 4]))->time);
-    const vfloat4 c5  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 5]))->time);
-    const vfloat4 c6  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 6]))->time);
-    const vfloat4 c7  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 7]))->time);
-    const vfloat4 c8  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 8]))->time);
-    const vfloat4 c9  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 9]))->time);
-    const vfloat4 c10 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[10]))->time);
-    const vfloat4 c11 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[11]))->time);
-    const vfloat4 c12 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[12]))->time);
-    const vfloat4 c13 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[13]))->time);
-    const vfloat4 c14 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[14]))->time);
-    const vfloat4 c15 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[15]))->time);
+    const vfloat4 c0  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 0]))->tfar);
+    const vfloat4 c1  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 1]))->tfar);
+    const vfloat4 c2  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 2]))->tfar);
+    const vfloat4 c3  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 3]))->tfar);
+    const vfloat4 c4  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 4]))->tfar);
+    const vfloat4 c5  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 5]))->tfar);
+    const vfloat4 c6  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 6]))->tfar);
+    const vfloat4 c7  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 7]))->tfar);
+    const vfloat4 c8  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 8]))->tfar);
+    const vfloat4 c9  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 9]))->tfar);
+    const vfloat4 c10 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[10]))->tfar);
+    const vfloat4 c11 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[11]))->tfar);
+    const vfloat4 c12 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[12]))->tfar);
+    const vfloat4 c13 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[13]))->tfar);
+    const vfloat4 c14 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[14]))->tfar);
+    const vfloat4 c15 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[15]))->tfar);
 
     vfloat16 maskf, idf, flagsf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
-              ray.time, maskf, idf, flagsf);
+              ray.tfar, maskf, idf, flagsf);
     ray.mask  = asInt(maskf);
     ray.id    = asInt(idf);
     ray.flags = asInt(flagsf);
@@ -1438,8 +1434,7 @@ namespace embree
           const size_t k = __bscf(valid_bits);
           RayHit* __restrict__ ray_k = (RayHit*)ptr[index[k]];
 
-          ray_k->tfar() = ray.tfar()[k];
-
+          ray_k->tfar = ray.tfar[k];
           ray_k->Ng.x   = ray.Ng.x[k];
           ray_k->Ng.y   = ray.Ng.y[k];
           ray_k->Ng.z   = ray.Ng.z[k];
@@ -1456,7 +1451,7 @@ namespace embree
     __forceinline void setHitByIndex(const vbool<K>& valid_i, const vint<K>& index, const RayK<K>& ray)
     {
       vbool<K> valid = valid_i;
-      valid &= (ray.tfar() < 0.0f);
+      valid &= (ray.tfar < 0.0f);
 
       if (likely(any(valid)))
       {
@@ -1466,7 +1461,7 @@ namespace embree
           const size_t k = __bscf(valid_bits);
           Ray* __restrict__ ray_k = ptr[index[k]];
 
-          ray_k->tfar() = ray.tfar()[k];
+          ray_k->tfar = ray.tfar[k];
         }
       }
     }
@@ -1493,16 +1488,16 @@ namespace embree
     const vfloat4 b2 = vfloat4::loadu(&ptr[index[2]]->dir);
     const vfloat4 b3 = vfloat4::loadu(&ptr[index[3]]->dir);
 
-    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
+    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.time());
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->time);
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->time);
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->time);
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->time);
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->tfar);
 
     vfloat4 maskf, idf, flagsf;
-    transpose(c0,c1,c2,c3, ray.time, maskf, idf, flagsf);
+    transpose(c0,c1,c2,c3, ray.tfar, maskf, idf, flagsf);
     ray.mask  = asInt(maskf);
     ray.id    = asInt(idf);
     ray.flags = asInt(flagsf);
@@ -1526,20 +1521,20 @@ namespace embree
     const vfloat8 ab6 = vfloat8::loadu(&ptr[index[6]]->org);
     const vfloat8 ab7 = vfloat8::loadu(&ptr[index[7]]->org);
 
-    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.time());
 
     /* load and transpose: time, mask, id, flags */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->time);
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->time);
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->time);
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->time);
-    const vfloat4 c4 = vfloat4::loadu(&ptr[index[4]]->time);
-    const vfloat4 c5 = vfloat4::loadu(&ptr[index[5]]->time);
-    const vfloat4 c6 = vfloat4::loadu(&ptr[index[6]]->time);
-    const vfloat4 c7 = vfloat4::loadu(&ptr[index[7]]->time);
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index[0]]->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index[1]]->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index[2]]->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index[3]]->tfar);
+    const vfloat4 c4 = vfloat4::loadu(&ptr[index[4]]->tfar);
+    const vfloat4 c5 = vfloat4::loadu(&ptr[index[5]]->tfar);
+    const vfloat4 c6 = vfloat4::loadu(&ptr[index[6]]->tfar);
+    const vfloat4 c7 = vfloat4::loadu(&ptr[index[7]]->tfar);
 
     vfloat8 maskf, idf, flagsf;
-    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.time, maskf, idf, flagsf);
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tfar, maskf, idf, flagsf);
     ray.mask  = asInt(maskf);
     ray.id    = asInt(idf);
     ray.flags = asInt(flagsf);
@@ -1554,7 +1549,7 @@ namespace embree
   {
     Ray16 ray;
 
-    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
+    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, time */
     const vfloat8 ab0  = vfloat8::loadu(&ptr[index[0]]->org);
     const vfloat8 ab1  = vfloat8::loadu(&ptr[index[1]]->org);
     const vfloat8 ab2  = vfloat8::loadu(&ptr[index[2]]->org);
@@ -1573,29 +1568,29 @@ namespace embree
     const vfloat8 ab15 = vfloat8::loadu(&ptr[index[15]]->org);
 
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
-              ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar());
+              ray.org.x, ray.org.y, ray.org.z, ray.tnear(), ray.dir.x, ray.dir.y, ray.dir.z, ray.time());
 
     /* load and transpose: time, mask, id, flags */
-    const vfloat4 c0  = vfloat4::loadu(&ptr[index[0]]->time);
-    const vfloat4 c1  = vfloat4::loadu(&ptr[index[1]]->time);
-    const vfloat4 c2  = vfloat4::loadu(&ptr[index[2]]->time);
-    const vfloat4 c3  = vfloat4::loadu(&ptr[index[3]]->time);
-    const vfloat4 c4  = vfloat4::loadu(&ptr[index[4]]->time);
-    const vfloat4 c5  = vfloat4::loadu(&ptr[index[5]]->time);
-    const vfloat4 c6  = vfloat4::loadu(&ptr[index[6]]->time);
-    const vfloat4 c7  = vfloat4::loadu(&ptr[index[7]]->time);
-    const vfloat4 c8  = vfloat4::loadu(&ptr[index[8]]->time);
-    const vfloat4 c9  = vfloat4::loadu(&ptr[index[9]]->time);
-    const vfloat4 c10 = vfloat4::loadu(&ptr[index[10]]->time);
-    const vfloat4 c11 = vfloat4::loadu(&ptr[index[11]]->time);
-    const vfloat4 c12 = vfloat4::loadu(&ptr[index[12]]->time);
-    const vfloat4 c13 = vfloat4::loadu(&ptr[index[13]]->time);
-    const vfloat4 c14 = vfloat4::loadu(&ptr[index[14]]->time);
-    const vfloat4 c15 = vfloat4::loadu(&ptr[index[15]]->time);
+    const vfloat4 c0  = vfloat4::loadu(&ptr[index[0]]->tfar);
+    const vfloat4 c1  = vfloat4::loadu(&ptr[index[1]]->tfar);
+    const vfloat4 c2  = vfloat4::loadu(&ptr[index[2]]->tfar);
+    const vfloat4 c3  = vfloat4::loadu(&ptr[index[3]]->tfar);
+    const vfloat4 c4  = vfloat4::loadu(&ptr[index[4]]->tfar);
+    const vfloat4 c5  = vfloat4::loadu(&ptr[index[5]]->tfar);
+    const vfloat4 c6  = vfloat4::loadu(&ptr[index[6]]->tfar);
+    const vfloat4 c7  = vfloat4::loadu(&ptr[index[7]]->tfar);
+    const vfloat4 c8  = vfloat4::loadu(&ptr[index[8]]->tfar);
+    const vfloat4 c9  = vfloat4::loadu(&ptr[index[9]]->tfar);
+    const vfloat4 c10 = vfloat4::loadu(&ptr[index[10]]->tfar);
+    const vfloat4 c11 = vfloat4::loadu(&ptr[index[11]]->tfar);
+    const vfloat4 c12 = vfloat4::loadu(&ptr[index[12]]->tfar);
+    const vfloat4 c13 = vfloat4::loadu(&ptr[index[13]]->tfar);
+    const vfloat4 c14 = vfloat4::loadu(&ptr[index[14]]->tfar);
+    const vfloat4 c15 = vfloat4::loadu(&ptr[index[15]]->tfar);
 
     vfloat16 maskf, idf, flagsf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
-              ray.time, maskf, idf, flagsf);
+              ray.tfar, maskf, idf, flagsf);
 
     ray.mask  = asInt(maskf);
     ray.id    = asInt(idf);

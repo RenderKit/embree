@@ -104,7 +104,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
-        valid &= (absDen*vfloat<M>(ray.tnear()) < T) & (T <= absDen*vfloat<M>(ray.tfar()));
+        valid &= (absDen*vfloat<M>(ray.tnear()) < T) & (T <= absDen*vfloat<M>(ray.tfar));
         if (likely(none(valid))) return false;
         
         /* update hit information */
@@ -280,7 +280,7 @@ namespace embree
         const Vec3vf<K> e1 = tri_v0-tri_v1;
         const Vec3vf<K> e2 = tri_v2-tri_v0;
         const Vec3vf<K> Ng = cross(e2,e1);
-        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar(),tri_v0,e1,e2,Ng,epilog);
+        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,e1,e2,Ng,epilog);
       }
 
       /*! Intersects K rays with one of M triangles. */
@@ -293,7 +293,7 @@ namespace embree
                                             const Epilog& epilog) const
       {
         const Vec3vf<K> tri_Ng = cross(tri_e2,tri_e1);
-        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar(),tri_v0,tri_e1,tri_e2,tri_Ng,epilog);
+        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,tri_e1,tri_e2,tri_Ng,epilog);
       }
       
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
@@ -330,7 +330,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
-        valid &= (absDen*vfloat<M>(ray.tnear()[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar()[k]));
+        valid &= (absDen*vfloat<M>(ray.tnear()[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar[k]));
         if (likely(none(valid))) return false;
         
         /* calculate hit information */

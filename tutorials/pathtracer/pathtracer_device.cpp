@@ -1056,7 +1056,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       else
       {
         ISPCTriangle* tri = &mesh->triangles[dg.primID];
-        float f = mesh->numTimeSteps*ray.time;
+        float f = mesh->numTimeSteps*ray.time();
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
         float t0 = 1.0f-t1;
@@ -1117,7 +1117,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       else
       {
         ISPCQuad* quad = &mesh->quads[dg.primID];
-        float f = mesh->numTimeSteps*ray.time;
+        float f = mesh->numTimeSteps*ray.time();
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
         float t0 = 1.0f-t1;
@@ -1206,7 +1206,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
+        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
       }
     }
   }
@@ -1237,7 +1237,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
-  dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
+  dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
 
   int materialID = 0;
   unsigned int instID = dg.instID; {
@@ -1261,8 +1261,8 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
 
       /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
+      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
       dg.Ng = xfmVector(space,dg.Ng);
       dg.Ns = xfmVector(space,dg.Ns);
     }
@@ -1294,7 +1294,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
 
   /* compute differential geometry */
   //const float tfar          = RTCHitN_t(hit,N,rayID);
-  const float tfar          = ray->tfar();
+  const float tfar          = ray->tfar;
   DifferentialGeometry dg;
   dg.instID = RTCHitN_instID(hit,N,rayID,0);
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
@@ -1321,7 +1321,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
-    ray->tfar()   = tfar;
+    ray->tfar   = tfar;
     // ray->instID = dg.instID;
     // ray->geomID = dg.geomID;
     // ray->primID = dg.primID;    
@@ -1368,7 +1368,7 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args)
 
   /* compute differential geometry */
   //const float tfar          = RTCHitN_t(hit,N,rayID);
-  const float tfar          = ray->tfar();
+  const float tfar          = ray->tfar;
 
   DifferentialGeometry dg;
   dg.instID = RTCHitN_instID(hit,N,rayID,0);
@@ -1492,7 +1492,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     dg.primID = ray.primID;
     dg.u = ray.u;
     dg.v = ray.v;
-    dg.P  = ray.org+ray.tfar()*ray.dir;
+    dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = ray.Ng;
     dg.Ns = Ns;
     int materialID = postIntersect(ray,dg);
@@ -1503,7 +1503,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     Vec3fa c = Vec3fa(1.0f);
     const Vec3fa transmission = medium.transmission;
     if (ne(transmission,Vec3fa(1.0f)))
-      c = c * pow(transmission,ray.tfar());
+      c = c * pow(transmission,ray.tfar);
 
     /* calculate BRDF */
     BRDF brdf;

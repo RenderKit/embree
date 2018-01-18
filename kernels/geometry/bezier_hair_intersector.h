@@ -101,7 +101,7 @@ namespace embree
         const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
-        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar()));
+        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
         valid &= t > ray.tnear()+2.0f*r*depth_scale; // ignore self intersections
 
         /* update hit information */
@@ -132,7 +132,7 @@ namespace embree
             const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
             const vfloatx r = p.w;
             const vfloatx r2 = r*r;
-            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar()));
+            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
             valid &= t > ray.tnear()+2.0f*r*depth_scale; // ignore self intersections
 
              /* update hit information */
@@ -204,7 +204,7 @@ namespace embree
           const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
           const vfloatx r = p.w;
           const vfloatx r2 = r*r;
-          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar [k]));
+          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar[k]));
           valid &= t > ray.tnear[k]+2.0f*r*depth_scale[k]; // ignore self intersections
           if (likely(none(valid))) continue;
         

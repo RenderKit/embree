@@ -87,7 +87,7 @@ namespace embree
         Primitive* prim = (Primitive*) prim_i;
         GridSOA* grid = nullptr;
         grid = (GridSOA*) prim->root_ref.get();
-        pre.itime = getTimeSegment(ray.time, float(grid->time_steps-1), pre.ftime);
+        pre.itime = getTimeSegment(ray.time(), float(grid->time_steps-1), pre.ftime);
         lazy_node = grid->root(pre.itime);
         pre.grid = grid;
         return false;

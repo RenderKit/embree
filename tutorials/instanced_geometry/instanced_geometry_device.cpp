@@ -230,14 +230,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* initialize shadow ray */
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.tfar() >= 0.0f)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
@@ -314,9 +314,9 @@ void renderTileStandardStream(int taskIndex,
     Ray& primary = primary_stream[N];
     mask = 1; { // invalidates inactive rays
       primary.tnear() = mask ? 0.0f         : (float)(pos_inf);
-      primary.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(primary, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.tnear(), primary.tfar());
+    init_Ray(primary, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.tnear(), primary.tfar);
 
     N++;
     RayStats_addRay(stats);
@@ -342,7 +342,7 @@ void renderTileStandardStream(int taskIndex,
     Ray& shadow = shadow_stream[N];
     {
       shadow.tnear() = (float)(pos_inf);
-      shadow.tfar()  = (float)(neg_inf);
+      shadow.tfar  = (float)(neg_inf);
     }
 
     /* ignore invalid rays */
@@ -370,9 +370,9 @@ void renderTileStandardStream(int taskIndex,
     /* initialize shadow ray tnear/tfar */
     bool mask = 1; {
       shadow.tnear() = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(shadow, primary.org + primary.tfar()*primary.dir, neg(lightDir), shadow.tnear(), shadow.tfar());
+    init_Ray(shadow, primary.org + primary.tfar*primary.dir, neg(lightDir), shadow.tnear(), shadow.tfar);
 
     RayStats_addShadowRay(stats);
   }
@@ -409,7 +409,7 @@ void renderTileStandardStream(int taskIndex,
 
     /* add light contrinution */
     Ray& shadow = shadow_stream[N];
-    if (shadow.tfar() >= 0.0f) {
+    if (shadow.tfar >= 0.0f) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
     }
   }

@@ -212,7 +212,7 @@ namespace embree
 #endif
 
       RayK<K>* ray = (RayK<K>*) args->ray;
-      ray->tfar() = select(valid_o, vfloat<K>(neg_inf), ray->tfar());
+      ray->tfar = select(valid_o, vfloat<K>(neg_inf), ray->tfar);
       return valid_o;
     }
 

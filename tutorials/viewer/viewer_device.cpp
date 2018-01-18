@@ -220,8 +220,8 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
 
       /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
+      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
       dg.Ng = xfmVector(space,dg.Ng);
       dg.Ns = xfmVector(space,dg.Ns);
     }
@@ -266,7 +266,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   dg.primID = ray.primID;
   dg.u = ray.u;
   dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar()*ray.dir;
+  dg.P  = ray.org+ray.tfar*ray.dir;
   dg.Ng = ray.Ng;
   dg.Ns = ray.Ng;
 

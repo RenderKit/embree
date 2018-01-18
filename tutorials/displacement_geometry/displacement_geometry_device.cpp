@@ -217,7 +217,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     Vec3fa Ng = normalize(ray.Ng);
 #if ENABLE_SMOOTH_NORMALS
-    Vec3fa P = ray.org + ray.tfar()*ray.dir;
+    Vec3fa P = ray.org + ray.tfar*ray.dir;
     if (ray.geomID > 0) {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
@@ -231,14 +231,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 #endif
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.tfar() >= 0.0f)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-(dot(lightDir,Ng)),0.0f,1.0f);
   }
   return color;

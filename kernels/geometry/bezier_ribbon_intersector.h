@@ -193,7 +193,7 @@ namespace embree
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
-        return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar(),
+        return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar,
                                                 ray_space,depth_scale,
                                                 v0,v1,v2,v3,N,
                                                 epilog);
@@ -226,7 +226,7 @@ namespace embree
       {
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar()[k],
+        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
                                                 ray_space[k],depth_scale[k],
                                                 v0,v1,v2,v3,N,
                                                 epilog);

@@ -348,7 +348,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* sample directional light */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(Vec3fa(g_dirlight_direction)), eps, inf, time);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(Vec3fa(g_dirlight_direction)), eps, inf, time);
     Vec3fa T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
@@ -365,22 +365,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate secondary ray and offset it out of the hair */
     float sign = dot(Vec3fa(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
-    ray.org = ray.org + ray.tfar()*ray.dir + sign*eps*brdf.dz;
+    ray.org = ray.org + ray.tfar*ray.dir + sign*eps*brdf.dz;
     ray.dir = Vec3fa(wi);
     ray.tnear() = 0.001f;
-    ray.tfar() = inf;
+    ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = time;
+    ray.time() = time;
     weight = weight * c/wi.w;
 
 #else
 
     /* continue with transparency ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.tnear() = 1.001f*ray.tfar();
-    ray.tfar() = inf;
+    ray.tnear() = 1.001f*ray.tfar;
+    ray.tfar = inf;
     weight *= brdf.Kt;
 
 #endif

@@ -58,9 +58,9 @@ sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_]*\)[ ]*;/alignedFree(\1);/g' $2
 
 # embree ray layout
 sed -i.backup  's/[.]tnear/.tnear()/g' $2
-sed -i.backup  's/[.]tfar/.tfar()/g' $2
+sed -i.backup  's/[.]time/.time()/g' $2
 sed -i.backup  's/[>]tnear/>tnear()/g' $2
-sed -i.backup  's/[>]tfar/>tfar()/g' $2
+sed -i.backup  's/ray->time/ray->time()/g' $2
 
 
 # system library

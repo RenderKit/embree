@@ -717,14 +717,14 @@ namespace embree
             const int slot = __bsf(movemask(xfm_hit));
             tray = cacheEntry[slot];
             ray.org = Vec3fa(tray.org_xyz,ray.tnear());
-            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar());
+            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
           } 
           else 
 #endif
             //if (likely(!node->identity)) 
           {
             const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
-            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar());
+            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar);
             new (&tray) TravRayBase<N,Nx,robust>(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
@@ -745,7 +745,7 @@ namespace embree
           //context->geomID_to_instID = nullptr;
           tray = (TravRayBase<N,Nx,robust>&)topRay;
           ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
-          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar());
+          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar);
           if (ray.geomID == -1) {
             ray.instID = context->instID;
             ray.geomID = context->geomID;
@@ -784,14 +784,14 @@ namespace embree
             const int slot = __bsf(movemask(xfm_hit));
             tray = cacheEntry[slot];
             ray.org = Vec3fa(tray.org_xyz,ray.tnear());
-            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar());
+            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
           } 
           else 
 #endif
             //if (likely(!node->identity)) 
           {
             const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
-            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar());
+            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar);
             new (&tray) TravRayBase<N,Nx,robust>(ray_org, ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
@@ -812,7 +812,7 @@ namespace embree
           //context->geomID_to_instID = nullptr;
           tray = (TravRayBase<N,Nx,robust>&)topRay;
           ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
-          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar());
+          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar);
           if (ray.geomID == -1) {
             ray.instID = context->instID;
             ray.geomID = context->geomID;
@@ -846,14 +846,14 @@ namespace embree
             const int slot = __bsf(movemask(xfm_hit));
             tray = cacheEntry[slot];
             ray.org = Vec3fa(tray.org_xyz,ray.tnear());
-            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar());
+            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
           }
           else
 #endif
             //if (likely(!node->identity))
           {
             const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
-            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar());
+            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar);
             new (&tray) TravRayBase<N,Nx,robust>(ray_org, ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
@@ -874,7 +874,7 @@ namespace embree
           //context->geomID_to_instID = nullptr;
           tray = (TravRayBase<N,Nx,robust>&)topRay;
           ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
-          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar());
+          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar);
           return true;
         }
 

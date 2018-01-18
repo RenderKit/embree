@@ -142,7 +142,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
-        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time());
         if (likely(geom->subtype == FLAT_CURVE))
           pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
@@ -153,7 +153,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
-        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time());
         if (likely(geom->subtype == FLAT_CURVE))
           return pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
@@ -184,7 +184,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());        
-        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time()[k]);
         if (likely(geom->subtype == FLAT_CURVE))
           pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else 
@@ -201,7 +201,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
-        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time()[k]);
         if (likely(geom->subtype == FLAT_CURVE))
           return pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else

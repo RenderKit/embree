@@ -49,17 +49,17 @@ namespace embree
       Ray& ray = *(Ray*)args->rayhit;
       
       const AffineSpace3fa world2local = 
-        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time());
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
-      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar);      
       user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.intersect((RTCRayHit&)ray,&context);
       user_context->instID[0] = -1;
       ray.org = ray_org;
-      ray.dir = Vec3fa(ray_dir,ray.tfar());
+      ray.dir = Vec3fa(ray_dir,ray.tfar);
     }
     
     __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
@@ -69,17 +69,17 @@ namespace embree
       RayHit& ray = *(RayHit*)args->ray;
       
       const AffineSpace3fa world2local = 
-        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time());
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
-      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar);
       user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
       user_context->instID[0] = -1;
       ray.org = ray_org;
-      ray.dir = Vec3fa(ray_dir,ray.tfar());
+      ray.dir = Vec3fa(ray_dir,ray.tfar);
     }
 
     template<int K>
@@ -111,7 +111,7 @@ namespace embree
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
-      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time);
+      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time());
 
       const Vec3vf<N> ray_org = ray.org;
       const Vec3vf<N> ray_dir = ray.dir;
@@ -136,7 +136,7 @@ namespace embree
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
-      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time);
+      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time());
 
       const Vec3vf<N> ray_org = ray.org;
       const Vec3vf<N> ray_dir = ray.dir;

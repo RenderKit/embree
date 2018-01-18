@@ -54,7 +54,7 @@ namespace embree
         for (size_t i = 0; i < numPackets; i++)
         {
           const vfloat<K> tnear = inputPackets[i]->tnear();
-          const vfloat<K> tfar  = inputPackets[i]->tfar();
+          const vfloat<K> tfar  = inputPackets[i]->tfar;
           vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
