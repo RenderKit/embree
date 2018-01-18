@@ -592,9 +592,9 @@ namespace embree
     __forceinline float* dir_x(size_t offset = 0) { return (float*)&ptr[4*4*N+offset]; }; //!< x coordinate of ray direction
     __forceinline float* dir_y(size_t offset = 0) { return (float*)&ptr[5*4*N+offset]; }; //!< y coordinate of ray direction
     __forceinline float* dir_z(size_t offset = 0) { return (float*)&ptr[6*4*N+offset]; }; //!< z coordinate of ray direction
-    __forceinline float* time(size_t offset = 0) { return (float*)&ptr[8*4*N+offset]; };  //!< time of this ray for motion blur
+    __forceinline float* time(size_t offset = 0) { return (float*)&ptr[7*4*N+offset]; };  //!< time of this ray for motion blur
 
-    __forceinline float* tfar (size_t offset = 0) { return (float*)&ptr[7*4*N+offset]; }; //!< end of ray segment (set to hit distance)
+    __forceinline float* tfar (size_t offset = 0) { return (float*)&ptr[8*4*N+offset]; }; //!< end of ray segment (set to hit distance)
     __forceinline int*   mask(size_t offset = 0) { return (int*)  &ptr[9*4*N+offset]; };  //!< used to mask out objects during traversal (optional)
     __forceinline int*   id   (size_t offset = 0) { return (int*)&ptr[10*4*N+offset]; };  //!< id
     __forceinline int*   flags(size_t offset = 0) { return (int*)&ptr[11*4*N+offset]; };  //!< flags

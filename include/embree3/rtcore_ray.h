@@ -281,9 +281,9 @@ struct RTCRayNt
   float dir_x[N];
   float dir_y[N];
   float dir_z[N];
-  float tfar[N];
 
   float time[N];
+  float tfar[N];
   unsigned mask[N];
   
   unsigned int id[N];

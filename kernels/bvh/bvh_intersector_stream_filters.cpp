@@ -451,7 +451,6 @@ namespace embree
           {
             const size_t offset = j * sizeof(float);
             vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(int(N));
-
             RayTypeK<VSIZEX, intersect> ray = rayN.getRayByOffset(valid, offset);
             valid &= ray.tnear() <= ray.tfar;
 

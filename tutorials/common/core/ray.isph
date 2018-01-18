@@ -23,8 +23,8 @@ struct Ray1
   uniform Vec3f org;     //!< Ray origin
   uniform float tnear;   //!< Start of ray segment
   uniform Vec3f dir;     //!< Ray direction
-  uniform float tfar;    //!< End of ray segment
   uniform float time;    //!< Time of this ray for motion blur.
+  uniform float tfar;    //!< End of ray segment
   uniform int mask;      //!< used to mask out objects during traversal
   uniform int id;        //!< ray ID
   uniform int flags;     //!< ray flags
@@ -50,8 +50,8 @@ struct Ray
   Vec3f org;     //!< Ray origin
   float tnear;   //!< Start of ray segment
   Vec3f dir;     //!< Ray direction
-  float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
+  float tfar;    //!< End of ray segment
   int mask;      //!< used to mask out objects during traversal
   int id;        //!< ray ID
   int flags;     //!< ray flags
@@ -95,10 +95,10 @@ inline Ray make_Ray(const Vec3f org,
 {
   Ray ray;
   ray.org   = org;
-  ray.dir   = dir;
   ray.tnear = tnear;
-  ray.tfar  = tfar;
+  ray.dir   = dir;  
   ray.time  = time;
+  ray.tfar  = tfar;
   ray.mask  = -1;
   ray.geomID = geomID;
   ray.primID = primID;
@@ -118,10 +118,10 @@ inline void init_Ray(Ray &ray,
                      const int instID = -1)
 {
   ray.org   = org;
-  ray.dir   = dir;
   ray.tnear = tnear;
-  ray.tfar  = tfar;
+  ray.dir   = dir;
   ray.time  = time;
+  ray.tfar  = tfar;
   ray.mask  = -1;
   ray.geomID = geomID;
   ray.primID = primID;
