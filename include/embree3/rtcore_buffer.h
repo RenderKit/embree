@@ -28,6 +28,7 @@ enum RTCBufferType
   RTC_BUFFER_TYPE_INDEX            = 0,
   RTC_BUFFER_TYPE_VERTEX           = 1,
   RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE = 2,
+  RTC_BUFFER_TYPE_NORMAL           = 3,
 
   RTC_BUFFER_TYPE_FACE                 = 16,
   RTC_BUFFER_TYPE_LEVEL                = 17,

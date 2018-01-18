@@ -177,14 +177,19 @@ namespace embree
   void SceneGraph::HairSetNode::verify() const
   {
     const size_t N = numVertices();
+
     for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+
+    for (const auto& n : normals) 
+      if (n.size() != N) 
+        THROW_RUNTIME_ERROR("incompatible normal array size");
+
     for (auto hair : hairs)
       if (size_t(hair.vertex) >= N)
-      {
         THROW_RUNTIME_ERROR("invalid hair");
-      }
+
     if (flags.size() != 0 && flags.size() != hairs.size())
       THROW_RUNTIME_ERROR("size of flags array does not match size of curve array");
   }

@@ -1075,6 +1075,15 @@ namespace embree
       }
     }
 
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++) {
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+        for (auto& n : mesh->normals[i]) n = normalize(n);
+      }
+    } else {
+      mesh->normals.push_back(loadVec4fArray(xml->childOpt("normals")));
+    }
+
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
