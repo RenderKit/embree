@@ -194,7 +194,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
         if (PrimitiveIntersector1::occluded(pre, ray, context, prim, num, lazy_node)) {
-          ray.tfar() = neg_inf;
+          ray.dir = Vec3fa(ray.dir,(float)neg_inf); // to avoid LSF issues
           break;
         }
 
