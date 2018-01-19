@@ -415,8 +415,11 @@ namespace embree
           intersect(curve2a);
         }
 
-        __forceinline void intersect_uv(const OrientedBezierCurve2f& curve2, const Vec2f& du, const Vec2f& dv)
+        __forceinline void intersect_uv(const OrientedBezierCurve2f& curve2)
         {
+          const Vec2f du = normalize(curve2.axis_u());
+          const Vec2f dv = normalize(curve2.axis_v());
+          
           DBG(PRINT(du));
           DBG(PRINT(dv));
           const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
@@ -493,13 +496,11 @@ namespace embree
           DBG(std::cout << std::endl << std::endl);
           DBG(std::cout << "intersect" << std::endl);
           DBG(PRINT(curve2));
-          Vec2f du = curve2.axis_u();
-          Vec2f dv = curve2.axis_v();
           //PRINT(du);
           //PRINT(dv);
           //PRINT(length(du));
           //PRINT(length(dv));
-          intersect_uv(curve2,normalize(du),normalize(dv));
+          intersect_uv(curve2);
           //if (length(du) > length(dv)) intersect_u(curve2,normalize(du));
           //else                         intersect_v(curve2,normalize(dv));
         }
@@ -576,6 +577,81 @@ namespace embree
           intersect_newton_raphson(curve2l);
           intersect_newton_raphson(curve2r);
         }
+
+        __forceinline void intersect_newton_raphson2(const OrientedBezierCurve2f& curve2)
+        {
+          {
+          BBox2f bounds = curve2.bounds();
+          if (bounds.upper.x < 0.0f) return;
+          if (bounds.upper.y < 0.0f) return;
+          if (bounds.lower.x > 0.0f) return;
+          if (bounds.lower.y > 0.0f) return;
+
+          Vec2f du = curve2.axis_u();
+          Vec2f dv = curve2.axis_v();
+          Vec2f ndu = Vec2f(-du.y,du.x);
+          Vec2f ndv = Vec2f(-dv.y,dv.x);
+          BBox1f boundsu = curve2.bounds(ndu);
+          BBox1f boundsv = curve2.bounds(ndv);
+          if (boundsu.upper < 0.0f) return;
+          if (boundsv.upper < 0.0f) return;
+          if (boundsu.lower > 0.0f) return;
+          if (boundsv.lower > 0.0f) return;
+          }
+          
+          const Vec2f du = normalize(curve2.axis_u());
+          const Vec2f dv = normalize(curve2.axis_v());
+       
+          DBG(PRINT(du));
+          DBG(PRINT(dv));
+          const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
+          DBG(PRINT(curve1v));
+          LinearCurve<BBox1f> curve0v = curve1v.reduce_u();
+          DBG(PRINT(curve0v));
+          
+          if (!curve0v.hasRoot())
+            return;
+          
+          DBG(PRINT("bezier_clipping_v"));
+          const BBox1f v = bezier_clipping(curve0v);
+          //PRINT(v);
+          if (v.empty()) return;
+          OrientedBezierCurve2f curve2a = curve2.clip_v(v);
+          DBG(PRINT(curve2a));
+
+#if 1
+          //PRINT("intersect_u");
+          
+          const OrientedBezierCurve1f curve1u = curve2a.xfm(du);
+          DBG(PRINT(curve1u));
+          MyBezierCurve<BBox1f> curve0u = curve1u.reduce_v();
+          DBG(PRINT(curve0u));
+          
+          int roots = curve0u.maxRoots();
+          DBG(PRINT(roots));
+          if (roots == 0) return;
+          
+          if (roots == 1)
+          {
+            DBG(PRINT("bezier_clipping_u"));
+            const BBox1f u = bezier_clipping(curve0u);
+            //PRINT(u);
+            if (u.empty()) return;
+            OrientedBezierCurve2f curve2b = curve2a.clip_u(u);
+            DBG(PRINT(curve2b));
+            solve_newton_raphson(curve2b);
+            return;
+          }
+#endif
+          DBG(PRINT("split"));
+          OrientedBezierCurve2f curve2l, curve2r;
+          curve2a.split_u(curve2l,curve2r);
+          DBG(PRINT(curve2l));
+          DBG(PRINT(curve2r));
+          intersect_newton_raphson2(curve2l);
+          intersect_newton_raphson2(curve2r);
+        }
+        
 
         bool intersect_newton_raphson()
         {
