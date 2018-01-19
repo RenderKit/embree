@@ -19,7 +19,7 @@
 #include "../common/ray.h"
 #include "bezier_curve_intersector.h"
 
-#define DBG(x)
+#define DBG(x) 
 
 namespace embree
 {
