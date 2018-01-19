@@ -75,6 +75,10 @@ namespace embree
         __forceinline MyBezierCurve<float> xfm(const V& dx) const {
           return MyBezierCurve<float>(u,dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
         }
+
+        __forceinline MyBezierCurve<float> xfm(const V& dx, const V& p) const {
+          return MyBezierCurve<float>(u,dot(p0-p,dx),dot(p1-p,dx),dot(p2-p,dx),dot(p3-p,dx));
+        }
         
         __forceinline MyBezierCurve<Vec2f> xfm(const V& dx, const V& dy, const V& p) const
         {
@@ -215,6 +219,10 @@ namespace embree
         __forceinline OrientedBezierCurve<float> xfm(const V& dx) const {
           return OrientedBezierCurve<float>(u,v,L.xfm(dx),R.xfm(dx));
         }
+
+        __forceinline OrientedBezierCurve<float> xfm(const V& dx, const V& p) const {
+          return OrientedBezierCurve<float>(u,v,L.xfm(dx,p),R.xfm(dx,p));
+        }
         
         __forceinline OrientedBezierCurve<Vec2f> xfm(const V& dx, const V& dy, const V& p) const {
           return OrientedBezierCurve<Vec2f>(u,v,L.xfm(dx,dy,p),R.xfm(dx,dy,p));
@@ -295,12 +303,13 @@ namespace embree
       struct OrientedBezierCurveIntersector
       {
         Ray& ray;
+        LinearSpace3fa space;
         OrientedBezierCurve3fa curve3d;
         const Epilog& epilog;
         bool isHit;
 
         __forceinline OrientedBezierCurveIntersector (Ray& ray, const OrientedBezierCurve3fa& curve3d, const Epilog& epilog)
-        : ray(ray), curve3d(curve3d), epilog(epilog), isHit(false) {}
+          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false) {}
         
         __forceinline BBox1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
@@ -408,7 +417,8 @@ namespace embree
           if (v.empty()) return;
           OrientedBezierCurve2f curve2a = curve2.clip_v(v);
           DBG(PRINT(curve2a));
-          
+
+#if 0
           //PRINT("intersect_u");
           
           const OrientedBezierCurve1f curve1u = curve2a.xfm(du);
@@ -431,7 +441,7 @@ namespace embree
             intersect(curve2b);
             return;
           }
-
+#endif
           DBG(PRINT("split"));
           OrientedBezierCurve2f curve2l, curve2r;
           curve2a.split_u(curve2l,curve2r);
@@ -447,11 +457,13 @@ namespace embree
             DBG(PRINT2("solution",curve2));
             const float u = curve2.u.center();
             const float v = curve2.v.center();
-            const Vec3fa p = curve3d.eval(u,v);
-            const float t = length(p-ray.org)/length(ray.dir);
-            const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
-            BezierCurveHit hit(t,u,v,Ng);
-            isHit |= epilog(hit);
+            OrientedBezierCurve1f curve_z = curve3d.xfm(space.vz,ray.org);
+            const float t = curve_z.eval(u,v)/length(ray.dir);
+            if (t >= ray.tnear() && t <= ray.tfar()) {
+              const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
+              BezierCurveHit hit(t,u,v,Ng);
+              isHit |= epilog(hit);
+            }
             return;
           }
 
@@ -478,7 +490,7 @@ namespace embree
         bool intersect()
         {
           /* transform bezier curve into ray space */
-          LinearSpace3fa space = frame(ray.dir);
+          
           //space.vx = -space.vx;
           //space.vy = -space.vy;
           //PRINT(space);
