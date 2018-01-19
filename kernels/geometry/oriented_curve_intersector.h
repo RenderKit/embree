@@ -19,6 +19,8 @@
 #include "../common/ray.h"
 #include "bezier_curve_intersector.h"
 
+#define DBG(x)
+
 namespace embree
 {
   namespace isa
@@ -29,12 +31,12 @@ namespace embree
         BBox<V> v;
         V p0,p1;
         
-        LinearCurve () {}
+        __forceinline LinearCurve () {}
         
-        LinearCurve (V p0, V p1)
+        __forceinline LinearCurve (V p0, V p1)
         : v(0.0f,1.0f), p0(p0), p1(p1) {}
         
-        LinearCurve (BBox1f v, V p0, V p1)
+        __forceinline LinearCurve (BBox1f v, V p0, V p1)
         : v(v), p0(p0), p1(p1) {}
         
         bool hasRoot() const;
@@ -44,7 +46,7 @@ namespace embree
         }
       };
     
-    inline int numRoots(const BBox1f& p0, const BBox1f& p1)
+    __forceinline int numRoots(const BBox1f& p0, const BBox1f& p1)
     {
       float eps = 1E-4f;
       bool neg0 = p0.lower < eps; bool pos0 = p0.upper > -eps;
@@ -52,7 +54,7 @@ namespace embree
       return (neg0 && pos1) || (pos0 && neg1) || (neg0 && pos0) || (neg1 && pos1);
     }
     
-    template<> inline bool LinearCurve<BBox1f>::hasRoot() const {
+    template<> __forceinline bool LinearCurve<BBox1f>::hasRoot() const {
       return numRoots(p0,p1);
     }
     
@@ -62,12 +64,12 @@ namespace embree
         BBox1f u;
         V p0,p1,p2,p3;
         
-        MyBezierCurve () {}
+        __forceinline MyBezierCurve () {}
         
-        MyBezierCurve (V p0, V p1, V p2, V p3)
+        __forceinline MyBezierCurve (V p0, V p1, V p2, V p3)
         : u(0.0f,1.0f), p0(p0), p1(p1), p2(p2), p3(p3) {}
         
-        MyBezierCurve (BBox1f u, V p0, V p1, V p2, V p3)
+        __forceinline MyBezierCurve (BBox1f u, V p0, V p1, V p2, V p3)
         : u(u), p0(p0), p1(p1), p2(p2), p3(p3) {}
         
         __forceinline MyBezierCurve<float> xfm(const V& dx) const {
@@ -83,9 +85,13 @@ namespace embree
           return MyBezierCurve<Vec2f>(u,q0,q1,q2,q3);
         }
         
-        int maxRoots() const;
+        __forceinline int maxRoots() const;
+
+        __forceinline BBox<V> bounds() const {
+          return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2),BBox<V>(p3));
+        }
         
-        void split(MyBezierCurve& left, MyBezierCurve& right, const float t = 0.5f) const
+        __forceinline void split(MyBezierCurve& left, MyBezierCurve& right, const float t = 0.5f) const
         {
           const V p00 = p0;
           const V p01 = p1;
@@ -104,7 +110,7 @@ namespace embree
           new (&right) MyBezierCurve(BBox1f(u10,u.upper),p30,p21,p12,p03);
         }
         
-        V eval(float t) const
+        __forceinline V eval(float t) const
         {
           const V p00 = p0;
           const V p01 = p1;
@@ -121,7 +127,7 @@ namespace embree
           return p30;
         }
         
-        V eval_dt(float u) const
+        __forceinline V eval_dt(float u) const
         {
           const float t1 = u;
           const float t0 = 1.0f-t1;
@@ -132,7 +138,7 @@ namespace embree
           return float(3.0f)*(B0*p0+B1*p1+B2*p2+B3*p3);
         }
         
-        MyBezierCurve clip(const BBox1f& u1) const
+        __forceinline MyBezierCurve clip(const BBox1f& u1) const
         {
           V f0 = eval(u1.lower);
           V df0 = eval_dt(u1.lower);
@@ -185,6 +191,10 @@ namespace embree
         
         __forceinline OrientedBezierCurve(const BBox1f& u, const BBox1f& v, const MyBezierCurve<V>& L, const MyBezierCurve<V>& R)
           : u(u), v(v), L(L), R(R) {}
+
+        __forceinline BBox<V> bounds() const {
+          return merge(L.bounds(),R.bounds());
+        }
         
         __forceinline MyBezierCurve<BBox1f> reduce_v() const
         {
@@ -210,14 +220,14 @@ namespace embree
           return OrientedBezierCurve<Vec2f>(u,v,L.xfm(dx,dy,p),R.xfm(dx,dy,p));
         }
         
-        OrientedBezierCurve clip_u(const BBox1f& u1) const
+        __forceinline OrientedBezierCurve clip_u(const BBox1f& u1) const
         {
           float lower = lerp(u.lower,u.upper,u1.lower);
           float upper = lerp(u.lower,u.upper,u1.upper);
           return OrientedBezierCurve(BBox1f(lower,upper),v,L.clip(u1),R.clip(u1));
         }
         
-        OrientedBezierCurve clip_v(const BBox1f& v1) const
+        __forceinline OrientedBezierCurve clip_v(const BBox1f& v1) const
         {
           float lower = lerp(v.lower,v.upper,v1.lower);
           float upper = lerp(v.lower,v.upper,v1.upper);
@@ -235,7 +245,7 @@ namespace embree
           return OrientedBezierCurve(u,BBox1f(lower,upper),MyBezierCurve<V>(L.u,L0,L1,L2,L3),MyBezierCurve<V>(R.u,R0,R1,R2,R3));
         }
         
-        void split_u(OrientedBezierCurve& left, OrientedBezierCurve& right, const float u0 = 0.5f) const
+        __forceinline void split_u(OrientedBezierCurve& left, OrientedBezierCurve& right, const float u0 = 0.5f) const
         {
           MyBezierCurve<V> L0,L1; L.split(L0,L1,u0);
           MyBezierCurve<V> R0,R1; R.split(R0,R1,u0);
@@ -244,21 +254,21 @@ namespace embree
           new (&right) OrientedBezierCurve(BBox1f(uc,u.upper),v,L1,R1);
         }
 
-        V eval(const float u, const float v)
+        __forceinline V eval(const float u, const float v)
         {
           V l = L.eval(u);
           V r = R.eval(u);
           return lerp(l,r,v);
         }
 
-        V eval_du(const float u, const float v)
+        __forceinline V eval_du(const float u, const float v)
         {
           V l = L.eval_dt(u);
           V r = R.eval_dt(u);
           return lerp(l,r,v);
         }
 
-        V eval_dv(const float u, const float v)
+        __forceinline V eval_dv(const float u, const float v)
         {
           V l = L.eval(u);
           V r = R.eval(u);
@@ -289,10 +299,10 @@ namespace embree
         const Epilog& epilog;
         bool isHit;
 
-        OrientedBezierCurveIntersector (Ray& ray, const OrientedBezierCurve3fa& curve3d, const Epilog& epilog)
+        __forceinline OrientedBezierCurveIntersector (Ray& ray, const OrientedBezierCurve3fa& curve3d, const Epilog& epilog)
         : ray(ray), curve3d(curve3d), epilog(epilog), isHit(false) {}
         
-        BBox1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
+        __forceinline BBox1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
           if (p1 == p0) {
             if (p0 == 0.0f) return BBox1f(u0,u1);
@@ -303,7 +313,7 @@ namespace embree
           return BBox1f(tt);
         }
         
-        void solve_linear(const float u0, const float u1, const BBox1f& p0, const BBox1f& p1, BBox1f& u)
+        __forceinline void solve_linear(const float u0, const float u1, const BBox1f& p0, const BBox1f& p1, BBox1f& u)
         {
           if (sign(p0.lower) != sign(p0.upper)) u.extend(u0);
           if (sign(p0.lower) != sign(p1.lower)) u.extend(solve_linear(u0,u1,p0.lower,p1.lower));
@@ -311,7 +321,7 @@ namespace embree
           if (sign(p1.lower) != sign(p1.upper)) u.extend(u1);
         }
         
-        BBox1f bezier_clipping(const MyBezierCurve<BBox1f>& curve)
+        __forceinline BBox1f bezier_clipping(const MyBezierCurve<BBox1f>& curve)
         {
           BBox1f u = empty;
           solve_linear(0.0f/3.0f,1.0f/3.0f,curve.p0,curve.p1,u);
@@ -323,14 +333,14 @@ namespace embree
           return embree::intersect(u,BBox1f(0.0f,1.0f));
         }
         
-        BBox1f bezier_clipping(const LinearCurve<BBox1f>& curve)
+        __forceinline BBox1f bezier_clipping(const LinearCurve<BBox1f>& curve)
         {
           BBox1f v = empty;
           solve_linear(0.0f,1.0f,curve.p0,curve.p1,v);
           return embree::intersect(v,BBox1f(0.0f,1.0f));
         }
         
-        void intersect_u(const OrientedBezierCurve2f& curve2, const Vec2f& du)
+        __forceinline void intersect_u(const OrientedBezierCurve2f& curve2, const Vec2f& du)
         {
           //PRINT("intersect_u");
           
@@ -361,7 +371,7 @@ namespace embree
           intersect(curve2b);
         }
         
-        void intersect_v(const OrientedBezierCurve2f& curve2, const Vec2f& dv)
+        __forceinline void intersect_v(const OrientedBezierCurve2f& curve2, const Vec2f& dv)
         {
           //PRINT("intersect_v");
           
@@ -380,46 +390,53 @@ namespace embree
           intersect(curve2a);
         }
 
-        void intersect_uv(const OrientedBezierCurve2f& curve2, const Vec2f& du, const Vec2f& dv)
+        __forceinline void intersect_uv(const OrientedBezierCurve2f& curve2, const Vec2f& du, const Vec2f& dv)
         {
+          DBG(PRINT(du));
+          DBG(PRINT(dv));
           const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
+          DBG(PRINT(curve1v));
           LinearCurve<BBox1f> curve0v = curve1v.reduce_u();
+          DBG(PRINT(curve0v));
           
           if (!curve0v.hasRoot())
             return;
           
-          //PRINT("bezier_clipping_v");
+          DBG(PRINT("bezier_clipping_v"));
           const BBox1f v = bezier_clipping(curve0v);
           //PRINT(v);
           if (v.empty()) return;
           OrientedBezierCurve2f curve2a = curve2.clip_v(v);
-          //PRINT(curve2a);
+          DBG(PRINT(curve2a));
           
           //PRINT("intersect_u");
           
           const OrientedBezierCurve1f curve1u = curve2a.xfm(du);
-          //PRINT(curve1);
+          DBG(PRINT(curve1u));
           MyBezierCurve<BBox1f> curve0u = curve1u.reduce_v();
-          //PRINT(curve0);
+          DBG(PRINT(curve0u));
           
           int roots = curve0u.maxRoots();
-          //PRINT(roots);
+          DBG(PRINT(roots));
           if (roots == 0) return;
           
           if (roots == 1)
           {
-            //PRINT("bezier_clipping_u");
+            DBG(PRINT("bezier_clipping_u"));
             const BBox1f u = bezier_clipping(curve0u);
             //PRINT(u);
             if (u.empty()) return;
             OrientedBezierCurve2f curve2b = curve2a.clip_u(u);
-            //PRINT(curve2a);
+            DBG(PRINT(curve2b));
             intersect(curve2b);
             return;
           }
-          
+
+          DBG(PRINT("split"));
           OrientedBezierCurve2f curve2l, curve2r;
           curve2a.split_u(curve2l,curve2r);
+          DBG(PRINT(curve2l));
+          DBG(PRINT(curve2r));
           intersect(curve2l);
           intersect(curve2r);
         }
@@ -427,7 +444,7 @@ namespace embree
         void intersect(const OrientedBezierCurve2f& curve2)
         {
           if (max(curve2.u.size(),curve2.v.size()) < 1E-3f) {
-            //PRINT2("solution",curve2);
+            DBG(PRINT2("solution",curve2));
             const float u = curve2.u.center();
             const float v = curve2.v.center();
             const Vec3fa p = curve3d.eval(u,v);
@@ -437,10 +454,16 @@ namespace embree
             isHit |= epilog(hit);
             return;
           }
-          
-          //std::cout << std::endl << std::endl;
-          //std::cout << "intersect" << std::endl;
-          //PRINT(curve2);
+
+          BBox2f bounds = curve2.bounds();
+          if (bounds.upper.x < 0.0f) return;
+          if (bounds.upper.y < 0.0f) return;
+          if (bounds.lower.x > 0.0f) return;
+          if (bounds.lower.y > 0.0f) return;
+                   
+          DBG(std::cout << std::endl << std::endl);
+          DBG(std::cout << "intersect" << std::endl);
+          DBG(PRINT(curve2));
           Vec2f du = curve2.L.p3-curve2.L.p0;
           Vec2f dv = curve2.R.p0-curve2.L.p0;
           //PRINT(du);
@@ -459,8 +482,9 @@ namespace embree
           //space.vx = -space.vx;
           //space.vy = -space.vy;
           //PRINT(space);
-          const OrientedBezierCurve2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
+          OrientedBezierCurve2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
           //PRINT(curve2);
+          //curve2 = curve2.clip_u(BBox1f(0.894387f,1.0f)).clip_v(BBox1f(0.00341939f, 1.0f));
           intersect(curve2);
           return isHit;
         }
