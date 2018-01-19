@@ -517,14 +517,14 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         
         MyBezierCurve3fa center(v0,v1,v2,v3);
-        MyBezierCurve3fa normal(n0,n1,n2,n3);
-        /*
-          Vec3fa d0 = normalize(cross(n0,center.eval_dt(0.0f/3.0f)));
-          Vec3fa d1 = normalize(cross(n0,center.eval_dt(1.0f/3.0f)));
-          Vec3fa d2 = normalize(cross(n0,center.eval_dt(2.0f/3.0f)));
-          Vec3fa d3 = normalize(cross(n0,center.eval_dt(3.0f/3.0f)));*/
-        
-        OrientedBezierCurve3fa curve(center,normal);
+        Vec3fa d0 = v0.w*normalize(cross(n0,center.eval_dt(0.0f/3.0f)));
+        Vec3fa d1 = v1.w*normalize(cross(n1,center.eval_dt(1.0f/3.0f)));
+        Vec3fa d2 = v2.w*normalize(cross(n2,center.eval_dt(2.0f/3.0f)));
+        Vec3fa d3 = v3.w*normalize(cross(n3,center.eval_dt(3.0f/3.0f)));
+
+        MyBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
+        MyBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
+        OrientedBezierCurve3fa curve(L,R);
         return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect();
       }
     };
