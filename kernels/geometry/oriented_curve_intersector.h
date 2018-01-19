@@ -418,7 +418,7 @@ namespace embree
           OrientedBezierCurve2f curve2a = curve2.clip_v(v);
           DBG(PRINT(curve2a));
 
-#if 0
+#if 1
           //PRINT("intersect_u");
           
           const OrientedBezierCurve1f curve1u = curve2a.xfm(du);
@@ -453,7 +453,13 @@ namespace embree
         
         void intersect(const OrientedBezierCurve2f& curve2)
         {
-          if (max(curve2.u.size(),curve2.v.size()) < 1E-3f) {
+          BBox2f bounds = curve2.bounds();
+          if (bounds.upper.x < 0.0f) return;
+          if (bounds.upper.y < 0.0f) return;
+          if (bounds.lower.x > 0.0f) return;
+          if (bounds.lower.y > 0.0f) return;
+          
+          if (max(curve2.u.size(),curve2.v.size()) < 1E-4f) {
             DBG(PRINT2("solution",curve2));
             const float u = curve2.u.center();
             const float v = curve2.v.center();
@@ -466,18 +472,12 @@ namespace embree
             }
             return;
           }
-
-          BBox2f bounds = curve2.bounds();
-          if (bounds.upper.x < 0.0f) return;
-          if (bounds.upper.y < 0.0f) return;
-          if (bounds.lower.x > 0.0f) return;
-          if (bounds.lower.y > 0.0f) return;
-                   
+          
           DBG(std::cout << std::endl << std::endl);
           DBG(std::cout << "intersect" << std::endl);
           DBG(PRINT(curve2));
-          Vec2f du = curve2.L.p3-curve2.L.p0;
-          Vec2f dv = curve2.R.p0-curve2.L.p0;
+          Vec2f du = (curve2.L.p3-curve2.L.p0)+(curve2.R.p3-curve2.R.p0);
+          Vec2f dv = (curve2.R.p0-curve2.L.p0)+(curve2.R.p3-curve2.L.p3);
           //PRINT(du);
           //PRINT(dv);
           //PRINT(length(du));
@@ -496,7 +496,7 @@ namespace embree
           //PRINT(space);
           OrientedBezierCurve2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
           //PRINT(curve2);
-          //curve2 = curve2.clip_u(BBox1f(0.894387f,1.0f)).clip_v(BBox1f(0.00341939f, 1.0f));
+          //curve2 = curve2.clip_u(BBox1f(0.00484675, 0.0326178)).clip_v(BBox1f(0.961587, 1));
           intersect(curve2);
           return isHit;
         }
