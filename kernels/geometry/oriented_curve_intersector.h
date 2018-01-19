@@ -262,21 +262,21 @@ namespace embree
           new (&right) OrientedBezierCurve(BBox1f(uc,u.upper),v,L1,R1);
         }
 
-        __forceinline V eval(const float u, const float v)
+        __forceinline V eval(const float u, const float v) const
         {
           V l = L.eval(u);
           V r = R.eval(u);
           return lerp(l,r,v);
         }
 
-        __forceinline V eval_du(const float u, const float v)
+        __forceinline V eval_du(const float u, const float v) const
         {
           V l = L.eval_dt(u);
           V r = R.eval_dt(u);
           return lerp(l,r,v);
         }
 
-        __forceinline V eval_dv(const float u, const float v)
+        __forceinline V eval_dv(const float u, const float v) const
         {
           V l = L.eval(u);
           V r = R.eval(u);
@@ -459,7 +459,8 @@ namespace embree
           if (bounds.lower.x > 0.0f) return;
           if (bounds.lower.y > 0.0f) return;
           
-          if (max(curve2.u.size(),curve2.v.size()) < 1E-4f) {
+          if (max(curve2.u.size(),curve2.v.size()) < 1E-4f)
+          {
             DBG(PRINT2("solution",curve2));
             const float u = curve2.u.center();
             const float v = curve2.v.center();
@@ -501,6 +502,76 @@ namespace embree
           return isHit;
         }
       };
+
+      template<typename Epilog>
+      struct OrientedBezierCurveNewtonRaphsonIntersector
+      {
+        Ray& ray;
+        LinearSpace3fa space;
+        OrientedBezierCurve3fa curve3d;
+        const Epilog& epilog;
+        bool isHit;
+
+        __forceinline OrientedBezierCurveNewtonRaphsonIntersector (Ray& ray, const OrientedBezierCurve3fa& curve3d, const Epilog& epilog)
+          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false) {}
+
+
+        void solve_newton_raphson(const OrientedBezierCurve2f& curve2)
+        {
+          Vec2f uv(curve2.u.center(), curve2.v.center());
+
+          for (size_t i=0; i<20; i++)
+          {
+            const Vec2f f    = curve2.eval(uv.x,uv.y);
+            const Vec2f dfdu = curve2.eval_du(uv.x,uv.y);
+            const Vec2f dfdv = curve2.eval_dv(uv.x,uv.y);
+            const LinearSpace2f J = LinearSpace2f(dfdu,dfdv);
+            const Vec2f duv = rcp(J)*f;
+            uv -= duv;
+
+            if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
+            {
+              DBG(PRINT2("solution",curve2));
+              const float u = lerp(curve2.u.lower,curve2.u.upper,uv.x);
+              const float v = lerp(curve2.v.lower,curve2.v.upper,uv.y);
+              if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
+              if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
+              const OrientedBezierCurve1f curve_z = curve3d.xfm(space.vz,ray.org);
+              const float t = curve_z.eval(u,v)/length(ray.dir);
+              if (!(t > ray.tnear() && t < ray.tfar())) return; // rejects NaNs
+              const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
+              BezierCurveHit hit(t,u,v,Ng);
+              isHit |= epilog(hit);
+              return;
+            }
+          }       
+        }
+        
+        void intersect(const OrientedBezierCurve2f& curve2)
+        {
+          BBox2f bounds = curve2.bounds();
+          if (bounds.upper.x < 0.0f) return;
+          if (bounds.upper.y < 0.0f) return;
+          if (bounds.lower.x > 0.0f) return;
+          if (bounds.lower.y > 0.0f) return;
+
+          if (curve2.u.size() < 0.05f)
+            return solve_newton_raphson(curve2);
+          
+          OrientedBezierCurve2f curve2l, curve2r;
+          curve2.split_u(curve2l,curve2r);
+          intersect(curve2l);
+          intersect(curve2r);
+        }
+
+        bool intersect()
+        {
+          OrientedBezierCurve2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
+          intersect(curve2);
+          return isHit;
+        }
+        
+      };
     
     struct OrientedBezierCurve1Intersector1
     {
@@ -525,7 +596,8 @@ namespace embree
         MyBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         MyBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
         OrientedBezierCurve3fa curve(L,R);
-        return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect();
+        //return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect();
+        return OrientedBezierCurveNewtonRaphsonIntersector<Epilog>(ray,curve,epilog).intersect();
       }
     };
   }
