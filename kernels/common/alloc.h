@@ -25,10 +25,10 @@ namespace embree
 {
   class FastAllocator
   {
-    /*! maximal supported alignment */
+    /*! maximum supported alignment */
     static const size_t maxAlignment = 64;
 
-    /*! maximal allocation size */
+    /*! maximum allocation size */
 
     /* default settings */
     //static const size_t defaultBlockSize = 4096;

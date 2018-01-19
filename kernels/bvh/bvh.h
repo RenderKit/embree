@@ -131,12 +131,12 @@ namespace embree
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | (tyLeaf+0);
     static const size_t popRay      = (((size_t)-1) & (~items_mask)) | (tyLeaf+1);
 
-    /*! Maximal depth of the BVH. */
+    /*! Maximum depth of the BVH. */
     static const size_t maxBuildDepth = 32;
     static const size_t maxBuildDepthLeaf = maxBuildDepth+8;
     static const size_t maxDepth = 2*maxBuildDepthLeaf; // 2x because of two level builder
 
-    /*! Maximal number of primitive blocks in a leaf. */
+    /*! Maximum number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
 
   public:

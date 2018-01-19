@@ -33,19 +33,20 @@ namespace embree
       {
         assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(args);
+
+        if (args->valid[0] == 0)
+          return false;
       }
-      
-      if (args->valid[0] == 0)
-        return false;
-      
+            
 #if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
         context->user->filter(args);
-      }
 
-      if (args->valid[0] == 0)
-        return false;
+        if (args->valid[0] == 0)
+          return false;
+      }
+      
 #endif
       copyHitToRay(*(RayHit*)args->ray,*(Hit*)args->hit);
       return true;
@@ -94,18 +95,21 @@ namespace embree
       {
         assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(args);
+
+        if (args->valid[0] == 0)
+          return false;
       }
       
 #if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
-      if (args->valid[0] == 0)
-        return false;
-      
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
         context->user->filter(args);
+
+        if (args->valid[0] == 0)
+          return false;
       }
 #endif
-      return args->valid[0] != 0;
+      return true;
     }
 
     __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
