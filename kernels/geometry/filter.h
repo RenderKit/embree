@@ -27,9 +27,7 @@ namespace embree
   {
     __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
     {
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (geometry->intersectionFilterN)
-#endif
       {
         assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(args);
@@ -38,7 +36,6 @@ namespace embree
           return false;
       }
             
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
         context->user->filter(args);
@@ -47,7 +44,6 @@ namespace embree
           return false;
       }
       
-#endif
       copyHitToRay(*(RayHit*)args->ray,*(Hit*)args->hit);
       return true;
     }
@@ -75,7 +71,6 @@ namespace embree
         geometry->intersectionFilterN(filter_args);
       }
       
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       //if (args->valid[0] == 0)
       //  return;
 
@@ -84,14 +79,11 @@ namespace embree
         context->user->filter(filter_args);
       }
 #endif
-#endif
     }
     
     __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
     {
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (geometry->occlusionFilterN)
-#endif
       {
         assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(args);
@@ -100,7 +92,6 @@ namespace embree
           return false;
       }
       
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
         context->user->filter(args);
@@ -108,7 +99,7 @@ namespace embree
         if (args->valid[0] == 0)
           return false;
       }
-#endif
+
       return true;
     }
 
@@ -135,7 +126,6 @@ namespace embree
         geometry->occlusionFilterN(filter_args);
       }
       
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       //if (args->valid[0] == 0)
       //  return false;
       
@@ -144,16 +134,13 @@ namespace embree
         context->user->filter(filter_args);
       }
 #endif
-#endif
     }
 
     template<int K>
       __forceinline vbool<K> runIntersectionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
     {
       vint<K>* mask = (vint<K>*) args->valid;
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (geometry->intersectionFilterN)
-#endif
       {
         assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(args);
@@ -162,7 +149,6 @@ namespace embree
       vbool<K> valid_o = *mask != vint<K>(zero);
       if (none(valid_o)) return valid_o;
 
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)      
       if (context->user->filter) {
         assert(context->scene->hasContextFilterFunction());
         context->user->filter(args);
@@ -170,7 +156,6 @@ namespace embree
 
       valid_o = *mask != vint<K>(zero);
       if (none(valid_o)) return valid_o;
-#endif
       
       copyHitToRay(valid_o,*(RayHitK<K>*)args->ray,*(HitK<K>*)args->hit);
       return valid_o;
@@ -194,9 +179,7 @@ namespace embree
       __forceinline vbool<K> runOcclusionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
     {
       vint<K>* mask = (vint<K>*) args->valid;
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (geometry->occlusionFilterN)
-#endif
       {
         assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(args);
@@ -204,7 +187,6 @@ namespace embree
 
       vbool<K> valid_o = *mask != vint<K>(zero);
       
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       if (none(valid_o)) return valid_o;
 
       if (context->user->filter) {
@@ -213,7 +195,6 @@ namespace embree
       }
 
       valid_o = *mask != vint<K>(zero);
-#endif
 
       RayK<K>* ray = (RayK<K>*) args->ray;
       ray->tfar = select(valid_o, vfloat<K>(neg_inf), ray->tfar);

@@ -58,7 +58,6 @@
   #define IF_ENABLED_USER(x)
 #endif
 
-#define EMBREE_FILTER_FUNCTION_CONTEXT // FIXME: remove later
 
 
 
