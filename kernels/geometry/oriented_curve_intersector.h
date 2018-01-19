@@ -94,6 +94,10 @@ namespace embree
         __forceinline BBox<V> bounds() const {
           return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2),BBox<V>(p3));
         }
+
+        __forceinline BBox1f bounds(const V& axis) const {
+          return merge(BBox1f(dot(p0,axis)),BBox1f(dot(p1,axis)),BBox1f(dot(p2,axis)),BBox1f(dot(p3,axis)));
+        }
         
         __forceinline void split(MyBezierCurve& left, MyBezierCurve& right, const float t = 0.5f) const
         {
@@ -199,6 +203,10 @@ namespace embree
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
         }
+
+        __forceinline BBox1f bounds(const V& axis) const {
+          return merge(L.bounds(axis),R.bounds(axis));
+        }
         
         __forceinline MyBezierCurve<BBox1f> reduce_v() const
         {
@@ -281,6 +289,14 @@ namespace embree
           V l = L.eval(u);
           V r = R.eval(u);
           return r-l;
+        }
+
+        __forceinline V axis_u() const {
+          return (L.p3-L.p0)+(R.p3-R.p0);
+        }
+
+        __forceinline V axis_v() const {
+          return (R.p0-L.p0)+(R.p3-L.p3);
         }
         
         friend std::ostream& operator<<(std::ostream& cout, const OrientedBezierCurve& a)
@@ -477,8 +493,8 @@ namespace embree
           DBG(std::cout << std::endl << std::endl);
           DBG(std::cout << "intersect" << std::endl);
           DBG(PRINT(curve2));
-          Vec2f du = (curve2.L.p3-curve2.L.p0)+(curve2.R.p3-curve2.R.p0);
-          Vec2f dv = (curve2.R.p0-curve2.L.p0)+(curve2.R.p3-curve2.L.p3);
+          Vec2f du = curve2.axis_u();
+          Vec2f dv = curve2.axis_v();
           //PRINT(du);
           //PRINT(dv);
           //PRINT(length(du));
@@ -554,6 +570,17 @@ namespace embree
           if (bounds.upper.y < 0.0f) return;
           if (bounds.lower.x > 0.0f) return;
           if (bounds.lower.y > 0.0f) return;
+
+          Vec2f du = curve2.axis_u();
+          Vec2f dv = curve2.axis_v();
+          Vec2f ndu = Vec2f(-du.y,du.x);
+          Vec2f ndv = Vec2f(-dv.y,dv.x);
+          BBox1f boundsu = curve2.bounds(ndu);
+          BBox1f boundsv = curve2.bounds(ndv);
+          if (boundsu.upper < 0.0f) return;
+          if (boundsv.upper < 0.0f) return;
+          if (boundsu.lower > 0.0f) return;
+          if (boundsv.lower > 0.0f) return;
 
           if (curve2.u.size() < 0.05f)
             return solve_newton_raphson(curve2);
