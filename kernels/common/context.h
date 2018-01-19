@@ -30,11 +30,7 @@ namespace embree
       : scene(scene), user(user_context), geomID_to_instID(nullptr), instID(user_context->instID[0]) {}
 
     __forceinline bool hasContextFilter() const {
-#if defined(EMBREE_FILTER_FUNCTION_CONTEXT)
       return user->filter != nullptr;
-#else
-      return false;
-#endif
     }
     
   public:
