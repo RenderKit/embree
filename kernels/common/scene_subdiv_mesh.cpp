@@ -366,7 +366,7 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunction func) 
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunctionN func) 
   {
     this->displFunc   = func;
     this->displBounds = empty;

@@ -78,7 +78,7 @@ namespace embree
     void setTessellationRate(float N);
     bool verify();
     void commit();
-    void setDisplacementFunction (RTCDisplacementFunction func);
+    void setDisplacementFunction (RTCDisplacementFunctionN func);
 
   public:
 
@@ -133,7 +133,7 @@ namespace embree
     }
 
   public:
-    RTCDisplacementFunction displFunc;    //!< displacement function
+    RTCDisplacementFunctionN displFunc;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for maximum displacement 
 
     /*! all buffers in this section are provided by the application */

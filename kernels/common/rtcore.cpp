@@ -1292,7 +1292,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunction displacement)
+  RTC_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunctionN displacement)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;

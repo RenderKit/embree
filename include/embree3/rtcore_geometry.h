@@ -103,7 +103,7 @@ struct RTCOccludedFunctionNArguments
 /* Occlusion callback function */
 typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
-/* Arguments for RTCDisplacementFunction */
+/* Arguments for RTCDisplacementFunctionN */
 struct RTCDisplacementFunctionNArguments
 {
   void* geometryUserPtr;
@@ -122,7 +122,7 @@ struct RTCDisplacementFunctionNArguments
 };
 
 /* Displacement mapping callback function */
-typedef void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* args);
+typedef void (*RTCDisplacementFunctionN)(const struct RTCDisplacementFunctionNArguments* args);
 
 /* Creates a new geometry of specified type. */
 RTC_API RTCGeometry rtcNewGeometry(RTCDevice device, enum RTCGeometryType type);
@@ -228,7 +228,7 @@ RTC_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned int to
 RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigned int vertexAttributeID, unsigned int topologyID);
 
 /* Sets the displacement callback function of a subdivision surface. */
-RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunction displacement);
+RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunctionN displacement);
 
 
 /* Arguments for rtcInterpolate */
