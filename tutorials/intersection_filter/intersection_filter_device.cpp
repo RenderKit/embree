@@ -78,7 +78,11 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   
   /* initialize ray */
   Ray2 primary;
-  init_Ray(primary.ray,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  const Vec3fa vx = camera.xfm.l.vx;
+  const Vec3fa vy = camera.xfm.l.vy;
+  const Vec3fa vz = camera.xfm.l.vz;
+
+  init_Ray(primary.ray,Vec3fa(camera.xfm.p), Vec3fa(normalize(vx*x + vy*y + vz)), 0.0f, inf);
   primary.ray.mask = 0; // needs to encode rayID for filter
   primary.transparency = 0.0f;
 
@@ -116,7 +120,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* add light contribution */
     if (shadow.ray.tfar >= 0.0f) {
-      Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
+      Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot((Vec3f)lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
       color = color + weight*opacity*Ll;
     }
 
