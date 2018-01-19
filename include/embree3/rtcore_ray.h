@@ -25,20 +25,20 @@ extern "C" {
 /* Ray structure for a single ray */
 struct RTC_ALIGN(16) RTCRay
 {
-  float org_x;         // x coordinate of ray origin
-  float org_y;         // y coordinate of ray origin
-  float org_z;         // z coordinate of ray origin
-  float tnear;         // start of ray segment
+  float org_x;        // x coordinate of ray origin
+  float org_y;        // y coordinate of ray origin
+  float org_z;        // z coordinate of ray origin
+  float tnear;        // start of ray segment
 
-  float dir_x;         // x coordinate of ray direction
-  float dir_y;         // y coordinate of ray direction
-  float dir_z;         // z coordinate of ray direction
-  float time;          // time of this ray for motion blur
+  float dir_x;        // x coordinate of ray direction
+  float dir_y;        // y coordinate of ray direction
+  float dir_z;        // z coordinate of ray direction
+  float time;         // time of this ray for motion blur
 
-  float tfar;          // end of ray segment (set to hit distance)
-  unsigned int mask;   // ray mask
-  unsigned int id;     // ray ID
-  unsigned int flags;  // ray flags
+  float tfar;         // end of ray segment (set to hit distance)
+  unsigned int mask;  // ray mask
+  unsigned int id;    // ray ID
+  unsigned int flags; // ray flags
 };
 
 /* Hit structure for a single ray */
@@ -199,7 +199,7 @@ struct RTCRayNp
   float* dir_z;
   float* time;
 
-  float* tfar; 
+  float* tfar;
   unsigned int* mask;
   unsigned int* id;
   unsigned int* flags;
@@ -246,10 +246,10 @@ RTC_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ray, unsigned int N, unsigned int 
 RTC_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[4*N+i]; }
 RTC_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[5*N+i]; }
 RTC_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[6*N+i]; }
-RTC_FORCEINLINE float&    RTCRayN_time(RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)   ray)[7*N+i]; }
+RTC_FORCEINLINE float& RTCRayN_time (RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[7*N+i]; }
 
-RTC_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[8*N+i]; }
-RTC_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ray, unsigned int N, unsigned int i) { return ((unsigned*)ray)[9*N+i]; }
+RTC_FORCEINLINE float&    RTCRayN_tfar (RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[8*N+i]; }
+RTC_FORCEINLINE unsigned& RTCRayN_mask (RTCRayN* ray, unsigned int N, unsigned int i) { return ((unsigned*)ray)[9*N+i]; }
 RTC_FORCEINLINE unsigned& RTCRayN_id   (RTCRayN* ray, unsigned int N, unsigned int i) { return ((unsigned*)ray)[10*N+i]; }
 RTC_FORCEINLINE unsigned& RTCRayN_flags(RTCRayN* ray, unsigned int N, unsigned int i) { return ((unsigned*)ray)[11*N+i]; }
 
@@ -281,11 +281,10 @@ struct RTCRayNt
   float dir_x[N];
   float dir_y[N];
   float dir_z[N];
-
   float time[N];
+
   float tfar[N];
   unsigned mask[N];
-  
   unsigned int id[N];
   unsigned int flags[N];
 };
