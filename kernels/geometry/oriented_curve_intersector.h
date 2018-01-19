@@ -379,10 +379,54 @@ namespace embree
           //PRINT(curve2a);
           intersect(curve2a);
         }
+
+        void intersect_uv(const OrientedBezierCurve2f& curve2, const Vec2f& du, const Vec2f& dv)
+        {
+          const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
+          LinearCurve<BBox1f> curve0v = curve1v.reduce_u();
+          
+          if (!curve0v.hasRoot())
+            return;
+          
+          //PRINT("bezier_clipping_v");
+          const BBox1f v = bezier_clipping(curve0v);
+          //PRINT(v);
+          if (v.empty()) return;
+          OrientedBezierCurve2f curve2a = curve2.clip_v(v);
+          //PRINT(curve2a);
+          
+          //PRINT("intersect_u");
+          
+          const OrientedBezierCurve1f curve1u = curve2a.xfm(du);
+          //PRINT(curve1);
+          MyBezierCurve<BBox1f> curve0u = curve1u.reduce_v();
+          //PRINT(curve0);
+          
+          int roots = curve0u.maxRoots();
+          //PRINT(roots);
+          if (roots == 0) return;
+          
+          if (roots == 1)
+          {
+            //PRINT("bezier_clipping_u");
+            const BBox1f u = bezier_clipping(curve0u);
+            //PRINT(u);
+            if (u.empty()) return;
+            OrientedBezierCurve2f curve2b = curve2a.clip_u(u);
+            //PRINT(curve2a);
+            intersect(curve2b);
+            return;
+          }
+          
+          OrientedBezierCurve2f curve2l, curve2r;
+          curve2a.split_u(curve2l,curve2r);
+          intersect(curve2l);
+          intersect(curve2r);
+        }
         
         void intersect(const OrientedBezierCurve2f& curve2)
         {
-          if (max(curve2.u.size(),curve2.v.size()) < 1E-6f) {
+          if (max(curve2.u.size(),curve2.v.size()) < 1E-3f) {
             //PRINT2("solution",curve2);
             const float u = curve2.u.center();
             const float v = curve2.v.center();
@@ -403,8 +447,9 @@ namespace embree
           //PRINT(dv);
           //PRINT(length(du));
           //PRINT(length(dv));
-          if (length(du) > length(dv)) intersect_u(curve2,normalize(du));
-          else                         intersect_v(curve2,normalize(dv));
+          intersect_uv(curve2,normalize(du),normalize(dv));
+          //if (length(du) > length(dv)) intersect_u(curve2,normalize(du));
+          //else                         intersect_v(curve2,normalize(dv));
         }
         
         bool intersect()
