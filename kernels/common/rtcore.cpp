@@ -1078,7 +1078,7 @@ namespace embree
     return nullptr;
   }
   
-  RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimCount)
+  RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1088,7 +1088,7 @@ namespace embree
     if (unlikely(geometry->type != Geometry::USER_GEOMETRY))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
 
-    geometry->setNumPrimitives(userPrimCount);
+    geometry->setNumPrimitives(userPrimitiveCount);
     RTC_CATCH_END2(geometry);
   }
 

@@ -187,7 +187,7 @@ RTC_API void* rtcGetGeometryUserData(RTCGeometry geometry);
 
 
 /* Sets the number of primitives of a user geometry. */
-RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimCount);
+RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
 RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
@@ -224,7 +224,7 @@ RTC_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, unsigned int topo
 /* Sets the subdivision interpolation mode. */
 RTC_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, unsigned int topologyID, enum RTCSubdivisionMode mode);
 
-/* Binds a topology to a vertex attribute. */
+/* Binds a vertex attribute to a topology of the geometry. */
 RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigned int vertexAttributeID, unsigned int topologyID);
 
 /* Sets the displacement callback function of a subdivision surface. */
