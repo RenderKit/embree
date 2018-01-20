@@ -215,7 +215,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, float time, enum RTCFormat format, void* xfm);
 
 
-/* Sets the uniform tessellation rate of a subdivision surface. */
+/* Sets the uniform tessellation rate of the geometry. */
 RTC_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, float tessellationRate);
 
 /* Sets the number of topologies of a subdivision surface. */
