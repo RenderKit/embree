@@ -172,11 +172,6 @@ namespace embree
 
   public:
     static TutorialApplication* instance;
-
-  private:
-    TutorialApplication (const TutorialApplication& other) DELETED; // do not implement
-    TutorialApplication& operator= (const TutorialApplication& other) DELETED; // do not implement
-
   };
 
   class SceneLoadingTutorialApplication : public TutorialApplication
