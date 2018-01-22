@@ -1,0 +1,39 @@
+.TH "rtcSetGeometryTessellationRate" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryTessellationRate\ \-\ sets\ the\ tessellation\ rate\ of\ the
+\ \ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryTessellationRate(
+\ \ RTCGeometry\ geometry,
+\ \ float\ tessellationRate
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryTessellationRate\f[] function sets the
+tessellation rate (\f[C]tessellationRate\f[] argument) for the specified
+geometry (\f[C]geometry\f[] argument).
+The tessellation rate can only be set for flat curves and subdivision
+geometries.
+For curves, the tessellation rate specifies the number of ray\-facing
+quads per curve segment.
+For subdivision surfaces, the tessellation rate specifies the number of
+quads along each edge.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_CURVE], [RTC_GEOMETRY_TYPE_SUBDIVISION]

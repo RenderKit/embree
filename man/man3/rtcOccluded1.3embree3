@@ -1,0 +1,69 @@
+.TH "rtcOccluded1" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcOccluded1\ \-\ finds\ any\ hit\ for\ a\ single\ ray
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcOccluded1(
+\ \ RTCScene\ scene,
+\ \ struct\ RTCIntersectContext*\ context,
+\ \ struct\ RTCRay*\ ray
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcOccluded1\f[] function checks for a single ray (\f[C]ray\f[]
+argument) whether there is any hit with the scene (\f[C]scene\f[]
+argument).
+.PP
+The user must initialize the ray origin (\f[C]org\f[] ray member), ray
+direction (\f[C]dir\f[] ray member), ray segment (\f[C]tnear\f[],
+\f[C]tfar\f[] ray members), and must set the ray flags to \f[C]0\f[]
+(\f[C]flags\f[] ray member).
+If the scene contains motion blur geometries, also the ray time
+(\f[C]time\f[] ray member) must be initialized to a value in the range
+[0, 1].
+If ray masks are enabled at compile time, the ray mask (\f[C]mask\f[]
+ray member) must be initialized as well.
+The ray segment must be in the range [0, ∞], thus ranges that start
+behind the ray origin are not valid, but ranges can reach to infinity.
+See Section [RTCRay] for the ray layout description.
+.PP
+When no intersection is found, the ray data is not updated.
+In case a hit was found, the \f[C]tfar\f[] component of the ray is set
+to \f[C]\-inf\f[].
+.PP
+The implementation makes no guarantees that primitives whose hit
+distance is exactly at (or very close to) \f[C]tnear\f[] or
+\f[C]tfar\f[] are hit or missed.
+If you want to exclude intersections at \f[C]tnear\f[] just pass a
+slightly enlarged \f[C]tnear\f[], and if you want to include
+intersections at \f[C]tfar\f[] pass a slightly enlarged \f[C]tfar\f[].
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+The ray must be aligned to 16 bytes.
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcOccluded1], [RTCRay]

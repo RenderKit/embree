@@ -1,0 +1,34 @@
+.TH "rtcReleaseScene" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcReleaseScene\ \-\ decrements\ the\ scene\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcReleaseScene(RTCScene\ scene);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Scene objects are reference counted.
+The \f[C]rtcReleaseScene\f[] function decrements the reference count of
+the passed scene object (\f[C]scene\f[] argument).
+When the reference count falls to 0, the scene gets destroyed.
+.PP
+The scene holds a reference to all attached geometries, thus if the
+scene gets destroyed, all geometries get detached and their reference
+count decremented.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewScene], [rtcRetainScene]

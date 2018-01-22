@@ -1,0 +1,49 @@
+.TH "rtcSetGeometryTransform" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryTransform\ \-\ sets\ the\ transformation\ for\ a\ particular
+\ \ time\ step\ of\ an\ instance\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryTransform(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCMatrixType\ layout,
+\ \ const\ float*\ xfm,
+\ \ unsigned\ int\ timeStep
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryTransform\f[] function sets the local\-to\-world
+affine transformation (\f[C]xfm\f[] parameter) of an instance geometry
+(\f[C]geometry\f[] parameter) for a particular time step
+(\f[C]timeStep\f[] parameter).
+The transformation is specified as a 3×4 matrix (3×3 linear
+transformation plus translation), for which the following layouts
+(\f[C]layout\f[] parameter) are supported:
+.IP \[bu] 2
+\f[C]RTC_FORMAT_FLOAT3X4_ROW_MAJOR\f[]: The 3×4 float matrix is laid out
+in row\-major form.
+.IP \[bu] 2
+\f[C]RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
+out in column\-major form.
+.IP \[bu] 2
+\f[C]RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
+out in column\-major form as a 4×4 homogeneous matrix with the last row
+being equal to (0, 0, 0, 1).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_INSTANCE]

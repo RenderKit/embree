@@ -1,0 +1,55 @@
+.TH "rtcSetSceneBuildQuality" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetSceneBuildQuality\ \-\ sets\ the\ build\ quality\ for
+\ \ the\ scene
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetSceneBuildQuality(
+\ \ RTCScene\ scene,
+\ \ enum\ RTCBuildQuality\ quality
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetSceneBuildQuality\f[] function sets the build quality
+(\f[C]quality\f[] argument) for the specified scene (\f[C]scene\f[]
+argument).
+Possible values for the build quality are:
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_LOW\f[]: Create lower quality data structures,
+e.g.
+for dynamic scenes.
+A two\-level spatial index structure is built when enabling this mode,
+which supports fast partial scene updates, and allows for setting a
+per\-geometry build quality through the
+\f[C]rtcSetGeometryBuildQuality\f[] function.
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_MEDIUM\f[]: Default build quality for most
+usages.
+Gives a good compromise between build and render performance.
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_HIGH\f[]: Create higher quality data structures
+for final\-frame rendering.
+For certain geometry types this enables a spatial split BVH.
+.PP
+Selecting a higher build quality results in better rendering performance
+but slower scene commit times.
+The default build quality for a scene is
+\f[C]RTC_BUILD_QUALITY_MEDIUM\f[].
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcGetSceneBuildQuality], [rtcSetGeometryBuildQuality]

@@ -1,0 +1,38 @@
+.TH "rtcGetGeometry" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetGeometry\ \-\ returns\ the\ geometry\ bound\ to
+\ \ the\ specified\ geometry\ ID
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ rtcGetGeometry(RTCScene\ scene,\ unsigned\ int\ geomID);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetGeometry\f[] function returns the geometry that is bound
+to the specified geometry ID (\f[C]geomID\f[] argument) for the
+specified scene (\f[C]scene\f[] argument).
+This function just looks up the handle and does \f[I]not\f[] increment
+the reference count.
+If you want to get ownership of the handle, you need to additionally
+call \f[C]rtcRetainGeometry\f[].
+For this reason, this function is fast and can be used during rendering.
+However, it is generally recommended to store the geometry handle inside
+the application\[aq]s geometry representation and look up the geometry
+handle from that representation directly.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcAttachGeometry], [rtcAttachGeometryByID]

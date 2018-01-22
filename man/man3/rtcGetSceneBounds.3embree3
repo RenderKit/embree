@@ -1,0 +1,45 @@
+.TH "rtcGetSceneBounds" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetSceneBounds\ \-\ returns\ the\ axis\-aligned\ bounding\ box\ of\ the\ scene
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCORE_ALIGN(16)\ RTCBounds
+{
+\ \ float\ lower_x,\ lower_y,\ lower_z,\ align0;
+\ \ float\ upper_x,\ upper_y,\ upper_z,\ align1;
+};
+
+void\ rtcGetSceneBounds(
+\ \ RTCScene\ scene,
+\ \ struct\ RTCBounds*\ bounds_o
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetSceneBounds\f[] function queries the axis\-aligned
+bounding box of the specified scene (\f[C]scene\f[] argument) and stores
+that bounding box to the provided destination pointer (\f[C]bounds_o\f[]
+argument).
+The stored bounding box consists of lower and upper bounds for the x, y,
+and z dimensions as specified by the \f[C]RTCBounds\f[] structure.
+.PP
+The provided destination pointer must be aligned to 16 bytes.
+The function may be invoked only after committing the scene; otherwise
+the result is undefined.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcGetSceneLinearBounds], [rtcCommitScene], [rtcJoinCommitScene]

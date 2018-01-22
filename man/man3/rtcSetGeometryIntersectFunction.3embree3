@@ -1,0 +1,102 @@
+.TH "rtcSetGeometryIntersectFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryIntersectFunction\ \-\ sets\ the\ callback\ function\ to
+\ \ intersect\ a\ user\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCIntersectFunctionNArguments
+{
+\ \ int*\ valid;
+\ \ void*\ geometryUserPtr;
+\ \ unsigned\ int\ primID;
+\ \ struct\ RTCIntersectContext*\ context;
+\ \ struct\ RTCRayHitN*\ rayhit;
+\ \ unsigned\ int\ N;
+};
+
+typedef\ void\ (*RTCIntersectFunctionN)(
+\ \ const\ struct\ RTCIntersectFunctionNArguments*\ args
+);
+
+void\ rtcSetGeometryIntersectFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCIntersectFunctionN\ intersect
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryIntersectFunction\f[] function registers a
+ray/primitive intersection callback function (\f[C]intersect\f[]
+argument) for the specified user geometry (\f[C]geometry\f[] argument).
+.PP
+Only a single callback function can be registered per geometry and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
+.PP
+The registered callback function is invoked by
+\f[C]rtcIntersect\f[]\-type ray queries to calculate the intersection of
+a ray packet of variable size with one user\-defined primitive.
+The callback function of type \f[C]RTCIntersectFunctionN\f[] gets passed
+a number of arguments through the
+\f[C]RTCIntersectFunctionNArguments\f[] structure.
+The value \f[C]N\f[] specifies the ray packet size, \f[C]valid\f[]
+points to an array of integers that specify whether the corresponding
+ray is valid (\-1) or invalid (0), the \f[C]geometryUserPtr\f[] member
+points to the geometry user data previously set through
+\f[C]rtcSetGeometryUserData\f[], the \f[C]context\f[] member points to
+the intersection context passed to the ray query, the \f[C]rayhit\f[]
+member points to a ray and hit packet of variable size \f[C]N\f[], and
+the \f[C]primID\f[] member identifies the primitive ID of the primitive
+to intersect.
+.PP
+The \f[C]ray\f[] component of the \f[C]rayhit\f[] structure contains
+valid data, in particular the \f[C]tfar\f[] value is the current closest
+hit distance found.
+All data inside the \f[C]hit\f[] component of the \f[C]rayhit\f[]
+structure are undefined and should not be read by the function.
+.PP
+The task of the callback function is to intersect each active ray from
+the ray packet with the specified user primitive.
+If the user\-defined primitive is missed by a ray of the ray packet, the
+function should return without modifying the ray or hit.
+If an intersection of the user\-defined primitive with the ray was found
+in the valid range (from \f[C]tnear\f[] to \f[C]tfar\f[]), it should
+update the hit distance of the ray (\f[C]tfar\f[] member) and the hit
+(\f[C]u\f[], \f[C]v\f[], \f[C]Ng\f[], \f[C]instID\f[], \f[C]geomID\f[],
+\f[C]primID\f[] members).
+In particular, the currently intersected instance is stored in the
+\f[C]instID\f[] field of the intersection context, which must be copied
+into the \f[C]instID\f[] member of the hit.
+.PP
+As a primitive might have multiple intersections with a ray, the
+intersection filter function needs to be invoked by the user geometry
+intersection callback for each encountered intersection, if filtering of
+intersections is desired.
+This can be achieved through the \f[C]rtcFilterIntersection\f[] call.
+.PP
+Within the user geometry intersect function, it is safe to trace new
+rays and create new scenes and geometries.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryOccludedFunction], [rtcSetGeometryUserData],
+[rtcFilterIntersection]

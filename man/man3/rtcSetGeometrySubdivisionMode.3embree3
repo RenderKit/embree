@@ -1,0 +1,58 @@
+.TH "rtcSetGeometrySubdivisionMode" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometrySubdivisionMode\ \-\ sets\ the\ subdivision\ mode
+\ \ of\ a\ subdivision\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometrySubdivisionMode(
+\ \ RTCGeometry\ geometry,
+\ \ unsigned\ int\ topologyID,
+\ \ enum\ RTCSubdivisionMode\ mode
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometrySubdivisionMode\f[] function sets the subdivision
+mode (\f[C]mode\f[] parameter) for the topology (\f[C]topologyID\f[]
+parameter) of the specified subdivision geometry (\f[C]geometry\f[]
+parameter).
+.PP
+The subdivision modes can be used to force linear interpolation for
+certain parts of the subdivision mesh:
+.IP \[bu] 2
+\f[C]RTC_SUBDIVISION_MODE_NO_BOUNDARY\f[]: Boundary patches are ignored.
+This way each rendered patch has a full set of control vertices.
+.IP \[bu] 2
+\f[C]RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY\f[]: The sequence of boundary
+control points are used to generate a smooth B\-spline boundary curve
+(default mode).
+.IP \[bu] 2
+\f[C]RTC_SUBDIVISION_MODE_PIN_CORNERS\f[]: Corner vertices are pinned to
+their location during subdivision.
+.IP \[bu] 2
+\f[C]RTC_SUBDIVISION_MODE_PIN_BOUNDARY\f[]: All vertices at the border
+are pinned to their location during subdivision.
+This way the boundary is interpolated linearly.
+This mode is typically used for texturing to also map texels at the
+border of the texture to the mesh.
+.IP \[bu] 2
+\f[C]RTC_SUBDIVISION_MODE_PIN_ALL\f[]: All vertices at the border are
+pinned to their location during subdivision.
+This way all patches are linearly interpolated.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_SUBDIVISION]

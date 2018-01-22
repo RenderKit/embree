@@ -1,0 +1,33 @@
+.TH "rtcDisableGeometry" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcDisableGeometry\ \-\ disables\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcDisableGeometry(RTCGeometry\ geometry);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcDisableGeometry\f[] function disables the specified geometry
+(\f[C]geometry\f[] argument).
+A disabled geometry is not rendered.
+Each geometry is enabled by default at construction time.
+.PP
+After disabling a geometry, the scene containing that geometry must be
+committed using \f[C]rtcCommitScene\f[] for the change to have effect.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry], [rtcEnableGeometry], [rtcCommitScene]

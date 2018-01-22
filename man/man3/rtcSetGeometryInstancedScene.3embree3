@@ -1,0 +1,33 @@
+.TH "rtcSetGeometryInstancedScene" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryInstancedScene\ \-\ sets\ the\ instanced\ scene\ of
+\ \ an\ instance\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryInstancedScene(
+\ \ RTCGeometry\ geometry,
+\ \ RTCScene\ scene
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryInstancedScene\f[] function sets the instanced
+scene (\f[C]scene\f[] argument) of the specified instance geometry
+(\f[C]geometry\f[] argument).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_INSTANCE], [rtcSetGeometryTransform]

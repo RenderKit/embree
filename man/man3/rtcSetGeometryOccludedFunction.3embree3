@@ -1,0 +1,91 @@
+.TH "rtcSetGeometryOccludedFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryOccludedFunction\ \-\ sets\ the\ callback\ function\ to
+\ \ test\ a\ user\ geometry\ for\ occlusion
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCOccludedFunctionNArguments
+{
+\ \ int*\ valid;
+\ \ void*\ geometryUserPtr;
+\ \ unsigned\ int\ primID;
+\ \ struct\ RTCIntersectContext*\ context;
+\ \ struct\ RTCRayN*\ ray;
+\ \ unsigned\ int\ N;
+};
+
+typedef\ void\ (*RTCOccludedFunctionN)(
+\ \ const\ struct\ RTCOccludedFunctionNArguments*\ args
+);
+
+void\ rtcSetGeometryOccludedFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCOccludedFunctionN\ filter
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryOccludedFunction\f[] function registers a
+ray/primitive occlusion callback function (\f[C]filter\f[] argument) for
+the specified user geometry (\f[C]geometry\f[] argument).
+.PP
+Only a single callback function can be registered per geometry, and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
+.PP
+The registered callback function is invoked by
+\f[C]rtcOccluded\f[]\-type ray queries to test whether the rays of a
+packet of variable size are occluded by a user\-defined primitive.
+The callback function of type \f[C]RTCOccludedFunctionN\f[] gets passed
+a number of arguments through the \f[C]RTCOccludedFunctionNArguments\f[]
+structure.
+The value \f[C]N\f[] specifies the ray packet size, \f[C]valid\f[]
+points to an array of integers which specify whether the corresponding
+ray is valid (\-1) or invalid (0), the \f[C]geometryUserPtr\f[] member
+points to the geometry user data previously set through
+\f[C]rtcSetGeometryUserData\f[], the \f[C]context\f[] member points to
+the intersection context passed to the ray query, the \f[C]ray\f[]
+member points to a ray packet of variable size \f[C]N\f[], and the
+\f[C]primID\f[] member identifies the primitive ID of the primitive to
+test for occlusion.
+.PP
+The task of the callback function is to intersect each active ray from
+the ray packet with the specified user primitive.
+If the user\-defined primitive is missed by a ray of the ray packet, the
+function should return without modifying the ray.
+If an intersection of the user\-defined primitive with the ray was found
+in the valid range (from \f[C]tnear\f[] to \f[C]tfar\f[]), it should set
+the \f[C]tfar\f[] member of the ray to \f[C]\-inf\f[].
+.PP
+As a primitive might have multiple intersections with a ray, the
+occlusion filter function needs to be invoked by the user geometry
+occlusion callback for each encountered intersection, if filtering of
+intersections is desired.
+This can be achieved through the \f[C]rtcFilterOcclusion\f[] call.
+.PP
+Within the user geometry occlusion function, it is safe to trace new
+rays and create new scenes and geometries.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryIntersectFunction], [rtcSetGeometryUserData],
+[rtcFilterOcclusion]

@@ -1,0 +1,60 @@
+.TH "rtcInterpolateN" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcInterpolateN\ \-\ performs\ N\ interpolations\ of\ vertex\ attribute\ data
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCInterpolateNArguments
+{
+\ \ RTCGeometry\ geometry;
+\ \ const\ void*\ valid;
+\ \ const\ unsigned\ int*\ primIDs;
+\ \ const\ float*\ u;
+\ \ const\ float*\ v;
+\ \ unsigned\ int\ N;
+\ \ enum\ RTCBufferType\ bufferType;
+\ \ unsigned\ int\ bufferSlot;
+\ \ float*\ P;
+\ \ float*\ dPdu;
+\ \ float*\ dPdv;
+\ \ float*\ ddPdudu;
+\ \ float*\ ddPdvdv;
+\ \ float*\ ddPdudv;
+\ \ unsigned\ int\ valueCount;
+};
+
+void\ rtcInterpolateN(
+\ \ const\ struct\ RTCInterpolateNArguments*\ args
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcInterpolateN\f[] is similar to \f[C]rtcInterpolate\f[], but
+performs \f[C]N\f[] many interpolations at once.
+It additionally gets an array of u/v coordinates and a valid mask
+(\f[C]valid\f[] parameter) that specifies which of these coordinates are
+valid.
+The valid mask points to \f[C]N\f[] integers, and a value of \-1 denotes
+valid and 0 invalid.
+If the valid pointer is \f[C]NULL\f[] all elements are considers valid.
+The destination arrays are filled in structure of array (SOA) layout.
+The value \f[C]N\f[] must be divisible by 4.
+.PP
+To use \f[C]rtcInterpolateN\f[] for a geometry, all changes to that
+geometry must be properly committed using \f[C]rtcCommitGeometry\f[].
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcInterpolate]

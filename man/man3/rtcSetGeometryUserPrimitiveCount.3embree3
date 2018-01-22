@@ -1,0 +1,33 @@
+.TH "rtcSetGeometryUserPrimitiveCount" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryUserPrimitiveCount\ \-\ sets\ the\ number\ of\ primitives
+\ \ of\ a\ user\-defined\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryUserPrimitiveCount(
+\ \ RTCGeometry\ geometry,
+\ \ unsigned\ int\ userPrimitiveCount
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryUserPrimitiveCount\f[] function sets the number
+of user\-defined primitives (\f[C]userPrimitiveCount\f[] parameter) of
+the specified user\-defined geometry (\f[C]geometry\f[] parameter).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_USER]

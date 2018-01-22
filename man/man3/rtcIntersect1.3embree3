@@ -1,0 +1,94 @@
+.TH "rtcIntersect1" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcIntersect1\ \-\ finds\ the\ closest\ hit\ for\ a\ single\ ray
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcIntersect1(
+\ \ RTCScene\ scene,
+\ \ struct\ RTCIntersectContext*\ context,
+\ \ struct\ RTCRayHit*\ rayhit
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcIntersect1\f[] function finds the closest hit of a single
+ray with the scene (\f[C]scene\f[] argument).
+The provided ray/hit structure (\f[C]rayhit\f[] argument) contains the
+ray to intersect and some hit output fields that are filled when a hit
+is found.
+.PP
+The user has to initialize the ray origin (\f[C]org\f[] ray member), ray
+direction (\f[C]dir\f[] ray member), ray segment (\f[C]tnear\f[],
+\f[C]tfar\f[] ray members), and set the ray flags to \f[C]0\f[]
+(\f[C]flags\f[] ray member).
+If the scene contains motion blur geometries, also the ray time
+(\f[C]time\f[] ray member) must be initialized to a value in the range
+[0, 1].
+If ray masks are enabled at compile time, the ray mask (\f[C]mask\f[]
+ray member) must be initialized as well.
+The ray segment has to be in the range [0, ∞], thus ranges that start
+behind the ray origin are not valid, but ranges can reach to infinity.
+See Section [RTCRay] for the ray layout description.
+.PP
+The instance ID (\f[C]instID\f[] hit member) and geometry ID
+(\f[C]geomID\f[] hit member) of the hit data must be initialized to
+\f[C]RTC_INVALID_GEOMETRY_ID\f[] (\-1).
+.PP
+Further, an intersection context for the ray query function must be
+created and initialized (see \f[C]rtcInitIntersectContext\f[]).
+.PP
+When no intersection is found, the ray/hit data is not updated.
+When an intersection is found, the hit distance is written into the
+\f[C]tfar\f[] member of the ray and all hit data is set, such as
+unnormalized geometry normal in object space (\f[C]Ng\f[] hit member),
+local hit coordinates (\f[C]u\f[], \f[C]v\f[] hit member), instance ID
+(\f[C]instID\f[] hit member), geometry ID (\f[C]geomID\f[] hit member),
+and primitive ID (\f[C]primID\f[] hit member).
+See Section [RTCHit] for the hit layout description.
+.PP
+If the instance ID was set (thus it is not equal to
+\f[C]RTC_INVALID_GEOMETRY_ID\f[]), the instance ID corresponds to the
+geometry ID of the hit instance of the top\-level scene, the geometry ID
+corresponds to the hit geometry inside the hit instanced scene, and the
+primitive ID corresponds to the n\-th primitive of that geometry.
+.PP
+If the instance ID was not set (thus it is still equal to
+\f[C]RTC_INVALID_GEOMETRY_ID\f[]), the geometry ID corresponds to the
+hit geometry inside the scene, and the primitive ID corresponds to the
+n\-th primitive of that geometry.
+.PP
+The implementation makes no guarantees that primitives whose hit
+distance is exactly at (or very close to) \f[C]tnear\f[] or
+\f[C]tfar\f[] are hit or missed.
+If you want to exclude intersections at \f[C]tnear\f[] just pass a
+slightly enlarged \f[C]tnear\f[], and if you want to include
+intersections at \f[C]tfar\f[] pass a slightly enlarged \f[C]tfar\f[].
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+The ray/hit structure must be aligned to 16 bytes.
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcOccluded1], [RTCRayHit], [RTCRay], [RTCHit]

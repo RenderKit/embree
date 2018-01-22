@@ -1,0 +1,30 @@
+.TH "rtcReleaseBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcReleaseBuffer\ \-\ decrements\ the\ buffer\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcReleaseBuffer(RTCBuffer\ buffer);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Buffer objects are reference counted.
+The \f[C]rtcReleaseBuffer\f[] function decrements the reference count of
+the passed buffer object (\f[C]buffer\f[] argument).
+When the reference count falls to 0, the buffer gets destroyed.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewBuffer], [rtcRetainBuffer]

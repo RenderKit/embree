@@ -1,0 +1,32 @@
+.TH "rtcRetainScene" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcRetainScene\ \-\ increments\ the\ scene\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcRetainScene(RTCScene\ scene);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Scene objects are reference counted.
+The \f[C]rtcRetainScene\f[] function increments the reference count of
+the passed scene object (\f[C]scene\f[] argument).
+This function together with \f[C]rtcReleaseScene\f[] allows to use the
+internal reference counting in a C++ wrapper class to handle the
+ownership of the object.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewScene], [rtcReleaseScene]

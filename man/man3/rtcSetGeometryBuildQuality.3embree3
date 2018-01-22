@@ -1,0 +1,54 @@
+.TH "rtcSetGeometryBuildQuality" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryBuildQuality\ \-\ sets\ the\ build\ quality\ for\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryBuildQuality(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCBuildQuality\ quality
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryBuildQuality\f[] function sets the build quality
+(\f[C]quality\f[] argument) for the specified geometry
+(\f[C]geometry\f[] argument).
+The per\-geometry build quality is only a hint and may be ignored.
+Embree currently uses the per\-geometry build quality when the scene
+build quality is set to \f[C]RTC_BUILD_QUALITY_LOW\f[].
+In this mode a two\-level acceleration structure is build, and
+geometries build a separate acceleration structure using the geometry
+build quality.
+The per\-geometry build quality can be one of:
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_LOW\f[]: Creates lower quality data structures,
+e.g.
+for dynamic scenes.
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_MEDIUM\f[]: Default build quality for most
+usages.
+Gives a good compromise between build and render performance.
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_HIGH\f[]: Creates higher quality data structures
+for final\-frame rendering.
+Enables a spatial split builder for certain primitive types.
+.IP \[bu] 2
+\f[C]RTC_BUILD_QUALITY_REFIT\f[]: Uses a BVH refitting approach when
+changing only the vertex buffer.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetSceneBuildQuality]
