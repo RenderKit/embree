@@ -517,7 +517,7 @@ namespace embree
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << std::endl;
       
-      for (size_t i=0; i<c.edge_valence; i++) {
+      for (unsigned int i=0; i<min(c.edge_valence,(unsigned int)MAX_RING_FACE_VALENCE); i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
         o << std::endl;

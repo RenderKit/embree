@@ -776,7 +776,8 @@ namespace embree
         convert_bspline_to_bezier(groupNode->children[i]);
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
-      hmesh->convert_bspline_to_bezier();
+      if (hmesh)
+        hmesh->convert_bspline_to_bezier();
     }
     return node;
   }
