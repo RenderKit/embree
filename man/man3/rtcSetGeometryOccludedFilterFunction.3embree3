@@ -3,7 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcSetGeometryOccludedFilterFunction\ \-\ sets\ occlusion\ filter\ for\ geometry
+rtcSetGeometryOccludedFilterFunction\ \-\ sets\ the\ occlusion\ filter
+\ \ for\ the\ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,30 +13,22 @@ rtcSetGeometryOccludedFilterFunction\ \-\ sets\ occlusion\ filter\ for\ geometry
 \f[C]
 #include\ <embree3/rtcore.h>
 
-struct\ RTCFilterFunctionNArguments
-{
-\ \ int*\ valid;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ valid\ mask
-\ \ void*\ geomUserPtr;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ geometry\ user\ data
-\ \ const\ struct\ RTCIntersectContext*\ context;\ //!<\ intersection\ context\ as\ passed\ to\ rtcIntersect/rtcOccluded
-\ \ struct\ RTCRayN*\ ray;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ ray\ and\ previous\ hit
-\ \ struct\ RTCHitN*\ potentialHit;\ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ potential\ new\ hit
-\ \ unsigned\ int\ N;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ size\ of\ ray\ packet
-};
-
-typedef\ void\ (*RTCFilterFunctionN)(const\ struct\ RTCFilterFunctionNArguments*\ const\ args);
-
-void\ rtcSetGeometryOccludedFilterFunction(RTCGeometry\ geometry,\ RTCFilterFunctionN\ func);
+void\ rtcSetGeometryOccludedFilterFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCFilterFunctionN\ filter
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
 The \f[C]rtcSetGeometryOccludedFilterFunction\f[] function registers an
-intersection filter callback function (\f[C]func\f[] argument) for the
+occlusion filter callback function (\f[C]filter\f[] argument) for the
 specified geometry (\f[C]geometry\f[] argument).
-Only a single callback function can get registered per geometry and
-further invokations overwrite the previously set callback function.
-Passing \f[C]NULL\f[] as function pointer disables the set callback
-function again.
+.PP
+Only a single callback function can be registered per geometry, and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
 .PP
 The registered intersection filter function is invoked for every hit
 encountered during the \f[C]rtcOccluded\f[]\-type ray queries and can
@@ -43,15 +36,15 @@ accept or reject that hit.
 The feature can be used to define a silhouette for a primitive and
 reject hits that are outside the silhouette.
 E.g.
-a tree leaf could be modeled with an alpha texture that decides if hit
-points lie inside or outside the leaf.
+a tree leaf could be modeled with an alpha texture that decides whether
+hit points lie inside or outside the leaf.
 .PP
 Please see the description of the
 \f[C]rtcSetGeometryIntersectFilterFunction\f[] for a description of the
 filter callback function.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

@@ -3,8 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcSetGeometryBoundsFunction\ \-\ sets\ callback\ to\ query\ bounding\ box
-\ \ of\ user\ defined\ primitives
+rtcSetGeometryBoundsFunction\ \-\ sets\ a\ callback\ to\ query\ the
+\ \ bounding\ box\ of\ user\-defined\ primitives
 \f[]
 .fi
 .SS SYNOPSIS
@@ -15,49 +15,58 @@ rtcSetGeometryBoundsFunction\ \-\ sets\ callback\ to\ query\ bounding\ box
 
 struct\ RTCBoundsFunctionArguments
 {
-\ \ void*\ userPtr;\ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ user\ data
-\ \ void*\ geomUserPtr;\ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ geometry\ user\ data
-\ \ unsigned\ int\ item;\ \ \ \ \ \ \ \ \ \ //!<\ item\ to\ calculate\ bounds\ for
-\ \ unsigned\ int\ time;\ \ \ \ \ \ \ \ \ \ //!<\ time\ to\ calculate\ bounds\ for
-\ \ struct\ RTCBounds*\ bounds_o;\ //!<\ returns\ calculated\ bounds
+\ \ void*\ geometryUserPtr;
+\ \ unsigned\ int\ primID;
+\ \ unsigned\ int\ timeStep;
+\ \ struct\ RTCBounds*\ bounds_o;
 };
 
-typedef\ void\ (*RTCBoundsFunction)(const\ struct\ RTCBoundsFunctionArguments*\ const\ args);
+typedef\ void\ (*RTCBoundsFunction)(
+\ \ const\ struct\ RTCBoundsFunctionArguments*\ args
+);
 
-void\ rtcSetGeometryBoundsFunction(RTCGeometry\ geometry,\ RTCBoundsFunction\ func,\ void*\ userPtr);
+void\ rtcSetGeometryBoundsFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCBoundsFunction\ bounds,
+\ \ void*\ userPtr
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
 The \f[C]rtcSetGeometryBoundsFunction\f[] function registers a bounding
-box callback function \f[C]func\f[] with payload \f[C]userPtr\f[] for
-the specified user geometry \f[C]geometry\f[].
-Only a single callback function can get registered per geometry and
-further invokations overwrite the previously set callback function.
-Passing \f[C]NULL\f[] as function pointer disables the set callback
-function again.
+box callback function (\f[C]bounds\f[] argument) with payload
+(\f[C]userPtr\f[] argument) for the specified user geometry
+(\f[C]geometry\f[] argument).
+.PP
+Only a single callback function can be registered per geometry, and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
 .PP
 The registered bounding box callback function is invoked to calculate
-axis aligned bounding boxes of the primitives of the user defined
+axis\-aligned bounding boxes of the primitives of the user\-defined
 geometry during spatial acceleration structure construction.
-The bounding box callback \f[C]func\f[] is invoked with a pointer to a
-structure of type \f[C]RTCBoundsFunctionArguments\f[] which contains
-various arguments, such as: the payload specified at registration time
-(\f[C]userPtr\f[] parameter), the per geometry user data pointer
-(\f[C]geomUserPtr\f[] parameter), the ID of the primitive to calculate
-the bounds for (\f[C]item\f[] parameter), the time step at which to
-calculate the bounds (\f[C]time\f[] parameter) and a memory location to
-write the calculated bound to (\f[C]bounds_o\f[] parameter).
+The bounding box callback of \f[C]RTCBoundsFunction\f[] type is invoked
+with a pointer to a structure of type
+\f[C]RTCBoundsFunctionArguments\f[] which contains various arguments,
+such as: the user data of the geometry (\f[C]geometryUserPtr\f[]
+member), the ID of the primitive to calculate the bounds for
+(\f[C]primID\f[] member), the time step at which to calculate the bounds
+(\f[C]timeStep\f[] member), and a memory location to write the
+calculated bound to (\f[C]bounds_o\f[] member).
 .PP
 In a typical usage scenario one would store a pointer to the internal
 representation of the user geometry object using
 \f[C]rtcSetGeometryUserData\f[].
 The callback function can then read that pointer from the
-\f[C]geomUserPtr\f[] field and calculate the proper bounding box for the
-requested primitive and time, and store that bounding box to the
-\f[C]bounds_o\f[] structure.
+\f[C]geometryUserPtr\f[] field and calculate the proper bounding box for
+the requested primitive and time, and store that bounding box to the
+destination structure (\f[C]bounds_o\f[] member).
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_USER]

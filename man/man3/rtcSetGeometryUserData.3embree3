@@ -3,7 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcSetGeometryUserData\ \-\ sets\ user\ data\ pointer\ of\ geometry
+rtcSetGeometryUserData\ \-\ sets\ the\ user\-defined\ data\ pointer\ of\ the
+\ \ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -17,20 +18,20 @@ void\ rtcSetGeometryUserData(RTCGeometry\ geometry,\ void*\ userPtr);
 .fi
 .SS DESCRIPTION
 .PP
-The \f[C]rtcSetGeometryUserData\f[] function sets a user data pointer
-(\f[C]userPtr\f[] argument) for some geometry (\f[C]geometry\f[]
+The \f[C]rtcSetGeometryUserData\f[] function sets the user\-defined data
+pointer (\f[C]userPtr\f[] argument) for a geometry (\f[C]geometry\f[]
 argument).
-This user data pointer is intended to be pointing to the applications
-representation of the geometry, and is passed to various callback
-functions.
+This user data pointer is intended to be pointing to the
+application\[aq]s representation of the geometry, and is passed to
+various callback functions.
 The application can use this pointer inside the callback functions to
 access its geometry representation.
 .PP
-The \f[C]rtcGetGeometryUserData\f[] function can get used to query an
-already set user geometry pointer.
+The \f[C]rtcGetGeometryUserData\f[] function can be used to query an
+already set user data pointer of a geometry.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcOccluded4/8/16\ \-\ find\ any\ hit\ for\ ray\ packet
+rtcOccluded4/8/16\ \-\ finds\ any\ hits\ for\ a\ ray\ packet
 \f[]
 .fi
 .SS SYNOPSIS
@@ -37,51 +37,46 @@ void\ rtcOccluded16(
 .SS DESCRIPTION
 .PP
 The \f[C]rtcOccluded4/8/16\f[] functions checks for each active ray of
-the ray packet of size 4,8, or 16 (\f[C]ray\f[] argument) whether there
+the ray packet of size 4, 8, or 16 (\f[C]ray\f[] argument) whether there
 is any hit with the scene (\f[C]scene\f[] argument).
-No hit is returned, but in case any hit got found the \f[C]geomID\f[]
-component of the corresponding ray is set to \f[C]0\f[].
-See Section \f[C]RTCRay\f[] for a description of the ray layout and how
-to setup a ray.
+See Section [rtcOccluded1] for a description of how to set up and trace
+occlusion rays.
 .PP
-A ray valid mask has to get provided (\f[C]valid\f[] argument) which
-stores one 32\-bit integer (\f[C]\-1\f[] means valid and \f[C]0\f[]
-invalid) per ray in the packet.
-Only active rays are processed and hit data of inactive rays is not
+A ray valid mask must be provided (\f[C]valid\f[] argument) which stores
+one 32\-bit integer (\f[C]\-1\f[] means valid and \f[C]0\f[] invalid)
+per ray in the packet.
+Only active rays are processed, and hit data of inactive rays is not
 changed.
-.PP
-The intersection context (\f[C]context\f[] argument) can specify some
-flags to optimize traversal and a filter callback function to be invoked
-for every intersection.
-Further the pointer to the intersection context is propagated to
-callback functions invoked during traversal and can thus be used to
-extend the ray with additional data.
-See Section \f[C]RTCIntersectContext\f[] for more information.
-.PP
-The ray pointer passed to callback functions is not guaranteed to be
-identical to the original ray provided.
-To extend the ray with additional data to be accessed in callback
-functions use the intersection context.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.IP
+.nf
+\f[C]
+\f[]
+.fi
 .PP
 The implementation of these functions is guaranteed to invoke callback
 functions always with the same ray packet size and ordering of rays as
 specified initially.
 .PP
-For \f[C]rtcOccluded4\f[] the ray packet has to be aligned to 16 bytes,
-for \f[C]rtcOccluded8\f[] alignment has to be 32 bytes, and for
-\f[C]rtcOccluded16\f[] alignment has to be 64 bytes.
+For \f[C]rtcOccluded4\f[] the ray packet must be aligned to 16 bytes,
+for \f[C]rtcOccluded8\f[] the alignment must be 32 bytes, and for
+\f[C]rtcOccluded16\f[] the alignment must be 64 bytes.
 .PP
 Further, \f[C]rtcOccluded4\f[] is only available when Embree was
-compiled with EMBREE_RAY_PACKETS turned on in cmake (which is the
-default).
-Furhter, the \f[C]rtcOccluded8\f[] function is only working if Embree
-got compiled with \f[C]AVX\f[] or \f[C]AVX2\f[] and the CPU running on
+compiled with \f[C]EMBREE_RAY_PACKETS\f[] turned on in CMake (which is
+the default).
+Further, the \f[C]rtcOccluded8\f[] function is works only if Embree was
+compiled with \f[C]AVX\f[] or \f[C]AVX2\f[] and the CPU it is running on
 supports the enabled ISA.
-Similar, the \f[C]rtcOccluded16\f[] function is only working if Embree
-got compiled with \f[C]AVX512SKX\f[] or \f[C]AVX512KNL\f[] and the CPU
+Similar, the \f[C]rtcOccluded16\f[] function works only if Embree was
+compiled with \f[C]AVX512SKX\f[] or \f[C]AVX512KNL\f[] and the CPU it is
 running on supports the enabled ISA.
-For this reason, use these functions only after checking if they are
-working by using an \f[C]rtcGetDeviceParameter\f[] query.
+For this reason, use these functions only after checking whether they
+are available by using an \f[C]rtcGetDeviceParameter\f[] query.
 .SS EXIT STATUS
 .PP
 For performance reasons this function does not do any error checks, thus

@@ -3,7 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcSetNewGeometryBuffer\ \-\ creates\ and\ sets\ a\ new\ data\ buffer
+rtcSetNewGeometryBuffer\ \-\ creates\ and\ assigns\ a\ new\ data\ buffer\ to
+\ \ the\ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -18,7 +19,7 @@ void*\ rtcSetNewGeometryBuffer(
 \ \ unsigned\ int\ slot,
 \ \ enum\ RTCFormat\ format,
 \ \ size_t\ byteStride,
-\ \ unsigned\ int\ numItems
+\ \ size_t\ itemCount
 );
 \f[]
 .fi
@@ -26,25 +27,24 @@ void*\ rtcSetNewGeometryBuffer(
 .PP
 The \f[C]rtcSetNewGeometryBuffer\f[] function creates a new data buffer
 of specified format (\f[C]format\f[] argument), byte stride
-(\f[C]byteStride\f[] argument), and number of items (\f[C]numItems\f[]
-argument) and assigns it to some geometry buffer slot (\f[C]type\f[] and
+(\f[C]byteStride\f[] argument), and number of items (\f[C]itemCount\f[]
+argument), and assigns it to a geometry buffer slot (\f[C]type\f[] and
 \f[C]slot\f[] argument) of the specified geometry (\f[C]geometry\f[]
 argument).
 The buffer data is managed internally and automatically freed when the
 geometry is destroyed.
 .PP
-The byte stride (\f[C]byteStride\f[] argument) has to be aligned to 4
-bytes, otherwise the \f[C]rtcSetNewGeometryBuffer\f[] function will
+The byte stride (\f[C]byteStride\f[] argument) must be aligned to 4
+bytes; otherwise the \f[C]rtcSetNewGeometryBuffer\f[] function will
 fail.
 .PP
-The allocated buffer will automatically get overallocated slightly when
-used as vertex buffers, where a requirement is that each buffer element
-should be readable using 16 byte SSE load instructions.
+The allocated buffer will be automatically over\-allocated slightly when
+used as a vertex buffer, where a requirement is that each buffer element
+should be readable using 16\-byte SSE load instructions.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
-[rtcSetGeometryBuffer], [rtcSetGeometryBufferRange],
-[rtcSetSharedGeometryBuffer]
+[rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer]

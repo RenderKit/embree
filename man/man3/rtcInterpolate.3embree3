@@ -17,71 +17,69 @@ struct\ RTCInterpolateArguments
 \ \ RTCGeometry\ geometry;
 \ \ unsigned\ int\ primID;
 \ \ float\ u,\ v;
-\ \ enum\ RTCBufferType\ buffer;
+\ \ enum\ RTCBufferType\ bufferType;
+\ \ unsigned\ int\ bufferSlot;
 \ \ float*\ P;
 \ \ float*\ dPdu;
 \ \ float*\ dPdv;
 \ \ float*\ ddPdudu;
 \ \ float*\ ddPdvdv;
 \ \ float*\ ddPdudv;
+\ \ unsigned\ int\ valueCount;
 };
 
-void\ rtcInterpolate(const\ struct\ RTCInterpolateArguments*\ const\ args);
-void\ rtcInterpolate0(...);
-void\ rtcInterpolate1(...);
-void\ rtcInterpolate2(...);
+void\ rtcInterpolate(
+\ \ const\ struct\ RTCInterpolateArguments*\ args
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
 The \f[C]rtcInterpolate\f[] function smoothly interpolates per\-vertex
 data over the geometry.
-This interpolation is supported for triangle meshes, quad meshs, curve
-geometries, and subdivision geometry.
-The interpolated value can be calculated, but also first and second
-order derivatives of that value.
+This interpolation is supported for triangle meshes, quad meshes, curve
+geometries, and subdivision geometries.
+Apart from interpolating the vertex attribute itself, it is also
+possible to get the first and second order derivatives of that value.
 This interpolation ignores displacements of subdivision surfaces and
 always interpolates the underlying base surface.
 .PP
 The \f[C]rtcInterpolate\f[] call gets passed a number of arguments
 inside a structure of type \f[C]RTCInterpolateArguments\f[].
-The function smoothly interpolates the per\-vertex data stored in the
-specified geometry buffer (\f[C]buffer\f[] parameter) to the u/v
-location (\f[C]u\f[] and \f[C]v\f[] parameters) of the primitive
-(\f[C]primID\f[] parameter) of the geometry (\f[C]geometry\f[]
-parameter).
-The number of values \f[C]M\f[] to interpolate are derived from the
-format of the interpolation buffer (\f[C]buffer\f[] parameter).
-As interpolation buffer one can specify the
-\f[C]RTC_VERTEX_BUFFER_(i)\f[] as well as user vertex buffers
-\f[C]RTC_USER_VERTEX_BUFFER_(i)\f[].
+For some geometry (\f[C]geometry\f[] parameter) this function smoothly
+interpolates the per\-vertex data stored inside the specified geometry
+buffer (\f[C]bufferType\f[] and \f[C]bufferSlot\f[] parameters) to the
+u/v location (\f[C]u\f[] and \f[C]v\f[] parameters) of the primitive
+(\f[C]primID\f[] parameter).
+The number of floating point values to interpolate and store to the
+destination arrays can be specified using the \f[C]valueCount\f[]
+parameter.
+As interpolation buffer, one can specify vertex buffers
+(\f[C]RTC_BUFFER_TYPE_VERTEX\f[]) and vertex attribute buffers
+(\f[C]RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE\f[]) as well.
 .PP
-The \f[C]rtcInterpolate\f[] call stores \f[C]M\f[] interpolated floating
-point values to the memory location pointed to by \f[C]P\f[].
+The \f[C]rtcInterpolate\f[] call stores \f[C]valueCount\f[] number of
+interpolated floating point values to the memory location pointed to by
+\f[C]P\f[].
 One can avoid storing the interpolated value by setting \f[C]P\f[] to
-NULL.
+\f[C]NULL\f[].
 .PP
 The first order derivative of the interpolation by u and v are stored at
 the \f[C]dPdu\f[] and \f[C]dPdv\f[] memory locations.
 One can avoid storing first order derivatives by setting both
-\f[C]dPdu\f[] and \f[C]dPdv\f[] to NULL.
+\f[C]dPdu\f[] and \f[C]dPdv\f[] to \f[C]NULL\f[].
 .PP
 The second order derivatives are stored at the \f[C]ddPdudu\f[],
 \f[C]ddPdvdv\f[], and \f[C]ddPdudv\f[] memory locations.
 One can avoid storing second order derivatives by setting these three
-pointers to NULL.
+pointers to \f[C]NULL\f[].
 .PP
-The \f[C]rtcInterpolate0\f[], \f[C]rtcInterpolate1\f[], and
-\f[C]rtcInterpolate2\f[] functions, are versions that just interpolate
-the value (\f[C]rtcInterpolate0\f[]), additionally calculate first
-derivatives (\f[C]rtcInterpolate1\f[]), or additionally calculate second
-derivatives (\f[C]rtcInterpolate2\f[]), by accepting standard function
-arguments instead of the \f[C]RTCInterpolateArguments\f[] structure.
+To use \f[C]rtcInterpolate\f[] for a geometry, all changes to that
+geometry must be properly committed using \f[C]rtcCommitGeometry\f[].
 .PP
-To use \f[C]rtcInterpolate\f[] for some geometry, all changes to that
-geometry have to be properly commited using \f[C]rtcCommitGeometry\f[].
-.PP
-All input buffers and output arrays must be padded to 16 bytes.
+All input buffers and output arrays must be padded to 16 bytes, as the
+implementation uses 16\-byte SSE instructions to read and write into
+these buffers.
 .PP
 See tutorial [Interpolation] for an example of using the
 \f[C]rtcInterpolate\f[] function.

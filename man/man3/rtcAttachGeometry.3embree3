@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcAttachGeometry\ \-\ attach\ geometry\ to\ scene
+rtcAttachGeometry\ \-\ attaches\ a\ geometry\ to\ the\ scene
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,23 +12,27 @@ rtcAttachGeometry\ \-\ attach\ geometry\ to\ scene
 \f[C]
 #include\ <embree3/rtcore.h>
 
-unsigned\ int\ rtcAttachGeometry(RTCScene\ scene,\ RTCGeometry\ geometry);
+unsigned\ int\ rtcAttachGeometry(
+\ \ RTCScene\ scene,
+\ \ RTCGeometry\ geometry
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
-The \f[C]rtcAttachGeometry\f[] function attaches a geometry to a scene
-and assigns a geometry ID to that geometry.
+The \f[C]rtcAttachGeometry\f[] function attaches a geometry
+(\f[C]geometry\f[] argument) to a scene (\f[C]scene\f[] argument) and
+assigns a geometry ID to that geometry.
 All geometries attached to a scene are defined to be included inside the
 scene.
 A geometry can only get attached to a single scene at a given time.
 However, it is possible to detach and re\-attach a geometry to a
 different scene.
 The geometry ID is unique for the scene, and is used to identify the
-geometry when hit by a ray using ray queries.
+geometry when hit by a ray during ray queries.
 .PP
-This function is thread safe, thus multiple threads can attach
-geometries to some scene.
+This function is thread\-safe, thus multiple threads can attach
+geometries to a scene in parallel.
 .PP
 The geometry IDs are assigned sequentially, starting from 0, as long as
 no geometry got detached.
@@ -39,13 +43,13 @@ compact range of IDs.
 .PP
 These rules allow the application to manage a dynamic array to
 efficiently map from geometry IDs to its own geometry representation.
-Alternatively, the application can also use per geometry user data to
+Alternatively, the application can also use per\-geometry user data to
 map to its geometry representation.
 See \f[C]rtcSetGeometryUserData\f[] and \f[C]rtcGetGeometryUserData\f[]
 for more information.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

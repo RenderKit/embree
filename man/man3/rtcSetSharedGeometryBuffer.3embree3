@@ -3,7 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcSetSharedGeometryBuffer\ \-\ sets\ shared\ data\ buffer
+rtcSetSharedGeometryBuffer\ \-\ assigns\ a\ view\ of\ a\ shared\ data\ buffer
+\ \ to\ a\ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -20,40 +21,35 @@ void\ rtcSetSharedGeometryBuffer(
 \ \ const\ void*\ ptr,
 \ \ size_t\ byteOffset,
 \ \ size_t\ byteStride,
-\ \ unsigned\ int\ numItems
+\ \ size_t\ itemCount
 );
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
-The \f[C]rtcSetSharedGeometryBuffer\f[] function assigns a shared user
-managed data buffer (\f[C]ptr\f[] argument) of specified format
-(\f[C]format\f[] argument) to some geometry buffer slot (\f[C]type\f[]
-and \f[C]slot\f[] argument) of the specified geometry (\f[C]geometry\f[]
-argument).
-The buffer data has to remain valid as long as the buffer may get used,
-and the user is responsible to free the buffer data.
+The \f[C]rtcSetSharedGeometryBuffer\f[] function binds a view of a
+shared user\-managed data buffer (\f[C]ptr\f[] argument) to a geometry
+buffer type and slot (\f[C]type\f[] and \f[C]slot\f[] argument) of the
+specified geometry (\f[C]geometry\f[] argument).
 .PP
-The \f[C]byteOffset\f[] parameter specifies a byte offset to the start
-of the first buffer element, the \f[C]byteStride\f[] parameter specifies
-a byte stride between the different elements of the buffer, and the
-\f[C]numItems\f[] parameter specifies the number of elements stored
-inside the buffer.
-This support for offset and stride allows the application flexibility in
-the data layout of shared buffers.
+One can specify the start of the first buffer element in bytes
+(\f[C]byteOffset\f[] argument), the byte stride between individual
+buffer elements (\f[C]byteStride\f[] argument), the format of the buffer
+elements (\f[C]format\f[] argument), and the number of elements to bind
+(\f[C]itemCount\f[]).
 .PP
-The start address (\f[C]ptr\f[] argument), byte offset
-(\f[C]byteOffset\f[] argument), and byte stride (\f[C]byteStride\f[]
-argument) always have to be aligned to 4 bytes, otherwise the
-\f[C]rtcSetSharedGeometryBuffer\f[] function will fail.
+The start address (\f[C]byteOffset\f[] argument) and stride
+(\f[C]byteStride\f[] argument) must be both aligned to 4 bytes;
+otherwise the \f[C]rtcSetGeometryBuffer\f[] function will fail.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
 .PP
-When used as a vertex buffer (\f[C]RTC_VERTEX_BUFFER\f[] and
-\f[C]RTC_USER_VERTEX_BUFFER\f[]), the last buffer element must be
-readable using 16 byte SSE load instructions, thus padding the last
-element is required for some layouts.
-E.g.
-a standard float3 vertex buffer layout should add storage for at least
-one more float to the end of the buffer.
+The buffer data must remain valid for as long as the buffer may be used,
+and the user is responsible for freeing the buffer data when no longer
+required.
 .PP
 Sharing buffers can significantly reduce the memory required by the
 application, thus we recommend using this feature.
@@ -62,9 +58,8 @@ index structures index into the vertex buffer, resulting in even higher
 memory savings.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
-[rtcSetGeometryBuffer], [rtcSetGeometryBufferRange],
-[rtcSetNewGeometryBuffer]
+[rtcSetGeometryBuffer], [rtcSetNewGeometryBuffer]

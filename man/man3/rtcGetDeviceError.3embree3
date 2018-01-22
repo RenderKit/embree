@@ -18,12 +18,12 @@ RTCError\ rtcGetDeviceError(RTCDevice\ device);
 .SS DESCRIPTION
 .PP
 Each thread has its own error code per device.
-If an error occurs when invoking some API function, this error code is
-set to the occured error if it stores no previous error.
+If an error occurs when calling an API function, this error code is set
+to the occurred error if it stores no previous error.
 The \f[C]rtcGetDeviceError\f[] function reads and returns the currently
-stored error and clears the error code again.
-This assures that the error code always contain the first error occured
-since the last invokation of \f[C]rtcGetDeviceError\f[].
+stored error and clears the error code.
+This assures that the returned error code is always the first error
+occurred since the last invocation of \f[C]rtcGetDeviceError\f[].
 .PP
 Possible error codes returned by \f[C]rtcGetDeviceError\f[] are:
 .IP \[bu] 2
@@ -42,15 +42,15 @@ complete the operation.
 \f[C]RTC_ERROR_UNSUPPORTED_CPU\f[]: The CPU is not supported as it does
 not support the lowest ISA Embree is compiled for.
 .IP \[bu] 2
-\f[C]RTC_ERROR_CANCELLED\f[]: The operation got cancelled by a Memory
-Monitor Callback or Progress Monitor Callback function.
+\f[C]RTC_ERROR_CANCELLED\f[]: The operation got canceled by a memory
+monitor callback or progress monitor callback function.
 .PP
-When the device construction fails \f[C]rtcNewDevice\f[] returns
+When the device construction fails, \f[C]rtcNewDevice\f[] returns
 \f[C]NULL\f[] as device.
-To detect the error code of a such a failed device construction pass
+To detect the error code of a such a failed device construction, pass
 \f[C]NULL\f[] as device to the \f[C]rtcGetDeviceError\f[] function.
-For all other invokations of \f[C]rtcGetDeviceError\f[] a proper device
-pointer has to get specified.
+For all other invocations of \f[C]rtcGetDeviceError\f[], a proper device
+pointer must be specified.
 .SS EXIT STATUS
 .PP
 Returns the error code for the device.

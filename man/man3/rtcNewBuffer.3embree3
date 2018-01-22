@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcNewBuffer\ \-\ creates\ a\ new\ buffer
+rtcNewBuffer\ \-\ creates\ a\ new\ data\ buffer
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,36 +12,32 @@ rtcNewBuffer\ \-\ creates\ a\ new\ buffer
 \f[C]
 #include\ <embree3/rtcore.h>
 
-RTCBuffer\ rtcNewBuffer(RTCDevice\ device,
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ size_t\ byteStride,
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unsigned\ int\ numItems);
+RTCBuffer\ rtcNewBuffer(
+\ \ RTCDevice\ device,
+\ \ size_t\ byteSize
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
-The \f[C]rtcNewBuffer\f[] function creates a new buffer object bound to
-the specified device (\f[C]device\f[] argument) and returns a handle to
-this buffer.
+The \f[C]rtcNewBuffer\f[] function creates a new data buffer object of
+specified size in bytes (\f[C]byteSize\f[] argument) that is bound to
+the specified device (\f[C]device\f[] argument).
 The buffer object is reference counted with an initial reference count
 of 1.
-The buffer handle can get released using the \f[C]rtcReleaseBuffer\f[]
-API call.
-At construction time, the stride between the buffer elements in bytes
-(\f[C]byteStride\f[] argument) and the number of items
-(\f[C]numItems\f[] argument) is specified.
-In total \f[C]byteStride*numItems\f[] many bytes are allocated for the
-buffer and deallocated again when the buffer is destroyed.
-.PP
-The \f[C]byteStride\f[] has to be aligned to 4 bytes, otherwise the
-\f[C]rtcNewBuffer\f[] function will fail.
-.PP
-The allocated buffer will automatically get overallocated slightly in
-order to use them as vertex buffers, where a requirement is that each
-buffer element should be readable using 16 byte SSE load instructions.
+The returned buffer object can be released using the
+\f[C]rtcReleaseBuffer\f[] API call.
+The specified number of bytes are allocated at buffer construction time
+and deallocated when the buffer is destroyed.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
 .SS EXIT STATUS
 .PP
 On failure \f[C]NULL\f[] is returned and an error code is set that can
-get queried using \f[C]rtcDeviceGetError\f[].
+be queried using \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
 [rtcRetainBuffer], [rtcReleaseBuffer]

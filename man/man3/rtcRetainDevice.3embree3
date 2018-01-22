@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcRetainDevice\ \-\ increments\ device\ reference\ count
+rtcRetainDevice\ \-\ increments\ the\ device\ reference\ count
 \f[]
 .fi
 .SS SYNOPSIS
@@ -19,13 +19,13 @@ void\ rtcRetainDevice(RTCDevice\ device);
 .PP
 Device objects are reference counted.
 The \f[C]rtcRetainDevice\f[] function increments the reference count of
-the passed device object.
+the passed device object (\f[C]device\f[] argument).
 This function together with \f[C]rtcReleaseDevice\f[] allows to use the
-internal reference counting in a C++ wrapper class to handle ownership
-of the object.
+internal reference counting in a C++ wrapper class to manage the
+ownership of the object.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
