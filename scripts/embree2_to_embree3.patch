@@ -1298,13 +1298,13 @@ void intersectionFilterN(const uniform RTCFilterFunctionNArguments* uniform args
 @@{
 RTCDisplacementFunc
 =>
-RTCDisplacementFunction
+RTCDisplacementFunctionN
 }@@
 
 @@{
 RTCDisplacementFunc2
 =>
-RTCDisplacementFunction
+RTCDisplacementFunctionN
 }@@
 
 @@{
