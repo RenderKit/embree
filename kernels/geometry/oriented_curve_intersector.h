@@ -26,6 +26,41 @@ namespace embree
   namespace isa
   {
     template<typename V>
+      struct Interval
+      {
+        V lower, upper;
+
+        __forceinline Interval() {}
+        __forceinline Interval           ( const Interval& other ) { lower = other.lower; upper = other.upper; }
+        __forceinline Interval& operator=( const Interval& other ) { lower = other.lower; upper = other.upper; return *this; }
+
+        __forceinline Interval(const V& a) : lower(a), upper(a) {}
+        __forceinline Interval(const V& lower, const V& upper) : lower(lower), upper(upper) {}
+
+        __forceinline friend Interval operator +( const Interval& a, const Interval& b )
+        {
+          return Interval(min(a.lower+b.lower,a.lower+b.upper,a.upper+b.lower,a.upper+b.upper),
+                          max(a.lower+b.lower,a.lower+b.upper,a.upper+b.lower,a.upper+b.upper));
+        }
+
+        __forceinline friend Interval operator -( const Interval& a, const Interval& b )
+        {
+          return Interval(min(a.lower-b.lower,a.lower-b.upper,a.upper-b.lower,a.upper-b.upper),
+                          max(a.lower-b.lower,a.lower-b.upper,a.upper-b.lower,a.upper-b.upper));
+        }
+
+        __forceinline friend Interval operator *( const Interval& a, const Interval& b )
+        {
+          return Interval(min(a.lower*b.lower,a.lower*b.upper,a.upper*b.lower,a.upper*b.upper),
+                          max(a.lower*b.lower,a.lower*b.upper,a.upper*b.lower,a.upper*b.upper));
+        }
+
+        friend std::ostream& operator<<(std::ostream& cout, const Interval& a) {
+          return cout << "[" << a.lower << ", " << a.upper << "]";
+        }
+      };
+    
+    template<typename V>
       struct LinearCurve
       {
         BBox<V> v;
@@ -521,15 +556,15 @@ namespace embree
 
         void solve_newton_raphson(const OrientedBezierCurve2f& curve2)
         {
-          Vec2f uv(curve2.u.center(), curve2.v.center());
-
+          Vec2f uv(0.5f,0.5f);
+                      
           for (size_t i=0; i<20; i++)
           {
             const Vec2f f    = curve2.eval(uv.x,uv.y);
             const Vec2f dfdu = curve2.eval_du(uv.x,uv.y);
             const Vec2f dfdv = curve2.eval_dv(uv.x,uv.y);
-            const LinearSpace2f J = LinearSpace2f(dfdu,dfdv);
-            const Vec2f duv = rcp(J)*f;
+            const LinearSpace2f rcp_J = rcp(LinearSpace2f(dfdu,dfdv));
+            const Vec2f duv = rcp_J*f;
             uv -= duv;
 
             if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
@@ -548,6 +583,42 @@ namespace embree
               return;
             }
           }       
+        }
+
+        void solve_newton_raphson2(const OrientedBezierCurve2f& curve2)
+        {
+          Vec2f uv(0.5f,0.5f);
+          const Vec2f dfdu = curve2.eval_du(uv.x,uv.y);
+          const Vec2f dfdv = curve2.eval_dv(uv.x,uv.y);
+          const LinearSpace2f rcp_J = rcp(LinearSpace2f(dfdu,dfdv));
+            
+          for (size_t i=0; i<20; i++)
+          {
+            const Vec2f f    = curve2.eval(uv.x,uv.y);
+            const Vec2f duv = rcp_J*f;
+            uv -= duv;
+
+            if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
+            {
+              DBG(PRINT2("solution",curve2));
+              const float u = lerp(curve2.u.lower,curve2.u.upper,uv.x);
+              const float v = lerp(curve2.v.lower,curve2.v.upper,uv.y);
+              if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
+              if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
+              const OrientedBezierCurve1f curve_z = curve3d.xfm(space.vz,ray.org);
+              const float t = curve_z.eval(u,v)/length(ray.dir);
+              if (!(t > ray.tnear() && t < ray.tfar())) return; // rejects NaNs
+              const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
+              BezierCurveHit hit(t,u,v,Ng);
+              isHit |= epilog(hit);
+              return;
+            }
+          }       
+        }
+
+        void krawczyk(const OrientedBezierCurve2f& curve2)
+        {
+          
         }
         
         void intersect_newton_raphson(const OrientedBezierCurve2f& curve2)
@@ -570,7 +641,7 @@ namespace embree
           if (boundsv.lower > 0.0f) return;
 
           if (curve2.u.size() < 0.05f)
-            return solve_newton_raphson(curve2);
+            return solve_newton_raphson2(curve2);
           
           OrientedBezierCurve2f curve2l, curve2r;
           curve2.split_u(curve2l,curve2r);
@@ -685,8 +756,8 @@ namespace embree
         MyBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         MyBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
         OrientedBezierCurve3fa curve(L,R);
-        return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect();
-        //return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect_newton_raphson();
+        //return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect();
+        return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).intersect_newton_raphson();
       }
     };
   }
