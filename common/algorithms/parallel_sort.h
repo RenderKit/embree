@@ -275,6 +275,11 @@ namespace embree
       static bool compare(const T& v0, const T& v1) {
       return (Key)v0 < (Key)v1;
     }
+
+  private:
+    ParallelRadixSort (const ParallelRadixSort& other) DELETED; // do not implement
+    ParallelRadixSort& operator= (const ParallelRadixSort& other) DELETED; // do not implement
+
     
   public:
     ParallelRadixSort (Ty* const src, Ty* const tmp, const size_t N)
