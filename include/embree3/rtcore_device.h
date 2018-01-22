@@ -26,7 +26,7 @@ extern "C" {
 typedef struct RTCDeviceTy* RTCDevice;
 
 /* Creates a new Embree device. */
-RTC_API RTCDevice rtcNewDevice(const char* cfg);
+RTC_API RTCDevice rtcNewDevice(const char* config);
 
 /* Retains the Embree device (increments the reference count). */
 RTC_API void rtcRetainDevice(RTCDevice device);

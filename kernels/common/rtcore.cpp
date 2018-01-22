@@ -31,12 +31,12 @@ namespace embree
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
 
-  RTC_API RTCDevice rtcNewDevice(const char* cfg)
+  RTC_API RTCDevice rtcNewDevice(const char* config)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
-    Device* device = new Device(cfg,false);
+    Device* device = new Device(config, false);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
