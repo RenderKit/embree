@@ -29,8 +29,8 @@ namespace embree
     __forceinline PrimRef(const PrimRef& v) { 
       vfloat8::store((float*)this,vfloat8::load((float*)&v));
     }
-    __forceinline void operator=(const PrimRef& v) { 
-      vfloat8::store((float*)this,vfloat8::load((float*)&v));
+    __forceinline PrimRef& operator=(const PrimRef& v) { 
+      vfloat8::store((float*)this,vfloat8::load((float*)&v)); return *this;
     }
 #endif
 

@@ -173,7 +173,8 @@ namespace embree
 
   ISPCQuadMesh::~ISPCQuadMesh () {
     if (positions) delete[] positions;
-    if (normals) delete[] normals;  }
+    if (normals) delete[] normals;
+  }
 
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)

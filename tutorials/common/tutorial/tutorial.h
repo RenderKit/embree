@@ -71,6 +71,10 @@ namespace embree
     TutorialApplication (const std::string& tutorialName, const int features);
     virtual ~TutorialApplication();
 
+  private:
+    TutorialApplication (const TutorialApplication& other) DELETED; // do not implement
+    TutorialApplication& operator= (const TutorialApplication& other) DELETED; // do not implement
+
   public:
     /* starts tutorial */
     void run(int argc, char** argv);

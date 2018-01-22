@@ -62,7 +62,6 @@ namespace embree
   void GeometryInstance::disabling() 
   {
     geom->used--;
-     geom->used++;
     if (geom->getType() == Geometry::GROUP) {
       Ref<GeometryGroup> group = geom.dynamicCast<GeometryGroup>();
       for (size_t i=0; i<group->size(); i++)

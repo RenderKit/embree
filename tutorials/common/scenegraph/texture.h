@@ -56,6 +56,11 @@ namespace embree
     Texture (unsigned width, unsigned height, const Format format, const char* in = nullptr);
     ~Texture ();
 
+  private:
+    Texture (const Texture& other) DELETED; // do not implement
+    Texture& operator= (const Texture& other) DELETED; // do not implement
+
+  public:
     static const char* format_to_string(const Format format);
     static Format string_to_format(const std::string& str);
     static unsigned getFormatBytesPerTexel(const Format format);
