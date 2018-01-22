@@ -72,6 +72,10 @@ namespace embree
     unsigned height_mask;
     void* data;
     std::string fileName;
+
+  private:
+    Texture (const Texture& other) DELETED; // do not implement
+    Texture& operator= (const Texture& other) DELETED; // do not implement
   };
 }
 #endif
