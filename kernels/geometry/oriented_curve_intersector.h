@@ -107,6 +107,14 @@ namespace embree
       return lower > upper;
     }
 
+    /*! subset relation */
+    template<typename T> __forceinline bool subset( const Interval<T>& a, const Interval<T>& b )
+    { 
+      if ( a.lower <= b.lower ) return false;
+      if ( a.upper >= b.upper ) return false;
+      return true; 
+    }
+    
     typedef Interval<float> Interval1f;
     typedef Interval<Vec2f> Interval2f;
     
@@ -706,8 +714,10 @@ namespace embree
           }       
         }
 
-        bool krawczyk(const OrientedBezierCurve2f& curve2)
+        int krawczyk(const OrientedBezierCurve2f& curve2)
         {
+          //float eps = 0.0001f;
+          
           Vec2f c(0.5f,0.5f);
           CubicBezierCurve2f L = curve2.L;
           CubicBezierCurve2f R = curve2.R;
@@ -718,9 +728,40 @@ namespace embree
                                                      merge(Interval2f(dL.p2),Interval2f(dR.p2)));
           const Interval2f bounds_du = dcurve2du.bounds();
 
+#if 0
+          for (size_t i=0; i<1000; i++)
+          {
+            float u = drand48(), v = drand48();
+            Vec2f dfdu = curve2.eval_du(u,v);
+            if (dfdu.x < bounds_du.lower.x-eps || bounds_du.upper.x+eps < dfdu.x ||
+                dfdu.y < bounds_du.lower.y-eps || bounds_du.upper.y+eps < dfdu.y)
+            {
+              PRINT("error du");
+              exit(1);
+            }
+          }
+#endif
+          
           CubicBezierCurve2f dcurve2dv = R-L;
           const Interval2f bounds_dv = dcurve2dv.bounds();
 
+#if 0
+          for (size_t i=0; i<1000; i++)
+          {
+            float u = drand48(), v = drand48();
+            Vec2f dfdv = curve2.eval_dv(u,v);
+            if (dfdv.x < bounds_dv.lower.x-eps || bounds_dv.upper.x+eps < dfdv.x ||
+                dfdv.y < bounds_dv.lower.y-eps || bounds_dv.upper.y+eps < dfdv.y)
+            {
+              PRINT("error dv");
+              PRINT2(u,v);
+              PRINT(dfdv);
+              PRINT(bounds_dv);
+              exit(1);
+            }
+          }
+#endif
+          
           LinearSpace2<Vec2<Interval1f>> I(Interval1f(1.0f), Interval1f(0.0f),
                                            Interval1f(0.0f), Interval1f(1.0f));
 
@@ -738,13 +779,50 @@ namespace embree
           const Vec2<Interval1f> x(Interval1f(0.0f,1.0f),Interval1f(0.0f,1.0f));
           const Vec2<Interval1f> K = Vec2<Interval1f>(c - rcp_J*curve2.eval(c.x,c.y)) + (I - rcp_Ji*G)*(x-Vec2<Interval1f>(c));
 
-          const Vec2<Interval1f> KK(intersect(K.x,x.x),intersect(K.y,x.y));
+          //PRINT(K);
 
-          return !(KK.x.empty() || KK.y.empty()); // FIXME: test subset relationship
+#if 0
+          for (size_t i=0; i<1000; i++)
+          {
+            float u = drand48(), v = drand48();
+            Vec2f k = Vec2f(u,v) - rcp_J*curve2.eval(u,v);
+            
+            if (k.x < K.x.lower || K.x.upper < k.x ||
+                k.y < K.y.lower || K.y.upper < k.y)
+            {
+              PRINT("error K");
+              PRINT2(u,v);
+              PRINT(k);
+              PRINT(K);
+              PRINT(rcp_J);
+              PRINT(rcp_Ji*G);
+              PRINT(I - rcp_Ji*G);
+              PRINT(x-Vec2<Interval1f>(c));
+
+              PRINT(rcp_Ji);
+              PRINT(G);
+              PRINT(rcp_Ji.vx.x);
+              PRINT(G.vx.x);
+              PRINT(rcp_Ji.vx.x*G.vx.x);
+              PRINT(rcp_Ji.vx.x*G.vx.x + rcp_Ji.vy.x*G.vx.y);
+              PRINT(rcp_Ji*G);
+              PRINT(c - rcp_J*curve2.eval(c.x,c.y));
+              exit(1);
+            }
+          }
+#endif
+          const Vec2<Interval1f> KK(intersect(K.x,x.x),intersect(K.y,x.y));
+          if (KK.x.empty() || KK.y.empty()) return 0;
+
+          bool converge = subset(K.x,x.x) && subset(K.y,x.y);
+          //PRINT(converge);
+          return converge ? 1 : 2;
         }
         
         void solve_newton_raphson(const OrientedBezierCurve2f& curve2)
         {
+          //PRINT(curve2);
+          
           Interval2f bounds = curve2.bounds();
           if (bounds.upper.x < 0.0f) return;
           if (bounds.upper.y < 0.0f) return;
@@ -762,12 +840,20 @@ namespace embree
           if (boundsu.lower > 0.0f) return;
           if (boundsv.lower > 0.0f) return;
 
+          if (curve2.u.size() < 0.0001f)
+            return;
+              
           //if (curve2.u.size() < 0.05f)
-          if (krawczyk(curve2))
+          int split = krawczyk(curve2);
+          if (split == 0) return;
+          if (split == 1)
             return solve_newton_raphson2(curve2);
           
           OrientedBezierCurve2f curve2l, curve2r;
           curve2.split_u(curve2l,curve2r);
+          //PRINT("split");
+          //PRINT(curve2l);
+          //PRINT(curve2r);
           solve_newton_raphson(curve2l);
           solve_newton_raphson(curve2r);
         }

@@ -235,12 +235,12 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#define DBG(x) 
+#define DBG(x)
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
-  DBG(if (x != 153 || y != 512-266) return zero);
+  DBG(if (x != 380 || y != 512-234) return zero);
   
   /* initialize sampler */
   RandomSampler sampler;
