@@ -50,28 +50,25 @@ namespace embree
         __forceinline const Interval& extend(const Interval& other) { lower = min(lower,other.lower); upper = max(upper,other.upper); return *this; }
         __forceinline const Interval& extend(const V   & other) { lower = min(lower,other      ); upper = max(upper,other      ); return *this; }
                 
-        __forceinline friend Interval operator +( const Interval& a, const Interval& b )
-        {
-          return Interval(min(a.lower+b.lower,a.lower+b.upper,a.upper+b.lower,a.upper+b.upper),
-                          max(a.lower+b.lower,a.lower+b.upper,a.upper+b.lower,a.upper+b.upper));
+        __forceinline friend Interval operator +( const Interval& a, const Interval& b ) {
+          return Interval(a.lower+b.lower,a.upper+b.upper);
         }
 
-        __forceinline friend Interval operator -( const Interval& a, const Interval& b )
-        {
-          return Interval(min(a.lower-b.lower,a.lower-b.upper,a.upper-b.lower,a.upper-b.upper),
-                          max(a.lower-b.lower,a.lower-b.upper,a.upper-b.lower,a.upper-b.upper));
+        __forceinline friend Interval operator -( const Interval& a, const Interval& b ) {
+          return Interval(a.lower-b.upper,a.upper-b.lower);
         }
 
-        __forceinline friend Interval operator -( const Interval& a, const V& b )
-        {
-          return Interval(min(a.lower-b,a.upper-b),
-                          max(a.lower-b,a.upper-b));
+        __forceinline friend Interval operator -( const Interval& a, const V& b ) {
+          return Interval(a.lower-b,a.upper-b);
         }
 
         __forceinline friend Interval operator *( const Interval& a, const Interval& b )
         {
-          return Interval(min(a.lower*b.lower,a.lower*b.upper,a.upper*b.lower,a.upper*b.upper),
-                          max(a.lower*b.lower,a.lower*b.upper,a.upper*b.lower,a.upper*b.upper));
+          const V ll = a.lower*b.lower;
+          const V lu = a.lower*b.upper;
+          const V ul = a.upper*b.lower;
+          const V uu = a.upper*b.upper;
+          return Interval(min(ll,lu,ul,uu),max(ll,lu,ul,uu));
         }
 
         __forceinline friend Interval merge( const Interval& a, const Interval& b) {
