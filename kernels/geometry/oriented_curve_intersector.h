@@ -91,6 +91,10 @@ namespace embree
         V p0,p1,p2,p3;
         
         __forceinline CubicBezierCurve () {}
+
+        template<typename T1>
+        __forceinline CubicBezierCurve (const CubicBezierCurve<T1>& other)
+          : p0(other.p0), p1(other.p1), p2(other.p2), p3(other.p3) {}
         
         __forceinline CubicBezierCurve (V p0, V p1, V p2, V p3)
           : p0(p0), p1(p1), p2(p2), p3(p3) {}
@@ -135,6 +139,10 @@ namespace embree
 
         __forceinline friend CubicBezierCurve operator *( const float a, const CubicBezierCurve& b ) {
           return CubicBezierCurve(a*b.p0,a*b.p1,a*b.p2,a*b.p3);
+        }
+
+        __forceinline friend CubicBezierCurve merge ( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
+          return CubicBezierCurve(merge(a.p0,b.p0),merge(a.p1,b.p1),merge(a.p2,b.p2),merge(a.p3,b.p3));
         }
 
         __forceinline void split(CubicBezierCurve& left, CubicBezierCurve& right, const float t = 0.5f) const
@@ -223,7 +231,7 @@ namespace embree
     template<> inline int CubicBezierCurve<Interval1f>::maxRoots() const {
       return numRoots(p0,p1) + numRoots(p1,p2) + numRoots(p2,p3);
     }
-    
+
     template<typename V>
       struct OrientedBezierCurve
       {
@@ -248,11 +256,9 @@ namespace embree
         
         __forceinline CubicBezierCurve<Interval1f> reduce_v() const
         {
-          const Interval1f p0(min(L.p0,R.p0),max(L.p0,R.p0));
-          const Interval1f p1(min(L.p1,R.p1),max(L.p1,R.p1));
-          const Interval1f p2(min(L.p2,R.p2),max(L.p2,R.p2));
-          const Interval1f p3(min(L.p3,R.p3),max(L.p3,R.p3));
-          return CubicBezierCurve<Interval1f>(p0,p1,p2,p3);
+          const CubicBezierCurve<Interval<V>> Li(L);
+          const CubicBezierCurve<Interval<V>> Ri(R);
+          return merge(Li,Ri);
         }
         
         __forceinline LinearBezierCurve<Interval1f> reduce_u() const
@@ -662,8 +668,8 @@ namespace embree
         CubicBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         CubicBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
         OrientedBezierCurve3fa curve(L,R);
-        //return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).solve();
-        return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).solve_newton_raphson_main();
+        return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).solve();
+        //return OrientedBezierCurveIntersector<Epilog>(ray,curve,epilog).solve_newton_raphson_main();
       }
     };
   }
