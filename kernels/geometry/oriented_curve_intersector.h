@@ -598,11 +598,9 @@ namespace embree
           const Vec2<Interval1f> x(Interval1f(0.0f,1.0f),Interval1f(0.0f,1.0f));
           const Vec2<Interval1f> K = Vec2<Interval1f>(c - rcp_J*curve2.eval(c.x,c.y)) + (I - rcp_Ji*G)*(x-Vec2<Interval1f>(c));
 
-          const Vec2<Interval1f> KK(intersect(K.x,x.x),intersect(K.y,x.y));
+          const Vec2<Interval1f> KK = intersect(K,x);
           if (KK.x.empty() || KK.y.empty()) return 0;
-
-          bool converge = subset(K.x,x.x) && subset(K.y,x.y);
-          return converge ? 1 : 2;
+          return subset(K,x) ? 1 : 2;
         }
         
         void solve_newton_raphson(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2)

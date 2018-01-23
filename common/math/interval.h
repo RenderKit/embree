@@ -101,12 +101,18 @@ namespace embree
   }
   
   /*! subset relation */
-  template<typename T> __forceinline bool subset( const Interval<T>& a, const Interval<T>& b )
-  { 
-    if ( a.lower <= b.lower ) return false;
-    if ( a.upper >= b.upper ) return false;
-    return true; 
+  template<typename T> __forceinline bool subset( const Interval<T>& a, const Interval<T>& b ) { 
+    return (a.lower > b.lower) && (a.upper < b.upper);
   }
+
+  template<typename T> __forceinline bool subset( const Vec2<Interval<T>>& a, const Vec2<Interval<T>>& b ) { 
+    return subset(a.x,b.x) && subset(a.y,b.y);
+  }
+
+  template<typename T> __forceinline const Vec2<Interval<T>> intersect( const Vec2<Interval<T>>& a, const Vec2<Interval<T>>& b ) {
+    return Vec2<Interval<T>>(intersect(a.x,b.x),intersect(a.y,b.y));
+  }
+    
   
   typedef Interval<float> Interval1f;
   typedef Vec2<Interval<float>> Interval2f;
