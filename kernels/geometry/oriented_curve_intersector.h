@@ -113,7 +113,7 @@ namespace embree
     }
     
     typedef Interval<float> Interval1f;
-    typedef Interval<Vec2f> Interval2f;
+    typedef Vec2<Interval<float>> Interval2f;
     
     template<typename V>
       struct LinearCurve
@@ -209,12 +209,12 @@ namespace embree
         
         __forceinline int maxRoots() const;
 
-        __forceinline Interval<V> bounds() const {
-          return merge(Interval<V>(p0),Interval<V>(p1),Interval<V>(p2),Interval<V>(p3));
+        __forceinline BBox<V> bounds() const {
+          return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2),BBox<V>(p3));
         }
 
-        __forceinline Interval1f bounds(const V& axis) const {
-          return merge(Interval1f(dot(p0,axis)),Interval1f(dot(p1,axis)),Interval1f(dot(p2,axis)),Interval1f(dot(p3,axis)));
+        __forceinline BBox1f bounds(const V& axis) const {
+          return merge(BBox1f(dot(p0,axis)),BBox1f(dot(p1,axis)),BBox1f(dot(p2,axis)),BBox1f(dot(p3,axis)));
         }
 
         __forceinline friend CubicBezierCurve operator -( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
@@ -330,11 +330,11 @@ namespace embree
         __forceinline OrientedBezierCurve(const Interval1f& u, const Interval1f& v, const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
           : u(u), v(v), L(L), R(R) {}
 
-        __forceinline Interval<V> bounds() const {
+        __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
         }
 
-        __forceinline Interval1f bounds(const V& axis) const {
+        __forceinline BBox1f bounds(const V& axis) const {
           return merge(L.bounds(axis),R.bounds(axis));
         }
         
@@ -602,7 +602,7 @@ namespace embree
         
         void solve(const OrientedBezierCurve2f& curve2)
         {
-          Interval2f bounds = curve2.bounds();
+          BBox2f bounds = curve2.bounds();
           if (bounds.upper.x < 0.0f) return;
           if (bounds.upper.y < 0.0f) return;
           if (bounds.lower.x > 0.0f) return;
@@ -720,10 +720,10 @@ namespace embree
           CubicBezierCurve2f R = curve2.R;
           QuadraticBezierCurve2f dL = L.derivative();
           QuadraticBezierCurve2f dR = R.derivative();
-          QuadraticBezierCurve<Interval2f> dcurve2du(merge(Interval2f(dL.p0),Interval2f(dR.p0)),
-                                                     merge(Interval2f(dL.p1),Interval2f(dR.p1)),
-                                                     merge(Interval2f(dL.p2),Interval2f(dR.p2)));
-          const Interval2f bounds_du = dcurve2du.bounds();
+          QuadraticBezierCurve<BBox2f> dcurve2du(merge(BBox2f(dL.p0),BBox2f(dR.p0)),
+                                                 merge(BBox2f(dL.p1),BBox2f(dR.p1)),
+                                                 merge(BBox2f(dL.p2),BBox2f(dR.p2)));
+          const BBox2f bounds_du = dcurve2du.bounds();
 
 #if 0
           for (size_t i=0; i<1000; i++)
@@ -740,7 +740,7 @@ namespace embree
 #endif
           
           CubicBezierCurve2f dcurve2dv = R-L;
-          const Interval2f bounds_dv = dcurve2dv.bounds();
+          const BBox2f bounds_dv = dcurve2dv.bounds();
 
 #if 0
           for (size_t i=0; i<1000; i++)
@@ -820,7 +820,7 @@ namespace embree
         {
           //PRINT(curve2);
           
-          Interval2f bounds = curve2.bounds();
+          BBox2f bounds = curve2.bounds();
           if (bounds.upper.x < 0.0f) return;
           if (bounds.upper.y < 0.0f) return;
           if (bounds.lower.x > 0.0f) return;
@@ -830,8 +830,8 @@ namespace embree
           Vec2f dv = curve2.axis_v();
           Vec2f ndu = Vec2f(-du.y,du.x);
           Vec2f ndv = Vec2f(-dv.y,dv.x);
-          Interval1f boundsu = curve2.bounds(ndu);
-          Interval1f boundsv = curve2.bounds(ndv);
+          BBox1f boundsu = curve2.bounds(ndu);
+          BBox1f boundsv = curve2.bounds(ndv);
           if (boundsu.upper < 0.0f) return;
           if (boundsv.upper < 0.0f) return;
           if (boundsu.lower > 0.0f) return;
