@@ -141,6 +141,10 @@ namespace embree
           return CubicBezierCurve(a*b.p0,a*b.p1,a*b.p2,a*b.p3);
         }
 
+        __forceinline friend CubicBezierCurve lerp ( const CubicBezierCurve& a, const CubicBezierCurve& b, float t ) {
+          return (1.0f-t)*a + t*b;
+        }
+
         __forceinline friend CubicBezierCurve merge ( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
           return CubicBezierCurve(merge(a.p0,b.p0),merge(a.p1,b.p1),merge(a.p2,b.p2),merge(a.p3,b.p3));
         }
@@ -277,40 +281,37 @@ namespace embree
           return OrientedBezierCurve<Vec2f>(L.xfm(dx,dy,p),R.xfm(dx,dy,p));
         }
         
-        __forceinline OrientedBezierCurve clip_u(const Interval1f& u1) const {
-          return OrientedBezierCurve(L.clip(u1),R.clip(u1));
+        __forceinline OrientedBezierCurve clip_u(const Interval1f& u) const {
+          return OrientedBezierCurve(L.clip(u),R.clip(u));
         }
         
-        __forceinline OrientedBezierCurve clip_v(const Interval1f& v1) const {
-          return OrientedBezierCurve((1.0f-v1.lower)*L+v1.lower*R,(1.0f-v1.upper)*L+v1.upper*R);
+        __forceinline OrientedBezierCurve clip_v(const Interval1f& v) const {
+          return OrientedBezierCurve(lerp(L,R,v.lower),lerp(L,R,v.upper));
         }
         
-        __forceinline void split_u(OrientedBezierCurve& left, OrientedBezierCurve& right, const float u0 = 0.5f) const
+        __forceinline void split_u(OrientedBezierCurve& left, OrientedBezierCurve& right, const float u = 0.5f) const
         {
-          CubicBezierCurve<V> L0,L1; L.split(L0,L1,u0);
-          CubicBezierCurve<V> R0,R1; R.split(R0,R1,u0);
+          CubicBezierCurve<V> L0,L1; L.split(L0,L1,u);
+          CubicBezierCurve<V> R0,R1; R.split(R0,R1,u);
           new (&left ) OrientedBezierCurve(L0,R0);
           new (&right) OrientedBezierCurve(L1,R1);
         }
 
-        __forceinline V eval(const float u, const float v) const
-        {
-          V l = L.eval(u);
-          V r = R.eval(u);
-          return lerp(l,r,v);
+        __forceinline V eval(const float u, const float v) const {
+          return lerp(L,R,v).eval(u);
         }
 
         __forceinline V eval_du(const float u, const float v) const
         {
-          V l = L.eval_dt(u);
-          V r = R.eval_dt(u);
+          const V l = L.eval_dt(u);
+          const V r = R.eval_dt(u);
           return lerp(l,r,v);
         }
 
         __forceinline V eval_dv(const float u, const float v) const
         {
-          V l = L.eval(u);
-          V r = R.eval(u);
+          const V l = L.eval(u);
+          const V r = R.eval(u);
           return r-l;
         }
 
