@@ -27,19 +27,22 @@ namespace embree
   namespace isa
   {
     template<typename V>
-      struct LinearCurve
+      struct LinearBezierCurve
       {
         V p0,p1;
         
-        __forceinline LinearCurve () {}
+        __forceinline LinearBezierCurve () {}
         
-        __forceinline LinearCurve (V p0, V p1)
+        __forceinline LinearBezierCurve (V p0, V p1)
           : p0(p0), p1(p1) {}
+
+        __forceinline V begin() const { return p0; }
+        __forceinline V end  () const { return p1; }
         
         bool hasRoot() const;
         
-        friend std::ostream& operator<<(std::ostream& cout, const LinearCurve& a) {
-          return cout << "LinearCurve (" << a.p0 << ", " << a.p1 << ")";
+        friend std::ostream& operator<<(std::ostream& cout, const LinearBezierCurve& a) {
+          return cout << "LinearBezierCurve (" << a.p0 << ", " << a.p1 << ")";
         }
       };
     
@@ -51,7 +54,7 @@ namespace embree
       return (neg0 && pos1) || (pos0 && neg1) || (neg0 && pos0) || (neg1 && pos1);
     }
     
-    template<> __forceinline bool LinearCurve<Interval1f>::hasRoot() const {
+    template<> __forceinline bool LinearBezierCurve<Interval1f>::hasRoot() const {
       return numRoots(p0,p1);
     }
     
@@ -64,7 +67,10 @@ namespace embree
         
         __forceinline QuadraticBezierCurve (V p0, V p1, V p2)
           : p0(p0), p1(p1), p2(p2) {}
-        
+
+        __forceinline V begin() const { return p0; }
+        __forceinline V end  () const { return p2; }
+             
         __forceinline V bounds() const {
           return merge(p0,p1,p2);
         }
@@ -88,7 +94,10 @@ namespace embree
         
         __forceinline CubicBezierCurve (V p0, V p1, V p2, V p3)
           : p0(p0), p1(p1), p2(p2), p3(p3) {}
-        
+
+        __forceinline V begin() const { return p0; }
+        __forceinline V end  () const { return p3; }
+             
         __forceinline CubicBezierCurve<float> xfm(const V& dx) const {
           return CubicBezierCurve<float>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
         }
@@ -246,11 +255,11 @@ namespace embree
           return CubicBezierCurve<Interval1f>(p0,p1,p2,p3);
         }
         
-        __forceinline LinearCurve<Interval1f> reduce_u() const
+        __forceinline LinearBezierCurve<Interval1f> reduce_u() const
         {
           const Interval1f p0(min(L.p0,L.p1,L.p2,L.p3),max(L.p0,L.p1,L.p2,L.p3));
           const Interval1f p1(min(R.p0,R.p1,R.p2,R.p3),max(R.p0,R.p1,R.p2,R.p3));
-          return LinearCurve<Interval1f>(p0,p1);
+          return LinearBezierCurve<Interval1f>(p0,p1);
         }
         
         __forceinline OrientedBezierCurve<float> xfm(const V& dx) const {
@@ -303,11 +312,11 @@ namespace embree
         }
 
         __forceinline V axis_u() const {
-          return (L.p3-L.p0)+(R.p3-R.p0);
+          return (L.end()-L.begin())+(R.end()-R.begin());
         }
 
         __forceinline V axis_v() const {
-          return (R.p0-L.p0)+(R.p3-L.p3);
+          return (R.begin()-L.begin())+(R.end()-L.end());
         }
         
         friend std::ostream& operator<<(std::ostream& cout, const OrientedBezierCurve& a)
@@ -367,7 +376,7 @@ namespace embree
           return intersect(u,Interval1f(0.0f,1.0f));
         }
         
-        __forceinline Interval1f bezier_clipping(const LinearCurve<Interval1f>& curve)
+        __forceinline Interval1f bezier_clipping(const LinearBezierCurve<Interval1f>& curve)
         {
           Interval1f v = empty;
           solve_linear(0.0f,1.0f,curve.p0,curve.p1,v);
@@ -400,7 +409,7 @@ namespace embree
         __forceinline void solve_v(BBox1f cu, BBox1f cv, const OrientedBezierCurve2f& curve2, const Vec2f& dv)
         {
           const OrientedBezierCurve1f curve1 = curve2.xfm(dv);
-          LinearCurve<Interval1f> curve0 = curve1.reduce_u();       
+          LinearBezierCurve<Interval1f> curve0 = curve1.reduce_u();       
           if (!curve0.hasRoot()) return;
           
           const Interval1f v = bezier_clipping(curve0);
@@ -416,7 +425,7 @@ namespace embree
           const Vec2f dv = normalize(curve2.axis_v());
           
           const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
-          LinearCurve<Interval1f> curve0v = curve1v.reduce_u();
+          LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
           if (!curve0v.hasRoot()) return;
           
           const Interval1f v = bezier_clipping(curve0v);
@@ -599,7 +608,7 @@ namespace embree
             const Vec2f dv = normalize(curve2.axis_v());
             
             const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
-            LinearCurve<Interval1f> curve0v = curve1v.reduce_u();
+            LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
             if (!curve0v.hasRoot()) return;       
             const Interval1f v = bezier_clipping(curve0v);
             if (v.empty()) return;
