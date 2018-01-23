@@ -819,7 +819,7 @@ namespace embree
           return converge ? 1 : 2;
         }
         
-        void solve_newton_raphson(const OrientedBezierCurve2f& curve2)
+        void solve_newton_raphson(OrientedBezierCurve2f curve2)
         {
           //PRINT(curve2);
           
@@ -840,8 +840,20 @@ namespace embree
           if (boundsu.lower > 0.0f) return;
           if (boundsv.lower > 0.0f) return;
 
+          {
+            //const Vec2f du = normalize(curve2.axis_u());
+            const Vec2f dv = normalize(curve2.axis_v());
+            
+            const OrientedBezierCurve1f curve1v = curve2.xfm(dv);
+            LinearCurve<Interval1f> curve0v = curve1v.reduce_u();
+            if (!curve0v.hasRoot()) return;       
+            const Interval1f v = bezier_clipping(curve0v);
+            if (v.empty()) return;
+            curve2 = curve2.clip_v(v);
+          }
+
           if (curve2.u.size() < 0.0001f)
-            return;
+            return solve_newton_raphson2(curve2);
               
           //if (curve2.u.size() < 0.05f)
           int split = krawczyk(curve2);
