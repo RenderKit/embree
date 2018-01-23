@@ -301,18 +301,12 @@ namespace embree
           return lerp(L,R,v).eval(u);
         }
 
-        __forceinline V eval_du(const float u, const float v) const
-        {
-          const V l = L.eval_dt(u);
-          const V r = R.eval_dt(u);
-          return lerp(l,r,v);
+        __forceinline V eval_du(const float u, const float v) const {
+          return lerp(L,R,v).eval_dt(u);
         }
 
-        __forceinline V eval_dv(const float u, const float v) const
-        {
-          const V l = L.eval(u);
-          const V r = R.eval(u);
-          return r-l;
+        __forceinline V eval_dv(const float u, const float v) const {
+          return (R-L).eval(u);
         }
 
         __forceinline V axis_u() const {
