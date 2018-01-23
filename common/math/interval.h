@@ -18,6 +18,7 @@
 
 #include "vec2.h"
 #include "vec3.h"
+#include "bbox.h"
 
 namespace embree
 {
@@ -29,10 +30,11 @@ namespace embree
       __forceinline Interval() {}
       __forceinline Interval           ( const Interval& other ) { lower = other.lower; upper = other.upper; }
       __forceinline Interval& operator=( const Interval& other ) { lower = other.lower; upper = other.upper; return *this; }
-        
-        __forceinline Interval(const V& a) : lower(a), upper(a) {}
+
+      __forceinline Interval(const V& a) : lower(a), upper(a) {}
       __forceinline Interval(const V& lower, const V& upper) : lower(lower), upper(upper) {}
-      
+      __forceinline Interval(const BBox<V>& a) : lower(a.lower), upper(a.upper) {}
+          
       /*! tests if box is empty */
       __forceinline bool empty() const { return lower > upper; }
       

@@ -261,11 +261,8 @@ namespace embree
           return merge(Li,Ri);
         }
         
-        __forceinline LinearBezierCurve<Interval1f> reduce_u() const
-        {
-          const Interval1f p0(min(L.p0,L.p1,L.p2,L.p3),max(L.p0,L.p1,L.p2,L.p3));
-          const Interval1f p1(min(R.p0,R.p1,R.p2,R.p3),max(R.p0,R.p1,R.p2,R.p3));
-          return LinearBezierCurve<Interval1f>(p0,p1);
+        __forceinline LinearBezierCurve<Interval1f> reduce_u() const {
+          return LinearBezierCurve<Interval1f>(L.bounds(),R.bounds());
         }
         
         __forceinline OrientedBezierCurve<float> xfm(const V& dx) const {
