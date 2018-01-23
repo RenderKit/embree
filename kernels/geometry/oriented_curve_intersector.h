@@ -71,8 +71,12 @@ namespace embree
         __forceinline V begin() const { return p0; }
         __forceinline V end  () const { return p2; }
              
-        __forceinline V bounds() const {
+        __forceinline V interval() const {
           return merge(p0,p1,p2);
+        }
+
+        __forceinline BBox<V> bounds() const {
+          return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2));
         }
 
         friend std::ostream& operator<<(std::ostream& cout, const QuadraticBezierCurve& a) {
@@ -237,6 +241,25 @@ namespace embree
     }
 
     template<typename V>
+      struct TensorLinearQuadraticBezierSurface
+      {
+        QuadraticBezierCurve<V> L;
+        QuadraticBezierCurve<V> R;
+        
+        __forceinline TensorLinearQuadraticBezierSurface() {}
+        
+        __forceinline TensorLinearQuadraticBezierSurface(const TensorLinearQuadraticBezierSurface<V>& curve)
+          : L(curve.L), R(curve.R) {}
+        
+        __forceinline TensorLinearQuadraticBezierSurface(const QuadraticBezierCurve<V>& L, const QuadraticBezierCurve<V>& R)
+          : L(L), R(R) {}
+        
+        __forceinline BBox<V> bounds() const {
+          return merge(L.bounds(),R.bounds());
+        }
+      };
+    
+    template<typename V>
       struct TensorLinearCubicBezierSurface
       {
         CubicBezierCurve<V> L;
@@ -307,6 +330,14 @@ namespace embree
 
         __forceinline V eval_dv(const float u, const float v) const {
           return (R-L).eval(u);
+        }
+
+        __forceinline TensorLinearQuadraticBezierSurface<V> derivative_u() const {
+          return TensorLinearQuadraticBezierSurface<V>(L.derivative(),R.derivative());
+        }
+
+        __forceinline CubicBezierCurve<V> derivative_v() const {
+          return R-L;
         }
 
         __forceinline V axis_u() const {
@@ -550,17 +581,8 @@ namespace embree
         int krawczyk(const TensorLinearCubicBezierSurface2f& curve2)
         {
           Vec2f c(0.5f,0.5f);
-          CubicBezierCurve2f L = curve2.L;
-          CubicBezierCurve2f R = curve2.R;
-          QuadraticBezierCurve2f dL = L.derivative();
-          QuadraticBezierCurve2f dR = R.derivative();
-          QuadraticBezierCurve<BBox2f> dcurve2du(merge(BBox2f(dL.p0),BBox2f(dR.p0)),
-                                                 merge(BBox2f(dL.p1),BBox2f(dR.p1)),
-                                                 merge(BBox2f(dL.p2),BBox2f(dR.p2)));
-          const BBox2f bounds_du = dcurve2du.bounds();
-
-          CubicBezierCurve2f dcurve2dv = R-L;
-          const BBox2f bounds_dv = dcurve2dv.bounds();
+          const BBox2f bounds_du = curve2.derivative_u().bounds();
+          const BBox2f bounds_dv = curve2.derivative_v().bounds();
 
           LinearSpace2<Vec2<Interval1f>> I(Interval1f(1.0f), Interval1f(0.0f),
                                            Interval1f(0.0f), Interval1f(1.0f));
@@ -660,8 +682,8 @@ namespace embree
         CubicBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         CubicBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
         TensorLinearCubicBezierSurface3fa curve(L,R);
-        return TensorLinearCubicBezierSurfaceIntersector<Epilog>(ray,curve,epilog).solve();
-        //return TensorLinearCubicBezierSurfaceIntersector<Epilog>(ray,curve,epilog).solve_newton_raphson_main();
+        //return TensorLinearCubicBezierSurfaceIntersector<Epilog>(ray,curve,epilog).solve();
+        return TensorLinearCubicBezierSurfaceIntersector<Epilog>(ray,curve,epilog).solve_newton_raphson_main();
       }
     };
   }
