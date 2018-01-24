@@ -150,6 +150,10 @@ namespace embree
           return merge(BBox1f(dot(p0,axis)),BBox1f(dot(p1,axis)),BBox1f(dot(p2,axis)),BBox1f(dot(p3,axis)));
         }
 
+        __forceinline BBox<vfloatx> vbounds(const V& axis) const {
+          return merge(BBox<vfloatx>(dot(p0,axis)),BBox<vfloatx>(dot(p1,axis)),BBox<vfloatx>(dot(p2,axis)),BBox<vfloatx>(dot(p3,axis)));
+        }
+
         __forceinline friend CubicBezierCurve operator +( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
           return CubicBezierCurve(a.p0+b.p0,a.p1+b.p1,a.p2+b.p2,a.p3+b.p3);
         }
@@ -335,6 +339,10 @@ namespace embree
 
         __forceinline BBox1f bounds(const V& axis) const {
           return merge(L.bounds(axis),R.bounds(axis));
+        }
+
+        __forceinline BBox<vfloatx> vbounds(const V& axis) const {
+          return merge(L.vbounds(axis),R.vbounds(axis));
         }
         
         __forceinline CubicBezierCurve<Interval1f> reduce_v() const
@@ -792,11 +800,22 @@ namespace embree
 #endif
           
           BBox<Vec2vfx> bounds = subcurves.bounds();
-          
           valid &= bounds.upper.x >= 0.0f;
           valid &= bounds.upper.y >= 0.0f;
           valid &= bounds.lower.x <= 0.0f;
           valid &= bounds.lower.y <= 0.0f;
+          if (none(valid)) return;
+
+          Vec2vfx du = subcurves.axis_u();
+          Vec2vfx dv = subcurves.axis_v();
+          Vec2vfx ndu = Vec2vfx(-du.y,du.x);
+          Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
+          BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
+          BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
+          valid &= boundsu.upper >= 0.0f;
+          valid &= boundsv.upper >= 0.0f;
+          valid &= boundsu.lower <= 0.0f;
+          valid &= boundsv.lower <= 0.0f;
           if (none(valid)) return;
 
           size_t mask = movemask(valid);
