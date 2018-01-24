@@ -170,6 +170,21 @@ namespace embree
           new (&left ) CubicBezierCurve(p00,p10,p20,p30);
           new (&right) CubicBezierCurve(p30,p21,p12,p03);
         }
+
+#if 0
+        __forceinline CubicBezierCurve<Vec2vfx> split() const
+        {
+          const float u0 = 0.0f, u1 = 1.0f;
+          const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
+          const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
+          Vec2vfx P0, dP0du; evalN(vu0,P0,dP0du); dP0du = dP0du * Vec2vfx(dscale);
+          const Vec2vfx P3 = shift_right_1(P0);
+          const Vec2vfx dP3du = shift_right_1(dP0du); 
+          const Vec2vfx P1 = P0 + dP0du; 
+          const Vec2vfx P2 = P3 - dP3du;
+          return CubicBezierCurve<Vec2vfx>(P0,P1,P2,P3);
+        }
+#endif
         
         __forceinline V eval(float t) const
         {
@@ -187,6 +202,26 @@ namespace embree
           
           return p30;
         }
+
+#if 0
+        __forceinline void evalN(const vfloatx& t, Vec2vfx& p, Vec2vfx& dp) const
+        {
+          const Vec2vfx p00 = p0;
+          const Vec2vfx p01 = p1;
+          const Vec2vfx p02 = p2;
+          const Vec2vfx p03 = p3;
+          
+          const Vec2vfx p10 = lerp(p00,p01,t);
+          const Vec2vfx p11 = lerp(p01,p02,t);
+          const Vec2vfx p12 = lerp(p02,p03,t);
+          const Vec2vfx p20 = lerp(p10,p11,t);
+          const Vec2vfx p21 = lerp(p11,p12,t);
+          const Vec2vfx p30 = lerp(p20,p21,t);
+          
+          p = p30;
+          dp = vfloatx(3.0f)*(p21-p20);
+        }
+#endif
         
         __forceinline V eval_dt(float u) const
         {
@@ -319,6 +354,12 @@ namespace embree
           new (&left ) TensorLinearCubicBezierSurface(L0,R0);
           new (&right) TensorLinearCubicBezierSurface(L1,R1);
         }
+
+#if 0
+        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u() const {
+          return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(),R.split());
+        }
+#endif
 
         __forceinline V eval(const float u, const float v) const {
           return lerp(L,R,v).eval(u);
@@ -648,6 +689,52 @@ namespace embree
           solve_newton_raphson(BBox1f(cu.center(),cu.upper),cv,curve2r);
         }
 
+#if 0
+        void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2)
+        {
+          {
+            const Vec2f dv = normalize(curve2.axis_v());
+            
+            const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
+            LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
+            if (!curve0v.hasRoot()) return;       
+            const Interval1f v = bezier_clipping(curve0v);
+            if (v.empty()) return;
+            curve2 = curve2.clip_v(v);
+            cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
+          }
+
+          if (cu.size() < 0.0001f)
+            return solve_newton_raphson2(cu,cv,curve2);
+              
+          int split = krawczyk(curve2);
+          if (split == 0) return;
+          if (split == 1)
+            return solve_newton_raphson2(cu,cv,curve2);
+
+          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2.split_u();
+          BBox<Vec2vfx> bounds = subcurves.bounds();
+          vboolx valid = true; clear(valid,VSIZEX-1);
+          valid &= bounds.upper.x >= 0.0f;
+          valid &= bounds.upper.y >= 0.0f;
+          valid &= bounds.lower.x <= 0.0f;
+          valid &= bounds.lower.y <= 0.0f;
+          if (none(valid)) return;
+
+          size_t mask = movemask(valid);
+          while (mask)
+          {
+            const size_t i = __bscf(mask);
+            const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
+            const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
+            TensorLinearCubicBezierSurface2f curve2b = curve2.clip_u(Interval1f(u0,u1));
+            const BBox1f cub(lerp(cu.lower,cu.upper,u0),
+                             lerp(cu.lower,cu.upper,u1));
+            solve_newton_raphson_wide(cub,cv,curve2b);
+          }
+        }
+#endif
+        
         bool solve_newton_raphson_main()
         {
           TensorLinearCubicBezierSurface2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);

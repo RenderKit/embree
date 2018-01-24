@@ -133,6 +133,14 @@ namespace embree
   }
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Shift Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline Vec2<T> shift_right_1( const Vec2<T>& a ) {
+    return Vec2<T>(shift_right_1(a.x),shift_right_1(a.y));
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
@@ -162,6 +170,11 @@ namespace embree
   template<typename T> __forceinline Vec2<T> select ( const typename T::Bool& s, const Vec2<T>& t, const Vec2<T>& f ) {
     return Vec2<T>(select(s,t.x,f.x),select(s,t.y,f.y));
   }
+
+  /*template<typename T>
+    __forceinline Vec2<T> lerp(const Vec2<T>& v0, const Vec2<T>& v1, const T& t) {
+    return madd(Vec2<T>(T(1.0f)-t),v0,t*v1);
+    }*/
 
   template<typename T> __forceinline int maxDim ( const Vec2<T>& a )
   {
