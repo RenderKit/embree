@@ -20,9 +20,11 @@
 
 namespace embree
 {
-  static struct NullTy {
-  } null MAYBE_UNUSED;
+  struct NullTy {
+  };
 
+  extern MAYBE_UNUSED NullTy null;
+  
   class RefCount
   {
   public:

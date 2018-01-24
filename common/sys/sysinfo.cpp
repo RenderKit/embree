@@ -17,6 +17,7 @@
 #include "sysinfo.h"
 #include "intrinsics.h"
 #include "string.h"
+#include "ref.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -24,6 +25,8 @@
 
 namespace embree
 {
+  NullTy null;
+  
   std::string getPlatformName() 
   {
 #if defined(__LINUX__) && !defined(__X86_64__)
