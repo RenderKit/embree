@@ -36,7 +36,7 @@ namespace embree
       __forceinline Interval(const BBox<V>& a) : lower(a.lower), upper(a.upper) {}
           
       /*! tests if box is empty */
-      __forceinline bool empty() const { return lower > upper; }
+      //__forceinline bool empty() const { return lower > upper; }
       
       /*! computes the size of the interval */
       __forceinline V size() const { return upper - lower; }
@@ -95,9 +95,13 @@ namespace embree
       __forceinline Interval( EmptyTy ) : lower(pos_inf), upper(neg_inf) {}
       __forceinline Interval( FullTy  ) : lower(neg_inf), upper(pos_inf) {}
     };
-  
-  template<> __forceinline bool Interval<float>::empty() const {
-    return lower > upper;
+
+  __forceinline bool isEmpty(const Interval<float>& v) { 
+    return v.lower > v.upper;
+  }
+
+  __forceinline vboolx isEmpty(const Interval<vfloatx>& v) {
+    return v.lower > v.upper;
   }
   
   /*! subset relation */
@@ -111,6 +115,18 @@ namespace embree
 
   template<typename T> __forceinline const Vec2<Interval<T>> intersect( const Vec2<Interval<T>>& a, const Vec2<Interval<T>>& b ) {
     return Vec2<Interval<T>>(intersect(a.x,b.x),intersect(a.y,b.y));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Select
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline Interval<T> select ( bool s, const Interval<T>& t, const Interval<T>& f ) {
+    return Interval<T>(select(s,t.lower,f.lower),select(s,t.upper,f.upper));
+  }
+
+  template<typename T> __forceinline Interval<T> select ( const typename T::Bool& s, const Interval<T>& t, const Interval<T>& f ) {
+    return Interval<T>(select(s,t.lower,f.lower),select(s,t.upper,f.upper));
   }
     
   
