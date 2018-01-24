@@ -775,6 +775,16 @@ namespace embree
           }
 #endif
 
+#if 0
+          {
+            BBox2f bounds = curve2.bounds();
+            if (bounds.upper.x < 0.0f) return;
+            if (bounds.upper.y < 0.0f) return;
+            if (bounds.lower.x > 0.0f) return;
+            if (bounds.lower.y > 0.0f) return;
+          }
+#endif
+
           if (cu.size() < 0.0001f)
             return solve_newton_raphson2(cu,cv,curve2);
               
