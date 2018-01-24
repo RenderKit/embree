@@ -865,15 +865,17 @@ namespace embree
           if (none(valid)) return;*/
 
           Vec2vfx du = subcurves.axis_u();
-          Vec2vfx dv = subcurves.axis_v();
           Vec2vfx ndu = Vec2vfx(-du.y,du.x);
-          Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
           BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
-          BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
-          valid &= boundsu.upper >= 0.0f;
-          valid &= boundsv.upper >= 0.0f;
           valid &= boundsu.lower <= 0.0f;
+          valid &= boundsu.upper >= 0.0f;
+          if (none(valid)) return;
+          
+          Vec2vfx dv = subcurves.axis_v();
+          Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
+          BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
           valid &= boundsv.lower <= 0.0f;
+          valid &= boundsv.upper >= 0.0f;
           if (none(valid)) return;
 
           size_t mask = movemask(valid);
@@ -883,11 +885,11 @@ namespace embree
             const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
             const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
             //TensorLinearCubicBezierSurface2f curve2b = curve2.clip_v(Interval1f(vcv.lower[i],vcv.upper[i]));
-            TensorLinearCubicBezierSurface2f curve2c = curve2.clip_u(Interval1f(u0,u1));
+            //TensorLinearCubicBezierSurface2f curve2c = curve2.clip_u(Interval1f(u0,u1));
             
             const BBox1f cub(lerp(cu.lower,cu.upper,u0),
                              lerp(cu.lower,cu.upper,u1));
-            solve_newton_raphson_wide(cub,cv,curve2c,depth+1);
+            solve_newton_raphson_wide(cub,cv,depth+1);
           }
         }
         
