@@ -26,6 +26,16 @@ namespace embree
 {
   namespace isa
   {
+    struct CurveCounters
+    {
+      __forceinline CurveCounters()
+        : numRecursions(0), numKrawczyk(0), numSolve(0) {}
+      
+      size_t numRecursions;
+      size_t numKrawczyk;
+      size_t numSolve;
+    };
+    
     template<typename V>
       struct LinearBezierCurve
       {
@@ -450,6 +460,7 @@ namespace embree
         TensorLinearCubicBezierSurface3fa curve3d;
         const Epilog& epilog;
         bool isHit;
+        CurveCounters counters;
 
         __forceinline TensorLinearCubicBezierSurfaceIntersector (Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
           : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false) {}
@@ -661,6 +672,8 @@ namespace embree
 
         void solve_newton_raphson2(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2f& curve2)
         {
+          counters.numSolve++;
+          
           Vec2f uv(0.5f,0.5f);
           const Vec2f dfdu = curve2.eval_du(uv.x,uv.y);
           const Vec2f dfdv = curve2.eval_dv(uv.x,uv.y);
@@ -692,6 +705,8 @@ namespace embree
 
         int krawczyk(const TensorLinearCubicBezierSurface2f& curve2)
         {
+          counters.numKrawczyk++;
+          
           Vec2f c(0.5f,0.5f);
           const BBox2f bounds_du = curve2.derivative_u().bounds();
           const BBox2f bounds_dv = curve2.derivative_v().bounds();
@@ -717,6 +732,8 @@ namespace embree
         
         void solve_newton_raphson(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2)
         {
+          counters.numRecursions++;
+          
           BBox2f bounds = curve2.bounds();
           if (bounds.upper.x < 0.0f) return;
           if (bounds.upper.y < 0.0f) return;
@@ -762,6 +779,8 @@ namespace embree
 
         void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2)
         {
+          counters.numRecursions++;
+          
 #if 1
           {
             const Vec2f dv = normalize(curve2.axis_v());
@@ -785,6 +804,10 @@ namespace embree
           }
 #endif
 
+#if 0
+          if (cu.size() < 0.05f)
+            return solve_newton_raphson2(cu,cv,curve2);
+#else
           if (cu.size() < 0.0001f)
             return solve_newton_raphson2(cu,cv,curve2);
               
@@ -792,6 +815,7 @@ namespace embree
           if (split == 0) return;
           if (split == 1)
             return solve_newton_raphson2(cu,cv,curve2);
+#endif
 
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2.split_u();
           vboolx valid = true; clear(valid,VSIZEX-1);
@@ -848,6 +872,10 @@ namespace embree
           TensorLinearCubicBezierSurface2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
           //solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
           solve_newton_raphson_wide(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
+          if (isHit) {
+            ((RayHit&)ray).u = counters.numRecursions/16.0f;
+            ((RayHit&)ray).v = 0.0f;
+          }
           return isHit;
         }
       };
