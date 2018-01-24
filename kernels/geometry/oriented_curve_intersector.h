@@ -811,27 +811,6 @@ namespace embree
 
 #if 1
           {
-            BBox2f bounds = curve2.bounds();
-            if (bounds.upper.x < 0.0f) return;
-            if (bounds.upper.y < 0.0f) return;
-            if (bounds.lower.x > 0.0f) return;
-            if (bounds.lower.y > 0.0f) return;
-            
-            Vec2f du = curve2.axis_u();
-            Vec2f dv = curve2.axis_v();
-            Vec2f ndu = Vec2f(-du.y,du.x);
-            Vec2f ndv = Vec2f(-dv.y,dv.x);
-            BBox1f boundsu = curve2.bounds(ndu);
-            BBox1f boundsv = curve2.bounds(ndv);
-            if (boundsu.upper < 0.0f) return;
-            if (boundsv.upper < 0.0f) return;
-            if (boundsu.lower > 0.0f) return;
-            if (boundsv.lower > 0.0f) return;
-          }
-#endif
-          
-#if 1
-          {
             const Vec2f dv = normalize(curve2.axis_v());
             const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
             LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
