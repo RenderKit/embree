@@ -802,7 +802,7 @@ namespace embree
             std::cout << "  ";
         }
 
-        void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2xx, int depth)
+        void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, int depth)
         {
           TensorLinearCubicBezierSurface2f curve2 = curve2d.clip(cu,cv);
           counters.numRecursions++;
@@ -834,10 +834,6 @@ namespace embree
           }
 #endif
 
-#if 0
-          if (cu.size() < 0.05f)
-            return solve_newton_raphson2(cu,cv,curve2);
-#else
           if (cu.size() < 0.0001f) {
             DBG(tab(depth); PRINT("forced newton"));
             return solve_newton_raphson2(cu,cv,curve2);
@@ -856,25 +852,11 @@ namespace embree
               return solve_newton_raphson2(cu,cv,curve2);
             }
           }
-#endif
 
           DBG(tab(depth); PRINT("split"));
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2.split_u();
           vboolx valid = true; clear(valid,VSIZEX-1);
 
-#if 0
-          const Vec2vfx dv = normalize(curve2.axis_v());
-          const TensorLinearCubicBezierSurface<vfloatx> curve1v = subcurves.xfmX(dv);
-          LinearBezierCurve<Interval<vfloatx>> curve0v = curve1v.vreduce_u();
-          valid &= curve0v.hasRootX();
-          if (none(valid)) return;
-          const Interval<vfloatx> v = bezier_clipping(valid,curve0v);
-          valid &= !isEmpty(v);
-          if (none(valid)) return;
-          subcurves = subcurves.vclip_v(v);
-          BBox<vfloatx> vcv(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
-#endif
-          
           /*BBox<Vec2vfx> bounds = subcurves.bounds();
           valid &= bounds.upper.x >= 0.0f;
           valid &= bounds.upper.y >= 0.0f;
@@ -940,7 +922,7 @@ namespace embree
           //BBox1f vv(0.377083f, 0.409252f); curve2 = curve2.clip_v(vv);
             
           //solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
-          solve_newton_raphson_wide(vu,vv,curve2d,0);
+          solve_newton_raphson_wide(vu,vv,0);
           if (isHit) {
             //((RayHit&)ray).u = counters.numRecursions/16.0f;
             //((RayHit&)ray).u = counters.numKrawczyk/4.0f;
