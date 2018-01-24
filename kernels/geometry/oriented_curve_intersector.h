@@ -223,6 +223,19 @@ namespace embree
           const Vec2vfx P2 = P3 - dP3du;
           return CubicBezierCurve<Vec2vfx>(P0,P1,P2,P3);
         }
+
+        __forceinline CubicBezierCurve<Vec2vfx> split(const BBox1f& u) const
+        {
+          const float u0 = u.lower, u1 = u.upper;
+          const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
+          const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
+          Vec2vfx P0, dP0du; evalN(vu0,P0,dP0du); dP0du = dP0du * Vec2vfx(dscale);
+          const Vec2vfx P3 = shift_right_1(P0);
+          const Vec2vfx dP3du = shift_right_1(dP0du); 
+          const Vec2vfx P1 = P0 + dP0du; 
+          const Vec2vfx P2 = P3 - dP3du;
+          return CubicBezierCurve<Vec2vfx>(P0,P1,P2,P3);
+        }
         
         __forceinline V eval(float t) const
         {
@@ -413,6 +426,10 @@ namespace embree
 
         __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u() const {
           return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(),R.split());
+        }
+
+        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(const BBox1f& u) const {
+          return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(u),R.split(u));
         }
 
         __forceinline V eval(const float u, const float v) const {
@@ -854,7 +871,7 @@ namespace embree
           }
 
           DBG(tab(depth); PRINT("split"));
-          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2.split_u();
+          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);
           vboolx valid = true; clear(valid,VSIZEX-1);
 
           /*BBox<Vec2vfx> bounds = subcurves.bounds();
