@@ -171,7 +171,6 @@ namespace embree
           new (&right) CubicBezierCurve(p30,p21,p12,p03);
         }
 
-#if 0
         __forceinline CubicBezierCurve<Vec2vfx> split() const
         {
           const float u0 = 0.0f, u1 = 1.0f;
@@ -184,7 +183,6 @@ namespace embree
           const Vec2vfx P2 = P3 - dP3du;
           return CubicBezierCurve<Vec2vfx>(P0,P1,P2,P3);
         }
-#endif
         
         __forceinline V eval(float t) const
         {
@@ -203,7 +201,6 @@ namespace embree
           return p30;
         }
 
-#if 0
         __forceinline void evalN(const vfloatx& t, Vec2vfx& p, Vec2vfx& dp) const
         {
           const Vec2vfx p00 = p0;
@@ -221,7 +218,6 @@ namespace embree
           p = p30;
           dp = vfloatx(3.0f)*(p21-p20);
         }
-#endif
         
         __forceinline V eval_dt(float u) const
         {
@@ -355,11 +351,9 @@ namespace embree
           new (&right) TensorLinearCubicBezierSurface(L1,R1);
         }
 
-#if 0
         __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u() const {
           return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(),R.split());
         }
-#endif
 
         __forceinline V eval(const float u, const float v) const {
           return lerp(L,R,v).eval(u);
@@ -689,7 +683,6 @@ namespace embree
           solve_newton_raphson(BBox1f(cu.center(),cu.upper),cv,curve2r);
         }
 
-#if 0
         void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2)
         {
           {
@@ -733,12 +726,12 @@ namespace embree
             solve_newton_raphson_wide(cub,cv,curve2b);
           }
         }
-#endif
         
         bool solve_newton_raphson_main()
         {
           TensorLinearCubicBezierSurface2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
-          solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
+          //solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
+          solve_newton_raphson_wide(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
           return isHit;
         }
       };
