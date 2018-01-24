@@ -603,6 +603,7 @@ different ISAs selected (e.g. embree2.a, embree2_sse42.a,
 embree2_avx.a, embree2_avx2.a, embree2_avx512knl.a,
 embree2_avx512skx.a). You have to link these libraries in increasing
 ISA order (the order shown in the example).
+
 Embree API
 ==========
 
@@ -2653,7 +2654,7 @@ by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
 
 
 Huge Page Support
---------------------------------
+-----------------
 
 Embree supports 2MB huge pages under Windows, Linux, and MacOSX. Under
 Linux huge page support is enabled by default and under Windows and
@@ -2889,6 +2890,7 @@ should use the `rtcMakeStatic` function after the build which clears
 some internal data.
 
     void rtcMakeStaticBVH(RTCBVH);
+
 Embree Tutorials
 ================
 
@@ -3181,6 +3183,7 @@ the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable has to be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree
 X.Y.Z\lib\cmake\embree-X.Y.Z`.
+
 [Embree API]: #embree-api
 [Ray Layout]: #ray-layout
 [Extending the Ray Structure]: #extending-the-ray-structure
