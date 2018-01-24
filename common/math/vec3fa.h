@@ -338,6 +338,10 @@ namespace embree
     return blendv_ps(f, t, s);
   }
 
+  __forceinline Vec3fa lerp(const Vec3fa& v0, const Vec3fa& v1, const float t) {
+    return madd(1.0f-t,v0,t*v1);
+  }
+
   __forceinline int maxDim ( const Vec3fa& a )
   {
     const Vec3fa b = abs(a);
