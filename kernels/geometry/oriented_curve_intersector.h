@@ -20,7 +20,7 @@
 #include "bezier_curve_intersector.h"
 #include "../../common/math/interval.h"
 
-#define DBG(x) 
+#define DBG(x)
 
 namespace embree
 {
@@ -29,11 +29,12 @@ namespace embree
     struct CurveCounters
     {
       __forceinline CurveCounters()
-        : numRecursions(0), numKrawczyk(0), numSolve(0) {}
+        : numRecursions(0), numKrawczyk(0), numSolve(0), numSolveIterations(0) {}
       
       size_t numRecursions;
       size_t numKrawczyk;
       size_t numSolve;
+      size_t numSolveIterations;
     };
     
     template<typename V>
@@ -394,6 +395,10 @@ namespace embree
           return TensorLinearCubicBezierSurface(lerp(L,R,v.lower),lerp(L,R,v.upper));
         }
 
+        __forceinline TensorLinearCubicBezierSurface clip(const Interval1f& u, const Interval1f& v) const {
+          return clip_v(v).clip_u(u);
+        }
+
         __forceinline TensorLinearCubicBezierSurface vclip_v(const Interval<vfloatx>& v) const {
           return TensorLinearCubicBezierSurface(lerp(L,R,v.lower),lerp(L,R,v.upper));
         }
@@ -458,6 +463,7 @@ namespace embree
         Ray& ray;
         LinearSpace3fa space; // FIXME:  calculate improved u,v directions aligned with curve
         TensorLinearCubicBezierSurface3fa curve3d;
+        TensorLinearCubicBezierSurface2f curve2d;
         const Epilog& epilog;
         bool isHit;
         CurveCounters counters;
@@ -641,10 +647,12 @@ namespace embree
 
         void solve_newton_raphson1(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2f& curve2)
         {
+          counters.numSolve++;
           Vec2f uv(0.5f,0.5f);
                       
           for (size_t i=0; i<20; i++)
           {
+            counters.numSolveIterations++;
             const Vec2f f    = curve2.eval(uv.x,uv.y);
             const Vec2f dfdu = curve2.eval_du(uv.x,uv.y);
             const Vec2f dfdv = curve2.eval_dv(uv.x,uv.y);
@@ -681,6 +689,7 @@ namespace embree
             
           for (size_t i=0; i<20; i++)
           {
+            counters.numSolveIterations++;
             const Vec2f f    = curve2.eval(uv.x,uv.y);
             const Vec2f duv = rcp_J*f;
             uv -= duv;
@@ -688,8 +697,11 @@ namespace embree
             if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
             {
               DBG(PRINT2("solution",curve2));
+              DBG(PRINT2(cu,cv));
+              DBG(PRINT(uv));
               const float u = lerp(cu.lower,cu.upper,uv.x);
               const float v = lerp(cv.lower,cv.upper,uv.y);
+              DBG(PRINT2(u,v));
               if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
               const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
@@ -703,13 +715,15 @@ namespace embree
           }       
         }
 
-        int krawczyk(const TensorLinearCubicBezierSurface2f& curve2)
+        int krawczyk(const TensorLinearCubicBezierSurface2f& curve2, int depth)
         {
           counters.numKrawczyk++;
           
           Vec2f c(0.5f,0.5f);
           const BBox2f bounds_du = curve2.derivative_u().bounds();
           const BBox2f bounds_dv = curve2.derivative_v().bounds();
+          DBG(tab(depth); PRINT(bounds_du));
+          DBG(tab(depth); PRINT(bounds_dv));
 
           LinearSpace2<Vec2<Interval1f>> I(Interval1f(1.0f), Interval1f(0.0f),
                                            Interval1f(0.0f), Interval1f(1.0f));
@@ -720,10 +734,15 @@ namespace embree
           const Vec2f dfdu = curve2.eval_du(c.x,c.y);
           const Vec2f dfdv = curve2.eval_dv(c.x,c.y);
           const LinearSpace2f rcp_J = rcp(LinearSpace2f(dfdu,dfdv));
+          //c -= rcp_J*curve2.eval(c.x,c.y); // do one newton iteration to find better start value
+          
+          //PRINT(rcp_J);
           const LinearSpace2<Vec2<Interval1f>> rcp_Ji(rcp_J);
 
           const Vec2<Interval1f> x(Interval1f(0.0f,1.0f),Interval1f(0.0f,1.0f));
           const Vec2<Interval1f> K = Vec2<Interval1f>(c - rcp_J*curve2.eval(c.x,c.y)) + (I - rcp_Ji*G)*(x-Vec2<Interval1f>(c));
+
+          DBG(tab(depth); PRINT(K));
 
           const Vec2<Interval1f> KK = intersect(K,x);
           if (isEmpty(KK.x) || isEmpty(KK.y)) return 0;
@@ -766,7 +785,7 @@ namespace embree
           if (cu.size() < 0.0001f)
             return solve_newton_raphson2(cu,cv,curve2);
               
-          int split = krawczyk(curve2);
+          int split = krawczyk(curve2,0);
           if (split == 0) return;
           if (split == 1)
             return solve_newton_raphson2(cu,cv,curve2);
@@ -777,9 +796,39 @@ namespace embree
           solve_newton_raphson(BBox1f(cu.center(),cu.upper),cv,curve2r);
         }
 
-        void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2)
+        void tab(int depth)
         {
+          for (int i=0; i<depth; i++)
+            std::cout << "  ";
+        }
+
+        void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, TensorLinearCubicBezierSurface2f curve2xx, int depth)
+        {
+          TensorLinearCubicBezierSurface2f curve2 = curve2d.clip(cu,cv);
           counters.numRecursions++;
+
+          DBG(tab(depth); PRINT2(cu,cv));
+
+#if 1
+          {
+            BBox2f bounds = curve2.bounds();
+            if (bounds.upper.x < 0.0f) return;
+            if (bounds.upper.y < 0.0f) return;
+            if (bounds.lower.x > 0.0f) return;
+            if (bounds.lower.y > 0.0f) return;
+            
+            Vec2f du = curve2.axis_u();
+            Vec2f dv = curve2.axis_v();
+            Vec2f ndu = Vec2f(-du.y,du.x);
+            Vec2f ndv = Vec2f(-dv.y,dv.x);
+            BBox1f boundsu = curve2.bounds(ndu);
+            BBox1f boundsv = curve2.bounds(ndv);
+            if (boundsu.upper < 0.0f) return;
+            if (boundsv.upper < 0.0f) return;
+            if (boundsu.lower > 0.0f) return;
+            if (boundsv.lower > 0.0f) return;
+          }
+#endif
           
 #if 1
           {
@@ -793,6 +842,8 @@ namespace embree
             cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
           }
 #endif
+
+          DBG(tab(depth); PRINT2(cu,cv));
 
 #if 0
           {
@@ -808,15 +859,27 @@ namespace embree
           if (cu.size() < 0.05f)
             return solve_newton_raphson2(cu,cv,curve2);
 #else
-          if (cu.size() < 0.0001f)
+          if (cu.size() < 0.0001f) {
+            DBG(tab(depth); PRINT("forced newton"));
             return solve_newton_raphson2(cu,cv,curve2);
-              
-          int split = krawczyk(curve2);
-          if (split == 0) return;
-          if (split == 1)
-            return solve_newton_raphson2(cu,cv,curve2);
+          }
+
+          /* we assume convergence for small u ranges and verify using krawczyk */
+          if (cu.size() < 1.0f/40.0f)
+          {
+            int split = krawczyk(curve2,depth);
+            if (split == 0) {
+              DBG(tab(depth); PRINT("krawczyk cull"));
+              return;
+            }
+            if (split == 1) {
+              DBG(tab(depth); PRINT("krawczyk newton"));
+              return solve_newton_raphson2(cu,cv,curve2);
+            }
+          }
 #endif
 
+          DBG(tab(depth); PRINT("split"));
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2.split_u();
           vboolx valid = true; clear(valid,VSIZEX-1);
 
@@ -833,12 +896,12 @@ namespace embree
           BBox<vfloatx> vcv(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
 #endif
           
-          BBox<Vec2vfx> bounds = subcurves.bounds();
+          /*BBox<Vec2vfx> bounds = subcurves.bounds();
           valid &= bounds.upper.x >= 0.0f;
           valid &= bounds.upper.y >= 0.0f;
           valid &= bounds.lower.x <= 0.0f;
           valid &= bounds.lower.y <= 0.0f;
-          if (none(valid)) return;
+          if (none(valid)) return;*/
 
           Vec2vfx du = subcurves.axis_u();
           Vec2vfx dv = subcurves.axis_v();
@@ -863,17 +926,47 @@ namespace embree
             
             const BBox1f cub(lerp(cu.lower,cu.upper,u0),
                              lerp(cu.lower,cu.upper,u1));
-            solve_newton_raphson_wide(cub,cv,curve2c);
+            solve_newton_raphson_wide(cub,cv,curve2c,depth+1);
           }
         }
         
         bool solve_newton_raphson_main()
         {
-          TensorLinearCubicBezierSurface2f curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
-          //solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
-          solve_newton_raphson_wide(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
+          curve2d = curve3d.xfm(space.vx,space.vy,ray.org);
+
+#if 0
+          {
+            BBox2f bounds = curve2.bounds();
+            if (bounds.upper.x < 0.0f) return false;
+            if (bounds.upper.y < 0.0f) return false;
+            if (bounds.lower.x > 0.0f) return false;
+            if (bounds.lower.y > 0.0f) return false;
+            
+            Vec2f du = curve2.axis_u();
+            Vec2f dv = curve2.axis_v();
+            Vec2f ndu = Vec2f(-du.y,du.x);
+            Vec2f ndv = Vec2f(-dv.y,dv.x);
+            BBox1f boundsu = curve2.bounds(ndu);
+            BBox1f boundsv = curve2.bounds(ndv);
+            if (boundsu.upper < 0.0f) return false;
+            if (boundsv.upper < 0.0f) return false;
+            if (boundsu.lower > 0.0f) return false;
+            if (boundsv.lower > 0.0f) return false;
+          }
+#endif
+          
+          BBox1f vu(0.0f,1.0f);
+          BBox1f vv(0.0f,1.0f);
+          //BBox1f vu(0.183673f, 0.204082f); curve2 = curve2.clip_u(vu);
+          //BBox1f vv(0.377083f, 0.409252f); curve2 = curve2.clip_v(vv);
+            
+          //solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
+          solve_newton_raphson_wide(vu,vv,curve2d,0);
           if (isHit) {
-            ((RayHit&)ray).u = counters.numRecursions/16.0f;
+            //((RayHit&)ray).u = counters.numRecursions/16.0f;
+            //((RayHit&)ray).u = counters.numKrawczyk/4.0f;
+            //((RayHit&)ray).u = counters.numSolve/4.0f;
+            ((RayHit&)ray).u = counters.numSolveIterations/20.0f;
             ((RayHit&)ray).v = 0.0f;
           }
           return isHit;

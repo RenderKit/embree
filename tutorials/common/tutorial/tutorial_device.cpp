@@ -746,13 +746,14 @@ extern "C" bool device_pick(const float x,
   rtcInitIntersectContext(&context);
   rtcIntersect1(g_scene,&context,RTCRayHit1_(ray));
   PRINT2(x,y);
-
+  
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     hitPos = Vec3fa(0.0f,0.0f,0.0f);
     return false;
   }
   else {
+    PRINT(ray.u*20.0f);
     hitPos = ray.org + ray.tfar()*ray.dir;
     return true;
   }
