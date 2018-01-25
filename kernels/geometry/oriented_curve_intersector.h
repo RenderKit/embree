@@ -827,7 +827,8 @@ namespace embree
             const Vec2fa duv = rcp_J*f;
             uv -= duv;
 
-            if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
+            //if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
+            if (max(fabs(f.x),fabs(f.y)) < eps)
             {
               DBG(PRINT("solution"));
               DBG(PRINT2(cu,cv));
