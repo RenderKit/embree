@@ -62,6 +62,9 @@ enum RTCDeviceProperty
 /* Gets a device property. */
 RTC_API uniform intptr_t rtcGetDeviceProperty(RTCDevice device, uniform RTCDeviceProperty prop);
 
+/* Sets a device property. */
+RTC_API void rtcSetDeviceProperty(RTCDevice device, const uniform RTCDeviceProperty prop, uniform intptr_t value);
+
 /* Error codes */
 enum RTCError
 {

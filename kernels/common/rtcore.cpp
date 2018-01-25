@@ -76,6 +76,18 @@ namespace embree
     return 0;
   }
 
+  RTC_API void rtcSetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop, ssize_t val)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetDeviceProperty);
+    const bool internal_prop = (size_t)prop >= 1000000 && (size_t)prop < 1000004;
+    if (!internal_prop) RTC_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
+    Lock<MutexSys> lock(g_mutex);
+    device->setProperty(prop,val);
+    RTC_CATCH_END(device);
+  }
+
   RTC_API RTCError rtcGetDeviceError(RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
