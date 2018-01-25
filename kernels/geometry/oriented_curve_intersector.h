@@ -531,7 +531,13 @@ namespace embree
         CurveCounters counters;
 
         __forceinline TensorLinearCubicBezierSurfaceIntersector (Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
-          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false) {}
+          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false)
+        {
+          /*Vec3fa yy = curve3d.axis_u();
+          Vec3fa x = cross(yy,ray.dir);
+          Vec3fa y = cross(x,ray.dir);
+          space = LinearSpace3fa(normalize(x),normalize(y),normalize(ray.dir));*/
+        }
         
         __forceinline Interval1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
