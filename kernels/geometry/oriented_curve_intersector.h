@@ -814,7 +814,7 @@ namespace embree
           }       
         }
 
-        void solve_newton_raphson2b(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
+        __forceinline void solve_newton_raphson2b(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
         {
           asm("//solve_newton_raphson2b");
           counters.numSolve++;
@@ -862,7 +862,7 @@ namespace embree
           return true;
         }
 
-        bool solve_krawczyk(BBox1f cu, BBox1f cv, int depth)
+        __forceinline bool solve_krawczyk(BBox1f cu, BBox1f cv, int depth)
         {
           DBG(tab(depth); PRINT("solve_krawczyk"));
           asm("//solve_krawczyk");
