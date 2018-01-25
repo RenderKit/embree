@@ -1011,27 +1011,30 @@ namespace embree
           if (none(valid)) return;
 #endif
 
-          Vec2vfx du = subcurves.axis_u();
-          DBG(tab(depth); PRINT(du));
-          Vec2vfx ndu = Vec2vfx(-du.y,du.x);
-          BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
-          DBG(tab(depth); PRINT(boundsu));
-          valid &= boundsu.lower <= eps;
-          valid &= boundsu.upper >= -eps;
-          DBG(tab(depth); PRINT(valid));
-          asm("//solve_newton_raphson_wide_f");
-          if (none(valid)) return;
+          //if (__popcnt(movemask(valid)) > 1)
+          {
+            Vec2vfx du = subcurves.axis_u();
+            DBG(tab(depth); PRINT(du));
+            Vec2vfx ndu = Vec2vfx(-du.y,du.x);
+            BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
+            DBG(tab(depth); PRINT(boundsu));
+            valid &= boundsu.lower <= eps;
+            valid &= boundsu.upper >= -eps;
+            DBG(tab(depth); PRINT(valid));
+            asm("//solve_newton_raphson_wide_f");
+            if (none(valid)) return;
+            
+            Vec2vfx dv = subcurves.axis_v();
+            DBG(tab(depth); PRINT(dv));
+            Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
+            BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
+            valid &= boundsv.lower <= eps;
+            valid &= boundsv.upper >= -eps;
+            DBG(tab(depth); PRINT(valid));
+            asm("//solve_newton_raphson_wide_g");
+            if (none(valid)) return;
+          }
           
-          Vec2vfx dv = subcurves.axis_v();
-          DBG(tab(depth); PRINT(dv));
-          Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
-          BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
-          valid &= boundsv.lower <= eps;
-          valid &= boundsv.upper >= -eps;
-          DBG(tab(depth); PRINT(valid));
-          asm("//solve_newton_raphson_wide_g");
-          if (none(valid)) return;
-
           size_t mask = movemask(valid);
           while (mask)
           {
