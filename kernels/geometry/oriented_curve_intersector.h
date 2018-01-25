@@ -795,7 +795,7 @@ namespace embree
 
             if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
             {
-              DBG(PRINT2("solution",curve2));
+              DBG(PRINT("solution"));
               DBG(PRINT2(cu,cv));
               DBG(PRINT(uv));
               const float u = uv.x;
@@ -828,7 +828,7 @@ namespace embree
 
             if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
             {
-              DBG(PRINT2("solution",curve2));
+              DBG(PRINT("solution"));
               DBG(PRINT2(cu,cv));
               DBG(PRINT(uv));
               const float u = uv.x;
@@ -855,7 +855,8 @@ namespace embree
           if (!curve0v.hasRoot()) return false;
           Interval1f v = bezier_clipping(curve0v);
           if (isEmpty(v)) return false;
-          if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
+          //if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
+          v = intersect(v + Interval1f(-0.1f,+0.1f),Interval1f(0.0f,1.0f));
           //curve2 = curve2.clip_v(v);
           cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
           return true;
@@ -863,14 +864,17 @@ namespace embree
 
         bool solve_krawczyk(BBox1f cu, BBox1f cv, int depth)
         {
+          DBG(tab(depth); PRINT("solve_krawczyk"));
           asm("//solve_krawczyk");
           counters.numKrawczyk++;
           if (!clip_v(cu,cv)) return true;
+          DBG(tab(depth); PRINT2(cu,cv));
 
           const float d = cu.size();
-          //PRINT(Device::debug_int0);
-          //cu.lower -= float(Device::debug_int0)*0.1f*d;
-          //cu.upper += float(Device::debug_int0)*0.1f*d;
+          DBG(PRINT(Device::debug_int0));
+          cu.lower -= float(Device::debug_int0)*0.1f*d;
+          cu.upper += float(Device::debug_int0)*0.1f*d;
+          DBG(tab(depth); PRINT2(cu,cv));
           const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
           const BBox2fa bounds_du = (1.0f/cu.size())*curve2.derivative_u().bounds();
           const BBox2fa bounds_dv = (1.0f/cv.size())*curve2.derivative_v().bounds();
@@ -964,8 +968,6 @@ namespace embree
           counters.numRecursions++;
           asm("//solve_newton_raphson_wide_b");
 
-          DBG(tab(depth); PRINT2(cu,cv));
-
 #if 0
           if (!clip_v(cu,cv))
             return;
@@ -980,9 +982,12 @@ namespace embree
           }
 
           /* we assume convergence for small u ranges and verify using krawczyk */
-          if (cu.size() < 1.0f/40.0f)
-            if (solve_krawczyk(cu,cv,depth))
+          if (cu.size() < 1.0f/40.0f) {
+            if (solve_krawczyk(cu,cv,depth)) {
+              DBG(tab(depth); PRINT("krawczyk_cull"));
               return;
+            }
+          }
 
           asm("//solve_newton_raphson_wide_c");
           
@@ -1003,8 +1008,6 @@ namespace embree
           subcurves = subcurves.vclip_v(v);
           BBox<vfloatx> vcv(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
 #endif
-          DBG(tab(depth); PRINT(valid));
-
 #if 0
           BBox<Vec2vfx> bounds = subcurves.bounds();
           valid &= bounds.upper.x >= -eps;
@@ -1018,27 +1021,29 @@ namespace embree
           //if (__popcnt(movemask(valid)) > 1)
           {
             Vec2vfx du = subcurves.axis_u();
-            DBG(tab(depth); PRINT(du));
+            //DBG(tab(depth); PRINT(du));
             Vec2vfx ndu = Vec2vfx(-du.y,du.x);
             BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
-            DBG(tab(depth); PRINT(boundsu));
+            //DBG(tab(depth); PRINT(boundsu));
             valid &= boundsu.lower <= eps;
             valid &= boundsu.upper >= -eps;
-            DBG(tab(depth); PRINT(valid));
+            //DBG(tab(depth); PRINT(valid));
             asm("//solve_newton_raphson_wide_f");
             if (none(valid)) return;
             
             Vec2vfx dv = subcurves.axis_v();
-            DBG(tab(depth); PRINT(dv));
+            //DBG(tab(depth); PRINT(dv));
             Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
             BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
             valid &= boundsv.lower <= eps;
             valid &= boundsv.upper >= -eps;
-            DBG(tab(depth); PRINT(valid));
+            //DBG(tab(depth); PRINT(valid));
             asm("//solve_newton_raphson_wide_g");
             if (none(valid)) return;
           }
-          
+
+          DBG(tab(depth); PRINT(valid));
+           
           size_t mask = movemask(valid);
           while (mask)
           {

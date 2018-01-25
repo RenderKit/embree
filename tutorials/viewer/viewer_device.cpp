@@ -244,7 +244,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (x > 407+4) return zero;
   if (y < 512-231-4) return zero;
   if (y > 512-231+4) return zero;*/
-  DBG(if (x != 406 || y != 282) return zero);
+  DBG(if (x != 77 || y != 512-372) return zero);
   
   /* initialize sampler */
   RandomSampler sampler;
@@ -264,12 +264,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
   }
-  /*DBG(
+  DBG(
     PRINT(ray.geomID);
     PRINT(ray.tfar());
     PRINT(ray.u);
     PRINT(ray.v);
-    )*/
+    )
     //return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
   
   /* shade all rays that hit something */
