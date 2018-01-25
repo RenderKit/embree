@@ -237,7 +237,7 @@ namespace embree
           return CubicBezierCurve<Vec2vfx>(P0,P1,P2,P3);
         }
         
-        __forceinline V eval(float t) const
+        __forceinline void eval(float t, V& p, V& dp) const
         {
           const V p00 = p0;
           const V p01 = p1;
@@ -251,9 +251,44 @@ namespace embree
           const V p21 = lerp(p11,p12,t);
           const V p30 = lerp(p20,p21,t);
           
+          p = p30;
+          dp = V(3.0f)*(p21-p20);
+        }
+
+        __forceinline V eval(float t) const
+        {
+          const V p00 = p0;
+          const V p01 = p1;
+          const V p02 = p2;
+          const V p03 = p3;
+          
+          const V p10 = lerp(p00,p01,t);
+          const V p11 = lerp(p01,p02,t);
+          const V p12 = lerp(p02,p03,t);
+          const V p20 = lerp(p10,p11,t);
+          const V p21 = lerp(p11,p12,t);
+          const V p30 = lerp(p20,p21,t);
+
           return p30;
         }
 
+        __forceinline V eval_dt(float t) const
+        {
+          const V p00 = p0;
+          const V p01 = p1;
+          const V p02 = p2;
+          const V p03 = p3;
+          
+          const V p10 = lerp(p00,p01,t);
+          const V p11 = lerp(p01,p02,t);
+          const V p12 = lerp(p02,p03,t);
+          const V p20 = lerp(p10,p11,t);
+          const V p21 = lerp(p11,p12,t);
+          //const V p30 = lerp(p20,p21,t);
+          
+          return V(3.0f)*(p21-p20);
+        }
+        
         __forceinline void evalN(const vfloatx& t, Vec2vfx& p, Vec2vfx& dp) const
         {
           const Vec2vfx p00 = p0;
@@ -272,23 +307,10 @@ namespace embree
           dp = vfloatx(3.0f)*(p21-p20);
         }
         
-        __forceinline V eval_dt(float u) const
-        {
-          const float t1 = u;
-          const float t0 = 1.0f-t1;
-          const float B0 = -(t0*t0);
-          const float B1 = madd(-2.0f,t0*t1,t0*t0);
-          const float B2 = msub(+2.0f,t0*t1,t1*t1);
-          const float B3 = +(t1*t1);
-          return float(3.0f)*(B0*p0+B1*p1+B2*p2+B3*p3);
-        }
-        
         __forceinline CubicBezierCurve clip(const Interval1f& u1) const
         {
-          V f0 = eval(u1.lower);
-          V df0 = eval_dt(u1.lower);
-          V f1 = eval(u1.upper);
-          V df1 = eval_dt(u1.upper);
+          V f0,df0; eval(u1.lower,f0,df0);
+          V f1,df1; eval(u1.upper,f1,df1);
           float s = u1.upper-u1.lower;
           return CubicBezierCurve(f0,f0+s*(1.0f/3.0f)*df0,f1-s*(1.0f/3.0f)*df1,f1);
         }
@@ -408,8 +430,14 @@ namespace embree
           return TensorLinearCubicBezierSurface(lerp(L,R,v.lower),lerp(L,R,v.upper));
         }
 
-        __forceinline TensorLinearCubicBezierSurface clip(const Interval1f& u, const Interval1f& v) const {
-          return clip_v(v).clip_u(u);
+        __forceinline TensorLinearCubicBezierSurface clip(const Interval1f& u, const Interval1f& v) const
+        {
+          asm("//clip_a");
+          auto cv = clip_v(v);
+          asm("//clip_b");
+          auto cu = cv.clip_u(u);
+          asm("//clip_c");
+          return cu;
         }
 
         __forceinline TensorLinearCubicBezierSurface vclip_v(const Interval<vfloatx>& v) const {
@@ -442,6 +470,15 @@ namespace embree
 
         __forceinline V eval_dv(const float u, const float v) const {
           return (R-L).eval(u);
+        }
+
+        __forceinline void eval(const float u, const float v, V& p, V& dpdu, V& dpdv) const
+        {
+          V p0, dp0du; L.eval(u,p0,dp0du);
+          V p1, dp1du; R.eval(u,p1,dp1du);
+          p = lerp(p0,p1,v);
+          dpdu = lerp(dp0du,dp1du,v);
+          dpdv = p1-p0;
         }
 
         __forceinline TensorLinearQuadraticBezierSurface<V> derivative_u() const {
@@ -702,7 +739,7 @@ namespace embree
           Vec2f uv(0.5f,0.5f);
           const Vec2f dfdu = curve2.eval_du(uv.x,uv.y);
           const Vec2f dfdv = curve2.eval_dv(uv.x,uv.y);
-          const LinearSpace2f rcp_J = rcp(LinearSpace2f(dfdu,dfdv)); // FIXME: already calculated in krawcyk!
+          const LinearSpace2f rcp_J = rcp(LinearSpace2f(dfdu,dfdv));
             
           for (size_t i=0; i<20; i++)
           {
@@ -734,6 +771,7 @@ namespace embree
 
         void solve_newton_raphson2b(BBox1f cu, BBox1f cv, Vec2f uv, const Vec2f& dfdu, const Vec2f& dfdv, const LinearSpace2f& rcp_J, const TensorLinearCubicBezierSurface2f& curve2)
         {
+          asm("//solve_newton_raphson2b");
           counters.numSolve++;
           
           for (size_t i=0; i<20; i++)
@@ -766,6 +804,7 @@ namespace embree
 
         bool solve_krawczyk(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2f& curve2, int depth)
         {
+          asm("//solve_krawczyk");
           counters.numKrawczyk++;
           
           Vec2f c(0.5f,0.5f);
@@ -855,8 +894,10 @@ namespace embree
 
         void solve_newton_raphson_wide(BBox1f cu, BBox1f cv, int depth)
         {
+          asm("//solve_newton_raphson_wide_a");
           TensorLinearCubicBezierSurface2f curve2 = curve2d.clip(cu,cv);
           counters.numRecursions++;
+          asm("//solve_newton_raphson_wide_b");
 
           DBG(tab(depth); PRINT2(cu,cv));
 
@@ -885,8 +926,11 @@ namespace embree
             if (solve_krawczyk(cu,cv,curve2,depth))
               return;
 
+          asm("//solve_newton_raphson_wide_c");
+          
           DBG(tab(depth); PRINT("split"));
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);
+          asm("//solve_newton_raphson_wide_d");
           vboolx valid = true; clear(valid,VSIZEX-1);
 
 #if 0
@@ -895,6 +939,7 @@ namespace embree
           valid &= bounds.upper.y >= 0.0f;
           valid &= bounds.lower.x <= 0.0f;
           valid &= bounds.lower.y <= 0.0f;
+          asm("//solve_newton_raphson_wide_e");
           if (none(valid)) return;
 #endif
 
@@ -903,6 +948,7 @@ namespace embree
           BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
           valid &= boundsu.lower <= 0.0f;
           valid &= boundsu.upper >= 0.0f;
+          asm("//solve_newton_raphson_wide_f");
           if (none(valid)) return;
           
           Vec2vfx dv = subcurves.axis_v();
@@ -910,6 +956,7 @@ namespace embree
           BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
           valid &= boundsv.lower <= 0.0f;
           valid &= boundsv.upper >= 0.0f;
+          asm("//solve_newton_raphson_wide_g");
           if (none(valid)) return;
 
           size_t mask = movemask(valid);
@@ -925,6 +972,7 @@ namespace embree
         
         bool solve_newton_raphson_main()
         {
+           asm("//solve_newton_raphson_main");
           curve2d = curve3d.xfm(space.vx,space.vy,ray.org);
 
 #if 0
@@ -979,6 +1027,7 @@ namespace embree
                                 const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
                                 const Epilog& epilog) const
       {
+        asm("//intersect");
         STAT3(normal.trav_prims,1,1,1);
         
         CubicBezierCurve3fa center(v0,v1,v2,v3);
