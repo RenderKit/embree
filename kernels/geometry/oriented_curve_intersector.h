@@ -819,10 +819,9 @@ namespace embree
           LinearSpace2<Vec2<Interval1f>> G(Interval1f(bounds_du.lower.x,bounds_du.upper.x), Interval1f(bounds_dv.lower.x,bounds_dv.upper.x),
                                            Interval1f(bounds_du.lower.y,bounds_du.upper.y), Interval1f(bounds_dv.lower.y,bounds_dv.upper.y));
 
-          const Vec2f dfdu = curve2.eval_du(c.x,c.y);
-          const Vec2f dfdv = curve2.eval_dv(c.x,c.y);
+          Vec2f f,dfdu,dfdv; curve2.eval(c.x,c.y,f,dfdu,dfdv);
           const LinearSpace2f rcp_J = rcp(LinearSpace2f(dfdu,dfdv));
-          const Vec2f c1 = c - rcp_J*curve2.eval(c.x,c.y);
+          const Vec2f c1 = c - rcp_J*f;
           
           //PRINT(rcp_J);
           const LinearSpace2<Vec2<Interval1f>> rcp_Ji(rcp_J);
