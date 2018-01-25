@@ -847,10 +847,25 @@ namespace embree
           }       
         }
 
+        bool clip_v(BBox1f& cu, BBox1f& cv)
+        {
+          const Vec2fa dv = normalize(curve2d.eval_dv(cu.lower,cv.lower));
+          const TensorLinearCubicBezierSurface1f curve1v = curve2d.xfm(dv).clip(cu,cv);
+          LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
+          if (!curve0v.hasRoot()) return false;
+          Interval1f v = bezier_clipping(curve0v);
+          if (isEmpty(v)) return false;
+          if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
+          //curve2 = curve2.clip_v(v);
+          cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
+          return true;
+        }
+
         bool solve_krawczyk(BBox1f cu, BBox1f cv, int depth)
         {
           asm("//solve_krawczyk");
           counters.numKrawczyk++;
+          if (!clip_v(cu,cv)) return true;
           
           Vec2fa c(cu.center(),cv.center());
           const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
@@ -948,24 +963,15 @@ namespace embree
           DBG(tab(depth); PRINT2(cu,cv));
 
 #if 0
-          {
-            //const Vec2fa dv = normalize(curve2.axis_v());
-            const Vec2fa dv = normalize(curve2d.eval_dv(cu.lower,cv.lower));
-            const TensorLinearCubicBezierSurface1f curve1v = curve2d.xfm(dv).clip(cu,cv);
-            LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
-            if (!curve0v.hasRoot()) return;       
-            Interval1f v = bezier_clipping(curve0v);
-            if (isEmpty(v)) return;
-            if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
-            //curve2 = curve2.clip_v(v);
-            cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
-          }
+          if (!clip_v(cu,cv))
+            return;
 #endif
 
           DBG(tab(depth); PRINT2(cu,cv));
 
           if (cu.size() < 0.001f) {
             DBG(tab(depth); PRINT("forced newton"));
+            if (!clip_v(cu,cv)) return;
             return solve_newton_raphson2(cu,cv);
           }
 
@@ -981,7 +987,7 @@ namespace embree
           asm("//solve_newton_raphson_wide_d");
           
           vboolx valid = true; clear(valid,VSIZEX-1);
-#if 1
+#if 0
           const Vec2vfx Dv = normalize(subcurves.axis_v());
           const TensorLinearCubicBezierSurface<vfloatx> curve1v = subcurves.xfmX(Dv);
           LinearBezierCurve<Interval<vfloatx>> curve0v = curve1v.vreduce_u();
@@ -1033,7 +1039,8 @@ namespace embree
             const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
             const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
             const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
-            const BBox1f cvi(vcv.lower[i],vcv.upper[i]);
+            //const BBox1f cvi(vcv.lower[i],vcv.upper[i]);
+            const BBox1f cvi = cv;
             solve_newton_raphson_wide(cui,cvi,depth+1);
           }
         }
