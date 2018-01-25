@@ -518,6 +518,7 @@ namespace embree
         LinearSpace3fa space; // FIXME:  calculate improved u,v directions aligned with curve
         TensorLinearCubicBezierSurface3fa curve3d;
         TensorLinearCubicBezierSurface2fa curve2d;
+        float eps;
         const Epilog& epilog;
         bool isHit;
         CurveCounters counters;
@@ -916,7 +917,7 @@ namespace embree
 
           DBG(tab(depth); PRINT2(cu,cv));
 
-          if (cu.size() < 0.0001f) {
+          if (cu.size() < 0.001f) {
             DBG(tab(depth); PRINT("forced newton"));
             return solve_newton_raphson2(cu,cv,curve2);
           }
@@ -932,30 +933,36 @@ namespace embree
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);
           asm("//solve_newton_raphson_wide_d");
           vboolx valid = true; clear(valid,VSIZEX-1);
+          DBG(tab(depth); PRINT(valid));
 
 #if 0
           BBox<Vec2vfx> bounds = subcurves.bounds();
-          valid &= bounds.upper.x >= 0.0f;
-          valid &= bounds.upper.y >= 0.0f;
-          valid &= bounds.lower.x <= 0.0f;
-          valid &= bounds.lower.y <= 0.0f;
+          valid &= bounds.upper.x >= -eps;
+          valid &= bounds.upper.y >= -eps;
+          valid &= bounds.lower.x <= eps;
+          valid &= bounds.lower.y <= eps;
           asm("//solve_newton_raphson_wide_e");
           if (none(valid)) return;
 #endif
 
           Vec2vfx du = subcurves.axis_u();
+          DBG(tab(depth); PRINT(du));
           Vec2vfx ndu = Vec2vfx(-du.y,du.x);
           BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
-          valid &= boundsu.lower <= 0.0f;
-          valid &= boundsu.upper >= 0.0f;
+          DBG(tab(depth); PRINT(boundsu));
+          valid &= boundsu.lower <= eps;
+          valid &= boundsu.upper >= -eps;
+          DBG(tab(depth); PRINT(valid));
           asm("//solve_newton_raphson_wide_f");
           if (none(valid)) return;
           
           Vec2vfx dv = subcurves.axis_v();
+          DBG(tab(depth); PRINT(dv));
           Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
           BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
-          valid &= boundsv.lower <= 0.0f;
-          valid &= boundsv.upper >= 0.0f;
+          valid &= boundsv.lower <= eps;
+          valid &= boundsv.upper >= -eps;
+          DBG(tab(depth); PRINT(valid));
           asm("//solve_newton_raphson_wide_g");
           if (none(valid)) return;
 
@@ -974,6 +981,7 @@ namespace embree
         {
            asm("//solve_newton_raphson_main");
           curve2d = curve3d.xfm(space.vx,space.vy,ray.org);
+          eps = 16.0f*float(ulp)*reduce_max(curve2d.bounds().size());
 
 #if 0
           {
