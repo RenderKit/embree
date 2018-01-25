@@ -947,7 +947,7 @@ namespace embree
 
           DBG(tab(depth); PRINT2(cu,cv));
 
-#if 1
+#if 0
           {
             //const Vec2fa dv = normalize(curve2.axis_v());
             const Vec2fa dv = normalize(curve2d.eval_dv(cu.lower,cv.lower));
@@ -979,7 +979,20 @@ namespace embree
           DBG(tab(depth); PRINT("split"));
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);
           asm("//solve_newton_raphson_wide_d");
+          
           vboolx valid = true; clear(valid,VSIZEX-1);
+#if 1
+          const Vec2vfx Dv = normalize(subcurves.axis_v());
+          const TensorLinearCubicBezierSurface<vfloatx> curve1v = subcurves.xfmX(Dv);
+          LinearBezierCurve<Interval<vfloatx>> curve0v = curve1v.vreduce_u();
+          valid &= curve0v.hasRootX();
+          if (none(valid)) return;
+          const Interval<vfloatx> v = bezier_clipping(valid,curve0v);
+          valid &= !isEmpty(v);
+          if (none(valid)) return;
+          subcurves = subcurves.vclip_v(v);
+          BBox<vfloatx> vcv(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
+#endif
           DBG(tab(depth); PRINT(valid));
 
 #if 0
@@ -1019,8 +1032,9 @@ namespace embree
             const size_t i = __bscf(mask);
             const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
             const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
-            const BBox1f cub(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
-            solve_newton_raphson_wide(cub,cv,depth+1);
+            const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
+            const BBox1f cvi(vcv.lower[i],vcv.upper[i]);
+            solve_newton_raphson_wide(cui,cvi,depth+1);
           }
         }
         
