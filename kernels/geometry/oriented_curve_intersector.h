@@ -872,10 +872,10 @@ namespace embree
           if (!clip_v(cu,cv)) return true;
           DBG(tab(depth); PRINT2(cu,cv));
 
-          const float d = cu.size();
-          DBG(PRINT(Device::debug_int0));
-          cu.lower -= float(Device::debug_int0)*0.1f*d;
-          cu.upper += float(Device::debug_int0)*0.1f*d;
+          //const float d = cu.size();
+          //DBG(PRINT(Device::debug_int0));
+          //cu.lower -= float(Device::debug_int0)*0.1f*d;
+          //cu.upper += float(Device::debug_int0)*0.1f*d;
           DBG(tab(depth); PRINT2(cu,cv));
           const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
           const BBox2fa bounds_du = (1.0f/cu.size())*curve2.derivative_u().bounds();
