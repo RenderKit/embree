@@ -273,10 +273,6 @@ namespace embree
     return blendv_ps(f, t, mask);
   }
 
-  __forceinline Vec2fa select( const Vec3ba& s, const Vec2fa& t, const Vec2fa& f ) {
-    return blendv_ps(f, t, s);
-  }
-
   __forceinline Vec2fa lerp(const Vec2fa& v0, const Vec2fa& v1, const float t) {
     return madd(1.0f-t,v0,t*v1);
   }
