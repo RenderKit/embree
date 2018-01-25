@@ -662,8 +662,10 @@ namespace embree
       }
       break;
     case 'c' : std::cout << camera.str() << std::endl; break;
-    case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
-    case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+      //case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
+      //case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+    case '+' : debug0++; PRINT(debug0); break;
+    case '-' : debug0--; PRINT(debug0); break;
 
     case ' ' : {
       Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);

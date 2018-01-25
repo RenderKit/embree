@@ -866,8 +866,11 @@ namespace embree
           asm("//solve_krawczyk");
           counters.numKrawczyk++;
           if (!clip_v(cu,cv)) return true;
-          
-          Vec2fa c(cu.center(),cv.center());
+
+          const float d = cu.size();
+          //PRINT(Device::debug_int0);
+          //cu.lower -= float(Device::debug_int0)*0.1f*d;
+          //cu.upper += float(Device::debug_int0)*0.1f*d;
           const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
           const BBox2fa bounds_du = (1.0f/cu.size())*curve2.derivative_u().bounds();
           const BBox2fa bounds_dv = (1.0f/cv.size())*curve2.derivative_v().bounds();
@@ -880,6 +883,7 @@ namespace embree
           LinearSpace2<Vec2<Interval1f>> G(Interval1f(bounds_du.lower.x,bounds_du.upper.x), Interval1f(bounds_dv.lower.x,bounds_dv.upper.x),
                                            Interval1f(bounds_du.lower.y,bounds_du.upper.y), Interval1f(bounds_dv.lower.y,bounds_dv.upper.y));
 
+          Vec2fa c(cu.center(),cv.center());
           Vec2fa f,dfdu,dfdv; curve2d.eval(c.x,c.y,f,dfdu,dfdv);
           const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
           const Vec2fa c1 = c - rcp_J*f;
