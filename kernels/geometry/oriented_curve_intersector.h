@@ -869,7 +869,20 @@ namespace embree
           DBG(tab(depth); PRINT("solve_krawczyk"));
           asm("//solve_krawczyk");
           counters.numKrawczyk++;
-          if (!clip_v(cu,cv)) return true;
+          //if (!clip_v(cu,cv)) return true;
+
+          TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
+          const Vec2fa dv = normalize(curve2.axis_v()); //curve2d.eval_dv(cu.lower,cv.lower));
+          const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
+          LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
+          if (!curve0v.hasRoot()) return true;
+          Interval1f v = bezier_clipping(curve0v);
+          if (isEmpty(v)) return true;
+          //if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
+          v = intersect(v + Interval1f(-0.1f,+0.1f),Interval1f(0.0f,1.0f));
+          curve2 = curve2.clip_v(v);
+          cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
+          
           DBG(tab(depth); PRINT2(cu,cv));
 
           //const float d = cu.size();
@@ -877,7 +890,7 @@ namespace embree
           //cu.lower -= float(Device::debug_int0)*0.1f*d;
           //cu.upper += float(Device::debug_int0)*0.1f*d;
           DBG(tab(depth); PRINT2(cu,cv));
-          const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
+          //const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
           const BBox2fa bounds_du = (1.0f/cu.size())*curve2.derivative_u().bounds();
           const BBox2fa bounds_dv = (1.0f/cv.size())*curve2.derivative_v().bounds();
           DBG(tab(depth); PRINT(bounds_du));
