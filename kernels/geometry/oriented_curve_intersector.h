@@ -847,7 +847,7 @@ namespace embree
           }       
         }
 
-        bool clip_v(BBox1f& cu, BBox1f& cv)
+        __forceinline bool clip_v(BBox1f& cu, BBox1f& cv)
         {
           const Vec2fa dv = normalize(curve2d.eval_dv(cu.lower,cv.lower));
           const TensorLinearCubicBezierSurface1f curve1v = curve2d.xfm(dv).clip(cu,cv);
