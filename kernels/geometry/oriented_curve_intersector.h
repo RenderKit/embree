@@ -908,8 +908,9 @@ namespace embree
             const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
             LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
             if (!curve0v.hasRoot()) return;       
-            const Interval1f v = bezier_clipping(curve0v);
+            Interval1f v = bezier_clipping(curve0v);
             if (isEmpty(v)) return;
+            if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
             curve2 = curve2.clip_v(v);
             cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
           }
