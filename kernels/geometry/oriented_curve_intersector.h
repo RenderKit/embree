@@ -274,19 +274,13 @@ namespace embree
 
         __forceinline V eval_dt(float t) const
         {
-          const V p00 = p0;
-          const V p01 = p1;
-          const V p02 = p2;
-          const V p03 = p3;
-          
+          const V p00 = p1-p0;
+          const V p01 = p2-p1;
+          const V p02 = p3-p2;
           const V p10 = lerp(p00,p01,t);
           const V p11 = lerp(p01,p02,t);
-          const V p12 = lerp(p02,p03,t);
           const V p20 = lerp(p10,p11,t);
-          const V p21 = lerp(p11,p12,t);
-          //const V p30 = lerp(p20,p21,t);
-          
-          return V(3.0f)*(p21-p20);
+          return V(3.0f)*p20;
         }
         
         __forceinline void evalN(const vfloatx& t, Vec2vfx& p, Vec2vfx& dp) const
