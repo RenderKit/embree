@@ -33,41 +33,9 @@
       </material>
     </TriangleMesh>
 
+    <!-- straight band -->
     <Transform>
       <AffineSpace translate="5 1 0"/>
-      
-      <Curves basis="bezier" type="normal_oriented">
-        
-        <positions>
-          -2 0 0 0.3
-          -1 1 0 0.3
-          1 0 1 0.3
-          2 0 0 0.3
-        </positions>
-        
-        <normals>
-          0 0 1
-          0 0 1
-          0 1 0
-          0 1 0
-        </normals>
-        
-        <indices>
-          0
-        </indices>
-        
-        <material>
-          <code>"OBJ"</code>
-          <parameters>
-            <float3 name="Kd">1 0 0</float3>
-          </parameters>
-        </material>
-        
-      </Curves>
-    </Transform>
-    
-    <Transform>
-      <AffineSpace translate="0 1 0"/>
       
       <Curves basis="bezier" type="normal_oriented">
         
@@ -98,7 +66,42 @@
         
       </Curves>
     </Transform>
+    
+    <!-- twisted band -->
+    <Transform>
+      <AffineSpace translate="0 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.3
+          -1 1 0 0.3
+          1 0 1 0.3
+          2 0 0 0.3
+        </positions>
+        
+        <normals>
+          0 0 1
+          0 0 1
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
 
+    <!-- varying width straight band -->
     <Transform>
       <AffineSpace translate="-5 1 0"/>
       
@@ -132,27 +135,28 @@
       </Curves>
     </Transform>
 
+    <!-- varying width twisted band -->
     <Transform>
-      <AffineSpace translate="0 1 2"/>
+      <AffineSpace translate="-10 1 0"/>
       
       <Curves basis="bezier" type="normal_oriented">
-        
+
         <positions>
           -2 0 0 0.2
-          5 3 0 0.2
-          -5 3 0 0.2
-          2 0 -1 0.2
+          -1 1 0 1
+          1 0 1 1
+          2 0 0 0.2
         </positions>
         
         <normals>
+          0 0 1
+          0 0 1
           0 1 0
-          -1 0 0
-          1 0 0
           0 1 0
         </normals>
         
         <indices>
-          0 0
+          0
         </indices>
         
         <material>
@@ -165,8 +169,9 @@
       </Curves>
     </Transform>
 
-    <Transform>
-      <AffineSpace translate="0 1 -2"/>
+     <!-- closed loop -->
+     <Transform>
+      <AffineSpace translate="5 1 -2"/>
       
       <Curves basis="bezier" type="normal_oriented">
         
@@ -198,5 +203,39 @@
       </Curves>
     </Transform>
     
+    <!-- looping -->
+    <Transform>
+      <AffineSpace translate="5 1 2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          5 3 0 0.2
+          -5 3 0 0.2
+          2 0 -1 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          -1 0 0
+          1 0 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0 0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
   </Group>
 </scene>
