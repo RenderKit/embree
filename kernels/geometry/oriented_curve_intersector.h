@@ -182,7 +182,7 @@ namespace embree
         }
 
         __forceinline friend CubicBezierCurve lerp ( const CubicBezierCurve& a, const CubicBezierCurve& b, const V& t ) {
-          return (V(1.0f)-t)*a + t*b;
+          return (V(1.0f)-t)*a + t*b; // FIXME: use fmadd
         }
 
         __forceinline friend CubicBezierCurve merge ( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
@@ -1282,7 +1282,7 @@ namespace embree
           }
         }
         
-        bool solve_newton_raphson_main()
+        __forceinline bool solve_newton_raphson_main()
         {
           asm("//solve_newton_raphson_main");
           curve2d = curve3d.xfm(space.vx,space.vy,ray.org); 
@@ -1344,10 +1344,10 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         
         CubicBezierCurve3fa center(v0,v1,v2,v3);
-        Vec3fa d0 = v0.w*normalize(cross(n0,center.eval_dt(0.0f/3.0f)));
+        Vec3fa d0 = v0.w*normalize(cross(n0,center.p1-center.p0));
         Vec3fa d1 = v1.w*normalize(cross(n1,center.eval_dt(1.0f/3.0f)));
         Vec3fa d2 = v2.w*normalize(cross(n2,center.eval_dt(2.0f/3.0f)));
-        Vec3fa d3 = v3.w*normalize(cross(n3,center.eval_dt(3.0f/3.0f)));
+        Vec3fa d3 = v3.w*normalize(cross(n3,center.p3-center.p2));
 
         CubicBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         CubicBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
