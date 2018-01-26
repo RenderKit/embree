@@ -851,8 +851,8 @@ namespace embree
 
         __forceinline void solve_uv(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2fa& curve2)
         {
-          const Vec2fa du = normalize(curve2.axis_u());
-          const Vec2fa dv = normalize(curve2.axis_v());
+          const Vec2fa du = curve2.axis_u();
+          const Vec2fa dv = curve2.axis_v();
           
           const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
           LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
@@ -906,8 +906,8 @@ namespace embree
             return;
           }          
           solve_uv(cu,cv,curve2);
-          //if (length(du) > length(dv)) solve_u(curve2,normalize(du));
-          //else                         solve_v(curve2,normalize(dv));
+          //if (length(du) > length(dv)) solve_u(curve2,du);
+          //else                         solve_v(curve2,dv);
         }
         
         bool solve()
@@ -1061,7 +1061,7 @@ namespace embree
 
         __forceinline bool clip_v(BBox1f& cu, BBox1f& cv)
         {
-          const Vec2fa dv = normalize(curve2d.eval_dv(cu.lower,cv.lower));
+          const Vec2fa dv = curve2d.eval_dv(cu.lower,cv.lower);
           const TensorLinearCubicBezierSurface1f curve1v = curve2d.xfm(dv).clip(cu,cv);
           LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
           if (!curve0v.hasRoot()) return false;
@@ -1082,7 +1082,7 @@ namespace embree
           //if (!clip_v(cu,cv)) return true;
 
           TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
-          const Vec2fa dv = normalize(curve2.axis_v()); //curve2d.eval_dv(cu.lower,cv.lower));
+          const Vec2fa dv = curve2.axis_v();
           const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
           LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
           if (!curve0v.hasRoot()) return true;
@@ -1157,7 +1157,7 @@ namespace embree
           if (boundsv.lower > 0.0f) return;
 
           {
-            const Vec2fa dv = normalize(curve2.axis_v());
+            const Vec2fa dv = curve2.axis_v();
             
             const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
             LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
@@ -1222,7 +1222,7 @@ namespace embree
           
           vboolx valid = true; clear(valid,VSIZEX-1);
 #if 0
-          const Vec2vfx Dv = normalize(subcurves.axis_v());
+          const Vec2vfx Dv = subcurves.axis_v();
           const TensorLinearCubicBezierSurface<vfloatx> curve1v = subcurves.xfmX(Dv);
           LinearBezierCurve<Interval<vfloatx>> curve0v = curve1v.vreduce_u();
           valid &= curve0v.hasRootX();
