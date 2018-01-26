@@ -1314,13 +1314,13 @@ namespace embree
             
           //solve_newton_raphson(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
           solve_newton_raphson_wide(vu,vv,0);
-          if (isHit) {
+          /*if (isHit) {
             //((RayHit&)ray).u = counters.numRecursions/16.0f;
             //((RayHit&)ray).u = counters.numKrawczyk/4.0f;
             //((RayHit&)ray).u = counters.numSolve/4.0f;
             ((RayHit&)ray).u = counters.numSolveIterations/20.0f;
             ((RayHit&)ray).v = 0.0f;
-          }
+            }*/
           return isHit;
         }
       };

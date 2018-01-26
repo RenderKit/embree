@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+
+    <PerspectiveCamera name="default" from="3.835576773 7.581315041 -7.45765686" to="0 0 0" up="0 1 0" fov="90"/>
+
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <Curves basis="bezier" type="normal_oriented">
+
+      <positions>
+        -2 0 0 0.3
+        -1 1 0 0.3
+        1 0 1 0.3
+        2 0 0 0.3
+      </positions>
+
+      <normals>
+        0 0 1
+        0 0 1
+        0 1 0
+        0 1 0
+      </normals>
+
+      <indices>
+        0
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </Curves>
+
+    <DirectionalLight>
+      <AffineSpace>
+        1 0 0 0
+        0 0 -1 0
+        0 1 0 0
+      </AffineSpace>
+      <E>3 3 3</E>
+    </DirectionalLight>
+      
+  </Group>
+</scene>

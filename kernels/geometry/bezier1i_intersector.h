@@ -64,6 +64,10 @@ namespace embree
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == FLAT_CURVE))
           return pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
+        else if (likely(geom->subtype == NORMAL_ORIENTED_CURVE)) {
+          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,prim.vertexID);
+          return pre.intersectorOrientedCurve.intersect(ray,a0,a1,a2,a3,n0,n1,n2,n3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
+        }
         else
           return pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
