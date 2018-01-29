@@ -649,40 +649,5 @@
       </Curves>
     </Transform>
 
-<!--
-     <Transform>
-      <AffineSpace translate="5 1 -6"/>
-      
-      <Curves basis="bezier" type="normal_oriented">
-        
-        <positions>
-          -2 0 0 0.2
-          -2 4 0 0.2
-          2 4 0 0.2
-          2 0 0 0.2
-        </positions>
-        
-        <normals>
-          0 1 0
-          0 0 0
-          0 0 0
-          0 1 0
-        </normals>
-        
-        <indices>
-          0
-        </indices>
-        
-        <material>
-          <code>"OBJ"</code>
-          <parameters>
-            <float3 name="Kd">1 0 0</float3>
-          </parameters>
-        </material>
-        
-      </Curves>
-    </Transform>
--->
-
   </Group>
 </scene>

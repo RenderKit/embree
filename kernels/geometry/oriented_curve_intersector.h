@@ -1341,6 +1341,7 @@ namespace embree
         asm("//intersect");
         STAT3(normal.trav_prims,1,1,1);
 
+        // FIXME: what if n0 or n1 oriented along tangent?
         const Vec3fa k0 = normalize(cross(n0,v1-v0));
         const Vec3fa k3 = normalize(cross(n3,v3-v2));
         const Vec3fa d0 = v0.w*k0;
