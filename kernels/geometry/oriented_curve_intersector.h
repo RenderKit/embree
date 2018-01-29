@@ -1340,13 +1340,13 @@ namespace embree
       {
         asm("//intersect");
         STAT3(normal.trav_prims,1,1,1);
-        
-        CubicBezierCurve3fa center(v0,v1,v2,v3);
-        Vec3fa d0 = v0.w*normalize(cross(n0,center.p1-center.p0));
-        Vec3fa d1 = v1.w*normalize(cross(n1,center.eval_dt(1.0f/3.0f)));
-        Vec3fa d2 = v2.w*normalize(cross(n2,center.eval_dt(2.0f/3.0f)));
-        Vec3fa d3 = v3.w*normalize(cross(n3,center.p3-center.p2));
 
+        const Vec3fa k0 = normalize(cross(n0,v1-v0));
+        const Vec3fa k3 = normalize(cross(n3,v3-v2));
+        const Vec3fa d0 = v0.w*k0;
+        const Vec3fa d1 = v1.w*k0;
+        const Vec3fa d2 = v2.w*k3;
+        const Vec3fa d3 = v3.w*k3;
         CubicBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         CubicBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
         TensorLinearCubicBezierSurface3fa curve(L,R);
