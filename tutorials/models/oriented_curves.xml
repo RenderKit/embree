@@ -513,5 +513,176 @@
       </Curves>
     </Transform>
 
+    <!-- degenerate loop -->
+    <Transform>
+      <AffineSpace translate="5 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.2
+          -2 4 0 0.2
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 0 0
+          0 0 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- varying radius degenerate loop -->
+    <Transform>
+      <AffineSpace translate="0 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.5
+          -2 4 0 0.5
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 0 0
+          0 0 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- twisted degenerate loop -->
+    <Transform>
+      <AffineSpace translate="-5 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.2
+          -2 4 0 0.2
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 0 0
+          0 0 0
+          0 0 1
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- varying radius twisted degenerate loop -->
+    <Transform>
+      <AffineSpace translate="-10 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.5
+          -2 4 0 0.5
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 0 0
+          0 0 0
+          0 0 1
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+<!--
+     <Transform>
+      <AffineSpace translate="5 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          -2 4 0 0.2
+          2 4 0 0.2
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 0 0
+          0 0 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
   </Group>
 </scene>
