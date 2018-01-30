@@ -735,13 +735,7 @@ namespace embree
         CurveCounters counters;
 
         __forceinline TensorLinearCubicBezierSurfaceIntersector (Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
-          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false)
-        {
-          /*Vec3fa yy = curve3d.axis_u();
-          Vec3fa x = cross(yy,ray.dir);
-          Vec3fa y = cross(x,ray.dir);
-          space = LinearSpace3fa(normalize(x),normalize(y),normalize(ray.dir));*/
-        }
+          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false) {}
         
         __forceinline Interval1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
@@ -784,10 +778,10 @@ namespace embree
         void solve_bezier_clipping(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2fa& curve2)
         {
           BBox2fa bounds = curve2.bounds();
-          if (bounds.upper.x < 0.0f) return;
-          if (bounds.upper.y < 0.0f) return;
-          if (bounds.lower.x > 0.0f) return;
-          if (bounds.lower.y > 0.0f) return;
+          if (bounds.upper.x < eps) return;
+          if (bounds.upper.y < eps) return;
+          if (bounds.lower.x > -eps) return;
+          if (bounds.lower.y > -eps) return;
           
           if (max(cu.size(),cv.size()) < 1E-4f)
           {
@@ -803,9 +797,8 @@ namespace embree
             return;
           }
 
-          const Vec2fa du = curve2.axis_u();
-          const Vec2fa dv = curve2.axis_v();
           
+          const Vec2fa dv = curve2.axis_v();
           const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
           LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
           if (!curve0v.hasRoot()) return;
@@ -815,6 +808,7 @@ namespace embree
           TensorLinearCubicBezierSurface2fa curve2a = curve2.clip_v(v);
           cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
 
+          const Vec2fa du = curve2.axis_u();
           const TensorLinearCubicBezierSurface1f curve1u = curve2a.xfm(du);
           CubicBezierCurve<Interval1f> curve0u = curve1u.reduce_v();         
           int roots = curve0u.maxRoots();
@@ -843,47 +837,23 @@ namespace embree
           return isHit;
         }
 
-        void solve_newton_raphson2(BBox1f cu, BBox1f cv)
+        void solve_newton_raphson(BBox1f cu, BBox1f cv)
         {
-          counters.numSolve++;
-          
           Vec2fa uv(cu.center(),cv.center());
           const Vec2fa dfdu = curve2d.eval_du(uv.x,uv.y);
           const Vec2fa dfdv = curve2d.eval_dv(uv.x,uv.y);
           const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
-            
-          for (size_t i=0; i<20; i++)
-          {
-            counters.numSolveIterations++;
-            const Vec2fa f    = curve2d.eval(uv.x,uv.y);
-            const Vec2fa duv = rcp_J*f;
-            uv -= duv;
-
-            if (max(fabs(f.x),fabs(f.y)) < eps)
-            {
-              const float u = uv.x;
-              const float v = uv.y;
-              if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
-              if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
-              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
-              const float t = curve_z.eval(u,v)/length(ray.dir);
-              if (!(t > ray.tnear() && t < ray.tfar())) return; // rejects NaNs
-              const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
-              BezierCurveHit hit(t,u,v,Ng);
-              isHit |= epilog(hit);
-              return;
-            }
-          }       
+          solve_newton_raphson_loop(cu,cv,uv,dfdu,dfdv,rcp_J);
         }
 
-        void solve_newton_raphson2b(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
+        void solve_newton_raphson_loop(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
         {
           counters.numSolve++;
           
           for (size_t i=0; i<20; i++)
           {
             counters.numSolveIterations++;
-            const Vec2fa f    = curve2d.eval(uv.x,uv.y);
+            const Vec2fa f = curve2d.eval(uv.x,uv.y);
             const Vec2fa duv = rcp_J*f;
             uv -= duv;
 
@@ -959,7 +929,7 @@ namespace embree
 
           if (!subset(K,x)) return false;
 
-          solve_newton_raphson2b(cu,cv,c1,dfdu,dfdv,rcp_J);
+          solve_newton_raphson_loop(cu,cv,c1,dfdu,dfdv,rcp_J);
           return true;
         }
         
@@ -973,7 +943,7 @@ namespace embree
 
           if (cu.size() < 0.001f) {
             if (!clip_v(cu,cv)) return;
-            return solve_newton_raphson2(cu,cv);
+            return solve_newton_raphson(cu,cv);
           }
 
           /* we assume convergence for small u ranges and verify using krawczyk */
@@ -986,31 +956,19 @@ namespace embree
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);         
           vboolx valid = true; clear(valid,VSIZEX-1);
           
-#if 0
-          BBox<Vec2vfx> bounds = subcurves.bounds();
-          valid &= bounds.upper.x >= -eps;
-          valid &= bounds.upper.y >= -eps;
-          valid &= bounds.lower.x <= eps;
-          valid &= bounds.lower.y <= eps;
+          Vec2vfx du = subcurves.axis_u();
+          Vec2vfx ndu = Vec2vfx(-du.y,du.x);
+          BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
+          valid &= boundsu.lower <= eps;
+          valid &= boundsu.upper >= -eps;
           if (none(valid)) return;
-
-          if (__popcnt(movemask(valid)) > 1)
-#endif
-          {
-            Vec2vfx du = subcurves.axis_u();
-            Vec2vfx ndu = Vec2vfx(-du.y,du.x);
-            BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
-            valid &= boundsu.lower <= eps;
-            valid &= boundsu.upper >= -eps;
-            if (none(valid)) return;
-            
-            Vec2vfx dv = subcurves.axis_v();
-            Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
-            BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
-            valid &= boundsv.lower <= eps;
-            valid &= boundsv.upper >= -eps;
-            if (none(valid)) return;
-          }
+          
+          Vec2vfx dv = subcurves.axis_v();
+          Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
+          BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
+          valid &= boundsv.lower <= eps;
+          valid &= boundsv.upper >= -eps;
+          if (none(valid)) return;
 
           size_t mask = movemask(valid);
           while (mask)
