@@ -887,7 +887,7 @@ namespace embree
           return true;
         }
 
-        bool solve_krawczyk(BBox1f cu, BBox1f cv, int depth)
+        bool solve_krawczyk(BBox1f cu, BBox1f cv)
         {
           counters.numKrawczyk++;
 
@@ -933,7 +933,7 @@ namespace embree
           return true;
         }
         
-        void solve_newton_raphson(BBox1f cu, BBox1f cv, int depth)
+        void solve_newton_raphson_recursion(BBox1f cu, BBox1f cv)
         {
           counters.numRecursions++;
 
@@ -944,7 +944,7 @@ namespace embree
 
           /* we assume convergence for small u ranges and verify using krawczyk */
           if (cu.size() < 1.0f/40.0f) {
-            if (solve_krawczyk(cu,cv,depth)) {
+            if (solve_krawczyk(cu,cv)) {
               return;
             }
           }
@@ -966,6 +966,7 @@ namespace embree
           valid &= boundsv.upper >= -eps;
           if (none(valid)) return;
 
+          /* recurse into each hit curve segment */
           size_t mask = movemask(valid);
           while (mask)
           {
@@ -973,7 +974,7 @@ namespace embree
             const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
             const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
             const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
-            solve_newton_raphson(cui,cv,depth+1);
+            solve_newton_raphson_recursion(cui,cv);
           }
         }
         
@@ -984,7 +985,7 @@ namespace embree
 
           BBox1f vu(0.0f,1.0f);
           BBox1f vv(0.0f,1.0f);
-          solve_newton_raphson(vu,vv,0);
+          solve_newton_raphson_recursion(vu,vv);
           /*if (isHit) {
             //((RayHit&)ray).u = counters.numRecursions/16.0f;
             //((RayHit&)ray).u = counters.numKrawczyk/4.0f;
