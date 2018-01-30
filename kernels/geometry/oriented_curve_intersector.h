@@ -36,6 +36,14 @@ namespace embree
       size_t numSolve;
       size_t numSolveIterations;
     };
+
+    __forceinline int numRoots(const Interval1f& p0, const Interval1f& p1)
+    {
+      float eps = 1E-4f;
+      bool neg0 = p0.lower < eps; bool pos0 = p0.upper > -eps;
+      bool neg1 = p1.lower < eps; bool pos1 = p1.upper > -eps;
+      return (neg0 && pos1) || (pos0 && neg1) || (neg0 && pos0) || (neg1 && pos1);
+    }
     
     template<typename V>
       struct LinearBezierCurve
@@ -43,6 +51,13 @@ namespace embree
         V p0,p1;
         
         __forceinline LinearBezierCurve () {}
+
+        __forceinline LinearBezierCurve (const LinearBezierCurve& other)
+          : p0(other.p0), p1(other.p1) {}
+        
+        __forceinline LinearBezierCurve& operator= (const LinearBezierCurve& other) {
+          p0 = other.p0; p1 = other.p1; return *this;
+        }
         
         __forceinline LinearBezierCurve (const V& p0, const V& p1)
           : p0(p0), p1(p1) {}
@@ -56,22 +71,6 @@ namespace embree
           return cout << "LinearBezierCurve (" << a.p0 << ", " << a.p1 << ")";
         }
       };
-    
-    __forceinline int numRoots(const Interval1f& p0, const Interval1f& p1)
-    {
-      float eps = 1E-4f;
-      bool neg0 = p0.lower < eps; bool pos0 = p0.upper > -eps;
-      bool neg1 = p1.lower < eps; bool pos1 = p1.upper > -eps;
-      return (neg0 && pos1) || (pos0 && neg1) || (neg0 && pos0) || (neg1 && pos1);
-    }
-
-    __forceinline vintx numRoots(const Interval<vfloatx>& p0, const Interval<vfloatx>& p1)
-    {
-      vfloatx eps = 1E-4f;
-      vboolx neg0 = p0.lower < eps; vboolx pos0 = p0.upper > -eps;
-      vboolx neg1 = p1.lower < eps; vboolx pos1 = p1.upper > -eps;
-      return select((neg0 & pos1) | (pos0 & neg1) | (neg0 & pos0) | (neg1 & pos1),vintx(1),vintx(0));
-    }
     
     template<> __forceinline bool LinearBezierCurve<Interval1f>::hasRoot() const {
       return numRoots(p0,p1);
@@ -134,10 +133,6 @@ namespace embree
              
         __forceinline CubicBezierCurve<float> xfm(const V& dx) const {
           return CubicBezierCurve<float>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
-        }
-
-        __forceinline CubicBezierCurve<vfloatx> xfmX(const V& dx) const {
-          return CubicBezierCurve<vfloatx>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
         }
 
         __forceinline CubicBezierCurve<float> xfm(const V& dx, const V& p) const {
@@ -384,7 +379,7 @@ namespace embree
       return (neg0 != neg1 || zero0) + (neg1 != neg2 || zero1) + (neg2 != neg3 || zero2 || zero3);
     }
     
-    template<> inline int CubicBezierCurve<Interval1f>::maxRoots() const {
+    template<> __forceinline int CubicBezierCurve<Interval1f>::maxRoots() const {
       return numRoots(p0,p1) + numRoots(p1,p2) + numRoots(p2,p3);
     }
 
@@ -466,16 +461,8 @@ namespace embree
           return LinearBezierCurve<Interval1f>(L.bounds(),R.bounds());
         }
 
-        __forceinline LinearBezierCurve<Interval<vfloatx>> vreduce_u() const {
-          return LinearBezierCurve<Interval<vfloatx>>(L.bounds(),R.bounds());
-        }
-        
         __forceinline TensorLinearCubicBezierSurface<float> xfm(const V& dx) const {
           return TensorLinearCubicBezierSurface<float>(L.xfm(dx),R.xfm(dx));
-        }
-
-        __forceinline TensorLinearCubicBezierSurface<vfloatx> xfmX(const V& dx) const {
-          return TensorLinearCubicBezierSurface<vfloatx>(L.xfmX(dx),R.xfmX(dx));
         }
 
         __forceinline TensorLinearCubicBezierSurface<float> xfm(const V& dx, const V& p) const {
