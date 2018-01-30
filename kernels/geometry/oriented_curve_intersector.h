@@ -512,7 +512,8 @@ namespace embree
           return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(),R.split());
         }
 
-        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(const BBox1f& u) const {
+        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(vboolx& valid, const BBox1f& u) const {
+          valid = true; clear(valid,VSIZEX-1);
           return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(u),R.split(u));
         }
 
@@ -651,7 +652,8 @@ namespace embree
         return TensorLinearCubicBezierSurface<Vec2vfx>(getL().split(),getR().split());
       }
       
-      __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(const BBox1f& u) const {
+      __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(vboolx& valid, const BBox1f& u) const {
+        valid = true; clear(valid,VSIZEX-1);
         return TensorLinearCubicBezierSurface<Vec2vfx>(getL().split(u),getR().split(u));
       }
       
@@ -837,7 +839,7 @@ namespace embree
           return isHit;
         }
 
-        void solve_newton_raphson(BBox1f cu, BBox1f cv)
+        __forceinline void solve_newton_raphson(BBox1f cu, BBox1f cv)
         {
           Vec2fa uv(cu.center(),cv.center());
           const Vec2fa dfdu = curve2d.eval_du(uv.x,uv.y);
@@ -846,7 +848,7 @@ namespace embree
           solve_newton_raphson_loop(cu,cv,uv,dfdu,dfdv,rcp_J);
         }
 
-        void solve_newton_raphson_loop(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
+        __forceinline void solve_newton_raphson_loop(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
         {
           counters.numSolve++;
           
@@ -887,7 +889,7 @@ namespace embree
           return true;
         }
 
-        bool solve_krawczyk(BBox1f cu, BBox1f cv)
+        __forceinline bool solve_krawczyk(BBox1f cu, BBox1f cv)
         {
           counters.numKrawczyk++;
 
@@ -903,32 +905,37 @@ namespace embree
           curve2 = curve2.clip_v(v);
           cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
 
+          /* perform one newton raphson iteration */
+          Vec2fa c(cu.center(),cv.center());
+          Vec2fa f,dfdu,dfdv; curve2d.eval(c.x,c.y,f,dfdu,dfdv);
+          const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
+          const Vec2fa c1 = c - rcp_J*f;
+          
           /* calculate bounds of derivatives */
           const BBox2fa bounds_du = (1.0f/cu.size())*curve2.derivative_u().bounds();
           const BBox2fa bounds_dv = (1.0f/cv.size())*curve2.derivative_v().bounds();
 
+          /* calculate krawczyk test */
           LinearSpace2<Vec2<Interval1f>> I(Interval1f(1.0f), Interval1f(0.0f),
                                            Interval1f(0.0f), Interval1f(1.0f));
 
           LinearSpace2<Vec2<Interval1f>> G(Interval1f(bounds_du.lower.x,bounds_du.upper.x), Interval1f(bounds_dv.lower.x,bounds_dv.upper.x),
                                            Interval1f(bounds_du.lower.y,bounds_du.upper.y), Interval1f(bounds_dv.lower.y,bounds_dv.upper.y));
 
-          Vec2fa c(cu.center(),cv.center());
-          Vec2fa f,dfdu,dfdv; curve2d.eval(c.x,c.y,f,dfdu,dfdv);
-          const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
-          const Vec2fa c1 = c - rcp_J*f;
-          
           const LinearSpace2<Vec2f> rcp_J2(rcp_J);
           const LinearSpace2<Vec2<Interval1f>> rcp_Ji(rcp_J2);
           
           const Vec2<Interval1f> x(cu,cv);
           const Vec2<Interval1f> K = Vec2<Interval1f>(Vec2f(c1)) + (I - rcp_Ji*G)*(x-Vec2<Interval1f>(Vec2f(c)));
 
+          /* test if there is no solution */
           const Vec2<Interval1f> KK = intersect(K,x);
           if (isEmpty(KK.x) || isEmpty(KK.y)) return true;
 
+          /* exit if convergence cannot get proven */
           if (!subset(K,x)) return false;
 
+          /* solve using newton raphson iteration of convergence is guarenteed */
           solve_newton_raphson_loop(cu,cv,c1,dfdu,dfdv,rcp_J);
           return true;
         }
@@ -950,9 +957,10 @@ namespace embree
             }
           }
 
-          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);         
-          vboolx valid = true; clear(valid,VSIZEX-1);
-
+          /* split the curve into VSIZEX-1 segments in u-direction */
+          vboolx valid = true;
+          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(valid,cu);
+          
           /* slabs test in v-direction */
           Vec2vfx ndu = cross(subcurves.axis_u());
           BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
