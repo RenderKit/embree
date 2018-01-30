@@ -843,39 +843,6 @@ namespace embree
           return isHit;
         }
 
-        void solve_newton_raphson1(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2fa& curve2)
-        {
-          counters.numSolve++;
-          Vec2fa uv(0.5f,0.5f);
-                      
-          for (size_t i=0; i<20; i++)
-          {
-            counters.numSolveIterations++;
-            const Vec2fa f    = curve2.eval(uv.x,uv.y);
-            const Vec2fa dfdu = curve2.eval_du(uv.x,uv.y);
-            const Vec2fa dfdv = curve2.eval_dv(uv.x,uv.y);
-            const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
-            const Vec2fa duv = rcp_J*f;
-            uv -= duv;
-
-            if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
-            {
-              DBG(PRINT2("solution",curve2));
-              const float u = lerp(cu.lower,cu.upper,uv.x);
-              const float v = lerp(cv.lower,cv.upper,uv.y);
-              if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
-              if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
-              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
-              const float t = curve_z.eval(u,v)/length(ray.dir);
-              if (!(t > ray.tnear() && t < ray.tfar())) return; // rejects NaNs
-              const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
-              BezierCurveHit hit(t,u,v,Ng);
-              isHit |= epilog(hit);
-              return;
-            }
-          }       
-        }
-
         void solve_newton_raphson2(BBox1f cu, BBox1f cv)
         {
           counters.numSolve++;
