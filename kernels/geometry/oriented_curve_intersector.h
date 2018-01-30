@@ -876,43 +876,6 @@ namespace embree
           }       
         }
 
-        void solve_newton_raphson2(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2fa& curve2)
-        {
-          counters.numSolve++;
-          
-          Vec2fa uv(0.5f,0.5f);
-          const Vec2fa dfdu = curve2.eval_du(uv.x,uv.y);
-          const Vec2fa dfdv = curve2.eval_dv(uv.x,uv.y);
-          const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
-            
-          for (size_t i=0; i<20; i++)
-          {
-            counters.numSolveIterations++;
-            const Vec2fa f    = curve2.eval(uv.x,uv.y);
-            const Vec2fa duv = rcp_J*f;
-            uv -= duv;
-
-            if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
-            {
-              DBG(PRINT2("solution",curve2));
-              DBG(PRINT2(cu,cv));
-              DBG(PRINT(uv));
-              const float u = lerp(cu.lower,cu.upper,uv.x);
-              const float v = lerp(cv.lower,cv.upper,uv.y);
-              DBG(PRINT2(u,v));
-              if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
-              if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
-              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
-              const float t = curve_z.eval(u,v)/length(ray.dir);
-              if (!(t > ray.tnear() && t < ray.tfar())) return; // rejects NaNs
-              const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
-              BezierCurveHit hit(t,u,v,Ng);
-              isHit |= epilog(hit);
-              return;
-            }
-          }       
-        }
-
         void solve_newton_raphson2(BBox1f cu, BBox1f cv)
         {
           counters.numSolve++;
@@ -929,15 +892,10 @@ namespace embree
             const Vec2fa duv = rcp_J*f;
             uv -= duv;
 
-            //if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
             if (max(fabs(f.x),fabs(f.y)) < eps)
             {
-              DBG(PRINT("solution"));
-              DBG(PRINT2(cu,cv));
-              DBG(PRINT(uv));
               const float u = uv.x;
               const float v = uv.y;
-              DBG(PRINT2(u,v));
               if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
               const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
@@ -953,7 +911,6 @@ namespace embree
 
         void solve_newton_raphson2b(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
         {
-          asm("//solve_newton_raphson2b");
           counters.numSolve++;
           
           for (size_t i=0; i<20; i++)
@@ -963,15 +920,10 @@ namespace embree
             const Vec2fa duv = rcp_J*f;
             uv -= duv;
 
-            //if (max(fabs(duv.x),fabs(duv.y)) < 1E-4f)
             if (max(fabs(f.x),fabs(f.y)) < eps)
             {
-              DBG(PRINT("solution"));
-              DBG(PRINT2(cu,cv));
-              DBG(PRINT(uv));
               const float u = uv.x;
               const float v = uv.y;
-              DBG(PRINT2(u,v));
               if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
               const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
@@ -993,20 +945,16 @@ namespace embree
           if (!curve0v.hasRoot()) return false;
           Interval1f v = bezier_clipping(curve0v);
           if (isEmpty(v)) return false;
-          //if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
           v = intersect(v + Interval1f(-0.1f,+0.1f),Interval1f(0.0f,1.0f));
-          //curve2 = curve2.clip_v(v);
           cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
           return true;
         }
 
         bool solve_krawczyk(BBox1f cu, BBox1f cv, int depth)
         {
-          DBG(tab(depth); PRINT("solve_krawczyk"));
-          asm("//solve_krawczyk");
           counters.numKrawczyk++;
-          //if (!clip_v(cu,cv)) return true;
 
+          /* perform bezier clipping in v-direction to get tight v-bounds */
           TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
           const Vec2fa dv = curve2.axis_v();
           const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
@@ -1014,23 +962,13 @@ namespace embree
           if (!curve0v.hasRoot()) return true;
           Interval1f v = bezier_clipping(curve0v);
           if (isEmpty(v)) return true;
-          //if (v.size()*cv.size() < 0.001f) v = Interval1f(v.center()) + Interval1f(-0.001f/cv.size(),+0.001f/cv.size());
           v = intersect(v + Interval1f(-0.1f,+0.1f),Interval1f(0.0f,1.0f));
           curve2 = curve2.clip_v(v);
           cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
-          
-          DBG(tab(depth); PRINT2(cu,cv));
 
-          //const float d = cu.size();
-          //DBG(PRINT(Device::debug_int0));
-          //cu.lower -= float(Device::debug_int0)*0.1f*d;
-          //cu.upper += float(Device::debug_int0)*0.1f*d;
-          DBG(tab(depth); PRINT2(cu,cv));
-          //const TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
+          /* calculate bounds of derivatives */
           const BBox2fa bounds_du = (1.0f/cu.size())*curve2.derivative_u().bounds();
           const BBox2fa bounds_dv = (1.0f/cv.size())*curve2.derivative_v().bounds();
-          DBG(tab(depth); PRINT(bounds_du));
-          DBG(tab(depth); PRINT(bounds_dv));
 
           LinearSpace2<Vec2<Interval1f>> I(Interval1f(1.0f), Interval1f(0.0f),
                                            Interval1f(0.0f), Interval1f(1.0f));
@@ -1043,14 +981,11 @@ namespace embree
           const LinearSpace2fa rcp_J = rcp(LinearSpace2fa(dfdu,dfdv));
           const Vec2fa c1 = c - rcp_J*f;
           
-          //PRINT(rcp_J);
           const LinearSpace2<Vec2f> rcp_J2(rcp_J);
           const LinearSpace2<Vec2<Interval1f>> rcp_Ji(rcp_J2);
           
           const Vec2<Interval1f> x(cu,cv);
           const Vec2<Interval1f> K = Vec2<Interval1f>(Vec2f(c1)) + (I - rcp_Ji*G)*(x-Vec2<Interval1f>(Vec2f(c)));
-
-          DBG(tab(depth); PRINT(K));
 
           const Vec2<Interval1f> KK = intersect(K,x);
           if (isEmpty(KK.x) || isEmpty(KK.y)) return true;
