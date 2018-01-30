@@ -951,16 +951,16 @@ namespace embree
 
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(cu);         
           vboolx valid = true; clear(valid,VSIZEX-1);
-          
-          Vec2vfx du = subcurves.axis_u();
-          Vec2vfx ndu = Vec2vfx(-du.y,du.x);
+
+          /* slabs test in v-direction */
+          Vec2vfx ndu = cross(subcurves.axis_u());
           BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
           valid &= boundsu.lower <= eps;
           valid &= boundsu.upper >= -eps;
           if (none(valid)) return;
-          
-          Vec2vfx dv = subcurves.axis_v();
-          Vec2vfx ndv = Vec2vfx(-dv.y,dv.x);
+
+          /* slabs test in u-direction */
+          Vec2vfx ndv = cross(subcurves.axis_v());
           BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
           valid &= boundsv.lower <= eps;
           valid &= boundsv.upper >= -eps;
@@ -973,8 +973,7 @@ namespace embree
             const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
             const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
             const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
-            const BBox1f cvi = cv;
-            solve_newton_raphson(cui,cvi,depth+1);
+            solve_newton_raphson(cui,cv,depth+1);
           }
         }
         
