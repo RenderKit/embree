@@ -937,13 +937,14 @@ namespace embree
         {
           counters.numRecursions++;
 
+          /* for very short curve segments we assume convergence */
           if (cu.size() < 0.001f) {
             if (!clip_v(cu,cv)) return;
             return solve_newton_raphson(cu,cv);
           }
 
           /* we assume convergence for small u ranges and verify using krawczyk */
-          if (cu.size() < 1.0f/40.0f) {
+          if (cu.size() < 1.0f/6.0f) {
             if (solve_krawczyk(cu,cv)) {
               return;
             }
