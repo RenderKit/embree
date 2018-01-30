@@ -852,7 +852,7 @@ namespace embree
         {
           counters.numSolve++;
           
-          for (size_t i=0; i<20; i++)
+          for (size_t i=0; i<200; i++)
           {
             counters.numSolveIterations++;
             const Vec2fa f = curve2d.eval(uv.x,uv.y);
@@ -989,8 +989,9 @@ namespace embree
         
         __forceinline bool solve_newton_raphson_main()
         {
-          curve2d = curve3d.xfm(space.vx,space.vy,ray.org); 
-          eps = 16.0f*float(ulp)*reduce_max(curve2d.bounds().size());
+          curve2d = curve3d.xfm(space.vx,space.vy,ray.org);
+          const BBox2fa b2 = curve2d.bounds();
+          eps = 8.0f*float(ulp)*reduce_max(max(abs(b2.lower),abs(b2.upper)));
 
           BBox1f vu(0.0f,1.0f);
           BBox1f vv(0.0f,1.0f);
