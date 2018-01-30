@@ -936,10 +936,6 @@ namespace embree
         void solve_newton_raphson(BBox1f cu, BBox1f cv, int depth)
         {
           counters.numRecursions++;
-#if 0
-          if (!clip_v(cu,cv))
-            return;
-#endif
 
           if (cu.size() < 0.001f) {
             if (!clip_v(cu,cv)) return;
@@ -989,7 +985,6 @@ namespace embree
 
           BBox1f vu(0.0f,1.0f);
           BBox1f vv(0.0f,1.0f);
-          //solve_newton_raphson(vu,vv,curve2d);
           solve_newton_raphson(vu,vv,0);
           /*if (isHit) {
             //((RayHit&)ray).u = counters.numRecursions/16.0f;
