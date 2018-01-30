@@ -135,6 +135,10 @@ namespace embree
           return CubicBezierCurve<float>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
         }
 
+        __forceinline CubicBezierCurve<vfloatx> vxfm(const V& dx) const {
+          return CubicBezierCurve<vfloatx>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
+        }
+
         __forceinline CubicBezierCurve<float> xfm(const V& dx, const V& p) const {
           return CubicBezierCurve<float>(dot(p0-p,dx),dot(p1-p,dx),dot(p2-p,dx),dot(p3-p,dx));
         }
@@ -145,14 +149,6 @@ namespace embree
 
         __forceinline BBox<V> bounds() const {
           return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2),BBox<V>(p3));
-        }
-
-        __forceinline BBox1f bounds(const V& axis) const {
-          return merge(BBox1f(dot(p0,axis)),BBox1f(dot(p1,axis)),BBox1f(dot(p2,axis)),BBox1f(dot(p3,axis)));
-        }
-
-        __forceinline BBox<vfloatx> vbounds(const V& axis) const {
-          return merge(BBox<vfloatx>(dot(p0,axis)),BBox<vfloatx>(dot(p1,axis)),BBox<vfloatx>(dot(p2,axis)),BBox<vfloatx>(dot(p3,axis)));
         }
 
         __forceinline friend CubicBezierCurve operator +( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
@@ -442,14 +438,6 @@ namespace embree
           return merge(L.bounds(),R.bounds());
         }
 
-        __forceinline BBox1f bounds(const V& axis) const {
-          return merge(L.bounds(axis),R.bounds(axis));
-        }
-
-        __forceinline BBox<vfloatx> vbounds(const V& axis) const {
-          return merge(L.vbounds(axis),R.vbounds(axis));
-        }
-        
         __forceinline CubicBezierCurve<Interval1f> reduce_v() const
         {
           const CubicBezierCurve<Interval<V>> Li(L);
@@ -463,6 +451,10 @@ namespace embree
 
         __forceinline TensorLinearCubicBezierSurface<float> xfm(const V& dx) const {
           return TensorLinearCubicBezierSurface<float>(L.xfm(dx),R.xfm(dx));
+        }
+
+         __forceinline TensorLinearCubicBezierSurface<vfloatx> vxfm(const V& dx) const {
+          return TensorLinearCubicBezierSurface<vfloatx>(L.vxfm(dx),R.vxfm(dx));
         }
 
         __forceinline TensorLinearCubicBezierSurface<float> xfm(const V& dx, const V& p) const {
@@ -950,14 +942,14 @@ namespace embree
           
           /* slabs test in v-direction */
           Vec2vfx ndu = cross(subcurves.axis_u());
-          BBox<vfloatx> boundsu = subcurves.vbounds(ndu);
+          BBox<vfloatx> boundsu = subcurves.vxfm(ndu).bounds();
           valid &= boundsu.lower <= eps;
           valid &= boundsu.upper >= -eps;
           if (none(valid)) return;
 
           /* slabs test in u-direction */
           Vec2vfx ndv = cross(subcurves.axis_v());
-          BBox<vfloatx> boundsv = subcurves.vbounds(ndv);
+          BBox<vfloatx> boundsv = subcurves.vxfm(ndv).bounds();
           valid &= boundsv.lower <= eps;
           valid &= boundsv.upper >= -eps;
           if (none(valid)) return;
