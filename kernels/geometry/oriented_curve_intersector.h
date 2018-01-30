@@ -142,15 +142,8 @@ namespace embree
           return CubicBezierCurve<float>(dot(p0-p,dx),dot(p1-p,dx),dot(p2-p,dx),dot(p3-p,dx));
         }
         
-        __forceinline CubicBezierCurve<Vec2fa> xfm(const V& dx, const V& dy, const V& p) const
-        {
-          const Vec2fa q0(dot(p0-p,dx), dot(p0-p,dy));
-          const Vec2fa q1(dot(p1-p,dx), dot(p1-p,dy));
-          const Vec2fa q2(dot(p2-p,dx), dot(p2-p,dy));
-          const Vec2fa q3(dot(p3-p,dx), dot(p3-p,dy));
-          return CubicBezierCurve<Vec2fa>(q0,q1,q2,q3);
-        }
-        
+        __forceinline CubicBezierCurve<Vec2fa> xfm(const V& dx, const V& dy, const V& p) const;
+
         __forceinline int maxRoots() const;
 
         __forceinline BBox<V> bounds() const {
@@ -340,7 +333,45 @@ namespace embree
     typedef CubicBezierCurve<float> CubicBezierCurve1f;
     typedef CubicBezierCurve<Vec2fa> CubicBezierCurve2fa;
     typedef CubicBezierCurve<Vec3fa> CubicBezierCurve3fa;
-    
+
+    template<>
+      __forceinline CubicBezierCurve<Vec2fa> CubicBezierCurve<Vec3fa>::xfm(const Vec3fa& dx, const Vec3fa& dy, const Vec3fa& p) const
+    {
+#if 0
+      Vec3<vfloat4> p0123;
+      transpose(vfloat4(p0),vfloat4(p1),vfloat4(p2),vfloat4(p3),p0123.x,p0123.y,p0123.z);
+#if 0 //defined(__AVX__)
+      vfloat8 q0123xy = dot(Vec3<vfloat8>(p0123)-Vec3<vfloat8>(p),Vec3<vfloat8>(vfloat8(vfloat4(dx.x),vfloat4(dy.x)),vfloat8(vfloat4(dx.y),vfloat4(dy.y)),vfloat8(vfloat4(dx.z),vfloat4(dy.z))));
+      vfloat4 q0123x = extract4<0>(q0123xy);
+      vfloat4 q0123y = extract4<1>(q0123xy);
+#else
+      vfloat4 q0123x = dot(p0123-Vec3<vfloat4>(p),Vec3<vfloat4>(dx));
+      vfloat4 q0123y = dot(p0123-Vec3<vfloat4>(p),Vec3<vfloat4>(dy));
+#endif
+      vfloat4 q0,q1,q2,q3;
+      transpose(q0123x,q0123y,q0123x,q0123y,q0,q1,q2,q3);
+      return CubicBezierCurve<Vec2fa>(Vec2fa(q0),Vec2fa(q1),Vec2fa(q2),Vec2fa(q3));
+#else
+#if defined (__AVX__)
+      const vfloat8 q0xy(dot(vfloat8(vfloat4(p0-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+      const vfloat8 q1xy(dot(vfloat8(vfloat4(p1-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+      const vfloat8 q2xy(dot(vfloat8(vfloat4(p2-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+      const vfloat8 q3xy(dot(vfloat8(vfloat4(p3-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+      const Vec2fa q0(unpacklo(extract4<0>(q0xy),extract4<1>(q0xy)));
+      const Vec2fa q1(unpacklo(extract4<0>(q1xy),extract4<1>(q1xy)));
+      const Vec2fa q2(unpacklo(extract4<0>(q2xy),extract4<1>(q2xy)));
+      const Vec2fa q3(unpacklo(extract4<0>(q3xy),extract4<1>(q3xy)));
+      return CubicBezierCurve<Vec2fa>(q0,q1,q2,q3);
+#else
+      const Vec2fa q0(dot(p0-p,dx), dot(p0-p,dy));
+      const Vec2fa q1(dot(p1-p,dx), dot(p1-p,dy));
+      const Vec2fa q2(dot(p2-p,dx), dot(p2-p,dy));
+      const Vec2fa q3(dot(p3-p,dx), dot(p3-p,dy));
+      return CubicBezierCurve<Vec2fa>(q0,q1,q2,q3);
+#endif
+#endif
+    }   
+
     template<> inline int CubicBezierCurve<float>::maxRoots() const
     {
       float eps = 1E-4f;
