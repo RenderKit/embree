@@ -438,11 +438,8 @@ namespace embree
           return merge(L.bounds(),R.bounds());
         }
 
-        __forceinline CubicBezierCurve<Interval1f> reduce_v() const
-        {
-          const CubicBezierCurve<Interval<V>> Li(L);
-          const CubicBezierCurve<Interval<V>> Ri(R);
-          return merge(Li,Ri);
+        __forceinline CubicBezierCurve<Interval1f> reduce_v() const {
+          return merge(CubicBezierCurve<Interval<V>>(L),CubicBezierCurve<Interval<V>>(R));
         }
         
         __forceinline LinearBezierCurve<Interval1f> reduce_u() const {
@@ -475,10 +472,6 @@ namespace embree
           return clip_v(v).clip_u(u);
         }
 
-        __forceinline TensorLinearCubicBezierSurface vclip_v(const Interval<vfloatx>& v) const {
-          return TensorLinearCubicBezierSurface(lerp(L,R,v.lower),lerp(L,R,v.upper));
-        }
-
         __forceinline void split_u(TensorLinearCubicBezierSurface& left, TensorLinearCubicBezierSurface& right, const float u = 0.5f) const
         {
           CubicBezierCurve<V> L0,L1; L.split(L0,L1,u);
@@ -487,11 +480,7 @@ namespace embree
           new (&right) TensorLinearCubicBezierSurface(L1,R1);
         }
 
-        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u() const {
-          return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(),R.split());
-        }
-
-        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(vboolx& valid, const BBox1f& u) const {
+        __forceinline TensorLinearCubicBezierSurface<Vec2vfx> vsplit_u(vboolx& valid, const BBox1f& u) const {
           valid = true; clear(valid,VSIZEX-1);
           return TensorLinearCubicBezierSurface<Vec2vfx>(L.split(u),R.split(u));
         }
@@ -627,11 +616,7 @@ namespace embree
         new (&right) TensorLinearCubicBezierSurface(LR1);
       }
       
-      __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u() const {
-        return TensorLinearCubicBezierSurface<Vec2vfx>(getL().split(),getR().split());
-      }
-      
-      __forceinline TensorLinearCubicBezierSurface<Vec2vfx> split_u(vboolx& valid, const BBox1f& u) const {
+      __forceinline TensorLinearCubicBezierSurface<Vec2vfx> vsplit_u(vboolx& valid, const BBox1f& u) const {
         valid = true; clear(valid,VSIZEX-1);
         return TensorLinearCubicBezierSurface<Vec2vfx>(getL().split(u),getR().split(u));
       }
@@ -938,7 +923,7 @@ namespace embree
 
           /* split the curve into VSIZEX-1 segments in u-direction */
           vboolx valid = true;
-          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).split_u(valid,cu);
+          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).vsplit_u(valid,cu);
           
           /* slabs test in v-direction */
           Vec2vfx ndu = cross(subcurves.axis_u());
