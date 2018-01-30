@@ -124,10 +124,14 @@ namespace embree
         template<typename T1>
         __forceinline CubicBezierCurve (const CubicBezierCurve<T1>& other)
           : p0(other.p0), p1(other.p1), p2(other.p2), p3(other.p3) {}
-        
-        __forceinline CubicBezierCurve (V p0, V p1, V p2, V p3)
-          : p0(p0), p1(p1), p2(p2), p3(p3) {}
 
+        __forceinline CubicBezierCurve& operator= (const CubicBezierCurve& other) {
+          p0 = other.p0; p1 = other.p1; p2 = other.p2; p3 = other.p3; return *this;
+        }
+          
+        __forceinline CubicBezierCurve (const V& p0, const V& p1, const V& p2, const V& p3)
+            : p0(p0), p1(p1), p2(p2), p3(p3) {}
+        
         __forceinline V begin() const { return p0; }
         __forceinline V end  () const { return p3; }
              
@@ -389,6 +393,10 @@ namespace embree
         
         __forceinline TensorLinearQuadraticBezierSurface(const TensorLinearQuadraticBezierSurface<V>& curve)
           : L(curve.L), R(curve.R) {}
+
+        __forceinline TensorLinearQuadraticBezierSurface& operator= (const TensorLinearQuadraticBezierSurface& other) {
+          L = other.L; R = other.R; return *this;
+        }
         
         __forceinline TensorLinearQuadraticBezierSurface(const QuadraticBezierCurve<V>& L, const QuadraticBezierCurve<V>& R)
           : L(L), R(R) {}
@@ -407,6 +415,10 @@ namespace embree
         
         __forceinline TensorLinearQuadraticBezierSurface(const TensorLinearQuadraticBezierSurface<Vec2fa>& curve)
           : LR(curve.LR) {}
+
+        __forceinline TensorLinearQuadraticBezierSurface& operator= (const TensorLinearQuadraticBezierSurface& other) {
+          LR = other.LR; return *this;
+        }
         
         __forceinline TensorLinearQuadraticBezierSurface(const QuadraticBezierCurve<vfloat4>& LR)
           : LR(LR) {}
@@ -430,7 +442,11 @@ namespace embree
         
         __forceinline TensorLinearCubicBezierSurface(const TensorLinearCubicBezierSurface& curve)
           : L(curve.L), R(curve.R) {}
-        
+
+        __forceinline TensorLinearCubicBezierSurface& operator= (const TensorLinearCubicBezierSurface& other) {
+          L = other.L; R = other.R; return *this;
+        }
+          
         __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
           : L(L), R(R) {}
         
@@ -541,6 +557,10 @@ namespace embree
       
       __forceinline TensorLinearCubicBezierSurface(const TensorLinearCubicBezierSurface& curve)
         : LR(curve.LR) {}
+
+      __forceinline TensorLinearCubicBezierSurface& operator= (const TensorLinearCubicBezierSurface& other) {
+          LR = other.LR; return *this;
+        }
 
       __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<vfloat4>& LR)
         : LR(LR) {}
