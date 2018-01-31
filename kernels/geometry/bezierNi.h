@@ -89,9 +89,16 @@ namespace embree
 
       /* normalize space for encoding */
       const Vec3fa bs = bounds.size();
-      AffineSpace3fa a(255.0f*s.vx/bs.x,255.0f*s.vy/bs.y,255.0f*s.vy/bs.y,-255.0f*bounds.lower/bounds.size());
+      AffineSpace3fa a(255.0f*s.vx/bs,255.0f*s.vy/bs,255.0f*s.vz/bs,-255.0f*bounds.lower/bs);
       space = AffineSpace3fa(a);
       N = end-begin;
+
+      /* verify space */
+      /*BBox3fa bounds1 = empty;
+      for (size_t j=begin; j<end; j++) {
+        BBox3fa b1 = scene->get<NativeCurves>(prims[j].geomID())->bounds(space,prims[j].primID());
+        bounds1.extend(b1);
+        }*/
                              
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
@@ -100,12 +107,15 @@ namespace embree
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space,primID);
-        items.lower_x[i] = (unsigned char) clamp(floor(bounds.lower.x),0.0f,255.0f);
-        items.upper_x[i] = (unsigned char) clamp(ceil (bounds.upper.x),0.0f,255.0f);
-        items.lower_y[i] = (unsigned char) clamp(floor(bounds.lower.y),0.0f,255.0f);
-        items.upper_y[i] = (unsigned char) clamp(ceil (bounds.upper.y),0.0f,255.0f);
-        items.lower_z[i] = (unsigned char) clamp(floor(bounds.lower.z),0.0f,255.0f);
-        items.upper_z[i] = (unsigned char) clamp(ceil (bounds.upper.z),0.0f,255.0f);
+        //if (reduce_min(bounds.lower) < 0.0f || reduce_max(bounds.upper) > 255.0f) PRINT(bounds);
+        //PRINT2(i,bounds.size());
+        
+        items.lower_x[i] = (unsigned char) clamp(floor(bounds.lower.x)-2.0f,0.0f,255.0f);
+        items.upper_x[i] = (unsigned char) clamp(ceil (bounds.upper.x)+2.0f,0.0f,255.0f);
+        items.lower_y[i] = (unsigned char) clamp(floor(bounds.lower.y)-2.0f,0.0f,255.0f);
+        items.upper_y[i] = (unsigned char) clamp(ceil (bounds.upper.y)+2.0f,0.0f,255.0f);
+        items.lower_z[i] = (unsigned char) clamp(floor(bounds.lower.z)-2.0f,0.0f,255.0f);
+        items.upper_z[i] = (unsigned char) clamp(ceil (bounds.upper.z)+2.0f,0.0f,255.0f);
         items.geomID[i] = geomID;
         items.primID[i] = primID;
       }

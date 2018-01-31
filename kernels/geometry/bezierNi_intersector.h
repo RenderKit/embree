@@ -71,6 +71,8 @@ namespace embree
             pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,geomID,primID));
           else 
             pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,geomID,primID));
+
+          valid &= tNear <= vfloat8(ray.tfar);
         }
       }
       
