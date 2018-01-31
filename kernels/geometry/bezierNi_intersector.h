@@ -42,6 +42,24 @@ namespace embree
 
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
       {
+#if USE_ALIGNED_SPACE
+        const Vec3vf8 org1 = xfmPoint (prim.naabb,Vec3vf8(ray.org));
+        const Vec3vf8 dir1 = xfmVector(prim.naabb,Vec3vf8(ray.dir));
+        const Vec3vf8 rcp_dir1 = rcp(dir1);
+        
+        const vfloat8 t_lower_x = -org1.x*rcp_dir1.x;
+        const vfloat8 t_lower_y = -org1.y*rcp_dir1.y;
+        const vfloat8 t_lower_z = -org1.z*rcp_dir1.z;
+        const vfloat8 t_upper_x = (vfloat8(one)-org1.x)*rcp_dir1.x;
+        const vfloat8 t_upper_y = (vfloat8(one)-org1.y)*rcp_dir1.y;
+        const vfloat8 t_upper_z = (vfloat8(one)-org1.z)*rcp_dir1.z;
+
+        const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
+        const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
+        vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
+
+#else
+
         const Vec3fa org1 = xfmPoint (prim.space,ray.org);
         const Vec3fa dir1 = xfmVector(prim.space,ray.dir);
         const Vec3fa rcp_dir1 = rcp(dir1);
@@ -56,6 +74,7 @@ namespace embree
         const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
         const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
         vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
+#endif
 
         while (any(valid))
         {

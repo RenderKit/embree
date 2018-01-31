@@ -19,6 +19,8 @@
 #include "primitive.h"
 #include "bezier1i.h"
 
+#define USE_ALIGNED_SPACE 1
+
 namespace embree
 {
   struct BezierNi
@@ -109,6 +111,44 @@ namespace embree
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {
+#if USE_ALIGNED_SPACE
+      size_t end = min(begin+M,_end);
+      N = end-begin;
+
+      /* encode all primitives */
+      for (size_t i=0; i<M && begin<end; i++, begin++)
+      {
+        const PrimRef& prim = prims[begin];
+        const unsigned int geomID = prim.geomID();
+        const unsigned int primID = prim.primID();
+        AffineSpace3fa space = computeAlignedSpace(scene,prims,range<size_t>(begin));
+        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space,primID);
+                
+        space.p -= bounds.lower;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
+
+        naabb.l.vx.x[i] = space.l.vx.x;
+        naabb.l.vx.y[i] = space.l.vx.y;
+        naabb.l.vx.z[i] = space.l.vx.z;
+
+        naabb.l.vy.x[i] = space.l.vy.x;
+        naabb.l.vy.y[i] = space.l.vy.y;
+        naabb.l.vy.z[i] = space.l.vy.z;
+
+        naabb.l.vz.x[i] = space.l.vz.x;
+        naabb.l.vz.y[i] = space.l.vz.y;
+        naabb.l.vz.z[i] = space.l.vz.z;
+
+        naabb.p.x[i] = space.p.x;
+        naabb.p.y[i] = space.p.y;
+        naabb.p.z[i] = space.p.z;
+
+        items.geomID[i] = geomID;
+        items.primID[i] = primID;
+      }
+        
+#else
+
       /* find aligned space */
       size_t end = min(begin+M,_end);
       LinearSpace3fa s = computeAlignedSpace(scene,prims,range<size_t>(begin,end));
@@ -131,7 +171,7 @@ namespace embree
         BBox3fa b1 = scene->get<NativeCurves>(prims[j].geomID())->bounds(space,prims[j].primID());
         bounds1.extend(b1);
         }*/
-                             
+        
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
@@ -154,9 +194,18 @@ namespace embree
         items.geomID[i] = geomID;
         items.primID[i] = primID;
       }
+#endif
     }
 
   public:
+#if USE_ALIGNED_SPACE
+    AffineSpace3vf<M> naabb;
+    unsigned int N;
+    struct Item {
+      unsigned int geomID[M];
+      unsigned int primID[M];
+    } items;
+#else
     AffineSpace3fa space;
     unsigned int N;
     struct Item {
@@ -169,5 +218,6 @@ namespace embree
       unsigned int geomID[M];
       unsigned int primID[M];
     } items;
+#endif
   };
 }
