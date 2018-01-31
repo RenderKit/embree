@@ -20,6 +20,7 @@
 
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
+#include "../geometry/bezierNi.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
 
@@ -70,9 +71,8 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = 0;
-        settings.minLeafSize = 64;
-        settings.maxLeafSize = BVH::maxLeafBlocks;
-        PRINT(BVH::maxLeafBlocks);
+        settings.minLeafSize = 16;
+        settings.maxLeafSize = Primitive::max_size()*BVH::maxLeafBlocks;
         settings.finished_range_threshold = numPrimitives/1000;
         if (settings.finished_range_threshold < 1000)
           settings.finished_range_threshold = inf;
@@ -81,7 +81,7 @@ namespace embree
         auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             size_t start = set.begin();
-            size_t items = set.size();
+            size_t items = Primitive::blocks(set.size());
             Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
               accel[i].fill(prims,start,set.end(),bvh->scene);
@@ -129,7 +129,8 @@ namespace embree
     
     /*! entry functions for the builder */
     Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    //Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,BezierNi>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier1v>((BVH8*)bvh,scene); }
