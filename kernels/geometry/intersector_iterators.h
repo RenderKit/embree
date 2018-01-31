@@ -31,8 +31,16 @@ namespace embree
 
         static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
+          unsigned int primID = ray.primID;
+          if (*(size_t*)&ray.id != 0 && *(size_t*)&ray.id != (size_t)prim)
+            return;
+          
           for (size_t i=0; i<num; i++)
             Intersector::intersect(pre,ray,context,prim[i]);
+          
+          if (ray.primID != primID) {
+            *(size_t*)&ray.u = (size_t)prim;
+          }
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)

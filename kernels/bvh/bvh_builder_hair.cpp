@@ -70,8 +70,9 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = 0;
-        settings.minLeafSize = 1;
+        settings.minLeafSize = 64;
         settings.maxLeafSize = BVH::maxLeafBlocks;
+        PRINT(BVH::maxLeafBlocks);
         settings.finished_range_threshold = numPrimitives/1000;
         if (settings.finished_range_threshold < 1000)
           settings.finished_range_threshold = inf;
