@@ -53,8 +53,8 @@ namespace embree
         const vfloat8 t_lower_z = (vfloat8::load(prim.items.lower_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
         const vfloat8 t_upper_z = (vfloat8::load(prim.items.upper_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
 
-        const vfloat8 tNear = max(min(t_lower_x,t_upper_x),min(t_lower_y,t_upper_y),min(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
-        const vfloat8 tFar  = min(max(t_lower_x,t_upper_x),max(t_lower_y,t_upper_y),max(t_lower_z,t_upper_z),vfloat8(ray.tfar));
+        const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
+        const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
         vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
 
         while (any(valid))
