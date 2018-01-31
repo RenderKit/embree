@@ -81,15 +81,15 @@ namespace embree
       size_t end = min(begin+M,_end);
       LinearSpace3fa s = computeAlignedSpace(scene,prims,range<size_t>(begin,end));
 
-      /* calculate leaf bounds for this space */
-      BBox3fa bounds = empty;
+      /* calculate leaf gbounds for this space */
+      BBox3fa gbounds = empty;
       for (size_t j=begin; j<end; j++) {
-        bounds.extend(scene->get<NativeCurves>(prims[j].geomID())->bounds(s,prims[j].primID()));
+        gbounds.extend(scene->get<NativeCurves>(prims[j].geomID())->bounds(s,prims[j].primID()));
       }
 
       /* normalize space for encoding */
-      const Vec3fa bs = bounds.size();
-      AffineSpace3fa a(255.0f*s.vx/bs,255.0f*s.vy/bs,255.0f*s.vz/bs,-255.0f*bounds.lower/bs);
+      const Vec3fa bs = gbounds.size();
+      AffineSpace3fa a(255.0f*s.vx/bs,255.0f*s.vy/bs,255.0f*s.vz/bs,-255.0f*gbounds.lower/bs);
       space = AffineSpace3fa(a);
       N = end-begin;
 
@@ -106,16 +106,19 @@ namespace embree
 	const PrimRef& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space,primID);
+        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(s,primID);
+        const Vec3fa lower = 255.0f*(bounds.lower-gbounds.lower)/gbounds.size();
+        const Vec3fa upper = 255.0f*(bounds.upper-gbounds.lower)/gbounds.size();
+        
         //if (reduce_min(bounds.lower) < 0.0f || reduce_max(bounds.upper) > 255.0f) PRINT(bounds);
         //PRINT2(i,bounds.size());
         
-        items.lower_x[i] = (unsigned char) clamp(floor(bounds.lower.x)-2.0f,0.0f,255.0f);
-        items.upper_x[i] = (unsigned char) clamp(ceil (bounds.upper.x)+2.0f,0.0f,255.0f);
-        items.lower_y[i] = (unsigned char) clamp(floor(bounds.lower.y)-2.0f,0.0f,255.0f);
-        items.upper_y[i] = (unsigned char) clamp(ceil (bounds.upper.y)+2.0f,0.0f,255.0f);
-        items.lower_z[i] = (unsigned char) clamp(floor(bounds.lower.z)-2.0f,0.0f,255.0f);
-        items.upper_z[i] = (unsigned char) clamp(ceil (bounds.upper.z)+2.0f,0.0f,255.0f);
+        items.lower_x[i] = (unsigned char) clamp(floor(lower.x),0.0f,255.0f);
+        items.upper_x[i] = (unsigned char) clamp(ceil (upper.x),0.0f,255.0f);
+        items.lower_y[i] = (unsigned char) clamp(floor(lower.y),0.0f,255.0f);
+        items.upper_y[i] = (unsigned char) clamp(ceil (upper.y),0.0f,255.0f);
+        items.lower_z[i] = (unsigned char) clamp(floor(lower.z),0.0f,255.0f);
+        items.upper_z[i] = (unsigned char) clamp(ceil (upper.z),0.0f,255.0f);
         items.geomID[i] = geomID;
         items.primID[i] = primID;
       }
