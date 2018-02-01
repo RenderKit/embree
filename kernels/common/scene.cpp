@@ -103,7 +103,8 @@ namespace embree
       "subdivs",
       "usergeom",
       "instance",
-      "group"
+      "group",
+      "grids"
     };
 
     std::cout << "  segments: ";
@@ -570,6 +571,14 @@ namespace embree
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
 #endif
   }
+
+  void Scene::createGridAccel()
+  {
+  }
+
+  void Scene::createGridMBAccel()
+  {
+  }
   
   void Scene::clear() {
   }
@@ -649,6 +658,8 @@ namespace embree
       createHairMBAccel();
       createLineAccel();
       createLineMBAccel();
+      createGridAccel();
+      createGridMBAccel();
       
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
       accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));

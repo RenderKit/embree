@@ -57,8 +57,8 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, QUAD_MESH = 2, BEZIER_CURVES = 4, LINE_SEGMENTS = 8, SUBDIV_MESH = 16, USER_GEOMETRY = 32, INSTANCE = 64, GROUP = 128 };
-    static const int NUM_TYPES = 8;
+    enum Type { TRIANGLE_MESH = 1, QUAD_MESH = 2, BEZIER_CURVES = 4, LINE_SEGMENTS = 8, SUBDIV_MESH = 16, USER_GEOMETRY = 32, INSTANCE = 64, GROUP = 128, GRID_MESH = 256 };
+    static const int NUM_TYPES = 9;
 
     enum State {
       MODIFIED = 0,

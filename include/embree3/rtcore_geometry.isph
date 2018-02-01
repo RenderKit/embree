@@ -39,6 +39,8 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE = 32, // round (tube-like) B-spline curves
   RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE  = 33, // flat (ribbon-like) B-spline curves
 
+  RTC_GEOMETRY_TYPE_GRID = 80, // grid mesh
+
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };
@@ -359,5 +361,13 @@ RTC_FORCEINLINE void rtcInterpolateV2(RTCGeometry geometry, varying unsigned int
   args.valueCount = valueCount;
   rtcInterpolateN(&args);
 }
+
+/* RTCGrid primitive for grid mesh */
+struct RTCGrid
+{
+  unsigned int startVtxID;
+  unsigned int lineOffset;
+  int16 resX,resY;
+};
 
 #endif
