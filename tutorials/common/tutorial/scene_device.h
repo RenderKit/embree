@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -91,6 +91,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
     ~ISPCTriangleMesh ();
+
+  private:
+    ISPCTriangleMesh (const ISPCTriangleMesh& other) DELETED; // do not implement
+    ISPCTriangleMesh& operator= (const ISPCTriangleMesh& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;
@@ -109,6 +115,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
     ~ISPCQuadMesh ();
+
+  private:
+    ISPCQuadMesh (const ISPCQuadMesh& other) DELETED; // do not implement
+    ISPCQuadMesh& operator= (const ISPCQuadMesh& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;
@@ -168,18 +180,29 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, RTCGeometryIntersector type, RTCCurveBasis basis, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
+
+  private:
+    ISPCHairSet (const ISPCHairSet& other) DELETED; // do not implement
+    ISPCHairSet& operator= (const ISPCHairSet& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
-    ISPCHair* hairs;         //!< for each hair, index to first control point
-    RTCGeometryIntersector type;
-    RTCCurveBasis basis;
+    ISPCHair* hairs;          //!< for each hair, index to first control point
+#if !defined(ISPC)
+    unsigned char* flags;     //!< end cap flags per segment
+#else
+    uint8* flags;             //!< end cap flags per segment
+#endif
+    RTCGeometryType type;
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;
+    unsigned int numHairCurves;
     unsigned int tessellation_rate;
   };
   
@@ -188,6 +211,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     ~ISPCInstance();
+
+  private:
+    ISPCInstance (const ISPCInstance& other) DELETED; // do not implement
+    ISPCInstance& operator= (const ISPCInstance& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;

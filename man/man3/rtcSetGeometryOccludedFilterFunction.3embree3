@@ -1,0 +1,51 @@
+.TH "rtcSetGeometryOccludedFilterFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryOccludedFilterFunction\ \-\ sets\ the\ occlusion\ filter
+\ \ for\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryOccludedFilterFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCFilterFunctionN\ filter
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryOccludedFilterFunction\f[] function registers an
+occlusion filter callback function (\f[C]filter\f[] argument) for the
+specified geometry (\f[C]geometry\f[] argument).
+.PP
+Only a single callback function can be registered per geometry, and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
+.PP
+The registered intersection filter function is invoked for every hit
+encountered during the \f[C]rtcOccluded\f[]\-type ray queries and can
+accept or reject that hit.
+The feature can be used to define a silhouette for a primitive and
+reject hits that are outside the silhouette.
+E.g.
+a tree leaf could be modeled with an alpha texture that decides whether
+hit points lie inside or outside the leaf.
+.PP
+Please see the description of the
+\f[C]rtcSetGeometryIntersectFilterFunction\f[] for a description of the
+filter callback function.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryIntersectFilterFunction]

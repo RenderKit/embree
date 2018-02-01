@@ -17,15 +17,13 @@
 #cmakedefine EMBREE_RAY_MASK
 #cmakedefine EMBREE_STAT_COUNTERS
 #cmakedefine EMBREE_BACKFACE_CULLING
-#cmakedefine EMBREE_INTERSECTION_FILTER
-#cmakedefine EMBREE_INTERSECTION_FILTER_CONTEXT
+#cmakedefine EMBREE_FILTER_FUNCTION
 #cmakedefine EMBREE_RETURN_SUBDIV_NORMAL
 #cmakedefine EMBREE_IGNORE_INVALID_RAYS
 #cmakedefine EMBREE_GEOMETRY_TRIANGLES
 #cmakedefine EMBREE_GEOMETRY_QUADS
-#cmakedefine EMBREE_GEOMETRY_LINES
-#cmakedefine EMBREE_GEOMETRY_HAIR
-#cmakedefine EMBREE_GEOMETRY_SUBDIV
+#cmakedefine EMBREE_GEOMETRY_CURVES
+#cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_RAY_PACKETS
 #cmakedefine EMBREE_NATIVE_CURVE_BSPLINE
@@ -42,19 +40,13 @@
   #define IF_ENABLED_QUADS(x)
 #endif
 
-#if defined(EMBREE_GEOMETRY_LINES)
-  #define IF_ENABLED_LINES(x) x
+#if defined(EMBREE_GEOMETRY_CURVES)
+  #define IF_ENABLED_CURVES(x) x
 #else
-  #define IF_ENABLED_LINES(x)
+  #define IF_ENABLED_CURVES(x)
 #endif
 
-#if defined(EMBREE_GEOMETRY_HAIR)
-  #define IF_ENABLED_HAIR(x) x
-#else
-  #define IF_ENABLED_HAIR(x)
-#endif
-
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
   #define IF_ENABLED_SUBDIV(x) x
 #else
   #define IF_ENABLED_SUBDIV(x)
@@ -65,6 +57,7 @@
 #else
   #define IF_ENABLED_USER(x)
 #endif
+
 
 
 

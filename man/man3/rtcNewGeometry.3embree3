@@ -1,0 +1,116 @@
+.TH "rtcNewGeometry" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcNewGeometry\ \-\ creates\ a\ new\ geometry\ object
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+enum\ RTCGeometryType
+{
+\ RTC_GEOMETRY_TYPE_TRIANGLE,
+\ RTC_GEOMETRY_TYPE_QUAD,
+\ RTC_GEOMETRY_TYPE_SUBDIVISION,
+\ RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,
+\ RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
+\ RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,
+\ RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
+\ RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,
+\ RTC_GEOMETRY_TYPE_USER,
+\ RTC_GEOMETRY_TYPE_INSTANCE
+};
+
+RTCGeometry\ rtcNewGeometry(
+\ \ RTCDevice\ device,
+\ \ enum\ RTCGeometryType\ type
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Geometries are objects that represent an array of primitives of the same
+type.
+The \f[C]rtcNewGeometry\f[] function creates a new geometry of specified
+type (\f[C]type\f[] argument) bound to the specified device
+(\f[C]device\f[] argument) and returns a handle to this geometry.
+The geometry object is reference counted with an initial reference count
+of 1.
+The geometry handle can be released using the
+\f[C]rtcReleaseGeometry\f[] API call.
+.PP
+Supported geometry types are triangle meshes
+(\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[] type), quad meshes (triangle pairs)
+(\f[C]RTC_GEOMETRY_TYPE_QUAD\f[] type), Catmull\-Clark subdivision
+surfaces (\f[C]RTC_GEOMETRY_TYPE_SUBDIVISION\f[] type), curve geometries
+with different bases (\f[C]RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\f[] types), user\-defined
+geometries (\f[C]RTC_GEOMETRY_TYPE_USER\f[]), and instances
+(\f[C]RTC_GEOMETRY_TYPE_INSTANCE\f[]).
+.PP
+The types \f[C]RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\f[] and
+\f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[] will treat the curve as a
+sweep surface of a varying\-radius circle swept tangentially along the
+curve.
+The types \f[C]RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE\f[] and
+\f[C]RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\f[] use ray\-facing ribbons as
+a faster\-to\-intersect approximation.
+.PP
+After construction, geometries are enabled by default and not attached
+to any scene.
+Geometries can be disabled (\f[C]rtcDisableGeometry\f[] call), and
+enabled again (\f[C]rtcEnableGeometry\f[] call).
+A geometry can be attached to a single scene using the
+\f[C]rtcAttachGeometry\f[] call (or \f[C]rtcAttachGeometryByID\f[]
+call), and detached using the \f[C]rtcDetachGeometry\f[] call.
+During attachment, a geometry ID is assigned to the geometry (or
+assigned by the user when using the \f[C]rtcAttachGeometryByID\f[]
+call), which uniquely identifies the geometry inside that scene.
+This identifier is returned when primitives of the geometry are hit in
+later ray queries for the scene.
+.PP
+Geometries can also be modified, including their vertex and index
+buffers.
+After modifying a buffer, \f[C]rtcUpdateGeometryBuffer\f[] must be
+called to notify that the buffer got modified.
+.PP
+The application can use the \f[C]rtcSetGeometryUserData\f[] function to
+set a user data pointer to its own geometry representation, and later
+read out this pointer using the \f[C]rtcGetGeometryUserData\f[]
+function.
+.PP
+After setting up the geometry or modifying it,
+\f[C]rtcCommitGeometry\f[] must be called to finish the geometry setup.
+After committing the geometry, vertex data interpolation can be
+performed using the \f[C]rtcInterpolate\f[] and \f[C]rtcInterpolateN\f[]
+functions.
+.PP
+A build quality can be specified for a geometry using the
+\f[C]rtcSetGeometryBuildQuality\f[] function, to balance between
+acceleration structure build performance and ray query performance.
+The build quality per geometry will be used if a two\-level acceleration
+structure is built internally, which is the case if the
+\f[C]RTC_BUILD_QUALITY_LOW\f[] is set as the scene build quality.
+See Section [rtcSetSceneBuildQuality] for more details.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcEnableGeometry], [rtcDisableGeometry], [rtcAttachGeometry],
+[rtcAttachGeometryByID], [rtcUpdateGeometryBuffer],
+[rtcSetGeometryUserData], [rtcGetGeometryUserData], [rtcCommitGeometry],
+[rtcInterpolate], [rtcInterpolateN], [rtcSetGeometryBuildQuality],
+[rtcSetSceneBuildQuality], [RTC_GEOMETRY_TYPE_TRIANGLE],
+[RTC_GEOMETRY_TYPE_QUAD], [RTC_GEOMETRY_TYPE_SUBDIVISION],
+[RTC_GEOMETRY_TYPE_CURVE], [RTC_GEOMETRY_TYPE_USER],
+[RTC_GEOMETRY_TYPE_INSTANCE]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -97,10 +97,9 @@ namespace embree
         BBox3fa box;
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.userPtr = boundsFuncUserPtr;
-        args.geomUserPtr = intersectors.ptr;
-        args.item = (unsigned int)i;
-        args.time = (unsigned int)itime;
+        args.geometryUserPtr = intersectors.ptr;
+        args.primID = (unsigned int)i;
+        args.timeStep = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
         boundsFunc(&args);
         return box;
@@ -112,13 +111,12 @@ namespace embree
         BBox3fa box[2];
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.userPtr = boundsFuncUserPtr;
-        args.geomUserPtr = intersectors.ptr;
-        args.item = (unsigned int)i;
-        args.time = (unsigned int)(itime+0);
+        args.geometryUserPtr = intersectors.ptr;
+        args.primID = (unsigned int)i;
+        args.timeStep = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
         boundsFunc(&args);
-        args.time = (unsigned int)(itime+1);
+        args.timeStep = (unsigned int)(itime+1);
         args.bounds_o = (RTCBounds*)&box[1];
         boundsFunc(&args);
         return LBBox3fa(box[0],box[1]);
@@ -152,25 +150,30 @@ namespace embree
         return true;
       }
 
+      /* returns true if topology changed */
+      bool topologyChanged() const {
+        return numPrimitivesChanged;
+      }
+
       void enabling ();
       void disabling();
 
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (Ray& ray, size_t item, IntersectContext* context, ReportIntersectionFunc report) 
+      __forceinline void intersect (RayHit& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
       {
-        assert(item < size());
+        assert(primID < size());
         assert(intersectors.intersectorN.intersect);
         
         int mask = -1;
         IntersectFunctionNArguments args;
         args.valid = &mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.ray = (RTCRayN*)&ray;
+        args.rayhit = (RTCRayHitN*)&ray;
         args.N = 1;
-        args.item = (unsigned int)item;
+        args.primID = (unsigned int)primID;
         args.internal_context = context;
         args.geometry = this;
         args.report = report;
@@ -179,19 +182,19 @@ namespace embree
       }
 
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (Ray& ray, size_t item, IntersectContext* context, ReportOcclusionFunc report) 
+      __forceinline void occluded (Ray& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report)
       {
-        assert(item < size());
+        assert(primID < size());
         assert(intersectors.intersectorN.occluded);
         
         int mask = -1;
         OccludedFunctionNArguments args;
         args.valid = &mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
         args.N = 1;
-        args.item = (unsigned int)item;
+        args.primID = (unsigned int)primID;
         args.internal_context = context;
         args.geometry = this;
         args.report = report;
@@ -201,19 +204,19 @@ namespace embree
    
       /*! Intersects a packet of K rays with the scene. */
       template<int K>
-        __forceinline void intersect (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context, ReportIntersectionFunc report) 
+        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
       {
-        assert(item < size());
+        assert(primID < size());
         assert(intersectors.intersectorN.intersect);
         
         vint<K> mask = valid.mask32();
         IntersectFunctionNArguments args;
         args.valid = (int*)&mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
-        args.ray = (RTCRayN*)&ray;
+        args.rayhit = (RTCRayHitN*)&ray;
         args.N = K;
-        args.item = (unsigned int)item;
+        args.primID = (unsigned int)primID;
         args.internal_context = context;
         args.geometry = this;
         args.report = report;
@@ -223,19 +226,19 @@ namespace embree
 
       /*! Tests if a packet of K rays is occluded by the scene. */
       template<int K>
-        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t item, IntersectContext* context, ReportOcclusionFunc report) 
+        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report)
       {
-        assert(item < size());
+        assert(primID < size());
         assert(intersectors.intersectorN.occluded);
         
         vint<K> mask = valid.mask32();
         OccludedFunctionNArguments args;
         args.valid = (int*)&mask;
-        args.geomUserPtr = intersectors.ptr;
+        args.geometryUserPtr = intersectors.ptr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
         args.N = K;
-        args.item = (unsigned int)item;
+        args.primID = (unsigned int)primID;
         args.internal_context = context;
         args.geometry = this;
         args.report = report;
@@ -245,7 +248,6 @@ namespace embree
 
     public:
       RTCBoundsFunction boundsFunc;
-      void* boundsFuncUserPtr;
 
       struct Intersectors 
       {

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -236,7 +236,7 @@ namespace embree
   TaskScheduler::TaskScheduler()
     : threadCounter(0), anyTasksRunning(0), hasRootTask(false)
   {
-    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the compatibility join mode with rtcCommit the worker threads also join. When disallowing rtcCommit to join a build we can remove the 2x.
+    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the compatibility join mode with rtcCommitScene the worker threads also join. When disallowing rtcCommitScene to join a build we can remove the 2x.
     for (size_t i=0; i<threadLocal.size(); i++)
       threadLocal[i].store(nullptr);
   }

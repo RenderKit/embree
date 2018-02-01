@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,8 +25,8 @@ namespace embree
   {
     struct BVHBuilderMorton
     {
-      static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximal supported BVH branching factor
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximum supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximum tree depth
 
       /*! settings for morton builder */
       struct Settings
@@ -36,13 +36,13 @@ namespace embree
         : branchingFactor(2), maxDepth(32), minLeafSize(1), maxLeafSize(8), singleThreadThreshold(1024) {}
 
         /*! initialize settings from API settings */
-        Settings (const RTCBuildSettings& settings)
+        Settings (const RTCBuildArguments& settings)
         : branchingFactor(2), maxDepth(32), minLeafSize(1), maxLeafSize(8), singleThreadThreshold(1024)
         {
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
-          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
         }
 
         Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)
@@ -50,9 +50,9 @@ namespace embree
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t maxDepth;         //!< maximum depth of BVH to build
+        size_t minLeafSize;      //!< minimum size of a leaf
+        size_t maxLeafSize;      //!< maximum size of a leaf
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
 
@@ -216,7 +216,7 @@ namespace embree
         {
           /* this should never occur but is a fatal error */
           if (depth > maxDepth)
-            throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+            throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
           /* create leaf for few primitives */
           if (current.size() <= maxLeafSize)

@@ -1,0 +1,32 @@
+.TH "rtcRetainDevice" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcRetainDevice\ \-\ increments\ the\ device\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcRetainDevice(RTCDevice\ device);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Device objects are reference counted.
+The \f[C]rtcRetainDevice\f[] function increments the reference count of
+the passed device object (\f[C]device\f[] argument).
+This function together with \f[C]rtcReleaseDevice\f[] allows to use the
+internal reference counting in a C++ wrapper class to manage the
+ownership of the object.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewDevice], [rtcReleaseDevice]

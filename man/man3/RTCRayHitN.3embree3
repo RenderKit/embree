@@ -1,0 +1,40 @@
+.TH "RTCRayHitN" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTCRayHitN\ \-\ combined\ ray/hit\ packet\ of\ runtime\ size
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore_ray.h>
+
+struct\ RTCRayHitN;
+
+struct\ RTCRayN*\ RTCRayHitN_RayN(struct\ RTCRayHitN*\ rayhit,\ unsigned\ int\ N);
+struct\ RTCHitN*\ RTCRayHitN_HitN(struct\ RTCRayHitN*\ rayhit,\ unsigned\ int\ N);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+When the packet size of a ray/hit structure is not known at compile time
+(e.g.
+when Embree returns a ray/hit packet in the
+\f[C]RTCIntersectFunctionN\f[] callback function), Embree uses the
+\f[C]RTCRayHitN\f[] type for ray packets.
+These ray/hit packets can only have sizes of 1, 4, 8, or 16.
+No other packet size will be used.
+.PP
+You can either implement different special code paths for each of these
+possible packet sizes and cast the ray/hit to the appropriate ray/hit
+packet type, or extract the \f[C]RTCRayN\f[] and \f[C]RTCHitN\f[]
+components using the \f[C]rtcGetRayN\f[] and \f[C]rtcGetHitN\f[] helper
+functions and use the \f[C]RTCRayN_XXX\f[] and \f[C]RTCHitN_XXX\f[]
+functions to access the ray and hit parts of the structure.
+.SS EXIT STATUS
+.SS SEE ALSO
+.PP
+[RTCHitN]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,7 +37,7 @@ namespace embree
   {
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
     void BVHNIntersector1<N, types, robust, PrimitiveIntersector1>::intersect(const Accel::Intersectors* __restrict__ This,
-                                                                              Ray& __restrict__ ray,
+                                                                              RayHit& __restrict__ ray,
                                                                               IntersectContext* __restrict__ context)
     {
       /* perform per ray precalculations required by the primitive intersector */
@@ -58,11 +58,11 @@ namespace embree
       /* verify correct input */
       assert(ray.valid());
       assert(ray.tnear() >= 0.0f);
-      assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || (ray.time() >= 0.0f && ray.time() <= 1.0f));
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar(), 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
       BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
@@ -81,7 +81,7 @@ namespace embree
         if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray.tfar)))
           continue;
 #else
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar()))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
 #endif
 
@@ -91,7 +91,7 @@ namespace embree
           /* intersect node */
           size_t mask; vfloat<Nx> tNear;
           STAT3(normal.trav_nodes,1,1,1);
-          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time, tNear, mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time(), tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
@@ -112,7 +112,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
         PrimitiveIntersector1::intersect(pre, ray, context, prim, num, lazy_node);
-        tray.tfar = ray.tfar();
+        tray.tfar = ray.tfar;
 
         /* push lazy node onto stack */
         if (unlikely(lazy_node)) {
@@ -129,7 +129,7 @@ namespace embree
                                                                              IntersectContext* __restrict__ context)
     {
       /* early out for already occluded rays */
-      if (unlikely(ray.geomID == 0))
+      if (unlikely(ray.tfar < 0.0f))
         return;
 
       /* perform per ray precalculations required by the primitive intersector */
@@ -150,11 +150,11 @@ namespace embree
       /* verify correct input */
       assert(ray.valid());
       assert(ray.tnear() >= 0.0f);
-      assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || (ray.time() >= 0.0f && ray.time() <= 1.0f));
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar(), 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
       BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
@@ -173,7 +173,7 @@ namespace embree
           /* intersect node */
           size_t mask; vfloat<Nx> tNear;
           STAT3(shadow.trav_nodes,1,1,1);
-          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time, tNear, mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time(), tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(shadow.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
@@ -194,7 +194,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
         if (PrimitiveIntersector1::occluded(pre, ray, context, prim, num, lazy_node)) {
-          ray.geomID = 0;
+          ray.tfar = neg_inf;
           break;
         }
 

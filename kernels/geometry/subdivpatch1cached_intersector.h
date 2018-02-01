@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -32,16 +32,16 @@ namespace embree
       typedef GridSOAIntersector1::Precalculations Precalculations;
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
         GridSOAIntersector1::intersect(pre,ray,context,prim,lazy_node);
       }
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
+      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
         intersect(pre,ray,context,prim,lazy_node);
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAIntersector1::occluded(pre,ray,context,prim,lazy_node);
       }
@@ -57,16 +57,16 @@ namespace embree
       typedef GridSOAMBIntersector1::Precalculations Precalculations;
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
         GridSOAMBIntersector1::intersect(pre,ray,context,prim,lazy_node);
       }
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
+      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
         intersect(pre,ray,context,prim,ty,lazy_node);
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         return GridSOAMBIntersector1::occluded(pre,ray,context,prim,lazy_node);
       }
@@ -81,7 +81,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       typedef GridSOAIntersectorK<K>::Precalculations Precalculations;
             
-      static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         GridSOAIntersectorK<K>::intersect(valid,pre,ray,context,prim,lazy_node);
       }
@@ -91,7 +91,7 @@ namespace embree
         return GridSOAIntersectorK<K>::occluded(valid,pre,ray,context,prim,lazy_node);
       }
       
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         GridSOAIntersectorK<K>::intersect(pre,ray,k,context,prim,lazy_node);
       }
@@ -113,7 +113,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       typedef GridSOAMBIntersectorK<K>::Precalculations Precalculations;
             
-      static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         GridSOAMBIntersectorK<K>::intersect(valid,pre,ray,context,prim,lazy_node);
       }
@@ -123,7 +123,7 @@ namespace embree
         return GridSOAMBIntersectorK<K>::occluded(valid,pre,ray,context,prim,lazy_node);
       }
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         GridSOAMBIntersectorK<K>::intersect(pre,ray,k,context,prim,lazy_node);
       }

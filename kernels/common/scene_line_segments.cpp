@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -45,96 +45,159 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setGeometryIntersector(RTCGeometryIntersector type)
+  void LineSegments::setNumTimeSteps (unsigned int numTimeSteps)
   {
-    if (type != RTC_GEOMETRY_INTERSECTOR_RIBBON)
-      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid curve type");
-    
+    vertices.resize(numTimeSteps);
+    Geometry::setNumTimeSteps(numTimeSteps);
+  }
+
+  void LineSegments::setVertexAttributeCount (unsigned int N)
+  {
+    vertexAttribs.resize(N);
+    Geometry::update();
+  }
+  
+  void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
+  {
+    /* verify that all accesses are 4 bytes aligned */
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
+
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (format != RTC_FORMAT_FLOAT4)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
+
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid vertex buffer slot");
+      
+      vertices[slot].set(buffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
+      vertices0 = vertices[0];
+    } 
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
+      vertexAttribs[slot].set(buffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+
+      segments.set(buffer, offset, stride, num, format);
+      setNumPrimitives(num);
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UCHAR)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid flag buffer format");
+
+      flags.set(buffer, offset, stride, num, format);
+    }
+    else
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+  }
+
+  void* LineSegments::getBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return segments.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertices[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertexAttribs[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS) 
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return flags.getPtr();
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+      return nullptr;
+    }
+  }
+
+  void LineSegments::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      segments.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS) 
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      flags.setModified(true);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
+
     Geometry::update();
   }
 
-  void* LineSegments::newBuffer(RTCBufferType type, size_t stride, unsigned int size)
+  void LineSegments::preCommit() 
   {
-    /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+    /* verify that stride of all time steps are identical */
+    for (unsigned int t=0; t<numTimeSteps; t++)
+      if (vertices[t].getStride() != vertices[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].newBuffer(device,size,stride);
-      vertices0 = vertices[0];
-      setNumTimeSteps((unsigned int)vertices.size());
-      return vertices[bid].get();
-    } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
-      return userbuffers[bid].get();
-    }
-    else if (type == RTC_INDEX_BUFFER) 
-    {
-      segments.newBuffer(device,size,stride); 
-      setNumPrimitives(size);
-      return segments.get();
-      // if (isEnabled() && size != (size_t)-1) disabling();
-      // segments.set(ptr,offset,stride,size); 
-      // setNumPrimitives(size);
-      // if (isEnabled() && size != (size_t)-1) enabling();
-    }
-    else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-
-    return nullptr;
+    Geometry::preCommit();
   }
 
-  void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size)
+  void LineSegments::postCommit() 
   {
-    /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3))
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+    scene->vertices[geomID] = (int*) vertices0.getPtr();
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].set(device,ptr,offset,stride,size);
-      vertices[bid].checkPadding16();
-      vertices0 = vertices[0];
-      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
-      // vertices.pop_back();
-      setNumTimeSteps((unsigned int)vertices.size());
-    } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride);
-      userbuffers[bid].set(device,ptr,offset,stride,size);
-      userbuffers[bid].checkPadding16();
-    }
-    else if (type == RTC_INDEX_BUFFER) 
-    {
-      segments.set(device,ptr,offset,stride,size); 
-      setNumPrimitives(size);
-    }
-    else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-  }
+    segments.setModified(false);
+    for (auto& buf : vertices)
+      buf.setModified(false);
+    for (auto& attrib : vertexAttribs)
+      attrib.setModified(false);
+    flags.setModified(false);
 
-  void* LineSegments::getBuffer(RTCBufferType type)
-  {
-    if (type == RTC_INDEX_BUFFER) {
-      return segments.get();
-    }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].get();
-    }
-    else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
-      return nullptr;
-    }
+    Geometry::postCommit();
   }
 
   bool LineSegments::verify ()
@@ -146,7 +209,7 @@ namespace embree
         return false;
 
     /*! verify segment indices */
-    for (unsigned int i=0; i<numPrimitives; i++) {
+    for (unsigned int i=0; i<size(); i++) {
       if (segments[i]+1 >= numVertices()) return false;
     }
 
@@ -162,31 +225,40 @@ namespace embree
     return true;
   }
 
-  void LineSegments::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+  void LineSegments::interpolate(const RTCInterpolateArguments* const args)
   {
+    unsigned int primID = args->primID;
+    float u = args->u;
+    RTCBufferType bufferType = args->bufferType;
+    unsigned int bufferSlot = args->bufferSlot;
+    float* P = args->P;
+    float* dPdu = args->dPdu;
+    float* ddPdudu = args->ddPdudu;
+    unsigned int valueCount = args->valueCount;
+      
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER_(numTimeSteps)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
     const char* src = nullptr;
     size_t stride = 0;
-    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF].getPtr();
-      stride = userbuffers[buffer&0xFFFF].getStride();
+    if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+      src    = vertexAttribs[bufferSlot].getPtr();
+      stride = vertexAttribs[bufferSlot].getStride();
     } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
+      src    = vertices[bufferSlot].getPtr();
+      stride = vertices[bufferSlot].getStride();
     }
     
-    for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+    for (unsigned int i=0; i<valueCount; i+=4)
     {
       const size_t ofs = i*sizeof(float);
       const size_t segment = segments[primID];
-      const vboolx valid = vintx((int)i)+vintx(step) < vintx(int(numFloats));
-      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
-      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
-      if (P      ) vfloatx::storeu(valid,P+i,lerp(p0,p1,u));
-      if (dPdu   ) vfloatx::storeu(valid,dPdu+i,p1-p0);
-      if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
+      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(valueCount));
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
+      if (P      ) vfloat4::storeu(valid,P+i,lerp(p0,p1,u));
+      if (dPdu   ) vfloat4::storeu(valid,dPdu+i,p1-p0);
+      if (ddPdudu) vfloat4::storeu(valid,dPdu+i,vfloat4(zero));
     }
   }
 #endif

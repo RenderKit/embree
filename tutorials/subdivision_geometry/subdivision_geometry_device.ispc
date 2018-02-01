@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -116,28 +116,30 @@ uniform unsigned int cube_faces[12] = {
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
-  //RTCGeometry geom = rtcNewTriangleMesh(g_device);
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
-  //RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  //RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+  //RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
-  rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ), 8);
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int), NUM_INDICES);
-  //rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(uniform unsigned int));
-  rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, sizeof(uniform Vec3fa), 8);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, cube_indices, 0, sizeof(uniform unsigned int), NUM_INDICES);
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, cube_indices, 0, 3*sizeof(uniform unsigned int));
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE, 0, RTC_FORMAT_UINT, cube_faces, 0, sizeof(uniform unsigned int), NUM_FACES);
 
-  rtcSetBuffer(geom, RTC_EDGE_CREASE_INDEX_BUFFER,   cube_edge_crease_indices,  0, 2*sizeof(uniform unsigned int), 0);
-  rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,  cube_edge_crease_weights,  0, sizeof(uniform float), 0);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_UINT2, cube_edge_crease_indices,   0, 2*sizeof(uniform unsigned int), 0);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT, cube_edge_crease_weights,   0, sizeof(uniform float), 0);
 
-  rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(uniform unsigned int), 0);
-  rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(uniform float), 0);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_UINT,  cube_vertex_crease_indices, 0, sizeof(uniform unsigned int), 0);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, cube_vertex_crease_weights, 0, sizeof(uniform float), 0);
 
-  rtcSetBuffer(geom, RTC_USER_VERTEX_BUFFER0, cube_colors, 0, sizeof(uniform Vec3fa), 8);
+  rtcSetGeometryVertexAttributeCount(geom,1);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_colors, 0, sizeof(uniform Vec3fa), 8);
 
-  uniform float* uniform level = (uniform float* uniform) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(uniform float),NUM_INDICES);
-  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
+  for (uniform unsigned int i=0; i<NUM_INDICES; i++)
+    level[i] = EDGE_LEVEL;
 
   rtcCommitGeometry(geom);
-  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }
@@ -146,22 +148,22 @@ uniform unsigned int addCube (RTCScene scene_i)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vertex), 4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(uniform Triangle), 2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
   rtcCommitGeometry(geom);
-  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }
@@ -171,16 +173,13 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcDeviceGetError(g_device));
-
-  /* configure the size of the software cache used for subdivision geometry */
-  rtcDeviceSetParameter1i(g_device,RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
+  error_handler(NULL,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
+  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
+  g_scene = rtcNewScene(g_device);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -189,7 +188,7 @@ export void device_init (uniform int8* uniform cfg)
   addCube(g_scene);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -200,13 +199,13 @@ export void device_init (uniform int8* uniform cfg)
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,&context,RTCRay_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -219,7 +218,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.geomID > 0) {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+        rtcInterpolateV1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       }
       Ng = cross(dPdu,dPdv);
     }
@@ -231,11 +230,11 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
   }
   return color;

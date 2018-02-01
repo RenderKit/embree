@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -41,7 +41,7 @@ namespace embree
     if (stored_error) return stored_error;
 
     Lock<MutexSys> lock(errors_mutex);
-    stored_error = new RTCError(RTC_NO_ERROR);
+    stored_error = new RTCError(RTC_ERROR_NONE);
     thread_errors.push_back(stored_error);
     setTls(thread_error,stored_error);
     return stored_error;
@@ -115,7 +115,6 @@ namespace embree
 
     ignore_config_files = false;
     float_exceptions = false;
-    accel_flags = -1;
     quality_flags = -1;
     scene_flags = -1;
     verbose = 0;
@@ -386,18 +385,6 @@ namespace embree
       else if (tok == Token::Id("benchmark") && cin->trySymbol("="))
         benchmark = cin->get().Int();
       
-      else if (tok == Token::Id("accel_flags")) {
-        accel_flags = 0;
-        if (cin->trySymbol("=")) {
-          do {
-            Token flag = cin->get();
-            if      (flag == Token::Id("default") ) accel_flags |= RTC_ACCEL_FAST;
-            else if (flag == Token::Id("compact")) accel_flags |= RTC_ACCEL_COMPACT;
-            else if (flag == Token::Id("robust")) accel_flags |= RTC_ACCEL_ROBUST;
-          } while (cin->trySymbol("|"));
-        }
-      }
-
       else if (tok == Token::Id("quality")) {
         if (cin->trySymbol("=")) {
           Token flag = cin->get();
@@ -413,6 +400,8 @@ namespace embree
           do {
             Token flag = cin->get();
             if (flag == Token::Id("dynamic") ) scene_flags |= RTC_SCENE_FLAG_DYNAMIC;
+            else if (flag == Token::Id("compact")) scene_flags |= RTC_SCENE_FLAG_COMPACT;
+            else if (flag == Token::Id("robust")) scene_flags |= RTC_SCENE_FLAG_ROBUST;
           } while (cin->trySymbol("|"));
         }
       }

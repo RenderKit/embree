@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -103,14 +103,14 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(const struct RTCDisplacementFunctionArguments* const args)
+void displacementFunction(const struct RTCDisplacementFunctionNArguments* args)
 {
-  const float* nx = args->nx;
-  const float* ny = args->ny;
-  const float* nz = args->nz;
-  float* px = args->px;
-  float* py = args->py;
-  float* pz = args->pz;
+  const float* nx = args->Ng_x;
+  const float* ny = args->Ng_y;
+  const float* nz = args->Ng_z;
+  float* px = args->P_x;
+  float* py = args->P_y;
+  float* pz = args->P_z;
   unsigned int N = args->N;
                                    
   for (unsigned int i=0; i<N; i++) {
@@ -125,16 +125,16 @@ void displacementFunction(const struct RTCDisplacementFunctionArguments* const a
 unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
-  rtcSetBuffer(geom, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa), 8);
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int), NUM_INDICES);
-  rtcSetBuffer(geom, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, sizeof(Vec3fa),       8);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   cube_indices,  0, sizeof(unsigned int), NUM_INDICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_faces,    0, sizeof(unsigned int), NUM_FACES);
 
-  float* level = (float*) rtcNewBuffer(geom, RTC_LEVEL_BUFFER, sizeof(float), NUM_INDICES);
+  float* level = (float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(float), NUM_INDICES);
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
 
-  rtcSetDisplacementFunction(geom,displacementFunction,nullptr);
+  rtcSetGeometryDisplacementFunction(geom,displacementFunction);
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
@@ -146,17 +146,17 @@ unsigned int addCube (RTCScene scene_i)
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
+  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
@@ -171,17 +171,14 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
-
-  /* configure the size of the software cache used for subdivision geometry */
-  rtcDeviceSetParameter1i(g_device,RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
-  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
+  g_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -190,7 +187,7 @@ extern "C" void device_init (char* cfg)
   addCube(g_scene);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -201,13 +198,13 @@ extern "C" void device_init (char* cfg)
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRay_(ray));
+  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -220,11 +217,11 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     Vec3fa Ng = normalize(ray.Ng);
 #if ENABLE_SMOOTH_NORMALS
-    Vec3fa P = ray.org + ray.tfar()*ray.dir;
+    Vec3fa P = ray.org + ray.tfar*ray.dir;
     if (ray.geomID > 0) {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,nullptr,nullptr,nullptr,3);
+        rtcInterpolate1(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ng = normalize(cross(dPdv,dPdu));
       dPdu = dPdu + Ng*displacement_du(P,dPdu);
@@ -234,14 +231,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 #endif
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-(dot(lightDir,Ng)),0.0f,1.0f);
   }
   return color;

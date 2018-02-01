@@ -1,0 +1,41 @@
+.TH "rtcCommitScene" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcCommitScene\ \-\ commits\ scene\ changes
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcCommitScene(RTCScene\ scene);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcCommitScene\f[] function commits all changes for the
+specified scene (\f[C]scene\f[] argument).
+This internally triggers building of a spatial acceleration structure
+for the scene using all available worker threads.
+Ray queries can be performed only after committing all scene changes.
+.PP
+The kind of acceleration structure built can be influenced using scene
+flags (see \f[C]rtcSetSceneFlags\f[]), and the quality can be specified
+using the \f[C]rtcSetSceneBuildQuality\f[] function.
+.PP
+Embree silently ignores primitives during spatial acceleration structure
+construction that would cause numerical issues, e.g.
+primitives containing NaNs, INFs, or values greater than 1.844E18f (as
+no reasonable calculations can be performed with such values without
+causing overflows).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcCommitJoinScene]

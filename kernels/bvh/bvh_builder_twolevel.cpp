@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -39,10 +39,7 @@ namespace embree
       : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold) {}
     
     template<int N, typename Mesh>
-    BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel ()
-    {
-      for (size_t i=0; i<builders.size(); i++) 
-	delete builders[i];
+    BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel () {
     }
 
     // ===========================================================================
@@ -57,7 +54,7 @@ namespace embree
       if (num < objects.size()) {
         parallel_for(num, objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
-              delete builders[i]; builders[i] = nullptr;
+              builders[i].clear();
               delete objects[i]; objects[i] = nullptr;
             }
           });
@@ -94,16 +91,24 @@ namespace embree
         {
           Mesh* mesh = scene->getSafe<Mesh>(objectID);
           
-          /* verify if meshes got deleted properly */
-          if (mesh == nullptr || mesh->numTimeSteps != 1) {
-            assert(objectID < objects.size () && objects[objectID] == nullptr);
-            assert(objectID < builders.size() && builders[objectID] == nullptr);
+          /* ignore meshes we do not support */
+          if (mesh == nullptr || mesh->numTimeSteps != 1)
             continue;
-          }
           
           /* create BVH and builder for new meshes */
-          if (objects[objectID] == nullptr)
-            createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
+          if (objects[objectID] == nullptr) {
+            Builder* builder = nullptr;
+            createMeshAccel(mesh,(AccelData*&)objects[objectID],builder);
+            builders[objectID] = BuilderState(builder,mesh->quality);
+          }
+
+          /* re-create when build quality changed */
+          else if (mesh->quality != builders[objectID].quality) {
+            Builder* builder = nullptr;
+            delete objects[objectID]; 
+            createMeshAccel(mesh,(AccelData*&)objects[objectID],builder);
+            builders[objectID] = BuilderState(builder,mesh->quality);
+          }
         }
       });
 
@@ -118,7 +123,7 @@ namespace embree
             continue;
         
           BVH*     object  = objects [objectID]; assert(object);
-          Builder* builder = builders[objectID]; assert(builder);
+          Ref<Builder>& builder = builders[objectID].builder; assert(builder);
           
           /* build object if it got modified */
           if (mesh->isModified())
@@ -269,7 +274,7 @@ namespace embree
     void BVHNBuilderTwoLevel<N,Mesh>::deleteGeometry(size_t geomID)
     {
       if (geomID >= objects.size()) return;
-      delete builders[geomID]; builders[geomID] = nullptr;
+      builders[geomID].clear();
       delete objects [geomID]; objects [geomID] = nullptr;
     }
 
@@ -280,7 +285,7 @@ namespace embree
         if (objects[i]) objects[i]->clear();
 
       for (size_t i=0; i<builders.size(); i++) 
-	if (builders[i]) builders[i]->clear();
+	if (builders[i].builder) builders[i].builder->clear();
 
       refs.clear();
     }
@@ -325,7 +330,7 @@ namespace embree
       }
     }
 
-#if defined(EMBREE_GEOMETRY_LINES)    
+#if defined(EMBREE_GEOMETRY_CURVES)    
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,LineSegments>((BVH4*)bvh,scene,createMeshAccel);
     }

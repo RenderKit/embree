@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -604,7 +604,7 @@ namespace embree
        }
      }
        
-     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(vertices,curves,curMaterial,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER);
+     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(vertices,curves,curMaterial,RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
      group->add(mesh.cast<SceneGraph::Node>());
      mesh->verify();
      curGroupHair.clear();

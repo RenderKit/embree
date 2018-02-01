@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,10 +25,10 @@ namespace embree
 {
   class FastAllocator
   {
-    /*! maximal supported alignment */
+    /*! maximum supported alignment */
     static const size_t maxAlignment = 64;
 
-    /*! maximal allocation size */
+    /*! maximum allocation size */
 
     /* default settings */
     //static const size_t defaultBlockSize = 4096;
@@ -502,7 +502,7 @@ namespace embree
 
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
-          throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
+          throw_RTCError(RTC_ERROR_UNKNOWN,"allocation is too large");
 
         /* parallel block creation in case of no freeBlocks, avoids single global mutex */
         if (likely(freeBlocks.load() == nullptr))

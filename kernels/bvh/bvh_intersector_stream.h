@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -38,7 +38,6 @@ namespace embree
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
 
-      template<bool occluded>
       __forceinline static size_t initPacketsAndFrustum(RayK<K>** inputPackets, size_t numOctantRays,
                                                         TravRayKStream<K, robust>* packets, Frustum<robust>& frustum, bool& commonOctant)
       {
@@ -55,9 +54,8 @@ namespace embree
         for (size_t i = 0; i < numPackets; i++)
         {
           const vfloat<K> tnear = inputPackets[i]->tnear();
-          const vfloat<K> tfar  = inputPackets[i]->tfar();
+          const vfloat<K> tfar  = inputPackets[i]->tfar;
           vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
-          if (occluded) m_valid &= inputPackets[i]->geomID != 0;
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
           m_valid &= inputPackets[i]->valid();
@@ -260,7 +258,7 @@ namespace embree
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
     public:
-      static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void intersect(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
 
       static void occludedIncoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
@@ -272,7 +270,7 @@ namespace embree
     class BVHNIntersectorStreamPacketFallback
     {
     public:
-      static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void intersect(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
     };
   }

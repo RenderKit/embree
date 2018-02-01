@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -54,14 +54,14 @@ namespace embree
   {
     /* check CPU */
     if (!hasISA(ISA)) 
-      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
+      throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
 
     /* initialize global state */
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
-      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(RTCORE_VERSION_MAJOR)));
+      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
     if (!ignore_config_files && FileName::homeFolder() != FileName(""))
-      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(RTCORE_VERSION_MAJOR)));
+      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
     State::verify();
 
     /*! do some internal tests */
@@ -155,7 +155,7 @@ namespace embree
 #if defined (EMBREE_BACKFACE_CULLING)
     v += "backfaceculling ";
 #endif
-#if defined(EMBREE_INTERSECTION_FILTER)
+#if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
 #endif
     return v;
@@ -164,7 +164,7 @@ namespace embree
   void Device::print()
   {
     const int cpu_features = getCPUFeatures();
-    std::cout << "Embree Ray Tracing Kernels " << RTCORE_VERSION_STRING << " (" << RTCORE_HASH << ")" << std::endl;
+    std::cout << "Embree Ray Tracing Kernels " << RTC_VERSION_STRING << " (" << RTC_HASH << ")" << std::endl;
     std::cout << "  Compiler  : " << getCompilerName() << std::endl;
     std::cout << "  Build     : ";
 #if defined(DEBUG)
@@ -228,7 +228,7 @@ namespace embree
   void Device::setDeviceErrorCode(RTCError error)
   {
     RTCError* stored_error = errorHandler.error();
-    if (*stored_error == RTC_NO_ERROR)
+    if (*stored_error == RTC_ERROR_NONE)
       *stored_error = error;
   }
 
@@ -236,14 +236,14 @@ namespace embree
   {
     RTCError* stored_error = errorHandler.error();
     RTCError error = *stored_error;
-    *stored_error = RTC_NO_ERROR;
+    *stored_error = RTC_ERROR_NONE;
     return error;
   }
 
   void Device::setThreadErrorCode(RTCError error)
   {
     RTCError* stored_error = g_errorHandler.error();
-    if (*stored_error == RTC_NO_ERROR)
+    if (*stored_error == RTC_ERROR_NONE)
       *stored_error = error;
   }
 
@@ -251,7 +251,7 @@ namespace embree
   {
     RTCError* stored_error = g_errorHandler.error();
     RTCError error = *stored_error;
-    *stored_error = RTC_NO_ERROR;
+    *stored_error = RTC_ERROR_NONE;
     return error;
   }
 
@@ -265,12 +265,12 @@ namespace embree
     if (device->verbosity(1)) 
     {
       switch (error) {
-      case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
-      case RTC_UNKNOWN_ERROR    : std::cerr << "Embree: Unknown error"; break;
-      case RTC_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument"; break;
-      case RTC_INVALID_OPERATION: std::cerr << "Embree: Invalid operation"; break;
-      case RTC_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory"; break;
-      case RTC_UNSUPPORTED_CPU  : std::cerr << "Embree: Unsupported CPU"; break;
+      case RTC_ERROR_NONE         : std::cerr << "Embree: No error"; break;
+      case RTC_ERROR_UNKNOWN    : std::cerr << "Embree: Unknown error"; break;
+      case RTC_ERROR_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument"; break;
+      case RTC_ERROR_INVALID_OPERATION: std::cerr << "Embree: Invalid operation"; break;
+      case RTC_ERROR_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory"; break;
+      case RTC_ERROR_UNSUPPORTED_CPU  : std::cerr << "Embree: Unsupported CPU"; break;
       default                   : std::cerr << "Embree: Invalid error code"; break;                   
       };
       if (str) std::cerr << ", (" << str << ")";
@@ -290,7 +290,7 @@ namespace embree
     if (State::memory_monitor_function && bytes != 0) {
       if (!State::memory_monitor_function(State::memory_monitor_userptr,bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
-          throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
+          throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"memory monitor forced termination");
         }
       }
     }
@@ -316,7 +316,7 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
@@ -361,10 +361,10 @@ namespace embree
 #endif
   }
 
-  void Device::setParameter1i(const RTCParameter parm, ssize_t val)
+  void Device::setProperty(const RTCDeviceProperty prop, ssize_t val)
   {
-    /* hidden internal parameters */
-    switch ((size_t)parm)
+    /* hidden internal properties */
+    switch ((size_t)prop)
     {
     case 1000000: debug_int0 = val; return;
     case 1000001: debug_int1 = val; return;
@@ -372,145 +372,136 @@ namespace embree
     case 1000003: debug_int3 = val; return;
     }
 
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown writable parameter"); break;
-    };
+    throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown writable property");
   }
 
-  ssize_t Device::getParameter1i(const RTCParameter parm)
+  ssize_t Device::getProperty(const RTCDeviceProperty prop)
   {
-    size_t iparm = (size_t)parm;
+    size_t iprop = (size_t)prop;
 
     /* get name of internal regression test */
-    if (iparm >= 2000000 && iparm < 3000000)
+    if (iprop >= 2000000 && iprop < 3000000)
     {
-      RegressionTest* test = getRegressionTest(iparm-2000000);
+      RegressionTest* test = getRegressionTest(iprop-2000000);
       if (test) return (ssize_t) test->name.c_str();
       else      return 0;
     }
 
     /* run internal regression test */
-    if (iparm >= 3000000 && iparm < 4000000)
+    if (iprop >= 3000000 && iprop < 4000000)
     {
-      RegressionTest* test = getRegressionTest(iparm-3000000);
+      RegressionTest* test = getRegressionTest(iprop-3000000);
       if (test) return test->run();
       else      return 0;
     }
 
-    /* documented parameters */
-    switch (parm) 
+    /* documented properties */
+    switch (prop) 
     {
-    case RTC_CONFIG_VERSION_MAJOR: return RTCORE_VERSION_MAJOR;
-    case RTC_CONFIG_VERSION_MINOR: return RTCORE_VERSION_MINOR;
-    case RTC_CONFIG_VERSION_PATCH: return RTCORE_VERSION_PATCH;
-    case RTC_CONFIG_VERSION      : return RTCORE_VERSION;
-
-    case RTC_CONFIG_INTERSECT1: return 1;
+    case RTC_DEVICE_PROPERTY_VERSION_MAJOR: return RTC_VERSION_MAJOR;
+    case RTC_DEVICE_PROPERTY_VERSION_MINOR: return RTC_VERSION_MINOR;
+    case RTC_DEVICE_PROPERTY_VERSION_PATCH: return RTC_VERSION_PATCH;
+    case RTC_DEVICE_PROPERTY_VERSION      : return RTC_VERSION;
 
 #if defined(EMBREE_TARGET_SIMD4) && defined(EMBREE_RAY_PACKETS)
-    case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED:  return hasISA(SSE2);
 #else
-    case RTC_CONFIG_INTERSECT4:  return 0;
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED:  return 0;
 #endif
 
 #if defined(EMBREE_TARGET_SIMD8) && defined(EMBREE_RAY_PACKETS)
-    case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED:  return hasISA(AVX);
 #else
-    case RTC_CONFIG_INTERSECT8:  return 0;
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED:  return 0;
 #endif
 
 #if defined(EMBREE_TARGET_SIMD16) && defined(EMBREE_RAY_PACKETS)
-    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(AVX512SKX);
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return hasISA(AVX512KNL) | hasISA(AVX512SKX);
 #else
-    case RTC_CONFIG_INTERSECT16: return 0;
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return 0;
 #endif
 
 #if defined(EMBREE_RAY_PACKETS)
-    case RTC_CONFIG_INTERSECT_STREAM:  return 1;
+    case RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED:  return 1;
 #else
-    case RTC_CONFIG_INTERSECT_STREAM:  return 0;
+    case RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED:  return 0;
 #endif
     
 #if defined(EMBREE_RAY_MASK)
-    case RTC_CONFIG_RAY_MASK: return 1;
+    case RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_RAY_MASK: return 0;
+    case RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED: return 0;
 #endif
 
 #if defined(EMBREE_BACKFACE_CULLING)
-    case RTC_CONFIG_BACKFACE_CULLING: return 1;
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 1;
 #else
-    case RTC_CONFIG_BACKFACE_CULLING: return 0;
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 0;
 #endif
 
-#if defined(EMBREE_INTERSECTION_FILTER)
-    case RTC_CONFIG_INTERSECTION_FILTER: return 1;
+#if defined(EMBREE_FILTER_FUNCTION)
+    case RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_INTERSECTION_FILTER: return 0;
+    case RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED: return 0;
 #endif
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-    case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
+    case RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED: return 1;
 #else
-    case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
+    case RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED: return 0;
 #endif
 
 #if defined(TASKING_INTERNAL)
-    case RTC_CONFIG_TASKING_SYSTEM: return 0;
+    case RTC_DEVICE_PROPERTY_TASKING_SYSTEM: return 0;
 #endif
 
 #if defined(TASKING_TBB)
-    case RTC_CONFIG_TASKING_SYSTEM: return 1;
+    case RTC_DEVICE_PROPERTY_TASKING_SYSTEM: return 1;
 #endif
 
 #if defined(TASKING_PPL)
-    case RTC_CONFIG_TASKING_SYSTEM: return 2;
+    case RTC_DEVICE_PROPERTY_TASKING_SYSTEM: return 2;
 #endif
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
-    case RTC_CONFIG_TRIANGLE_GEOMETRY: return 1;
+    case RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_TRIANGLE_GEOMETRY: return 0;
+    case RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED: return 0;
 #endif
         
 #if defined(EMBREE_GEOMETRY_QUADS)
-    case RTC_CONFIG_QUAD_GEOMETRY: return 1;
+    case RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_QUAD_GEOMETRY: return 0;
+    case RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED: return 0;
 #endif
 
-#if defined(EMBREE_GEOMETRY_LINES)
-    case RTC_CONFIG_LINE_GEOMETRY: return 1;
+#if defined(EMBREE_GEOMETRY_CURVES)
+    case RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_LINE_GEOMETRY: return 0;
+    case RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED: return 0;
 #endif
 
-#if defined(EMBREE_GEOMETRY_HAIR)
-    case RTC_CONFIG_HAIR_GEOMETRY: return 1;
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
+    case RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_HAIR_GEOMETRY: return 0;
-#endif
-
-#if defined(EMBREE_GEOMETRY_SUBDIV)
-    case RTC_CONFIG_SUBDIV_GEOMETRY: return 1;
-#else
-    case RTC_CONFIG_SUBDIV_GEOMETRY: return 0;
+    case RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED: return 0;
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    case RTC_CONFIG_USER_GEOMETRY: return 1;
+    case RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED: return 1;
 #else
-    case RTC_CONFIG_USER_GEOMETRY: return 0;
+    case RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED: return 0;
 #endif
 
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
-    case RTC_CONFIG_COMMIT_JOIN: return 0;
+#if defined(TASKING_PPL)
+    case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 0;
+#elif defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+    case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 0;
 #else
-    case RTC_CONFIG_COMMIT_JOIN: return 1;
+    case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 1;
 #endif
 
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;
+    default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown readable property"); break;
     };
   }
 }

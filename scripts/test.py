@@ -248,8 +248,8 @@ def runConfig(config):
     conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
   if "IGNORE_INVALID_RAYS" in config:
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
-  if "INTERSECTION_FILTER" in config:
-    conf.append("-D EMBREE_INTERSECTION_FILTER="+config["INTERSECTION_FILTER"])
+  if "FILTER_FUNCTION" in config:
+    conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
   if "RAY_MASK" in config:
     conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
   if "RAY_PACKETS" in config:
@@ -260,12 +260,10 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_TRIANGLES="+config["TRIS"])
   if "QUADS" in config:
     conf.append("-D EMBREE_GEOMETRY_QUADS="+config["QUADS"])
-  if "LINES" in config:
-    conf.append("-D EMBREE_GEOMETRY_LINES="+config["LINES"])
-  if "HAIR" in config:
-    conf.append("-D EMBREE_GEOMETRY_HAIR="+config["HAIR"])
+  if "CURVES" in config:
+    conf.append("-D EMBREE_GEOMETRY_CURVES="+config["CURVES"])
   if "SUBDIV" in config:
-    conf.append("-D EMBREE_GEOMETRY_SUBDIV="+config["SUBDIV"])
+    conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
 

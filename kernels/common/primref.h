@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -29,8 +29,8 @@ namespace embree
     __forceinline PrimRef(const PrimRef& v) { 
       vfloat8::store((float*)this,vfloat8::load((float*)&v));
     }
-    __forceinline void operator=(const PrimRef& v) { 
-      vfloat8::store((float*)this,vfloat8::load((float*)&v));
+    __forceinline PrimRef& operator=(const PrimRef& v) { 
+      vfloat8::store((float*)this,vfloat8::load((float*)&v)); return *this;
     }
 #endif
 

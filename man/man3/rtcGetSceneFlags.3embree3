@@ -1,0 +1,37 @@
+.TH "rtcGetSceneFlags" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetSceneFlags\ \-\ returns\ the\ flags\ of\ the\ scene
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+enum\ RTCSceneFlags\ rtcGetSceneFlags(RTCScene\ scene);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Queries the flags of a scene.
+This function can be useful when setting individual flags, e.g.
+to just set the robust mode without changing other flags the following
+way:
+.IP
+.nf
+\f[C]
+RTCSceneFlags\ flags\ =\ rtcGetSceneFlags(scene);
+rtcSetSceneFlags(scene,\ RTC_SCENE_FLAG_ROBUST\ |\ flags);
+\f[]
+.fi
+.SS EXIT STATUS
+.PP
+On failure \f[C]RTC_SCENE_FLAG_NONE\f[] is returned and an error code is
+set that can be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetSceneFlags]

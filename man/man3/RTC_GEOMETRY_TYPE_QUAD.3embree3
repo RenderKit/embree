@@ -1,0 +1,82 @@
+.TH "RTC_GEOMETRY_TYPE_QUAD" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_QUAD\ \-\ quad\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =
+\ \ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_QUAD);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Quad meshes are created by passing \f[C]RTC_GEOMETRY_TYPE_QUAD\f[] to
+the \f[C]rtcNewGeometry\f[] function call.
+The quad indices can be specified by setting an index buffer
+(\f[C]RTC_BUFFER_TYPE_INDEX\f[] type) and the quad vertices by setting a
+vertex buffer (\f[C]RTC_BUFFER_TYPE_VERTEX\f[] type).
+See \f[C]rtcSetGeometryBuffer\f[] and
+\f[C]rtcSetSharedGeometryBuffer\f[] for more details on how to set
+buffers.
+The index buffer contains an array of four 32\-bit indices per quad
+(\f[C]RTC_FORMAT_UINT\f[] format), and the number of primitives is
+inferred from the size of that buffer.
+The vertex buffer contains an array of single precision \f[C]x\f[],
+\f[C]y\f[], \f[C]z\f[] floating point coordinates
+(\f[C]RTC_FORMAT_FLOAT3\f[] format), and the number of vertices is
+inferred from the size of that buffer.
+The vertex buffer can be at most 16 GB large.
+.PP
+A quad is internally handled as a pair of two triangles
+\f[C]v0,v1,v3\f[] and \f[C]v2,v3,v1\f[], with the
+\f[C]u\[aq]\f[]/\f[C]v\[aq]\f[] coordinates of the second triangle
+corrected by \f[C]u\ =\ 1\-u\[aq]\f[] and \f[C]v\ =\ 1\-v\[aq]\f[] to
+produce a quad parametrization where \f[C]u\f[] and \f[C]v\f[] are in
+the range 0 to 1.
+Thus the parametrization of a quad uses the first vertex \f[C]p0\f[] as
+base point, and the vector \f[C]p1\ \-\ p0\f[] as \f[C]u\f[]\-direction,
+and \f[C]p3\ \-\ p0\f[] as v\-direction.
+Thus vertex attributes \f[C]t0,t1,t2,t3\f[] can be bilinearly
+interpolated over the quadrilateral the following way:
+.IP
+.nf
+\f[C]
+t_uv\ =\ (1\-v)((1\-u)*t0\ +\ u*t1)\ +\ v*((1\-u)*t3\ +\ u*t2)
+\f[]
+.fi
+.PP
+Mixed triangle/quad meshes are supported by encoding a triangle as a
+quad, which can be achieved by replicating the last triangle vertex
+(\f[C]v0,v1,v2\f[] \-> \f[C]v0,v1,v2,v2\f[]).
+This way the second triangle is a line (which can never get hit), and
+the parametrization of the first triangle is compatible with the
+standard triangle parametrization.
+.PP
+A quad whose vertices are laid out counter\-clockwise has its geometry
+normal pointing upwards outside the front face, like illustrated in the
+following picture.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+For multi\-segment motion blur, the number of time steps must be first
+specified using the \f[C]rtcSetGeometryTimeStepCount\f[] call.
+Then a vertex buffer for each time step can be set using different
+buffer slots, and all these buffers must have the same stride and size.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

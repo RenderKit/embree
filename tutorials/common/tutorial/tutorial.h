@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -70,6 +70,10 @@ namespace embree
   public:
     TutorialApplication (const std::string& tutorialName, const int features);
     virtual ~TutorialApplication();
+
+  private:
+    TutorialApplication (const TutorialApplication& other) DELETED; // do not implement
+    TutorialApplication& operator= (const TutorialApplication& other) DELETED; // do not implement
 
   public:
     /* starts tutorial */
@@ -156,8 +160,8 @@ namespace embree
     int debug2;
     int debug3;
 
-    RTCIntersectFlags iflags_coherent;
-    RTCIntersectFlags iflags_incoherent;
+    RTCIntersectContextFlags iflags_coherent;
+    RTCIntersectContextFlags iflags_incoherent;
 
     std::unique_ptr<ISPCScene> ispc_scene;
 

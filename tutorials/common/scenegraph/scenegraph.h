@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -632,9 +632,9 @@ namespace embree
 
       SubdivMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
         : Node(true), 
-          position_subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), 
-          normal_subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY),
-          texcoord_subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY),
+          position_subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY), 
+          normal_subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY),
+          texcoord_subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY),
           material(material), tessellationRate(2.0f) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
@@ -749,29 +749,28 @@ namespace embree
       public:
         Hair () {}
         Hair (unsigned vertex, unsigned id) 
-          : vertex(vertex), id(id) {}
-
+        : vertex(vertex), id(id) {}
       public:
-        unsigned vertex,id;  //!< index of first control point and hair ID
+        unsigned vertex, id;  //!< index of first control point and hair ID
       };
       
     public:
-      HairSetNode (RTCGeometryIntersector type, RTCCurveBasis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), type(type), basis(basis), material(material), tessellation_rate(4)
+      HairSetNode (RTCGeometryType type, Ref<MaterialNode> material, size_t numTimeSteps = 0)
+        : Node(true), type(type), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometryIntersector type, RTCCurveBasis basis)
-        : Node(true), type(type), basis(basis), hairs(hairs), material(material), tessellation_rate(4) 
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, RTCGeometryType type)
+        : Node(true), type(type), hairs(hairs), material(material), tessellation_rate(4)
       {
         positions.push_back(positions_in);
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), basis(imesh->basis), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
-        hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
+        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -817,10 +816,11 @@ namespace embree
       void verify() const;
 
     public:
-      RTCGeometryIntersector type;                //!< type of geometry (hair or curve)
-      RTCCurveBasis basis;              //!< basis function of curve (bezier or bspline)
+      RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
-      std::vector<Hair> hairs;  //!< list of hairs
+      std::vector<Hair> hairs;                //!< list of hairs
+      std::vector<unsigned char> flags;       //!< left, right end cap flags
+
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
     };
@@ -828,6 +828,12 @@ namespace embree
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GEOMETRY_GROUP, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
+
+    enum CurveSubtype
+    {
+      ROUND_CURVE,
+      FLAT_CURVE
+    };
   }
 }
 

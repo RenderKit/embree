@@ -1,0 +1,33 @@
+.TH "rtcNewScene" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcNewScene\ \-\ creates\ a\ new\ scene
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCScene\ rtcNewScene(RTCDevice\ device);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+This function creates a new scene bound to the specified device
+(\f[C]device\f[] argument), and returns a handle to this scene.
+The scene object is reference counted with an initial reference count of
+1.
+The scene handle can be released using the \f[C]rtcReleaseScene\f[] API
+call.
+.SS EXIT STATUS
+.PP
+On success a scene handle is returned.
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcRetainScene], [rtcReleaseScene]

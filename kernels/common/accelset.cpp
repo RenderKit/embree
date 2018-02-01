@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,7 +20,7 @@
 namespace embree
 {
   AccelSet::AccelSet (Device* device, size_t numItems, size_t numTimeSteps) 
-    : Geometry(device,Geometry::USER_GEOMETRY,(unsigned int)numItems,(unsigned int)numTimeSteps), boundsFunc(nullptr), boundsFuncUserPtr(nullptr)
+    : Geometry(device,Geometry::USER_GEOMETRY,(unsigned int)numItems,(unsigned int)numTimeSteps), boundsFunc(nullptr)
   {
     intersectors.ptr = nullptr; 
   }

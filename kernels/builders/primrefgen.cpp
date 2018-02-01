@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -318,29 +318,29 @@ namespace embree
 
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh>(QuadMesh* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<NativeCurves>(NativeCurves* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments>(LineSegments* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES (template PrimInfo createPrimRefArray<NativeCurves>(NativeCurves* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES(template PrimInfo createPrimRefArray<LineSegments>(LineSegments* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER (template PrimInfo createPrimRefArray<AccelSet>(AccelSet* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     
     IF_ENABLED_TRIS (template PrimInfo createGroupPrimRefArray<TriangleMesh>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createGroupPrimRefArray<QuadMesh>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_HAIR (template PrimInfo createGroupPrimRefArray<NativeCurves>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_LINES(template PrimInfo createGroupPrimRefArray<LineSegments>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES (template PrimInfo createGroupPrimRefArray<NativeCurves>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES(template PrimInfo createGroupPrimRefArray<LineSegments>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER (template PrimInfo createGroupPrimRefArray<AccelSet>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<NativeCurves COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES (template PrimInfo createPrimRefArray<NativeCurves COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES(template PrimInfo createPrimRefArray<LineSegments COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES(template PrimInfo createPrimRefArray<LineSegments COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER(template PrimInfo createPrimRefArray<AccelSet COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER(template PrimInfo createPrimRefArray<AccelSet COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
 
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArrayMBlur<TriangleMesh>(size_t timeSegment COMMA Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArrayMBlur<QuadMesh>(size_t timeSegment COMMA Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_LINES(template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeSegment COMMA Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_CURVES(template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeSegment COMMA Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER(template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeSegment COMMA Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
 
     template PrimInfoMB createPrimRefArrayMSMBlur<TriangleMesh>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);

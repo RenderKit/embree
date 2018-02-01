@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -34,8 +34,8 @@ namespace embree
   {
     struct GeneralBVHBuilder
     {
-      static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximum tree depth
 
       /*! settings for SAH builder */
       struct Settings
@@ -46,17 +46,17 @@ namespace embree
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf) {}
 
         /*! initialize settings from API settings */
-        Settings (const RTCBuildSettings& settings)
+        Settings (const RTCBuildArguments& settings)
         : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
         {
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
-          if (RTC_BUILD_SETTINGS_HAS(settings,sahBlockSize      )) logBlockSize    = __bsr(settings.sahBlockSize);
-          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,travCost          )) travCost        = settings.travCost;
-          if (RTC_BUILD_SETTINGS_HAS(settings,intCost           )) intCost         = settings.intCost;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,sahBlockSize      )) logBlockSize    = __bsr(settings.sahBlockSize);
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,traversalCost     )) travCost        = settings.traversalCost;
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,intersectionCost  )) intCost         = settings.intersectionCost;
         }
 
         Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
@@ -65,10 +65,10 @@ namespace embree
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t maxDepth;         //!< maximum depth of BVH to build
         size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t minLeafSize;      //!< minimum size of a leaf
+        size_t maxLeafSize;      //!< maximum size of a leaf
         float travCost;          //!< estimated cost of one traversal step
         float intCost;           //!< estimated cost of one primitive intersection
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
@@ -133,14 +133,14 @@ namespace embree
             progressMonitor(progressMonitor)
           {
             if (cfg.branchingFactor > MAX_BRANCHING_FACTOR)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
           }
 
           const ReductionTy createLargeLeaf(const BuildRecord& current, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
             if (current.depth > cfg.maxDepth)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
             /* create leaf for few primitives */
             if (current.prims.size() <= cfg.maxLeafSize)
@@ -466,7 +466,7 @@ namespace embree
               return A;
             },std::plus<double>());
 
-          /* calculate maximal number of spatial splits per primitive */
+          /* calculate maximum number of spatial splits per primitive */
           const float f = 10.0f;
           const float invA = 1.0f / A;
           parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {
@@ -474,7 +474,7 @@ namespace embree
               for (size_t i=r.begin(); i<r.end(); i++)
               {
                 PrimRef& prim = prims[i];
-                assert((prim.lower.a & 0xFF000000) == 0);
+                assert((prim.lower.a & SPLITS_MASK) == 0);
                 const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
                 // FIXME: is there a better general heuristic ?
                 size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));

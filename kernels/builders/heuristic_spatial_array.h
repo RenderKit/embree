@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -323,7 +323,7 @@ namespace embree
 
                   const size_t ID = ext_elements.fetch_add(1);
 
-                  /* break if the number of subdivided elements are greater than the maximal allowed size */
+                  /* break if the number of subdivided elements are greater than the maximum allowed size */
                   if (unlikely(ID >= max_ext_range_size)) 
                     break;
 

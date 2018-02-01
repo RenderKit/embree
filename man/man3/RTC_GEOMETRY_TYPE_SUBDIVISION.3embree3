@@ -1,0 +1,207 @@
+.TH "RTC_GEOMETRY_TYPE_SUBDIVISION" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_SUBDIVISION\ \-\ subdivision\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =
+\ \ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_SUBDIVISION);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Catmull\-Clark subdivision meshes are supported, including support for
+edge creases, vertex creases, holes, non\-manifold geometry, and
+face\-varying interpolation.
+The number of vertices per face can be in the range of 3 to 15 vertices
+(triangles, quadrilateral, pentagons, etc).
+.PP
+Subdivision meshes are created by passing
+\f[C]RTC_GEOMETRY_TYPE_SUBDIVISION\f[] to the \f[C]rtcNewGeometry\f[]
+function.
+Various buffers need to be set by the application to set up the
+subdivision mesh.
+See \f[C]rtcSetGeometryBuffer\f[] and
+\f[C]rtcSetSharedGeometryBuffer\f[] for more details on how to set
+buffers.
+The face buffer (\f[C]RTC_BUFFER_TYPE_FACE\f[] type and
+\f[C]RTC_FORMAT_UINT\f[] format) contains the number of edges/indices of
+each face (3 to 15), and the number of faces is inferred from the size
+of this buffer.
+The index buffer (\f[C]RTC_BUFFER_TYPE_INDEX\f[] type) contains multiple
+(3 to 15) 32\-bit vertex indices (\f[C]RTC_FORMAT_UINT\f[] format) for
+each face, and the number of edges is inferred from the size of this
+buffer.
+The vertex buffer (\f[C]RTC_BUFFER_TYPE_VERTEX\f[] type) stores an array
+of single precision \f[C]x\f[], \f[C]y\f[], \f[C]z\f[] floating point
+coordinates (\f[C]RTC_FORMAT_FLOAT3\f[] format), and the number of
+vertices is inferred from the size of this buffer.
+.PP
+Optionally, the application may set additional index buffers using
+different buffer slots if multiple topologies are required for
+face\-varying interpolation.
+The standard vertex buffers (\f[C]RTC_BUFFER_TYPE_VERTEX\f[]) are always
+bound to the geometry topology (topology 0) thus use
+\f[C]RTC_BUFFER_TYPE_INDEX\f[] with buffer slot 0.
+User vertex data interpolation may use different topologies as described
+later.
+.PP
+Optionally, the application can set up the hole buffer
+(\f[C]RTC_BUFFER_TYPE_HOLE\f[]) which contains an array of 32\-bit
+indices (\f[C]RTC_FORMAT_UINT\f[] format) of faces that should be
+considered non\-existing in all topologies.
+The number of holes is inferred from the size of this buffer.
+.PP
+Optionally, the application can fill the level buffer
+(\f[C]RTC_BUFFER_TYPE_LEVEL\f[]) with a tessellation rate for each of
+the edges of each face.
+This buffer must have the same size as the index buffer.
+The tessellation level is a positive floating point value
+(\f[C]RTC_FORMAT_FLOAT\f[] format) that specifies how many quads along
+the edge should be generated during tessellation.
+If no level buffer is specified, a level of 1 is used.
+The maximally supported edge level is 4096, and larger levels are
+clamped to that value.
+Note that edges may be shared between (typically 2) faces.
+To guarantee a watertight tessellation, the level of these shared edges
+should be identical.
+A uniform tessellation rate for an entire subdivision mesh can be set by
+using the \f[C]rtcSetGeometryTessellationRate\f[] function.
+The existence of a level buffer has precedence over the uniform
+tessellation rate.
+.PP
+Optionally, the application can fill the sparse edge crease buffers to
+make edges appear sharper.
+The edge crease index buffer
+(\f[C]RTC_BUFFER_TYPE_EDGE_CREASE_INDEX\f[]) contains an array of pairs
+of 32\-bit vertex indices (\f[C]RTC_FORMAT_UINT2\f[] format) that
+specify unoriented edges in the geometry topology.
+The edge crease weight buffer
+(\f[C]RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT\f[]) stores for each of these
+crease edges a positive floating point weight (\f[C]RTC_FORMAT_FLOAT\f[]
+format).
+The number of edge creases is inferred from the size of these buffers,
+which has to be identical.
+The larger a weight, the sharper the edge.
+Specifying a weight of infinity is supported and marks an edge as
+infinitely sharp.
+Storing an edge multiple times with the same crease weight is allowed,
+but has lower performance.
+Storing an edge multiple times with different crease weights results in
+undefined behavior.
+For a stored edge (i,j), the reverse direction edges (j,i) do not have
+to be stored, as both are considered the same unoriented edge.
+Edge crease features are shared between all topologies.
+.PP
+Optionally, the application can fill the sparse vertex crease buffers to
+make vertices appear sharper.
+The vertex crease index buffer
+(\f[C]RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX\f[]), contains an array of
+32\-bit vertex indices (\f[C]RTC_FORMAT_UINT\f[] format) to specify a
+set of vertices from the geometry topology.
+The vertex crease weight buffer
+(\f[C]RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT\f[]) specifies for each of
+these vertices a positive floating point weight
+(\f[C]RTC_FORMAT_FLOAT\f[] format).
+The number of vertex creases is inferred from the size of these buffers,
+and has to be identical.
+The larger a weight, the sharper the vertex.
+Specifying a weight of infinity is supported and makes the vertex
+infinitely sharp.
+Storing a vertex multiple times with the same crease weight is allowed,
+but has lower performance.
+Storing a vertex multiple times with different crease weights results in
+undefined behavior.
+Vertex crease features are shared between all topologies.
+.PP
+Subdivision modes can be used to force linear interpolation for parts of
+the subdivision mesh; see \f[C]rtcSetGeometrySubdivisionMode\f[] for
+more details.
+.PP
+For multi\-segment motion blur, the number of time steps must be first
+specified using the \f[C]rtcSetGeometryTimeStepCount\f[] call.
+Then a vertex buffer for each time step can be set using different
+buffer slots, and all these buffers have to have the same stride and
+size.
+.PP
+Also see tutorial [Subdivision Geometry] for an example of how to create
+subdivision surfaces.
+.SS Parametrization
+.PP
+The parametrization for subdivision faces is different for
+quadrilaterals and non\-quadrilateral faces.
+.PP
+The parametrization of a quadrilateral face uses the first vertex
+\f[C]p0\f[] as base point, and the vector \f[C]p1\ \-\ p0\f[] as
+u\-direction and \f[C]p3\ \-\ p0\f[] as v\-direction.
+.PP
+The parametrization for all other face types (with number of vertices
+not equal 4), have a special parametrization where the subpatch ID
+\f[C]n\f[] (of the \f[C]n\f[]\-th quadrilateral that would be obtained
+by a single subdivision step) and the local hit location inside this
+quadrilateral are encoded in the UV coordinates.
+The following code extracts the sub\-patch ID \f[C]i\f[] and local UVs
+of this subpatch:
+.IP
+.nf
+\f[C]
+unsigned\ int\ l\ =\ floorf(0.5f*U);
+unsigned\ int\ h\ =\ floorf(0.5f*V);
+unsigned\ int\ i\ =\ 4*h+l;
+float\ u\ =\ 2.0f*fracf(0.5f*U)\-0.5f;
+float\ v\ =\ 2.0f*fracf(0.5f*V)\-0.5f;
+\f[]
+.fi
+.PP
+This encoding allows local subpatch UVs to be in the range
+\f[C][\-0.5,1.5[\f[] thus negative subpatch UVs can be passed to
+\f[C]rtcInterpolate\f[] to sample subpatches slightly out of bounds.
+This can be useful to calculate derivatives using finite differences if
+required.
+The encoding further has the property that one can just move the value
+\f[C]u\f[] (or \f[C]v\f[]) on a subpatch by adding \f[C]du\f[] (or
+\f[C]dv\f[]) to the special UV encoding as long as it does not fall out
+of the \f[C][\-0.5,1.5[\f[] range.
+.PP
+To smoothly interpolate vertex attributes over the subdivision surface
+we recommend using the \f[C]rtcInterpolate\f[] function, which will
+apply the standard subdivision rules for interpolation and automatically
+takes care of the special UV encoding for non\-quadrilaterals.
+.SS Face\-Varying Data
+.PP
+Face\-varying interpolation is supported through multiple topologies per
+subdivision mesh and binding such topologies to vertex attribute buffers
+to interpolate.
+This way, texture coordinates may use a different topology with
+additional boundaries to construct separate UV regions inside one
+subdivision mesh.
+.PP
+Each such topology \f[C]i\f[] has a separate index buffer (specified
+using \f[C]RTC_BUFFER_TYPE_INDEX\f[] with buffer slot \f[C]i\f[]) and
+separate subdivision mode that can be set using
+\f[C]rtcSetGeometrySubdivisionMode\f[].
+A vertex attribute buffer \f[C]RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE\f[]
+bound to a buffer slot \f[C]j\f[] can be assigned to use a topology for
+interpolation using the \f[C]rtcSetGeometryVertexAttributeTopology\f[]
+call.
+.PP
+The face buffer (\f[C]RTC_BUFFER_TYPE_FACE\f[] type) is shared between
+all topologies, which means that the \f[C]n\f[]\-th primitive always has
+the same number of vertices (e.g.
+being a triangle or a quad) for each topology.
+However, the indices of the topologies themselves may be different.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

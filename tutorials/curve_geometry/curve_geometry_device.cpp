@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -65,10 +65,11 @@ unsigned int hair_indices[6] = {
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, RTC_GEOMETRY_INTERSECTOR_SURFACE, RTC_BASIS_BSPLINE);
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair_indices,0,sizeof(unsigned int),NUM_CURVES);
-  rtcSetBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa),NUM_VERTICES);
-  rtcSetBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa),NUM_VERTICES);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+  rtcSetGeometryVertexAttributeCount(geom,1);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(unsigned int), NUM_CURVES);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,           0, RTC_FORMAT_FLOAT4, hair_vertices,      0, sizeof(Vec3fa),       NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, hair_vertex_colors, 0, sizeof(Vec3fa),       NUM_VERTICES);
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
@@ -79,17 +80,17 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vertex),4);
+  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vertex), 4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle), 2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
@@ -104,13 +105,13 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
+  g_scene = rtcNewScene(g_device);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -119,7 +120,7 @@ extern "C" void device_init (char* cfg)
   addCurve(g_scene,Vec3fa(0.0f,0.0f,0.0f));
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -130,13 +131,13 @@ extern "C" void device_init (char* cfg)
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRay_(ray));
+  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -148,7 +149,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     if (ray.geomID > 0)
     {
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,nullptr,nullptr,nullptr,3);
+        rtcInterpolate0(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
       }
       diffuse = 0.5f*diffuse;
     }
@@ -159,14 +160,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID) {
+    if (shadow.tfar >= 0.0f) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
       float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
       float d = clamp(-dot(lightDir,Ng),0.0f,1.0f);

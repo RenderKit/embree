@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -46,11 +46,11 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   rtcSetGeometryBuildQuality(geom, quality);
-  Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
-  for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+  Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), mesh->numVertices);
+  for (unsigned int i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -60,11 +60,11 @@ void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewQuadMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
   rtcSetGeometryBuildQuality(geom, quality);
-  Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
-  for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+  Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), mesh->numVertices);
+  for (unsigned int i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -74,20 +74,20 @@ void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = mesh->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
-  RTCGeometry geom = rtcNewSubdivisionMesh(g_device);
+  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
   rtcSetGeometryBuildQuality(geom, quality);
-  for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
-  Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),mesh->numVertices);
-  for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
-  rtcSetBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
-  rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-  rtcSetBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
-  rtcSetBuffer(geom, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int), mesh->numFaces);
-  rtcSetBuffer(geom, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
-  rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
-  rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
-  rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
-  rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
+  for (unsigned int i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
+  Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), mesh->numVertices);
+  for (unsigned int i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, mesh->subdivlevel,      0, sizeof(float),        mesh->numEdges);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,  mesh->position_indices, 0, sizeof(unsigned int), mesh->numEdges);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,  0, RTC_FORMAT_UINT,  mesh->verticesPerFace,  0, sizeof(unsigned int), mesh->numFaces);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_HOLE,  0, RTC_FORMAT_UINT,  mesh->holes,            0, sizeof(unsigned int), mesh->numFaces);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_UINT2, mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT, mesh->edge_crease_weights,   0, sizeof(float),          mesh->numEdgeCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_UINT,  mesh->vertex_creases,        0, sizeof(unsigned int),   mesh->numVertexCreases);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, mesh->vertex_crease_weights, 0, sizeof(float),          mesh->numVertexCreases);
+  rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
   mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
@@ -98,32 +98,32 @@ void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   /* if more than a single timestep, mark object as dynamic */
   RTCBuildQuality quality = hair->numTimeSteps > 1 ? RTC_BUILD_QUALITY_LOW : RTC_BUILD_QUALITY_MEDIUM;
   /* create object */
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->type, hair->basis);
+  RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
   rtcSetGeometryBuildQuality(geom, quality);
   /* generate vertex buffer */
-  Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(Vec3fa),hair->numVertices);
-  for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-  if (hair->basis != RTC_BASIS_LINEAR)
-    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+  Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), hair->numVertices);
+  for (unsigned int i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, hair->hairs, 0, sizeof(ISPCHair), hair->numHairs);
+  if (hair->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
+    rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   hair->geom.geometry = geom;
   hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
 }
 
-size_t getNumObjects(ISPCScene* scene_in) {
+unsigned int getNumObjects(ISPCScene* scene_in) {
   return scene_in->numGeometries;
 }
 
 RTCScene createScene(ISPCScene* scene_in)
 {
-  RTCScene scene = rtcDeviceNewScene(g_device);
-  rtcSetBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
+  RTCScene scene = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_DYNAMIC);
   return scene;
 }
 
-void createObject(const size_t i, ISPCScene* scene_in, RTCScene scene_out)
+void createObject(const unsigned int i, ISPCScene* scene_in, RTCScene scene_out)
 {
   ISPCGeometry* geometry = scene_in->geometries[i];
   
@@ -148,45 +148,46 @@ Vec3fa lerpr(const Vec3fa& v0, const Vec3fa& v1, const float t) {
 }
 
 
- void interpolateVertexBlock (int taskIndex, int threadIndex, const size_t numVertices,
+ void interpolateVertexBlock (int taskIndex, int threadIndex, const unsigned int numVertices,
                                   Vec3fa* vertices,
                                   const Vec3fa* const input0,
                                   const Vec3fa* const input1,
                                   const float tt)
  {
-   const size_t b = taskIndex;
-   const size_t startID = b*VERTEX_INTERPOLATION_BLOCK_SIZE;
-   const size_t endID = min(startID + VERTEX_INTERPOLATION_BLOCK_SIZE,numVertices);
-   for (size_t i=startID; i<endID; i++)
+   const unsigned int b = taskIndex;
+   const unsigned int startID = b*VERTEX_INTERPOLATION_BLOCK_SIZE;
+   const unsigned int endID = min(startID + VERTEX_INTERPOLATION_BLOCK_SIZE,numVertices);
+   for (unsigned int i=startID; i<endID; i++)
      vertices[i] = lerpr(input0[i],input1[i],tt);
  }
 
 
 void interpolateVertices(RTCGeometry geom,
-                         const size_t numVertices,
+                         const unsigned int numVertices,
                          const Vec3fa* const input0,
                          const Vec3fa* const input1,
                          const float tt)
   {
-    Vec3fa* vertices = (Vec3fa*) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
+    Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_VERTEX, 0);
 #if 1
-    const size_t blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
+    const unsigned int blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
     parallel_for(size_t(0),size_t(blocks),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       interpolateVertexBlock((int)i,threadIndex,numVertices,vertices,input0,input1,tt);
   }); 
 #else
-    for (size_t i=0; i<numVertices; i++)
+    for (unsigned int i=0; i<numVertices; i++)
       vertices[i] = lerpr(input0[i],input1[i],tt);
 #endif
+    rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0);
     rtcCommitGeometry(geom);
   }
 
   void updateVertexData(const unsigned int ID,
                         ISPCScene* scene_in,
                         RTCScene scene_out,
-                        const size_t keyFrameID,
+                        const unsigned int keyFrameID,
                         const float tt)
   {
     ISPCGeometry* geometry = scene_in->geometries[ID];
@@ -201,8 +202,8 @@ void interpolateVertices(RTCGeometry geom,
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
-      const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
-      const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
+      const unsigned int t0 = (keyFrameID+0) % mesh->numTimeSteps;
+      const unsigned int t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const Vec3fa* const input0 = mesh->positions[t0];
       const Vec3fa* const input1 = mesh->positions[t1];
       interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
@@ -212,8 +213,8 @@ void interpolateVertices(RTCGeometry geom,
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
-      const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
-      const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
+      const unsigned int t0 = (keyFrameID+0) % mesh->numTimeSteps;
+      const unsigned int t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const Vec3fa* const input0 = mesh->positions[t0];
       const Vec3fa* const input1 = mesh->positions[t1];
       interpolateVertices(geometry->geometry, mesh->numVertices, input0, input1, tt);
@@ -260,19 +261,19 @@ void renderTileStandard(int taskIndex,
     Ray& ray = rays[N++];
     bool mask = 1; { // invalidates inactive rays
       ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
-      ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar());
+    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar);
 
     RayStats_addRay(stats);
   }
 
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
-  rtcIntersect1M(g_scene,&context,(RTCRay*)&rays,N,sizeof(Ray));
+  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays,N,sizeof(Ray));
 
   /* shade stream of rays */
   Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
@@ -317,28 +318,28 @@ void renderTileStandard(int taskIndex,
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
-        for (size_t n=0;n<N;n++)
+        for (unsigned int n=0;n<N;n++)
         {
           Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
-          const Vec3fa hitpos = ray.org + ray.dir * ray.tfar();
+          const Vec3fa hitpos = ray.org + ray.dir * ray.tfar;
           const Vec3fa shadow_org = hitpos - ray.org;
           init_Ray(ray, ls_positions[i], shadow_org, 1E-4f, valid ? 0.99f : -1.0f);
           RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
 #if 0
-        for (size_t n=0;n<N;n++)
+        for (unsigned int n=0;n<N;n++)
           rtcOccluded1(g_scene,&context,RTCRay_(rays[n]));
 #else
         rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,N,sizeof(Ray));
 #endif
         /* modify pixel color based on occlusion */
-        for (size_t n=0;n<N;n++)
-          if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
+        for (unsigned int n=0;n<N;n++)
+          if (rays[n].tfar >= 0.0f)
             colors[n] = colors[n] * 0.1f;
 
       }
@@ -386,21 +387,21 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* create scene */
   g_scene = createScene(g_ispc_scene);
 
   /* create objects */
-  size_t numObjects = getNumObjects(g_ispc_scene);
+  unsigned int numObjects = getNumObjects(g_ispc_scene);
 
-  for (size_t i=0;i<numObjects;i++)
+  for (unsigned int i=0;i<numObjects;i++)
     createObject(i,g_ispc_scene,g_scene);
 
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
@@ -434,7 +435,7 @@ extern "C" void device_render (int* pixels,
     dg.P  = Vec3fa(0.0f,0.0f,0.0f);
     dg.Ng = Vec3fa(0.0f,0.0f,0.0f);
     dg.Ns = dg.Ng;
-    for (size_t i=0; i<g_ispc_scene->numLights; i++)
+    for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
     {
       const Light* l = g_ispc_scene->lights[i];
       const Vec2f sample = Vec2f(0.0f,0.0f);
@@ -463,19 +464,19 @@ extern "C" void device_render (int* pixels,
 
   if (animTime < 0.0f) animTime = getTime();
   const double atime = (getTime() - animTime) * ANIM_FPS;
-  const size_t intpart = (size_t)floor(atime);
+  const unsigned int intpart = (unsigned int)floor(atime);
   const double fracpart = atime - (double)intpart;
-  const size_t keyFrameID = intpart;
+  const unsigned int keyFrameID = intpart;
 
-  size_t numObjects = getNumObjects(g_ispc_scene);
-  for (size_t i=0;i<numObjects;i++)
+  unsigned int numObjects = getNumObjects(g_ispc_scene);
+  for (unsigned int i=0;i<numObjects;i++)
     updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
   /* =========== */
   /* rebuild bvh */
   /* =========== */
 
-  rtcCommit(g_scene);
+  rtcCommitScene(g_scene);
 
 #endif
 }

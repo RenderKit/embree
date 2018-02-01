@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -46,7 +46,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
-                                                                                                       RayK<K>** inputPackets,
+                                                                                                       RayHitK<K>** inputPackets,
                                                                                                        size_t numOctantRays,
                                                                                                        IntersectContext* context)
     {
@@ -58,7 +58,7 @@ namespace embree
       __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
-      const size_t m_active = initPacketsAndFrustum<false>(inputPackets, numOctantRays, packets, frustum, commonOctant);
+      const size_t m_active = initPacketsAndFrustum((RayK<K>**)inputPackets, numOctantRays, packets, frustum, commonOctant);
       if (unlikely(m_active == 0)) return;
 
       /* case of non-common origin */
@@ -66,7 +66,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->intersect(inputPackets[i]->tnear() <= inputPackets[i]->tfar(), *inputPackets[i], context);
+          This->intersect(inputPackets[i]->tnear() <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
@@ -143,7 +143,7 @@ namespace embree
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          p.tfar = min(p.tfar, inputPackets[i]->tfar());
+          p.tfar = min(p.tfar, inputPackets[i]->tfar);
         };
 
       } // traversal + intersection
@@ -171,7 +171,7 @@ namespace embree
       __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
-      size_t m_active = initPacketsAndFrustum<true>(inputPackets, numOctantRays, packets, frustum, commonOctant);
+      size_t m_active = initPacketsAndFrustum(inputPackets, numOctantRays, packets, frustum, commonOctant);
 
       /* valid rays */
       if (unlikely(m_active == 0)) return;
@@ -181,7 +181,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->occluded(inputPackets[i]->tnear() <= inputPackets[i]->tfar(), *inputPackets[i], context);
+          This->occluded(inputPackets[i]->tnear() <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
@@ -258,7 +258,7 @@ namespace embree
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);
+          inputPackets[i]->tfar = select(m_hit & m_valid, vfloat<K>(neg_inf), inputPackets[i]->tfar);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         }
 
@@ -283,7 +283,7 @@ namespace embree
       for (size_t i = 0; i < numPackets; i++)
       {
         const vfloat<K> tnear  = inputPackets[i]->tnear();
-        const vfloat<K> tfar   = inputPackets[i]->tfar();
+        const vfloat<K> tfar   = inputPackets[i]->tfar;
         vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
         m_active |= (size_t)movemask(m_valid) << (K*i);
         const Vec3vf<K>& org = inputPackets[i]->org;
@@ -374,7 +374,7 @@ namespace embree
           const size_t k = rayID % K;
           if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
           {
-            ray.geomID[k] = 0;
+            ray.tfar[k] = neg_inf;
             terminated |= (size_t)1 << rayID;
           }
 
@@ -413,7 +413,7 @@ namespace embree
 
     template<int N, int Nx, int K>
     void BVHNIntersectorStreamPacketFallback<N, Nx, K>::intersect(Accel::Intersectors* __restrict__ This,
-                                                                  RayK<K>** inputRays,
+                                                                  RayHitK<K>** inputRays,
                                                                   size_t numTotalRays,
                                                                   IntersectContext* context)
     {
@@ -422,8 +422,8 @@ namespace embree
       {
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear() <= ray.tfar();
+        RayHitK<K>& ray = *(inputRays[i / K]);
+        valid &= ray.tnear() <= ray.tfar;
         This->intersect(valid, ray, context);
       }
     }
@@ -440,7 +440,7 @@ namespace embree
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
         RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear() <= ray.tfar();
+        valid &= ray.tnear() <= ray.tfar;
         This->occluded(valid, ray, context);
       }
     }

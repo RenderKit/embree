@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2017 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -16,6 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(instanced_geometry)
+ADD_TUTORIAL_ISPC(instanced_geometry)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_TEST(instanced_geometry)

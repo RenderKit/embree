@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -32,7 +32,7 @@ namespace embree
   namespace avx2      { extern type name(); }                           \
   namespace avx512knl { extern type name(); }                           \
   namespace avx512skx { extern type name(); }                           \
-  void name##_error2() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
+  void name##_error2() { throw_RTCError(RTC_ERROR_UNKNOWN,"internal error in ISA selection for " TOSTRING(name)); } \
   type name##_error() { return type(name##_error2); }                   \
   type name##_zero() { return type(nullptr); }
 
@@ -43,7 +43,7 @@ namespace embree
   namespace avx2      { extern type symbol(args); }                       \
   namespace avx512knl { extern type symbol(args); }                       \
   namespace avx512skx { extern type symbol(args); }                     \
-  inline type symbol##_error(args) { throw_RTCError(RTC_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
+  inline type symbol##_error(args) { throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
   typedef type (*symbol##Ty)(args);                                       \
   
 #define DEFINE_ISA_FUNCTION(type,symbol,args)   \

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,7 +37,7 @@ namespace embree
       init(first_half_edge,vertices,stride);
     }
     
-    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferRefT<Vec3fa>& vertices) {
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferView<Vec3fa>& vertices) {
       init(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
     
@@ -306,7 +306,7 @@ namespace embree
       init(h,vertices,stride);
     }
 
-    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferRefT<Vec3fa>& vertices) {
+    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferView<Vec3fa>& vertices) {
       init(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
 

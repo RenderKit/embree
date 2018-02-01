@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -137,19 +137,20 @@ namespace embree
 
         /* call displacement shader */
         if (unlikely(geom->displFunc)) {
-          RTCDisplacementFunctionArguments args;
-          args.geomUserPtr = geom->userPtr;
-          args.geomID = patch.geomID();
+          RTCDisplacementFunctionNArguments args;
+          args.geometryUserPtr = geom->userPtr;
+          args.geometry = (RTCGeometry)geom;
+          //args.geomID = patch.geomID();
           args.primID = patch.primID();
-          args.time = patch.time();
+          args.timeStep = patch.time();
           args.u = grid_u;
           args.v = grid_v;
-          args.nx = grid_Ng_x;
-          args.ny = grid_Ng_y;
-          args.nz = grid_Ng_z;
-          args.px = grid_x;
-          args.py = grid_y;
-          args.pz = grid_z;
+          args.Ng_x = grid_Ng_x;
+          args.Ng_y = grid_Ng_y;
+          args.Ng_z = grid_Ng_z;
+          args.P_x = grid_x;
+          args.P_y = grid_y;
+          args.P_z = grid_z;
           args.N = dwidth*dheight;
           geom->displFunc(&args);
         }
@@ -197,19 +198,20 @@ namespace embree
           if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
-            RTCDisplacementFunctionArguments args;
-            args.geomUserPtr = geom->userPtr;
-            args.geomID = patch.geomID();
+            RTCDisplacementFunctionNArguments args;
+            args.geometryUserPtr = geom->userPtr;
+            args.geometry = (RTCGeometry)geom;
+            //args.geomID = patch.geomID();
             args.primID = patch.primID();
-            args.time = patch.time();
+            args.timeStep = patch.time();
             args.u = &u[0];
             args.v = &v[0];
-            args.nx = &normal.x[0];
-            args.ny = &normal.y[0];
-            args.nz = &normal.z[0];
-            args.px = &vtx.x[0];
-            args.py = &vtx.y[0];
-            args.pz = &vtx.z[0];
+            args.Ng_x = &normal.x[0];
+            args.Ng_y = &normal.y[0];
+            args.Ng_z = &normal.z[0];
+            args.P_x = &vtx.x[0];
+            args.P_y = &vtx.y[0];
+            args.P_z = &vtx.z[0];
             args.N = VSIZEX;
             geom->displFunc(&args);
           }
@@ -271,19 +273,20 @@ namespace embree
         /* call displacement shader */
         if (unlikely(geom->displFunc))
         {
-          RTCDisplacementFunctionArguments args;
-          args.geomUserPtr = geom->userPtr;
-          args.geomID = patch.geomID();
+          RTCDisplacementFunctionNArguments args;
+          args.geometryUserPtr = geom->userPtr;
+          args.geometry = (RTCGeometry)geom;
+          //args.geomID = patch.geomID();
           args.primID = patch.primID();
-          args.time = patch.time();
+          args.timeStep = patch.time();
           args.u = grid_u;
           args.v = grid_v;
-          args.nx = grid_Ng_x;
-          args.ny = grid_Ng_y;
-          args.nz = grid_Ng_z;
-          args.px = grid_x;
-          args.py = grid_y;
-          args.pz = grid_z;
+          args.Ng_x = grid_Ng_x;
+          args.Ng_y = grid_Ng_y;
+          args.Ng_z = grid_Ng_z;
+          args.P_x = grid_x;
+          args.P_y = grid_y;
+          args.P_z = grid_z;
           args.N = dwidth*dheight;
           geom->displFunc(&args);
         }
@@ -371,19 +374,20 @@ namespace embree
           if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
-            RTCDisplacementFunctionArguments args;
-            args.geomUserPtr = geom->userPtr;
-            args.geomID = patch.geomID();
+            RTCDisplacementFunctionNArguments args;
+            args.geometryUserPtr = geom->userPtr;
+            args.geometry = (RTCGeometry)geom;
+            //args.geomID = patch.geomID();
             args.primID = patch.primID();
-            args.time = patch.time();
+            args.timeStep = patch.time();
             args.u = &u[0];
             args.v = &v[0];
-            args.nx = &normal.x[0];
-            args.ny = &normal.y[0];
-            args.nz = &normal.z[0];
-            args.px = &vtx.x[0];
-            args.py = &vtx.y[0];
-            args.pz = &vtx.z[0];
+            args.Ng_x = &normal.x[0];
+            args.Ng_y = &normal.y[0];
+            args.Ng_z = &normal.z[0];
+            args.P_x = &vtx.x[0];
+            args.P_y = &vtx.y[0];
+            args.P_z = &vtx.z[0];
             args.N = VSIZEX;
             geom->displFunc(&args);
           }

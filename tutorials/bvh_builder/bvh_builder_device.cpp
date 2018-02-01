@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -105,27 +105,38 @@ namespace embree
   void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
     RTCDevice device = rtcNewDevice(cfg);
-    rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor,nullptr);
+    rtcSetDeviceMemoryMonitorFunction(device,memoryMonitor,nullptr);
 
     RTCBVH bvh = rtcNewBVH(device);
-
-    /* settings for BVH build */
-    RTCBuildSettings settings;
-    settings.size = sizeof(settings);
-    settings.quality = quality;
-    settings.maxBranchingFactor = 2;
-    settings.maxDepth = 1024;
-    settings.sahBlockSize = 1;
-    settings.minLeafSize = 1;
-    settings.maxLeafSize = 1;
-    settings.travCost = 1.0f;
-    settings.intCost = 1.0f;
-    settings.extraSpace = (unsigned int)extraSpace;
 
     avector<RTCBuildPrimitive> prims;
     prims.reserve(prims_i.size()+extraSpace);
     prims.resize(prims_i.size());
 
+    /* settings for BVH build */
+    RTCBuildArguments arguments = rtcDefaultBuildArguments();
+    arguments.byteSize = sizeof(arguments);
+    arguments.buildFlags = RTC_BUILD_FLAG_DYNAMIC;
+    arguments.buildQuality = quality;
+    arguments.maxBranchingFactor = 2;
+    arguments.maxDepth = 1024;
+    arguments.sahBlockSize = 1;
+    arguments.minLeafSize = 1;
+    arguments.maxLeafSize = 1;
+    arguments.traversalCost = 1.0f;
+    arguments.intersectionCost = 1.0f;
+    arguments.bvh = bvh;
+    arguments.primitives = prims.data();
+    arguments.primitiveCount = prims.size();
+    arguments.primitiveArrayCapacity = prims.capacity();
+    arguments.createNode = InnerNode::create;
+    arguments.setNodeChildren = InnerNode::setChildren;
+    arguments.setNodeBounds = InnerNode::setBounds;
+    arguments.createLeaf = LeafNode::create;
+    arguments.splitPrimitive = splitPrimitive;
+    arguments.buildProgress = buildProgress;
+    arguments.userPtr = nullptr;
+    
     for (size_t i=0; i<10; i++)
     {
       /* we recreate the prims array here, as the builders modify this array */
@@ -133,14 +144,12 @@ namespace embree
 
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(bvh,&settings,prims.data(),prims.size(),
-                                       InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,splitPrimitive,buildProgress,nullptr);
+      Node* root = (Node*) rtcBuildBVH(&arguments);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
     }
 
-    rtcMakeStaticBVH(bvh);
     rtcReleaseBVH(bvh);
   }
 
@@ -149,10 +158,10 @@ namespace embree
   {
     /* create new Embree device */
     g_device = rtcNewDevice(cfg);
-    error_handler(nullptr,rtcDeviceGetError(g_device));
+    error_handler(nullptr,rtcGetDeviceError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
     /* set start render mode */
     renderTile = renderTileStandard;

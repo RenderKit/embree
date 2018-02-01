@@ -1,0 +1,32 @@
+.TH "rtcCommitGeometry" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcCommitGeometry\ \-\ commits\ geometry\ changes
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcCommitGeometry(RTCGeometry\ geometry);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcCommitGeometry\f[] function is used to commit all geometry
+changes performed to a geometry (\f[C]geometry\f[] parameter).
+After a geometry gets modified, this function must be called to properly
+update the internal state of the geometry to perform interpolations
+using \f[C]rtcInterpolate\f[] or to commit a scene containing the
+geometry using \f[C]rtcCommitScene\f[].
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcInterpolate], [rtcCommitScene]

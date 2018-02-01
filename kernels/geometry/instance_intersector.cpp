@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,8 +23,8 @@ namespace embree
   {
     void InstanceBoundsFunction(const struct RTCBoundsFunctionArguments* const args)
     {
-      const Instance* instance = (const Instance*) args->geomUserPtr;
-      unsigned int itime = args->time;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
+      unsigned int itime = args->timeStep;
 
       assert(itime < instance->numTimeSteps);
       unsigned num_time_segments = instance->numTimeSegments();
@@ -44,83 +44,83 @@ namespace embree
 
     __forceinline void FastInstanceIntersectorN::intersect1(const struct RTCIntersectFunctionNArguments* const args)
     {
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
-      Ray& ray = *(Ray*)args->ray;
+      Ray& ray = *(Ray*)args->rayhit;
       
       const AffineSpace3fa world2local = 
-        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time());
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
-      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());      
-      user_context->instID = instance->geomID;
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.time());      
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
-      instance->object->intersectors.intersect((RTCRay&)ray,&context);
-      user_context->instID = -1;
+      instance->object->intersectors.intersect((RTCRayHit&)ray,&context);
+      user_context->instID[0] = -1;
       ray.org = ray_org;
-      ray.dir = Vec3fa(ray_dir,ray.tfar());
+      ray.dir = ray_dir;
     }
     
     __forceinline void FastInstanceIntersectorN::occluded1(const struct RTCOccludedFunctionNArguments* const args)
     {
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
-      Ray& ray = *(Ray*)args->ray;
+      RayHit& ray = *(RayHit*)args->ray;
       
       const AffineSpace3fa world2local = 
-        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time());
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = Vec3fa(xfmPoint (world2local,ray_org),ray.tnear());
-      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.tfar());
-      user_context->instID = instance->geomID;
+      ray.dir = Vec3fa(xfmVector(world2local,ray_dir),ray.time());
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       instance->object->intersectors.occluded((RTCRay&)ray,&context);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
 
     template<int K>
-    __forceinline void intersectObject(vint<K>* valid, Scene* object, IntersectContext* context, RayK<K>& ray);
+    __forceinline void intersectObject(vint<K>* valid, Scene* object, IntersectContext* context, RayHitK<K>& ray);
     template<int K>
-    __forceinline void occludedObject(vint<K>* valid, Scene* object, IntersectContext* context, RayK<K>& ray);
+    __forceinline void occludedObject(vint<K>* valid, Scene* object, IntersectContext* context, RayHitK<K>& ray);
         
 #if defined (__SSE__)
-    template<> __forceinline void intersectObject<4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.intersect4(valid,(RTCRay4&)ray,context); }
-    template<> __forceinline void occludedObject <4>(vint4* valid, Scene* object, IntersectContext* context, Ray4& ray) { object->intersectors.occluded4 (valid,(RTCRay4&)ray,context); }
+    template<> __forceinline void intersectObject<4>(vint4* valid, Scene* object, IntersectContext* context, RayHit4& ray) { object->intersectors.intersect4(valid,(RTCRayHit4&)ray,context); }
+    template<> __forceinline void occludedObject <4>(vint4* valid, Scene* object, IntersectContext* context, RayHit4& ray) { object->intersectors.occluded4 (valid,(RTCRay4&)ray,context); }
 #endif
 #if defined (__AVX__)
-    template<> __forceinline void intersectObject<8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.intersect8(valid,(RTCRay8&)ray,context); }
-    template<> __forceinline void occludedObject <8>(vint8* valid, Scene* object, IntersectContext* context, Ray8& ray) { object->intersectors.occluded8 (valid,(RTCRay8&)ray,context); }
+    template<> __forceinline void intersectObject<8>(vint8* valid, Scene* object, IntersectContext* context, RayHit8& ray) { object->intersectors.intersect8(valid,(RTCRayHit8&)ray,context); }
+    template<> __forceinline void occludedObject <8>(vint8* valid, Scene* object, IntersectContext* context, RayHit8& ray) { object->intersectors.occluded8 (valid,(RTCRay8&)ray,context); }
 #endif
 #if defined (__AVX512F__)
-    template<> __forceinline void intersectObject<16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.intersect16(valid,(RTCRay16&)ray,context); }
-    template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->intersectors.occluded16 (valid,(RTCRay16&)ray,context); }
+    template<> __forceinline void intersectObject<16>(vint16* valid, Scene* object, IntersectContext* context, RayHit16& ray) { object->intersectors.intersect16(valid,(RTCRayHit16&)ray,context); }
+    template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, RayHit16& ray) { object->intersectors.occluded16 (valid,(RTCRay16&)ray,context); }
 #endif
 
     template<int N>
     __noinline void FastInstanceIntersectorN::intersectN(const struct RTCIntersectFunctionNArguments* const args)
     {
       const vint<N>* validi = (const vint<N>*) args->valid;
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayK<N>& ray = *(RayK<N>*)args->ray;
+      RayHitK<N>& ray = *(RayHitK<N>*)args->rayhit;
       
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
-      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time);
+      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time());
 
       const Vec3vf<N> ray_org = ray.org;
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context); 
       intersectObject((vint<N>*)validi,instance->object,&context,ray);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
@@ -129,23 +129,23 @@ namespace embree
     __noinline void FastInstanceIntersectorN::occludedN(const struct RTCOccludedFunctionNArguments* const args)
     {
       const vint<N>* validi = (const vint<N>*) args->valid;
-      const Instance* instance = (const Instance*) args->geomUserPtr;
+      const Instance* instance = (const Instance*) args->geometryUserPtr;
       RTCIntersectContext* user_context = args->context;
-      RayK<N>& ray = *(RayK<N>*)args->ray;
+      RayHitK<N>& ray = *(RayHitK<N>*)args->ray;
       
       AffineSpace3vf<N> world2local;
       const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
-      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time);
+      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time());
 
       const Vec3vf<N> ray_org = ray.org;
       const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      user_context->instID = instance->geomID;
+      user_context->instID[0] = instance->geomID;
       IntersectContext context(instance->object,user_context);
       occludedObject((vint<N>*)validi,instance->object,&context,ray);
-      user_context->instID = -1;
+      user_context->instID[0] = -1;
       ray.org = ray_org;
       ray.dir = ray_dir;
     }

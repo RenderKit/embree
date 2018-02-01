@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,21 +23,23 @@ struct Ray1
   uniform Vec3f org;     //!< Ray origin
   uniform float tnear;   //!< Start of ray segment
   uniform Vec3f dir;     //!< Ray direction
-  uniform float tfar;    //!< End of ray segment
   uniform float time;    //!< Time of this ray for motion blur.
+  uniform float tfar;    //!< End of ray segment
   uniform int mask;      //!< used to mask out objects during traversal
+  uniform int id;        //!< ray ID
+  uniform int flags;     //!< ray flags
   uniform Vec3f Ng;      //!< Geometric normal.
   uniform float u;       //!< Barycentric u coordinate of hit
   uniform float v;       //!< Barycentric v coordinate of hit
-  uniform int geomID;    //!< geometry ID
   uniform int primID;    //!< primitive ID
+  uniform int geomID;    //!< geometry ID
   uniform int instID;    //!< instance ID
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
-inline uniform RTCRay1* uniform RTCRay1_(uniform Ray1& ray)
+inline uniform RTCRayHit* uniform RTCRayHit1_(uniform Ray1& ray)
 {
-  uniform RTCRay1* uniform ray_ptr = (uniform RTCRay1* uniform)&ray;
+  uniform RTCRayHit* uniform ray_ptr = (uniform RTCRayHit* uniform)&ray;
   return ray_ptr;
 }
 
@@ -48,21 +50,35 @@ struct Ray
   Vec3f org;     //!< Ray origin
   float tnear;   //!< Start of ray segment
   Vec3f dir;     //!< Ray direction
-  float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
+  float tfar;    //!< End of ray segment
   int mask;      //!< used to mask out objects during traversal
+  int id;        //!< ray ID
+  int flags;     //!< ray flags
   Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
   int primID;    //!< primitive ID
+  int geomID;    //!< geometry ID
   int instID;    //!< instance ID
 };
+
+inline varying RTCRayHit* uniform RTCRayHit_(varying Ray& ray)
+{
+  varying RTCRayHit* uniform ray_ptr = (varying RTCRayHit* uniform)&ray;
+  return ray_ptr;
+}
 
 inline varying RTCRay* uniform RTCRay_(varying Ray& ray)
 {
   varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
   return ray_ptr;
+}
+
+inline varying RTCHit* uniform RTCHit_(varying Ray& ray)
+{
+  varying RTCHit* uniform hit_ptr = (varying RTCHit* uniform)&(ray.Ng.x);
+  return hit_ptr;
 }
 
 /*! Constructs a ray from origin, direction, and ray segment. Near
@@ -79,10 +95,10 @@ inline Ray make_Ray(const Vec3f org,
 {
   Ray ray;
   ray.org   = org;
-  ray.dir   = dir;
   ray.tnear = tnear;
-  ray.tfar  = tfar;
+  ray.dir   = dir;  
   ray.time  = time;
+  ray.tfar  = tfar;
   ray.mask  = -1;
   ray.geomID = geomID;
   ray.primID = primID;
@@ -102,10 +118,10 @@ inline void init_Ray(Ray &ray,
                      const int instID = -1)
 {
   ray.org   = org;
-  ray.dir   = dir;
   ray.tnear = tnear;
-  ray.tfar  = tfar;
+  ray.dir   = dir;
   ray.time  = time;
+  ray.tfar  = tfar;
   ray.mask  = -1;
   ray.geomID = geomID;
   ray.primID = primID;
@@ -125,6 +141,6 @@ struct IntersectContext
 
 inline void InitIntersectionContext(uniform IntersectContext* uniform context)
 {
-  rtcInitIntersectionContext(&context->context);
+  rtcInitIntersectContext(&context->context);
   context->userRayExt = NULL;
 }

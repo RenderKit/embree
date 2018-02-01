@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -31,7 +31,7 @@ namespace embree
       case USER_GEOMETRY: scene->instanced.numUserGeometries += f*ssize_t(geom->size()); break;
       case BEZIER_CURVES: scene->instanced.numBezierCurves   += f*ssize_t(geom->size()); break;
       case SUBDIV_MESH  : scene->instanced.numSubdivPatches  += f*ssize_t(geom->size()); break;
-      default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry ");
+      default           : throw_RTCError(RTC_ERROR_INVALID_OPERATION,"cannot instantiate this geometry ");
       };
     }
     else
@@ -41,7 +41,7 @@ namespace embree
       case USER_GEOMETRY: scene->instancedMB.numUserGeometries += f*ssize_t(geom->size()); break;
       case BEZIER_CURVES: scene->instancedMB.numBezierCurves   += f*ssize_t(geom->size()); break;
       case SUBDIV_MESH  : scene->instancedMB.numSubdivPatches  += f*ssize_t(geom->size()); break;
-      default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry");
+      default           : throw_RTCError(RTC_ERROR_INVALID_OPERATION,"cannot instantiate this geometry");
       };
     }
   }
@@ -62,7 +62,6 @@ namespace embree
   void GeometryInstance::disabling() 
   {
     geom->used--;
-     geom->used++;
     if (geom->getType() == Geometry::GROUP) {
       Ref<GeometryGroup> group = geom.dynamicCast<GeometryGroup>();
       for (size_t i=0; i<group->size(); i++)
@@ -82,7 +81,7 @@ namespace embree
   void GeometryInstance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (timeStep != 0)
-      throw_RTCError(RTC_INVALID_OPERATION,"geometry instances only support a single timestep");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry instances only support a single timestep");
 
     local2world = xfm;
     world2local = rcp(xfm);

@@ -1,0 +1,71 @@
+.TH "RTC_GEOMETRY_TYPE_USER" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_USER\ \-\ user\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =
+\ \ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_USER);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+User\-defined geometries contain a number of user\-defined primitives,
+just like triangle meshes contain multiple triangles.
+The shape of the user\-defined primitives is specified through
+registered callback functions, which enable extending Embree with
+arbitrary types of primitives.
+.PP
+User\-defined geometries are created by passing
+\f[C]RTC_GEOMETRY_TYPE_USER\f[] to the \f[C]rtcNewGeometry\f[] function
+call.
+One has to set the number of primitives (see
+\f[C]rtcSetGeometryUserPrimitiveCount\f[]), a user data pointer (see
+\f[C]rtcSetGeometryUserData\f[]), a bounding function closure (see
+\f[C]rtcSetGeometryBoundsFunction\f[]), as well as user\-defined
+intersect (see \f[C]rtcSetGeometryIntersectFunction\f[]) and occluded
+(see \f[C]rtcSetGeometryOccludedFunction\f[]) callback functions.
+The bounding function is used to query the bounds of all time steps of a
+user primitive, while the intersect and occluded callback functions are
+called to intersect the primitive with a ray.
+The user data pointer is passed to each callback invocation and can be
+used to point to the application\[aq]s representation of the user
+geometry.
+.PP
+The creation of a user geometry typically looks the following:
+.IP
+.nf
+\f[C]
+RTCGeometry\ geometry\ =\ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_USER);
+rtcSetGeometryUserPrimitiveCount(geometry,\ numPrimitives);
+rtcSetGeometryUserData(geometry,\ userGeometryRepresentation);
+rtcSetGeometryBoundsFunction(geometry,\ boundsFunction);
+rtcSetGeometryIntersectFunction(geometry,\ intersectFunction);
+rtcSetGeometryOccludedFunction(geometry,\ occludedFunction);
+\f[]
+.fi
+.PP
+Please have a look at the \f[C]rtcSetGeometryBoundsFunction\f[],
+\f[C]rtcSetGeometryIntersectFunction\f[], and
+\f[C]rtcSetGeometryOccludedFunction\f[] functions on the implementation
+of the callback functions.
+.PP
+See tutorial [User Geometry] for an example of how to use the
+user\-defined geometries.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry], [rtcSetGeometryUserPrimitiveCount],
+[rtcSetGeometryUserData], [rtcSetGeometryBoundsFunction],
+[rtcSetGeometryIntersectFunction], [rtcSetGeometryOccludedFunction]

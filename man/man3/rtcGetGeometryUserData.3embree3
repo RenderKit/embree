@@ -1,0 +1,31 @@
+.TH "rtcGetGeometryUserData" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetGeometryUserData\ \-\ returns\ the\ user\ data\ pointer
+\ \ of\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void*\ rtcGetGeometryUserData(RTCGeometry\ geometry);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetGeometryUserData\f[] function queries the user data
+pointer previously set with \f[C]rtcSetGeometryUserData\f[].
+When \f[C]rtcSetGeometryUserData\f[] was not called yet, \f[C]NULL\f[]
+is returned.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryUserData]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -64,295 +64,312 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setGeometryIntersector(RTCGeometryIntersector type_in)
-  {
-    if (type_in != RTC_GEOMETRY_INTERSECTOR_SURFACE)
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry intersector");
-    
-    Geometry::update();
-  }
-  
   void SubdivMesh::setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)
   {
     if (topologyID >= topology.size())
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid topology ID");
     topology[topologyID].setSubdivisionMode(mode);
+    Geometry::update();
   }
 
-  void SubdivMesh::setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer)
+  void SubdivMesh::setVertexAttributeTopology(unsigned int vertexAttribID, unsigned int topologyID)
   {
-    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+(int)userbuffers.size()) {
-      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+(int)topology.size()) {
-        unsigned vid = vertexBuffer & 0xFFFF;
-        unsigned iid = indexBuffer & 0xFFFF;
-        if ((unsigned)userbuffers[vid].userdata != iid) {
-          userbuffers[vid].userdata = iid;
+    if (vertexAttribID < vertexAttribs.size()){
+      if (topologyID < topology.size()) {
+        if ((unsigned)vertexAttribs[vertexAttribID].userData != topologyID) {
+          vertexAttribs[vertexAttribID].userData = topologyID;
           commitCounter++; // triggers recalculation of cached interpolation data
         }
       } else {
-        throw_RTCError(RTC_INVALID_OPERATION,"invalid index buffer specified");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid topology specified");
       }
     } else {
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid vertex buffer specified");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute specified");
     }
   }
 
-  void* SubdivMesh::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
-  { 
-    /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-
-    if (type != RTC_LEVEL_BUFFER)
-      commitCounter++;
-
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      if (bid >= vertices.size()) {
-        vertices.resize(bid+1);
-        vertex_buffer_tags.resize(bid+1);
-      }
-      vertices[bid].newBuffer(device,size,stride);
-      setNumTimeSteps((unsigned int)vertices.size());
-      return vertices[bid].get();
-    }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) {
-        userbuffers.resize(bid+1);
-        user_buffer_tags.resize(bid+1);
-      }
-      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
-      return userbuffers[bid].get();
-    }
-    else if (type == RTC_FACE_BUFFER) 
-    {
-      faceVertices.newBuffer(device,size,stride);
-      setNumPrimitives(size);
-      return faceVertices.get();
-      // if (isEnabled() && size != (size_t)-1) disabling();
-      // faceVertices.set(ptr,offset,stride,size);
-      // setNumPrimitives(size);
-      // if (isEnabled() && size != (size_t)-1) enabling();
-    }
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-    {
-      int begin = (int)topology.size();
-      if (bid >= topology.size()) {
-        topology.resize(bid+1);
-        for (size_t i=begin; i<topology.size(); i++)
-          topology[i] = Topology(this);
-      }
-      topology[bid].vertexIndices.newBuffer(device,size,stride);
-      return topology[bid].vertexIndices.get();
-    }
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER) {
-      edge_creases.newBuffer(device,size,stride);
-      return edge_creases.get();
-    }
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER) {
-      edge_crease_weights.newBuffer(device,size,stride);
-      return edge_crease_weights.get();
-    }
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER) {
-      vertex_creases.newBuffer(device,size,stride);
-      return vertex_creases.get();
-    }
-
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER) {
-      vertex_crease_weights.newBuffer(device,size,stride);
-      return vertex_crease_weights.get();
-    }
-
-    else if (type == RTC_HOLE_BUFFER) {
-      holes.newBuffer(device,size,stride);
-      return holes.get();
-    }
-
-    else if (type == RTC_LEVEL_BUFFER) {
-      levels.newBuffer(device,size,stride);
-      return levels.get();
-    }
-
-    else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-
-    return nullptr;
-  }
-
-  void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
-  { 
-    /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-
-    if (type != RTC_LEVEL_BUFFER)
-      commitCounter++;
-
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      if (bid >= vertices.size()) {
-        vertices.resize(bid+1);
-        vertex_buffer_tags.resize(bid+1);
-      }
-      vertices[bid].set(device,ptr,offset,stride,size); 
-      vertices[bid].checkPadding16();
-      /*while (vertices.size() > 1 && vertices.back().getPtr() == nullptr) {
-        vertices.pop_back();
-        vertex_buffer_tags.pop_back();
-        }*/
-      setNumTimeSteps((unsigned int)vertices.size());
-    }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
-    {
-      if (bid >= userbuffers.size()) {
-        userbuffers.resize(bid+1);
-        user_buffer_tags.resize(bid+1);
-      }
-      userbuffers[bid] = APIBuffer<char>(device,size,stride);
-      userbuffers[bid].set(device,ptr,offset,stride,size);  
-      userbuffers[bid].checkPadding16();
-    }
-    else if (type == RTC_FACE_BUFFER) 
-    {
-      faceVertices.set(device,ptr,offset,stride,size);
-      setNumPrimitives(size);
-    }
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER_(RTC_MAX_INDEX_BUFFERS))
-    {
-      int begin = (int)topology.size();
-      if (bid >= topology.size()) {
-        topology.resize(bid+1);
-        for (size_t i=begin; i<topology.size(); i++)
-          topology[i] = Topology(this);
-      }
-      topology[bid].vertexIndices.set(device,ptr,offset,stride,size);
-    }
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
-      edge_creases.set(device,ptr,offset,stride,size);
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
-      edge_crease_weights.set(device,ptr,offset,stride,size);
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
-      vertex_creases.set(device,ptr,offset,stride,size);
-
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
-      vertex_crease_weights.set(device,ptr,offset,stride,size);
-
-    else if (type == RTC_HOLE_BUFFER)
-      holes.set(device,ptr,offset,stride,size);
-
-    else if (type == RTC_LEVEL_BUFFER)
-      levels.set(device,ptr,offset,stride,size);
-
-    else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-  }
-
-  void* SubdivMesh::getBuffer(RTCBufferType type) 
+  void SubdivMesh::setNumTimeSteps (unsigned int numTimeSteps)
   {
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps))
-      return vertices[bid].get();
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].vertexIndices.get();
-
-    else if (type == RTC_FACE_BUFFER)
-      return faceVertices.get();
-
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
-      return edge_creases.get(); 
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
-      return edge_crease_weights.get(); 
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
-      return vertex_creases.get(); 
-    
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
-      return vertex_crease_weights.get();
-
-    else if (type == RTC_HOLE_BUFFER)
-      return holes.get();
-
-    else if (type == RTC_LEVEL_BUFFER)
-      return levels.get(); 
-
-    else 
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
-
-    return nullptr;
+    vertices.resize(numTimeSteps);
+    vertex_buffer_tags.resize(numTimeSteps);
+    Geometry::setNumTimeSteps(numTimeSteps);
   }
 
-  void SubdivMesh::update ()
+  void SubdivMesh::setVertexAttributeCount (unsigned int N)
   {
-    faceVertices.setModified(true);
-    holes.setModified(true);
-    for (auto& buffer : vertices) buffer.setModified(true); 
-    levels.setModified(true);
-    edge_creases.setModified(true);
-    edge_crease_weights.setModified(true);
-    vertex_creases.setModified(true);
-    vertex_crease_weights.setModified(true); 
-    for (auto& t : topology) t.update();
+    vertexAttribs.resize(N);
+    vertex_attrib_buffer_tags.resize(N);
     Geometry::update();
   }
 
-  void SubdivMesh::updateBuffer (RTCBufferType type)
+  void SubdivMesh::setTopologyCount (unsigned int N)
   {
-    if (type != RTC_LEVEL_BUFFER)
+    if (N == 0)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"at least one topology has to exist")
+        
+    size_t begin = topology.size();
+    topology.resize(N);
+    for (size_t i = begin; i < topology.size(); i++)
+      topology[i] = Topology(this);
+  }
+  
+  void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
+  { 
+    /* verify that all accesses are 4 bytes aligned */
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
+
+    if (type != RTC_BUFFER_TYPE_LEVEL)
       commitCounter++;
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(numTimeSteps))
-      vertices[bid].setModified(true);
-    
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
-      userbuffers[bid].setModified(true);
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
 
-    else if (type == RTC_FACE_BUFFER)
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid vertex buffer slot");
+
+      vertices[slot].set(buffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
+      vertexAttribs[slot].set(buffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_FACE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid face buffer format");
+
+      faceVertices.set(buffer, offset, stride, num, format);
+      setNumPrimitives(num);
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (format != RTC_FORMAT_UINT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid face buffer format");
+
+      if (slot >= topology.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid index buffer slot");
+
+      topology[slot].vertexIndices.set(buffer, offset, stride, num, format);
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT2)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid edge crease index buffer format");
+
+      edge_creases.set(buffer, offset, stride, num, format);
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_FLOAT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid edge crease weight buffer format");
+
+      edge_crease_weights.set(buffer, offset, stride, num, format);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex crease index buffer format");
+
+      vertex_creases.set(buffer, offset, stride, num, format);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_FLOAT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex crease weight buffer format");
+
+      vertex_crease_weights.set(buffer, offset, stride, num, format);
+    }
+    else if (type == RTC_BUFFER_TYPE_HOLE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid hole buffer format");
+
+      holes.set(buffer, offset, stride, num, format);
+    }
+    else if (type == RTC_BUFFER_TYPE_LEVEL)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_FLOAT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid level buffer format");
+
+      levels.set(buffer, offset, stride, num, format);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown buffer type");
+    }
+  }
+
+  void* SubdivMesh::getBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertices[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertexAttribs[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_FACE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return faceVertices.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot >= topology.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return topology[slot].vertexIndices.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return edge_creases.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return edge_crease_weights.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertex_creases.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertex_crease_weights.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_HOLE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return holes.getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_LEVEL)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return levels.getPtr();
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+      return nullptr;
+    }
+  }
+
+  void SubdivMesh::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type != RTC_BUFFER_TYPE_LEVEL)
+      commitCounter++;
+
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_FACE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       faceVertices.setModified(true);
-
-    else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].vertexIndices.setModified(true);
-
-    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot >= topology.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      topology[slot].vertexIndices.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       edge_creases.setModified(true);
-
-    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+    }
+    else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       edge_crease_weights.setModified(true);
-
-    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertex_creases.setModified(true);
-
-    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertex_crease_weights.setModified(true);
-
-    else if (type == RTC_HOLE_BUFFER)
+    }
+    else if (type == RTC_BUFFER_TYPE_HOLE)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       holes.setModified(true);
-
-    else if (type == RTC_LEVEL_BUFFER)
+    }
+    else if (type == RTC_BUFFER_TYPE_LEVEL)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       levels.setModified(true);
-
+    }
     else
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
 
     Geometry::update();
   }
 
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunction func, RTCBounds* bounds) 
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunctionN func) 
   {
     this->displFunc   = func;
-    if (bounds) this->displBounds = *(BBox3fa*)bounds; 
-    else        this->displBounds = empty;
+    this->displBounds = empty;
   }
 
   void SubdivMesh::setTessellationRate(float N)
@@ -368,7 +385,7 @@ namespace embree
   }
 
   SubdivMesh::Topology::Topology(SubdivMesh* mesh)
-    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
+    : mesh(mesh), subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
   {
   }
   
@@ -376,7 +393,7 @@ namespace embree
   {
     if (subdiv_mode == mode) return;
     subdiv_mode = mode;
-    mesh->updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
+    mesh->updateBuffer(RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0);
   }
   
   void SubdivMesh::Topology::update () {
@@ -386,7 +403,7 @@ namespace embree
   bool SubdivMesh::Topology::verify (size_t numVertices) 
   {
     size_t ofs = 0;
-    for (size_t i=0; i<mesh->faceVertices.size(); i++) 
+    for (size_t i=0; i<mesh->size(); i++) 
     {
       int valence = mesh->faceVertices[i];
       for (size_t j=ofs; j<ofs+valence; j++) 
@@ -530,15 +547,15 @@ namespace embree
         for (size_t i=0; i<mesh->faceVertices[f]; i++) 
         {
           /* pin corner vertices when requested by user */
-          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge[i].isCorner())
+          if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge[i].isCorner())
             edge[i].vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
             edge[i].vertex_crease_weight = float(inf);
 
           /* pin all edges and vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_ALL) {
             edge[i].edge_crease_weight = float(inf);
             edge[i].vertex_crease_weight = float(inf);
           }
@@ -587,15 +604,15 @@ namespace embree
 	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
 
           /* pin corner vertices when requested by user */
-          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge.isCorner())
+          if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge.isCorner())
             edge.vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge.vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_BOUNDARY && edge.vertexHasBorder()) 
             edge.vertex_crease_weight = float(inf);
 
           /* pin every vertex when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+          else if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_ALL) {
             edge.edge_crease_weight = float(inf);
             edge.vertex_crease_weight = float(inf);
           }
@@ -703,8 +720,8 @@ namespace embree
     /* create interpolation cache mapping for interpolatable meshes */
     for (size_t i=0; i<vertex_buffer_tags.size(); i++)
       vertex_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertices[i].getStride()));
-    for (size_t i=0; i<userbuffers.size(); i++)
-      if (userbuffers[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(userbuffers[i].getStride()));
+    for (size_t i=0; i<vertexAttribs.size(); i++)
+      if (vertexAttribs[i]) vertex_attrib_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertexAttribs[i].getStride()));
 
     /* cleanup some state for static scenes */
     if (scene == nullptr || scene->isStaticAccel()) 
@@ -744,8 +761,8 @@ namespace embree
     if (!topology[0].verify(numVertices()))
       return false;
 
-    for (auto& b : userbuffers)
-      if (!topology[b.userdata].verify(b.size()))
+    for (auto& b : vertexAttribs)
+      if (!topology[b.userData].verify(b.size()))
         return false;
 
     /*! verify vertices */
@@ -771,28 +788,40 @@ namespace embree
       return new SubdivMeshISA(device);
     }
     
-    void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
+    void SubdivMeshISA::interpolate(const RTCInterpolateArguments* const args)
     {
+      unsigned int primID = args->primID;
+      float u = args->u;
+      float v = args->v;
+      RTCBufferType bufferType = args->bufferType;
+      unsigned int bufferSlot = args->bufferSlot;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* dPdv = args->dPdv;
+      float* ddPdudu = args->ddPdudu;
+      float* ddPdvdv = args->ddPdvdv;
+      float* ddPdudv = args->ddPdudv;
+      unsigned int valueCount = args->valueCount;
+      
       /* calculate base pointer and stride */
-      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
+      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEP_COUNT) ||
+             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot < RTC_MAX_USER_VERTEX_BUFFERS));
       const char* src = nullptr; 
       size_t stride = 0;
-      size_t bufID = buffer&0xFFFF;
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
-      if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-        assert(bufID < userbuffers.size());
-        src    = userbuffers[bufID].getPtr();
-        stride = userbuffers[bufID].getStride();
-        baseEntry = &user_buffer_tags[bufID];
-        int topologyID = userbuffers[bufID].userdata;
+      if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        assert(bufferSlot < vertexAttribs.size());
+        src    = vertexAttribs[bufferSlot].getPtr();
+        stride = vertexAttribs[bufferSlot].getStride();
+        baseEntry = &vertex_attrib_buffer_tags[bufferSlot];
+        int topologyID = vertexAttribs[bufferSlot].userData;
         topo = &topology[topologyID];
       } else {
-        assert(bufID < numTimeSteps);
-        src    = vertices[bufID].getPtr();
-        stride = vertices[bufID].getStride();
-        baseEntry = &vertex_buffer_tags[bufID];
+        assert(bufferSlot < numTimeSteps);
+        src    = vertices[bufferSlot].getPtr();
+        stride = vertices[bufferSlot].getStride();
+        baseEntry = &vertex_buffer_tags[bufferSlot];
         topo = &topology[0];
       }
       
@@ -800,7 +829,7 @@ namespace embree
       bool has_dP = dPdu;     assert(!has_dP  || dPdv);
       bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
       
-      for (unsigned int i=0; i<numFloats; i+=4)
+      for (unsigned int i=0; i<valueCount; i+=4)
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
         isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),commitCounter,
@@ -813,19 +842,19 @@ namespace embree
                                         has_ddP ? &ddPdudvt : nullptr);
         
         if (has_P) {
-          for (size_t j=i; j<min(i+4,numFloats); j++) 
+          for (size_t j=i; j<min(i+4,valueCount); j++) 
             P[j] = Pt[j-i];
         }
         if (has_dP) 
         {
-          for (size_t j=i; j<min(i+4,numFloats); j++) {
+          for (size_t j=i; j<min(i+4,valueCount); j++) {
             dPdu[j] = dPdut[j-i];
             dPdv[j] = dPdvt[j-i];
           }
         }
         if (has_ddP) 
         {
-          for (size_t j=i; j<min(i+4,numFloats); j++) {
+          for (size_t j=i; j<min(i+4,valueCount); j++) {
             ddPdudu[j] = ddPdudut[j-i];
             ddPdvdv[j] = ddPdvdvt[j-i];
             ddPdudv[j] = ddPdudvt[j-i];
@@ -834,37 +863,50 @@ namespace embree
       }
     }
     
-    void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                                     RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+    void SubdivMeshISA::interpolateN(const RTCInterpolateNArguments* const args)
     {
+      const void* valid_i = args->valid;
+      const unsigned* primIDs = args->primIDs;
+      const float* u = args->u;
+      const float* v = args->v;
+      unsigned int N = args->N;
+      RTCBufferType bufferType = args->bufferType;
+      unsigned int bufferSlot = args->bufferSlot;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* dPdv = args->dPdv;
+      float* ddPdudu = args->ddPdudu;
+      float* ddPdvdv = args->ddPdvdv;
+      float* ddPdudv = args->ddPdudv;
+      unsigned int valueCount = args->valueCount;
+    
       /* calculate base pointer and stride */
-      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
+      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEP_COUNT) ||
+             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot < RTC_MAX_USER_VERTEX_BUFFERS));
       const char* src = nullptr; 
       size_t stride = 0;
-      size_t bufID = buffer&0xFFFF;
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
-      if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-        assert(bufID < userbuffers.size());
-        src    = userbuffers[bufID].getPtr();
-        stride = userbuffers[bufID].getStride();
-        baseEntry = &user_buffer_tags[bufID];
-        int topologyID = userbuffers[bufID].userdata;
+      if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        assert(bufferSlot < vertexAttribs.size());
+        src    = vertexAttribs[bufferSlot].getPtr();
+        stride = vertexAttribs[bufferSlot].getStride();
+        baseEntry = &vertex_attrib_buffer_tags[bufferSlot];
+        int topologyID = vertexAttribs[bufferSlot].userData;
         topo = &topology[topologyID];
       } else {
-        assert(bufID < numTimeSteps);
-        src    = vertices[bufID].getPtr();
-        stride = vertices[bufID].getStride();
-        baseEntry = &vertex_buffer_tags[bufID];
+        assert(bufferSlot < numTimeSteps);
+        src    = vertices[bufferSlot].getPtr();
+        stride = vertices[bufferSlot].getStride();
+        baseEntry = &vertex_buffer_tags[bufferSlot];
         topo = &topology[0];
       }
       
       const int* valid = (const int*) valid_i;
       
-      for (size_t i=0; i<numUVs; i+=4) 
+      for (size_t i=0; i<N; i+=4) 
       {
-        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(int(numUVs));
+        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(int(N));
         if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) continue;
         
@@ -874,18 +916,18 @@ namespace embree
         
         foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
                        {
-                         for (unsigned int j=0; j<numFloats; j+=4) 
+                         for (unsigned int j=0; j<valueCount; j+=4) 
                          {
-                           const size_t M = min(4u,numFloats-j);
+                           const size_t M = min(4u,valueCount-j);
                            isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),commitCounter,
                                                                             topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                                            P ? P+j*numUVs+i : nullptr,
-                                                                            dPdu ? dPdu+j*numUVs+i : nullptr,
-                                                                            dPdv ? dPdv+j*numUVs+i : nullptr,
-                                                                            ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
-                                                                            ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
-                                                                            ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
-                                                                            numUVs,M);
+                                                                            P ? P+j*N+i : nullptr,
+                                                                            dPdu ? dPdu+j*N+i : nullptr,
+                                                                            dPdv ? dPdv+j*N+i : nullptr,
+                                                                            ddPdudu ? ddPdudu+j*N+i : nullptr,
+                                                                            ddPdvdv ? ddPdvdv+j*N+i : nullptr,
+                                                                            ddPdudv ? ddPdudv+j*N+i : nullptr,
+                                                                            N,M);
                          }
                        });
       }

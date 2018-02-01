@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -865,15 +865,15 @@ extern uniform int g_spp;
 extern uniform bool g_accumulate;
 
 /* occlusion filter function */
-unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 
-unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args);
+unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args);
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -903,25 +903,25 @@ void assignShaders(ISPCGeometry* uniform geometry)
   if (geometry->type == SUBDIV_MESH)
   {
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(geom,intersectionFilterReject);
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(geom,intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
 #endif
@@ -930,29 +930,29 @@ void assignShaders(ISPCGeometry* uniform geometry)
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(geom,intersectionFilterReject);
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(geom,intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
   }
   else if (geometry->type == CURVES)
   {
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterHair);
   }
 #endif
   else if (geometry->type == GROUP) {
     ISPCGroup* uniform group = (ISPCGroup* uniform) geometry;
-    for (uniform size_t i=0; i<group->numGeometries; i++)
+    for (uniform unsigned int i=0; i<group->numGeometries; i++)
       assignShaders(group->geometries[i]);
   }
 }
@@ -962,7 +962,7 @@ typedef uniform ISPCGeometry* uniform ISPCGeometry_ptr;
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
-  for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+  for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
@@ -981,15 +981,15 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
 
   /* commit changes to scene */
   //progressStart();
-  //rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
-  rtcCommit (scene_out);
-  //rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
+  //rtcSetSceneProgressMonitorFunction(scene_out,progressMonitor,NULL);
+  rtcCommitScene (scene_out);
+  //rtcSetSceneProgressMonitorFunction(scene_out,NULL,NULL);
   //progressEnd();
 
   return scene_out;
@@ -1149,7 +1149,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     if (g_use_smooth_normals)
     {
       Vec3f dPdu,dPdv;
-      rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+      rtcInterpolateV1(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
     
@@ -1161,7 +1161,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
   {
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     
-    if (mesh->basis == RTC_BASIS_LINEAR)
+    if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
     {
       materialID = mesh->geom.materialID;
       const Vec3f dx = normalize(dg.Ng);
@@ -1170,10 +1170,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
       dg.Tx = dx;
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
-      int vtx = mesh->hairs[dg.primID].vertex;
-      dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
-    else if (mesh->basis == RTC_BASIS_BEZIER || mesh->basis == RTC_BASIS_BSPLINE)
+    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
     {
       uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
       materialID = mesh->geom.materialID;
@@ -1183,17 +1184,19 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
         dg.Ty = make_Vec3f(0,1,0);
         dg.Ng = dg.Ns = make_Vec3f(0,0,1);
       }
-      else if (mesh->type == RTC_GEOMETRY_INTERSECTOR_RIBBON)
+      else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
+               mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
       {
+        if (reduce_max(abs(dg.Ng)) < 1E-6f) dg.Ng = make_Vec3f(1,1,1);
         const Vec3f dx = normalize(dg.Ng);
         const Vec3f dy = normalize(cross(neg(ray.dir),dx));
         const Vec3f dz = normalize(cross(dy,dx));
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.eps = 1.1f*p.w;
       }
-      else if (mesh->type == RTC_GEOMETRY_INTERSECTOR_SURFACE)
+      else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
+               mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
       {
         const Vec3f dx = normalize(make_Vec3f(dp));
         const Vec3f dy = normalize(cross(make_Vec3f(dp),dg.Ng));
@@ -1214,7 +1217,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     assert(false);
 
   if (max(max(abs(dg.Ns.x), abs(dg.Ns.y)), abs(dg.Ns.z)) < 1E-4f)
-	dg.Ns = make_Vec3f(1, 0, 0);
+    dg.Ns = make_Vec3f(1, 0, 0);
 }
 
 AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
@@ -1266,38 +1269,39 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args)
 {
   assert(args->N == programCount);
   bool valid = *((varying int* uniform) args->valid);
   if (!valid) return;
 }
 
-unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
   
-  const uniform size_t rayID = 0;
+  const uniform unsigned int rayID = 0;
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
+  const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1327,7 +1331,7 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform c
     valid_i[programIndex] = 0;
 }
 
-unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
@@ -1342,35 +1346,37 @@ unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform c
   *transparency = make_Vec3f(0.0f);
 }
 
-unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
-  struct RTCRayN* uniform _ray = args->ray;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
   
-  const uniform size_t rayID = 0;
+  const uniform unsigned int rayID = 0;
   varying Ray *uniform ray = (varying Ray* uniform)_ray;
 
   /* compute differential geometry */
-  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
+  const float tfar          = ray->tfar;
+
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1393,23 +1399,23 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform cons
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform const args)
+unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
   uniform int* uniform valid_i = args->valid;
-  struct RTCHitN* uniform potentialHit = args->potentialHit;
+  struct RTCHitN* uniform hit = args->hit;
   const uniform unsigned int N = args->N;
   
   assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
   
-  const uniform size_t rayID = 0;
+  const uniform unsigned int rayID = 0;
   
-  unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  unsigned int hit_geomID = RTCHitN_geomID(hit,N,rayID);
   Vec3f Kt = make_Vec3f(0.0f);
   foreach_unique(geomID in hit_geomID)
   {
@@ -1456,7 +1462,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     uniform IntersectContext context;
     InitIntersectionContext(&context);
     context.context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect(g_scene,&context.context,RTCRay_(ray));
+    rtcIntersectV(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1466,7 +1472,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       //L = L + Lw*make_Vec3f(1.0f);
 
       /* iterate over all lights */
-      for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (uniform unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         const uniform Light* uniform l = g_ispc_scene->lights[i];
         Light_EvalRes le = l->eval(l,dg,ray.dir);
@@ -1509,7 +1515,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
     /* iterate over lights */
     context.context.flags = g_iflags_incoherent;
-    for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+    for (uniform unsigned int i=0; i<g_ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = g_ispc_scene->lights[i];
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
@@ -1517,7 +1523,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded(g_scene,&context.context,RTCRay_(shadow));
+      rtcOccludedV(g_scene,&context.context,RTCRay_(shadow));
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
@@ -1603,7 +1609,7 @@ task void renderTileTask(uniform int* uniform pixels,
 
 /***************************************************************************************/
 
-inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform unsigned int e0, const uniform unsigned int e1)
 {
   const uniform Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const uniform Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
@@ -1613,20 +1619,20 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
-void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
+void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform unsigned int startID, uniform unsigned int endID )
 {
-  for (uniform size_t f=startID; f<endID;f++)
+  for (uniform unsigned int f=startID; f<endID;f++)
   {
     uniform unsigned int e = mesh->face_offsets[f];
     uniform unsigned int N = mesh->verticesPerFace[f];
     if (N == 4) /* fast path for quads */
-      for (uniform size_t i=0; i<4; i++)
+      for (uniform unsigned int i=0; i<4; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
        else if (N == 3) /* fast path for triangles */
-         for (uniform size_t i=0; i<3; i++)
+         for (uniform unsigned int i=0; i<3; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
        else /* fast path for general polygons */
-         for (uniform size_t i=0; i<N; i++)
+         for (uniform unsigned int i=0; i<N; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
   }
 }
@@ -1634,16 +1640,16 @@ void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform 
 #if defined(ISPC)
 task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
 {
-  const uniform size_t size = mesh->numFaces;
-  const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
-  const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
+  const uniform unsigned int size = mesh->numFaces;
+  const uniform unsigned int startID = ((taskIndex+0)*size)/taskCount;
+  const uniform unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
 #endif
 
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
-  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
+  for (uniform unsigned int g=0; g<scene_in->numGeometries; g++)
   {
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
@@ -1653,7 +1659,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry,RTC_BUFFER_TYPE_LEVEL,0);
     rtcCommitGeometry(geometry->geometry);
   }
 }
@@ -1669,18 +1675,14 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
+  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
-
-#if ENABLE_FILTER_FUNCTION == 0
-  print("Warning: filter functions disabled\n");
-#endif
 
 } // device_init
 
@@ -1695,7 +1697,7 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
 
   /* create accumulator */
@@ -1704,7 +1706,7 @@ export void device_render (uniform int* uniform pixels,
     g_accu = uniform new uniform Vec3fa[width*height];
     g_accu_width = width;
     g_accu_height = height;
-    for (uniform size_t i=0; i<width*height; i++)
+    for (uniform unsigned int i=0; i<width*height; i++)
       g_accu[i] = make_Vec3fa(0.0f);
   }
 
@@ -1718,12 +1720,12 @@ export void device_render (uniform int* uniform pixels,
   if (camera_changed)
   {
     g_accu_count=0;
-    for (uniform size_t i=0; i<width*height; i++)
+    for (uniform unsigned int i=0; i<width*height; i++)
       g_accu[i] = make_Vec3fa(0.0f);
 
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
     }
   }
   else

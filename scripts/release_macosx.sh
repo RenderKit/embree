@@ -33,8 +33,8 @@ cmake \
 -D CMAKE_INSTALL_PREFIX=/opt/local \
 -D CMAKE_INSTALL_INCLUDEDIR=include \
 -D CMAKE_INSTALL_LIBDIR=lib \
--D CMAKE_INSTALL_DOCDIR=../../Applications/Embree2/doc \
--D CMAKE_INSTALL_BINDIR=../../Applications/Embree2/bin \
+-D CMAKE_INSTALL_DOCDIR=../../Applications/Embree3/doc \
+-D CMAKE_INSTALL_BINDIR=../../Applications/Embree3/bin \
 -D EMBREE_TBB_ROOT=/opt/local \
 ..
 make -j 4 package

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -258,7 +258,7 @@ float Noise(float x, float y, float z)
           hairs.push_back(SceneGraph::HairSetNode::Hair(unsigned(v_index),0) );
         }
       }
-      scene->add(new SceneGraph::HairSetNode(positions,hairs,material,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER));
+      scene->add(new SceneGraph::HairSetNode(positions,hairs,material,RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE));
     }
   }
 

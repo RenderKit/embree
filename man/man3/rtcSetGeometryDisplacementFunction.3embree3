@@ -1,0 +1,91 @@
+.TH "rtcSetGeometryDisplacementFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryDisplacementFunction\ \-\ sets\ the\ displacement\ function
+\ \ for\ a\ subdivision\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCDisplacementFunctionNArguments
+{
+\ \ void*\ geometryUserPtr;
+\ \ RTCGeometry\ geometry;
+\ \ unsigned\ int\ primID;
+\ \ unsigned\ int\ timeStep;
+\ \ const\ float*\ u;
+\ \ const\ float*\ v;
+\ \ const\ float*\ Ng_x;
+\ \ const\ float*\ Ng_y;
+\ \ const\ float*\ Ng_z;
+\ \ float*\ P_x;
+\ \ float*\ P_y;
+\ \ float*\ P_z;
+\ \ unsigned\ int\ N;
+};
+
+typedef\ void\ (*RTCDisplacementFunctionN)(
+\ \ \ const\ struct\ RTCDisplacementFunctionNArguments*\ args
+);
+
+void\ rtcSetGeometryDisplacementFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCDisplacementFunctionN\ displacement
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryDisplacementFunction\f[] function registers a
+displacement callback function (\f[C]displacement\f[] argument) for the
+specified subdivision geometry (\f[C]geometry\f[] argument).
+.PP
+Only a single callback function can be registered per geometry, and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
+.PP
+The registered displacement callback function is invoked to displace
+points on the subdivision geometry during spatial acceleration structure
+construction, during the \f[C]rtcCommitScene\f[] call.
+.PP
+The callback function of type \f[C]RTCDisplacementFunctionN\f[] is
+invoked with a number of arguments stored inside the
+\f[C]RTCDisplacementFunctionNArguments\f[] structure.
+The provided user data pointer of the geometry (\f[C]geometryUserPtr\f[]
+member) can be used to point to the application\[aq]s representation of
+the subdivision mesh.
+A number \f[C]N\f[] of points to displace are specified in a structure
+of array layout.
+For each point to displace, the local patch UV coordinates (\f[C]u\f[]
+and \f[C]v\f[] arrays), the normalized geometry normal (\f[C]Ng_x\f[],
+\f[C]Ng_y\f[], and \f[C]Ng_z\f[] arrays), and the position
+(\f[C]P_x\f[], \f[C]P_y\f[], and \f[C]P_z\f[] arrays) are provided.
+The task of the displacement function is to use this information and
+change the position data.
+.PP
+The geometry handle (\f[C]geometry\f[] member) and primitive ID
+(\f[C]primID\f[] member) of the patch to displace are additionally
+provided as well as the time step \f[C]timeStep\f[], which can be
+important if the displacement is time\-dependent and motion blur is
+used.
+.PP
+All passed arrays must be aligned to 64 bytes and properly padded to
+make wide vector processing inside the displacement function easily
+possible.
+.PP
+Also see tutorial [Displacement Geometry] for an example of how to use
+the displacement mapping functions.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_SUBDIVISION]

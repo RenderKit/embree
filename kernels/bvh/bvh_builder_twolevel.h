@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -116,9 +116,28 @@ namespace embree
       void open_sequential(const size_t extSize);
 
     public:
+      
+      struct BuilderState
+      {
+        BuilderState ()
+        : builder(nullptr), quality(RTC_BUILD_QUALITY_LOW) {}
+
+        BuilderState (const Ref<Builder>& builder, RTCBuildQuality quality)
+        : builder(builder), quality(quality) {}
+        
+        void clear() {
+          builder = nullptr;
+          quality = RTC_BUILD_QUALITY_LOW;
+        }
+        
+        Ref<Builder> builder;
+        RTCBuildQuality quality;
+      };
+      
+    public:
       BVH* bvh;
       std::vector<BVH*>& objects;
-      std::vector<Builder*> builders;
+      std::vector<BuilderState> builders;
       
     public:
       Scene* scene;

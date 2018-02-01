@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -31,7 +31,7 @@ namespace embree
 
   public:
 
-    /* Returns maximal number of stored primitives */
+    /* Returns maximum number of stored primitives */
     static __forceinline size_t max_size() { return 1; }
 
     /* Returns required number of primitive blocks for N primitives */
@@ -46,8 +46,12 @@ namespace embree
     __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID)
       : vertexID(vertexID), geom(geomID), prim(primID) {}
 
+    /* Returns the geometry ID */
+    template<class T>
+    static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
+
     /*! returns geometry ID */
-    __forceinline unsigned geomID() const { return geom; }
+    __forceinline unsigned geomID() const { return unmask(geom); }
 
     /*! returns primitive ID */
     __forceinline unsigned primID() const { return prim; }
@@ -61,7 +65,9 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
+      /* encode the RTCCurveFlags into the two most significant bits */
+      const unsigned int mask = curves->getStartEndBitMask(primID);
+      new (this) Bezier1i(vertexID,geomID | mask,primID);
     }
 
     /*! fill curve from curve list */
@@ -73,7 +79,9 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
+      /* encode the RTCCurveFlags into the two most significant bits */
+      const unsigned int mask = curves->getStartEndBitMask(primID);
+      new (this) Bezier1i(vertexID,geomID | mask,primID);
       return curves->linearBounds(primID,time_range);
     }
 

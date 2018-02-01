@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -120,7 +120,7 @@ namespace embree
     };
 
   /*! allocator for IDs */
-  template<typename T>
+  template<typename T, size_t max_id>
     struct IDPool
     {
       typedef T value_type;
@@ -139,7 +139,11 @@ namespace embree
         } 
 
         /* allocate new ID */
-        else {
+        else
+        {
+          if (size_t(nextID)+1 > max_id)
+            return -1;
+          
           return nextID++;
         }
       }
@@ -147,6 +151,9 @@ namespace embree
       /* adds an ID provided by the user */
       bool add(T id)
       {
+        if (id > max_id)
+          return false;
+        
         /* check if ID should be in IDs set */
         if (id < nextID) {
           auto p = IDs.find(id);

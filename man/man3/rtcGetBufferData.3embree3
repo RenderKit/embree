@@ -1,0 +1,28 @@
+.TH "rtcGetBufferData" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetBufferData\ \-\ gets\ a\ pointer\ to\ the\ buffer\ data
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void*\ rtcGetBufferData(RTCBuffer\ buffer);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetBufferData\f[] function returns a pointer to the buffer
+data of the specified buffer object (\f[C]buffer\f[] argument).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewBuffer]

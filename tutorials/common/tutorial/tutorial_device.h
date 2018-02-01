@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -49,11 +49,11 @@ enum Mode {
 };
 
 extern "C" Mode g_mode;
-extern "C" RTCIntersectFlags g_iflags_coherent;
-extern "C" RTCIntersectFlags g_iflags_incoherent;
+extern "C" RTCIntersectContextFlags g_iflags_coherent;
+extern "C" RTCIntersectContextFlags g_iflags_incoherent;
 
 /* error reporting function */
-void error_handler(void* userPtr, const RTCError code, const char* str = nullptr);
+void error_handler(void* userPtr, RTCError code, const char* str = nullptr);
 
 /* returns time stamp counter */
 extern "C" int64_t get_tsc();
@@ -171,5 +171,14 @@ inline void RayStats_addShadowRay(RayStats& stats) {}
 #endif
 
 extern "C" RayStats* g_stats;
+
+inline bool nativePacketSupported(RTCDevice device)
+{
+  if (sizeof(float) == 1*4) return true;
+  else if (sizeof(float) == 4*4) return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED);
+  else if (sizeof(float) == 8*4) return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED);
+  else if (sizeof(float) == 16*4) return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED);
+  else return false;
+}
 
 } // namespace embree
