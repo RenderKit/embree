@@ -19,7 +19,7 @@
 #include "primitive.h"
 #include "bezier1i.h"
 
-#define USE_ALIGNED_SPACE 1
+#define HAIR_LEAF_MODE 0
 
 namespace embree
 {
@@ -111,7 +111,7 @@ namespace embree
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {
-#if USE_ALIGNED_SPACE
+#if HAIR_LEAF_MODE == 0
       size_t end = min(begin+M,_end);
       N = end-begin;
 
@@ -147,7 +147,9 @@ namespace embree
         items.primID[i] = primID;
       }
         
-#else
+#endif
+
+#if HAIR_LEAF_MODE == 1 
 
       /* find aligned space */
       size_t end = min(begin+M,_end);
@@ -198,14 +200,19 @@ namespace embree
     }
 
   public:
-#if USE_ALIGNED_SPACE
+#if HAIR_LEAF_MODE == 0
+
+    // 56 bytes
     AffineSpace3vf<M> naabb;
     unsigned int N;
     struct Item {
       unsigned int geomID[M];
       unsigned int primID[M];
     } items;
-#else
+#endif
+
+#if HAIR_LEAF_MODE == 1
+    // 20 bytes 
     AffineSpace3fa space;
     unsigned int N;
     struct Item {
@@ -218,6 +225,22 @@ namespace embree
       unsigned int geomID[M];
       unsigned int primID[M];
     } items;
+#endif
+
+#if HAIR_LEAF_MODE == 2
+    // 26 bytes per primitive
+    Vec3 offset,scale;
+    unsigned int N;
+    unsigned int geomID[M];
+    unsigned int primID[M];
+    struct CompressedOrientedBounds
+    {
+      unsigned char x[M];
+      unsigned char y[M];
+      unsigned char z[M];
+      unsigned char lower[M];
+      unsigned char upper[M];
+    } bounds[3];
 #endif
   };
 }

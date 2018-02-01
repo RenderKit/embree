@@ -42,7 +42,8 @@ namespace embree
 
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
       {
-#if USE_ALIGNED_SPACE
+#if HAIR_LEAF_MODE == 0
+
         const Vec3vf8 dir1 = xfmVector(prim.naabb,Vec3vf8(ray.dir));
         const Vec3vf8 org1 = xfmPoint (prim.naabb,Vec3vf8(ray.org));
         const Vec3vf8 nrcp_dir1 = -rcp(dir1);
@@ -58,7 +59,9 @@ namespace embree
         const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
         vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
 
-#else
+#endif
+
+#if HAIR_LEAF_MODE == 1
 
         const Vec3fa org1 = xfmPoint (prim.space,ray.org);
         const Vec3fa dir1 = xfmVector(prim.space,ray.dir);
@@ -76,6 +79,10 @@ namespace embree
         vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
 #endif
 
+#if HAIR_LEAF_MODE == 2
+
+#endif
+        
         while (any(valid))
         {
           size_t i = select_min(valid,tNear);
