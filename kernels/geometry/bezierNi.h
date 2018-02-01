@@ -19,7 +19,7 @@
 #include "primitive.h"
 #include "bezier1i.h"
 
-#define HAIR_LEAF_MODE 0
+#define HAIR_LEAF_MODE 1
 
 namespace embree
 {
@@ -112,6 +112,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {
 #if HAIR_LEAF_MODE == 0
+      
       size_t end = min(begin+M,_end);
       N = end-begin;
 
@@ -197,6 +198,66 @@ namespace embree
         items.primID[i] = primID;
       }
 #endif
+
+#if HAIR_LEAF_MODE == 2
+      
+      size_t end = min(begin+M,_end);
+      N = end-begin;
+
+      /* encode all primitives */
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<M && begin<end; i++, begin++)
+      {
+        const PrimRef& prim = prims[begin];
+        const unsigned int geomID = prim.geomID();
+        const unsigned int primID = prim.primID();
+        bounds.extend(scene->get<NativeCurves>(geomID)->bounds(primID));
+      }
+
+      /* calculate offset and scale */
+      offset = -bounds.lower;
+      scale = 127.0f/bounds.size()/sqrt(3.0f);
+
+      /* encode all primitives */
+      for (size_t i=0; i<M && begin<end; i++, begin++)
+      {
+        const PrimRef& prim = prims[begin];
+        const unsigned int geomID = prim.geomID();
+        const unsigned int primID = prim.primID();
+        LinearSpace3fa space = computeAlignedSpace(scene,prims,range<size_t>(begin)).transposed();
+        
+        LinearSpace3fa space1(scale*space.vx,scale*space.vy,scale*space.vz);
+        LinearSpace3fa space2(normalize(space1.vx),normalize(space1.vy),normalize(space1.vz));
+        LinearSpace3fa space3(trunc(127.0f*space2.vx),trunc(127.0f*space2.vy),trunc(127.0f*space2.vz));
+        LinearSpace3fa space4(space3.vx/scale,space3.vy/scale,space3.vz/scale);
+        LinearSpace3fa space5(normalize(space4.vx),normalize(space4.vy),normalize(space4.vz));
+        Vec3fa len(length(space4.vx),length(space4.vy),length(space4.vz));
+        BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space5,primID);
+        bounds.lower /= len; bounds.upper /= len;
+
+        bounds_vx.x[i] = (char) space3.vx.x;
+        bounds_vx.y[i] = (char) space3.vx.y;
+        bounds_vx.z[i] = (char) space3.vx.z;
+        bounds_vx.lower[i] = (unsigned char) clamp(floor(bounds.lower.x),-127.0f,126.0f);
+        bounds_vx.upper[i] = (unsigned char) clamp(ceil (bounds.lower.x),-127.0f,126.0f);
+
+        bounds_vy.x[i] = (char) space3.vy.x;
+        bounds_vy.y[i] = (char) space3.vy.y;
+        bounds_vy.z[i] = (char) space3.vy.z;
+        bounds_vy.lower[i] = (char) clamp(floor(bounds.lower.y),-127.0f,126.0f);
+        bounds_vy.upper[i] = (char) clamp(ceil (bounds.lower.y),-127.0f,126.0f);
+
+        bounds_vz.x[i] = (char) space3.vz.x;
+        bounds_vz.y[i] = (char) space3.vz.y;
+        bounds_vz.z[i] = (char) space3.vz.z;
+        bounds_vz.lower[i] = (char) clamp(floor(bounds.lower.z),-127.0f,126.0f);
+        bounds_vz.upper[i] = (char) clamp(ceil (bounds.lower.z),-127.0f,126.0f);
+               
+        items.geomID[i] = geomID;
+        items.primID[i] = primID;
+      }
+        
+#endif
     }
 
   public:
@@ -229,18 +290,18 @@ namespace embree
 
 #if HAIR_LEAF_MODE == 2
     // 26 bytes per primitive
-    Vec3 offset,scale;
+    Vec3a offset,scale;
     unsigned int N;
     unsigned int geomID[M];
     unsigned int primID[M];
     struct CompressedOrientedBounds
     {
-      unsigned char x[M];
-      unsigned char y[M];
-      unsigned char z[M];
-      unsigned char lower[M];
-      unsigned char upper[M];
-    } bounds[3];
+      char x[M];
+      char y[M];
+      char z[M];
+      char lower[M];
+      char upper[M];
+    } bounds_vx, bounds_vy, bounds_vz;
 #endif
   };
 }

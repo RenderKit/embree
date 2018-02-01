@@ -353,11 +353,11 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__SSE4_1__)
-  //__forceinline Vec3fa trunc( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
+  __forceinline Vec3fa trunc( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
   __forceinline Vec3fa floor( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline Vec3fa ceil ( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
 #else
-  //__forceinline Vec3fa trunc( const Vec3fa& a ) { return Vec3fa(truncf(a.x),truncf(a.y),truncf(a.z)); }
+  __forceinline Vec3fa trunc( const Vec3fa& a ) { return Vec3fa(truncf(a.x),truncf(a.y),truncf(a.z)); }
   __forceinline Vec3fa floor( const Vec3fa& a ) { return Vec3fa(floorf(a.x),floorf(a.y),floorf(a.z)); }
   __forceinline Vec3fa ceil ( const Vec3fa& a ) { return Vec3fa(ceilf (a.x),ceilf (a.y),ceilf (a.z)); }
 #endif
