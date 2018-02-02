@@ -136,7 +136,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX) && 0)
+          if (device->hasISA(AVX))
 	  {
             if (quality_flags == RTC_BUILD_QUALITY_HIGH) 
               accels.add(device->bvh8_factory->BVH8Triangle4(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
