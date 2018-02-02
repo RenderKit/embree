@@ -27,6 +27,10 @@ namespace embree
     /*! assert that the xchg function works */
     static_assert(sizeof(T) <= 12, "sizeof(T) <= 12 failed");
 
+    __forceinline StackItemT() {}
+
+    __forceinline StackItemT(T &ptr, unsigned &dist) : ptr(ptr), dist(dist) {}
+
     /*! use SSE instructions to swap stack items */
     __forceinline static void xchg(StackItemT& a, StackItemT& b) 
     { 
@@ -58,6 +62,35 @@ namespace embree
       if (s4.dist < s2.dist) xchg(s4,s2);
       if (s3.dist < s2.dist) xchg(s3,s2);
     }
+
+    /*! use SSE instructions to swap stack items */
+    __forceinline static void cmp_xchg(vint4& a, vint4& b) 
+    { 
+      const vboolf4 mask(shuffle<2>(b < a));
+      const vint4 c = select(mask,b,a);
+      const vint4 d = select(mask,a,b);
+      a = c;
+      b = d;
+    }
+    
+    /*! Sort 3 stack items. */
+    __forceinline static void sort3(vint4& s1, vint4& s2, vint4& s3)
+    {
+      cmp_xchg(s2,s1);
+      cmp_xchg(s3,s2);
+      cmp_xchg(s2,s1);
+    }
+    
+    /*! Sort 4 stack items. */
+    __forceinline static void sort4(vint4& s1, vint4& s2, vint4& s3, vint4& s4)
+    {
+      cmp_xchg(s2,s1);
+      cmp_xchg(s4,s3);
+      cmp_xchg(s3,s1);
+      cmp_xchg(s4,s2);
+      cmp_xchg(s3,s2);
+    }
+
 
     /*! Sort N stack items. */
     __forceinline friend void sort(StackItemT* begin, StackItemT* end)
