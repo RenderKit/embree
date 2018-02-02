@@ -66,7 +66,8 @@ namespace embree
     /*! use SSE instructions to swap stack items */
     __forceinline static void cmp_xchg(vint4& a, vint4& b) 
     { 
-      const vboolf4 mask(shuffle<2>(b < a));
+      const vboolf4 mask0(b < a);
+      const vboolf4 mask(shuffle<2,2,2,2>(mask0));
       const vint4 c = select(mask,b,a);
       const vint4 d = select(mask,a,b);
       a = c;
