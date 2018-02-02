@@ -50,6 +50,9 @@ namespace embree
 
     Accel* BVH8UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH8UserGeometryMB(Scene* scene);
+
+    Accel* BVH8Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
+    Accel* BVH8GridMB(Scene* scene);
   
     static void createTriangleMeshTriangle4Morton (TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
     static void createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);

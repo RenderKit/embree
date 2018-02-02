@@ -1140,6 +1140,23 @@ namespace embree
     Builder* builder = BVH8VirtualMBSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
+
+  Accel* BVH8Factory::BVH8Grid(Scene* scene, BuildVariant bvariant)
+  {
+    BVH8* accel = new BVH8(Object::type,scene);
+    Accel::Intersectors intersectors;
+    Builder* builder = nullptr;
+    return new AccelInstance(accel,builder,intersectors);    
+  }
+
+  Accel* BVH8Factory::BVH8GridMB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Object::type,scene);
+    Accel::Intersectors intersectors;
+    Builder* builder = nullptr;
+    return new AccelInstance(accel,builder,intersectors);        
+  }
+
 }
 
 #endif

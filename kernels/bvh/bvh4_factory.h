@@ -58,6 +58,9 @@ namespace embree
 
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
 
+    Accel* BVH4Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
+    Accel* BVH4GridMB(Scene* scene);
+
   private:
     void selectBuilders(int features);
     void selectIntersectors(int features);
