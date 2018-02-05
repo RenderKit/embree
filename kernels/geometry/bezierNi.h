@@ -19,8 +19,6 @@
 #include "primitive.h"
 #include "bezier1i.h"
 
-#define HAIR_LEAF_MODE 2
-
 namespace embree
 {
   struct BezierNi
@@ -111,7 +109,7 @@ namespace embree
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {
-#if HAIR_LEAF_MODE == 0
+#if EMBREE_HAIR_LEAF_MODE == 0
       
       size_t end = min(begin+M,_end);
       N = end-begin;
@@ -150,7 +148,7 @@ namespace embree
         
 #endif
 
-#if HAIR_LEAF_MODE == 1 
+#if EMBREE_HAIR_LEAF_MODE == 1 
 
       /* find aligned space */
       size_t end = min(begin+M,_end);
@@ -199,7 +197,7 @@ namespace embree
       }
 #endif
 
-#if HAIR_LEAF_MODE == 2
+#if EMBREE_HAIR_LEAF_MODE == 2
       
       size_t end = min(begin+M,_end);
       N = end-begin;
@@ -257,7 +255,7 @@ namespace embree
     }
 
   public:
-#if HAIR_LEAF_MODE == 0
+#if EMBREE_HAIR_LEAF_MODE == 0
 
     // 56 bytes
     AffineSpace3vf<M> naabb;
@@ -268,7 +266,7 @@ namespace embree
     } items;
 #endif
 
-#if HAIR_LEAF_MODE == 1
+#if EMBREE_HAIR_LEAF_MODE == 1
     // 20 bytes 
     AffineSpace3fa space;
     unsigned int N;
@@ -284,7 +282,7 @@ namespace embree
     } items;
 #endif
 
-#if HAIR_LEAF_MODE == 2
+#if EMBREE_HAIR_LEAF_MODE == 2
     // 26 bytes per primitive
     Vec3fa offset,scale;
     unsigned int N;
