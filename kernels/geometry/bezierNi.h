@@ -313,7 +313,7 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 2
     // 26 bytes per primitive
-    Vec3fa offset,scale;
+    Vec3f offset,scale;
     unsigned int N;
     struct Bla {
       unsigned int geomID[M];

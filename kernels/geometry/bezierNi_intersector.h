@@ -81,8 +81,10 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 2
 
-        const Vec3fa org1 = (ray.org-prim.offset)*prim.scale;
-        const Vec3fa dir1 = ray.dir*prim.scale;
+        const Vec3fa offset = Vec3fa(vfloat4::loadu(&prim.offset));
+        const Vec3fa scale = Vec3fa(vfloat4::loadu(&prim.scale));
+        const Vec3fa org1 = (ray.org-offset)*scale;
+        const Vec3fa dir1 = ray.dir*scale;
 
         const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx.x), vfloat8::load(prim.bounds_vx.y), vfloat8::load(prim.bounds_vx.z),
                                     vfloat8::load(prim.bounds_vy.x), vfloat8::load(prim.bounds_vy.y), vfloat8::load(prim.bounds_vy.z),
