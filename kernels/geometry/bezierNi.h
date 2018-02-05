@@ -244,7 +244,7 @@ namespace embree
 
       /* calculate offset and scale */
       offset = bounds.lower;
-      scale = 1.0f/(bounds.size()*sqrt(3.0f));
+      scale = 256.0f/(bounds.size()*sqrt(3.0f));
       scale = Vec3fa(min(scale.x,scale.y,scale.z));
       
       /* encode all primitives */
@@ -255,7 +255,7 @@ namespace embree
         const unsigned int primID = prim.primID();
         const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),offset,scale);
         
-        const LinearSpace3fa space3(trunc(32767.0f*space2.vx),trunc(32767.0f*space2.vy),trunc(32767.0f*space2.vz));
+        const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(offset,scale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
         bounds_vx.x[i] = (short) space3.vx.x;
@@ -321,9 +321,9 @@ namespace embree
     } items;
     struct CompressedOrientedBounds
     {
-      short x[M];
-      short y[M];
-      short z[M];
+      char x[M];
+      char y[M];
+      char z[M];
       short lower[M];
       short upper[M];
     } bounds_vx, bounds_vy, bounds_vz;
