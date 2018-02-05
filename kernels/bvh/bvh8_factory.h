@@ -51,8 +51,8 @@ namespace embree
     Accel* BVH8UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH8UserGeometryMB(Scene* scene);
 
-    Accel* BVH8Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
-    Accel* BVH8GridMB(Scene* scene);
+    Accel* BVH8Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH8GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
   
     static void createTriangleMeshTriangle4Morton (TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
     static void createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
@@ -93,6 +93,9 @@ namespace embree
 
     Accel::Intersectors BVH8UserGeometryIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8UserGeometryMBIntersectors(BVH8* bvh);
+
+    Accel::Intersectors BVH8GridIntersectors(BVH8* bvh, IntersectVariant ivariant);
+    Accel::Intersectors BVH8GridMBIntersectors(BVH8* bvh, IntersectVariant ivariant);
 
   private:
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);

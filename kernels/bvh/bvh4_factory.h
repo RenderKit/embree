@@ -58,8 +58,8 @@ namespace embree
 
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
 
-    Accel* BVH4Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
-    Accel* BVH4GridMB(Scene* scene);
+    Accel* BVH4Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
 
   private:
     void selectBuilders(int features);
@@ -95,6 +95,9 @@ namespace embree
     //Accel::Intersectors BVH4SubdivPatch1CachedIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4SubdivPatch1EagerMBIntersectors(BVH4* bvh);
     //Accel::Intersectors BVH4SubdivPatch1CachedMBIntersectors(BVH4* bvh);
+
+    Accel::Intersectors BVH4GridIntersectors(BVH4* bvh, IntersectVariant ivariant);
+    Accel::Intersectors BVH4GridMBIntersectors(BVH4* bvh, IntersectVariant ivariant);
     
     static void createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder);
 

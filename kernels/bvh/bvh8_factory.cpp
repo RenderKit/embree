@@ -1141,18 +1141,46 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH8Factory::BVH8Grid(Scene* scene, BuildVariant bvariant)
+  Accel::Intersectors BVH8Factory::BVH8GridIntersectors(BVH8* bvh, IntersectVariant ivariant)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = nullptr;
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = nullptr;
+    intersectors.intersector8  = nullptr;
+    intersectors.intersector16 = nullptr;
+    intersectors.intersectorN  = nullptr;
+#endif
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH8Factory::BVH8GridMBIntersectors(BVH8* bvh, IntersectVariant ivariant)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = nullptr;
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = nullptr;
+    intersectors.intersector8  = nullptr;
+    intersectors.intersector16 = nullptr;
+    intersectors.intersectorN  = nullptr;
+#endif
+    return intersectors;
+  }
+
+  Accel* BVH8Factory::BVH8Grid(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
     BVH8* accel = new BVH8(Object::type,scene);
-    Accel::Intersectors intersectors;
+    Accel::Intersectors intersectors = BVH8GridIntersectors(accel,ivariant);
     Builder* builder = nullptr;
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-  Accel* BVH8Factory::BVH8GridMB(Scene* scene)
+  Accel* BVH8Factory::BVH8GridMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
     BVH8* accel = new BVH8(Object::type,scene);
-    Accel::Intersectors intersectors;
+    Accel::Intersectors intersectors = BVH8GridMBIntersectors(accel,ivariant);
     Builder* builder = nullptr;
     return new AccelInstance(accel,builder,intersectors);        
   }
