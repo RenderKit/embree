@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -32,11 +32,11 @@ namespace embree
     void init();
 
   public:
-    static void intersect (Accel::Intersectors* This, RTCRay& ray, IntersectContext* context);
-    static void intersect4 (const void* valid, Accel::Intersectors* This, RTCRay4& ray, IntersectContext* context);
-    static void intersect8 (const void* valid, Accel::Intersectors* This, RTCRay8& ray, IntersectContext* context);
-    static void intersect16 (const void* valid, Accel::Intersectors* This, RTCRay16& ray, IntersectContext* context);
-    static void intersectN (Accel::Intersectors* This, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context);
+    static void intersect (Accel::Intersectors* This, RTCRayHit& ray, IntersectContext* context);
+    static void intersect4 (const void* valid, Accel::Intersectors* This, RTCRayHit4& ray, IntersectContext* context);
+    static void intersect8 (const void* valid, Accel::Intersectors* This, RTCRayHit8& ray, IntersectContext* context);
+    static void intersect16 (const void* valid, Accel::Intersectors* This, RTCRayHit16& ray, IntersectContext* context);
+    static void intersectN (Accel::Intersectors* This, RayHitK<VSIZEX>** ray, const size_t N, IntersectContext* context);
 
   public:
     static void occluded (Accel::Intersectors* This, RTCRay& ray, IntersectContext* context);

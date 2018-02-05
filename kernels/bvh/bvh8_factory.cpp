@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -234,13 +234,13 @@ namespace embree
 
   void BVH8Factory::selectBuilders(int features)
   {
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
 
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iBuilder_OBB_New));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8OBBBezier1iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8OBBBezier1iMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vSceneBuilderSAH));
@@ -288,12 +288,12 @@ namespace embree
   void BVH8Factory::selectIntersectors(int features)
   {
     /* select intersectors1 */
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
 
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1vIntersector1_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1iIntersector1_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8OBBBezier1iMBIntersector1_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1vIntersector1_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1iIntersector1_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8OBBBezier1iMBIntersector1_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Triangle4Intersector1Moeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Triangle4iIntersector1Moeller));
@@ -323,12 +323,12 @@ namespace embree
 #if defined (EMBREE_RAY_PACKETS)
 
     /* select intersectors4 */
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iIntersector4));
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iMBIntersector4));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iIntersector4));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iMBIntersector4));
 
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1vIntersector4Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1iIntersector4Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8OBBBezier1iMBIntersector4Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1vIntersector4Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1iIntersector4Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8OBBBezier1iMBIntersector4Hybrid_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Triangle4Intersector4HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Triangle4Intersector4HybridMoellerNoFilter));
@@ -354,12 +354,12 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8VirtualMBIntersector4Chunk));
 
     /* select intersectors8 */
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iIntersector8));
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iMBIntersector8));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iIntersector8));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Line4iMBIntersector8));
 
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1vIntersector8Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1iIntersector8Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8OBBBezier1iMBIntersector8Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1vIntersector8Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Bezier1iIntersector8Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8OBBBezier1iMBIntersector8Hybrid_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Triangle4Intersector8HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8Triangle4Intersector8HybridMoellerNoFilter));
@@ -385,12 +385,12 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8VirtualMBIntersector8Chunk));
 
     /* select intersectors16 */
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector16));
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector16));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector16));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector16));
 
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1vIntersector16Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1iIntersector16Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8OBBBezier1iMBIntersector16Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1vIntersector16Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1iIntersector16Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8OBBBezier1iMBIntersector16Hybrid_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Triangle4Intersector16HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Triangle4Intersector16HybridMoellerNoFilter));
@@ -466,7 +466,7 @@ namespace embree
     case RTC_BUILD_QUALITY_MEDIUM:
     case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
+    default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
@@ -479,7 +479,7 @@ namespace embree
     case RTC_BUILD_QUALITY_MEDIUM:
     case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
+    default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
@@ -492,7 +492,7 @@ namespace embree
     case RTC_BUILD_QUALITY_MEDIUM:
     case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
+    default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
@@ -505,7 +505,7 @@ namespace embree
     case RTC_BUILD_QUALITY_MEDIUM:
     case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
+    default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
@@ -525,7 +525,7 @@ namespace embree
     case RTC_BUILD_QUALITY_MEDIUM:
     case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8VirtualMeshBuilderSAH(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8VirtualMeshRefitSAH(accel,mesh,0); break;
-    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid build quality");
+    default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
@@ -911,7 +911,7 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->hair_builder_mb == "default"     ) builder = BVH8OBBBezier1iMBBuilder_OBB(accel,scene,0);
     else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH8OBBBezier1iMBBuilder_OBB(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH8MBOBB<Bezier1iMB>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH8MBOBB<Bezier1iMB>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -922,7 +922,7 @@ namespace embree
     Accel::Intersectors intersectors = BVH8Line4iIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->line_builder == "default"     ) builder = BVH8Line4iSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder+" for BVH8<Line4i>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder+" for BVH8<Line4i>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -932,7 +932,7 @@ namespace embree
     Accel::Intersectors intersectors = BVH8Line4iMBIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH8Line4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8<Line4i>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8<Line4i>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -953,7 +953,7 @@ namespace embree
     else if (scene->device->tri_builder == "sah_presplit")     builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (scene->device->tri_builder == "dynamic"     ) builder = BVH8BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4);
     else if (scene->device->tri_builder == "morton"     ) builder = BVH8BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4Morton);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -970,7 +970,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: builder = BVH8Triangle4vSceneBuilderFastSpatialSAH(accel,scene,0); break;
       }
     }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4v>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4v>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -987,7 +987,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break; // FIXME: implement
       }
     }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4i>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4i>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1006,7 +1006,7 @@ namespace embree
       }
     }
     else if (scene->device->tri_builder_mb == "internal_time_splits")  builder = BVH8Triangle4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4iMB>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4iMB>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1025,7 +1025,7 @@ namespace embree
       }
     }
     else if (scene->device->tri_builder_mb == "internal_time_splits")  builder = BVH8Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4vMB>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4vMB>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1062,7 +1062,7 @@ namespace embree
     else if (scene->device->quad_builder == "dynamic"      ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4v);
     else if (scene->device->quad_builder == "morton"       ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4vMorton);
     else if (scene->device->quad_builder == "sah_fast_spatial" ) builder = BVH8Quad4vSceneBuilderFastSpatialSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4v>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4v>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1080,7 +1080,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break; // FIXME: implement
       }
     }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4i>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4i>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1098,7 +1098,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8<Quad4i>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8<Quad4i>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1109,7 +1109,7 @@ namespace embree
     Accel::Intersectors intersectors = QBVH8Quad4iIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->quad_builder == "default"     ) builder = BVH8QuantizedQuad4iSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for QBVH8<Quad4i>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for QBVH8<Quad4i>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1128,7 +1128,7 @@ namespace embree
     }
     else if (scene->device->object_builder == "sah") builder = BVH8VirtualSceneBuilderSAH(accel,scene,0);
     else if (scene->device->object_builder == "dynamic") builder = BVH8BuilderTwoLevelVirtualSAH(accel,scene,&createAccelSetMesh);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8<Object>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8<Object>");
 
     return new AccelInstance(accel,builder,intersectors);
   }

@@ -1,0 +1,55 @@
+.TH "rtcAttachGeometryByID" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcAttachGeometryByID\ \-\ attaches\ a\ geometry\ to\ the\ scene
+\ \ using\ a\ specified\ geometry\ ID
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcAttachGeometryByID(
+\ \ RTCScene\ scene,
+\ \ RTCGeometry\ geometry,
+\ \ unsigned\ int\ geomID
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcAttachGeometryByID\f[] function attaches a geometry
+(\f[C]geometry\f[] argument) to a scene (\f[C]scene\f[] argument) and
+assigns a user provided geometry ID (\f[C]geomID\f[] argument) to that
+geometry.
+All geometries attached to a scene are defined to be included inside the
+scene.
+A geometry can only get attached to a single scene at a given time.
+However, it is possible to detach and re\-attach a geometry to a
+different scene.
+The passed user\-defined geometry ID is used to identify the geometry
+when hit by a ray during ray queries.
+Using this function, it is possible to share the same IDs to refer to
+geometries inside the application and Embree.
+.PP
+This function is thread\-safe, thus multiple threads can attach
+geometries to a scene in parallel.
+.PP
+The user\-provided geometry ID must be unused in the scene, otherwise
+the creation of the geometry will fail.
+Further, the user\-provided geometry IDs should be compact, as Embree
+internally creates a vector which size is equal to the largest geometry
+ID used.
+Creating very large geometry IDs for small scenes would thus cause a
+memory consumption and performance overhead.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcAttachGeometry]

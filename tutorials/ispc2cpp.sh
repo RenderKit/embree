@@ -58,9 +58,9 @@ sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_]*\)[ ]*;/alignedFree(\1);/g' $2
 
 # embree ray layout
 sed -i.backup  's/[.]tnear/.tnear()/g' $2
-sed -i.backup  's/[.]tfar/.tfar()/g' $2
+sed -i.backup  's/[.]time/.time()/g' $2
 sed -i.backup  's/[>]tnear/>tnear()/g' $2
-sed -i.backup  's/[>]tfar/>tfar()/g' $2
+sed -i.backup  's/ray->time/ray->time()/g' $2
 
 
 # system library
@@ -106,8 +106,7 @@ sed -i 's/\/\/ALIGNED_STRUCT/ALIGNED_STRUCT/g' $2
 sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i.backup  's/RTC_INTERSECT_UNIFORM/RTC_INTERSECT1/g' $2
 sed -i.backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
-sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
-sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+sed -i.backup  's/RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR/RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR/g' $2
 
 sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
@@ -118,11 +117,13 @@ sed -i.backup  's/RTCRay1/RTCRay/g' $2
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
 
-sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
-sed -i.backup  's/rtcOccluded1/rtcOccluded/g' $2
+#sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
+#sed -i.backup  's/rtcOccluded1/rtcOccluded/g' $2
 
-sed -i.backup  's/rtcIntersect/rtcIntersect1/g' $2
-sed -i.backup  's/rtcOccluded/rtcOccluded1/g' $2
+sed -i.backup  's/rtcIntersectV/rtcIntersect1/g' $2
+sed -i.backup  's/rtcOccludedV/rtcOccluded1/g' $2
+
+sed -i.backup  's/rtcInterpolateV/rtcInterpolate/g' $2
 
 sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
 sed -i.backup  's/Texture_RGBA8/Texture::RGBA8/g' $2

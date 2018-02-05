@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -44,7 +44,7 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void occlusionFilter(const RTCFilterFunctionNArguments* const args);
+void occlusionFilter(const RTCFilterFunctionNArguments* args);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -61,12 +61,12 @@ Vec3fa sampleSphere(const float u, const float v)
 
 void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
-  for (size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
+  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -74,13 +74,13 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
-  RTCGeometry geom = rtcNewCurveGeometry (g_device, hair->type, hair->basis);
-  for (size_t t=0; t<hair->numTimeSteps; t++) {
-    rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
+  RTCGeometry geom = rtcNewGeometry (g_device, hair->type);
+  for (unsigned int t=0; t<hair->numTimeSteps; t++) {
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
-  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-  rtcSetOcclusionFilterFunction(geom,occlusionFilter);
-  rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryTessellationRate(geom,hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -89,9 +89,9 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcDeviceNewScene(g_device);
+  RTCScene scene_out = rtcNewScene(g_device);
 
-  for (size_t i=0; i<scene_in->numGeometries; i++)
+  for (unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == TRIANGLE_MESH)
@@ -101,7 +101,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit (scene_out);
+  rtcCommitScene (scene_out);
 
   return scene_out;
 }
@@ -240,7 +240,7 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 }
 
 /* occlusion filter function */
-void occlusionFilter(const RTCFilterFunctionNArguments* const args)
+void occlusionFilter(const RTCFilterFunctionNArguments* args)
 
 {
   IntersectContext* context = (IntersectContext*) args->context;
@@ -248,14 +248,14 @@ void occlusionFilter(const RTCFilterFunctionNArguments* const args)
   if (!transparency) return;
     
   int* valid_i = args->valid;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
+  unsigned int geomID = RTCHitN_geomID(hit,N,0);
   ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = Vec3fa(0.0f);
@@ -300,7 +300,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa weight = Vec3fa(1.0f);
-  size_t depth = 0;
+  unsigned int depth = 0;
 
   while (true)
   {
@@ -309,7 +309,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect1(g_scene,&context.context,RTCRay_(ray));
+    rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -331,8 +331,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       /* generate anisotropic BRDF */
       AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr;
-      Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
-      eps = 1.1f*p.w;
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
@@ -350,7 +348,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* sample directional light */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(Vec3fa(g_dirlight_direction)), eps, inf, time);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(Vec3fa(g_dirlight_direction)), eps, inf, time);
     Vec3fa T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
@@ -367,22 +365,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate secondary ray and offset it out of the hair */
     float sign = dot(Vec3fa(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
-    ray.org = ray.org + ray.tfar()*ray.dir + sign*eps*brdf.dz;
+    ray.org = ray.org + ray.tfar*ray.dir + sign*eps*brdf.dz;
     ray.dir = Vec3fa(wi);
     ray.tnear() = 0.001f;
-    ray.tfar() = inf;
+    ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = time;
+    ray.time() = time;
     weight = weight * c/wi.w;
 
 #else
 
     /* continue with transparency ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.tnear() = 1.001f*ray.tfar();
-    ray.tfar() = inf;
+    ray.tnear() = 1.001f*ray.tfar;
+    ray.tfar = inf;
     weight *= brdf.Kt;
 
 #endif
@@ -454,10 +452,10 @@ extern "C" void device_init (char* cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -480,7 +478,7 @@ extern "C" void device_render (int* pixels,
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
 
@@ -493,7 +491,7 @@ extern "C" void device_render (int* pixels,
   g_accu_count++;
   if (camera_changed) {
     g_accu_count=0;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
 

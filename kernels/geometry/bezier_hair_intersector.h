@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -32,7 +32,7 @@ namespace embree
       __forceinline HairHit() {}
 
       __forceinline HairHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
-                              const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
+                            const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
         : U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3), valid(valid) {}
       
       __forceinline void finalize() 
@@ -44,10 +44,8 @@ namespace embree
       
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
       __forceinline float t  (const size_t i) const { return vt[i]; }
-      __forceinline Vec3fa Ng(const size_t i) const 
-      { 
-        Vec3fa T = NativeCurve3fa(p0,p1,p2,p3).eval_du(vu[i]);
-        return T == Vec3fa(zero) ? Vec3fa(one) : T; 
+      __forceinline Vec3fa Ng(const size_t i) const { 
+        return NativeCurve3fa(p0,p1,p2,p3).eval_du(vu[i]);
       }
       
     public:
@@ -72,7 +70,7 @@ namespace embree
 
       __forceinline Hair1Intersector1() {}
 
-      __forceinline Hair1Intersector1(const Ray& ray, const void* ptr) 
+      __forceinline Hair1Intersector1(const Ray& ray, const void* ptr)
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
       template<typename Epilog>
@@ -103,7 +101,8 @@ namespace embree
         const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
-        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar()));
+        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
+        valid &= t > ray.tnear()+2.0f*r*depth_scale; // ignore self intersections
 
         /* update hit information */
         bool ishit = false;
@@ -133,7 +132,8 @@ namespace embree
             const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
             const vfloatx r = p.w;
             const vfloatx r2 = r*r;
-            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar()));
+            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
+            valid &= t > ray.tnear()+2.0f*r*depth_scale; // ignore self intersections
 
              /* update hit information */
             if (unlikely(any(valid))) {
@@ -152,7 +152,7 @@ namespace embree
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
 
-      __forceinline Hair1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
+      __forceinline Hair1IntersectorK(const vbool<K>& valid, const RayK<K>& ray)
       {
         size_t mask = movemask(valid);
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -162,7 +162,7 @@ namespace embree
         }
       }
 
-      __forceinline Hair1IntersectorK (const RayK<K>& ray, size_t k)
+      __forceinline Hair1IntersectorK(const RayK<K>& ray, size_t k)
       {
         Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
@@ -204,7 +204,8 @@ namespace embree
           const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
           const vfloatx r = p.w;
           const vfloatx r2 = r*r;
-          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar [k]));
+          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar[k]));
+          valid &= t > ray.tnear[k]+2.0f*r*depth_scale[k]; // ignore self intersections
           if (likely(none(valid))) continue;
         
           /* update hit information */

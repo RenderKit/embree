@@ -1,0 +1,36 @@
+.TH "rtcGetGeometryBufferData" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetGeometryBufferData\ \-\ gets\ pointer\ to
+\ \ the\ first\ buffer\ view\ element
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void*\ rtcGetGeometryBufferData(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCBufferType\ type,
+\ \ unsigned\ int\ slot
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetGeometryBufferData\f[] function returns a pointer to the
+first element of the buffer view attached to the specified buffer type
+and slot (\f[C]type\f[] and \f[C]slot\f[] argument) of the geometry
+(\f[C]geometry\f[] argument).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
+[rtcSetNewGeometryBuffer]

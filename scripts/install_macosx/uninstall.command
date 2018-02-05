@@ -3,7 +3,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd $DIR/../..
 
 IFS=$'\n'
-FILES=($(pkgutil --files com.intel.embree-@EMBREE_VERSION@ | grep -e 'opt/local/include/\|opt/local/lib/\|Applications/Embree@EMBREE_VERSION_MAJOR@' | tail -r))
+FILES=($(pkgutil --files com.intel.embree-@EMBREE_VERSION@ | grep -e 'opt/local/include/\|opt/local/lib/\|opt/local/share/man/\|Applications/Embree@EMBREE_VERSION_MAJOR@' | tail -r))
 unset IFS
 
 # exit if no files found

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -34,6 +34,31 @@ namespace embree
     device->refDec();
   }
 
+  void Geometry::setNumPrimitives(unsigned int numPrimitives_in)
+  {      
+    if (numPrimitives_in == numPrimitives) return;
+    
+    if (isEnabled() && scene) disabling();
+    numPrimitives = numPrimitives_in;
+    numPrimitivesChanged = true;
+    if (isEnabled() && scene) enabling();
+    
+    Geometry::update();
+  }
+
+  void Geometry::setNumTimeSteps (unsigned int numTimeSteps_in)
+  {
+    if (numTimeSteps_in == numTimeSteps)
+      return;
+    
+    if (isEnabled() && scene) disabling();
+    numTimeSteps = numTimeSteps_in;
+    fnumTimeSegments = float(numTimeSteps_in-1);
+    if (isEnabled() && scene) enabling();
+    
+    Geometry::update();
+  }
+  
   void Geometry::update() 
   {
     if (scene)
@@ -53,11 +78,13 @@ namespace embree
   void Geometry::preCommit()
   {
     if (state == MODIFIED)
-      throw_RTCError(RTC_INVALID_OPERATION,"geometry got not committed");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry got not committed");
   }
 
   void Geometry::postCommit()
   {
+    numPrimitivesChanged = false;
+    
     /* set state to build */
     if (isEnabled())
       state = BUILD;
@@ -136,7 +163,7 @@ namespace embree
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
       scene->numIntersectionFiltersN -= intersectionFilterN != nullptr;
@@ -148,7 +175,7 @@ namespace embree
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   { 
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY) 
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
       scene->numIntersectionFiltersN -= occlusionFilterN != nullptr;
@@ -157,12 +184,26 @@ namespace embree
     occlusionFilterN = filter;
   }
 
-  void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, unsigned int numUVs, 
-                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats)
+  void Geometry::interpolateN(const RTCInterpolateNArguments* const args)
   {
-    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
-    const int* valid = (const int*) valid_i;
+    const void* valid_i = args->valid;
+    const unsigned* primIDs = args->primIDs;
+    const float* u = args->u;
+    const float* v = args->v;
+    unsigned int N = args->N;
+    RTCBufferType bufferType = args->bufferType;
+    unsigned int bufferSlot = args->bufferSlot;
+    float* P = args->P;
+    float* dPdu = args->dPdu;
+    float* dPdv = args->dPdv;
+    float* ddPdudu = args->ddPdudu;
+    float* ddPdvdv = args->ddPdvdv;
+    float* ddPdudv = args->ddPdudv;
+    unsigned int valueCount = args->valueCount;
 
+    if (valueCount > 256) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
+    const int* valid = (const int*) valid_i;
+ 
     __aligned(64) float P_tmp[256];
     __aligned(64) float dPdu_tmp[256];
     __aligned(64) float dPdv_tmp[256];
@@ -176,28 +217,42 @@ namespace embree
     float* ddPdudut = nullptr, *ddPdvdvt = nullptr, *ddPdudvt = nullptr;
     if (ddPdudu) { ddPdudut = ddPdudu_tmp; ddPdvdvt = ddPdvdv_tmp; ddPdudvt = ddPdudv_tmp; }
     
-    for (unsigned int i=0; i<numUVs; i++)
+    for (unsigned int i=0; i<N; i++)
     {
       if (valid && !valid[i]) continue;
-      interpolate(primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,ddPdudut,ddPdvdvt,ddPdudvt,numFloats);
+
+      RTCInterpolateArguments iargs;
+      iargs.primID = primIDs[i];
+      iargs.u = u[i];
+      iargs.v = v[i];
+      iargs.bufferType = bufferType;
+      iargs.bufferSlot = bufferSlot;
+      iargs.P = Pt;
+      iargs.dPdu = dPdut;
+      iargs.dPdv = dPdvt;
+      iargs.ddPdudu = ddPdudut;
+      iargs.ddPdvdv = ddPdvdvt;
+      iargs.ddPdudv = ddPdudvt;
+      iargs.valueCount = valueCount;
+      interpolate(&iargs);
       
       if (likely(P)) {
-        for (unsigned int j=0; j<numFloats; j++) 
-          P[j*numUVs+i] = Pt[j];
+        for (unsigned int j=0; j<valueCount; j++) 
+          P[j*N+i] = Pt[j];
       }
       if (likely(dPdu)) 
       {
-        for (unsigned int j=0; j<numFloats; j++) {
-          dPdu[j*numUVs+i] = dPdut[j];
-          dPdv[j*numUVs+i] = dPdvt[j];
+        for (unsigned int j=0; j<valueCount; j++) {
+          dPdu[j*N+i] = dPdut[j];
+          dPdv[j*N+i] = dPdvt[j];
         }
       }
       if (likely(ddPdudu)) 
       {
-        for (unsigned int j=0; j<numFloats; j++) {
-          ddPdudu[j*numUVs+i] = ddPdudut[j];
-          ddPdvdv[j*numUVs+i] = ddPdvdvt[j];
-          ddPdudv[j*numUVs+i] = ddPdudvt[j];
+        for (unsigned int j=0; j<valueCount; j++) {
+          ddPdudu[j*N+i] = ddPdudut[j];
+          ddPdvdv[j*N+i] = ddPdvdvt[j];
+          ddPdudv[j*N+i] = ddPdudvt[j];
         }
       }
     }

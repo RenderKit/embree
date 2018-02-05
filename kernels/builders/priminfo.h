@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -234,7 +234,7 @@ namespace embree
     public:
       range<size_t> object_range; //!< primitive range
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
-      size_t max_num_time_segments; //!< maximal number of time segments of a primitive
+      size_t max_num_time_segments; //!< maximum number of time segments of a primitive
       BBox1f time_range;
     };
 

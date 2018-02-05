@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,20 +22,19 @@
 namespace embree
 {
   /* error raising rtcIntersect and rtcOccluded functions */
-  void missing_rtcCommit()      { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
-  void invalid_rtcIntersect1()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
-  void invalid_rtcIntersect4()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
-  void invalid_rtcIntersect8()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
-  void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
-  void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
+  void missing_rtcCommit()      { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed"); }
+  void invalid_rtcIntersect1()  { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
+  void invalid_rtcIntersect4()  { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
+  void invalid_rtcIntersect8()  { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
+  void invalid_rtcIntersect16() { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
+  void invalid_rtcIntersectN()  { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
   Scene::Scene (Device* device)
     : Accel(AccelData::TY_UNKNOWN),
       device(device),
       flags_modified(true),
-      accel_flags(RTC_ACCEL_FAST),
-      quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       scene_flags(RTC_SCENE_FLAG_NONE),
+      quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFiltersN(0)
@@ -53,8 +52,6 @@ namespace embree
     intersectors = Accel::Intersectors(missing_rtcCommit);
 
     /* one can overwrite flags through device for debugging */
-    if (device->accel_flags != -1)
-      accel_flags = (RTCAccelFlags) device->accel_flags;
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
     if (device->scene_flags != -1)
@@ -77,7 +74,7 @@ namespace embree
   
   void Scene::printStatistics()
   {
-    /* calculate maximal number of time segments */
+    /* calculate maximum number of time segments */
     unsigned max_time_steps = 0;
     for (size_t i=0; i<size(); i++)
       max_time_steps = max(max_time_steps,get(i)->numTimeSteps);
@@ -207,7 +204,7 @@ namespace embree
     else if (device->tri_accel == "qbvh8.triangle4i")     accels.add(device->bvh8_factory->BVH8QuantizedTriangle4i(this));
     else if (device->tri_accel == "qbvh8.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
 #endif
   }
 
@@ -245,7 +242,7 @@ namespace embree
     else if (device->tri_accel_mb == "bvh8.triangle4imb") accels.add(device->bvh8_factory->BVH8Triangle4iMB(this));
     else if (device->tri_accel_mb == "bvh8.triangle4vmb") accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur triangle acceleration structure "+device->tri_accel_mb);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur triangle acceleration structure "+device->tri_accel_mb);
 #endif
   }
 
@@ -326,7 +323,7 @@ namespace embree
     else if (device->quad_accel == "bvh8.quad4i")       accels.add(device->bvh8_factory->BVH8Quad4i(this));
     else if (device->quad_accel == "qbvh8.quad4i")      accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
 #endif
   }
 
@@ -363,13 +360,13 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->quad_accel_mb == "bvh8.quad4imb") accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad motion blur acceleration structure "+device->quad_accel_mb);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown quad motion blur acceleration structure "+device->quad_accel_mb);
 #endif
   }
 
   void Scene::createHairAccel()
   {
-#if defined(EMBREE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_CURVES)
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompactAccel() + 1*(int)isRobustAccel();
@@ -414,13 +411,13 @@ namespace embree
     else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
     else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
 #endif
   }
 
   void Scene::createHairMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_CURVES)
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -438,13 +435,13 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->hair_accel_mb == "bvh8.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
 #endif
   }
 
   void Scene::createLineAccel()
   {
-#if defined(EMBREE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_CURVES)
     if (device->line_accel == "default")
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -465,13 +462,13 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->line_accel == "bvh8.line4i") accels.add(device->bvh8_factory->BVH8Line4i(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown line segment acceleration structure "+device->line_accel);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown line segment acceleration structure "+device->line_accel);
 #endif
   }
 
   void Scene::createLineMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_CURVES)
     if (device->line_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -485,13 +482,13 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->line_accel_mb == "bvh8.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
 #endif
   }
 
   void Scene::createSubdivAccel()
   {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     if (device->subdiv_accel == "default") 
     {
       //if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -503,13 +500,13 @@ namespace embree
     else if (device->subdiv_accel == "bvh4.subdivpatch1eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
     //else if (device->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,false));
     //else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
 #endif
   }
 
   void Scene::createSubdivMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIVISION)
     if (device->subdiv_accel_mb == "default") 
     {
       //if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -519,7 +516,7 @@ namespace embree
     }
     // else if (device->subdiv_accel_mb == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
     // else if (device->subdiv_accel_mb == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
 #endif
   }
 
@@ -551,7 +548,7 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->object_accel == "bvh8.object") accels.add(device->bvh8_factory->BVH8UserGeometry(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
 #endif
   }
 
@@ -570,7 +567,7 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->object_accel_mb == "bvh8.object") accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
 #endif
   }
   
@@ -580,11 +577,15 @@ namespace embree
   unsigned Scene::bind(unsigned geomID, Ref<Geometry> geometry) 
   {
     Lock<SpinLock> lock(geometriesMutex);
-    if (geomID == RTC_INVALID_GEOMETRY_ID)
+    if (geomID == RTC_INVALID_GEOMETRY_ID) {
       geomID = id_pool.allocate();
-    else {
+      if (geomID == RTC_INVALID_GEOMETRY_ID)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"too many geometries inside scene");
+    }
+    else
+    {
       if (!id_pool.add(geomID))
-        throw_RTCError(RTC_INVALID_OPERATION,"provided geometry ID already assigned to a geometry");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry ID provided");
     }
     if (geomID >= geometries.size()) {
       geometries.resize(geomID+1);
@@ -599,11 +600,11 @@ namespace embree
     Lock<SpinLock> lock(geometriesMutex);
     
     if (geomID >= geometries.size())
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry ID");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry ID");
 
     Ref<Geometry>& geometry = geometries[geomID];
     if (geometry == null)
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry");
     
     geometry->detach();
     accels.deleteGeometry(unsigned(geomID));
@@ -630,7 +631,8 @@ namespace embree
 
     /* call preCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i]) geometries[i]->preCommit();
+        if (geometries[i] && geometries[i]->isEnabled())
+          geometries[i]->preCommit();
       });
 
     /* select acceleration structures to build */
@@ -672,7 +674,8 @@ namespace embree
 
     /* call postCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i]) geometries[i]->postCommit();
+        if (geometries[i] && geometries[i]->isEnabled())
+          geometries[i]->postCommit();
       });
       
     updateInterface();
@@ -685,17 +688,6 @@ namespace embree
     }
     
     setModified(false);
-  }
-
-  void Scene::setAccelFlags(RTCAccelFlags accel_flags_i)
-  {
-    if (accel_flags == accel_flags_i) return;
-    accel_flags = accel_flags_i;
-    flags_modified = true;
-  }
-
-  RTCAccelFlags Scene::getAccelFlags() const {
-    return accel_flags;
   }
 
   void Scene::setBuildQuality(RTCBuildQuality quality_flags_i)
@@ -741,7 +733,7 @@ namespace embree
     if (!buildLock.isLocked())
     {
       if (!join) 
-        throw_RTCError(RTC_INVALID_OPERATION,"use rtcCommitJoin to join a build operation");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
       
       scheduler->join();
       return;
@@ -772,6 +764,16 @@ namespace embree
 
   void Scene::commit (bool join) 
   {
+#if defined(TASKING_PPL)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with PPL");
+#endif
+    
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with this TBB version");
+#endif
+
     /* try to obtain build lock */
     Lock<MutexSys> lock(buildMutex,buildMutex.try_lock());
 
@@ -779,11 +781,8 @@ namespace embree
     if (!lock.isLocked())
     {
       if (!join) 
-        throw_RTCError(RTC_INVALID_OPERATION,"use rtcCommitJoin to join a build operation");
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
       
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
-      throw_RTCError(RTC_INVALID_OPERATION,"join not supported");
-#endif
 #if USE_TASK_ARENA
       device->arena->execute([&]{ group->wait(); });
 #else
@@ -866,7 +865,7 @@ namespace embree
     if (progress_monitor_function) {
       size_t n = size_t(dn) + progress_monitor_counter.fetch_add(size_t(dn));
       if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
-        throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
+        throw_RTCError(RTC_ERROR_CANCELLED,"progress monitor forced termination");
       }
     }
   }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,7 +23,7 @@ namespace embree {
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
-//#define rtcOccluded1 rtcIntersect1
+//#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
 
 #define SIMPLE_SHADING 1
@@ -40,7 +40,7 @@ RTCScene g_scene = nullptr;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
-inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
   const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
@@ -51,19 +51,19 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
 }
 
 
-void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
+void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, unsigned int startID, unsigned int endID )
 {
-  for (size_t f=startID; f<endID;f++) {
+  for (unsigned int f=startID; f<endID;f++) {
     unsigned int e = mesh->face_offsets[f];
     unsigned int N = mesh->verticesPerFace[f];
     if (N == 4) /* fast path for quads */
-      for (size_t i=0; i<4; i++)
+      for (unsigned int i=0; i<4; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
     else if (N == 3) /* fast path for triangles */
-      for (size_t i=0; i<3; i++)
+      for (unsigned int i=0; i<3; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
     else /* fast path for general polygons */
-      for (size_t i=0; i<N; i++)
+      for (unsigned int i=0; i<N; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
   }
 }
@@ -71,9 +71,9 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 #if defined(ISPC)
 void updateSubMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
-  const size_t size = mesh->numFaces;
-  const size_t startID = ((taskIndex+0)*size)/taskCount;
-  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  const unsigned int size = mesh->numFaces;
+  const unsigned int startID = ((taskIndex+0)*size)/taskCount;
+  const unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
 void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* scene_in, const Vec3fa& cam_pos )
@@ -84,7 +84,7 @@ void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* 
   unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry,RTC_BUFFER_TYPE_LEVEL,0);
     rtcCommitGeometry(geometry->geometry);
   }
 }
@@ -102,7 +102,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #endif
 
   /* now update large meshes */
-  for (size_t g=0; g<scene_in->numGeometries; g++)
+  for (unsigned int g=0; g<scene_in->numGeometries; g++)
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
@@ -117,7 +117,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry,RTC_BUFFER_TYPE_LEVEL,0);
     rtcCommitGeometry(geometry->geometry);
   }
 }
@@ -130,7 +130,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
   return scene_out;
@@ -148,7 +148,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 
   /* calculate hit point */
   float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar() * ray.dir;
+  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
 
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
@@ -167,31 +167,31 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
     Ray& shadow = rays[i];
     bool mask = 1; { // invalidate inactive rays
       shadow.tnear() = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(shadow, hitPos, dir.v, shadow.tnear(), shadow.tfar());
+    init_Ray(shadow, hitPos, dir.v, shadow.tnear(), shadow.tfar);
 
     RayStats_addShadowRay(stats);
   }
 
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
   rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
 #elif USE_INTERFACE == 1
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  for (unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded1(g_scene,RTCRay_(rays[i]));
 #else
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  for (unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
 #endif
 
   /* accumulate illumination */
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
-    if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+    if (rays[i].tfar >= 0.0f)
       intensity += 1.0f;
   }
 
@@ -268,8 +268,8 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
 
       /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
+      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
       dg.Ng = xfmVector(space,dg.Ng);
       dg.Ns = xfmVector(space,dg.Ns);
     }
@@ -319,26 +319,26 @@ void renderTileStandard(int taskIndex,
     Ray& ray = rays[N++];
     bool mask = 1; { // invalidates inactive rays
       ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
-      ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar(), RandomSampler_get1D(sampler));
+    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar, RandomSampler_get1D(sampler));
 
     RayStats_addRay(stats);
   }
 
   RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersect1M(g_scene,&context,(RTCRay*)&rays[0],N,sizeof(Ray));
+  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],N,sizeof(Ray));
 #elif USE_INTERFACE == 1
-  for (size_t i=0; i<N; i++)
-    rtcIntersect1(g_scene,&context,RTCRay_(rays[i]));
+  for (unsigned int i=0; i<N; i++)
+    rtcIntersect1(g_scene,&context,RTCRayHit_(rays[i]));
 #else
-  for (size_t i=0; i<N; i++)
-    rtcIntersect1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
+  for (unsigned int i=0; i<N; i++)
+    rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[i],1,sizeof(Ray));
 #endif
 
   /* shade stream of rays */
@@ -361,7 +361,7 @@ void renderTileStandard(int taskIndex,
       dg.primID = ray.primID;
       dg.u = ray.u;
       dg.v = ray.v;
-      dg.P  = ray.org+ray.tfar()*ray.dir;
+      dg.P  = ray.org+ray.tfar*ray.dir;
       dg.Ng = ray.Ng;
       dg.Ns = ray.Ng;
       int materialID = postIntersect(ray,dg);
@@ -408,10 +408,10 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
@@ -429,7 +429,7 @@ extern "C" void device_render (int* pixels,
   if (!g_scene) {
     g_scene = convertScene(g_ispc_scene);
     updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
   
   /* render image */

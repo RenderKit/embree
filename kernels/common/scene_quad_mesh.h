@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -47,23 +47,18 @@ namespace embree
   public:
     void enabling();
     void disabling();
-    void setMask (unsigned mask);
-    void setGeometryIntersector(RTCGeometryIntersector type);
-    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
-    void* getBuffer(RTCBufferType type);
+    void setMask(unsigned mask);
+    void setNumTimeSteps (unsigned int numTimeSteps);
+    void setVertexAttributeCount (unsigned int N);
+    void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
+    void* getBuffer(RTCBufferType type, unsigned int slot);
+    void updateBuffer(RTCBufferType type, unsigned int slot);
     void preCommit();
-    void postCommit ();
-    bool verify ();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
-    // FIXME: implement interpolateN
+    void postCommit();
+    bool verify();
+    void interpolate(const RTCInterpolateArguments* const args);
 
   public:
-
-    /*! returns number of quads */
-    __forceinline size_t size() const {
-      return quads.size();
-    }
 
     /*! returns number of vertices */
     __forceinline size_t numVertices() const {
@@ -210,11 +205,16 @@ namespace embree
       return true;
     }
 
+    /* returns true if topology changed */
+    bool topologyChanged() const {
+      return quads.isModified() || numPrimitivesChanged;
+    }
+
   public:
-    APIBuffer<Quad> quads;                            //!< array of quads
-    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
-    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<APIBuffer<char>> userbuffers;              //!< user buffers
+    BufferView<Quad> quads;                 //!< array of quads
+    BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
+    vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    vector<BufferView<char>> vertexAttribs; //!< vertex attribute buffers
   };
 
   namespace isa

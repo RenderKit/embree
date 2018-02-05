@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -38,7 +38,7 @@ namespace embree
     /* primitive supports single time segments */
     static const bool singleTimeSegment = true;
 
-    /* Returns maximal number of stored triangles */
+    /* Returns maximum number of stored triangles */
     static __forceinline size_t max_size() { return M; }
     
     /* Returns required number of primitive blocks for N primitives */

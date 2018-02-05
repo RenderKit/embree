@@ -1,0 +1,43 @@
+.TH "rtcNewBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcNewBuffer\ \-\ creates\ a\ new\ data\ buffer
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCBuffer\ rtcNewBuffer(
+\ \ RTCDevice\ device,
+\ \ size_t\ byteSize
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcNewBuffer\f[] function creates a new data buffer object of
+specified size in bytes (\f[C]byteSize\f[] argument) that is bound to
+the specified device (\f[C]device\f[] argument).
+The buffer object is reference counted with an initial reference count
+of 1.
+The returned buffer object can be released using the
+\f[C]rtcReleaseBuffer\f[] API call.
+The specified number of bytes are allocated at buffer construction time
+and deallocated when the buffer is destroyed.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcRetainBuffer], [rtcReleaseBuffer]

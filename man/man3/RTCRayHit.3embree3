@@ -1,0 +1,37 @@
+.TH "RTCRay" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTCRayHit\ \-\ combined\ single\ ray/hit\ structure
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore_ray.h>
+
+struct\ RTCORE_ALIGN(16)\ RTCRayHit
+{
+\ \ struct\ RTCRay\ ray;
+\ \ struct\ RTCHit\ hit;
+};
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]RTCRayHit\f[] structure is used as input for the
+\f[C]rtcIntersect\f[]\-type functions and stores the ray to intersect
+and some hit fields that hold the intersection result afterwards.
+.PP
+The \f[C]embree3/rtcore_ray.h\f[] header additionally defines the same
+ray/hit structure in structure of array (SOA) layout for API functions
+accepting ray packets of size 4 (\f[C]RTCRayHit4\f[] type), size 8
+(\f[C]RTCRayHit8\f[] type), and size 16 (\f[C]RTCRayHit16\f[] type).
+The header additionally defines an \f[C]RTCRayHitNt\f[] template to
+generate ray/hit packets of an arbitrary compile\-time size.
+.SS EXIT STATUS
+.SS SEE ALSO
+.PP
+[RTCRay], [RTCHit]

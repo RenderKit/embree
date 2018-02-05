@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -288,7 +288,7 @@ namespace embree
    __forceinline size_t alloc(const size_t blocks)
    {
      if (unlikely(blocks >= switch_block_threshold))
-       throw_RTCError(RTC_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
+       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
 
      assert(blocks < switch_block_threshold);
      size_t index = next_block.fetch_add(blocks);

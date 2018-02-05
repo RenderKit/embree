@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -38,12 +38,12 @@ uniform int disabledID = -1;
 uniform unsigned int createSphere (uniform RTCBuildQuality quality, const uniform Vec3f& pos, const uniform float r)
 {
   /* create a triangulated sphere */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   rtcSetGeometryBuildQuality(geom, quality);
 
   /* map triangle and vertex buffer */
-  uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),numTheta*(numPhi+1));
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2*numTheta*(numPhi-1));
+  uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numTheta*(numPhi+1));
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(uniform Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere geometry */
   uniform int tri = 0;
@@ -95,17 +95,17 @@ uniform unsigned int createSphere (uniform RTCBuildQuality quality, const unifor
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewTriangleMesh (g_device);
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(uniform Vertex),4);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(uniform Triangle),2);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(uniform Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
 
@@ -120,16 +120,15 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
+  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device);
-  rtcSetAccelFlags(g_scene,RTC_ACCEL_ROBUST);
-  rtcSetBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
+  g_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST);
+  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
 
   /* create some triangulated spheres */
   for (uniform int i=0; i<numSpheres; i++)
@@ -153,7 +152,7 @@ export void device_init (uniform int8* uniform cfg)
   colors[id] = make_Vec3f(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -188,8 +187,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
-  rtcIntersect(g_scene,&context,RTCRay_(ray));
+  rtcInitIntersectContext(&context);
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -204,11 +203,11 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
   return color;
@@ -262,7 +261,7 @@ void animateSphere (uniform int id, uniform float time)
 {
   /* animate vertices */
   RTCGeometry geom = rtcGetGeometry(g_scene,id);
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcGetBuffer(geom,RTC_VERTEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcGetGeometryBufferData(geom,RTC_BUFFER_TYPE_VERTEX,0);
   const uniform float rcpNumTheta = rcp((uniform float)numTheta);
   const uniform float rcpNumPhi   = rcp((uniform float)numPhi);
   const uniform Vec3f pos = position[id];
@@ -285,6 +284,7 @@ void animateSphere (uniform int id, uniform float time)
 #endif
 
   /* commit mesh */
+  rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
   rtcCommitGeometry(geom);
 }
 
@@ -300,7 +300,7 @@ export void device_render (uniform int* uniform pixels,
     animateSphere(i,time+i);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  rtcCommitScene (g_scene);
 
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

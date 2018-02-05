@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -130,7 +130,6 @@ namespace embree
         /* we reset the allocator when the group size changed */
         if (group && group->numPrimitivesChanged) {
           bvh->alloc.clear();
-          group->numPrimitivesChanged = false;
         }
 
 	/* skip build for empty scene */
@@ -175,7 +174,6 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
-          mesh->numPrimitivesChanged = false;
         }
 
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
@@ -283,7 +281,6 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
-          mesh->numPrimitivesChanged = false;
         }
 
 	/* skip build for empty scene */
@@ -546,7 +543,6 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
-          mesh->numPrimitivesChanged = false;
         }
 
 	/* skip build for empty scene */
@@ -614,7 +610,7 @@ namespace embree
     /************************************************************************************/
 
 
-#if defined(EMBREE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_CURVES)
     Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode,true); }
     Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
@@ -624,7 +620,7 @@ namespace embree
 #endif
 #endif
 
-#if defined(EMBREE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_CURVES)
     Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,NativeCurves,Bezier1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode); }
     Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,NativeCurves,Bezier1i>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
 #endif

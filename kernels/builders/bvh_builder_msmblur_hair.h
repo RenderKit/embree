@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -38,10 +38,10 @@ namespace embree
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t maxDepth;         //!< maximum depth of BVH to build
         size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t minLeafSize;      //!< minimum size of a leaf
+        size_t maxLeafSize;      //!< maximum size of a leaf
       };
 
       struct BuildRecord
@@ -78,8 +78,8 @@ namespace embree
         {
           ALIGNED_CLASS;
 
-          static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
-          static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
+          static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximum supported BVH branching factor
+          static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximum tree depth
           static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
           typedef BVHNodeRecordMB<NodeRef> NodeRecordMB;
@@ -144,7 +144,7 @@ namespace embree
           {
             /* this should never occur but is a fatal error */
             if (current.depth > cfg.maxDepth)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+              throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
             /* create leaf for few primitives */
             if (current.size() <= cfg.maxLeafSize)

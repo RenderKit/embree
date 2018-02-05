@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -36,7 +36,7 @@ uniform bool g_subdiv_mode = false;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
-inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform unsigned int e0, const uniform unsigned int e1)
 {
   const uniform Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const uniform Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
@@ -47,19 +47,19 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
 }
 
 
-void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
+void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform unsigned int startID, uniform unsigned int endID )
 {
-  for (uniform size_t f=startID; f<endID;f++) {
+  for (uniform unsigned int f=startID; f<endID;f++) {
     uniform unsigned int e = mesh->face_offsets[f];
     uniform unsigned int N = mesh->verticesPerFace[f];
     if (N == 4) /* fast path for quads */
-      for (uniform size_t i=0; i<4; i++)
+      for (uniform unsigned int i=0; i<4; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
     else if (N == 3) /* fast path for triangles */
-      for (uniform size_t i=0; i<3; i++)
+      for (uniform unsigned int i=0; i<3; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
     else /* fast path for general polygons */
-      for (uniform size_t i=0; i<N; i++)
+      for (uniform unsigned int i=0; i<N; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
   }
 }
@@ -67,9 +67,9 @@ void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform 
 #if defined(ISPC)
 task void updateSubMeshEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
 {
-  const uniform size_t size = mesh->numFaces;
-  const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
-  const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
+  const uniform unsigned int size = mesh->numFaces;
+  const uniform unsigned int startID = ((taskIndex+0)*size)/taskCount;
+  const uniform unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
 task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos )
@@ -80,7 +80,7 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
   uniform unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry, RTC_BUFFER_TYPE_LEVEL, 0);
   }
   rtcCommitGeometry(geometry->geometry);
 }
@@ -94,7 +94,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #endif
 
   /* now update large meshes */
-  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
+  for (uniform unsigned int g=0; g<scene_in->numGeometries; g++)
   {
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
@@ -105,7 +105,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry, RTC_BUFFER_TYPE_LEVEL, 0);
     rtcCommitGeometry(geometry->geometry);
   }
 }
@@ -119,7 +119,7 @@ void device_key_pressed_handler(uniform int key)
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
-  for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+  for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
@@ -133,7 +133,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
 
@@ -237,9 +237,9 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  rtcInitIntersectionContext(&context);
+  rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
-  rtcIntersect(g_scene,&context,RTCRay_(ray));
+  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade background black */
@@ -265,7 +265,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,NULL,NULL,NULL,3);
+        rtcInterpolateV1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);
     }
@@ -333,10 +333,10 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,NULL);
+  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -357,7 +357,7 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
     old_p = camera.xfm.p;
   }
 
@@ -372,7 +372,7 @@ export void device_render (uniform int* uniform pixels,
     /* update edge levels if camera changed */
     if (camera_changed && g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
     }
   }
 

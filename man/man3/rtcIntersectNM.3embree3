@@ -1,0 +1,59 @@
+.TH "rtcIntersectNM" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcIntersectNM\ \-\ finds\ the\ closest\ hits\ for\ a\ stream\ of\ M
+\ \ ray\ packets\ of\ size\ N
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcIntersectNM(
+\ \ RTCScene\ scene,
+\ \ struct\ RTCIntersectContext*\ context,
+\ \ struct\ RTCRayHitN*\ rayhit,
+\ \ unsigned\ int\ N,
+\ \ unsigned\ int\ M,
+\ \ size_t\ byteStride
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcIntersectNM\f[] function finds the closest hits for a stream
+of \f[C]M\f[] ray packets (\f[C]rayhit\f[] argument) of size \f[C]N\f[]
+with the scene (\f[C]scene\f[] argument).
+The \f[C]rays\f[] argument points to an array of ray and hit packets
+with specified byte stride (\f[C]byteStride\f[] argument) between the
+ray/hit packets.
+See Section [rtcIntersect1] for a description of how to set up and trace
+rays.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+A ray in a ray stream is considered inactive if its \f[C]tnear\f[] value
+is larger than its \f[C]tfar\f[] value.
+.PP
+The packet size \f[C]N\f[] must be larger than 0, and the stream size
+\f[C]M\f[] can be an arbitrary positive integer including 0.
+Each ray must be aligned to 16 bytes.
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcOccludedNM]

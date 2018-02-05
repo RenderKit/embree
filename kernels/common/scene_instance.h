@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,14 +33,18 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
-    static Instance* create (Device* device, Scene* object, unsigned int numTimeSteps) {
-      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(device,object,numTimeSteps);
-    }
-  private:
     Instance (Device* device, Scene* object, unsigned int numTimeSteps);
     ~Instance();
+
+  private:
+    Instance (const Instance& other) DELETED; // do not implement
+    Instance& operator= (const Instance& other) DELETED; // do not implement
+    
   public:
+    virtual void setNumTimeSteps (unsigned int numTimeSteps);
+    virtual void setInstancedScene(const Ref<Scene>& scene);
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
+    virtual AffineSpace3fa getTransform(float time);
     virtual void setMask (unsigned mask);
     virtual void build() {}
 
@@ -82,6 +86,6 @@ namespace embree
   public:
     Scene* object;                 //!< pointer to instanced acceleration structure
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
-    AffineSpace3fa local2world[1]; //!< transformation from local space to world space for each timestep
+    AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
   };
 }

@@ -1,0 +1,32 @@
+.TH "rtcRetainBVH" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcRetainBVH\ \-\ increments\ the\ BVH\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcRetainBVH(RTCBVH\ bvh);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+BVH objects are reference counted.
+The \f[C]rtcRetainBVH\f[] function increments the reference count of the
+passed BVH object (\f[C]bvh\f[] argument).
+This function together with \f[C]rtcReleaseBVH\f[] allows to use the
+internal reference counting in a C++ wrapper class to handle the
+ownership of the object.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewBVH], [rtcReleaseBVH]

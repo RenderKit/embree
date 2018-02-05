@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -52,12 +52,12 @@ namespace embree
     };
     
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-      __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3fa& curve, size_t i, 
+      __forceinline bool intersect_bezier_iterative_debug(const RayHit& ray, const float dt, const NativeCurve3fa& curve, size_t i, 
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
     {
-      if (tp.lower[i]+dt > ray.tfar()) return false;
+      if (tp.lower[i]+dt > ray.tfar) return false;
       Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
@@ -112,7 +112,7 @@ namespace embree
         if (converged_u && converged_t) 
         {
           t+=dt;
-          if (!(t > ray.tnear() && t < ray.tfar())) return false; // rejects NaNs
+          if (!(t > ray.tnear() && t < ray.tfar)) return false; // rejects NaNs
           if (!(u >= 0.0f && u <= 1.0f)) return false; // rejects NaNs
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
@@ -125,7 +125,7 @@ namespace embree
     }
 
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-      bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve, 
+      bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
                                                const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
@@ -162,7 +162,7 @@ namespace embree
       if (none(valid)) return false;
      
       /* intersect with cap-planes */
-      BBox<vfloatx> tp(ray.tnear()-dt,ray.tfar()-dt);
+      BBox<vfloatx> tp(ray.tnear()-dt,ray.tfar-dt);
       tp = embree::intersect(tp,tc_outer);
       BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
       tp = embree::intersect(tp,h0);
@@ -202,9 +202,9 @@ namespace embree
         if (depth >= termDepth) found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
         //if (depth >= maxDepth) found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
         else                   found = found | intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid0 &= tp0.lower+dt <= ray.tfar();
+        valid0 &= tp0.lower+dt <= ray.tfar;
       }
-      valid1 &= tp1.lower+dt <= ray.tfar();
+      valid1 &= tp1.lower+dt <= ray.tfar;
 
       /* iterate over all second hits front to back */
       while (any(valid1))
@@ -214,7 +214,7 @@ namespace embree
         if (depth >= termDepth) found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
         //if (depth >= maxDepth) found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
         else                   found = found | intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid1 &= tp1.lower+dt <= ray.tfar();
+        valid1 &= tp1.lower+dt <= ray.tfar;
       }
       return found;
     }
@@ -227,7 +227,7 @@ namespace embree
       __forceinline BezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
-      __noinline bool intersect(Ray& ray, 
+      __noinline bool intersect(Ray& ray,
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Epilog& epilog) const
       {
@@ -251,18 +251,18 @@ namespace embree
     {
       struct Ray1
       {
-        __forceinline Ray1(RayK<K>& ray, size_t k) 
-          : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), _tnear(ray.tnear()[k]), _tfar(ray.tfar()[k]) {}
+        __forceinline Ray1(RayK<K>& ray, size_t k)
+          : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), _tnear(ray.tnear()[k]), tfar(ray.tfar[k]) {}
 
         Vec3fa org;
         Vec3fa dir;
         float _tnear;
-        float& _tfar;
+        float& tfar;
 
-        __forceinline float &tnear() { return _tnear; }
-        __forceinline float &tfar()  { return _tfar; }
-        __forceinline const float &tnear() const { return _tnear; }
-        __forceinline const float &tfar()  const { return _tfar; }
+        __forceinline float& tnear() { return _tnear; }
+        //__forceinline float& tfar()  { return _tfar; }
+        __forceinline const float& tnear() const { return _tnear; }
+        //__forceinline const float& tfar()  const { return _tfar; }
         
       };
 

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) 
-    : Geometry(device,BEZIER_CURVES,0,1), subtype(subtype), basis(basis), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, CurveType type, CurveSubtype subtype)
+    : Geometry(device,BEZIER_CURVES,0,1), type(type), subtype(subtype), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
@@ -45,88 +45,134 @@ namespace embree
     Geometry::update();
   }
 
-  void NativeCurves::setGeometryIntersector(RTCGeometryIntersector type_in)
+  void NativeCurves::setNumTimeSteps (unsigned int numTimeSteps)
   {
-    this->subtype = type_in;
+    vertices.resize(numTimeSteps);
+    Geometry::setNumTimeSteps(numTimeSteps);
+  }
+  
+  void NativeCurves::setVertexAttributeCount (unsigned int N)
+  {
+    vertexAttribs.resize(N);
     Geometry::update();
   }
-  
-  void* NativeCurves::newBuffer(RTCBufferType type, size_t stride, unsigned int size) 
+
+  void NativeCurves::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
-    if (stride & 0x3) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
+    if (type == RTC_BUFFER_TYPE_VERTEX)
     {
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].newBuffer(device,size,stride);
-      setNumTimeSteps((unsigned int)vertices.size());
-      return vertices[bid].get();
+      if (format != RTC_FORMAT_FLOAT4)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
+
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer slot");
+      
+      vertices[slot].set(buffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
     }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER_(RTC_MAX_USER_VERTEX_BUFFERS))
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride,true);
-      return userbuffers[bid].get();
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
+      vertexAttribs[slot].set(buffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
     }
-    else if (type == RTC_INDEX_BUFFER) 
+    else if (type == RTC_BUFFER_TYPE_INDEX)
     {
-      curves.newBuffer(device,size,stride); 
-      setNumPrimitives(size);
-      return curves.get();
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+
+      curves.set(buffer, offset, stride, num, format);
+      setNumPrimitives(num);
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UCHAR)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid flag buffer format");
+
+      flags.set(buffer, offset, stride, num, format);
     }
     else 
-        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-
-    return nullptr;
-  }
-  
-  void NativeCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size) 
-  { 
-    /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
-      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-
-    unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER_(RTC_MAX_TIME_STEPS)) 
-    {
-      if (bid >= vertices.size()) vertices.resize(bid+1);
-      vertices[bid].set(device,ptr,offset,stride,size); 
-      vertices[bid].checkPadding16();
-      //while (vertices.size() > 1 && vertices.back().getPtr() == nullptr)
-      //  vertices.pop_back();
-      setNumTimeSteps((unsigned int)vertices.size());
-    }
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
-    {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(device,size,stride);
-      userbuffers[bid].set(device,ptr,offset,stride,size);  
-      userbuffers[bid].checkPadding16();
-    }
-    else if (type == RTC_INDEX_BUFFER) 
-    {
-      curves.set(device,ptr,offset,stride,size); 
-      setNumPrimitives(size);
-    }
-    else 
-        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* NativeCurves::getBuffer(RTCBufferType type) 
+  void* NativeCurves::getBuffer(RTCBufferType type, unsigned int slot)
   {
-    if (type == RTC_INDEX_BUFFER) {
-      return curves.get();
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return curves.getPtr();
     }
-    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].get();
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertices[slot].getPtr();
     }
-    else {
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return vertexAttribs[slot].getPtr();
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return flags.getPtr();
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
       return nullptr;
     }
+  }
+
+  void NativeCurves::updateBuffer(RTCBufferType type, unsigned int slot)
+  {
+    if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      curves.setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertices[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      vertexAttribs[slot].setModified(true);
+    }
+    else if (type == RTC_BUFFER_TYPE_FLAGS) 
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      flags.setModified(true);
+    }
+    else
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+    }
+
+    Geometry::update();
   }
 
   void NativeCurves::setTessellationRate(float N)
@@ -161,15 +207,30 @@ namespace embree
 
   void NativeCurves::preCommit()
   {
-    if (!isEnabled()) return;
+    /* verify that stride of all time steps are identical */
+    for (unsigned int t=0; t<numTimeSteps; t++)
+      if (vertices[t].getStride() != vertices[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-    native_curves = (BufferRefT<unsigned>) curves;
+    native_curves = (BufferView<unsigned>) curves;
     if (native_vertices.size() != vertices.size())
       native_vertices.resize(vertices.size());
 
     native_vertices0 = vertices[0];
     for (size_t i=0; i<vertices.size(); i++)
-      native_vertices[i] = (BufferRefT<Vec3fa>) vertices[i];
+      native_vertices[i] = (BufferView<Vec3fa>) vertices[i];
+  }
+
+  void NativeCurves::postCommit() 
+  {
+    curves.setModified(false);
+    for (auto& buf : vertices)
+      buf.setModified(false);
+    for (auto& attrib : vertexAttribs)
+      attrib.setModified(false);
+    flags.setModified(false);
+
+    Geometry::postCommit();
   }
 
 #endif
@@ -177,46 +238,54 @@ namespace embree
   namespace isa
   {
     template<typename Curve>
-    __forceinline void NativeCurvesISA::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                                           float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
+    __forceinline void NativeCurvesISA::interpolate_helper(const RTCInterpolateArguments* const args)
     {
+      unsigned int primID = args->primID;
+      float u = args->u;
+      RTCBufferType bufferType = args->bufferType;
+      unsigned int bufferSlot = args->bufferSlot;
+      float* P = args->P;
+      float* dPdu = args->dPdu;
+      float* ddPdudu = args->ddPdudu;
+      unsigned int valueCount = args->valueCount;
+    
       /* calculate base pointer and stride */
-      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
-             (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
       const char* src = nullptr; 
       size_t stride = 0;
-      if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-        src    = userbuffers[buffer&0xFFFF].getPtr();
-        stride = userbuffers[buffer&0xFFFF].getStride();
+      if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        src    = vertexAttribs[bufferSlot].getPtr();
+        stride = vertexAttribs[bufferSlot].getStride();
       } else {
-        src    = vertices[buffer&0xFFFF].getPtr();
-        stride = vertices[buffer&0xFFFF].getStride();
+        src    = vertices[bufferSlot].getPtr();
+        stride = vertices[bufferSlot].getStride();
       }
       
-      for (unsigned int i=0; i<numFloats; i+=VSIZEX)
+      for (unsigned int i=0; i<valueCount; i+=4)
       {
         size_t ofs = i*sizeof(float);
         const size_t curve = curves[primID];
-        const vboolx valid = vintx((int)i)+vintx(step) < vintx((int)numFloats);
-        const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-        const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-        const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-        const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+        const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
+        const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+        const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+        const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+        const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
         
         const Curve bezier(p0,p1,p2,p3);
-        if (P      ) vfloatx::storeu(valid,P+i,      bezier.eval(u));
-        if (dPdu   ) vfloatx::storeu(valid,dPdu+i,   bezier.eval_du(u));
-        if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+        if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+        if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+        if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
       }
     }
     
     template<typename InputCurve3fa, typename OutputCurve3fa>
     void NativeCurvesISA::commit_helper()
     {
-      if (native_curves.size() != curves.size()) 
+      if (native_curves.size() != size()) 
       {
-        native_curves = APIBuffer<unsigned>(device,curves.size(),sizeof(unsigned int),true);
-        parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
+        native_curves.set(new Buffer(device, size()*sizeof(unsigned int)), 0, sizeof(unsigned int), size(), RTC_FORMAT_UINT);
+        parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
               else                              native_curves[i] = unsigned(4*i);
@@ -227,12 +296,12 @@ namespace embree
       if (native_vertices.size() != vertices.size())
         native_vertices.resize(vertices.size());
       
-      parallel_for(vertices.size(), [&] ( const size_t i ) {
+      parallel_for(vertices.size(), [&] (const size_t i) {
           
-          if (native_vertices[i].size() != 4*curves.size())
-            native_vertices[i] = APIBuffer<Vec3fa>(device,4*curves.size(),sizeof(Vec3fa),true);
+          if (native_vertices[i].size() != 4*size())
+            native_vertices[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT4);
           
-          parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
+          parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
               
               for (size_t j=rj.begin(); j<rj.end(); j++)
               {
@@ -254,8 +323,8 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) {
-      return new CurvesBezier(device,subtype,basis);
+    NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype) {
+      return new CurvesBezier(device,BEZIER_CURVE,subtype);
     }
     
     void CurvesBezier::preCommit() {
@@ -267,14 +336,12 @@ namespace embree
       Geometry::preCommit();
     }
     
-    void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                   float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
-    {
-      interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    void CurvesBezier::interpolate(const RTCInterpolateArguments* const args) {
+      interpolate_helper<BezierCurveT<vfloat4>>(args);
     }
     
-    NativeCurves* createCurvesBSpline(Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis) {
-      return new CurvesBSpline(device,subtype,basis);
+    NativeCurves* createCurvesBSpline(Device* device, CurveSubtype subtype) {
+      return new CurvesBSpline(device,BSPLINE_CURVE,subtype);
     }
     
     void CurvesBSpline::preCommit() {
@@ -286,10 +353,8 @@ namespace embree
       Geometry::preCommit();
     }
     
-    void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                    float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats) 
-    {
-      interpolate_helper<BSplineCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    void CurvesBSpline::interpolate(const RTCInterpolateArguments* const args) {
+      interpolate_helper<BSplineCurveT<vfloat4>>(args);
     }
   }
 }

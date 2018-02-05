@@ -1,0 +1,68 @@
+.TH "RTCRay" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTCRay\ \-\ single\ ray\ structure
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore_ray.h>
+
+struct\ RTC_ALIGN(16)\ RTCRay
+{
+\ \ float\ org_x;\ \ \ \ \ \ \ \ //\ x\ coordinate\ of\ ray\ origin
+\ \ float\ org_y;\ \ \ \ \ \ \ \ //\ y\ coordinate\ of\ ray\ origin
+\ \ float\ org_z;\ \ \ \ \ \ \ \ //\ z\ coordinate\ of\ ray\ origin
+\ \ float\ tnear;\ \ \ \ \ \ \ \ //\ start\ of\ ray\ segment
+
+\ \ float\ dir_x;\ \ \ \ \ \ \ \ //\ x\ coordinate\ of\ ray\ direction
+\ \ float\ dir_y;\ \ \ \ \ \ \ \ //\ y\ coordinate\ of\ ray\ direction
+\ \ float\ dir_z;\ \ \ \ \ \ \ \ //\ z\ coordinate\ of\ ray\ direction
+\ \ float\ time;\ \ \ \ \ \ \ \ \ //\ time\ of\ this\ ray\ for\ motion\ blur
+
+\ \ float\ tfar;\ \ \ \ \ \ \ \ \ //\ end\ of\ ray\ segment\ (set\ to\ hit\ distance)
+\ \ unsigned\ int\ mask;\ \ //\ ray\ mask
+\ \ unsigned\ int\ id;\ \ \ \ //\ ray\ ID
+\ \ unsigned\ int\ flags;\ //\ ray\ flags
+};
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]RTCRay\f[] structure defines the ray layout for a single ray.
+The ray contains the origin (\f[C]org_x\f[], \f[C]org_y\f[],
+\f[C]org_z\f[] members), direction vector (\f[C]dir_x\f[],
+\f[C]dir_y\f[], \f[C]dir_z\f[] members), and ray segment (\f[C]tnear\f[]
+and \f[C]tfar\f[] members).
+The ray direction does not have to be normalized, and only the parameter
+range specified by the \f[C]tnear\f[]/\f[C]tfar\f[] interval is
+considered valid.
+.PP
+The ray segment must be in the range [0, ∞], thus ranges that start
+behind the ray origin are not allowed, but ranges can reach to infinity.
+For rays inside a ray stream, \f[C]tfar\f[] < \f[C]tnear\f[] identifies
+an inactive ray.
+.PP
+The ray further contains a motion blur time in the range [0, 1]
+(\f[C]time\f[] member), a ray mask (\f[C]mask\f[] member), a ray ID
+(\f[C]id\f[] member), and ray flags (\f[C]flags\f[] member).
+The ray mask can be used to mask out some geometries for some rays (see
+\f[C]rtcSetGeometryMask\f[] for more details).
+The ray ID can be used to identify a ray inside a callback function,
+even if the order of rays inside a ray packet or stream has changed.
+The ray flags are reserved.
+.PP
+The \f[C]embree3/rtcore_ray.h\f[] header additionally defines the same
+ray structure in structure of array (SOA) layout for API functions
+accepting ray packets of size 4 (\f[C]RTCRay4\f[] type), size 8
+(\f[C]RTCRay8\f[] type), and size 16 (\f[C]RTCRay16\f[] type).
+The header additionally defines an \f[C]RTCRayNt\f[] template for ray
+packets of an arbitrary compile\-time size.
+.SS EXIT STATUS
+.SS SEE ALSO
+.PP
+[RTCHit]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,7 +21,7 @@
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
 
-#if defined(EMBREE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_CURVES)
 
 namespace embree
 {

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -109,7 +109,7 @@ namespace embree
         mesh->verticesPerFace[i] = 4;
       }
     }
-    mesh->position_subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
+    mesh->position_subdiv_mode = RTC_SUBDIVISION_MODE_PIN_CORNERS;
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -301,21 +301,22 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
-    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,radius,0),radius));
-    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,radius),radius));
-    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,+radius,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(+radius,0,0),radius));
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, RTCGeometryIntersector type, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, CurveSubtype subtype, Ref<MaterialNode> material)
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
 
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_BASIS_BEZIER,material,1);
+    RTCGeometryType type = (subtype == ROUND_CURVE) ? RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material,1);
 
     if (numHairs == 1) {
       const Vec3fa p0 = pos;
@@ -427,7 +428,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_LINEAR,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,material,mblur?2:1);
 
     mesh->hairs.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
@@ -463,7 +464,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BEZIER,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,mblur?2:1);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {

@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2017 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -78,7 +78,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1_bvh4.cpp
   )
 
-IF (EMBREE_GEOMETRY_SUBDIV)
+IF (EMBREE_GEOMETRY_SUBDIVISION)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
   common/scene_subdiv_mesh.cpp
   subdiv/tessellation_cache.cpp
@@ -119,7 +119,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_builder_twolevel.cpp
       bvh/bvh_builder_instancing.cpp)
 
-    IF (EMBREE_GEOMETRY_SUBDIV)
+    IF (EMBREE_GEOMETRY_SUBDIVISION)
       LIST(APPEND ${TARGET} bvh/bvh_builder_subdiv.cpp)
     ENDIF()
   ENDIF()
@@ -141,7 +141,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_statistics.cpp)
   ENDIF()
 
-  IF (EMBREE_GEOMETRY_SUBDIV)
+  IF (EMBREE_GEOMETRY_SUBDIVISION)
     LIST(APPEND ${TARGET}
         common/scene_subdiv_mesh.cpp
         geometry/grid_soa.cpp
@@ -303,6 +303,8 @@ INSTALL(TARGETS embree
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
 )
 
-INSTALL(TARGETS embree
-  LIBRARY NAMELINK_ONLY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
-)
+IF (NOT EMBREE_STATIC_LIB)
+  INSTALL(TARGETS embree
+    LIBRARY NAMELINK_ONLY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+  )
+ENDIF()

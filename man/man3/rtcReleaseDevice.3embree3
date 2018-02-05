@@ -1,0 +1,34 @@
+.TH "rtcReleaseDevice" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcReleaseDevice\ \-\ decrements\ the\ device\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcReleaseDevice(RTCDevice\ device);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Device objects are reference counted.
+The \f[C]rtcReleaseDevice\f[] function decrements the reference count of
+the passed device object (\f[C]device\f[] argument).
+When the reference count falls to 0, the device gets destroyed.
+.PP
+All objects created from the device (like scenes, geometries, etc.) hold
+a reference to the device, thus the device will not get destroyed unless
+these objects are destroyed first.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewDevice], [rtcRetainDevice]

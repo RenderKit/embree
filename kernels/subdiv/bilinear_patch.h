@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -34,7 +34,7 @@ namespace embree
       
       __forceinline BilinearPatchT () {}
 
-      __forceinline BilinearPatchT (const HalfEdge* edge, const BufferRefT<Vertex>& vertices) {
+      __forceinline BilinearPatchT (const HalfEdge* edge, const BufferView<Vertex>& vertices) {
         init(edge,vertices.getPtr(),vertices.getStride());
       }
       

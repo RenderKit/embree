@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -31,18 +31,18 @@ namespace embree
   /* error reporting function */
   void error_handler(void* userPtr, const RTCError code, const char* str)
   {
-    if (code == RTC_NO_ERROR) 
+    if (code == RTC_ERROR_NONE) 
       return;
     
     printf("Embree: ");
     switch (code) {
-    case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-    case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-    case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-    case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-    case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-    case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-    default                   : printf("invalid error code"); break;
+    case RTC_ERROR_UNKNOWN          : printf("RTC_ERROR_UNKNOWN"); break;
+    case RTC_ERROR_INVALID_ARGUMENT : printf("RTC_ERROR_INVALID_ARGUMENT"); break;
+    case RTC_ERROR_INVALID_OPERATION: printf("RTC_ERROR_INVALID_OPERATION"); break;
+    case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
+    case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
+    case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
+    default                         : printf("invalid error code"); break;
     }
     if (str) { 
       printf(" ("); 
@@ -56,10 +56,10 @@ namespace embree
   unsigned int addCube (RTCDevice device_i, RTCScene scene_i, const Vec3fa& pos)
   {
     /* create a triangulated cube with 12 triangles and 8 vertices */
-    RTCGeometry mesh = rtcNewTriangleMesh (device_i);
+    RTCGeometry mesh = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_TRIANGLE);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),8); 
+    Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), 8); 
     vertices[0].x = pos.x + -1; vertices[0].y = pos.y + -1; vertices[0].z = pos.z + -1; 
     vertices[1].x = pos.x + -1; vertices[1].y = pos.y + -1; vertices[1].z = pos.z + +1; 
     vertices[2].x = pos.x + -1; vertices[2].y = pos.y + +1; vertices[2].z = pos.z + -1; 
@@ -71,7 +71,7 @@ namespace embree
     
     /* set triangles */
     int tri = 0;
-    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),12);
+    Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle), 12);
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -107,17 +107,17 @@ namespace embree
   unsigned int addGroundPlane (RTCDevice device_i, RTCScene scene_i)
   {
     /* create a triangulated plane with 2 triangles and 4 vertices */
-    RTCGeometry mesh = rtcNewTriangleMesh (device_i);
+    RTCGeometry mesh = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_TRIANGLE);
     
     /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcNewBuffer(mesh,RTC_VERTEX_BUFFER,sizeof(Vec3fa),4); 
+    Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), 4); 
     vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
     vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
     vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
     vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
     
     /* set triangles */
-    Triangle* triangles = (Triangle*) rtcNewBuffer(mesh,RTC_INDEX_BUFFER,sizeof(Triangle),2);
+    Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle), 2);
     triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
     triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
 
@@ -130,15 +130,15 @@ namespace embree
   /* adds a hair to the scene */
   unsigned int addHair(RTCDevice device_i, RTCScene scene_i)
   {
-    RTCGeometry geom = rtcNewCurveGeometry (device_i, RTC_GEOMETRY_INTERSECTOR_RIBBON, RTC_BASIS_BEZIER);
+    RTCGeometry geom = rtcNewGeometry (device_i, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
 
-    vfloat4* pos = (vfloat4*) rtcNewBuffer(geom,RTC_VERTEX_BUFFER,sizeof(vfloat4),4);
+    vfloat4* pos = (vfloat4*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(vfloat4), 4);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);
     pos[1] = vfloat4(0.0f,1.0f,0.0f,0.1f);
     pos[2] = vfloat4(0.0f,2.0f,0.0f,0.1f);
     pos[3] = vfloat4(0.0f,3.0f,0.0f,0.1f);
 
-    int* index = (int*) rtcNewBuffer(geom,RTC_INDEX_BUFFER,sizeof(int),1);
+    int* index = (int*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, sizeof(int), 1);
     index[0] = 0;
 
     rtcCommitGeometry(geom);
@@ -231,20 +231,20 @@ namespace embree
 
     /* create new Embree device and force bvh4.triangle4v hierarchy for triangles */
     RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
-    error_handler(nullptr,rtcDeviceGetError(device));
+    error_handler(nullptr,rtcGetDeviceError(device));
     
     /* set error handler */
-    rtcDeviceSetErrorFunction(device,error_handler,nullptr);
+    rtcSetDeviceErrorFunction(device,error_handler,nullptr);
     
     /* create scene */
-    RTCScene scene = rtcDeviceNewScene(device);
+    RTCScene scene = rtcNewScene(device);
     addCube(device,scene,Vec3fa(-1,0,0));
     addCube(device,scene,Vec3fa(1,0,0));
     addCube(device,scene,Vec3fa(0,0,-1));
     addCube(device,scene,Vec3fa(0,0,1));
     addHair(device,scene);
     addGroundPlane(device,scene);
-    rtcCommit (scene);
+    rtcCommitScene (scene);
     /* print triangle BVH */
     print_bvh(scene);
 

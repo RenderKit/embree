@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -450,18 +450,35 @@ namespace embree
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> mesh, ssize_t id)
   {
     std::string str_type = "";
-    switch (mesh->type) {
-    case RTC_GEOMETRY_INTERSECTOR_RIBBON: str_type = "ribbon"; break;
-    case RTC_GEOMETRY_INTERSECTOR_SURFACE: str_type = "surface"; break;
-    default: throw std::runtime_error("invalid curve type");
-    }
+    std::string str_subtype = "";
 
-    std::string str_basis = "";
-    switch (mesh->basis) {
-    case RTC_BASIS_LINEAR: str_basis = "linear"; break;
-    case RTC_BASIS_BEZIER: str_basis = "bezier"; break;
-    case RTC_BASIS_BSPLINE: str_basis = "bspline"; break;
-    default: throw std::runtime_error("invalid basis");
+    switch (mesh->type) {
+    case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
+      str_type = "linear";
+      break;
+
+    case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
+      str_type = "bezier";
+      str_subtype = "surface";
+      break;
+
+    case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:
+      str_type = "bezier";
+      str_subtype = "ribbon";
+      break;
+
+    case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
+      str_type = "bspline";
+      str_subtype = "surface";
+      break;
+
+    case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:
+      str_type = "bspline";
+      str_subtype = "ribbon";
+      break;
+
+    default:
+      throw std::runtime_error("invalid curve type");
     }
 
     std::vector<int> indices(mesh->hairs.size());
@@ -471,7 +488,7 @@ namespace embree
       hairid[i] = mesh->hairs[i].id;
     }
     
-    open("Curve type=\""+str_type+"\" basis=\""+str_basis+"\"",id);
+    open("Curve type=\""+str_subtype+"\" basis=\""+str_type+"\"",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store4f("positions",p);

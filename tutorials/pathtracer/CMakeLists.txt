@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2017 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -16,8 +16,14 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(pathtracer)
+IF (EMBREE_RAY_PACKETS)
+  ADD_TUTORIAL_ISPC(pathtracer)
+ENDIF()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  IF (NOT ${EMBREE_RAY_PACKETS})
+    SET(DISABLE_ISPC_TEST ON)
+  ENDIF()
   ADD_EMBREE_MODELS_TEST(pathtracer pathtracer pathtracer)
   ADD_EMBREE_MODELS_TEST(pathtracer_coherent pathtracer pathtracer --coherent)
   ADD_EMBREE_MODELS_TEST(pathtracer_incoherent pathtracer pathtracer --incoherent)

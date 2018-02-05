@@ -1,0 +1,51 @@
+.TH "rtcSetSceneFlags" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetSceneFlags\ \-\ sets\ the\ flags\ for\ the\ scene
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetSceneFlags(RTCScene\ scene,\ enum\ RTCSceneFlags\ flags);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetSceneFlags\f[] function sets the scene flags
+(\f[C]flags\f[] argument) for the specified scene (\f[C]scene\f[]
+argument).
+Possible scene flags are:
+.IP \[bu] 2
+\f[C]RTC_SCENE_FLAG_NONE\f[]: No flags set.
+.IP \[bu] 2
+\f[C]RTC_SCENE_FLAG_DYNAMIC\f[]: Provides better build performance for
+dynamic scenes (but also higher memory consumption).
+.IP \[bu] 2
+\f[C]RTC_SCENE_FLAG_COMPACT\f[]: Uses compact acceleration structures
+and avoids algorithms that consume much memory.
+.IP \[bu] 2
+\f[C]RTC_SCENE_FLAG_ROBUST\f[]: Uses acceleration structures that allow
+for robust traversal, and avoids optimizations that reduce arithmetic
+accuracy.
+This mode is typically used for avoiding artifacts caused by rays
+shooting through edges of neighboring primitives.
+.IP \[bu] 2
+\f[C]RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION\f[]: Enables support for a
+filter function inside the intersection context.
+See Section [rtcInitIntersectContext] for more details.
+.PP
+Multiple flags can be enabled using an \f[C]or\f[] operation, e.g.
+\f[C]RTC_SCENE_FLAG_COMPACT\ |\ RTC_SCENE_FLAG_ROBUST\f[].
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcGetSceneFlags]

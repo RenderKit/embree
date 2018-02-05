@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTCORE_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
-#define RTCORE_VERSION_MINOR @EMBREE_VERSION_MINOR@
-#define RTCORE_VERSION_PATCH @EMBREE_VERSION_PATCH@
-#define RTCORE_VERSION @EMBREE_VERSION_NUMBER@
-#define RTCORE_VERSION_STRING "@EMBREE_VERSION_MAJOR@.@EMBREE_VERSION_MINOR@.@EMBREE_VERSION_PATCH@@EMBREE_VERSION_NOTE@"
+#define RTC_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
+#define RTC_VERSION_MINOR @EMBREE_VERSION_MINOR@
+#define RTC_VERSION_PATCH @EMBREE_VERSION_PATCH@
+#define RTC_VERSION @EMBREE_VERSION_NUMBER@
+#define RTC_VERSION_STRING "@EMBREE_VERSION_MAJOR@.@EMBREE_VERSION_MINOR@.@EMBREE_VERSION_PATCH@@EMBREE_VERSION_NOTE@"

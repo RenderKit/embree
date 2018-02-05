@@ -1,0 +1,59 @@
+.TH "rtcGetDeviceError" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetDeviceError\ \-\ returns\ the\ error\ code\ of\ the\ device
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCError\ rtcGetDeviceError(RTCDevice\ device);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Each thread has its own error code per device.
+If an error occurs when calling an API function, this error code is set
+to the occurred error if it stores no previous error.
+The \f[C]rtcGetDeviceError\f[] function reads and returns the currently
+stored error and clears the error code.
+This assures that the returned error code is always the first error
+occurred since the last invocation of \f[C]rtcGetDeviceError\f[].
+.PP
+Possible error codes returned by \f[C]rtcGetDeviceError\f[] are:
+.IP \[bu] 2
+\f[C]RTC_ERROR_NONE\f[]: No error occurred.
+.IP \[bu] 2
+\f[C]RTC_ERROR_UNKNOWN\f[]: An unknown error has occurred.
+.IP \[bu] 2
+\f[C]RTC_ERROR_INVALID_ARGUMENT\f[]: An invalid argument was specified.
+.IP \[bu] 2
+\f[C]RTC_ERROR_INVALID_OPERATION\f[]: The operation is not allowed for
+the specified object.
+.IP \[bu] 2
+\f[C]RTC_ERROR_OUT_OF_MEMORY\f[]: There is not enough memory left to
+complete the operation.
+.IP \[bu] 2
+\f[C]RTC_ERROR_UNSUPPORTED_CPU\f[]: The CPU is not supported as it does
+not support the lowest ISA Embree is compiled for.
+.IP \[bu] 2
+\f[C]RTC_ERROR_CANCELLED\f[]: The operation got canceled by a memory
+monitor callback or progress monitor callback function.
+.PP
+When the device construction fails, \f[C]rtcNewDevice\f[] returns
+\f[C]NULL\f[] as device.
+To detect the error code of a such a failed device construction, pass
+\f[C]NULL\f[] as device to the \f[C]rtcGetDeviceError\f[] function.
+For all other invocations of \f[C]rtcGetDeviceError\f[], a proper device
+pointer must be specified.
+.SS EXIT STATUS
+.PP
+Returns the error code for the device.
+.SS SEE ALSO
+.PP
+[rtcSetDeviceErrorFunction]

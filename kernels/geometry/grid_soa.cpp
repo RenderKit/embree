@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -72,7 +72,7 @@ namespace embree
 
       /* otherwise build MBlur BVH */
       else {
-        BBox3fa gbounds[RTC_MAX_TIME_STEPS];
+        BBox3fa gbounds[RTC_MAX_TIME_STEP_COUNT];
         troot = buildMSMBlurBVH(make_range(0,int(time_steps-1)),gbounds).first;
 
         if (bounds_o)

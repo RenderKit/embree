@@ -1,0 +1,32 @@
+.TH "rtcRetainBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcRetainBuffer\ \-\ increments\ the\ buffer\ reference\ count
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcRetainBuffer(RTCBuffer\ buffer);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Buffer objects are reference counted.
+The \f[C]rtcRetainBuffer\f[] function increments the reference count of
+the passed buffer object (\f[C]buffer\f[] argument).
+This function together with \f[C]rtcReleaseBuffer\f[] allows to use the
+internal reference counting in a C++ wrapper class to handle the
+ownership of the object.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewBuffer], [rtcReleaseBuffer]

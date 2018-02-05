@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,6 +17,7 @@
 #include "sysinfo.h"
 #include "intrinsics.h"
 #include "string.h"
+#include "ref.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -24,6 +25,8 @@
 
 namespace embree
 {
+  NullTy null;
+  
   std::string getPlatformName() 
   {
 #if defined(__LINUX__) && !defined(__X86_64__)

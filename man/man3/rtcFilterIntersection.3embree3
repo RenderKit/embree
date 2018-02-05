@@ -1,0 +1,39 @@
+.TH "rtcFilterIntersection" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcFilterIntersection\ \-\ invokes\ the\ intersection\ filter\ function
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcFilterIntersection(
+\ \ const\ struct\ RTCIntersectFunctionNArguments*\ args,
+\ \ const\ struct\ RTCFilterFunctionNArguments*\ filterArgs
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcFilterIntersection\f[] function can be called inside an
+\f[C]RTCIntersectFunctionN\f[] callback function to invoke the
+intersection filter registered to the geometry and stored inside the
+context.
+For this an \f[C]RTCFilterFunctionNArguments\f[] structure must be
+created (see \f[C]rtcSetGeometryIntersectFilterFunction\f[]) which
+basically consists of a valid mask, a hit packet to filter, the
+corresponding ray packet, and the packet size.
+After the invocation of \f[C]rtcFilterIntersection\f[], only rays that
+are still valid (valid mask set to \-1) should update a hit.
+.SS EXIT STATUS
+.PP
+For performance reasons this function does not do any error checks, thus
+will not set any error flags on failure.
+.SS SEE ALSO
+.PP
+[rtcFilterOcclusion], [rtcSetGeometryIntersectFunction]

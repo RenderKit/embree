@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,19 +33,15 @@ namespace embree
     Geometry::update();
   }
 
-  void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) 
-  {
+  void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
     this->boundsFunc = bounds;
-    this->boundsFuncUserPtr = userPtr;
   }
 
-  void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) 
-  {
+  void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) {
     intersectors.intersectorN.intersect = intersect;
   }
 
-  void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) 
-  {
+  void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) {
     intersectors.intersectorN.occluded = occluded;
   }
 }

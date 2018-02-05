@@ -1,0 +1,75 @@
+.TH "RTC_GEOMETRY_TYPE_TRIANGLE" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_TRIANGLE\ \-\ triangle\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =
+\ \ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_TRIANGLE);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Triangle meshes are created by passing
+\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[] to the \f[C]rtcNewGeometry\f[]
+function call.
+The triangle indices can be specified by setting an index buffer
+(\f[C]RTC_BUFFER_TYPE_INDEX\f[] type) and the triangle vertices by
+setting a vertex buffer (\f[C]RTC_BUFFER_TYPE_VERTEX\f[] type).
+See \f[C]rtcSetGeometryBuffer\f[] and
+\f[C]rtcSetSharedGeometryBuffer\f[] for more details on how to set
+buffers.
+The index buffer contains an array of three 32\-bit indices per triangle
+(\f[C]RTC_FORMAT_UINT\f[] format) and the number of primitives is
+inferred from the size of that buffer.
+The vertex buffer contains an array of single precision \f[C]x\f[],
+\f[C]y\f[], \f[C]z\f[] floating point coordinates
+(\f[C]RTC_FORMAT_FLOAT3\f[] format), and the number of vertices are
+inferred from the size of that buffer.
+The vertex buffer can be at most 16 GB large.
+.PP
+The parametrization of a triangle uses the first vertex \f[C]p0\f[] as
+base point, the vector \f[C]p1\ \-\ p0\f[] as u\-direction and the
+vector \f[C]p2\ \-\ p0\f[] as v\-direction.
+Thus vertex attributes \f[C]t0,t1,t2\f[] can be linearly interpolated
+over the triangle the following way:
+.IP
+.nf
+\f[C]
+t_uv\ =\ (1\-u\-v)*t0\ +\ u*t1\ +\ v*t2
+\ \ \ \ \ =\ t0\ +\ u*(t1\-t0)\ +\ v*(t2\-t0)
+\f[]
+.fi
+.PP
+A triangle whose vertices are laid out counter\-clockwise has its
+geometry normal pointing upwards outside the front face, like
+illustrated in the following picture:
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+For multi\-segment motion blur, the number of time steps must be first
+specified using the \f[C]rtcSetGeometryTimeStepCount\f[] call.
+Then a vertex buffer for each time step can be set using different
+buffer slots, and all these buffers have to have the same stride and
+size.
+.PP
+Also see tutorial [Triangle Geometry] for an example of how to create
+triangle meshes.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that be
+get queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

@@ -1,0 +1,41 @@
+.TH "rtcUpdateGeometryBuffer" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcUpdateGeometryBuffer\ \-\ marks\ a\ buffer\ view\ bound\ to\ the\ geometry
+\ \ as\ modified
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcUpdateGeometryBuffer(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCBufferType\ type,
+\ \ unsigned\ int\ slot
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcUpdateGeometryBuffer\f[] function marks the buffer view
+bound to the specified buffer type and slot (\f[C]type\f[] and
+\f[C]slot\f[] argument) of a geometry (\f[C]geometry\f[] argument) as
+modified.
+.PP
+If a data buffer is changed by the application, the
+\f[C]rtcUpdateGeometryBuffer\f[] call must be invoked for that buffer.
+Each buffer view assigned to a buffer slot is initially marked as
+modified, thus this function needs to be called only when doing buffer
+modifications after the first \f[C]rtcCommitScene\f[].
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry], [rtcCommitScene]

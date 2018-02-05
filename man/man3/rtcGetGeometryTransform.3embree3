@@ -1,0 +1,49 @@
+.TH "rtcGetGeometryTransform" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcGetGeometryTransform\ \-\ returns\ the\ interpolated\ instance
+\ \ transformation\ for\ the\ specified\ time
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcGetGeometryTransform(
+\ \ RTCGeometry\ geometry,
+\ \ float\ time,
+\ \ enum\ RTCFormat\ format,
+\ \ void*\ xfm
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcGetGeometryTransform\f[] function returns the interpolated
+local to world transformation (\f[C]xfm\f[] parameter) of an instance
+geometry (\f[C]geometry\f[] parameter) for a particular time
+(\f[C]time\f[] parameter in range [0, 1]) in the specified format
+(\f[C]format\f[] parameter).
+.PP
+Possible formats for the returned matrix are:
+.IP \[bu] 2
+\f[C]RTC_FORMAT_FLOAT3X4_ROW_MAJOR\f[]: The 3×4 float matrix is laid out
+in row\-major form.
+.IP \[bu] 2
+\f[C]RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
+out in column\-major form.
+.IP \[bu] 2
+\f[C]RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
+out in column\-major form as a 4x4 homogeneous matrix with last row
+equal to (0, 0, 0, 1).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[RTC_GEOMETRY_TYPE_INSTANCE], [rtcSetGeometryTransform]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -238,8 +238,8 @@ namespace embree
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, RTCGeometryIntersector type); // only for compatibility
-    Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCGeometryIntersector type, RTCCurveBasis basis);
+    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::CurveSubtype subtype); // only for compatibility
+    Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCGeometryType type);
  
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
@@ -272,6 +272,7 @@ namespace embree
     avector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
     avector<AffineSpace3fa> loadAffineSpace3faArray(const Ref<XML>& xml);
     std::vector<unsigned> loadUIntArray(const Ref<XML>& xml);
+    std::vector<unsigned char> loadUCharArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
     std::vector<Vec4i> loadVec4iArray(const Ref<XML>& xml);
@@ -547,6 +548,23 @@ namespace embree
       data.resize(xml->body.size());
       for (size_t i=0; i<data.size(); i++) 
         data[i] = xml->body[i].Int();
+      return data;
+    }
+  }
+
+  std::vector<unsigned char> XMLLoader::loadUCharArray(const Ref<XML>& xml)
+  {
+    if (!xml) return std::vector<unsigned char>();
+
+    if (xml->parm("flags") != "") {
+      return loadBinary<std::vector<unsigned char>>(xml);
+    } 
+    else 
+    {
+      std::vector<unsigned char> data;
+      data.resize(xml->body.size());
+      for (size_t i=0; i<data.size(); i++) 
+        data[i] = (unsigned char)xml->body[i].Int();
       return data;
     }
   }
@@ -936,13 +954,13 @@ namespace embree
   RTCSubdivisionMode parseSubdivMode(const Ref<XML>& xml)
   {
     std::string subdiv_mode = xml->parm("subdiv_mode");
-    if      (subdiv_mode == "no_boundary" ) return RTC_SUBDIV_NO_BOUNDARY;
-    else if (subdiv_mode == "smooth"      ) return RTC_SUBDIV_SMOOTH_BOUNDARY;
-    else if (subdiv_mode == "pin_corners" ) return RTC_SUBDIV_PIN_CORNERS;
-    else if (subdiv_mode == "pin_boundary") return RTC_SUBDIV_PIN_BOUNDARY;
-    else if (subdiv_mode == "pin_all"     ) return RTC_SUBDIV_PIN_ALL;
+    if      (subdiv_mode == "no_boundary" ) return RTC_SUBDIVISION_MODE_NO_BOUNDARY;
+    else if (subdiv_mode == "smooth"      ) return RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY;
+    else if (subdiv_mode == "pin_corners" ) return RTC_SUBDIVISION_MODE_PIN_CORNERS;
+    else if (subdiv_mode == "pin_boundary") return RTC_SUBDIVISION_MODE_PIN_BOUNDARY;
+    else if (subdiv_mode == "pin_all"     ) return RTC_SUBDIVISION_MODE_PIN_ALL;
     else if (subdiv_mode != ""            ) THROW_RUNTIME_ERROR("invalid subdivision mode: "+subdiv_mode);
-    return RTC_SUBDIV_SMOOTH_BOUNDARY;
+    return RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
@@ -1011,10 +1029,11 @@ namespace embree
     }
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, RTCGeometryIntersector type) 
+  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, SceneGraph::CurveSubtype subtype)
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,RTC_BASIS_BEZIER,material);
+    RTCGeometryType type = (subtype == SceneGraph::ROUND_CURVE) ? RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1034,14 +1053,16 @@ namespace embree
     if (tessellation_rate != "")
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
+    mesh->flags = loadUCharArray(xml->childOpt("flags"));
+
     mesh->verify();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadCurves(const Ref<XML>& xml, RTCGeometryIntersector type, RTCCurveBasis basis) 
+  Ref<SceneGraph::Node> XMLLoader::loadCurves(const Ref<XML>& xml, RTCGeometryType type)
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,basis,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++) {
@@ -1058,11 +1079,13 @@ namespace embree
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
     mesh->hairs.resize(indices.size()); 
-    for (size_t i=0; i<indices.size(); i++) {
+    for (size_t i=0; i<indices.size(); i++) 
       mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
-    }
 
-    if (basis == RTC_BASIS_BSPLINE) {
+    mesh->flags = loadUCharArray(xml->childOpt("flags"));
+
+    if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
+        type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE) {
       for (auto& vertices : mesh->positions)
         fix_bspline_end_points(indices,vertices);
     }
@@ -1207,29 +1230,44 @@ namespace embree
       else if (xml->name == "TriangleMesh"    ) node = sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
-      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_INTERSECTOR_RIBBON);
-      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_LINEAR);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_INTERSECTOR_RIBBON);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_INTERSECTOR_RIBBON,RTC_BASIS_BSPLINE);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,RTC_GEOMETRY_INTERSECTOR_SURFACE);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_INTERSECTOR_SURFACE,RTC_BASIS_BSPLINE);
+      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
       
       else if (xml->name == "Curves")
       {
-        RTCGeometryIntersector type;
-        std::string str_type = xml->parm("type");
-        if      (str_type == "ribbon" ) type = RTC_GEOMETRY_INTERSECTOR_RIBBON;
-        else if (str_type == "surface") type = RTC_GEOMETRY_INTERSECTOR_SURFACE;
-        else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_type);
-
-        RTCCurveBasis basis;
-        std::string str_basis = xml->parm("basis");
-        if    (str_basis == "linear") basis = RTC_BASIS_LINEAR;
-        else if (str_basis == "bezier") basis = RTC_BASIS_BEZIER;
-        else if (str_basis == "bspline") basis = RTC_BASIS_BSPLINE;
-        else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve basis: "+str_basis);
+        RTCGeometryType type;
+        std::string str_type = xml->parm("basis");
+        std::string str_subtype = xml->parm("type");
+        if (str_type == "linear")
+        {
+          type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
+        }
+        else if (str_type == "bezier")
+        {
+          if (str_subtype == "ribbon")
+            type = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
+          else if (str_subtype == "surface")
+            type = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;
+          else
+            THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
+        }
+        else if (str_type == "bspline")
+        {
+          if (str_subtype == "ribbon")
+            type = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;
+          else if (str_subtype == "surface")
+            type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
+          else
+            THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
+        }
+        else
+          THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve basis: "+str_type);
         
-        node = sceneMap[id] = loadCurves(xml,type,basis);
+        node = sceneMap[id] = loadCurves(xml,type);
       }
       else if (xml->name == "PerspectiveCamera") node = sceneMap[id] = loadPerspectiveCamera(xml);
       else if (xml->name == "Group"           ) node = sceneMap[id] = loadGroupNode       (xml);

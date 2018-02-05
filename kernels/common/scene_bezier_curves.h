@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,6 +24,21 @@
 
 namespace embree
 {
+  /*! basis of a curve */
+  enum CurveType
+  {
+    LINEAR_CURVE,
+    BEZIER_CURVE,
+    BSPLINE_CURVE
+  };
+
+  /* rendering mode of a curve */
+  enum CurveSubtype
+  {
+    ROUND_CURVE,
+    FLAT_CURVE
+  };
+
   /*! represents an array of bicubic bezier curves */
   struct NativeCurves : public Geometry
   {
@@ -33,27 +48,23 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis); 
+    NativeCurves (Device* device, CurveType type, CurveSubtype subtype);
     
   public:
     void enabling();
     void disabling();
-    void setMask (unsigned mask);
-    void setGeometryIntersector(RTCGeometryIntersector type);
-    void* newBuffer(RTCBufferType type, size_t stride, unsigned int size);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, unsigned int size);
-    void* getBuffer(RTCBufferType type);
-    bool verify ();
-    void setTessellationRate(float N);
-    // FIXME: implement interpolateN
+    void setMask(unsigned mask);
+    void setNumTimeSteps (unsigned int numTimeSteps);
+    void setVertexAttributeCount (unsigned int N);
+    void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
+    void* getBuffer(RTCBufferType type, unsigned int slot);
+    void updateBuffer(RTCBufferType type, unsigned int slot);
     void preCommit();
+    void postCommit();
+    bool verify();
+    void setTessellationRate(float N);
 
   public:
-    
-    /*! returns number of bezier curves */
-    __forceinline size_t size() const {
-      return curves.size();
-    }
     
     /*! returns the number of vertices */
     __forceinline size_t numVertices() const {
@@ -69,6 +80,15 @@ namespace embree
     __forceinline const unsigned int& curve(size_t i) const {
       return native_curves[i];
     }
+
+    /*! returns the i'th segment */
+    __forceinline unsigned int getStartEndBitMask(size_t i) const {
+      unsigned int mask = 0;
+      if (flags) 
+        mask |= (flags[i] & 0x3) << 30;
+      return mask;
+    }
+
 
     /*! returns the i'th curve */
     __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
@@ -141,8 +161,10 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == RTC_GEOMETRY_INTERSECTOR_RIBBON)) return curve.tessellatedBounds(tessellationRate);
-      else                                     return curve.accurateBounds();
+      if (likely(subtype == FLAT_CURVE))
+        return curve.tessellatedBounds(tessellationRate);
+      else
+        return curve.accurateBounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
@@ -158,7 +180,7 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == RTC_GEOMETRY_INTERSECTOR_RIBBON)) return curve.tessellatedBounds(tessellationRate);
+      if (likely(subtype == FLAT_CURVE)) return curve.tessellatedBounds(tessellationRate);
       else                                     return curve.accurateBounds();
     }
 
@@ -274,49 +296,50 @@ namespace embree
     }
 
   public:
-    APIBuffer<unsigned int> curves;                   //!< array of curve indices
-    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    vector<APIBuffer<char>> userbuffers;            //!< user buffers
-    RTCGeometryIntersector subtype;                                //!< hair or surface geometry
-    RTCCurveBasis basis;                                    //!< basis of user provided vertices
-    int tessellationRate;                           //!< tessellation rate for bezier curve
+    BufferView<unsigned int> curves;        //!< array of curve indices
+    vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    BufferView<char> flags;                 //!< start, end flag per segment
+    vector<BufferView<char>> vertexAttribs; //!< user buffers
+    CurveType type;                         //!< basis of user provided vertices
+    CurveSubtype subtype;                   //!< round of flat curve
+    int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
-    BufferRefT<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
-    APIBuffer<unsigned int> native_curves;                   //!< array of curve indices
-    vector<APIBuffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
+    BufferView<Vec3fa> native_vertices0;        //!< fast access to first vertex buffer
+    BufferView<unsigned int> native_curves;     //!< array of curve indices
+    vector<BufferView<Vec3fa>> native_vertices; //!< vertex array for each timestep
   };
 
   namespace isa
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
-        : NativeCurves(device,subtype,basis) {}
+      NativeCurvesISA (Device* device, CurveType type, CurveSubtype subtype)
+        : NativeCurves(device,type,subtype) {}
 
-      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      template<typename Curve> void interpolate_helper(const RTCInterpolateArguments* const args);
       
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
     };
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
-         : NativeCurvesISA(device,subtype,basis) {}
+      CurvesBezier (Device* device, CurveType type, CurveSubtype subtype)
+         : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      void interpolate(const RTCInterpolateArguments* const args);
     };
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, RTCGeometryIntersector subtype, RTCCurveBasis basis)
-         : NativeCurvesISA(device,subtype,basis) {}
+      CurvesBSpline (Device* device, CurveType type, CurveSubtype subtype)
+         : NativeCurvesISA(device,type,subtype) {}
 
       void preCommit();
-      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, unsigned int numFloats);
+      void interpolate(const RTCInterpolateArguments* const args);
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA RTCGeometryIntersector COMMA RTCCurveBasis);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA RTCGeometryIntersector COMMA RTCCurveBasis);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA CurveSubtype);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA CurveSubtype);
 }

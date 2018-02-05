@@ -1,0 +1,110 @@
+.TH "rtcSetGeometryIntersectFilterFunction" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryIntersectFilterFunction\ \-\ sets\ the\ intersection\ filter
+\ \ for\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+struct\ RTCFilterFunctionNArguments
+{
+\ \ int*\ valid;
+\ \ void*\ geometryUserPtr;
+\ \ const\ struct\ RTCIntersectContext*\ context;
+\ \ struct\ RTCRayN*\ ray;
+\ \ struct\ RTCHitN*\ hit;
+\ \ unsigned\ int\ N;
+};
+
+typedef\ void\ (*RTCFilterFunctionN)(
+\ \ const\ struct\ RTCFilterFunctionNArguments*\ args
+);
+
+void\ rtcSetGeometryIntersectFilterFunction(
+\ \ RTCGeometry\ geometry,
+\ \ RTCFilterFunctionN\ filter
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryIntersectFilterFunction\f[] function registers an
+intersection filter callback function (\f[C]filter\f[] argument) for the
+specified geometry (\f[C]geometry\f[] argument).
+.PP
+Only a single callback function can be registered per geometry, and
+further invocations overwrite the previously set callback function.
+Passing \f[C]NULL\f[] as function pointer disables the registered
+callback function.
+.PP
+The registered intersection filter function is invoked for every hit
+encountered during the \f[C]rtcIntersect\f[]\-type ray queries and can
+accept or reject that hit.
+The feature can be used to define a silhouette for a primitive and
+reject hits that are outside the silhouette.
+E.g.
+a tree leaf could be modeled with an alpha texture that decides whether
+hit points lie inside or outside the leaf.
+.PP
+If the \f[C]RTC_SCENE_HIGH_QUALITY\f[] mode is set, the filter functions
+may be called multiple times for the same primitive hit.
+Further, rays hitting exactly the edge might also report two hits for
+the same surface.
+For certain use cases, the application may have to work around this
+limitation by collecting already reported hits
+(\f[C]geomID\f[]/\f[C]primID\f[] pairs) and ignoring duplicates.
+.PP
+The filter function callback of type \f[C]RTCFilterFunctionN\f[] gets
+passed a number of arguments through the
+\f[C]RTCFilterFunctionNArguments\f[] structure.
+The \f[C]valid\f[] parameter of that structure points to an integer
+valid mask (0 means invalid and \-1 means valid).
+The \f[C]geometryUserPtr\f[] member is a user pointer optionally set per
+geometry through the \f[C]rtcSetGeometryUserData\f[] function.
+The \f[C]context\f[] member points to the intersection context passed to
+the ray query function.
+The \f[C]ray\f[] parameter points to \f[C]N\f[] rays in SOA layout.
+The \f[C]hit\f[] parameter points to \f[C]N\f[] hits in SOA layout to
+test.
+The \f[C]N\f[] parameter is the number of rays and hits in \f[C]ray\f[]
+and \f[C]hit\f[].
+The hit distance is provided as the \f[C]tfar\f[] value of the ray.
+If the hit geometry is instanced, the \f[C]instID\f[] member of the ray
+is valid, and the ray and the potential hit are in object space.
+.PP
+The filter callback function has the task to check for each valid ray
+whether it wants to accept or reject the corresponding hit.
+To reject a hit, the filter callback function just has to write
+\f[C]0\f[] to the integer valid mask of the corresponding ray.
+To accept the hit, it just has to leave the valid mask set to
+\f[C]\-1\f[].
+The filter function is further allowed to change the hit and decrease
+the \f[C]tfar\f[] value of the ray but it should not modify other ray
+data nor any inactive components of the ray or hit.
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+The implementation of the filter function can choose to implement a
+single code path that uses the ray access helper functions
+\f[C]RTCRay_XXX\f[] and hit access helper functions \f[C]RTCHit_XXX\f[]
+to access ray and hit data.
+Alternatively the code can branch to optimized implementations for
+specific sizes of \f[C]N\f[] and cast the \f[C]ray\f[] and \f[C]hit\f[]
+inputs to the proper packet types.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcSetGeometryOccludedFilterFunction]

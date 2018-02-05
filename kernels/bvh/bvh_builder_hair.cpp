@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,7 +21,7 @@
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
 
-#if defined(EMBREE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_CURVES)
 
 namespace embree
 {
@@ -108,7 +108,6 @@ namespace embree
            scene,prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-
         /* if we allocated using the primrefarray we have to keep it alive */
         if (settings.finished_range_threshold != size_t(inf))
           bvh->alloc.share(prims);

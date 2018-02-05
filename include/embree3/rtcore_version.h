@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTCORE_VERSION_MAJOR 3
-#define RTCORE_VERSION_MINOR 0
-#define RTCORE_VERSION_PATCH 0
-#define RTCORE_VERSION 30000
-#define RTCORE_VERSION_STRING "3.0.0-alpha.0"
+#define RTC_VERSION_MAJOR 3
+#define RTC_VERSION_MINOR 0
+#define RTC_VERSION_PATCH 0
+#define RTC_VERSION 30000
+#define RTC_VERSION_STRING "3.0.0-beta.0"

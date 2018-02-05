@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -29,30 +29,66 @@ namespace embree
   }
 
   Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
-    : AccelSet(device,1,numTimeSteps), object(object)
+    : AccelSet(device,1,numTimeSteps), object(object), local2world(nullptr)
   {
-    object->refInc();
+    if (object) object->refInc();
     world2local0 = one;
-    for (unsigned int i=0; i<numTimeSteps; i++) local2world[i] = one;
+    local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa));
+    for (size_t i = 0; i < numTimeSteps; i++)
+      local2world[i] = one;
     intersectors.ptr = this;
     boundsFunc = device->instance_factory->InstanceBoundsFunc();
-    boundsFuncUserPtr = nullptr;
     intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
   }
 
-  Instance::~Instance() {
-    object->refDec();
+  Instance::~Instance()
+  {
+    alignedFree(local2world);
+    if (object) object->refDec();
+  }
+
+  void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
+  {
+    if (numTimeSteps_in == numTimeSteps)
+      return;
+    
+    AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa));
+     
+    for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++)
+      local2world2[i] = local2world[i];
+
+    for (size_t i = numTimeSteps; i < numTimeSteps_in; i++)
+      local2world2[i] = one;
+        
+    alignedFree(local2world);
+    local2world = local2world2;
+    
+    Geometry::setNumTimeSteps(numTimeSteps_in);
+  }
+
+  void Instance::setInstancedScene(const Ref<Scene>& scene)
+  {
+    if (object) object->refDec();
+    object = scene.ptr;
+    if (object) object->refInc();
+    Geometry::update();
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (timeStep >= numTimeSteps)
-      throw_RTCError(RTC_INVALID_OPERATION,"invalid timestep");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = xfm;
-    if (timeStep == 0) world2local0 = rcp(xfm);
+    if (timeStep == 0)
+      world2local0 = rcp(xfm);
   }
 
+  AffineSpace3fa Instance::getTransform(float time)
+  {
+    return getWorld2Local(time);
+  }
+  
   void Instance::setMask (unsigned mask) 
   {
     this->mask = mask; 

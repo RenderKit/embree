@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -867,15 +867,15 @@ extern "C" int g_spp;
 extern "C" bool g_accumulate;
 
 /* occlusion filter function */
-void intersectionFilterReject(const RTCFilterFunctionNArguments* const args);
+void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
 
-void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args);
+void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args);
 
-void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args);
+void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
 
-void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args);
+void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args);
 
-void occlusionFilterHair(const RTCFilterFunctionNArguments* const args);
+void occlusionFilterHair(const RTCFilterFunctionNArguments* args);
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
@@ -905,25 +905,25 @@ void assignShaders(ISPCGeometry* geometry)
   if (geometry->type == SUBDIV_MESH)
   {
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(geom,intersectionFilterReject);
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(geom,intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
 #endif
@@ -932,29 +932,29 @@ void assignShaders(ISPCGeometry* geometry)
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(geom,intersectionFilterReject);
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(geom,intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (geom,occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
       }
     }
   }
   else if (geometry->type == CURVES)
   {
-    rtcSetOcclusionFilterFunction(geom,occlusionFilterHair);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterHair);
   }
 #endif
   else if (geometry->type == GROUP) {
     ISPCGroup* group = (ISPCGroup*) geometry;
-    for (size_t i=0; i<group->numGeometries; i++)
+    for (unsigned int i=0; i<group->numGeometries; i++)
       assignShaders(group->geometries[i]);
   }
 }
@@ -964,7 +964,7 @@ typedef ISPCGeometry* ISPCGeometry_ptr;
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  for (size_t i=0; i<scene_in->numGeometries; i++)
+  for (unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
@@ -983,15 +983,15 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
     }
   }
 
   /* commit changes to scene */
   //progressStart();
-  //rtcSetProgressMonitorFunction(scene_out,progressMonitor,nullptr);
-  rtcCommit (scene_out);
-  //rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
+  //rtcSetSceneProgressMonitorFunction(scene_out,progressMonitor,nullptr);
+  rtcCommitScene (scene_out);
+  //rtcSetSceneProgressMonitorFunction(scene_out,nullptr,nullptr);
   //progressEnd();
 
   return scene_out;
@@ -1056,7 +1056,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       else
       {
         ISPCTriangle* tri = &mesh->triangles[dg.primID];
-        float f = mesh->numTimeSteps*ray.time;
+        float f = mesh->numTimeSteps*ray.time();
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
         float t0 = 1.0f-t1;
@@ -1117,7 +1117,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       else
       {
         ISPCQuad* quad = &mesh->quads[dg.primID];
-        float f = mesh->numTimeSteps*ray.time;
+        float f = mesh->numTimeSteps*ray.time();
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
         float t0 = 1.0f-t1;
@@ -1151,7 +1151,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     if (g_use_smooth_normals)
     {
       Vec3fa dPdu,dPdv;
-      rtcInterpolate(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,nullptr,nullptr,nullptr,3);
+      rtcInterpolate1(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       dg.Ns = normalize(cross(dPdv,dPdu));
     }
     
@@ -1163,7 +1163,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     
-    if (mesh->basis == RTC_BASIS_LINEAR)
+    if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
     {
       materialID = mesh->geom.materialID;
       const Vec3fa dx = normalize(dg.Ng);
@@ -1172,10 +1172,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       dg.Tx = dx;
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
-      int vtx = mesh->hairs[dg.primID].vertex;
-      dg.eps = 1.1f*mesh->positions[0][vtx].w;
     }
-    else if (mesh->basis == RTC_BASIS_BEZIER || mesh->basis == RTC_BASIS_BSPLINE)
+    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
+             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
     {
       ISPCHairSet* mesh = (ISPCHairSet*) geometry;
       materialID = mesh->geom.materialID;
@@ -1185,17 +1186,19 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Ty = Vec3fa(0,1,0);
         dg.Ng = dg.Ns = Vec3fa(0,0,1);
       }
-      else if (mesh->type == RTC_GEOMETRY_INTERSECTOR_RIBBON)
+      else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
+               mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
       {
+        if (reduce_max(abs(dg.Ng)) < 1E-6f) dg.Ng = Vec3fa(1,1,1);
         const Vec3fa dx = normalize(dg.Ng);
         const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
         const Vec3fa dz = normalize(cross(dy,dx));
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.eps = 1.1f*p.w;
       }
-      else if (mesh->type == RTC_GEOMETRY_INTERSECTOR_SURFACE)
+      else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
+               mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
       {
         const Vec3fa dx = normalize(Vec3fa(dp));
         const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));
@@ -1203,7 +1206,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
         dg.Tx = dx;
         dg.Ty = dy;
         dg.Ng = dg.Ns = dz;
-        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
+        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
       }
     }
   }
@@ -1216,7 +1219,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     assert(false);
 
   if (max(max(abs(dg.Ns.x), abs(dg.Ns.y)), abs(dg.Ns.z)) < 1E-4f)
-	dg.Ns = Vec3fa(1, 0, 0);
+    dg.Ns = Vec3fa(1, 0, 0);
 }
 
 AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
@@ -1234,7 +1237,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
-  dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar()));
+  dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
 
   int materialID = 0;
   unsigned int instID = dg.instID; {
@@ -1258,8 +1261,8 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
 
       /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
+      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
       dg.Ng = xfmVector(space,dg.Ng);
       dg.Ns = xfmVector(space,dg.Ns);
     }
@@ -1268,38 +1271,39 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-void intersectionFilterReject(const RTCFilterFunctionNArguments* const args)
+void intersectionFilterReject(const RTCFilterFunctionNArguments* args)
 {
   assert(args->N == 1);
   bool valid = *((int*) args->valid);
   if (!valid) return;
 }
 
-void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
+void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
 {
   int* valid_i = args->valid;
-  struct RTCRayN* _ray = args->ray;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  struct RTCRayHitN* _ray = (struct RTCRayHitN*)args->ray;
+  struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
   
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
   
-  const size_t rayID = 0;
+  const unsigned int rayID = 0;
   Ray *ray = (Ray*)_ray;
 
   /* compute differential geometry */
-  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
+  const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3fa Ng = Vec3fa(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3fa Ng = Vec3fa(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1317,7 +1321,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
   {
-    ray->tfar()   = tfar;
+    ray->tfar   = tfar;
     // ray->instID = dg.instID;
     // ray->geomID = dg.geomID;
     // ray->primID = dg.primID;    
@@ -1329,7 +1333,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* const args)
     valid_i[0] = 0;
 }
 
-void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args)
 {
   IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
@@ -1344,35 +1348,37 @@ void occlusionFilterOpaque(const RTCFilterFunctionNArguments* const args)
   *transparency = Vec3fa(0.0f);
 }
 
-void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args)
 {
   IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
   int* valid_i = args->valid;
-  struct RTCRayN* _ray = args->ray;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  struct RTCRayHitN* _ray = (struct RTCRayHitN*)args->ray;
+  struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
   
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
   
-  const size_t rayID = 0;
+  const unsigned int rayID = 0;
   Ray *ray = (Ray*)_ray;
 
   /* compute differential geometry */
-  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+  //const float tfar          = RTCHitN_t(hit,N,rayID);
+  const float tfar          = ray->tfar;
+
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(potentialHit,N,rayID);
-  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
-  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
-  dg.u = RTCHitN_u(potentialHit,N,rayID);
-  dg.v = RTCHitN_v(potentialHit,N,rayID);
-  Vec3fa Ng = Vec3fa(RTCHitN_Ng_x(potentialHit,N,rayID),
-                        RTCHitN_Ng_y(potentialHit,N,rayID),
-                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.geomID = RTCHitN_geomID(hit,N,rayID);
+  dg.primID = RTCHitN_primID(hit,N,rayID);
+  dg.u = RTCHitN_u(hit,N,rayID);
+  dg.v = RTCHitN_v(hit,N,rayID);
+  Vec3fa Ng = Vec3fa(RTCHitN_Ng_x(hit,N,rayID),
+                        RTCHitN_Ng_y(hit,N,rayID),
+                        RTCHitN_Ng_z(hit,N,rayID));
   dg.P  = ray->org+tfar*ray->dir;
   dg.Ng = Ng;
   dg.Ns = Ng;
@@ -1395,23 +1401,23 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* const args)
 }
 
 /* occlusion filter function */
-void occlusionFilterHair(const RTCFilterFunctionNArguments* const args)
+void occlusionFilterHair(const RTCFilterFunctionNArguments* args)
 {
   IntersectContext* context = (IntersectContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
   int* valid_i = args->valid;
-  struct RTCHitN* potentialHit = args->potentialHit;
+  struct RTCHitN* hit = args->hit;
   const unsigned int N = args->N;
   
   assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
   
-  const size_t rayID = 0;
+  const unsigned int rayID = 0;
   
-  unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  unsigned int hit_geomID = RTCHitN_geomID(hit,N,rayID);
   Vec3fa Kt = Vec3fa(0.0f);
   unsigned int geomID = hit_geomID;
   {
@@ -1458,7 +1464,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     IntersectContext context;
     InitIntersectionContext(&context);
     context.context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersect1(g_scene,&context.context,RTCRay_(ray));
+    rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1468,7 +1474,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       //L = L + Lw*Vec3fa(1.0f);
 
       /* iterate over all lights */
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         const Light* l = g_ispc_scene->lights[i];
         Light_EvalRes le = l->eval(l,dg,ray.dir);
@@ -1486,7 +1492,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     dg.primID = ray.primID;
     dg.u = ray.u;
     dg.v = ray.v;
-    dg.P  = ray.org+ray.tfar()*ray.dir;
+    dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = ray.Ng;
     dg.Ns = Ns;
     int materialID = postIntersect(ray,dg);
@@ -1497,7 +1503,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     Vec3fa c = Vec3fa(1.0f);
     const Vec3fa transmission = medium.transmission;
     if (ne(transmission,Vec3fa(1.0f)))
-      c = c * pow(transmission,ray.tfar());
+      c = c * pow(transmission,ray.tfar);
 
     /* calculate BRDF */
     BRDF brdf;
@@ -1511,7 +1517,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 
     /* iterate over lights */
     context.context.flags = g_iflags_incoherent;
-    for (size_t i=0; i<g_ispc_scene->numLights; i++)
+    for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
     {
       const Light* l = g_ispc_scene->lights[i];
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
@@ -1605,7 +1611,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
 /***************************************************************************************/
 
-inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
   const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
@@ -1615,20 +1621,20 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
-void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
+void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, unsigned int startID, unsigned int endID )
 {
-  for (size_t f=startID; f<endID;f++)
+  for (unsigned int f=startID; f<endID;f++)
   {
     unsigned int e = mesh->face_offsets[f];
     unsigned int N = mesh->verticesPerFace[f];
     if (N == 4) /* fast path for quads */
-      for (size_t i=0; i<4; i++)
+      for (unsigned int i=0; i<4; i++)
         mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
        else if (N == 3) /* fast path for triangles */
-         for (size_t i=0; i<3; i++)
+         for (unsigned int i=0; i<3; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
        else /* fast path for general polygons */
-         for (size_t i=0; i<N; i++)
+         for (unsigned int i=0; i<N; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
   }
 }
@@ -1636,16 +1642,16 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 #if defined(ISPC)
 void updateEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
-  const size_t size = mesh->numFaces;
-  const size_t startID = ((taskIndex+0)*size)/taskCount;
-  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  const unsigned int size = mesh->numFaces;
+  const unsigned int startID = ((taskIndex+0)*size)/taskCount;
+  const unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
 #endif
 
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
-  for (size_t g=0; g<scene_in->numGeometries; g++)
+  for (unsigned int g=0; g<scene_in->numGeometries; g++)
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
@@ -1659,7 +1665,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(geometry->geometry,RTC_LEVEL_BUFFER);
+    rtcUpdateGeometryBuffer(geometry->geometry,RTC_BUFFER_TYPE_LEVEL,0);
     rtcCommitGeometry(geometry->geometry);
   }
 }
@@ -1675,18 +1681,14 @@ extern "C" void device_init (char* cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcGetDeviceError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
-
-#if ENABLE_FILTER_FUNCTION == 0
-  printf("Warning: filter functions disabled\n");
-#endif
 
 } // device_init
 
@@ -1701,7 +1703,7 @@ extern "C" void device_render (int* pixels,
   if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-    rtcCommit (g_scene);
+    rtcCommitScene (g_scene);
   }
 
   /* create accumulator */
@@ -1710,7 +1712,7 @@ extern "C" void device_render (int* pixels,
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
 
@@ -1724,12 +1726,12 @@ extern "C" void device_render (int* pixels,
   if (camera_changed)
   {
     g_accu_count=0;
-    for (size_t i=0; i<width*height; i++)
+    for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
 
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommit (g_scene);
+      rtcCommitScene (g_scene);
     }
   }
   else

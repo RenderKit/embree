@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2017 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -16,7 +16,13 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(hair_geometry)
+IF (EMBREE_RAY_PACKETS)
+  ADD_TUTORIAL_ISPC(hair_geometry)
+ENDIF()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  IF (NOT ${EMBREE_RAY_PACKETS})
+    SET(DISABLE_ISPC_TEST ON)
+  ENDIF()
   ADD_EMBREE_TEST(hair_geometry)
 ENDIF()

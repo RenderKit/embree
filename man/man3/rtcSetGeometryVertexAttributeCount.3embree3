@@ -1,0 +1,40 @@
+.TH "rtcSetGeometryTimeStepCount" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryVertexAttributeCount\ \-\ sets\ the\ number\ of\ vertex
+\ \ attributes\ of\ the\ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryVertexAttributeCount(
+\ \ RTCGeometry\ geometry,
+\ \ unsigned\ int\ vertexAttributeCount
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryVertexAttributeCount\f[] function sets the number
+of slots (\f[C]vertexAttributeCount\f[] parameter) for vertex attribute
+buffers (\f[C]RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE\f[]) that can be used for
+the specified geometry (\f[C]geometry\f[] parameter).
+.PP
+This function is supported only for triangle meshes
+(\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[]), quad meshes
+(\f[C]RTC_GEOMETRY_TYPE_QUAD\f[]), curves
+(\f[C]RTC_GEOMETRY_TYPE_CURVE\f[]), and subdivision geometries
+(\f[C]RTC_GEOMETRY_TYPE_SUBDIVISION\f[]).
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry], [RTCBufferType]

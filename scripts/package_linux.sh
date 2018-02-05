@@ -45,19 +45,20 @@ function check_symbols
 #EMBREE_VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h`
 #EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
 EMBREE_VERSION=$2
+EMBREE_VERSION_MAJOR=$3
 
 # create package
 make -j 16 preinstall
-check_symbols libembree.so GLIBC 2 4 0
-check_symbols libembree.so GLIBCXX 3 4 11
-check_symbols libembree.so CXXABI 1 3 0
+check_symbols libembree${EMBREE_VERSION_MAJOR}.so GLIBC 2 4 0
+check_symbols libembree${EMBREE_VERSION_MAJOR}.so GLIBCXX 3 4 11
+check_symbols libembree${EMBREE_VERSION_MAJOR}.so CXXABI 1 3 0
 make -j 16 package
 
 if [ "$1" == "OFF" ]; then
 
   # create TGZ of RPMs
   embree_tgz=embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz
-  tar czf ${embree_tgz} embree-*-${EMBREE_VERSION}-*.rpm
+  tar czf ${embree_tgz} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
 
   # send RPMs to CDash
   echo "<DartMeasurement name=\"${embree_tgz}\" type=\"text/string\">${embree_tgz}</DartMeasurement>"

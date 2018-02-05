@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2017 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -40,6 +40,9 @@ ENDIF()
 # Install Headers
 ##############################################################
 INSTALL(DIRECTORY include/embree3 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
+IF (NOT WIN32)
+  INSTALL(DIRECTORY man/man3 DESTINATION ${CMAKE_INSTALL_MANDIR} COMPONENT devel)
+ENDIF()
 
 ##############################################################
 # Install Models
@@ -166,7 +169,7 @@ IF(WIN32)
   IF (NOT EMBREE_ZIP_MODE)
     SET(CPACK_GENERATOR WIX)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}")
-    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Intel\\\\Embree v${EMBREE_VERSION} ${ARCH}")
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Intel\\\\Embree${EMBREE_VERSION_MAJOR} ${ARCH}")
     SET(CPACK_WIX_PRODUCT_GUID "331BD5A9-DAD6-486B-A435-18AAB80${EMBREE_VERSION_NUMBER}")
     SET(CPACK_WIX_UPGRADE_GUID "331BD5A9-DAD6-486B-A435-18AAB80${EMBREE_VERSION_MAJOR}0000") # upgrade as long as major version is the same
     SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY TRUE)
@@ -223,7 +226,11 @@ ELSE()
     SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
     SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
     SET(CPACK_RPM_CHANGELOG_FILE ${CMAKE_BINARY_DIR}/rpm_changelog.txt) # ChangeLog of the RPM
-    STRING(TIMESTAMP CHANGELOG_DATE "%a %b %d %Y")
+    IF (CMAKE_VERSION VERSION_LESS "3.7.0")
+      EXECUTE_PROCESS(COMMAND date "+%a %b %d %Y" OUTPUT_VARIABLE CHANGELOG_DATE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    ELSE()
+      STRING(TIMESTAMP CHANGELOG_DATE "%a %b %d %Y")
+    ENDIF()
     SET(RPM_CHANGELOG "* ${CHANGELOG_DATE} Johannes Günther <johannes.guenther@intel.com> - ${EMBREE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}\n- First package")
     FILE(WRITE ${CPACK_RPM_CHANGELOG_FILE} ${RPM_CHANGELOG})
     SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
@@ -233,7 +240,7 @@ ELSE()
     SET(CPACK_RPM_lib_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
     SET(CPACK_RPM_lib_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
     IF (EMBREE_TESTING_PACKAGE)
-      ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/package_linux.sh ${EMBREE_ZIP_MODE} ${EMBREE_VERSION})
+      ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/package_linux.sh ${EMBREE_ZIP_MODE} ${EMBREE_VERSION} ${EMBREE_VERSION_MAJOR})
     ENDIF()
   ELSE()
   

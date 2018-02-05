@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -96,14 +96,14 @@ namespace embree
   public:
     std::string object_accel;               //!< acceleration structure for user geometries
     std::string object_builder;             //!< builder for user geometries
-    int object_accel_min_leaf_size;         //!< minimal leaf size for object acceleration structure
-    int object_accel_max_leaf_size;         //!< maximal leaf size for object acceleration structure
+    int object_accel_min_leaf_size;         //!< minimum leaf size for object acceleration structure
+    int object_accel_max_leaf_size;         //!< maximum leaf size for object acceleration structure
 
   public:
     std::string object_accel_mb;            //!< acceleration structure for user geometries
     std::string object_builder_mb;          //!< builder for user geometries
-    int object_accel_mb_min_leaf_size;      //!< minimal leaf size for mblur object acceleration structure
-    int object_accel_mb_max_leaf_size;      //!< maximal leaf size for mblur object acceleration structure
+    int object_accel_mb_min_leaf_size;      //!< minimum leaf size for mblur object acceleration structure
+    int object_accel_mb_max_leaf_size;      //!< maximum leaf size for mblur object acceleration structure
 
   public:
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
@@ -117,13 +117,12 @@ namespace embree
     size_t instancing_open_min;            //!< instancing opens tree to minimally that number of subtrees
     size_t instancing_block_size;          //!< instancing opens tree up to average block size of primitives
     float  instancing_open_factor;         //!< instancing opens tree up to x times the number of instances
-    size_t instancing_open_max_depth;      //!< maximal open depth for geometries
+    size_t instancing_open_max_depth;      //!< maximum open depth for geometries
     size_t instancing_open_max;            //!< instancing opens tree to maximally that number of subtrees
 
   public:
     bool ignore_config_files;              //!< if true no more config files get parse
     bool float_exceptions;                 //!< enable floating point exceptions
-    int accel_flags;
     int quality_flags;
     int scene_flags;
     size_t verbose;                        //!< verbosity of output

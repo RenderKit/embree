@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2017 Intel Corporation                                    //
+// Copyright 2009-2018 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -44,12 +44,12 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR4(BVH8Quad4iMBIntersector4HybridMoeller,      BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA QuadMiMBIntersectorKMoeller <4 COMMA 4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR4(BVH8Quad4iMBIntersector4HybridPluecker,     BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA true  COMMA ArrayIntersectorK_1<4 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 4 COMMA true> > >));
 
-    IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH8Line4iIntersector4,  BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 4 COMMA true> > >));
-    IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector4,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 4 COMMA true> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH8Line4iIntersector4,  BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 4 COMMA true> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector4,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 4 COMMA true> > >));
  
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1vIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >));
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8OBBBezier1iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH8Bezier1vIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH8Bezier1iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH8OBBBezier1iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR4(BVH8VirtualIntersector4Chunk, BVHNIntersectorKChunk<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA ObjectIntersector4> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR4(BVH8VirtualMBIntersector4Chunk, BVHNIntersectorKChunk<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA ObjectIntersector4MB> >));
