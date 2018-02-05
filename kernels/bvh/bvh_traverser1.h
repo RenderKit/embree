@@ -20,6 +20,8 @@
 #include "node_intersector1.h"
 #include "../common/stack_item.h"
 
+#define NEW_SORTING_CODE 1
+
 namespace embree
 {
   namespace isa
@@ -477,6 +479,29 @@ namespace embree
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
 
+#if NEW_SORTING_CODE == 1
+        vint4 s0((size_t)c0,(size_t)d0);
+        vint4 s1((size_t)c1,(size_t)d1);
+        r = __bscf(mask);
+        NodeRef c2 = node->child(r); c2.prefetch(types); unsigned int d2 = ((unsigned int*)&tNear)[r]; 
+        vint4 s2((size_t)c2,(size_t)d2);
+        /* 3 hits */
+        if (likely(mask == 0)) {
+          StackItemT<NodeRef>::sort3(s0,s1,s2);
+          *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1;
+          cur = toScalar64(s2);
+          stackPtr+=2;
+          return;
+        }
+        r = __bscf(mask);
+        NodeRef c3 = node->child(r); c3.prefetch(types); unsigned int d3 = ((unsigned int*)&tNear)[r]; 
+        vint4 s3((size_t)c3,(size_t)d3);
+        /* 4 hits */
+        StackItemT<NodeRef>::sort4(s0,s1,s2,s3);
+        *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1; *(vint4*)&stackPtr[2] = s2;
+        cur = toScalar64(s3);
+        stackPtr+=3;
+#else
         /*! Here starts the slow path for 3 or 4 hit children. We push
          *  all nodes onto the stack to sort them there. */
         assert(stackPtr < stackEnd);
@@ -502,6 +527,7 @@ namespace embree
         assert(c != BVH::emptyNode);
         sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
 #endif
       }
 
@@ -553,7 +579,7 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-#if defined(__AVX512F__) && 1
+#if defined(__AVX512F__)
 
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
@@ -590,7 +616,49 @@ namespace embree
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
+#if NEW_SORTING_CODE == 1
+        vint4 s0((size_t)c0,(size_t)d0);
+        vint4 s1((size_t)c1,(size_t)d1);
 
+        r = __bscf(mask);
+        NodeRef c2 = node->child(r); c2.prefetch(types); unsigned int d2 = ((unsigned int*)&tNear)[r]; 
+        vint4 s2((size_t)c2,(size_t)d2);
+        /* 3 hits */
+        if (likely(mask == 0)) {
+          StackItemT<NodeRef>::sort3(s0,s1,s2);
+          *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1;
+          cur = toScalar64(s2);
+          stackPtr+=2;
+          return;
+        }
+        r = __bscf(mask);
+        NodeRef c3 = node->child(r); c3.prefetch(types); unsigned int d3 = ((unsigned int*)&tNear)[r]; 
+        vint4 s3((size_t)c3,(size_t)d3);
+        /* 4 hits */
+        if (likely(mask == 0)) {
+          StackItemT<NodeRef>::sort4(s0,s1,s2,s3);
+          *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1; *(vint4*)&stackPtr[2] = s2;
+          cur = toScalar64(s3);
+          stackPtr+=3;
+          return;
+        }
+        *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1; *(vint4*)&stackPtr[2] = s2; *(vint4*)&stackPtr[3] = s3;
+        /*! fallback case if more than 4 children are hit */
+        StackItemT<NodeRef>* stackFirst = stackPtr;
+        stackPtr+=4;      
+        while (1)
+        {
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          NodeRef c = node->child(r); c.prefetch(types); unsigned int d = *(unsigned int*)&tNear[r]; 
+          const vint4 s((size_t)c,(size_t)d);
+          *(vint4*)stackPtr++ = s;
+          assert(c != BVH::emptyNode);
+          if (unlikely(mask == 0)) break;
+        }
+        sort(stackFirst,stackPtr);
+        cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#else
         /*! Here starts the slow path for 3 or 4 hit children. We push
          *  all nodes onto the stack to sort them there. */
         assert(stackPtr < stackEnd);
@@ -619,7 +687,6 @@ namespace embree
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
           return;
         }
-
         /*! fallback case if more than 4 children are hit */
         StackItemT<NodeRef>* stackFirst = stackPtr-4;
         while (1)
@@ -632,6 +699,7 @@ namespace embree
         }
         sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
 #endif
       }
 
