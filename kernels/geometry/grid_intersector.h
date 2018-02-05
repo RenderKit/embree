@@ -67,7 +67,7 @@ namespace embree
     };
 
     template <int K>
-      struct SubdivPatch1EagerIntersectorK
+      struct GridIntersectorK
     {
       typedef GridSOA Primitive;
       typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAIntersectorK<K>::Precalculations> Precalculations;

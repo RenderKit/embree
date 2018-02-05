@@ -31,6 +31,7 @@
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/object.h"
+#include "../geometry/subgrid.h"
 
 #include "../common/state.h"
 
@@ -723,5 +724,17 @@ namespace embree
 
 #endif
 #endif
+
+
+#if defined(EMBREE_GEOMETRY_GRID)
+    Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,GridMesh,SubGrid>((BVH4*)bvh,mesh,1,1.0f,1,inf,mode); }
+
+    //Builder* BVH4GridSceneBuilderSAH (void* bvh, Scene* scene      , size_t mode) { return new BVHNBuilderSAH<4,GridMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+
+#if defined(__AVX__)
+    //Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,GridMesh,Triangle4>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
+#endif
+#endif
+
   }
 }
