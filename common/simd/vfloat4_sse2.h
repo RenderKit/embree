@@ -118,6 +118,16 @@ namespace embree
   }
 
 #if defined(__SSE4_1__)
+    static __forceinline vfloat4 load(const char* ptr) {
+      return _mm_cvtepi32_ps(_mm_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
+    }
+#else
+    static __forceinline vfloat4 load(const char* ptr) {
+      return vfloat4(ptr[0],ptr[1],ptr[2],ptr[3]);
+    }
+#endif
+
+#if defined(__SSE4_1__)
     static __forceinline vfloat4 load(const unsigned char* ptr) {
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     }

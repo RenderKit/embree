@@ -181,7 +181,25 @@ namespace embree
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
       if (likely(subtype == FLAT_CURVE)) return curve.tessellatedBounds(tessellationRate);
-      else                                     return curve.accurateBounds();
+      else                               return curve.accurateBounds();
+    }
+
+    /*! calculates bounding box of i'th bezier curve */
+    __forceinline BBox3fa bounds(const Vec3fa& ofs, const Vec3fa& scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
+    {
+      const float r_scale = max(scale.x,scale.y,scale.z);
+      const unsigned int index = curve(i);
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3fa v2 = vertex(index+2,itime);
+      const Vec3fa v3 = vertex(index+3,itime);
+      Vec3fa w0 = xfmPoint(space,(v0-ofs)*scale); w0.w = v0.w*r_scale;
+      Vec3fa w1 = xfmPoint(space,(v1-ofs)*scale); w1.w = v1.w*r_scale;
+      Vec3fa w2 = xfmPoint(space,(v2-ofs)*scale); w2.w = v2.w*r_scale;
+      Vec3fa w3 = xfmPoint(space,(v3-ofs)*scale); w3.w = v3.w*r_scale;
+      const Curve3fa curve(w0,w1,w2,w3);
+      if (likely(subtype == FLAT_CURVE)) return curve.tessellatedBounds(tessellationRate);
+      else                               return curve.accurateBounds();
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
