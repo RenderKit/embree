@@ -310,9 +310,9 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 2
     
     // 32.5 bytes per primitive
+    char N;
     Vec3f offset,scale;
-    unsigned int N;
-
+    
     unsigned int geomID[M];
     unsigned int primID[M];
     
