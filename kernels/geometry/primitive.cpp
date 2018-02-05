@@ -55,10 +55,10 @@ namespace embree
   /********************** BezierNi **************************/
   
   BezierNi::Type::Type ()
-    : PrimitiveType("bezierNi",sizeof(BezierNi),1) {}
+    : PrimitiveType("bezierNi",sizeof(BezierNi),8) {}
   
   size_t BezierNi::Type::size(const char* This) const {
-    return 1;
+    return ((Triangle4*)This)->size();
   }
 
   BezierNi::Type BezierNi::type;
