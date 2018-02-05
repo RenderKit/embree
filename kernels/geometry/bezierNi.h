@@ -235,19 +235,19 @@ namespace embree
         bounds_vx.y[i] = (char) space3.vx.y;
         bounds_vx.z[i] = (char) space3.vx.z;
         bounds_vx.lower[i] = (char) clamp(floor(bounds.lower.x),-126.0f,126.0f);
-        bounds_vx.upper[i] = (char) clamp(ceil (bounds.lower.x),-126.0f,126.0f);
+        bounds_vx.upper[i] = (char) clamp(ceil (bounds.upper.x),-126.0f,126.0f);
 
         bounds_vy.x[i] = (char) space3.vy.x;
         bounds_vy.y[i] = (char) space3.vy.y;
         bounds_vy.z[i] = (char) space3.vy.z;
         bounds_vy.lower[i] = (char) clamp(floor(bounds.lower.y),-126.0f,126.0f);
-        bounds_vy.upper[i] = (char) clamp(ceil (bounds.lower.y),-126.0f,126.0f);
+        bounds_vy.upper[i] = (char) clamp(ceil (bounds.upper.y),-126.0f,126.0f);
 
         bounds_vz.x[i] = (char) space3.vz.x;
         bounds_vz.y[i] = (char) space3.vz.y;
         bounds_vz.z[i] = (char) space3.vz.z;
         bounds_vz.lower[i] = (char) clamp(floor(bounds.lower.z),-126.0f,126.0f);
-        bounds_vz.upper[i] = (char) clamp(ceil (bounds.lower.z),-126.0f,126.0f);
+        bounds_vz.upper[i] = (char) clamp(ceil (bounds.upper.z),-126.0f,126.0f);
                
         items.geomID[i] = geomID;
         items.primID[i] = primID;
