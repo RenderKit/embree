@@ -185,9 +185,9 @@ namespace embree
     }
 
     /*! calculates bounding box of i'th bezier curve */
-    __forceinline BBox3fa bounds(const Vec3fa& ofs, const Vec3fa& scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
+    __forceinline BBox3fa bounds(const Vec3fa& ofs, const Vec3fa& scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
     {
-      const float r_scale = max(scale.x,scale.y,scale.z);
+      const float r_scale = r_scale0*max(scale.x,scale.y,scale.z);
       const unsigned int index = curve(i);
       const Vec3fa v0 = vertex(index+0,itime);
       const Vec3fa v1 = vertex(index+1,itime);

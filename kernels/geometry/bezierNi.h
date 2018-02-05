@@ -74,6 +74,36 @@ namespace embree
       }
       return frame(axis).transposed();
     }
+
+    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset, const Vec3fa& scale)
+    {
+      Vec3fa axis(0,0,1);
+      uint64_t bestGeomPrimID = -1;
+      
+      /*! find curve with minimum ID that defines valid direction */
+      for (size_t i=set.begin(); i<set.end(); i++)
+      {
+        const unsigned int geomID = prims[i].geomID();
+        const unsigned int primID = prims[i].primID();
+        const uint64_t geomprimID = prims[i].ID64();
+        if (geomprimID >= bestGeomPrimID) continue;
+        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+        const unsigned vtxID = mesh->curve(primID);
+        const Vec3fa v0 = (mesh->vertex(vtxID+0)-offset)*scale;
+        const Vec3fa v1 = (mesh->vertex(vtxID+1)-offset)*scale;
+        const Vec3fa v2 = (mesh->vertex(vtxID+2)-offset)*scale;
+        const Vec3fa v3 = (mesh->vertex(vtxID+3)-offset)*scale;
+        const Curve3fa curve(v0,v1,v2,v3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa axis1 = normalize(p3 - p0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axis = axis1;
+          bestGeomPrimID = geomprimID;
+        }
+      }
+      return frame(axis);
+    }
 #endif
 
 #if 0
@@ -222,12 +252,10 @@ namespace embree
         const PrimRef& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space = computeAlignedSpace(scene,prims,range<size_t>(begin)).transposed();
+        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),offset,scale);
         
-        const LinearSpace3fa space1(scale*space.vx,scale*space.vy,scale*space.vz);
-        const LinearSpace3fa space2(normalize(space1.vx),normalize(space1.vy),normalize(space1.vz));
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
-        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(offset,scale,space3.transposed(),primID);
+        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(offset,scale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
         bounds_vx.x[i] = (char) space3.vx.x;
         bounds_vx.y[i] = (char) space3.vx.y;
