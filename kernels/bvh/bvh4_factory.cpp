@@ -19,6 +19,7 @@
 
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
+#include "../geometry/bezierNi.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
@@ -1141,7 +1142,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    BVH4* accel = new BVH4(BezierNi::type,scene); // FIXME:
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
