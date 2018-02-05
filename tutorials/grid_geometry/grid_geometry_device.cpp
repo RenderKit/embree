@@ -174,6 +174,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 
 unsigned int addGridPlane (RTCScene scene_i)
 {
+  PING;
   /* create a triangulated plane with 2 triangles and 4 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
   unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS;

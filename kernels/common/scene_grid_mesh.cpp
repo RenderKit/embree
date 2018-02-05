@@ -90,7 +90,7 @@ namespace embree
       vertexAttribs[slot].set(buffer, offset, stride, num, format);
       vertexAttribs[slot].checkPadding16();
     }
-    else if (type == RTC_BUFFER_TYPE_INDEX)
+    else if (type == RTC_BUFFER_TYPE_GRID)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
@@ -98,7 +98,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
       grids.set(buffer, offset, stride, num, format);
-      setNumPrimitives(num);
+      setNumPrimitives(getNumSubGrids());
     }
     else 
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
@@ -106,7 +106,7 @@ namespace embree
 
   void* GridMesh::getBuffer(RTCBufferType type, unsigned int slot)
   {
-    if (type == RTC_BUFFER_TYPE_INDEX)
+    if (type == RTC_BUFFER_TYPE_GRID)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
@@ -133,7 +133,7 @@ namespace embree
 
   void GridMesh::updateBuffer(RTCBufferType type, unsigned int slot)
   {
-    if (type == RTC_BUFFER_TYPE_INDEX)
+    if (type == RTC_BUFFER_TYPE_GRID)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
@@ -202,6 +202,12 @@ namespace embree
 	  return false;
 
     return true;
+  }
+
+  unsigned int GridMesh::getNumSubGrids()
+  {
+    PING;
+    return 0;
   }
   
   void GridMesh::interpolate(const RTCInterpolateArguments* const args)

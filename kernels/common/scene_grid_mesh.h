@@ -60,6 +60,7 @@ namespace embree
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
 
+    unsigned int getNumSubGrids();
   public:
 
     /*! returns number of vertices */

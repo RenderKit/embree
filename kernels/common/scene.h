@@ -273,7 +273,7 @@ namespace embree
       std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
       std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
       std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
-      std::atomic<size_t> numGrids;                 //!< number of enabled grid geometries
+      std::atomic<size_t> numGrids;              //!< number of enabled grid geometries
 
     };
     
