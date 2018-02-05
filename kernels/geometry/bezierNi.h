@@ -245,7 +245,8 @@ namespace embree
       /* calculate offset and scale */
       offset = bounds.lower;
       scale = 1.0f/(bounds.size()*sqrt(3.0f));
-
+      scale = Vec3fa(min(scale.x,scale.y,scale.z));
+      
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
@@ -254,26 +255,26 @@ namespace embree
         const unsigned int primID = prim.primID();
         const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),offset,scale);
         
-        const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
+        const LinearSpace3fa space3(trunc(32767.0f*space2.vx),trunc(32767.0f*space2.vy),trunc(32767.0f*space2.vz));
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(offset,scale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
-        bounds_vx.x[i] = (char) space3.vx.x;
-        bounds_vx.y[i] = (char) space3.vx.y;
-        bounds_vx.z[i] = (char) space3.vx.z;
-        bounds_vx.lower[i] = (char) clamp(floor(bounds.lower.x),-126.0f,126.0f);
-        bounds_vx.upper[i] = (char) clamp(ceil (bounds.upper.x),-126.0f,126.0f);
+        bounds_vx.x[i] = (short) space3.vx.x;
+        bounds_vx.y[i] = (short) space3.vx.y;
+        bounds_vx.z[i] = (short) space3.vx.z;
+        bounds_vx.lower[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
+        bounds_vx.upper[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
 
-        bounds_vy.x[i] = (char) space3.vy.x;
-        bounds_vy.y[i] = (char) space3.vy.y;
-        bounds_vy.z[i] = (char) space3.vy.z;
-        bounds_vy.lower[i] = (char) clamp(floor(bounds.lower.y),-126.0f,126.0f);
-        bounds_vy.upper[i] = (char) clamp(ceil (bounds.upper.y),-126.0f,126.0f);
+        bounds_vy.x[i] = (short) space3.vy.x;
+        bounds_vy.y[i] = (short) space3.vy.y;
+        bounds_vy.z[i] = (short) space3.vy.z;
+        bounds_vy.lower[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
+        bounds_vy.upper[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
 
-        bounds_vz.x[i] = (char) space3.vz.x;
-        bounds_vz.y[i] = (char) space3.vz.y;
-        bounds_vz.z[i] = (char) space3.vz.z;
-        bounds_vz.lower[i] = (char) clamp(floor(bounds.lower.z),-126.0f,126.0f);
-        bounds_vz.upper[i] = (char) clamp(ceil (bounds.upper.z),-126.0f,126.0f);
+        bounds_vz.x[i] = (short) space3.vz.x;
+        bounds_vz.y[i] = (short) space3.vz.y;
+        bounds_vz.z[i] = (short) space3.vz.z;
+        bounds_vz.lower[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
+        bounds_vz.upper[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
                
         items.geomID[i] = geomID;
         items.primID[i] = primID;
@@ -320,11 +321,11 @@ namespace embree
     } items;
     struct CompressedOrientedBounds
     {
-      char x[M];
-      char y[M];
-      char z[M];
-      char lower[M];
-      char upper[M];
+      short x[M];
+      short y[M];
+      short z[M];
+      short lower[M];
+      short upper[M];
     } bounds_vx, bounds_vy, bounds_vz;
 #endif
   };
