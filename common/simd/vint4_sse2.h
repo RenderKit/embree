@@ -53,6 +53,8 @@ namespace embree
     __forceinline explicit vint(const vboolf4& a) : v(_mm_castps_si128((__m128)a)) {}
 #endif
 
+    __forceinline vint(long long a, long long b) : v(_mm_set_epi64x(b,a)) {}
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -433,6 +435,8 @@ namespace embree
   template<> __forceinline int extract<0>(const vint4& b) { return _mm_cvtsi128_si32(b); }
 
   __forceinline int toScalar(const vint4& v) { return _mm_cvtsi128_si32(v); }
+
+  __forceinline long long toScalar64(const vint4& v) { return _mm_cvtsi128_si64(v); }
 
 #if defined(__AVX512VL__)
 
