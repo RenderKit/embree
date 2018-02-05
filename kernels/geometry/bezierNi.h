@@ -172,8 +172,8 @@ namespace embree
         naabb.p.y[i] = space.p.y;
         naabb.p.z[i] = space.p.z;
 
-        items.geomID[i] = geomID;
-        items.primID[i] = primID;
+        this->geomID[i] = geomID;
+        this->primID[i] = primID;
       }
         
 #endif
@@ -216,14 +216,14 @@ namespace embree
         //if (reduce_min(bounds.lower) < 0.0f || reduce_max(bounds.upper) > 255.0f) PRINT(bounds);
         //PRINT2(i,bounds.size());
         
-        items.lower_x[i] = (unsigned char) clamp(floor(lower.x),0.0f,255.0f);
-        items.upper_x[i] = (unsigned char) clamp(ceil (upper.x),0.0f,255.0f);
-        items.lower_y[i] = (unsigned char) clamp(floor(lower.y),0.0f,255.0f);
-        items.upper_y[i] = (unsigned char) clamp(ceil (upper.y),0.0f,255.0f);
-        items.lower_z[i] = (unsigned char) clamp(floor(lower.z),0.0f,255.0f);
-        items.upper_z[i] = (unsigned char) clamp(ceil (upper.z),0.0f,255.0f);
-        items.geomID[i] = geomID;
-        items.primID[i] = primID;
+        this->lower_x[i] = (unsigned char) clamp(floor(lower.x),0.0f,255.0f);
+        this->upper_x[i] = (unsigned char) clamp(ceil (upper.x),0.0f,255.0f);
+        this->lower_y[i] = (unsigned char) clamp(floor(lower.y),0.0f,255.0f);
+        this->upper_y[i] = (unsigned char) clamp(ceil (upper.y),0.0f,255.0f);
+        this->lower_z[i] = (unsigned char) clamp(floor(lower.z),0.0f,255.0f);
+        this->upper_z[i] = (unsigned char) clamp(ceil (upper.z),0.0f,255.0f);
+        this->geomID[i] = geomID;
+        this->primID[i] = primID;
       }
 #endif
 
@@ -258,26 +258,26 @@ namespace embree
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(offset,scale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
-        bounds_vx.x[i] = (short) space3.vx.x;
-        bounds_vx.y[i] = (short) space3.vx.y;
-        bounds_vx.z[i] = (short) space3.vx.z;
-        bounds_vx.lower[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
-        bounds_vx.upper[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
+        bounds_vx_x[i] = (short) space3.vx.x;
+        bounds_vx_y[i] = (short) space3.vx.y;
+        bounds_vx_z[i] = (short) space3.vx.z;
+        bounds_vx_lower[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
+        bounds_vx_upper[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
 
-        bounds_vy.x[i] = (short) space3.vy.x;
-        bounds_vy.y[i] = (short) space3.vy.y;
-        bounds_vy.z[i] = (short) space3.vy.z;
-        bounds_vy.lower[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
-        bounds_vy.upper[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
+        bounds_vy_x[i] = (short) space3.vy.x;
+        bounds_vy_y[i] = (short) space3.vy.y;
+        bounds_vy_z[i] = (short) space3.vy.z;
+        bounds_vy_lower[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
+        bounds_vy_upper[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
 
-        bounds_vz.x[i] = (short) space3.vz.x;
-        bounds_vz.y[i] = (short) space3.vz.y;
-        bounds_vz.z[i] = (short) space3.vz.z;
-        bounds_vz.lower[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
-        bounds_vz.upper[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
+        bounds_vz_x[i] = (short) space3.vz.x;
+        bounds_vz_y[i] = (short) space3.vz.y;
+        bounds_vz_z[i] = (short) space3.vz.z;
+        bounds_vz_lower[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
+        bounds_vz_upper[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
                
-        items.geomID[i] = geomID;
-        items.primID[i] = primID;
+        this->geomID[i] = geomID;
+        this->primID[i] = primID;
       }
         
 #endif
@@ -289,44 +289,50 @@ namespace embree
     // 56 bytes
     AffineSpace3vf<M> naabb;
     unsigned int N;
-    struct Item {
-      unsigned int geomID[M];
-      unsigned int primID[M];
-    } items;
+    unsigned int geomID[M];
+    unsigned int primID[M];
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 1
     // 20 bytes 
     AffineSpace3fa space;
     unsigned int N;
-    struct Item {
-      unsigned char lower_x[M];
-      unsigned char upper_x[M];
-      unsigned char lower_y[M];
-      unsigned char upper_y[M];
-      unsigned char lower_z[M];
-      unsigned char upper_z[M];
-      unsigned int geomID[M];
-      unsigned int primID[M];
-    } items;
+    unsigned char lower_x[M];
+    unsigned char upper_x[M];
+    unsigned char lower_y[M];
+    unsigned char upper_y[M];
+    unsigned char lower_z[M];
+    unsigned char upper_z[M];
+    unsigned int geomID[M];
+    unsigned int primID[M];
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 2
-    // 26 bytes per primitive
+    
+    // 32.5 bytes per primitive
     Vec3f offset,scale;
     unsigned int N;
-    struct Bla {
-      unsigned int geomID[M];
-      unsigned int primID[M];
-    } items;
-    struct CompressedOrientedBounds
-    {
-      char x[M];
-      char y[M];
-      char z[M];
-      short lower[M];
-      short upper[M];
-    } bounds_vx, bounds_vy, bounds_vz;
+
+    unsigned int geomID[M];
+    unsigned int primID[M];
+    
+    char bounds_vx_x[M];
+    char bounds_vx_y[M];
+    char bounds_vx_z[M];
+    short bounds_vx_lower[M];
+    short bounds_vx_upper[M];
+    
+    char bounds_vy_x[M];
+    char bounds_vy_y[M];
+    char bounds_vy_z[M];
+    short bounds_vy_lower[M];
+    short bounds_vy_upper[M];
+    
+    char bounds_vz_x[M];
+    char bounds_vz_y[M];
+    char bounds_vz_z[M];
+    short bounds_vz_lower[M];
+    short bounds_vz_upper[M];
 #endif
   };
 }

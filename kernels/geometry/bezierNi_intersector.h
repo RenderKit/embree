@@ -67,12 +67,12 @@ namespace embree
         const Vec3fa dir1 = xfmVector(prim.space,ray.dir);
         const Vec3fa rcp_dir1 = rcp(dir1);
         
-        const vfloat8 t_lower_x = (vfloat8::load(prim.items.lower_x)-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
-        const vfloat8 t_upper_x = (vfloat8::load(prim.items.upper_x)-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
-        const vfloat8 t_lower_y = (vfloat8::load(prim.items.lower_y)-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
-        const vfloat8 t_upper_y = (vfloat8::load(prim.items.upper_y)-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
-        const vfloat8 t_lower_z = (vfloat8::load(prim.items.lower_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
-        const vfloat8 t_upper_z = (vfloat8::load(prim.items.upper_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
+        const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x)-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
+        const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x)-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
+        const vfloat8 t_lower_y = (vfloat8::load(prim.lower_y)-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
+        const vfloat8 t_upper_y = (vfloat8::load(prim.upper_y)-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
+        const vfloat8 t_lower_z = (vfloat8::load(prim.lower_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
+        const vfloat8 t_upper_z = (vfloat8::load(prim.upper_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
 
         const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
         const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
@@ -86,20 +86,20 @@ namespace embree
         const Vec3fa org1 = (ray.org-offset)*scale;
         const Vec3fa dir1 = ray.dir*scale;
 
-        const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx.x), vfloat8::load(prim.bounds_vx.y), vfloat8::load(prim.bounds_vx.z),
-                                    vfloat8::load(prim.bounds_vy.x), vfloat8::load(prim.bounds_vy.y), vfloat8::load(prim.bounds_vy.z),
-                                    vfloat8::load(prim.bounds_vz.x), vfloat8::load(prim.bounds_vz.y), vfloat8::load(prim.bounds_vz.z));
+        const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx_x), vfloat8::load(prim.bounds_vx_y), vfloat8::load(prim.bounds_vx_z),
+                                    vfloat8::load(prim.bounds_vy_x), vfloat8::load(prim.bounds_vy_y), vfloat8::load(prim.bounds_vy_z),
+                                    vfloat8::load(prim.bounds_vz_x), vfloat8::load(prim.bounds_vz_y), vfloat8::load(prim.bounds_vz_z));
 
         const Vec3vf8 dir2 = xfmVector(space,Vec3vf8(dir1));
         const Vec3vf8 org2 = xfmPoint (space,Vec3vf8(org1));
         const Vec3vf8 rcp_dir2 = rcp(dir2);
        
-        const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx.lower)-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
-        const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx.upper)-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
-        const vfloat8 t_lower_y = (vfloat8::load(prim.bounds_vy.lower)-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
-        const vfloat8 t_upper_y = (vfloat8::load(prim.bounds_vy.upper)-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
-        const vfloat8 t_lower_z = (vfloat8::load(prim.bounds_vz.lower)-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
-        const vfloat8 t_upper_z = (vfloat8::load(prim.bounds_vz.upper)-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
+        const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx_lower)-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
+        const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx_upper)-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
+        const vfloat8 t_lower_y = (vfloat8::load(prim.bounds_vy_lower)-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
+        const vfloat8 t_upper_y = (vfloat8::load(prim.bounds_vy_upper)-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
+        const vfloat8 t_lower_z = (vfloat8::load(prim.bounds_vz_lower)-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
+        const vfloat8 t_upper_z = (vfloat8::load(prim.bounds_vz_upper)-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
 
         const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
         const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
@@ -113,8 +113,8 @@ namespace embree
           clear(valid,i);
         
           STAT3(normal.trav_prims,1,1,1);
-          const unsigned int geomID = prim.items.geomID[i];
-          const unsigned int primID = prim.items.primID[i];
+          const unsigned int geomID = prim.geomID[i];
+          const unsigned int primID = prim.primID[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
           if (likely(geom->subtype == FLAT_CURVE))
