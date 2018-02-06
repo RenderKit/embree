@@ -42,7 +42,8 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
 #if EMBREE_HAIR_LEAF_MODE == 0
-      return blocks(N)*sizeof(BezierNi);
+      const size_t f = N/M, r = N%M;
+      return f*sizeof(BezierNi) + (r!=0)*(1+14*4*r + 4*max(0,8-3*(int)N));
 #elif EMBREE_HAIR_LEAF_MODE == 1
       const size_t f = N/M, r = N%M;
       return f*sizeof(BezierNi) + (r!=0)*(49 + 14*r);
@@ -169,24 +170,24 @@ namespace embree
         space.p -= bounds.lower;
         space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
 
-        vx_x[i] = space.l.vx.x;
-        vx_y[i] = space.l.vx.y;
-        vx_z[i] = space.l.vx.z;
+        vx_x(N)[i] = space.l.vx.x;
+        vx_y(N)[i] = space.l.vx.y;
+        vx_z(N)[i] = space.l.vx.z;
 
-        vy_x[i] = space.l.vy.x;
-        vy_y[i] = space.l.vy.y;
-        vy_z[i] = space.l.vy.z;
+        vy_x(N)[i] = space.l.vy.x;
+        vy_y(N)[i] = space.l.vy.y;
+        vy_z(N)[i] = space.l.vy.z;
 
-        vz_x[i] = space.l.vz.x;
-        vz_y[i] = space.l.vz.y;
-        vz_z[i] = space.l.vz.z;
+        vz_x(N)[i] = space.l.vz.x;
+        vz_y(N)[i] = space.l.vz.y;
+        vz_z(N)[i] = space.l.vz.z;
 
-        p_x[i] = space.p.x;
-        p_y[i] = space.p.y;
-        p_z[i] = space.p.z;
+        p_x(N)[i] = space.p.x;
+        p_y(N)[i] = space.p.y;
+        p_z(N)[i] = space.p.z;
 
-        this->geomID[i] = geomID;
-        this->primID[i] = primID;
+        this->geomID(N)[i] = geomID;
+        this->primID(N)[i] = primID;
       }
         
 #endif
@@ -306,20 +307,63 @@ namespace embree
 
     // 56 bytes
     unsigned char N;
-    float vx_x[M];
-    float vx_y[M];
-    float vx_z[M];
-    float vy_x[M];
-    float vy_y[M];
-    float vy_z[M];
-    float vz_x[M];
-    float vz_y[M];
-    float vz_z[M];
-    float p_x[M];
-    float p_y[M];
-    float p_z[M];
-    unsigned int geomID[M];
-    unsigned int primID[M];
+    float _vx_x[M];
+    float _vx_y[M];
+    float _vx_z[M];
+    float _vy_x[M];
+    float _vy_y[M];
+    float _vy_z[M];
+    float _vz_x[M];
+    float _vz_y[M];
+    float _vz_z[M];
+    float _p_x[M];
+    float _p_y[M];
+    float _p_z[M];
+    unsigned int _geomID[M];
+    unsigned int _primID[M];
+
+    __forceinline       float* vx_x(size_t N)       { return (float*)((char*)this+1+0*N); }
+    __forceinline const float* vx_x(size_t N) const { return (float*)((char*)this+1+0*N); }
+    
+    __forceinline       float* vx_y(size_t N)       { return (float*)((char*)this+1+4*N); }
+    __forceinline const float* vx_y(size_t N) const { return (float*)((char*)this+1+4*N); }
+    
+    __forceinline       float* vx_z(size_t N)       { return (float*)((char*)this+1+8*N); }
+    __forceinline const float* vx_z(size_t N) const { return (float*)((char*)this+1+8*N); }
+    
+    __forceinline       float* vy_x(size_t N)       { return (float*)((char*)this+1+12*N); }
+    __forceinline const float* vy_x(size_t N) const { return (float*)((char*)this+1+12*N); }
+    
+    __forceinline       float* vy_y(size_t N)       { return (float*)((char*)this+1+16*N); }
+    __forceinline const float* vy_y(size_t N) const { return (float*)((char*)this+1+16*N); }
+    
+    __forceinline       float* vy_z(size_t N)       { return (float*)((char*)this+1+20*N); }
+    __forceinline const float* vy_z(size_t N) const { return (float*)((char*)this+1+20*N); }
+    
+    __forceinline       float* vz_x(size_t N)       { return (float*)((char*)this+1+24*N); }
+    __forceinline const float* vz_x(size_t N) const { return (float*)((char*)this+1+24*N); }
+    
+    __forceinline       float* vz_y(size_t N)       { return (float*)((char*)this+1+28*N); }
+    __forceinline const float* vz_y(size_t N) const { return (float*)((char*)this+1+28*N); }
+    
+    __forceinline       float* vz_z(size_t N)       { return (float*)((char*)this+1+32*N); }
+    __forceinline const float* vz_z(size_t N) const { return (float*)((char*)this+1+32*N); }
+    
+    __forceinline       float* p_x(size_t N)       { return (float*)((char*)this+1+36*N); }
+    __forceinline const float* p_x(size_t N) const { return (float*)((char*)this+1+36*N); }
+    
+    __forceinline       float* p_y(size_t N)       { return (float*)((char*)this+1+40*N); }
+    __forceinline const float* p_y(size_t N) const { return (float*)((char*)this+1+40*N); }
+    
+    __forceinline       float* p_z(size_t N)       { return (float*)((char*)this+1+44*N); }
+    __forceinline const float* p_z(size_t N) const { return (float*)((char*)this+1+44*N); }
+    
+    __forceinline       unsigned int* geomID(size_t N)       { return (unsigned int*)((char*)this+1+48*N); }
+    __forceinline const unsigned int* geomID(size_t N) const { return (unsigned int*)((char*)this+1+48*N); }
+    
+    __forceinline       unsigned int* primID(size_t N)       { return (unsigned int*)((char*)this+1+52*N); }
+    __forceinline const unsigned int* primID(size_t N) const { return (unsigned int*)((char*)this+1+52*N); }
+    
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 1

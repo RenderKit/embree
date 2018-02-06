@@ -44,10 +44,11 @@ namespace embree
       {
 #if EMBREE_HAIR_LEAF_MODE == 0
 
-        AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(&prim.vx_x),vfloat<8>::loadu(&prim.vx_y),vfloat<8>::loadu(&prim.vx_z)),
-                                Vec3vf8(vfloat<8>::loadu(&prim.vy_x),vfloat<8>::loadu(&prim.vy_y),vfloat<8>::loadu(&prim.vy_z)),
-                                Vec3vf8(vfloat<8>::loadu(&prim.vz_x),vfloat<8>::loadu(&prim.vz_y),vfloat<8>::loadu(&prim.vz_z)),
-                                Vec3vf8(vfloat<8>::loadu(&prim.p_x ),vfloat<8>::loadu(&prim.p_y ),vfloat<8>::loadu(&prim.p_z )));
+        const size_t N = prim.N;
+        AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(prim.vx_x(N)),vfloat<8>::loadu(prim.vx_y(N)),vfloat<8>::loadu(prim.vx_z(N))),
+                                Vec3vf8(vfloat<8>::loadu(prim.vy_x(N)),vfloat<8>::loadu(prim.vy_y(N)),vfloat<8>::loadu(prim.vy_z(N))),
+                                Vec3vf8(vfloat<8>::loadu(prim.vz_x(N)),vfloat<8>::loadu(prim.vz_y(N)),vfloat<8>::loadu(prim.vz_z(N))),
+                                Vec3vf8(vfloat<8>::loadu(prim.p_x (N)),vfloat<8>::loadu(prim.p_y (N)),vfloat<8>::loadu(prim.p_z (N))));
         
         const Vec3vf8 dir1 = xfmVector(space,Vec3vf8(ray.dir));
         const Vec3vf8 org1 = xfmPoint (space,Vec3vf8(ray.org));
@@ -125,13 +126,8 @@ namespace embree
           clear(valid,i);
         
           STAT3(normal.trav_prims,1,1,1);
-#if EMBREE_HAIR_LEAF_MODE != 0
           const unsigned int geomID = prim.geomID(N)[i];
           const unsigned int primID = prim.primID(N)[i];
-#else
-          const unsigned int geomID = prim.geomID[i];
-          const unsigned int primID = prim.primID[i];
-#endif
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
           if (likely(geom->subtype == FLAT_CURVE))
