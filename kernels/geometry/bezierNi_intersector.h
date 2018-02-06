@@ -66,13 +66,14 @@ namespace embree
         const Vec3fa org1 = xfmPoint (prim.space,ray.org);
         const Vec3fa dir1 = xfmVector(prim.space,ray.dir);
         const Vec3fa rcp_dir1 = rcp(dir1);
+        const size_t N = prim.N;
         
-        const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x)-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
-        const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x)-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
-        const vfloat8 t_lower_y = (vfloat8::load(prim.lower_y)-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
-        const vfloat8 t_upper_y = (vfloat8::load(prim.upper_y)-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
-        const vfloat8 t_lower_z = (vfloat8::load(prim.lower_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
-        const vfloat8 t_upper_z = (vfloat8::load(prim.upper_z)-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
+        const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
+        const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
+        const vfloat8 t_lower_y = (vfloat8::load(prim.lower_y(N))-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
+        const vfloat8 t_upper_y = (vfloat8::load(prim.upper_y(N))-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
+        const vfloat8 t_lower_z = (vfloat8::load(prim.lower_z(N))-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
+        const vfloat8 t_upper_z = (vfloat8::load(prim.upper_z(N))-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
 
         const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
         const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
@@ -114,7 +115,7 @@ namespace embree
           clear(valid,i);
         
           STAT3(normal.trav_prims,1,1,1);
-#if EMBREE_HAIR_LEAF_MODE == 2
+#if EMBREE_HAIR_LEAF_MODE != 0
           const unsigned int geomID = prim.geomID(N)[i];
           const unsigned int primID = prim.primID(N)[i];
 #else
