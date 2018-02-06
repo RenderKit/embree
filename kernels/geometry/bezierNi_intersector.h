@@ -63,8 +63,13 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 1
 
-        const Vec3fa org1 = xfmPoint (prim.space,ray.org);
-        const Vec3fa dir1 = xfmVector(prim.space,ray.dir);
+        const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
+                                   Vec3fa::loadu(&prim.space.l.vy),
+                                   Vec3fa::loadu(&prim.space.l.vz),
+                                   Vec3fa::loadu(&prim.space.p));
+        
+        const Vec3fa org1 = xfmPoint (space,ray.org);
+        const Vec3fa dir1 = xfmVector(space,ray.dir);
         const Vec3fa rcp_dir1 = rcp(dir1);
         const size_t N = prim.N;
         

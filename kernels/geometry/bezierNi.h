@@ -45,7 +45,7 @@ namespace embree
       return blocks(N)*sizeof(BezierNi);
 #elif EMBREE_HAIR_LEAF_MODE == 1
       const size_t f = N/M, r = N%M;
-      return f*sizeof(BezierNi) + (r!=0)*(65 + 14*r);
+      return f*sizeof(BezierNi) + (r!=0)*(49 + 14*r);
 #elif EMBREE_HAIR_LEAF_MODE == 2
       const size_t f = N/M, r = N%M;
       return f*sizeof(BezierNi) + (r!=0)*(25 + 29*r);
@@ -313,7 +313,7 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 1
     // 20 bytes
-    AffineSpace3fa space;
+    AffineSpace3f space;
     unsigned char N;
     unsigned char _lower_x[M];
     unsigned char _upper_x[M];
@@ -324,29 +324,29 @@ namespace embree
     unsigned int _geomID[M];
     unsigned int _primID[M];
 
-    __forceinline       unsigned char* lower_x(size_t N)       { return (unsigned char*)((char*)this+65+0*N); }
-    __forceinline const unsigned char* lower_x(size_t N) const { return (unsigned char*)((char*)this+65+0*N); }
+    __forceinline       unsigned char* lower_x(size_t N)       { return (unsigned char*)((char*)this+49+0*N); }
+    __forceinline const unsigned char* lower_x(size_t N) const { return (unsigned char*)((char*)this+49+0*N); }
     
-    __forceinline       unsigned char* upper_x(size_t N)       { return (unsigned char*)((char*)this+65+1*N); }
-    __forceinline const unsigned char* upper_x(size_t N) const { return (unsigned char*)((char*)this+65+1*N); }
+    __forceinline       unsigned char* upper_x(size_t N)       { return (unsigned char*)((char*)this+49+1*N); }
+    __forceinline const unsigned char* upper_x(size_t N) const { return (unsigned char*)((char*)this+49+1*N); }
     
-    __forceinline       unsigned char* lower_y(size_t N)       { return (unsigned char*)((char*)this+65+2*N); }
-    __forceinline const unsigned char* lower_y(size_t N) const { return (unsigned char*)((char*)this+65+2*N); }
+    __forceinline       unsigned char* lower_y(size_t N)       { return (unsigned char*)((char*)this+49+2*N); }
+    __forceinline const unsigned char* lower_y(size_t N) const { return (unsigned char*)((char*)this+49+2*N); }
     
-    __forceinline       unsigned char* upper_y(size_t N)       { return (unsigned char*)((char*)this+65+3*N); }
-    __forceinline const unsigned char* upper_y(size_t N) const { return (unsigned char*)((char*)this+65+3*N); }
+    __forceinline       unsigned char* upper_y(size_t N)       { return (unsigned char*)((char*)this+49+3*N); }
+    __forceinline const unsigned char* upper_y(size_t N) const { return (unsigned char*)((char*)this+49+3*N); }
     
-    __forceinline       unsigned char* lower_z(size_t N)       { return (unsigned char*)((char*)this+65+4*N); }
-    __forceinline const unsigned char* lower_z(size_t N) const { return (unsigned char*)((char*)this+65+4*N); }
+    __forceinline       unsigned char* lower_z(size_t N)       { return (unsigned char*)((char*)this+49+4*N); }
+    __forceinline const unsigned char* lower_z(size_t N) const { return (unsigned char*)((char*)this+49+4*N); }
     
-    __forceinline       unsigned char* upper_z(size_t N)       { return (unsigned char*)((char*)this+65+5*N); }
-    __forceinline const unsigned char* upper_z(size_t N) const { return (unsigned char*)((char*)this+65+5*N); }
+    __forceinline       unsigned char* upper_z(size_t N)       { return (unsigned char*)((char*)this+49+5*N); }
+    __forceinline const unsigned char* upper_z(size_t N) const { return (unsigned char*)((char*)this+49+5*N); }
     
-    __forceinline       unsigned int* geomID  (size_t N)       { return (unsigned int* )((char*)this+65+6*N); }
-    __forceinline const unsigned int* geomID  (size_t N) const { return (unsigned int* )((char*)this+65+6*N); }
+    __forceinline       unsigned int* geomID  (size_t N)       { return (unsigned int* )((char*)this+49+6*N); }
+    __forceinline const unsigned int* geomID  (size_t N) const { return (unsigned int* )((char*)this+49+6*N); }
     
-    __forceinline       unsigned int* primID  (size_t N)       { return (unsigned int* )((char*)this+65+10*N); }
-    __forceinline const unsigned int* primID  (size_t N) const { return (unsigned int* )((char*)this+65+10*N); }
+    __forceinline       unsigned int* primID  (size_t N)       { return (unsigned int* )((char*)this+49+10*N); }
+    __forceinline const unsigned int* primID  (size_t N) const { return (unsigned int* )((char*)this+49+10*N); }
     
     
 #endif
