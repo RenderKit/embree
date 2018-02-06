@@ -224,7 +224,7 @@ namespace embree
           size_t i = select_min(valid,tNear);
           clear(valid,i);
         
-          STAT3(normal.trav_prims,1,1,1);
+          STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N)[i];
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
