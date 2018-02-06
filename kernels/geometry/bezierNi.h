@@ -41,8 +41,14 @@ namespace embree
 
     static __forceinline size_t bytes(size_t N)
     {
+#if EMBREE_HAIR_LEAF_MODE == 0
+      return blocks(N)*sizeof(BezierNi);
+#elif EMBREE_HAIR_LEAF_MODE == 1
+      return blocks(N)*sizeof(BezierNi);
+#elif EMBREE_HAIR_LEAF_MODE == 2
       const size_t f = N/M, r = N%M;
       return f*sizeof(BezierNi) + (r!=0)*(1 + 29*r + 24);
+#endif
     }
 
   public:
@@ -315,9 +321,9 @@ namespace embree
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 1
-    // 20 bytes 
+    // 20 bytes
+    unsigned char N;
     AffineSpace3fa space;
-    unsigned int N;
     unsigned char lower_x[M];
     unsigned char upper_x[M];
     unsigned char lower_y[M];
