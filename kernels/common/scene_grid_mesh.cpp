@@ -98,7 +98,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
       grids.set(buffer, offset, stride, num, format);
-      setNumPrimitives(getNumSubGrids());
+      setNumPrimitives(num);
     }
     else 
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
@@ -204,10 +204,10 @@ namespace embree
     return true;
   }
 
-  unsigned int GridMesh::getNumSubGrids()
+  unsigned int GridMesh::getNumSubGrids(const size_t gridID)
   {
-    PING;
-    return 0;
+    const Grid &g = grid(gridID);
+    return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
   }
   
   void GridMesh::interpolate(const RTCInterpolateArguments* const args)

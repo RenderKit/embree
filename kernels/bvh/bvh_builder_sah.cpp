@@ -650,13 +650,29 @@ namespace embree
           bvh->alloc.unshare(prims);
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
+        const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
+        PRINT(numGrids);
+        PRINT( mesh );
+        size_t numPrimitives = 0;
+
+        Scene::Iterator<GridMesh,false> iter(scene);
+        for (size_t s=0;s<scene->size();s++)
+        {
+          GridMesh *gmesh = iter.at(s);
+          if (gmesh == nullptr) continue;
+          for (size_t i=0;i<gmesh->size();i++)
+          {
+            PRINT( gmesh->getNumSubGrids(i) );
+            numPrimitives += gmesh->getNumSubGrids(i);
+          }
+        }
+
+        PRINT( numPrimitives );
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
           return;
         }
-        exit(0);
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
@@ -678,9 +694,37 @@ namespace embree
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
         prims.resize(numPrimitives); 
 
-        PrimInfo pinfo = mesh ?
-          createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
-          createPrimRefArray<GridMesh,false>(scene,prims,bvh->scene->progressInterface);
+        //PrimInfo pinfo = mesh ?
+        //  createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
+        //  createPrimRefArray<GridMesh,false>(scene,prims,bvh->scene->progressInterface);
+
+        PrimInfo pinfo(empty);
+        size_t p_index = 0;
+        for (size_t s=0;s<scene->size();s++)
+        {
+          PRINT(s);
+          GridMesh *gmesh = iter.at(s);
+          if (gmesh == nullptr) continue;
+          for (size_t i=0;i<gmesh->size();i++)
+          {
+            PRINT("GRID");
+            const GridMesh::Grid &g = gmesh->grid(i);
+            for (size_t y=0;y<(size_t)g.resY-1;y+=2)
+              for (size_t x=0;x<(size_t)g.resX-1;x+=2)
+              {
+                BBox3fa bounds = empty;
+                if (!gmesh->buildBounds(g,x,y,&bounds)) continue;
+                const unsigned int startVtxID = gmesh->grid_vertex_index(g,x,y);
+                const PrimRef prim(bounds,gmesh->geomID,startVtxID);
+                PRINT(prim);
+                pinfo.add_center2(prim);
+                prims[p_index++] = prim;                
+              }
+          }
+        }
+        assert(p_index == numPrimitives);
+
+        exit(0);
 
         /* pinfo might has zero size due to invalid geometry */
         if (unlikely(pinfo.size() == 0))

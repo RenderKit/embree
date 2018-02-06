@@ -60,7 +60,8 @@ namespace embree
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
 
-    unsigned int getNumSubGrids();
+    unsigned int getNumSubGrids(const size_t gridID);
+
   public:
 
     /*! returns number of vertices */
@@ -94,21 +95,25 @@ namespace embree
     }
 
     /*! returns i'th vertex of the first timestep */
-    __forceinline const Vec3fa grid_vertex(const Grid& g, size_t x, size_t y) const {
+    __forceinline size_t grid_vertex_index(const Grid& g, size_t x, size_t y) const {
       assert(x < (size_t)g.resX);
       assert(y < (size_t)g.resY);
-      const size_t index = g.startVtxID + x + y * g.lineOffset;
+      return g.startVtxID + x + y * g.lineOffset;
+    }
+    
+    /*! returns i'th vertex of the first timestep */
+    __forceinline const Vec3fa grid_vertex(const Grid& g, size_t x, size_t y) const {
+      const size_t index = grid_vertex_index(g,x,y);
       return vertex(index);
     }
 
     /*! returns i'th vertex of the itime'th timestep */
     __forceinline const Vec3fa grid_vertex(const Grid& g, size_t x, size_t y, size_t itime) const {
-      assert(x < (size_t)g.resX);
-      assert(y < (size_t)g.resY);
-      const size_t index = g.startVtxID + x + y * g.lineOffset;
+      const size_t index = grid_vertex_index(g,x,y);
       return vertex(index,itime);
     }
 
+#if 1
     /*! calculates the bounds of the i'th grid */
     __forceinline BBox3fa bounds(size_t i) const 
     {
@@ -130,6 +135,7 @@ namespace embree
           b.extend(grid_vertex(g,x,y,itime));
       return b;
     }
+#endif
 
     /*! calculates the interpolated bounds of the i'th grid at the specified time */
     __forceinline BBox3fa bounds(size_t i, float time) const
@@ -164,14 +170,21 @@ namespace embree
     }
 
     /*! calculates the build bounds of the i'th primitive, if it's valid */
-    __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
+    __forceinline bool buildBounds(const size_t i, BBox3fa* bbox = nullptr) const
     {
-      const Grid& g = grid(i);
+      //const Grid& g = grid(i);     
+      FATAL("not implemented");
+      return false;
+    }
+
+    /*! calculates the build bounds of the i'th primitive, if it's valid */
+    __forceinline bool buildBounds(const Grid& g, size_t sx, size_t sy, BBox3fa* bbox = nullptr) const
+    {
       BBox3fa b(empty);
       for (size_t t=0; t<numTimeSteps; t++)
       {
-        for (size_t y=0;y<(size_t)g.resY;y++)
-          for (size_t x=0;x<(size_t)g.resX;x++)
+        for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
+          for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
           {
             const Vec3fa v = grid_vertex(g,x,y,t);
             if (unlikely(!isvalid(v))) return false;
@@ -186,14 +199,13 @@ namespace embree
     }
 
     /*! calculates the build bounds of the i'th primitive at the itime'th time segment, if it's valid */
-    __forceinline bool buildBounds(size_t i, size_t itime, BBox3fa& bbox) const
+    __forceinline bool buildBounds(const Grid& g, size_t sx, size_t sy, size_t itime, BBox3fa& bbox) const
     {
-      const Grid& g = grid(i);
       assert(itime+1 < numTimeSteps);
 
       BBox3fa b0(empty);
-      for (size_t y=0;y<(size_t)g.resY;y++)
-        for (size_t x=0;x<(size_t)g.resX;x++)
+      for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
+        for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
         {
           const Vec3fa v = grid_vertex(g,x,y,itime+0);
           if (unlikely(!isvalid(v))) return false;
@@ -201,8 +213,8 @@ namespace embree
         }
 
       BBox3fa b1(empty);
-      for (size_t y=0;y<(size_t)g.resY;y++)
-        for (size_t x=0;x<(size_t)g.resX;x++)
+      for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
+        for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
         {
           const Vec3fa v = grid_vertex(g,x,y,itime+1);
           if (unlikely(!isvalid(v))) return false;

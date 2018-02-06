@@ -186,9 +186,16 @@ unsigned int addGridPlane (RTCScene scene_i)
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
 
+
+  RTCGrid* grids = (RTCGrid*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(RTCGrid),NUM_GRIDS);
+
   unsigned int index = 0;
   for (unsigned int g=0;g<NUM_GRIDS;g++)
   {
+    grids[g].startVtxID = index;
+    grids[g].lineOffset = GRID_RESOLUTION_X;
+    grids[g].resX       = GRID_RESOLUTION_X;
+    grids[g].resY       = GRID_RESOLUTION_Y;
     for (unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
       for (unsigned int x=0;x<GRID_RESOLUTION_X;x++)
       {
@@ -197,6 +204,7 @@ unsigned int addGridPlane (RTCScene scene_i)
         vertices[index].z = startY + (float)y / (GRID_RESOLUTION_Y-1) * sizeY;
         index++;
       }
+    
     startX += sizeY;
   }
   assert(index == numVertices);
