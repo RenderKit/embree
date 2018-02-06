@@ -39,6 +39,12 @@ namespace embree
     /* Returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return (N+M-1)/M; }
 
+    static __forceinline size_t bytes(size_t N)
+    {
+      const size_t f = N/M, r = N%M;
+      return f*sizeof(BezierNi) + (r!=0)*(1 + 29*r + 24);
+    }
+
   public:
 
     /*! Default constructor. */
@@ -290,7 +296,8 @@ namespace embree
     {
       size_t start = set.begin();
       size_t items = BezierNi::blocks(set.size());
-      BezierNi* accel = (BezierNi*) alloc.malloc1(items*sizeof(BezierNi),BVH::byteAlignment);
+      size_t numbytes = BezierNi::bytes(set.size());
+      BezierNi* accel = (BezierNi*) alloc.malloc1(numbytes,BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,start,set.end(),bvh->scene);
       }
