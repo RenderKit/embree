@@ -43,12 +43,15 @@ namespace embree
     {
 #if EMBREE_HAIR_LEAF_MODE == 0
       const size_t f = N/M, r = N%M;
+      static_assert(sizeof(BezierNi) == 1+14*4*M, "internal data layout issue");
       return f*sizeof(BezierNi) + (r!=0)*(1+14*4*r + 4*max(0,8-3*(int)N));
 #elif EMBREE_HAIR_LEAF_MODE == 1
       const size_t f = N/M, r = N%M;
-      return f*sizeof(BezierNi) + (r!=0)*(49 + 14*r);
+      static_assert(sizeof(BezierNi) == 52+14*M, "internal data layout issue");
+      return f*sizeof(BezierNi) + (r!=0)*(52 + 14*r);
 #elif EMBREE_HAIR_LEAF_MODE == 2
       const size_t f = N/M, r = N%M;
+      static_assert(sizeof(BezierNi) == 25+29*M, "internal data layout issue");
       return f*sizeof(BezierNi) + (r!=0)*(25 + 29*r);
 #endif
     }
@@ -307,20 +310,24 @@ namespace embree
 
     // 56 bytes
     unsigned char N;
-    float _vx_x[M];
-    float _vx_y[M];
-    float _vx_z[M];
-    float _vy_x[M];
-    float _vy_y[M];
-    float _vy_z[M];
-    float _vz_x[M];
-    float _vz_y[M];
-    float _vz_z[M];
-    float _p_x[M];
-    float _p_y[M];
-    float _p_z[M];
-    unsigned int _geomID[M];
-    unsigned int _primID[M];
+    unsigned char data[14*4*M];
+    
+    struct Layout {
+      float vx_x;
+      float vx_y;
+      float vx_z;
+      float vy_x;
+      float vy_y;
+      float vy_z;
+      float vz_x;
+      float vz_y;
+      float vz_z;
+      float p_x;
+      float p_y;
+      float p_z;
+      unsigned int geomID;
+      unsigned int primID;
+    };
 
     __forceinline       float* vx_x(size_t N)       { return (float*)((char*)this+1+0*N); }
     __forceinline const float* vx_x(size_t N) const { return (float*)((char*)this+1+0*N); }
@@ -369,39 +376,43 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 1
     // 20 bytes
     AffineSpace3f space;
-    unsigned char N;
-    unsigned char _lower_x[M];
-    unsigned char _upper_x[M];
-    unsigned char _lower_y[M];
-    unsigned char _upper_y[M];
-    unsigned char _lower_z[M];
-    unsigned char _upper_z[M];
-    unsigned int _geomID[M];
-    unsigned int _primID[M];
+    unsigned int N;
+    unsigned char data[14*M];
 
-    __forceinline       unsigned char* lower_x(size_t N)       { return (unsigned char*)((char*)this+49+0*N); }
-    __forceinline const unsigned char* lower_x(size_t N) const { return (unsigned char*)((char*)this+49+0*N); }
+    struct Layout {
+      unsigned char lower_x;
+      unsigned char upper_x;
+      unsigned char lower_y;
+      unsigned char upper_y;
+      unsigned char lower_z;
+      unsigned char upper_z;
+      unsigned int geomID;
+      unsigned int primID;
+    };
+
+    __forceinline       unsigned char* lower_x(size_t N)       { return (unsigned char*)((char*)this+52+0*N); }
+    __forceinline const unsigned char* lower_x(size_t N) const { return (unsigned char*)((char*)this+52+0*N); }
     
-    __forceinline       unsigned char* upper_x(size_t N)       { return (unsigned char*)((char*)this+49+1*N); }
-    __forceinline const unsigned char* upper_x(size_t N) const { return (unsigned char*)((char*)this+49+1*N); }
+    __forceinline       unsigned char* upper_x(size_t N)       { return (unsigned char*)((char*)this+52+1*N); }
+    __forceinline const unsigned char* upper_x(size_t N) const { return (unsigned char*)((char*)this+52+1*N); }
     
-    __forceinline       unsigned char* lower_y(size_t N)       { return (unsigned char*)((char*)this+49+2*N); }
-    __forceinline const unsigned char* lower_y(size_t N) const { return (unsigned char*)((char*)this+49+2*N); }
+    __forceinline       unsigned char* lower_y(size_t N)       { return (unsigned char*)((char*)this+52+2*N); }
+    __forceinline const unsigned char* lower_y(size_t N) const { return (unsigned char*)((char*)this+52+2*N); }
     
-    __forceinline       unsigned char* upper_y(size_t N)       { return (unsigned char*)((char*)this+49+3*N); }
-    __forceinline const unsigned char* upper_y(size_t N) const { return (unsigned char*)((char*)this+49+3*N); }
+    __forceinline       unsigned char* upper_y(size_t N)       { return (unsigned char*)((char*)this+52+3*N); }
+    __forceinline const unsigned char* upper_y(size_t N) const { return (unsigned char*)((char*)this+52+3*N); }
     
-    __forceinline       unsigned char* lower_z(size_t N)       { return (unsigned char*)((char*)this+49+4*N); }
-    __forceinline const unsigned char* lower_z(size_t N) const { return (unsigned char*)((char*)this+49+4*N); }
+    __forceinline       unsigned char* lower_z(size_t N)       { return (unsigned char*)((char*)this+52+4*N); }
+    __forceinline const unsigned char* lower_z(size_t N) const { return (unsigned char*)((char*)this+52+4*N); }
     
-    __forceinline       unsigned char* upper_z(size_t N)       { return (unsigned char*)((char*)this+49+5*N); }
-    __forceinline const unsigned char* upper_z(size_t N) const { return (unsigned char*)((char*)this+49+5*N); }
+    __forceinline       unsigned char* upper_z(size_t N)       { return (unsigned char*)((char*)this+52+5*N); }
+    __forceinline const unsigned char* upper_z(size_t N) const { return (unsigned char*)((char*)this+52+5*N); }
     
-    __forceinline       unsigned int* geomID  (size_t N)       { return (unsigned int* )((char*)this+49+6*N); }
-    __forceinline const unsigned int* geomID  (size_t N) const { return (unsigned int* )((char*)this+49+6*N); }
+    __forceinline       unsigned int* geomID  (size_t N)       { return (unsigned int* )((char*)this+52+6*N); }
+    __forceinline const unsigned int* geomID  (size_t N) const { return (unsigned int* )((char*)this+52+6*N); }
     
-    __forceinline       unsigned int* primID  (size_t N)       { return (unsigned int* )((char*)this+49+10*N); }
-    __forceinline const unsigned int* primID  (size_t N) const { return (unsigned int* )((char*)this+49+10*N); }
+    __forceinline       unsigned int* primID  (size_t N)       { return (unsigned int* )((char*)this+52+10*N); }
+    __forceinline const unsigned int* primID  (size_t N) const { return (unsigned int* )((char*)this+52+10*N); }
     
     
 #endif
@@ -409,31 +420,35 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 2
     
     // 32.1 bytes per primitive
-    char N;
-        
-    unsigned int _geomID[M];
-    unsigned int _primID[M];
-    
-    char _bounds_vx_x[M];
-    char _bounds_vx_y[M];
-    char _bounds_vx_z[M];
-    short _bounds_vx_lower[M];
-    short _bounds_vx_upper[M];
-    
-    char _bounds_vy_x[M];
-    char _bounds_vy_y[M];
-    char _bounds_vy_z[M];
-    short _bounds_vy_lower[M];
-    short _bounds_vy_upper[M];
-    
-    char _bounds_vz_x[M];
-    char _bounds_vz_y[M];
-    char _bounds_vz_z[M];
-    short _bounds_vz_lower[M];
-    short _bounds_vz_upper[M];
+    unsigned char N;
+    unsigned char data[24+29*M];
 
-    Vec3f _offset;
-    Vec3f _scale;
+    struct Layout
+    {
+      unsigned int geomID;
+      unsigned int primID;
+      
+      char bounds_vx_x;
+      char bounds_vx_y;
+      char bounds_vx_z;
+      short bounds_vx_lower;
+      short bounds_vx_upper;
+      
+      char bounds_vy_x;
+      char bounds_vy_y;
+      char bounds_vy_z;
+      short bounds_vy_lower;
+      short bounds_vy_upper;
+      
+      char bounds_vz_x;
+      char bounds_vz_y;
+      char bounds_vz_z;
+      short bounds_vz_lower;
+      short bounds_vz_upper;
+      
+      Vec3f offset;
+      Vec3f scale;
+    };
     
     __forceinline       unsigned int* geomID(size_t N)       { return (unsigned int*)((char*)this+1); }
     __forceinline const unsigned int* geomID(size_t N) const { return (unsigned int*)((char*)this+1); }
