@@ -243,9 +243,11 @@ namespace embree
       }
 
       /* calculate offset and scale */
-      offset = bounds.lower;
-      scale = 256.0f/(bounds.size()*sqrt(3.0f));
-      scale = Vec3fa(min(scale.x,scale.y,scale.z));
+      Vec3fa loffset = bounds.lower;
+      Vec3fa lscale = 256.0f/(bounds.size()*sqrt(3.0f));
+      lscale = Vec3fa(min(lscale.x,lscale.y,lscale.z));
+      *this->offset(N) = loffset;
+      *this->scale(N) = lscale;
       
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
@@ -253,31 +255,31 @@ namespace embree
         const PrimRef& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),offset,scale);
+        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),loffset,lscale);
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
-        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(offset,scale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
+        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
-        bounds_vx_x[i] = (short) space3.vx.x;
-        bounds_vx_y[i] = (short) space3.vx.y;
-        bounds_vx_z[i] = (short) space3.vx.z;
-        bounds_vx_lower[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
-        bounds_vx_upper[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
+        bounds_vx_x(N)[i] = (short) space3.vx.x;
+        bounds_vx_y(N)[i] = (short) space3.vx.y;
+        bounds_vx_z(N)[i] = (short) space3.vx.z;
+        bounds_vx_lower(N)[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
+        bounds_vx_upper(N)[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
 
-        bounds_vy_x[i] = (short) space3.vy.x;
-        bounds_vy_y[i] = (short) space3.vy.y;
-        bounds_vy_z[i] = (short) space3.vy.z;
-        bounds_vy_lower[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
-        bounds_vy_upper[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
+        bounds_vy_x(N)[i] = (short) space3.vy.x;
+        bounds_vy_y(N)[i] = (short) space3.vy.y;
+        bounds_vy_z(N)[i] = (short) space3.vy.z;
+        bounds_vy_lower(N)[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
+        bounds_vy_upper(N)[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
 
-        bounds_vz_x[i] = (short) space3.vz.x;
-        bounds_vz_y[i] = (short) space3.vz.y;
-        bounds_vz_z[i] = (short) space3.vz.z;
-        bounds_vz_lower[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
-        bounds_vz_upper[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
+        bounds_vz_x(N)[i] = (short) space3.vz.x;
+        bounds_vz_y(N)[i] = (short) space3.vz.y;
+        bounds_vz_z(N)[i] = (short) space3.vz.z;
+        bounds_vz_lower(N)[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
+        bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
                
-        this->geomID[i] = geomID;
-        this->primID[i] = primID;
+        this->geomID(N)[i] = geomID;
+        this->primID(N)[i] = primID;
       }
         
 #endif
@@ -309,30 +311,91 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 2
     
-    // 32.5 bytes per primitive
+    // 32.1 bytes per primitive
     char N;
-    Vec3f offset,scale;
+        
+    unsigned int _geomID[M];
+    unsigned int _primID[M];
     
-    unsigned int geomID[M];
-    unsigned int primID[M];
+    char _bounds_vx_x[M];
+    char _bounds_vx_y[M];
+    char _bounds_vx_z[M];
+    short _bounds_vx_lower[M];
+    short _bounds_vx_upper[M];
     
-    char bounds_vx_x[M];
-    char bounds_vx_y[M];
-    char bounds_vx_z[M];
-    short bounds_vx_lower[M];
-    short bounds_vx_upper[M];
+    char _bounds_vy_x[M];
+    char _bounds_vy_y[M];
+    char _bounds_vy_z[M];
+    short _bounds_vy_lower[M];
+    short _bounds_vy_upper[M];
     
-    char bounds_vy_x[M];
-    char bounds_vy_y[M];
-    char bounds_vy_z[M];
-    short bounds_vy_lower[M];
-    short bounds_vy_upper[M];
+    char _bounds_vz_x[M];
+    char _bounds_vz_y[M];
+    char _bounds_vz_z[M];
+    short _bounds_vz_lower[M];
+    short _bounds_vz_upper[M];
+
+    Vec3f _offset;
+    Vec3f _scale;
     
-    char bounds_vz_x[M];
-    char bounds_vz_y[M];
-    char bounds_vz_z[M];
-    short bounds_vz_lower[M];
-    short bounds_vz_upper[M];
+    __forceinline       unsigned int* geomID(size_t N)       { return (unsigned int*)((char*)this+1); }
+    __forceinline const unsigned int* geomID(size_t N) const { return (unsigned int*)((char*)this+1); }
+    
+    __forceinline       unsigned int* primID(size_t N)       { return (unsigned int*)((char*)this+1+4*N); }
+    __forceinline const unsigned int* primID(size_t N) const { return (unsigned int*)((char*)this+1+4*N); }
+    
+    __forceinline       char* bounds_vx_x(size_t N)       { return (char*)((char*)this+1+8*N); }
+    __forceinline const char* bounds_vx_x(size_t N) const { return (char*)((char*)this+1+8*N); }
+    
+    __forceinline       char* bounds_vx_y(size_t N)       { return (char*)((char*)this+1+9*N); }
+    __forceinline const char* bounds_vx_y(size_t N) const { return (char*)((char*)this+1+9*N); }
+    
+    __forceinline       char* bounds_vx_z(size_t N)       { return (char*)((char*)this+1+10*N); }
+    __forceinline const char* bounds_vx_z(size_t N) const { return (char*)((char*)this+1+10*N); }
+    
+    __forceinline       short* bounds_vx_lower(size_t N)       { return (short*)((char*)this+1+11*N); }
+    __forceinline const short* bounds_vx_lower(size_t N) const { return (short*)((char*)this+1+11*N); }
+    
+    __forceinline       short* bounds_vx_upper(size_t N)       { return (short*)((char*)this+1+13*N); }
+    __forceinline const short* bounds_vx_upper(size_t N) const { return (short*)((char*)this+1+13*N); }
+    
+    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+1+15*N); }
+    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+1+15*N); }
+    
+    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+1+16*N); }
+    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+1+16*N); }
+    
+    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+1+17*N); }
+    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+1+17*N); }
+    
+    __forceinline       short* bounds_vy_lower(size_t N)       { return (short*)((char*)this+1+18*N); }
+    __forceinline const short* bounds_vy_lower(size_t N) const { return (short*)((char*)this+1+18*N); }
+    
+    __forceinline       short* bounds_vy_upper(size_t N)       { return (short*)((char*)this+1+20*N); }
+    __forceinline const short* bounds_vy_upper(size_t N) const { return (short*)((char*)this+1+20*N); }
+    
+    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+1+22*N); }
+    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+1+22*N); }
+    
+    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+1+23*N); }
+    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+1+23*N); }
+    
+    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+1+24*N); }
+    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+1+24*N); }
+    
+    __forceinline       short* bounds_vz_lower(size_t N)       { return (short*)((char*)this+1+25*N); }
+    __forceinline const short* bounds_vz_lower(size_t N) const { return (short*)((char*)this+1+25*N); }
+    
+    __forceinline       short* bounds_vz_upper(size_t N)       { return (short*)((char*)this+1+27*N); }
+    __forceinline const short* bounds_vz_upper(size_t N) const { return (short*)((char*)this+1+27*N); }
+    
+    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+1+29*N); }
+    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+1+29*N); }
+    
+    __forceinline       Vec3f* scale(size_t N)       { return (Vec3f*)((char*)this+1+29*N+12); }
+    __forceinline const Vec3f* scale(size_t N) const { return (Vec3f*)((char*)this+1+29*N+12); }
+    
+    
 #endif
   };
 }

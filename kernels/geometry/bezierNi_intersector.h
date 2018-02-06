@@ -81,25 +81,26 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 2
 
-        const Vec3fa offset = Vec3fa(vfloat4::loadu(&prim.offset));
-        const Vec3fa scale = Vec3fa(vfloat4::loadu(&prim.scale));
+        const size_t N = prim.N;
+        const Vec3fa offset = Vec3fa(vfloat4::loadu(prim.offset(N)));
+        const Vec3fa scale = Vec3fa(vfloat4::loadu(prim.scale(N)));
         const Vec3fa org1 = (ray.org-offset)*scale;
         const Vec3fa dir1 = ray.dir*scale;
 
-        const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx_x), vfloat8::load(prim.bounds_vx_y), vfloat8::load(prim.bounds_vx_z),
-                                    vfloat8::load(prim.bounds_vy_x), vfloat8::load(prim.bounds_vy_y), vfloat8::load(prim.bounds_vy_z),
-                                    vfloat8::load(prim.bounds_vz_x), vfloat8::load(prim.bounds_vz_y), vfloat8::load(prim.bounds_vz_z));
+        const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx_x(N)), vfloat8::load(prim.bounds_vx_y(N)), vfloat8::load(prim.bounds_vx_z(N)),
+                                    vfloat8::load(prim.bounds_vy_x(N)), vfloat8::load(prim.bounds_vy_y(N)), vfloat8::load(prim.bounds_vy_z(N)),
+                                    vfloat8::load(prim.bounds_vz_x(N)), vfloat8::load(prim.bounds_vz_y(N)), vfloat8::load(prim.bounds_vz_z(N)));
 
         const Vec3vf8 dir2 = xfmVector(space,Vec3vf8(dir1));
         const Vec3vf8 org2 = xfmPoint (space,Vec3vf8(org1));
         const Vec3vf8 rcp_dir2 = rcp(dir2);
        
-        const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx_lower)-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
-        const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx_upper)-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
-        const vfloat8 t_lower_y = (vfloat8::load(prim.bounds_vy_lower)-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
-        const vfloat8 t_upper_y = (vfloat8::load(prim.bounds_vy_upper)-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
-        const vfloat8 t_lower_z = (vfloat8::load(prim.bounds_vz_lower)-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
-        const vfloat8 t_upper_z = (vfloat8::load(prim.bounds_vz_upper)-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
+        const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx_lower(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
+        const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx_upper(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
+        const vfloat8 t_lower_y = (vfloat8::load(prim.bounds_vy_lower(N))-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
+        const vfloat8 t_upper_y = (vfloat8::load(prim.bounds_vy_upper(N))-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
+        const vfloat8 t_lower_z = (vfloat8::load(prim.bounds_vz_lower(N))-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
+        const vfloat8 t_upper_z = (vfloat8::load(prim.bounds_vz_upper(N))-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
 
         const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()));
         const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar));
@@ -113,8 +114,13 @@ namespace embree
           clear(valid,i);
         
           STAT3(normal.trav_prims,1,1,1);
+#if EMBREE_HAIR_LEAF_MODE == 2
+          const unsigned int geomID = prim.geomID(N)[i];
+          const unsigned int primID = prim.primID(N)[i];
+#else
           const unsigned int geomID = prim.geomID[i];
           const unsigned int primID = prim.primID[i];
+#endif
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
           if (likely(geom->subtype == FLAT_CURVE))
