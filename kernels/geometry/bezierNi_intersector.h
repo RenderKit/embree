@@ -45,6 +45,10 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 0
 
         const size_t N = prim.N;
+        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
+        
         AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(prim.vx_x(N)),vfloat<8>::loadu(prim.vx_y(N)),vfloat<8>::loadu(prim.vx_z(N))),
                                 Vec3vf8(vfloat<8>::loadu(prim.vy_x(N)),vfloat<8>::loadu(prim.vy_y(N)),vfloat<8>::loadu(prim.vy_z(N))),
                                 Vec3vf8(vfloat<8>::loadu(prim.vz_x(N)),vfloat<8>::loadu(prim.vz_y(N)),vfloat<8>::loadu(prim.vz_z(N))),
@@ -69,6 +73,11 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 1
 
+        const size_t N = prim.N;
+        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
+        
         const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
                                    Vec3fa::loadu(&prim.space.l.vy),
                                    Vec3fa::loadu(&prim.space.l.vz),
@@ -77,8 +86,7 @@ namespace embree
         const Vec3fa org1 = xfmPoint (space,ray.org);
         const Vec3fa dir1 = xfmVector(space,ray.dir);
         const Vec3fa rcp_dir1 = rcp(dir1);
-        const size_t N = prim.N;
-        
+                
         const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
         const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
         const vfloat8 t_lower_y = (vfloat8::load(prim.lower_y(N))-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
@@ -94,6 +102,10 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 2
 
         const size_t N = prim.N;
+        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
+        
         const Vec3fa offset = Vec3fa(vfloat4::loadu(prim.offset(N)));
         const Vec3fa scale = Vec3fa(vfloat4::loadu(prim.scale(N)));
         const Vec3fa org1 = (ray.org-offset)*scale;
@@ -122,7 +134,11 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 3
 
-        //const size_t N = prim.N;
+        const size_t N = prim.N;
+        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
+        
         const Vec3vf4 dir1 = xfmVector(prim.naabb,Vec3vf4(ray.dir));
         const Vec3vf4 org1 = xfmPoint (prim.naabb,Vec3vf4(ray.org));
         const Vec3vf4 nrcp_dir1 = -rcp(dir1);
@@ -144,8 +160,9 @@ namespace embree
         {
           size_t i = select_min(valid,tNear);
           clear(valid,i);
-        
-          STAT3(normal.trav_prims,1,1,1);
+
+          STAT(if (N>1) STAT3(normal.trav_leaves,1,1,1));
+          STAT(if (N>1) STAT3(normal.trav_prims,1,1,1))
 #if EMBREE_HAIR_LEAF_MODE == 3
           const unsigned int geomID = prim.geomID[i];
           const unsigned int primID = prim.primID[i];
@@ -173,6 +190,10 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 0
 
         const size_t N = prim.N;
+        STAT(if (N>1) STAT3(shadow.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(shadow.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(shadow.trav_prims,1,1,1));
+        
         AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(prim.vx_x(N)),vfloat<8>::loadu(prim.vx_y(N)),vfloat<8>::loadu(prim.vx_z(N))),
                                 Vec3vf8(vfloat<8>::loadu(prim.vy_x(N)),vfloat<8>::loadu(prim.vy_y(N)),vfloat<8>::loadu(prim.vy_z(N))),
                                 Vec3vf8(vfloat<8>::loadu(prim.vz_x(N)),vfloat<8>::loadu(prim.vz_y(N)),vfloat<8>::loadu(prim.vz_z(N))),
@@ -197,6 +218,11 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 1
 
+        const size_t N = prim.N;
+        STAT(if (N>1) STAT3(shadow.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(shadow.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(shadow.trav_prims,1,1,1));
+     
         const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
                                    Vec3fa::loadu(&prim.space.l.vy),
                                    Vec3fa::loadu(&prim.space.l.vz),
@@ -205,8 +231,7 @@ namespace embree
         const Vec3fa org1 = xfmPoint (space,ray.org);
         const Vec3fa dir1 = xfmVector(space,ray.dir);
         const Vec3fa rcp_dir1 = rcp(dir1);
-        const size_t N = prim.N;
-        
+                
         const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
         const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
         const vfloat8 t_lower_y = (vfloat8::load(prim.lower_y(N))-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
@@ -222,6 +247,10 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 2
 
         const size_t N = prim.N;
+        STAT(if (N>1) STAT3(shadow.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(shadow.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(shadow.trav_prims,1,1,1));
+        
         const Vec3fa offset = Vec3fa(vfloat4::loadu(prim.offset(N)));
         const Vec3fa scale = Vec3fa(vfloat4::loadu(prim.scale(N)));
         const Vec3fa org1 = (ray.org-offset)*scale;
@@ -250,7 +279,11 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 3
 
-        //const size_t N = prim.N;
+        const size_t N = prim.N;
+        STAT(if (N>1) STAT3(shadow.trav_leaves,-1,-1,-1));
+        STAT(if (N>1) STAT3(shadow.trav_nodes,1,1,1));
+        STAT(if (N<2) STAT3(shadow.trav_prims,1,1,1));
+       
         const Vec3vf4 dir1 = xfmVector(prim.naabb,Vec3vf4(ray.dir));
         const Vec3vf4 org1 = xfmPoint (prim.naabb,Vec3vf4(ray.org));
         const Vec3vf4 nrcp_dir1 = -rcp(dir1);
@@ -272,8 +305,9 @@ namespace embree
         {
           size_t i = select_min(valid,tNear);
           clear(valid,i);
-        
-          STAT3(shadow.trav_prims,1,1,1);
+
+          STAT(if (N>1) STAT3(shadow.trav_leaves,1,1,1));
+          STAT(if (N>1) STAT3(shadow.trav_prims,1,1,1))
 #if EMBREE_HAIR_LEAF_MODE == 3
           const unsigned int geomID = prim.geomID[i];
           const unsigned int primID = prim.primID[i];
