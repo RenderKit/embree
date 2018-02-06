@@ -36,7 +36,7 @@ renderTileFunc renderTile;
 
 extern "C" void tutorial_error_handler(void* userPtr, RTCError code, const char* str);
 
-extern "C" size_t leaf;
+//extern "C" size_t leaf;
 
 /* error reporting function */
 void error_handler(void* userPtr, RTCError code, const char* str) {
@@ -172,7 +172,7 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  *(size_t*)&ray.id = leaf;
+  //*(size_t*)&ray.id = leaf;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -372,7 +372,7 @@ Vec3fa renderPixelGeomID(float x, float y, const ISPCCamera& camera, RayStats& s
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  *(size_t*)&ray.id = leaf;
+  //*(size_t*)&ray.id = leaf;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -428,7 +428,7 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera, RaySt
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  *(size_t*)&ray.id = leaf;
+  //*(size_t*)&ray.id = leaf;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -752,7 +752,7 @@ extern "C" bool device_pick(const float x,
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  *(size_t*)&ray.id = 0;
+  //*(size_t*)&ray.id = 0;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -766,7 +766,7 @@ extern "C" bool device_pick(const float x,
   }
   else {
     hitPos = ray.org + ray.tfar*ray.dir;
-    leaf = *(size_t*)&ray.u;
+    //leaf = *(size_t*)&ray.u;
     return true;
   }
 }
