@@ -33,12 +33,12 @@ namespace embree {
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 1
+#define ENABLE_FILTER_FUNCTION 0
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
-#define MAX_PATH_LENGTH  8
+#define MAX_PATH_LENGTH  1
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
@@ -1525,10 +1525,10 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded1(g_scene,&context.context,RTCRay_(shadow));
+      rtcIntersect1(g_scene,&context.context,RTCRayHit_(shadow));
       RayStats_addShadowRay(stats);
-      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
+      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      //if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
     }
 
@@ -1558,6 +1558,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
     L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
+    for (size_t j=0; j<9; j++)
+      renderPixelFunction(fx,fy,sampler,camera,stats);
   }
   L = L/g_spp;
   return L;

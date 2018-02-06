@@ -255,7 +255,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= cfg.minLeafSize)
+                if (children[i].size() <= 1) //cfg.minLeafSize)
                   continue;
 
                 /* remember child with largest area */

@@ -119,6 +119,26 @@ namespace embree
         vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
         
 #endif
+
+#if EMBREE_HAIR_LEAF_MODE == 3
+
+        //const size_t N = prim.N;
+        const Vec3vf4 dir1 = xfmVector(prim.naabb,Vec3vf4(ray.dir));
+        const Vec3vf4 org1 = xfmPoint (prim.naabb,Vec3vf4(ray.org));
+        const Vec3vf4 nrcp_dir1 = -rcp(dir1);
+        
+        const vfloat4 t_lower_x = org1.x*nrcp_dir1.x;
+        const vfloat4 t_lower_y = org1.y*nrcp_dir1.y;
+        const vfloat4 t_lower_z = org1.z*nrcp_dir1.z;
+        const vfloat4 t_upper_x = t_lower_x - nrcp_dir1.x;
+        const vfloat4 t_upper_y = t_lower_y - nrcp_dir1.y;
+        const vfloat4 t_upper_z = t_lower_z - nrcp_dir1.z;
+
+        const vfloat4 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat4(ray.tnear()));
+        const vfloat4 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat4(ray.tfar));
+        vbool4 valid = (vint4(step) < vint4(prim.N)) & (tNear <= tFar);
+
+#endif
         
         while (any(valid))
         {
@@ -126,8 +146,13 @@ namespace embree
           clear(valid,i);
         
           STAT3(normal.trav_prims,1,1,1);
+#if EMBREE_HAIR_LEAF_MODE == 3
+          const unsigned int geomID = prim.geomID[i];
+          const unsigned int primID = prim.primID[i];
+#else
           const unsigned int geomID = prim.geomID(N)[i];
           const unsigned int primID = prim.primID(N)[i];
+#endif
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
           if (likely(geom->subtype == FLAT_CURVE))
@@ -135,7 +160,11 @@ namespace embree
           else 
             pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,geomID,primID));
 
+#if EMBREE_HAIR_LEAF_MODE == 3
+          valid &= tNear <= vfloat4(ray.tfar);
+#else
           valid &= tNear <= vfloat8(ray.tfar);
+#endif
         }
       }
       
@@ -218,6 +247,26 @@ namespace embree
         vbool8 valid = (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
         
 #endif
+
+#if EMBREE_HAIR_LEAF_MODE == 3
+
+        //const size_t N = prim.N;
+        const Vec3vf4 dir1 = xfmVector(prim.naabb,Vec3vf4(ray.dir));
+        const Vec3vf4 org1 = xfmPoint (prim.naabb,Vec3vf4(ray.org));
+        const Vec3vf4 nrcp_dir1 = -rcp(dir1);
+        
+        const vfloat4 t_lower_x = org1.x*nrcp_dir1.x;
+        const vfloat4 t_lower_y = org1.y*nrcp_dir1.y;
+        const vfloat4 t_lower_z = org1.z*nrcp_dir1.z;
+        const vfloat4 t_upper_x = t_lower_x - nrcp_dir1.x;
+        const vfloat4 t_upper_y = t_lower_y - nrcp_dir1.y;
+        const vfloat4 t_upper_z = t_lower_z - nrcp_dir1.z;
+
+        const vfloat4 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat4(ray.tnear()));
+        const vfloat4 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat4(ray.tfar));
+        vbool4 valid = (vint4(step) < vint4(prim.N)) & (tNear <= tFar);
+
+#endif
         
         while (any(valid))
         {
@@ -225,8 +274,13 @@ namespace embree
           clear(valid,i);
         
           STAT3(shadow.trav_prims,1,1,1);
+#if EMBREE_HAIR_LEAF_MODE == 3
+          const unsigned int geomID = prim.geomID[i];
+          const unsigned int primID = prim.primID[i];
+#else
           const unsigned int geomID = prim.geomID(N)[i];
           const unsigned int primID = prim.primID(N)[i];
+#endif
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
           if (likely(geom->subtype == FLAT_CURVE)) {
@@ -237,7 +291,11 @@ namespace embree
               return true;
           }
 
+#if EMBREE_HAIR_LEAF_MODE == 3
+          valid &= tNear <= vfloat4(ray.tfar);
+#else
           valid &= tNear <= vfloat8(ray.tfar);
+#endif
         }
         return false;
       }
