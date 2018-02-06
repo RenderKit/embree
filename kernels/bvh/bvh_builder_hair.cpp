@@ -78,17 +78,10 @@ namespace embree
           settings.finished_range_threshold = inf;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
-          {
-            size_t start = set.begin();
-            size_t items = Primitive::blocks(set.size());
-            Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
-            for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims,start,set.end(),bvh->scene);
-            }
-            return bvh->encodeLeaf((char*)accel,items);
-          };
-
+        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+          return Primitive::createLeaf(bvh,prims,set,alloc);
+        };
+        
         auto reportFinishedRange = [&] (const range<size_t>& range) -> void
           {
             PrimRef* begin = prims.data()+range.begin();

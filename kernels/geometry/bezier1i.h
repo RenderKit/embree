@@ -70,6 +70,18 @@ namespace embree
       new (this) Bezier1i(vertexID,geomID | mask,primID);
     }
 
+    template<typename BVH, typename Allocator>
+      __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
+    {
+      size_t start = set.begin();
+      size_t items = Bezier1i::blocks(set.size());
+      Bezier1i* accel = (Bezier1i*) alloc.malloc1(items*sizeof(Bezier1i),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,start,set.end(),bvh->scene);
+      }
+      return bvh->encodeLeaf((char*)accel,items);
+    };
+    
     /*! fill curve from curve list */
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
     {

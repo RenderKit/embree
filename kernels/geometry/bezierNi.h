@@ -285,6 +285,18 @@ namespace embree
 #endif
     }
 
+    template<typename BVH, typename Allocator>
+      __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
+    {
+      size_t start = set.begin();
+      size_t items = BezierNi::blocks(set.size());
+      BezierNi* accel = (BezierNi*) alloc.malloc1(items*sizeof(BezierNi),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,start,set.end(),bvh->scene);
+      }
+      return bvh->encodeLeaf((char*)accel,items);
+    };
+    
   public:
 #if EMBREE_HAIR_LEAF_MODE == 0
 
