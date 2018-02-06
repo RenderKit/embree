@@ -56,7 +56,7 @@ namespace embree
         
         const Vec3vf8 dir1 = xfmVector(space,Vec3vf8(ray.dir));
         const Vec3vf8 org1 = xfmPoint (space,Vec3vf8(ray.org));
-        const Vec3vf8 nrcp_dir1 = -rcp(dir1);
+        const Vec3vf8 nrcp_dir1 = -rcp_safe(dir1);
         
         const vfloat8 t_lower_x = org1.x*nrcp_dir1.x;
         const vfloat8 t_lower_y = org1.y*nrcp_dir1.y;
@@ -85,7 +85,7 @@ namespace embree
         
         const Vec3fa org1 = xfmPoint (space,ray.org);
         const Vec3fa dir1 = xfmVector(space,ray.dir);
-        const Vec3fa rcp_dir1 = rcp(dir1);
+        const Vec3fa rcp_dir1 = rcp_safe(dir1);
                 
         const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
         const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
@@ -117,7 +117,7 @@ namespace embree
 
         const Vec3vf8 dir2 = xfmVector(space,Vec3vf8(dir1));
         const Vec3vf8 org2 = xfmPoint (space,Vec3vf8(org1));
-        const Vec3vf8 rcp_dir2 = rcp(dir2);
+        const Vec3vf8 rcp_dir2 = rcp_safe(dir2);
        
         const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx_lower(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
         const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx_upper(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
@@ -138,10 +138,9 @@ namespace embree
         STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
         STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
         STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
-        
         const Vec3vf4 dir1 = xfmVector(prim.naabb,Vec3vf4(ray.dir));
         const Vec3vf4 org1 = xfmPoint (prim.naabb,Vec3vf4(ray.org));
-        const Vec3vf4 nrcp_dir1 = -rcp(dir1);
+        const Vec3vf4 nrcp_dir1 = -rcp_safe(dir1);
         
         const vfloat4 t_lower_x = org1.x*nrcp_dir1.x;
         const vfloat4 t_lower_y = org1.y*nrcp_dir1.y;
@@ -201,7 +200,7 @@ namespace embree
         
         const Vec3vf8 dir1 = xfmVector(space,Vec3vf8(ray.dir));
         const Vec3vf8 org1 = xfmPoint (space,Vec3vf8(ray.org));
-        const Vec3vf8 nrcp_dir1 = -rcp(dir1);
+        const Vec3vf8 nrcp_dir1 = -rcp_safe(dir1);
         
         const vfloat8 t_lower_x = org1.x*nrcp_dir1.x;
         const vfloat8 t_lower_y = org1.y*nrcp_dir1.y;
@@ -230,7 +229,7 @@ namespace embree
         
         const Vec3fa org1 = xfmPoint (space,ray.org);
         const Vec3fa dir1 = xfmVector(space,ray.dir);
-        const Vec3fa rcp_dir1 = rcp(dir1);
+        const Vec3fa rcp_dir1 = rcp_safe(dir1);
                 
         const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
         const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
@@ -262,7 +261,7 @@ namespace embree
 
         const Vec3vf8 dir2 = xfmVector(space,Vec3vf8(dir1));
         const Vec3vf8 org2 = xfmPoint (space,Vec3vf8(org1));
-        const Vec3vf8 rcp_dir2 = rcp(dir2);
+        const Vec3vf8 rcp_dir2 = rcp_safe(dir2);
        
         const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx_lower(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
         const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx_upper(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
@@ -286,7 +285,7 @@ namespace embree
        
         const Vec3vf4 dir1 = xfmVector(prim.naabb,Vec3vf4(ray.dir));
         const Vec3vf4 org1 = xfmPoint (prim.naabb,Vec3vf4(ray.org));
-        const Vec3vf4 nrcp_dir1 = -rcp(dir1);
+        const Vec3vf4 nrcp_dir1 = -rcp_safe(dir1);
         
         const vfloat4 t_lower_x = org1.x*nrcp_dir1.x;
         const vfloat4 t_lower_y = org1.y*nrcp_dir1.y;
