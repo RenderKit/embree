@@ -44,8 +44,13 @@ namespace embree
       {
 #if EMBREE_HAIR_LEAF_MODE == 0
 
-        const Vec3vf8 dir1 = xfmVector(prim.naabb,Vec3vf8(ray.dir));
-        const Vec3vf8 org1 = xfmPoint (prim.naabb,Vec3vf8(ray.org));
+        AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(&prim.vx_x),vfloat<8>::loadu(&prim.vx_y),vfloat<8>::loadu(&prim.vx_z)),
+                                Vec3vf8(vfloat<8>::loadu(&prim.vy_x),vfloat<8>::loadu(&prim.vy_y),vfloat<8>::loadu(&prim.vy_z)),
+                                Vec3vf8(vfloat<8>::loadu(&prim.vz_x),vfloat<8>::loadu(&prim.vz_y),vfloat<8>::loadu(&prim.vz_z)),
+                                Vec3vf8(vfloat<8>::loadu(&prim.p_x ),vfloat<8>::loadu(&prim.p_y ),vfloat<8>::loadu(&prim.p_z )));
+        
+        const Vec3vf8 dir1 = xfmVector(space,Vec3vf8(ray.dir));
+        const Vec3vf8 org1 = xfmPoint (space,Vec3vf8(ray.org));
         const Vec3vf8 nrcp_dir1 = -rcp(dir1);
         
         const vfloat8 t_lower_x = org1.x*nrcp_dir1.x;

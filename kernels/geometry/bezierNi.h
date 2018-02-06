@@ -169,21 +169,21 @@ namespace embree
         space.p -= bounds.lower;
         space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
 
-        naabb.l.vx.x[i] = space.l.vx.x;
-        naabb.l.vx.y[i] = space.l.vx.y;
-        naabb.l.vx.z[i] = space.l.vx.z;
+        vx_x[i] = space.l.vx.x;
+        vx_y[i] = space.l.vx.y;
+        vx_z[i] = space.l.vx.z;
 
-        naabb.l.vy.x[i] = space.l.vy.x;
-        naabb.l.vy.y[i] = space.l.vy.y;
-        naabb.l.vy.z[i] = space.l.vy.z;
+        vy_x[i] = space.l.vy.x;
+        vy_y[i] = space.l.vy.y;
+        vy_z[i] = space.l.vy.z;
 
-        naabb.l.vz.x[i] = space.l.vz.x;
-        naabb.l.vz.y[i] = space.l.vz.y;
-        naabb.l.vz.z[i] = space.l.vz.z;
+        vz_x[i] = space.l.vz.x;
+        vz_y[i] = space.l.vz.y;
+        vz_z[i] = space.l.vz.z;
 
-        naabb.p.x[i] = space.p.x;
-        naabb.p.y[i] = space.p.y;
-        naabb.p.z[i] = space.p.z;
+        p_x[i] = space.p.x;
+        p_y[i] = space.p.y;
+        p_z[i] = space.p.z;
 
         this->geomID[i] = geomID;
         this->primID[i] = primID;
@@ -305,8 +305,19 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 0
 
     // 56 bytes
-    AffineSpace3vf<M> naabb;
-    unsigned int N;
+    unsigned char N;
+    float vx_x[M];
+    float vx_y[M];
+    float vx_z[M];
+    float vy_x[M];
+    float vy_y[M];
+    float vy_z[M];
+    float vz_x[M];
+    float vz_y[M];
+    float vz_z[M];
+    float p_x[M];
+    float p_y[M];
+    float p_z[M];
     unsigned int geomID[M];
     unsigned int primID[M];
 #endif
