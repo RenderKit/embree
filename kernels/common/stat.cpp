@@ -102,13 +102,13 @@ namespace embree
     float active_normal_trav_prim_hits = float(cntrs.active.normal.trav_prim_hits  )/float(cntrs.all.normal.trav_prim_hits  );
     float active_normal_trav_stack_pop = float(cntrs.active.normal.trav_stack_pop  )/float(cntrs.all.normal.trav_stack_pop  );
 
-    cout << "  #normal_travs   = " << float(cntrs.all.normal.travs      )/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_travs       << "% active" << std::endl;
-    cout << "    #nodes        = " << float(cntrs.all.normal.trav_nodes )/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_trav_nodes  << "% active" << std::endl;
-    cout << "    #node_xfm     = " << float(cntrs.all.normal.trav_xfm_nodes )/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_trav_xfm_nodes  << "% active" << std::endl;
-    cout << "    #leaves       = " << float(cntrs.all.normal.trav_leaves)/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_trav_leaves << "% active" << std::endl;
-    cout << "    #prims        = " << float(cntrs.all.normal.trav_prims  )/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_trav_prims   << "% active" << std::endl;
-    cout << "    #prim_hits    = " << float(cntrs.all.normal.trav_prim_hits  )/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_trav_prim_hits   << "% active" << std::endl;
-    cout << "    #stack_pop    = " << float(cntrs.all.normal.trav_stack_pop  )/float(cntrs.all.normal.travs) << ", " << 100.0f*active_normal_trav_stack_pop   << "% active" << std::endl;
+    cout << "  #normal_travs   = " << float(cntrs.code.normal.travs      )/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_travs       << "% active" << std::endl;
+    cout << "    #nodes        = " << float(cntrs.code.normal.trav_nodes )/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_trav_nodes  << "% active" << std::endl;
+    cout << "    #node_xfm     = " << float(cntrs.code.normal.trav_xfm_nodes )/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_trav_xfm_nodes  << "% active" << std::endl;
+    cout << "    #leaves       = " << float(cntrs.code.normal.trav_leaves)/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_trav_leaves << "% active" << std::endl;
+    cout << "    #prims        = " << float(cntrs.code.normal.trav_prims  )/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_trav_prims   << "% active" << std::endl;
+    cout << "    #prim_hits    = " << float(cntrs.code.normal.trav_prim_hits  )/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_trav_prim_hits   << "% active" << std::endl;
+    cout << "    #stack_pop    = " << float(cntrs.code.normal.trav_stack_pop  )/float(cntrs.code.normal.travs) << ", " << 100.0f*active_normal_trav_stack_pop   << "% active" << std::endl;
 
     if (cntrs.all.shadow.travs) {
       float active_shadow_travs       = float(cntrs.active.shadow.travs      )/float(cntrs.all.shadow.travs      );
@@ -118,12 +118,12 @@ namespace embree
       float active_shadow_trav_prims   = float(cntrs.active.shadow.trav_prims  )/float(cntrs.all.shadow.trav_prims  );
       float active_shadow_trav_prim_hits = float(cntrs.active.shadow.trav_prim_hits  )/float(cntrs.all.shadow.trav_prim_hits  );
 
-      cout << "  #shadow_travs = " << float(cntrs.all.shadow.travs      )/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_travs       << "% active" << std::endl;
-      cout << "    #nodes      = " << float(cntrs.all.shadow.trav_nodes )/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_trav_nodes  << "% active" << std::endl;
-      cout << "    #nodes_xfm  = " << float(cntrs.all.shadow.trav_xfm_nodes )/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_trav_xfm_nodes  << "% active" << std::endl;
-      cout << "    #leaves     = " << float(cntrs.all.shadow.trav_leaves)/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_trav_leaves << "% active" << std::endl;
-      cout << "    #prims      = " << float(cntrs.all.shadow.trav_prims  )/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_trav_prims   << "% active" << std::endl;
-      cout << "    #prim_hits  = " << float(cntrs.all.shadow.trav_prim_hits  )/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_trav_prim_hits   << "% active" << std::endl;
+      cout << "  #shadow_travs = " << float(cntrs.code.shadow.travs      )/float(cntrs.code.shadow.travs) << ", " << 100.0f*active_shadow_travs       << "% active" << std::endl;
+      cout << "    #nodes      = " << float(cntrs.code.shadow.trav_nodes )/float(cntrs.code.shadow.travs) << ", " << 100.0f*active_shadow_trav_nodes  << "% active" << std::endl;
+      cout << "    #nodes_xfm  = " << float(cntrs.code.shadow.trav_xfm_nodes )/float(cntrs.code.shadow.travs) << ", " << 100.0f*active_shadow_trav_xfm_nodes  << "% active" << std::endl;
+      cout << "    #leaves     = " << float(cntrs.code.shadow.trav_leaves)/float(cntrs.code.shadow.travs) << ", " << 100.0f*active_shadow_trav_leaves << "% active" << std::endl;
+      cout << "    #prims      = " << float(cntrs.code.shadow.trav_prims  )/float(cntrs.code.shadow.travs) << ", " << 100.0f*active_shadow_trav_prims   << "% active" << std::endl;
+      cout << "    #prim_hits  = " << float(cntrs.code.shadow.trav_prim_hits  )/float(cntrs.code.shadow.travs) << ", " << 100.0f*active_shadow_trav_prim_hits   << "% active" << std::endl;
 
     }
     cout << std::endl;
