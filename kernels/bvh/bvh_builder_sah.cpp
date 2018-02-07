@@ -610,25 +610,64 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    struct SubGridBuildData {
+      unsigned short sx,sy;
+      unsigned int geomID;
+      unsigned int primID;
+
+      __forceinline SubGridBuildData() {};
+      __forceinline SubGridBuildData(const unsigned int sx, const unsigned int sy, const unsigned int geomID, const unsigned int primID) : sx(sx), sy(sy), geomID(geomID), primID(primID) {};
+
+    };
+
+    template<int N, typename Primitive>
+    struct CreateLeafGrid
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+      __forceinline CreateLeafGrid (BVH* bvh, const SubGridBuildData * const sgrids) : bvh(bvh),sgrids(sgrids) {}
+
+      __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+      {
+        size_t n = set.size();
+        size_t items = Primitive::blocks(n);
+        size_t start = set.begin();
+        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        assert(items == 1);
+        const unsigned int sgridID = prims[start].primID();
+        PRINT(sgridID);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims,start,set.end(),bvh->scene);
+        }
+        return node;
+      }
+
+      BVH* bvh;
+      const SubGridBuildData * const sgrids;
+    };
+
 
     template<int N>
     struct BVHNBuilderSAHGrid : public Builder
     {
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
-
+      
       BVH* bvh;
       Scene* scene;
       GridMesh* mesh;
       mvector<PrimRef> prims;
+      mvector<SubGridBuildData> sgrids;
       GeneralBVHBuilder::Settings settings;
       bool primrefarrayalloc;
 
       BVHNBuilderSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, bool primrefarrayalloc = false)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,SubGrid::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,SubGrid::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
 
       BVHNBuilderSAHGrid (BVH* bvh, GridMesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,SubGrid::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,SubGrid::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -693,6 +732,7 @@ namespace embree
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
         prims.resize(numPrimitives); 
+        sgrids.resize(numPrimitives); 
 
         //PrimInfo pinfo = mesh ?
         //  createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
@@ -713,29 +753,28 @@ namespace embree
               for (size_t x=0;x<(size_t)g.resX-1;x+=2)
               {
                 BBox3fa bounds = empty;
-                if (!gmesh->buildBounds(g,x,y,&bounds)) continue;
-                const unsigned int startVtxID = gmesh->grid_vertex_index(g,x,y);
-                const PrimRef prim(bounds,gmesh->geomID,startVtxID);
+                if (!gmesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
+                const PrimRef prim(bounds,0,p_index);
                 PRINT(prim);
                 pinfo.add_center2(prim);
+                sgrids[p_index] = SubGridBuildData(x,y,i,s);
                 prims[p_index++] = prim;                
               }
           }
         }
         assert(p_index == numPrimitives);
 
-        exit(0);
-
         /* pinfo might has zero size due to invalid geometry */
         if (unlikely(pinfo.size() == 0))
         {
           bvh->clear();
+          sgrids.clear();
           prims.clear();
           return;
         }
 
         /* call BVH builder */
-        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,SubGrid>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafGrid<N,SubGrid>(bvh,sgrids.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
@@ -751,9 +790,11 @@ namespace embree
         }
 	bvh->cleanup();
         bvh->postBuild(t0);
+        PRINT("BUILD DONE");
       }
 
       void clear() {
+        sgrids.clear();
         prims.clear();
       }
     };

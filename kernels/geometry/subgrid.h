@@ -50,25 +50,25 @@ namespace embree
         __forceinline SubGrid() {  }
 
         /* Construction from vertices and IDs */
-        __forceinline SubGrid(const unsigned int startVtxID,
-                              const unsigned int lineVtxOffset,
+        __forceinline SubGrid(const unsigned int x,
+                              const unsigned int y,
                               const unsigned int geomID,
                               const unsigned int primID)
-          : startVtxID(startVtxID), lineVtxOffset(lineVtxOffset), geomID(geomID), primID(primID) {}
+          : x(x), y(y), geomID(geomID), primID(primID) {}
 
         __forceinline Vec3fa getVertex(const size_t x, const size_t y, const Scene *const scene) const
         {
           const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          //const GridMesh::Grid = mesh->grid(primID());
-          const size_t vtxID = startVtxID + x + y * lineVtxOffset;
+          const GridMesh::Grid &g= mesh->grid(primID);
+          const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
           return mesh->vertex(vtxID);
         }
 
         __forceinline Vec3fa getVertex(const size_t x, const size_t y, const Scene *const scene, const size_t itime) const
         {
           const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          //const GridMesh::Grid = mesh->grid(primID());
-          const size_t vtxID = startVtxID + x + y * lineVtxOffset;
+          const GridMesh::Grid &g= mesh->grid(primID);
+          const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
           return Vec3fa::loadu(mesh->vertexPtr(vtxID,itime));
         }
 
@@ -76,8 +76,8 @@ namespace embree
         __forceinline Vec3<T> getVertex(const size_t x, const size_t y, const Scene *const scene, const size_t itime, const T& ftime) const
         {
           const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          //const GridMesh::Grid = mesh->grid(primID());
-          const size_t vtxID = startVtxID + x + y * lineVtxOffset;
+          const GridMesh::Grid &g = mesh->grid(primID);
+          const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
           const Vec3fa* vertices0 = (const Vec3fa*) mesh->vertexPtr(0,itime+0);
           const Vec3fa* vertices1 = (const Vec3fa*) mesh->vertexPtr(0,itime+1);
           const Vec3fa v0 = Vec3fa::loadu(&vertices0[vtxID]);
@@ -91,9 +91,7 @@ namespace embree
         __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
         {
           BBox3fa bounds = empty;
-          for (size_t y=0;y<3;y++) // does not consider corner cases
-            for (size_t x=0;x<3;x++)
-              bounds.extend(getVertex(x,y,scene,itime));
+          FATAL("not implemented yet");
           return bounds;
         }
 
@@ -108,14 +106,14 @@ namespace embree
           LBBox3fa allBounds = empty;
           //const GridMesh* mesh = scene->get<GridMesh>(geomID);
           //allBounds.extend(mesh->linearBounds(primID, itime, numTimeSteps));
-          FATAL("HERE");
+          FATAL("not implemented yet");
           return allBounds;
         }
 
         __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
         {
           LBBox3fa allBounds = empty;
-          FATAL("HERE");
+          FATAL("not implemented yet");
           return allBounds;
         }
 
@@ -130,13 +128,13 @@ namespace embree
 
 
         friend std::ostream& operator<<(std::ostream& cout, const SubGrid& sg) {
-          return cout << "SubGrid " << " ( startVtxID " << sg.startVtxID << ", lineVtxOffset = " << sg.lineVtxOffset << ", geomID = " << sg.geomID << ", primID = " << sg.primID << " )";
+          return cout << "SubGrid " << " ( x " << sg.x << ", y = " << sg.y << ", geomID = " << sg.geomID << ", primID = " << sg.primID << " )";
         }
 
 
       public:
-        unsigned int startVtxID;
-        unsigned int lineVtxOffset;
+        unsigned short x;
+        unsigned short y;
       private:
         unsigned int geomID;    // geometry ID of mesh
         unsigned int primID;    // primitive ID of primitive inside mesh

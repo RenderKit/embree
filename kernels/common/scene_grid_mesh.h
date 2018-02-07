@@ -31,12 +31,12 @@ namespace embree
     struct Grid 
     {
       unsigned int startVtxID;
-      unsigned int lineOffset;
+      unsigned int lineVtxOffset;
       unsigned short resX,resY;
       
       /*! outputs grid structure */
       __forceinline friend std::ostream &operator<<(std::ostream& cout, const Grid& t) {
-        return cout << "Grid { startVtxID " << t.startVtxID << ", lineOffset " << t.lineOffset << ", resX " << t.resX << ", resY " << t.resY << " }";
+        return cout << "Grid { startVtxID " << t.startVtxID << ", lineVtxOffset " << t.lineVtxOffset << ", resX " << t.resX << ", resY " << t.resY << " }";
       }
     };
 
@@ -98,7 +98,7 @@ namespace embree
     __forceinline size_t grid_vertex_index(const Grid& g, size_t x, size_t y) const {
       assert(x < (size_t)g.resX);
       assert(y < (size_t)g.resY);
-      return g.startVtxID + x + y * g.lineOffset;
+      return g.startVtxID + x + y * g.lineVtxOffset;
     }
     
     /*! returns i'th vertex of the first timestep */
@@ -117,6 +117,7 @@ namespace embree
     /*! calculates the bounds of the i'th grid */
     __forceinline BBox3fa bounds(size_t i) const 
     {
+      PRINT("FULL BOUNDS");
       const Grid& g = grid(i);
       BBox3fa b(empty);
       for (size_t y=0;y<(size_t)g.resY;y++)
