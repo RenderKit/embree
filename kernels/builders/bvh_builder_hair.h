@@ -162,13 +162,14 @@ namespace embree
           {
             /* variable to track the SAH of the best splitting approach */
             float bestSAH = inf;
-            const float leafSAH = intCost*float(pinfo.size())*halfArea(pinfo.geomBounds);
+            const size_t blocks = (pinfo.size()+(1<<cfg.logBlockSize)-1) >> cfg.logBlockSize;
+            const float leafSAH = intCost*float(blocks)*halfArea(pinfo.geomBounds);
 
             /* try standard binning in aligned space */
             float alignedObjectSAH = inf;
             HeuristicBinningSAH::Split alignedObjectSplit;
             if (aligned) {
-              alignedObjectSplit = alignedHeuristic.find(pinfo,0);
+              alignedObjectSplit = alignedHeuristic.find(pinfo,cfg.logBlockSize);
               alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
               bestSAH = min(alignedObjectSAH,bestSAH);
             }
@@ -180,7 +181,7 @@ namespace embree
             if (bestSAH > 0.7f*leafSAH) {
               uspace = unalignedHeuristic.computeAlignedSpace(pinfo);
               const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
-              unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);
+              unalignedObjectSplit = unalignedHeuristic.find(sinfo,cfg.logBlockSize,uspace);
               unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
               bestSAH = min(unalignedObjectSAH,bestSAH);
             }
@@ -189,7 +190,7 @@ namespace embree
             HeuristicStrandSplitSAH::Split strandSplit;
             float strandSAH = inf;
             if (bestSAH > 0.7f*leafSAH && pinfo.size() <= 256) {
-              strandSplit = strandHeuristic.find(pinfo);
+              strandSplit = strandHeuristic.find(pinfo,cfg.logBlockSize);
               strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
               bestSAH = min(strandSAH,bestSAH);
             }
