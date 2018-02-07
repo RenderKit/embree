@@ -135,6 +135,13 @@ namespace embree
       p3 = vertex(i+3,itime);
     }
 
+    /*! prefetches the curve starting with i'th vertex of itime'th timestep */
+    __forceinline void prefetch(size_t i) const
+    {
+      prefetchL1(native_vertices0.getPtr(i)+0);
+      prefetchL2(native_vertices0.getPtr(i)+64);
+    }  
+
     __forceinline void gather(Vec3fa& p0,
                               Vec3fa& p1,
                               Vec3fa& p2,

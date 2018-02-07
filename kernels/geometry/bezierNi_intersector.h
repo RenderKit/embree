@@ -154,6 +154,15 @@ namespace embree
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
+
+          if (any(valid)) {
+            size_t i1 = __bsf(movemask(valid));
+            const unsigned int geomID1 = prim.geomID(N)[i1];
+            const unsigned int primID1 = prim.primID(N)[i1];
+            const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
+            geom->prefetch(geom->curve(primID1));
+          }
+          
           if (likely(geom->subtype == FLAT_CURVE))
             pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,geomID,primID));
           else 
@@ -181,6 +190,15 @@ namespace embree
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
+
+          if (any(valid)) {
+            size_t i1 = __bsf(movemask(valid));
+            const unsigned int geomID1 = prim.geomID(N)[i1];
+            const unsigned int primID1 = prim.primID(N)[i1];
+            const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
+            geom->prefetch(geom->curve(primID1));
+          }
+          
           if (likely(geom->subtype == FLAT_CURVE)) {
             if (pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,geomID,primID)))
               return true;
