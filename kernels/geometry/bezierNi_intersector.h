@@ -144,7 +144,8 @@ namespace embree
         const size_t N = prim.N;
         while (any(valid))
         {
-          size_t i = select_min(valid,tNear);
+          size_t i = __bsf(movemask(valid));
+          //size_t i = select_min(valid,tNear);
           clear(valid,i);
 
           STAT(if (N>1) STAT3(normal.trav_leaves,1,1,1));
@@ -170,7 +171,8 @@ namespace embree
         const size_t N = prim.N;
         while (any(valid))
         {
-          size_t i = select_min(valid,tNear);
+          size_t i = __bsf(movemask(valid));
+          //size_t i = select_min(valid,tNear);
           clear(valid,i);
 
           STAT(if (N>1) STAT3(shadow.trav_leaves,1,1,1));
