@@ -148,14 +148,14 @@ namespace embree
           const size_t i = __bscf(mask);
           STAT(if (N>1) STAT3(normal.trav_leaves,1,1,1));
           STAT(if (N>1) STAT3(normal.trav_prims,1,1,1))
-          const unsigned int geomID = prim.geomID(N)[i];
+          const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           const size_t i1 = __bsf(mask);
           if (mask) {
-            const unsigned int geomID1 = prim.geomID(N)[i1];
+            const unsigned int geomID1 = prim.geomID(N);
             const unsigned int primID1 = prim.primID(N)[i1];
             const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
             geom1->prefetch(geom1->curve(primID1));
@@ -182,14 +182,14 @@ namespace embree
           const size_t i = __bscf(mask);
           STAT(if (N>1) STAT3(shadow.trav_leaves,1,1,1));
           STAT(if (N>1) STAT3(shadow.trav_prims,1,1,1))
-          const unsigned int geomID = prim.geomID(N)[i];
+          const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           const size_t i1 = __bsf(mask);
           if (mask) {
-            const unsigned int geomID1 = prim.geomID(N)[i1];
+            const unsigned int geomID1 = prim.geomID(N);
             const unsigned int primID1 = prim.primID(N)[i1];
             const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
             geom1->prefetch(geom1->curve(primID1));
