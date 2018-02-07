@@ -352,7 +352,7 @@ namespace embree
   public:
 #if EMBREE_HAIR_LEAF_MODE == 0
 
-    // 56 bytes
+    // 56 - 57 bytes per primitive
     unsigned char N;
     unsigned char data[14*4*M];
     
@@ -418,7 +418,8 @@ namespace embree
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 1
-    // 20 bytes
+    
+    // 20.5 - 66 bytes per primitive
     AffineSpace3f space;
     unsigned int N;
     unsigned char data[14*M];
@@ -463,7 +464,7 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 2
     
-    // 32.1 bytes per primitive
+    // 31 - 45 bytes per primitive
     unsigned char N;
     unsigned char data[16+29*M];
 
