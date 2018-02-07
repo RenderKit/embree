@@ -87,6 +87,46 @@ namespace embree
           return lerp(p0,p1,ftime);
         }
 
+        /* Gather the quads */
+        __forceinline void gather(Vec3vf4& p0,
+                                  Vec3vf4& p1,
+                                  Vec3vf4& p2,
+                                  Vec3vf4& p3,
+                                  const Scene *const scene) const
+        {
+          const GridMesh* mesh    = scene->get<GridMesh>(geomID);
+          const GridMesh::Grid &g = mesh->grid(primID);
+
+          /* row0 */
+          const size_t vtxID00 = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID01 = vtxID00 + 1;
+          const size_t vtxID02 = vtxID00 + 2;       
+          const vfloat4 vtx00  = vfloat4::loadu(mesh->vertexPtr(vtxID00));
+          const vfloat4 vtx01  = vfloat4::loadu(mesh->vertexPtr(vtxID01));
+          const vfloat4 vtx02  = vfloat4::loadu(mesh->vertexPtr(vtxID02));
+
+          /* row1 */
+          const size_t vtxID10 = vtxID00 + g.lineVtxOffset;
+          const size_t vtxID11 = vtxID01 + g.lineVtxOffset;
+          const size_t vtxID12 = vtxID02 + g.lineVtxOffset;       
+          const vfloat4 vtx10  = vfloat4::loadu(mesh->vertexPtr(vtxID10));
+          const vfloat4 vtx11  = vfloat4::loadu(mesh->vertexPtr(vtxID11));
+          const vfloat4 vtx12  = vfloat4::loadu(mesh->vertexPtr(vtxID12));
+
+          /* row2 */
+          const size_t vtxID20 = vtxID10 + g.lineVtxOffset;
+          const size_t vtxID21 = vtxID11 + g.lineVtxOffset;
+          const size_t vtxID22 = vtxID12 + g.lineVtxOffset;       
+          const vfloat4 vtx20  = vfloat4::loadu(mesh->vertexPtr(vtxID20));
+          const vfloat4 vtx21  = vfloat4::loadu(mesh->vertexPtr(vtxID21));
+          const vfloat4 vtx22  = vfloat4::loadu(mesh->vertexPtr(vtxID22));
+
+          transpose(vtx00,vtx01,vtx11,vtx10,p0.x,p0.y,p0.z);
+          transpose(vtx01,vtx02,vtx12,vtx11,p1.x,p1.y,p1.z);
+          transpose(vtx11,vtx12,vtx22,vtx21,p2.x,p2.y,p2.z);
+          transpose(vtx10,vtx11,vtx21,vtx20,p3.x,p3.y,p3.z);          
+        }
+
         /* Calculate the bounds of the subgrid */
         __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
         {
@@ -135,7 +175,6 @@ namespace embree
       public:
         unsigned short x;
         unsigned short y;
-      private:
         unsigned int geomID;    // geometry ID of mesh
         unsigned int primID;    // primitive ID of primitive inside mesh
       };

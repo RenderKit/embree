@@ -75,7 +75,7 @@ namespace embree
     }
 
     /*! returns i'th vertex of the first time step  */
-    __forceinline const Vec3fa vertex(size_t i) const {
+    __forceinline const Vec3fa vertex(size_t i) const { // FIXME: check if this does a unaligned load
       return vertices0[i];
     }
 

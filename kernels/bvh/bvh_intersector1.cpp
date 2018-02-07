@@ -30,6 +30,7 @@
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/subgrid_intersector.h"
 
 namespace embree
 {

@@ -612,11 +612,10 @@ namespace embree
 
     struct SubGridBuildData {
       unsigned short sx,sy;
-      unsigned int geomID;
       unsigned int primID;
 
       __forceinline SubGridBuildData() {};
-      __forceinline SubGridBuildData(const unsigned int sx, const unsigned int sy, const unsigned int geomID, const unsigned int primID) : sx(sx), sy(sy), geomID(geomID), primID(primID) {};
+      __forceinline SubGridBuildData(const unsigned int sx, const unsigned int sy, const unsigned int primID) : sx(sx), sy(sy), primID(primID) {};
 
     };
 
@@ -633,13 +632,13 @@ namespace embree
         size_t n = set.size();
         size_t items = Primitive::blocks(n);
         size_t start = set.begin();
-        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
+        SubGrid* accel = (SubGrid*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
-        assert(items == 1);
-        const unsigned int sgridID = prims[start].primID();
-        PRINT(sgridID);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,set.end(),bvh->scene);
+          const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];          
+          const unsigned int geomID = prims[start+i].geomID();
+          accel[i] = SubGrid(sgrid_bd.sx,sgrid_bd.sy,geomID,sgrid_bd.primID);
+          PRINT(accel[i]);
         }
         return node;
       }
@@ -754,10 +753,10 @@ namespace embree
               {
                 BBox3fa bounds = empty;
                 if (!gmesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
-                const PrimRef prim(bounds,0,p_index);
+                const PrimRef prim(bounds,s,p_index);
                 PRINT(prim);
                 pinfo.add_center2(prim);
-                sgrids[p_index] = SubGridBuildData(x,y,i,s);
+                sgrids[p_index] = SubGridBuildData(x,y,i);
                 prims[p_index++] = prim;                
               }
           }
