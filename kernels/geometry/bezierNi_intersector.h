@@ -105,12 +105,13 @@ namespace embree
         STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
         STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
         STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
-        
-        const Vec3fa offset = Vec3fa(vfloat4::loadu(prim.offset(N)));
-        const Vec3fa scale = Vec3fa(vfloat4::loadu(prim.scale(N)));
+
+        const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
+        const Vec3fa offset = Vec3fa(offset_scale);
+        const Vec3fa scale = Vec3fa(shuffle<3,3,3,3>(offset_scale));
         const Vec3fa org1 = (ray.org-offset)*scale;
         const Vec3fa dir1 = ray.dir*scale;
-
+        
         const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx_x(N)), vfloat8::load(prim.bounds_vx_y(N)), vfloat8::load(prim.bounds_vx_z(N)),
                                     vfloat8::load(prim.bounds_vy_x(N)), vfloat8::load(prim.bounds_vy_y(N)), vfloat8::load(prim.bounds_vy_z(N)),
                                     vfloat8::load(prim.bounds_vz_x(N)), vfloat8::load(prim.bounds_vz_y(N)), vfloat8::load(prim.bounds_vz_z(N)));
@@ -249,9 +250,10 @@ namespace embree
         STAT(if (N>1) STAT3(shadow.trav_leaves,-1,-1,-1));
         STAT(if (N>1) STAT3(shadow.trav_nodes,1,1,1));
         STAT(if (N<2) STAT3(shadow.trav_prims,1,1,1));
-        
-        const Vec3fa offset = Vec3fa(vfloat4::loadu(prim.offset(N)));
-        const Vec3fa scale = Vec3fa(vfloat4::loadu(prim.scale(N)));
+
+        const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
+        const Vec3fa offset = Vec3fa(offset_scale);
+        const Vec3fa scale = Vec3fa(shuffle<3,3,3,3>(offset_scale));
         const Vec3fa org1 = (ray.org-offset)*scale;
         const Vec3fa dir1 = ray.dir*scale;
 

@@ -55,8 +55,8 @@ namespace embree
       return f*sizeof(BezierNi) + (r!=0)*(52 + 14*r);
 #elif EMBREE_HAIR_LEAF_MODE == 2
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNi) == 25+29*M, "internal data layout issue");
-      return f*sizeof(BezierNi) + (r!=0)*(25 + 29*r);
+      static_assert(sizeof(BezierNi) == 17+29*M, "internal data layout issue");
+      return f*sizeof(BezierNi) + (r!=0)*(17 + 29*r);
 #elif EMBREE_HAIR_LEAF_MODE == 3
       return blocks(N)*sizeof(BezierNi);
 #endif
@@ -260,7 +260,7 @@ namespace embree
       Vec3fa lscale = 256.0f/(bounds.size()*sqrt(3.0f));
       lscale = Vec3fa(min(lscale.x,lscale.y,lscale.z));
       *this->offset(N) = loffset;
-      *this->scale(N) = lscale;
+      *this->scale(N) = lscale.x;
       
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
@@ -466,7 +466,7 @@ namespace embree
     
     // 32.1 bytes per primitive
     unsigned char N;
-    unsigned char data[24+29*M];
+    unsigned char data[16+29*M];
 
     struct Layout
     {
@@ -492,7 +492,7 @@ namespace embree
       short bounds_vz_upper;
       
       Vec3f offset;
-      Vec3f scale;
+      float scale;
     };
     
     __forceinline       unsigned int* geomID(size_t N)       { return (unsigned int*)((char*)this+1); }
@@ -549,8 +549,8 @@ namespace embree
     __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+1+29*N); }
     __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+1+29*N); }
     
-    __forceinline       Vec3f* scale(size_t N)       { return (Vec3f*)((char*)this+1+29*N+12); }
-    __forceinline const Vec3f* scale(size_t N) const { return (Vec3f*)((char*)this+1+29*N+12); }
+    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+1+29*N+12); }
+    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+1+29*N+12); }
     
     
 #endif
