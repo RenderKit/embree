@@ -23,11 +23,7 @@ namespace embree
 {
   struct BezierNi
   {
-#if EMBREE_HAIR_LEAF_MODE == 3
-    enum { M = 4 };
-#else
     enum { M = 8 };
-#endif
     
     struct Type : public PrimitiveType {
       Type ();
@@ -58,8 +54,6 @@ namespace embree
       const size_t f = N/M, r = N%M;
       static_assert(sizeof(BezierNi) == 17+29*M, "internal data layout issue");
       return f*sizeof(BezierNi) + (r!=0)*(17 + 29*r);
-#elif EMBREE_HAIR_LEAF_MODE == 3
-      return blocks(N)*sizeof(BezierNi);
 #endif
     }
 
@@ -297,44 +291,6 @@ namespace embree
         
 #endif
 
-#if EMBREE_HAIR_LEAF_MODE == 3
-
-      size_t end = min(begin+M,_end);
-      N = end-begin;
-
-      /* encode all primitives */
-      for (size_t i=0; i<M && begin<end; i++, begin++)
-      {
-        const PrimRef& prim = prims[begin];
-        const unsigned int geomID = prim.geomID();
-        const unsigned int primID = prim.primID();
-        AffineSpace3fa space = computeAlignedSpace(scene,prims,range<size_t>(begin));
-        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space,primID);
-                
-        space.p -= bounds.lower;
-        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
-
-        naabb.l.vx.x[i] = space.l.vx.x;
-        naabb.l.vx.y[i] = space.l.vx.y;
-        naabb.l.vx.z[i] = space.l.vx.z;
-
-        naabb.l.vy.x[i] = space.l.vy.x;
-        naabb.l.vy.y[i] = space.l.vy.y;
-        naabb.l.vy.z[i] = space.l.vy.z;
-
-        naabb.l.vz.x[i] = space.l.vz.x;
-        naabb.l.vz.y[i] = space.l.vz.y;
-        naabb.l.vz.z[i] = space.l.vz.z;
-
-        naabb.p.x[i] = space.p.x;
-        naabb.p.y[i] = space.p.y;
-        naabb.p.z[i] = space.p.z;
-
-        this->geomID[i] = geomID;
-        this->primID[i] = primID;
-      }
-      
-#endif
     }
 
     template<typename BVH, typename Allocator>
@@ -556,14 +512,5 @@ namespace embree
     
 #endif
 
-#if EMBREE_HAIR_LEAF_MODE == 3
-
-    // 56 bytes
-    unsigned char N;
-    AffineSpace3vf<M> naabb;
-    unsigned int geomID[M];
-    unsigned int primID[M];
-
-#endif
   };
 }
