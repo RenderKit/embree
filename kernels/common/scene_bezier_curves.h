@@ -136,9 +136,16 @@ namespace embree
     }
 
     /*! prefetches the curve starting with i'th vertex of itime'th timestep */
-    __forceinline void prefetch(size_t i) const
+    __forceinline void prefetchL1_vertices(size_t i) const
     {
       prefetchL1(native_vertices0.getPtr(i)+0);
+      prefetchL1(native_vertices0.getPtr(i)+64);
+    }
+
+    /*! prefetches the curve starting with i'th vertex of itime'th timestep */
+    __forceinline void prefetchL2_vertices(size_t i) const
+    {
+      prefetchL2(native_vertices0.getPtr(i)+0);
       prefetchL2(native_vertices0.getPtr(i)+64);
     }  
 
