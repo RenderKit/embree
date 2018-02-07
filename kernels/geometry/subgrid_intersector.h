@@ -36,7 +36,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
-        pre.intersect(ray,context,v0,v1,v2,v3,subgrid.geomID,subgrid.primID);
+        pre.intersect(ray,context,v0,v1,v2,v3,subgrid.geomID(),subgrid.primID());
       }
 
       /*! Test if the ray is occluded by one of M subgrids. */
@@ -44,7 +44,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
-        return pre.occluded(ray,context,v0,v1,v2,v3,subgrid.geomID,subgrid.primID);
+        return pre.occluded(ray,context,v0,v1,v2,v3,subgrid.geomID(),subgrid.primID());
       }
     };
 

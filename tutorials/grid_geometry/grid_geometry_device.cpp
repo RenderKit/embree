@@ -20,8 +20,8 @@ namespace embree {
 
 /* configuration */
 #define NUM_GRIDS 4
-#define GRID_RESOLUTION_X 5
-#define GRID_RESOLUTION_Y 5
+#define GRID_RESOLUTION_X 3
+#define GRID_RESOLUTION_Y 3
 
 
 #define EDGE_LEVEL 256.0f

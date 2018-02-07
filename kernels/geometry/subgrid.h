@@ -54,20 +54,26 @@ namespace embree
                               const unsigned int y,
                               const unsigned int geomID,
                               const unsigned int primID)
-          : x(x), y(y), geomID(geomID), primID(primID) {}
+          : x(x), y(y), _geomID(geomID), _primID(primID)
+        {
+        }
+
+        __forceinline bool invalid3x3X() const { return _geomID & (1<<31); }
+        __forceinline bool invalid3x3Y() const { return _geomID & (1<<30); }
+
 
         __forceinline Vec3fa getVertex(const size_t x, const size_t y, const Scene *const scene) const
         {
-          const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          const GridMesh::Grid &g= mesh->grid(primID);
+          const GridMesh* mesh = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g= mesh->grid(primID());
           const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
           return mesh->vertex(vtxID);
         }
 
         __forceinline Vec3fa getVertex(const size_t x, const size_t y, const Scene *const scene, const size_t itime) const
         {
-          const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          const GridMesh::Grid &g= mesh->grid(primID);
+          const GridMesh* mesh = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g= mesh->grid(primID());
           const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
           return Vec3fa::loadu(mesh->vertexPtr(vtxID,itime));
         }
@@ -75,8 +81,8 @@ namespace embree
         template<typename T>
         __forceinline Vec3<T> getVertex(const size_t x, const size_t y, const Scene *const scene, const size_t itime, const T& ftime) const
         {
-          const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          const GridMesh::Grid &g = mesh->grid(primID);
+          const GridMesh* mesh = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g = mesh->grid(primID());
           const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
           const Vec3fa* vertices0 = (const Vec3fa*) mesh->vertexPtr(0,itime+0);
           const Vec3fa* vertices1 = (const Vec3fa*) mesh->vertexPtr(0,itime+1);
@@ -94,31 +100,35 @@ namespace embree
                                   Vec3vf4& p3,
                                   const Scene *const scene) const
         {
-          const GridMesh* mesh    = scene->get<GridMesh>(geomID);
-          const GridMesh::Grid &g = mesh->grid(primID);
+          const GridMesh* mesh     = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g  = mesh->grid(primID());
 
-          /* row0 */
+          /* first quad always valid */
           const size_t vtxID00 = g.startVtxID + x + y * g.lineVtxOffset;
           const size_t vtxID01 = vtxID00 + 1;
-          const size_t vtxID02 = vtxID00 + 2;       
           const vfloat4 vtx00  = vfloat4::loadu(mesh->vertexPtr(vtxID00));
           const vfloat4 vtx01  = vfloat4::loadu(mesh->vertexPtr(vtxID01));
-          const vfloat4 vtx02  = vfloat4::loadu(mesh->vertexPtr(vtxID02));
-
-          /* row1 */
           const size_t vtxID10 = vtxID00 + g.lineVtxOffset;
           const size_t vtxID11 = vtxID01 + g.lineVtxOffset;
-          const size_t vtxID12 = vtxID02 + g.lineVtxOffset;       
           const vfloat4 vtx10  = vfloat4::loadu(mesh->vertexPtr(vtxID10));
           const vfloat4 vtx11  = vfloat4::loadu(mesh->vertexPtr(vtxID11));
+
+          /* deltaX => vtx02, vtx12 */
+          const size_t deltaX  = invalid3x3X() ? 0 : 1;
+          const size_t vtxID02 = vtxID01 + deltaX;       
+          const vfloat4 vtx02  = vfloat4::loadu(mesh->vertexPtr(vtxID02));
+          const size_t vtxID12 = vtxID11 + deltaX;       
           const vfloat4 vtx12  = vfloat4::loadu(mesh->vertexPtr(vtxID12));
 
-          /* row2 */
-          const size_t vtxID20 = vtxID10 + g.lineVtxOffset;
-          const size_t vtxID21 = vtxID11 + g.lineVtxOffset;
-          const size_t vtxID22 = vtxID12 + g.lineVtxOffset;       
+          /* deltaY => vtx20, vtx21 */
+          const size_t deltaY  = invalid3x3Y() ? 0 : g.lineVtxOffset;
+          const size_t vtxID20 = vtxID10 + deltaY;
+          const size_t vtxID21 = vtxID11 + deltaY;
           const vfloat4 vtx20  = vfloat4::loadu(mesh->vertexPtr(vtxID20));
           const vfloat4 vtx21  = vfloat4::loadu(mesh->vertexPtr(vtxID21));
+
+          /* deltaX/deltaY => vtx22 */
+          const size_t vtxID22 = vtxID11 + deltaX + deltaY;       
           const vfloat4 vtx22  = vfloat4::loadu(mesh->vertexPtr(vtxID22));
 
 #if 0
@@ -133,10 +143,6 @@ namespace embree
           PRINT(vtx20);
           PRINT(vtx21);
           PRINT(vtx22);
-          PRINT(p0);
-          PRINT(p1);
-          PRINT(p2);
-          PRINT(p3);
           exit(0);
 #endif
 
@@ -178,25 +184,20 @@ namespace embree
         }
 
 
-        /* Fill triangle from triangle list */
-        __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
-        {
-          assert(begin+1 == end);
-          PING;
-        }
-
-
-
         friend std::ostream& operator<<(std::ostream& cout, const SubGrid& sg) {
-          return cout << "SubGrid " << " ( x " << sg.x << ", y = " << sg.y << ", geomID = " << sg.geomID << ", primID = " << sg.primID << " )";
+          return cout << "SubGrid " << " ( x " << sg.x << ", y = " << sg.y << ", geomID = " << sg.geomID() << ", primID = " << sg.primID() << " )";
         }
+
+        __forceinline unsigned int geomID() const { return _geomID & 0x3fffffff; }
+        __forceinline unsigned int primID() const { return _primID; }
 
 
       public:
         unsigned short x;
         unsigned short y;
-        unsigned int geomID;    // geometry ID of mesh
-        unsigned int primID;    // primitive ID of primitive inside mesh
+      private:
+        unsigned int _geomID;    // geometry ID of mesh
+        unsigned int _primID;    // primitive ID of primitive inside mesh
       };
 
 }

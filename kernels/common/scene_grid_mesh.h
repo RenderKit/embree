@@ -33,7 +33,16 @@ namespace embree
       unsigned int startVtxID;
       unsigned int lineVtxOffset;
       unsigned short resX,resY;
-      
+
+      __forceinline unsigned int get3x3Flags(const unsigned int x, const unsigned int y) const
+      {
+        /* border flags due to 3x3 vertex pattern */
+        unsigned int flags = 0;
+        flags |= (x + 2 >= (unsigned int)resX) ? (1<<31) : 0;
+        flags |= (y + 2 >= (unsigned int)resY) ? (1<<30) : 0;
+        return flags;
+      }
+
       /*! outputs grid structure */
       __forceinline friend std::ostream &operator<<(std::ostream& cout, const Grid& t) {
         return cout << "Grid { startVtxID " << t.startVtxID << ", lineVtxOffset " << t.lineVtxOffset << ", resX " << t.resX << ", resY " << t.resY << " }";
