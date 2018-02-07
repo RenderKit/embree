@@ -67,6 +67,9 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8VirtualIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8VirtualMBIntersector1);
 
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridIntersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridMBIntersector1Moeller);
+
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iMBIntersector4);
 
@@ -324,6 +327,9 @@ namespace embree
 
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8VirtualIntersector1));
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8VirtualMBIntersector1));
+
+    IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8GridIntersector1Moeller));
+    IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8GridMBIntersector1Moeller))
 
 #if defined (EMBREE_RAY_PACKETS)
 
@@ -1150,7 +1156,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = nullptr;
+    intersectors.intersector1  = BVH8GridIntersector1Moeller();
 #if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = nullptr;
     intersectors.intersector8  = nullptr;
@@ -1164,7 +1170,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = nullptr;
+    intersectors.intersector1  = BVH8GridMBIntersector1Moeller();
 #if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = nullptr;
     intersectors.intersector8  = nullptr;
