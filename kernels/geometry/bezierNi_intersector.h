@@ -142,12 +142,10 @@ namespace embree
         vbool8 valid = intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
-        while (any(valid))
+        size_t mask = movemask(valid);
+        while (mask)
         {
-          size_t i = __bsf(movemask(valid));
-          //size_t i = select_min(valid,tNear);
-          clear(valid,i);
-
+          const size_t i = __bscf(mask);
           STAT(if (N>1) STAT3(normal.trav_leaves,1,1,1));
           STAT(if (N>1) STAT3(normal.trav_prims,1,1,1))
           const unsigned int geomID = prim.geomID(N)[i];
@@ -155,12 +153,12 @@ namespace embree
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
-          if (any(valid)) {
-            size_t i1 = __bsf(movemask(valid));
+          const size_t i1 = __bsf(mask);
+          if (mask) {
             const unsigned int geomID1 = prim.geomID(N)[i1];
             const unsigned int primID1 = prim.primID(N)[i1];
             const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
-            geom->prefetch(geom->curve(primID1));
+            geom1->prefetch(geom1->curve(primID1));
           }
           
           if (likely(geom->subtype == FLAT_CURVE))
@@ -168,7 +166,7 @@ namespace embree
           else 
             pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,geomID,primID));
 
-          valid &= tNear <= vfloat8(ray.tfar);
+          mask &= movemask(tNear <= vfloat8(ray.tfar));
         }
       }
       
@@ -178,12 +176,10 @@ namespace embree
         vbool8 valid = intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
-        while (any(valid))
+        size_t mask = movemask(valid);
+        while (mask)
         {
-          size_t i = __bsf(movemask(valid));
-          //size_t i = select_min(valid,tNear);
-          clear(valid,i);
-
+          const size_t i = __bscf(mask);
           STAT(if (N>1) STAT3(shadow.trav_leaves,1,1,1));
           STAT(if (N>1) STAT3(shadow.trav_prims,1,1,1))
           const unsigned int geomID = prim.geomID(N)[i];
@@ -191,12 +187,12 @@ namespace embree
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
-          if (any(valid)) {
-            size_t i1 = __bsf(movemask(valid));
+          const size_t i1 = __bsf(mask);
+          if (mask) {
             const unsigned int geomID1 = prim.geomID(N)[i1];
             const unsigned int primID1 = prim.primID(N)[i1];
             const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
-            geom->prefetch(geom->curve(primID1));
+            geom1->prefetch(geom1->curve(primID1));
           }
           
           if (likely(geom->subtype == FLAT_CURVE)) {
@@ -207,7 +203,7 @@ namespace embree
               return true;
           }
 
-          valid &= tNear <= vfloat8(ray.tfar);
+          mask &= movemask(tNear <= vfloat8(ray.tfar));
         }
         return false;
       }
