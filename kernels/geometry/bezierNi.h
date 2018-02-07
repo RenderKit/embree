@@ -312,26 +312,29 @@ namespace embree
   public:
 #if EMBREE_HAIR_LEAF_MODE == 0
 
-    // 56 - 57 bytes per primitive
+    // 52.6 - 57 bytes per primitive
     unsigned char N;
     unsigned char data[13*4*M+4];
-        
-    struct Layout {
-      float vx_x;
-      float vx_y;
-      float vx_z;
-      float vy_x;
-      float vy_y;
-      float vy_z;
-      float vz_x;
-      float vz_y;
-      float vz_z;
-      float p_x;
-      float p_y;
-      float p_z;
-      unsigned int primID;
+
+    /*
+    struct Layout
+    {
+      float vx_x[N];
+      float vx_y[N];
+      float vx_z[N];
+      float vy_x[N];
+      float vy_y[N];
+      float vy_z[N];
+      float vz_x[N];
+      float vz_y[N];
+      float vz_z[N];
+      float p_x[N];
+      float p_y[N];
+      float p_z[N];
+      unsigned int primID[N];
       unsigned int geomID;
     };
+    */
 
     __forceinline       float* vx_x(size_t N)       { return (float*)((char*)this+1+0*N); }
     __forceinline const float* vx_x(size_t N) const { return (float*)((char*)this+1+0*N); }
@@ -380,21 +383,23 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 1
     
-    // 20.5 - 66 bytes per primitive
+    // 17 - 66 bytes per primitive
     unsigned int N;
     AffineSpace3f space;
     unsigned char data[10*M+4];
 
+    /*
     struct Layout {
-      unsigned char lower_x;
-      unsigned char upper_x;
-      unsigned char lower_y;
-      unsigned char upper_y;
-      unsigned char lower_z;
-      unsigned char upper_z;
-      unsigned int primID;
+      unsigned char lower_x[N];
+      unsigned char upper_x[N];
+      unsigned char lower_y[N];
+      unsigned char upper_y[N];
+      unsigned char lower_z[N];
+      unsigned char upper_z[N];
+      unsigned int primID[N];
       unsigned int geomID;
     };
+    */
 
     __forceinline       unsigned char* lower_x(size_t N)       { return (unsigned char*)((char*)this+52+0*N); }
     __forceinline const unsigned char* lower_x(size_t N) const { return (unsigned char*)((char*)this+52+0*N); }
@@ -424,36 +429,38 @@ namespace embree
 
 #if EMBREE_HAIR_LEAF_MODE == 2
     
-    // 31 - 45 bytes per primitive
+    // 27.6 - 46 bytes per primitive
     unsigned char N;
     unsigned char data[4+25*M+16];
 
+    /*
     struct Layout
     {
       unsigned int geomID;
-      unsigned int primID;
+      unsigned int primID[N];
       
-      char bounds_vx_x;
-      char bounds_vx_y;
-      char bounds_vx_z;
-      short bounds_vx_lower;
-      short bounds_vx_upper;
+      char bounds_vx_x[N];
+      char bounds_vx_y[N];
+      char bounds_vx_z[N];
+      short bounds_vx_lower[N];
+      short bounds_vx_upper[N];
       
-      char bounds_vy_x;
-      char bounds_vy_y;
-      char bounds_vy_z;
-      short bounds_vy_lower;
-      short bounds_vy_upper;
+      char bounds_vy_x[N];
+      char bounds_vy_y[N];
+      char bounds_vy_z[N];
+      short bounds_vy_lower[N];
+      short bounds_vy_upper[N];
       
-      char bounds_vz_x;
-      char bounds_vz_y;
-      char bounds_vz_z;
-      short bounds_vz_lower;
-      short bounds_vz_upper;
+      char bounds_vz_x[N];
+      char bounds_vz_y[N];
+      char bounds_vz_z[N];
+      short bounds_vz_lower[N];
+      short bounds_vz_upper[N];
       
-      Vec3f offset;
-      float scale;
+      Vec3f offset[N];
+      float scale[N];
     };
+    */
     
     __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+1); }
     __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+1); }
