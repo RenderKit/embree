@@ -155,10 +155,8 @@ namespace embree
 
           const size_t i1 = __bsf(mask);
           if (mask) {
-            const unsigned int geomID1 = prim.geomID(N);
             const unsigned int primID1 = prim.primID(N)[i1];
-            const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
-            geom1->prefetch(geom1->curve(primID1));
+            geom->prefetch(geom->curve(primID1));
           }
           
           if (likely(geom->subtype == FLAT_CURVE))
@@ -189,10 +187,8 @@ namespace embree
 
           const size_t i1 = __bsf(mask);
           if (mask) {
-            const unsigned int geomID1 = prim.geomID(N);
             const unsigned int primID1 = prim.primID(N)[i1];
-            const NativeCurves* geom1 = (NativeCurves*) context->scene->get(geomID1);
-            geom1->prefetch(geom1->curve(primID1));
+            geom->prefetch(geom->curve(primID1));
           }
           
           if (likely(geom->subtype == FLAT_CURVE)) {
