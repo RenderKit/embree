@@ -184,8 +184,8 @@ namespace embree
       BBox3fa b(empty);
       for (size_t t=0; t<numTimeSteps; t++)
       {
-        for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
-          for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
+        for (size_t y=sy;y<min(sy+3,(size_t)g.resY);y++)
+          for (size_t x=sx;x<min(sx+3,(size_t)g.resX);x++)
           {
             const Vec3fa v = grid_vertex(g,x,y,t);
             if (unlikely(!isvalid(v))) return false;

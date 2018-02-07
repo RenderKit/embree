@@ -202,6 +202,8 @@ unsigned int addGridPlane (RTCScene scene_i)
         vertices[index].x = startX + (float)x / (GRID_RESOLUTION_X-1) * sizeX;
         vertices[index].y = -2;
         vertices[index].z = startY + (float)y / (GRID_RESOLUTION_Y-1) * sizeY;
+        PRINT(index);
+        PRINT(*(Vec3fa*)&vertices[index]);
         index++;
       }
     

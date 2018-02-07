@@ -672,7 +672,6 @@ namespace embree
 
       void build()
       {
-        PING;
         if (mesh && mesh->getType() == Geometry::GROUP) {
           FATAL("NOT YET IMPLEMENTED"); //build_group((GeometryGroup*)mesh);
           return;
@@ -733,6 +732,7 @@ namespace embree
         prims.resize(numPrimitives); 
         sgrids.resize(numPrimitives); 
 
+        // TODO: replace this with proper PrimRefArray generation
         //PrimInfo pinfo = mesh ?
         //  createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
         //  createPrimRefArray<GridMesh,false>(scene,prims,bvh->scene->progressInterface);

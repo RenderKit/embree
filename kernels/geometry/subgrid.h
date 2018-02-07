@@ -121,10 +121,30 @@ namespace embree
           const vfloat4 vtx21  = vfloat4::loadu(mesh->vertexPtr(vtxID21));
           const vfloat4 vtx22  = vfloat4::loadu(mesh->vertexPtr(vtxID22));
 
+#if 0
+          PRINT(vtx00);
+          PRINT(vtx01);
+          PRINT(vtx02);
+
+          PRINT(vtx10);
+          PRINT(vtx11);
+          PRINT(vtx12);
+
+          PRINT(vtx20);
+          PRINT(vtx21);
+          PRINT(vtx22);
+          PRINT(p0);
+          PRINT(p1);
+          PRINT(p2);
+          PRINT(p3);
+          exit(0);
+#endif
+
           transpose(vtx00,vtx01,vtx11,vtx10,p0.x,p0.y,p0.z);
           transpose(vtx01,vtx02,vtx12,vtx11,p1.x,p1.y,p1.z);
           transpose(vtx11,vtx12,vtx22,vtx21,p2.x,p2.y,p2.z);
           transpose(vtx10,vtx11,vtx21,vtx20,p3.x,p3.y,p3.z);          
+          
         }
 
         /* Calculate the bounds of the subgrid */
