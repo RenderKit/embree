@@ -58,7 +58,11 @@ namespace embree
     : PrimitiveType("bezierNi",sizeof(BezierNi),8) {}
   
   size_t BezierNi::Type::size(const char* This) const {
-    return ((Triangle4*)This)->size();
+    return *This;
+  }
+
+  size_t BezierNi::Type::getBytes(const char* This) const {
+    return BezierNi::bytes(size(This));
   }
 
   BezierNi::Type BezierNi::type;

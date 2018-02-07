@@ -32,6 +32,7 @@ namespace embree
     struct Type : public PrimitiveType {
       Type ();
       size_t size(const char* This) const;
+      size_t getBytes(const char* This) const;
     };
     static Type type;
 
@@ -420,8 +421,8 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 1
     
     // 20.5 - 66 bytes per primitive
-    AffineSpace3f space;
     unsigned int N;
+    AffineSpace3f space;
     unsigned char data[14*M];
 
     struct Layout {

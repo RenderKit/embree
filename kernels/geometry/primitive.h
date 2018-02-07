@@ -33,9 +33,14 @@ namespace embree
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;
 
+    /*! Returns the number of bytes of block. */
+    virtual size_t getBytes(const char* This) const {
+      return bytes;
+    }
+
   public:
     std::string name;       //!< name of this primitive type
-    size_t bytes;           //!< number of bytes of the triangle data
+    size_t bytes;           //!< number of bytes of primitive data
     size_t blockSize;       //!< block size
   };
 }
