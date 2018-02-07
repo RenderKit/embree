@@ -98,7 +98,7 @@ namespace embree
       return frame(axis).transposed();
     }
 
-    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset, const Vec3fa& scale)
+    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset, const float scale)
     {
       Vec3fa axis(0,0,1);
       uint64_t bestGeomPrimID = -1;
@@ -257,10 +257,9 @@ namespace embree
 
       /* calculate offset and scale */
       Vec3fa loffset = bounds.lower;
-      Vec3fa lscale = 256.0f/(bounds.size()*sqrt(3.0f));
-      lscale = Vec3fa(min(lscale.x,lscale.y,lscale.z));
+      float lscale = reduce_min(256.0f/(bounds.size()*sqrt(3.0f)));
       *this->offset(N) = loffset;
-      *this->scale(N) = lscale.x;
+      *this->scale(N) = lscale;
       
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
