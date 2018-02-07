@@ -99,6 +99,18 @@ namespace embree
             reportFinishedRange(reportFinishedRange),
             alignedHeuristic(prims), unalignedHeuristic(scene,prims), strandHeuristic(scene,prims) {}
 
+          /*! checks if all primitives are from the same geometry */
+          __forceinline bool sameGeometry(const PrimInfoRange& range)
+          {
+            unsigned int firstGeomID = prims[range.begin()].geomID();
+            for (size_t i=range.begin()+1; i<range.end(); i++) {
+              if (prims[i].geomID() != firstGeomID){
+                return false;
+              }
+            }
+            return true;
+          }
+
           /*! creates a large leaf that could be larger than supported by the BVH */
           NodeRef createLargeLeaf(size_t depth, const PrimInfoRange& pinfo, Allocator alloc)
           {
@@ -107,7 +119,7 @@ namespace embree
               throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
             /* create leaf for few primitives */
-            if (pinfo.size() <= cfg.maxLeafSize)
+            if (pinfo.size() <= cfg.maxLeafSize && sameGeometry(pinfo))
               return createLeaf(prims,pinfo,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -123,7 +135,7 @@ namespace embree
               for (unsigned i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= cfg.maxLeafSize)
+                if (children[i].size() <= cfg.maxLeafSize && sameGeometry(children[i]))
                   continue;
 
                 /* remember child with largest size */
@@ -136,7 +148,11 @@ namespace embree
 
               /*! split best child into left and right child */
               __aligned(64) PrimInfoRange left, right;
-              alignedHeuristic.splitFallback(children[bestChild],left,right);
+              if (!sameGeometry(children[bestChild])) {
+                alignedHeuristic.splitByGeometry(children[bestChild],left,right);
+              } else {
+                alignedHeuristic.splitFallback(children[bestChild],left,right);
+              }
 
               /* add new children left and right */
               children[bestChild] = children[numChildren-1];
