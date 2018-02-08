@@ -45,10 +45,6 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 0
 
         const size_t N = prim.N;
-        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
-        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
-        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
-        
         AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(prim.vx_x(N)),vfloat<8>::loadu(prim.vx_y(N)),vfloat<8>::loadu(prim.vx_z(N))),
                                 Vec3vf8(vfloat<8>::loadu(prim.vy_x(N)),vfloat<8>::loadu(prim.vy_y(N)),vfloat<8>::loadu(prim.vy_z(N))),
                                 Vec3vf8(vfloat<8>::loadu(prim.vz_x(N)),vfloat<8>::loadu(prim.vz_y(N)),vfloat<8>::loadu(prim.vz_z(N))),
@@ -75,10 +71,6 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 1
 
         const size_t N = prim.N;
-        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
-        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
-        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
-        
         const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
                                    Vec3fa::loadu(&prim.space.l.vy),
                                    Vec3fa::loadu(&prim.space.l.vz),
@@ -104,10 +96,6 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 2
 
         const size_t N = prim.N;
-        STAT(if (N>1) STAT3(normal.trav_leaves,-1,-1,-1));
-        STAT(if (N>1) STAT3(normal.trav_nodes,1,1,1));
-        STAT(if (N<2) STAT3(normal.trav_prims,1,1,1));
-
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
         const Vec3fa scale = Vec3fa(shuffle<3,3,3,3>(offset_scale));
@@ -146,8 +134,7 @@ namespace embree
         while (mask)
         {
           const size_t i = __bscf(mask);
-          STAT(if (N>1) STAT3(normal.trav_leaves,1,1,1));
-          STAT(if (N>1) STAT3(normal.trav_prims,1,1,1))
+          STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
@@ -184,8 +171,7 @@ namespace embree
         while (mask)
         {
           const size_t i = __bscf(mask);
-          STAT(if (N>1) STAT3(shadow.trav_leaves,1,1,1));
-          STAT(if (N>1) STAT3(shadow.trav_prims,1,1,1))
+          STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);

@@ -37,8 +37,7 @@ namespace embree
         while (mask)
         {
           const size_t i = __bscf(mask);
-          STAT(if (N>1) STAT3(normal.trav_leaves,1,1,1));
-          STAT(if (N>1) STAT3(normal.trav_prims,1,1,1))
+          STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
@@ -78,8 +77,7 @@ namespace embree
         while (mask)
         {
           const size_t i = __bscf(mask);
-          STAT(if (N>1) STAT3(shadow.trav_leaves,1,1,1));
-          STAT(if (N>1) STAT3(shadow.trav_prims,1,1,1))
+          STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
