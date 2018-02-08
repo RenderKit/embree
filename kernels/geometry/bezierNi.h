@@ -62,38 +62,7 @@ namespace embree
     /*! Default constructor. */
     __forceinline BezierNi () {}
 
-#if 1
-    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set)
-    {
-      Vec3fa axis(0,0,1);
-      uint64_t bestGeomPrimID = -1;
-      
-      /*! find curve with minimum ID that defines valid direction */
-      for (size_t i=set.begin(); i<set.end(); i++)
-      {
-        const unsigned int geomID = prims[i].geomID();
-        const unsigned int primID = prims[i].primID();
-        const uint64_t geomprimID = prims[i].ID64();
-        if (geomprimID >= bestGeomPrimID) continue;
-        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
-        const unsigned vtxID = mesh->curve(primID);
-        const Vec3fa v0 = mesh->vertex(vtxID+0);
-        const Vec3fa v1 = mesh->vertex(vtxID+1);
-        const Vec3fa v2 = mesh->vertex(vtxID+2);
-        const Vec3fa v3 = mesh->vertex(vtxID+3);
-        const Curve3fa curve(v0,v1,v2,v3);
-        const Vec3fa p0 = curve.begin();
-        const Vec3fa p3 = curve.end();
-        const Vec3fa axis1 = normalize(p3 - p0);
-        if (sqr_length(p3-p0) > 1E-18f) {
-          axis = axis1;
-          bestGeomPrimID = geomprimID;
-        }
-      }
-      return frame(axis).transposed();
-    }
-
-    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset, const float scale)
+    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset = zero, const float scale = 1.0f)
     {
       Vec3fa axisz(0,0,1);
       Vec3fa axisy(0,1,0);
@@ -133,38 +102,7 @@ namespace embree
       }
       return frame(axisz);
     }
-#endif
 
-#if 0
-
-    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set)
-    {
-      Vec3fa axis(0,0,0);
-      
-      /*! find curve with minimum ID that defines valid direction */
-      for (size_t i=set.begin(); i<set.end(); i++)
-      {
-        const unsigned int geomID = prims[i].geomID();
-        const unsigned int primID = prims[i].primID();
-        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
-        const unsigned vtxID = mesh->curve(primID);
-        const Vec3fa v0 = mesh->vertex(vtxID+0);
-        const Vec3fa v1 = mesh->vertex(vtxID+1);
-        const Vec3fa v2 = mesh->vertex(vtxID+2);
-        const Vec3fa v3 = mesh->vertex(vtxID+3);
-        const Curve3fa curve(v0,v1,v2,v3);
-        const Vec3fa p0 = curve.begin();
-        const Vec3fa p3 = curve.end();
-        const Vec3fa axis1 = normalize(p3 - p0);
-        axis += axis1;
-      }
-      axis = normalize(axis);
-      
-      return frame(axis).transposed();
-    }
-    
-#endif
-    
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {  
