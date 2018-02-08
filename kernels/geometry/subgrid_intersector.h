@@ -48,5 +48,66 @@ namespace embree
       }
     };
 
+
+    /*! Intersects M triangles with K rays. */
+    template<int K, bool filter>
+    struct SubGridIntersectorKMoeller
+    {
+      typedef SubGrid Primitive;
+      typedef QuadMIntersectorKMoellerTrumbore<4,K,filter> Precalculations;
+
+      /*! Intersects K rays with M triangles. */
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& subgrid)
+      {
+        Vec3fa vtx[16];
+        subgrid.gather(vtx,context->scene);
+        for (size_t i=0;i<4;i++)
+        {
+          const Vec3vf<K> p0 = vtx[i*4+0];
+          const Vec3vf<K> p1 = vtx[i*4+1];
+          const Vec3vf<K> p2 = vtx[i*4+2];
+          const Vec3vf<K> p3 = vtx[i*4+3];
+          STAT3(normal.trav_prims,1,popcnt(valid_i),K);
+          pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<4,K,filter>(ray,context,subgrid.geomID(),subgrid.primID(),i));
+        }
+      }
+
+      /*! Test for K rays if they are occluded by any of the M triangles. */
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& subgrid)
+      {
+        vbool<K> valid0 = valid_i;
+        Vec3fa vtx[16];
+        subgrid.gather(vtx,context->scene);
+        for (size_t i=0;i<4;i++)
+        {
+          const Vec3vf<K> p0 = vtx[i*4+0];
+          const Vec3vf<K> p1 = vtx[i*4+1];
+          const Vec3vf<K> p2 = vtx[i*4+2];
+          const Vec3vf<K> p3 = vtx[i*4+3];
+          STAT3(shadow.trav_prims,1,popcnt(valid0),K);
+          if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<4,K,filter>(valid0,ray,context,subgrid.geomID(),subgrid.primID(),i)))
+            break;
+        }
+        return !valid0;
+      }
+
+      /*! Intersect a ray with M triangles and updates the hit. */
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& subgrid)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
+        pre.intersect1(ray,k,context,v0,v1,v2,v3,subgrid.geomID(),subgrid.primID());
+      }
+
+      /*! Test if the ray is occluded by one of the M triangles. */
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& subgrid)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
+        return pre.occluded1(ray,k,context,v0,v1,v2,v3,subgrid.geomID(),subgrid.primID());
+      }
+    };
+
+
   }
 }

@@ -131,26 +131,52 @@ namespace embree
           const size_t vtxID22 = vtxID11 + deltaX + deltaY;       
           const vfloat4 vtx22  = vfloat4::loadu(mesh->vertexPtr(vtxID22));
 
-#if 0
-          PRINT(vtx00);
-          PRINT(vtx01);
-          PRINT(vtx02);
-
-          PRINT(vtx10);
-          PRINT(vtx11);
-          PRINT(vtx12);
-
-          PRINT(vtx20);
-          PRINT(vtx21);
-          PRINT(vtx22);
-          exit(0);
-#endif
-
           transpose(vtx00,vtx01,vtx11,vtx10,p0.x,p0.y,p0.z);
           transpose(vtx01,vtx02,vtx12,vtx11,p1.x,p1.y,p1.z);
           transpose(vtx11,vtx12,vtx22,vtx21,p2.x,p2.y,p2.z);
           transpose(vtx10,vtx11,vtx21,vtx20,p3.x,p3.y,p3.z);          
           
+        }
+
+
+        /* Gather the quads */
+        __forceinline void gather(Vec3fa vtx[16], const Scene *const scene) const
+        {
+          const GridMesh* mesh     = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g  = mesh->grid(primID());
+
+          /* first quad always valid */
+          const size_t vtxID00 = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID01 = vtxID00 + 1;
+          const Vec3fa vtx00  = Vec3fa::loadu(mesh->vertexPtr(vtxID00));
+          const Vec3fa vtx01  = Vec3fa::loadu(mesh->vertexPtr(vtxID01));
+          const size_t vtxID10 = vtxID00 + g.lineVtxOffset;
+          const size_t vtxID11 = vtxID01 + g.lineVtxOffset;
+          const Vec3fa vtx10  = Vec3fa::loadu(mesh->vertexPtr(vtxID10));
+          const Vec3fa vtx11  = Vec3fa::loadu(mesh->vertexPtr(vtxID11));
+
+          /* deltaX => vtx02, vtx12 */
+          const size_t deltaX  = invalid3x3X() ? 0 : 1;
+          const size_t vtxID02 = vtxID01 + deltaX;       
+          const Vec3fa vtx02  = Vec3fa::loadu(mesh->vertexPtr(vtxID02));
+          const size_t vtxID12 = vtxID11 + deltaX;       
+          const Vec3fa vtx12  = Vec3fa::loadu(mesh->vertexPtr(vtxID12));
+
+          /* deltaY => vtx20, vtx21 */
+          const size_t deltaY  = invalid3x3Y() ? 0 : g.lineVtxOffset;
+          const size_t vtxID20 = vtxID10 + deltaY;
+          const size_t vtxID21 = vtxID11 + deltaY;
+          const Vec3fa vtx20  = Vec3fa::loadu(mesh->vertexPtr(vtxID20));
+          const Vec3fa vtx21  = Vec3fa::loadu(mesh->vertexPtr(vtxID21));
+
+          /* deltaX/deltaY => vtx22 */
+          const size_t vtxID22 = vtxID11 + deltaX + deltaY;       
+          const Vec3fa vtx22  = Vec3fa::loadu(mesh->vertexPtr(vtxID22));
+
+          vtx[ 0] = vtx00; vtx[ 1] = vtx01; vtx[ 2] = vtx11; vtx[ 3] = vtx10;
+          vtx[ 4] = vtx01; vtx[ 5] = vtx02; vtx[ 6] = vtx12; vtx[ 7] = vtx11;
+          vtx[ 8] = vtx11; vtx[ 9] = vtx12; vtx[10] = vtx22; vtx[11] = vtx21;
+          vtx[12] = vtx10; vtx[13] = vtx11; vtx[14] = vtx21; vtx[15] = vtx20;
         }
 
         /* Calculate the bounds of the subgrid */

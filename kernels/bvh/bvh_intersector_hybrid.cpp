@@ -32,6 +32,7 @@
 #include "../geometry/subdivpatch1eager_intersector.h"
 //#include "../geometry/subdivpatch1cached_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/subgrid_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 #define FORCE_SINGLE_MODE 0
