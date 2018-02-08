@@ -404,10 +404,15 @@ namespace embree
   {
     open("TriangleMesh",id);
     store(mesh->material);
+    
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
-    store("normals",mesh->normals);
+
+    if (mesh->numTimeSteps() != 1) open("animated_normals");
+    for (const auto& p : mesh->normals) store("normals",p);
+    if (mesh->numTimeSteps() != 1) close("animated_normals");
+    
     store("texcoords",mesh->texcoords);
     store("triangles",mesh->triangles);
     close("TriangleMesh");
@@ -417,10 +422,15 @@ namespace embree
   {
     open("QuadMesh",id);
     store(mesh->material);
+    
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
-    store("normals",mesh->normals);
+
+    if (mesh->numTimeSteps() != 1) open("animated_normals");
+    for (const auto& p : mesh->normals) store("normals",p);
+    if (mesh->numTimeSteps() != 1) close("animated_normals");
+    
     store("texcoords",mesh->texcoords);
     store("indices",mesh->quads);
     close("QuadMesh");
@@ -430,10 +440,15 @@ namespace embree
   {
     open("SubdivisionMesh",id);
     store(mesh->material);
+    
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
-    store("normals",mesh->normals);
+
+    if (mesh->numTimeSteps() != 1) open("animated_normals");
+    for (const auto& p : mesh->normals) store("normals",p);
+    if (mesh->numTimeSteps() != 1) close("animated_normals");
+
     store("texcoords",mesh->texcoords);
     store("position_indices",mesh->position_indices);
     store("normal_indices",mesh->normal_indices);
