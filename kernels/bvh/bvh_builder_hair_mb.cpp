@@ -72,20 +72,9 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D
-          {
-            size_t start = prims.object_range.begin();
-            size_t end   = prims.object_range.end();
-            size_t items = prims.object_range.size();
-            Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive));
-            const NodeRef node = bvh->encodeLeaf((char*)accel,items);
-
-            LBBox3fa bounds = empty;
-            for (size_t i=0; i<items; i++)
-              bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
-            
-            return NodeRecordMB4D(node,bounds,prims.time_range);
-          };
+        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
+          return Primitive::createLeafMB(bvh,prims,alloc);
+        };
 
         /* build the hierarchy */
         auto root = BVHBuilderHairMSMBlur::build<NodeRef>

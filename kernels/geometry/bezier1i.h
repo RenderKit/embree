@@ -97,6 +97,22 @@ namespace embree
       return curves->linearBounds(primID,time_range);
     }
 
+    template<typename BVH, typename SetMB, typename Allocator>
+    __forceinline static typename BVH::NodeRecordMB4D createLeafMB(BVH* bvh, const SetMB& prims, const Allocator& alloc)
+    {
+      size_t start = prims.object_range.begin();
+      size_t end   = prims.object_range.end();
+      size_t items = prims.object_range.size();
+      Bezier1i* accel = (Bezier1i*) alloc.malloc1(items*sizeof(Bezier1i));
+      const typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      
+      LBBox3fa bounds = empty;
+      for (size_t i=0; i<items; i++)
+        bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
+      
+      return typename BVH::NodeRecordMB4D(node,bounds,prims.time_range);
+    };
+
   public:
     unsigned vertexID; //!< index of start vertex
   private:
