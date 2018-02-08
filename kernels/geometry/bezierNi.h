@@ -326,8 +326,10 @@ namespace embree
 
     __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+1+52*N); }
     __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+1+52*N); }
- 
-    
+
+    __forceinline       char* end(size_t N)       { return (char*)this+1+52*N+4; }
+    __forceinline const char* end(size_t N) const { return (char*)this+1+52*N+4; }
+     
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 1
@@ -372,7 +374,10 @@ namespace embree
     __forceinline const unsigned int* primID  (size_t N) const { return (unsigned int* )((char*)this+52+6*N); }
 
     __forceinline       unsigned int& geomID  (size_t N)       { return *(unsigned int* )((char*)this+52+10*N); }
-    __forceinline const unsigned int& geomID  (size_t N) const { return *(unsigned int* )((char*)this+52+10*N); }   
+    __forceinline const unsigned int& geomID  (size_t N) const { return *(unsigned int* )((char*)this+52+10*N); }
+
+    __forceinline       char* end(size_t N)       { return (char*)this+52+10*N+4; }
+    __forceinline const char* end(size_t N) const { return (char*)this+52+10*N+4; }
     
 #endif
 
@@ -467,8 +472,10 @@ namespace embree
     
     __forceinline       float* scale(size_t N)       { return (float*)((char*)this+5+25*N+12); }
     __forceinline const float* scale(size_t N) const { return (float*)((char*)this+5+25*N+12); }
-    
-    
+
+    __forceinline       char* end(size_t N)       { return (char*)this+5+25*N+16; }
+    __forceinline const char* end(size_t N) const { return (char*)this+5+25*N+16; }
+        
 #endif
 
   };
