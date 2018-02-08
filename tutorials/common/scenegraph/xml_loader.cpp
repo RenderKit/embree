@@ -217,7 +217,8 @@ namespace embree
   public:
 
     static Ref<SceneGraph::Node> load(const FileName& fileName, const AffineSpace3fa& space);
-    XMLLoader(const FileName& fileName, const AffineSpace3fa& space);
+    static Ref<SceneGraph::Node> load(const FileName& fileName, const AffineSpace3fa& space, std::map<std::string,Ref<SceneGraph::Node> >& sceneMap);
+    XMLLoader(const FileName& fileName, const AffineSpace3fa& space, std::map<std::string,Ref<SceneGraph::Node> >& sceneMap);
    ~XMLLoader();
 
   public:
@@ -286,7 +287,7 @@ namespace embree
   private:
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
     std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
-    std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+    std::map<std::string,Ref<SceneGraph::Node> >& sceneMap; 
     std::map<std::string,std::shared_ptr<Texture>> textureMap; 
 
   private:
@@ -1213,6 +1214,8 @@ namespace embree
       const std::string id = xml->parm("id");
       if (xml->name == "extern") 
         node = sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "xml")
+        node = sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one,sceneMap);
       else if (xml->name == "extern_combine") 
         node = sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
       else if (xml->name == "obj"             ) {
@@ -1371,11 +1374,26 @@ namespace embree
   /*******************************************************************************************/
   
 
-  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space) {
-    XMLLoader loader(fileName,space); return loader.root;
+  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space)
+  {
+    PRINT(fileName);
+    std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+    XMLLoader loader(fileName,space,sceneMap); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), binFileSize(0), currentNodeID(0)
+  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space, std::map<std::string,Ref<SceneGraph::Node> >& sceneMap)
+  {
+    PRINT(fileName);
+    if (sceneMap.find(fileName) != sceneMap.end())
+      return sceneMap[fileName];
+    
+    XMLLoader loader(fileName,space,sceneMap);
+    sceneMap[fileName] = loader.root;
+    return loader.root;
+  }
+
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space, std::map<std::string,Ref<SceneGraph::Node> >& sceneMap)
+    : binFile(nullptr), binFileSize(0), sceneMap(sceneMap), currentNodeID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
