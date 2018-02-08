@@ -239,12 +239,18 @@ namespace embree
             if (tbounds.size() == 0) continue;
 
             const size_t t = (tbounds.begin()+tbounds.end())/2;
-            const int curve = mesh->curve(primID);
-            const Vec3fa a0 = mesh->vertex(curve+0,t);
-            const Vec3fa a3 = mesh->vertex(curve+3,t);
+            const unsigned int vertexID = mesh->curve(primID);
+            const Vec3fa a0 = mesh->vertex(vertexID+0,t);
+            const Vec3fa a1 = mesh->vertex(vertexID+1,t);
+            const Vec3fa a2 = mesh->vertex(vertexID+2,t);
+            const Vec3fa a3 = mesh->vertex(vertexID+3,t);
+            const Curve3fa curve(a0,a1,a2,a3);
+            const Vec3fa p0 = curve.begin();
+            const Vec3fa p3 = curve.end();
+            const Vec3fa axis1 = normalize(p3 - p0);
             
-            if (sqr_length(a3 - a0) > 1E-18f) {
-              axis0 = normalize(a3 - a0);
+            if (sqr_length(axis1) > 1E-18f) {
+              axis0 = normalize(axis1);
               bestGeomPrimID = geomprimID;
             }
           }
