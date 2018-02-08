@@ -17,11 +17,11 @@
 #pragma once
 
 #include "primitive.h"
-#include "bezier1i.h"
+#include "bezier1v.h"
 
 namespace embree
 {
-  struct BezierNi
+  struct BezierNv
   {
     enum { M = 8 };
     
@@ -44,23 +44,23 @@ namespace embree
     {
 #if EMBREE_HAIR_LEAF_MODE == 0
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNi) == 5+13*4*M, "internal data layout issue");
-      return f*sizeof(BezierNi) + (r!=0)*(5+13*4*r + 4*max(0,8-3*(int)N));
+      static_assert(sizeof(BezierNv) == 5+13*4*M+4*16*M, "internal data layout issue");
+      return f*sizeof(BezierNv) + (r!=0)*(5 + 13*4*r + 4*16*r);
 #elif EMBREE_HAIR_LEAF_MODE == 1
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNi) == 56+10*M, "internal data layout issue");
-      return f*sizeof(BezierNi) + (r!=0)*(56 + 10*r);
+      static_assert(sizeof(BezierNv) == 56+10*M+4*16*M, "internal data layout issue");
+      return f*sizeof(BezierNv) + (r!=0)*(56 + 10*r + 4*16*r);
 #elif EMBREE_HAIR_LEAF_MODE == 2
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNi) == 21+25*M, "internal data layout issue");
-      return f*sizeof(BezierNi) + (r!=0)*(21 + 25*r);
+      static_assert(sizeof(BezierNv) == 21+25*M+4*16*M, "internal data layout issue");
+      return f*sizeof(BezierNv) + (r!=0)*(21 + 25*r + 4*16*r);
 #endif
     }
 
   public:
 
     /*! Default constructor. */
-    __forceinline BezierNi () {}
+    __forceinline BezierNv () {}
 
     const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset = zero, const float scale = 1.0f)
     {
@@ -142,6 +142,13 @@ namespace embree
         p_z(N)[i] = space.p.z;
 
         this->primID(N)[i] = primID;
+
+        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+        const unsigned vtxID = mesh->curve(primID);
+        Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
+        Vec3fa::storeu(&this->vertices(i,N)[1],mesh->vertex(vtxID+1));
+        Vec3fa::storeu(&this->vertices(i,N)[2],mesh->vertex(vtxID+2));
+        Vec3fa::storeu(&this->vertices(i,N)[3],mesh->vertex(vtxID+3));
       }
         
 #endif
@@ -183,6 +190,13 @@ namespace embree
         this->lower_z(N)[i] = (unsigned char) clamp(floor(lower.z),0.0f,255.0f);
         this->upper_z(N)[i] = (unsigned char) clamp(ceil (upper.z),0.0f,255.0f);
         this->primID(N)[i] = primID;
+
+        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+        const unsigned vtxID = mesh->curve(primID);
+        Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
+        Vec3fa::storeu(&this->vertices(i,N)[1],mesh->vertex(vtxID+1));
+        Vec3fa::storeu(&this->vertices(i,N)[2],mesh->vertex(vtxID+2));
+        Vec3fa::storeu(&this->vertices(i,N)[3],mesh->vertex(vtxID+3));
       }
 #endif
 
@@ -239,6 +253,13 @@ namespace embree
         bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
                
         this->primID(N)[i] = primID;
+
+        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+        const unsigned vtxID = mesh->curve(primID);
+        Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
+        Vec3fa::storeu(&this->vertices(i,N)[1],mesh->vertex(vtxID+1));
+        Vec3fa::storeu(&this->vertices(i,N)[2],mesh->vertex(vtxID+2));
+        Vec3fa::storeu(&this->vertices(i,N)[3],mesh->vertex(vtxID+3));
       }
         
 #endif
@@ -249,9 +270,9 @@ namespace embree
       __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
     {
       size_t start = set.begin();
-      size_t items = BezierNi::blocks(set.size());
-      size_t numbytes = BezierNi::bytes(set.size());
-      BezierNi* accel = (BezierNi*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      size_t items = BezierNv::blocks(set.size());
+      size_t numbytes = BezierNv::bytes(set.size());
+      BezierNv* accel = (BezierNv*) alloc.malloc1(numbytes,BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,start,set.end(),bvh->scene);
       }
@@ -263,7 +284,7 @@ namespace embree
 
     // 52.6 - 57 bytes per primitive
     unsigned char N;
-    unsigned char data[13*4*M+4];
+    unsigned char data[13*4*M+4+4*16*M];
 
     /*
     struct Layout
@@ -282,6 +303,7 @@ namespace embree
       float p_z[N];
       unsigned int primID[N];
       unsigned int geomID;
+      Vec3fa vertices[4][N];
     };
     */
 
@@ -326,8 +348,10 @@ namespace embree
 
     __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+1+52*N); }
     __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+1+52*N); }
- 
-    
+
+    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)((char*)this+1+52*N+4)+4*i; }
+    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)((char*)this+1+52*N+4)+4*i; }
+     
 #endif
 
 #if EMBREE_HAIR_LEAF_MODE == 1
@@ -335,7 +359,7 @@ namespace embree
     // 17 - 66 bytes per primitive
     unsigned int N;
     AffineSpace3f space;
-    unsigned char data[10*M+4];
+    unsigned char data[10*M+4+4*16*M];
 
     /*
     struct Layout {
@@ -347,6 +371,7 @@ namespace embree
       unsigned char upper_z[N];
       unsigned int primID[N];
       unsigned int geomID;
+      Vec3fa vertices[4][N];
     };
     */
 
@@ -372,7 +397,10 @@ namespace embree
     __forceinline const unsigned int* primID  (size_t N) const { return (unsigned int* )((char*)this+52+6*N); }
 
     __forceinline       unsigned int& geomID  (size_t N)       { return *(unsigned int* )((char*)this+52+10*N); }
-    __forceinline const unsigned int& geomID  (size_t N) const { return *(unsigned int* )((char*)this+52+10*N); }   
+    __forceinline const unsigned int& geomID  (size_t N) const { return *(unsigned int* )((char*)this+52+10*N); }
+
+    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)((char*)this+52+10*N+4)+4*i; }
+    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)((char*)this+52+10*N+4)+4*i; }
     
 #endif
 
@@ -380,7 +408,7 @@ namespace embree
     
     // 27.6 - 46 bytes per primitive
     unsigned char N;
-    unsigned char data[4+25*M+16];
+    unsigned char data[4+25*M+16+4*16*M];
 
     /*
     struct Layout
@@ -408,6 +436,8 @@ namespace embree
       
       Vec3f offset;
       float scale;
+
+      Vec3fa vertices[4][N];
     };
     */
     
@@ -467,7 +497,9 @@ namespace embree
     
     __forceinline       float* scale(size_t N)       { return (float*)((char*)this+5+25*N+12); }
     __forceinline const float* scale(size_t N) const { return (float*)((char*)this+5+25*N+12); }
-    
+
+    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)((char*)this+5+25*N+16)+4*i; }
+    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)((char*)this+5+25*N+16)+4*i; }  
     
 #endif
 

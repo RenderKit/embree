@@ -21,6 +21,7 @@
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
 #include "../geometry/bezierNi.h"
+#include "../geometry/bezierNv.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
 
@@ -121,7 +122,8 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }
+    //Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,BezierNv>((BVH4*)bvh,scene); }
     //Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
     Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,BezierNi>((BVH4*)bvh,scene); }
 
