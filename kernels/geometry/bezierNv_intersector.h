@@ -155,6 +155,18 @@ namespace embree
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
           const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+
+          size_t mask1 = mask;
+          const size_t i1 = __bscf(mask1);
+          if (mask) {
+            prefetchL1(&prim.vertices(i1,N)[0]);
+            prefetchL1(&prim.vertices(i1,N)[4]);
+            if (mask1) {
+              const size_t i2 = __bsf(mask1);
+              prefetchL2(&prim.vertices(i2,N)[0]);
+              prefetchL2(&prim.vertices(i2,N)[4]);
+            }
+          }
           
           if (likely(geom->subtype == FLAT_CURVE))
             pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,geomID,primID));
@@ -184,6 +196,18 @@ namespace embree
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
           const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+
+          size_t mask1 = mask;
+          const size_t i1 = __bscf(mask1);
+          if (mask) {
+            prefetchL1(&prim.vertices(i1,N)[0]);
+            prefetchL1(&prim.vertices(i1,N)[4]);
+            if (mask1) {
+              const size_t i2 = __bsf(mask1);
+              prefetchL2(&prim.vertices(i2,N)[0]);
+              prefetchL2(&prim.vertices(i2,N)[4]);
+            }
+          }
           
           if (likely(geom->subtype == FLAT_CURVE)) {
             if (pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,geomID,primID)))
