@@ -95,7 +95,8 @@ namespace embree
 
     const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset, const float scale)
     {
-      Vec3fa axis(0,0,1);
+      Vec3fa axisz(0,0,1);
+      Vec3fa axisy(0,1,0);
       uint64_t bestGeomPrimID = -1;
       
       /*! find curve with minimum ID that defines valid direction */
@@ -114,13 +115,23 @@ namespace embree
         const Curve3fa curve(v0,v1,v2,v3);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
-        const Vec3fa axis1 = normalize(p3 - p0);
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
         if (sqr_length(p3-p0) > 1E-18f) {
-          axis = axis1;
+          axisz = axisz_;
+          axisy = axisy_;
           bestGeomPrimID = geomprimID;
         }
       }
-      return frame(axis);
+
+      if (sqr_length(axisy) > 1E-18) {
+        axisy = normalize(axisy);
+        Vec3fa axisx = normalize(cross(axisy,axisz));
+        return LinearSpace3fa(axisx,axisy,axisz);
+      }
+      return frame(axisz);
     }
 #endif
 
