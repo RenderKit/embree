@@ -32,10 +32,10 @@ namespace embree
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
-  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename, bool embedTextures)
+  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename, bool embedTextures, bool referenceMaterials)
   {
     if (toLowerCase(filename.ext()) == std::string("xml")) {
-      storeXML(root,filename,embedTextures);
+      storeXML(root,filename,embedTextures,referenceMaterials);
     }
     else
       throw std::runtime_error("unknown scene format: " + filename.ext());

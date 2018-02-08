@@ -113,10 +113,10 @@ namespace embree
   struct PREFIX(OBJMaterial) MATERIAL_BASE_CLASS
   {
 #if !defined(ISPC) && !defined(CPPTUTORIAL)
-    OBJMaterial ()
-      : base(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+    OBJMaterial (const std::string name = "")
+      : SceneGraph::MaterialNode(name), base(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
-    OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
+    OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns, const std::string name = "")
       : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
     OBJMaterial (float d, const std::shared_ptr<Texture> map_d, 

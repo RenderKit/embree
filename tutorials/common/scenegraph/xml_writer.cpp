@@ -22,7 +22,7 @@ namespace embree
   {
   public:
 
-    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures);
+    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials);
 
   public:
     void tab();
@@ -82,6 +82,7 @@ namespace embree
     std::map<Ref<SceneGraph::Node>, size_t> nodeMap;   
     std::map<std::shared_ptr<Texture>, size_t> textureMap; // FIXME: use Ref<Texture>
     bool embedTextures;
+    bool referenceMaterials;
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -380,6 +381,12 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::MaterialNode> mnode)
   {
+    /* let materials reference by their name, allows separate bindings of materials */
+    if (referenceMaterials) {
+      tab(); xml << "<material id=\""+mnode->name+"\"/>" << std::endl;
+      return;
+    }
+    
     Ref<SceneGraph::Node> node = mnode.dynamicCast<SceneGraph::Node>();
     if (nodeMap.find(node) != nodeMap.end()) {
       tab(); xml << "<material id=\"" << nodeMap[node] << "\"/>" << std::endl;
@@ -623,8 +630,8 @@ namespace embree
     else throw std::runtime_error("unknown node type");
   }
  
-  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) 
-    : ident(0), currentNodeID(0), embedTextures(embedTextures)
+  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) 
+    : ident(0), currentNodeID(0), embedTextures(embedTextures), referenceMaterials(referenceMaterials)
   {
     FileName binFileName = fileName.addExt(".bin");
 
@@ -642,7 +649,7 @@ namespace embree
     close("scene");
   }
 
-  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) {
-    XMLWriter(root,fileName,embedTextures);
+  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) {
+    XMLWriter(root,fileName,embedTextures,referenceMaterials);
   }
 }
