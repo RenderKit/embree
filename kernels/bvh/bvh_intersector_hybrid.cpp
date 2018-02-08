@@ -142,6 +142,11 @@ namespace embree
 
       /* return if there are no valid rays */
       size_t valid_bits = movemask(valid);
+
+#if defined(__AVX__)
+      STAT3(normal.trav_hit_boxes[__popcnt(movemask(valid))], 1, 1, 1);
+#endif
+
       if (unlikely(valid_bits == 0)) return;
 
       /* verify correct input */
@@ -188,9 +193,6 @@ namespace embree
         vbool<K> octant_valid = (count_diff_octant <= 1) & (octant != vint<K>(0xffffffff));
         if (!single || !split) octant_valid = valid; // deactivate octant sorting in pure chunk mode, otherwise instance traversal performance goes down 
 
-#if defined(__AVX__)
-        STAT3(normal.trav_hit_boxes[__popcnt(movemask(octant_valid))], 1, 1, 1);
-#endif
 
         octant = select(octant_valid,vint<K>(0xffffffff),octant);
         valid_bits &= ~(size_t)movemask(octant_valid);
