@@ -1380,14 +1380,12 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space)
   {
-    PRINT(fileName);
     SharedState state;
     XMLLoader loader(fileName,space,state); return loader.root;
   }
 
   Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space, SharedState& state)
   {
-    PRINT(fileName);
     if (state.sceneMap.find(fileName) != state.sceneMap.end())
       return state.sceneMap[fileName];
     
