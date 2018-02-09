@@ -17,6 +17,10 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
+#define NUM_GRIDS 4
+#define GRID_RESOLUTION_X 3
+#define GRID_RESOLUTION_Y 3
+
 #define EDGE_LEVEL 256.0f
 #define ENABLE_SMOOTH_NORMALS 0
 
@@ -164,6 +168,50 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   return geomID;
 }
 
+
+uniform unsigned int addGridPlane (RTCScene scene_i)
+{
+  /* create a triangulated plane with 2 triangles and 4 vertices */
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
+  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS;
+  uniform float startX = 10.0f;
+  uniform float startY = 10.0f;
+  uniform float sizeX  = 20.0f;
+  uniform float sizeY  = 20.0f;
+
+  /* set vertices */
+  uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
+
+
+  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(uniform RTCGrid),NUM_GRIDS);
+
+  uniform unsigned int index = 0;
+  for (uniform unsigned int g=0;g<NUM_GRIDS;g++)
+  {
+    grids[g].startVtxID = index;
+    grids[g].lineOffset = GRID_RESOLUTION_X;
+    grids[g].resX       = GRID_RESOLUTION_X;
+    grids[g].resY       = GRID_RESOLUTION_Y;
+    for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
+      for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x++)
+      {
+        vertices[index].x = startX + (float)x / (GRID_RESOLUTION_X-1) * sizeX;
+        vertices[index].y = -2;
+        vertices[index].z = startY + (float)y / (GRID_RESOLUTION_Y-1) * sizeY;
+        index++;
+      }
+    
+    startX += sizeY;
+  }
+  assert(index == numVertices);
+
+  rtcCommitGeometry(geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
+}
+
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -179,10 +227,12 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
   /* add ground plane */
-  addGroundPlane(g_scene);
+  //addGroundPlane(g_scene);
 
   /* add cube */
-  addCube(g_scene);
+  //addCube(g_scene);
+
+  addGridPlane(g_scene);
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
