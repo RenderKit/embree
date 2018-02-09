@@ -107,6 +107,9 @@ namespace embree
     subdiv_accel = "default";
     subdiv_accel_mb = "default";
 
+    grid_accel = "default";
+    grid_accel_mb = "default";
+
     instancing_open_min = 0;
     instancing_block_size = 0;
     instancing_open_factor = 8.0f; 
@@ -379,6 +382,11 @@ namespace embree
         subdiv_accel = cin->get().Identifier();
       else if (tok == Token::Id("subdiv_accel_mb") && cin->trySymbol("="))
         subdiv_accel_mb = cin->get().Identifier();
+
+      else if (tok == Token::Id("grid_accel") && cin->trySymbol("="))
+        grid_accel = cin->get().Identifier();
+      else if (tok == Token::Id("grid_accel_mb") && cin->trySymbol("="))
+        grid_accel_mb = cin->get().Identifier();
       
       else if (tok == Token::Id("verbose") && cin->trySymbol("="))
         verbose = cin->get().Int();
@@ -489,6 +497,9 @@ namespace embree
     
     std::cout << "subdivision surfaces:" << std::endl;
     std::cout << "  accel         = " << subdiv_accel << std::endl;
+
+    std::cout << "grids:" << std::endl;
+    std::cout << "  accel         = " << grid_accel << std::endl;
 
     std::cout << "object_accel:" << std::endl;
     std::cout << "  min_leaf_size = " << object_accel_min_leaf_size << std::endl;

@@ -638,7 +638,7 @@ namespace embree
           const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];          
           const unsigned int geomID = prims[start+i].geomID();
           accel[i] = SubGrid(sgrid_bd.sx,sgrid_bd.sy,geomID,sgrid_bd.primID);
-          PRINT(accel[i]);
+          //PRINT(accel[i]);
         }
         return node;
       }
@@ -689,7 +689,6 @@ namespace embree
 	/* skip build for empty scene */
         const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
         PRINT(numGrids);
-        PRINT( mesh );
         size_t numPrimitives = 0;
 
         Scene::Iterator<GridMesh,false> iter(scene);
@@ -699,7 +698,7 @@ namespace embree
           if (gmesh == nullptr) continue;
           for (size_t i=0;i<gmesh->size();i++)
           {
-            PRINT( gmesh->getNumSubGrids(i) );
+            //PRINT( gmesh->getNumSubGrids(i) );
             numPrimitives += gmesh->getNumSubGrids(i);
           }
         }
@@ -741,12 +740,10 @@ namespace embree
         size_t p_index = 0;
         for (size_t s=0;s<scene->size();s++)
         {
-          PRINT(s);
           GridMesh *gmesh = iter.at(s);
           if (gmesh == nullptr) continue;
           for (size_t i=0;i<gmesh->size();i++)
           {
-            PRINT("GRID");
             const GridMesh::Grid &g = gmesh->grid(i);
             for (size_t y=0;y<(size_t)g.resY-1;y+=2)
               for (size_t x=0;x<(size_t)g.resX-1;x+=2)
@@ -754,7 +751,7 @@ namespace embree
                 BBox3fa bounds = empty;
                 if (!gmesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
                 const PrimRef prim(bounds,s | g.get3x3Flags(x,y),p_index);
-                PRINT(prim);
+                //PRINT(prim);
                 pinfo.add_center2(prim);
                 sgrids[p_index] = SubGridBuildData(x,y,i);
                 prims[p_index++] = prim;                
