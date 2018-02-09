@@ -330,8 +330,6 @@ namespace embree
     /* Calculates if the hit is valid */
     __forceinline void verifyHit() const
     {
-#pragma message "enable this code"
-#if 0 // FIXME: enable
       if (geomID == RTC_INVALID_GEOMETRY_ID) return;
       const bool vt = (abs(tfar) <= FLT_LARGE) || (tfar == float(neg_inf));
       const bool vu = (abs(u) <= FLT_LARGE);
@@ -345,7 +343,6 @@ namespace embree
       if (!vnx) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid Ng.x");
       if (!vny) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid Ng.y");
       if (!vnz) throw_RTCError(RTC_ERROR_UNKNOWN, "invalid Ng.z");
-#endif
     }
 
 #if defined(__AVX512F__)

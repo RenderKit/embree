@@ -84,7 +84,7 @@ namespace embree
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space,primID);
                 
         space.p -= bounds.lower;
-        this->space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
 
         this->vx_x(N)[i] = space.l.vx.x;
         this->vx_y(N)[i] = space.l.vx.y;
