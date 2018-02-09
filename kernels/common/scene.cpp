@@ -376,30 +376,30 @@ namespace embree
         if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
         {
           switch (mode) {
-          case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
-          case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
-          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
-          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
+          case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezierNv(this)); break;
+          case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBBezierNv(this)); break;
+          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezierNi(this)); break;
+          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezierNi(this)); break;
           }
         }
         else
 #endif
         {
           switch (mode) {
-          case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this)); break;
-          case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this)); break;
-          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
-          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
+          case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezierNv(this)); break;
+          case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezierNv(this)); break;
+          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezierNi(this)); break;
+          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezierNi(this)); break;
           }
         }
       }
       else
       {
         switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezierNv(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezierNv(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezierNi(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezierNi(this)); break;
         }
       }
     }
@@ -407,9 +407,13 @@ namespace embree
     else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
     else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this));
     else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
+    else if (device->hair_accel == "bvh4obb.bezierNv" ) accels.add(device->bvh4_factory->BVH4OBBBezierNv(this));
+    else if (device->hair_accel == "bvh4obb.bezierNi" ) accels.add(device->bvh4_factory->BVH4OBBBezierNi(this));
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
     else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));
+    else if (device->hair_accel == "bvh8obb.bezierNv" ) accels.add(device->bvh8_factory->BVH8OBBBezierNv(this));
+    else if (device->hair_accel == "bvh8obb.bezierNi" ) accels.add(device->bvh8_factory->BVH8OBBBezierNi(this));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
 #endif
@@ -423,17 +427,19 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->hasISA(AVX2) && !isCompactAccel()) // only enable on HSW machines, on SNB this codepath is slower
       {
-        accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
+        accels.add(device->bvh8_factory->BVH8OBBBezierNiMB(this));
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
+        accels.add(device->bvh4_factory->BVH4OBBBezierNiMB(this));
       }
     }
     else if (device->hair_accel_mb == "bvh4.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
+    else if (device->hair_accel_mb == "bvh4.bezier1Nmb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->hair_accel_mb == "bvh8.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
+    else if (device->hair_accel_mb == "bvh8.bezier1Nmb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
 #endif
