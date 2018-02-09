@@ -124,14 +124,14 @@ namespace embree
     /*! entry functions for the builder */
     Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }
     Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
-    Builder* BVH4BezierNvBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,BezierNv<4>>((BVH4*)bvh,scene); }
-    Builder* BVH4BezierNiBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,BezierNi<4>>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier4v>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier1v>((BVH8*)bvh,scene); }
     Builder* BVH8Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
-    Builder* BVH8BezierNvBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,BezierNv<8>>((BVH8*)bvh,scene); }
-    Builder* BVH8BezierNiBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,BezierNi<8>>((BVH8*)bvh,scene); }
+    Builder* BVH8Bezier8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier8v>((BVH8*)bvh,scene); }
+    Builder* BVH4Bezier8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier8i>((BVH4*)bvh,scene); }
 #endif
 
   }

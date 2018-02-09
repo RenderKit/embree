@@ -53,10 +53,12 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBBezier1iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
 
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4BezierNvIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNvIntersectorK<4 COMMA 8> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4BezierNiIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiIntersectorK<4 COMMA 8> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBBezierNiMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiIntersectorKMB<4 COMMA 8> > >));
-  
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4Bezier4vIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNvIntersectorK<4 COMMA 8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4Bezier4iIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiIntersectorK<4 COMMA 8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBBezier4iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiIntersectorKMB<4 COMMA 8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4Bezier8iIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiIntersectorK<8 COMMA 8> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBBezier8iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiIntersectorKMB<8 COMMA 8> > >));
+    
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1Intersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1EagerIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector8>));
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1CachedIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector8>));
