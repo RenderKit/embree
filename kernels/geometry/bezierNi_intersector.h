@@ -202,5 +202,212 @@ namespace embree
         return false;
       }
     };
+
+    template<int K>
+      struct BezierNiIntersectorK
+    {
+      typedef BezierNi Primitive;
+
+      struct Precalculations
+      {
+        __forceinline Precalculations() {}
+
+        __forceinline Precalculations(const vbool<K>& valid, const RayK<K>& ray)
+          : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+
+        __forceinline Precalculations(const RayK<K>& ray, size_t k)
+          : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+
+        Bezier1IntersectorK<Curve3fa,K> intersectorHair;
+        BezierCurve1IntersectorK<Curve3fa,K> intersectorCurve;
+      };
+
+      static __forceinline vbool8 intersect(RayK<K>& ray, const size_t k, const Primitive& prim, vfloat8& tNear_o)
+      {
+#if EMBREE_HAIR_LEAF_MODE == 0
+
+        const size_t N = prim.N;
+        AffineSpace3vf<8> space(Vec3vf8(vfloat<8>::loadu(prim.vx_x(N)),vfloat<8>::loadu(prim.vx_y(N)),vfloat<8>::loadu(prim.vx_z(N))),
+                                Vec3vf8(vfloat<8>::loadu(prim.vy_x(N)),vfloat<8>::loadu(prim.vy_y(N)),vfloat<8>::loadu(prim.vy_z(N))),
+                                Vec3vf8(vfloat<8>::loadu(prim.vz_x(N)),vfloat<8>::loadu(prim.vz_y(N)),vfloat<8>::loadu(prim.vz_z(N))),
+                                Vec3vf8(vfloat<8>::loadu(prim.p_x (N)),vfloat<8>::loadu(prim.p_y (N)),vfloat<8>::loadu(prim.p_z (N))));
+
+        const Vec3f ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+        const Vec3f ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        const Vec3vf8 dir1 = xfmVector(space,Vec3vf8(ray_dir));
+        const Vec3vf8 org1 = xfmPoint (space,Vec3vf8(ray_org));
+        const Vec3vf8 nrcp_dir1 = -rcp_safe(dir1);
+        
+        const vfloat8 t_lower_x = org1.x*nrcp_dir1.x;
+        const vfloat8 t_lower_y = org1.y*nrcp_dir1.y;
+        const vfloat8 t_lower_z = org1.z*nrcp_dir1.z;
+        const vfloat8 t_upper_x = t_lower_x - nrcp_dir1.x;
+        const vfloat8 t_upper_y = t_lower_y - nrcp_dir1.y;
+        const vfloat8 t_upper_z = t_lower_z - nrcp_dir1.z;
+
+        const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()[k]));
+        const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar[k]));
+        tNear_o = tNear;
+        return (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
+
+#endif
+
+#if EMBREE_HAIR_LEAF_MODE == 1
+
+        const size_t N = prim.N;
+        const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
+                                   Vec3fa::loadu(&prim.space.l.vy),
+                                   Vec3fa::loadu(&prim.space.l.vz),
+                                   Vec3fa::loadu(&prim.space.p));
+
+        const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+        const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        const Vec3fa org1 = xfmPoint (space,ray_org);
+        const Vec3fa dir1 = xfmVector(space,ray_dir);
+        const Vec3fa rcp_dir1 = rcp_safe(dir1);
+                
+        const vfloat8 t_lower_x = (vfloat8::load(prim.lower_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
+        const vfloat8 t_upper_x = (vfloat8::load(prim.upper_x(N))-vfloat8(org1.x))*vfloat8(rcp_dir1.x);
+        const vfloat8 t_lower_y = (vfloat8::load(prim.lower_y(N))-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
+        const vfloat8 t_upper_y = (vfloat8::load(prim.upper_y(N))-vfloat8(org1.y))*vfloat8(rcp_dir1.y);
+        const vfloat8 t_lower_z = (vfloat8::load(prim.lower_z(N))-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
+        const vfloat8 t_upper_z = (vfloat8::load(prim.upper_z(N))-vfloat8(org1.z))*vfloat8(rcp_dir1.z);
+
+        const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()[k]));
+        const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar[k]));
+        tNear_o = tNear;
+        return (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
+#endif
+
+#if EMBREE_HAIR_LEAF_MODE == 2
+
+        const size_t N = prim.N;
+        const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
+        const Vec3fa offset = Vec3fa(offset_scale);
+        const Vec3fa scale = Vec3fa(shuffle<3,3,3,3>(offset_scale));
+
+        const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+        const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        const Vec3fa org1 = (ray_org-offset)*scale;
+        const Vec3fa dir1 = ray_dir*scale;
+        
+        const LinearSpace3vf8 space(vfloat8::load(prim.bounds_vx_x(N)), vfloat8::load(prim.bounds_vx_y(N)), vfloat8::load(prim.bounds_vx_z(N)),
+                                    vfloat8::load(prim.bounds_vy_x(N)), vfloat8::load(prim.bounds_vy_y(N)), vfloat8::load(prim.bounds_vy_z(N)),
+                                    vfloat8::load(prim.bounds_vz_x(N)), vfloat8::load(prim.bounds_vz_y(N)), vfloat8::load(prim.bounds_vz_z(N)));
+
+        const Vec3vf8 dir2 = xfmVector(space,Vec3vf8(dir1));
+        const Vec3vf8 org2 = xfmPoint (space,Vec3vf8(org1));
+        const Vec3vf8 rcp_dir2 = rcp_safe(dir2);
+       
+        const vfloat8 t_lower_x = (vfloat8::load(prim.bounds_vx_lower(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
+        const vfloat8 t_upper_x = (vfloat8::load(prim.bounds_vx_upper(N))-vfloat8(org2.x))*vfloat8(rcp_dir2.x);
+        const vfloat8 t_lower_y = (vfloat8::load(prim.bounds_vy_lower(N))-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
+        const vfloat8 t_upper_y = (vfloat8::load(prim.bounds_vy_upper(N))-vfloat8(org2.y))*vfloat8(rcp_dir2.y);
+        const vfloat8 t_lower_z = (vfloat8::load(prim.bounds_vz_lower(N))-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
+        const vfloat8 t_upper_z = (vfloat8::load(prim.bounds_vz_upper(N))-vfloat8(org2.z))*vfloat8(rcp_dir2.z);
+
+        const vfloat8 tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat8(ray.tnear()[k]));
+        const vfloat8 tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat8(ray.tfar[k]));
+        tNear_o = tNear;
+        return (vint8(step) < vint8(prim.N)) & (tNear <= tFar);
+#endif
+      }
+      
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+      {
+        vfloat8 tNear;
+        vbool8 valid = intersect(ray,k,prim,tNear);
+
+        const size_t N = prim.N;
+        size_t mask = movemask(valid);
+        while (mask)
+        {
+          const size_t i = __bscf(mask);
+          STAT3(normal.trav_prims,1,1,1);
+          const unsigned int geomID = prim.geomID(N);
+          const unsigned int primID = prim.primID(N)[i];
+          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
+
+          size_t mask1 = mask;
+          const size_t i1 = __bscf(mask1);
+          if (mask) {
+            const unsigned int primID1 = prim.primID(N)[i1];
+            geom->prefetchL1_vertices(geom->curve(primID1));
+            if (mask1) {
+              const size_t i2 = __bsf(mask1);
+              const unsigned int primID2 = prim.primID(N)[i2];
+              geom->prefetchL2_vertices(geom->curve(primID2));
+            }
+          }
+          
+          if (likely(geom->subtype == FLAT_CURVE))
+            pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,geomID,primID));
+          else 
+            pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,geomID,primID));
+
+          mask &= movemask(tNear <= vfloat8(ray.tfar[k]));
+        }
+      }
+      
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
+      {
+        size_t mask = movemask(valid_i);
+        while (mask) intersect(pre,ray,__bscf(mask),context,prim);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+      {
+        vfloat8 tNear;
+        vbool8 valid = intersect(ray,k,prim,tNear);
+
+        const size_t N = prim.N;
+        size_t mask = movemask(valid);
+        while (mask)
+        {
+          const size_t i = __bscf(mask);
+          STAT3(shadow.trav_prims,1,1,1);
+          const unsigned int geomID = prim.geomID(N);
+          const unsigned int primID = prim.primID(N)[i];
+          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
+
+          size_t mask1 = mask;
+          const size_t i1 = __bscf(mask1);
+          if (mask) {
+            const unsigned int primID1 = prim.primID(N)[i1];
+            geom->prefetchL1_vertices(geom->curve(primID1));
+            if (mask1) {
+              const size_t i2 = __bsf(mask1);
+              const unsigned int primID2 = prim.primID(N)[i2];
+              geom->prefetchL2_vertices(geom->curve(primID2));
+            }
+          }
+                     
+          if (likely(geom->subtype == FLAT_CURVE)) {
+            if (pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,geomID,primID)))
+              return true;
+          } else {
+            if (pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,geomID,primID)))
+              return true;
+          }
+
+          mask &= movemask(tNear <= vfloat8(ray.tfar[k]));
+        }
+        return false;
+      }
+      
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
+      {
+        vbool<K> valid_o = false;
+        size_t mask = movemask(valid_i);
+        while (mask) {
+          size_t k = __bscf(mask);
+          if (occluded(pre,ray,k,context,prim))
+            set(valid_o, k);
+        }
+        return valid_o;
+      }
+    };
   }
 }
