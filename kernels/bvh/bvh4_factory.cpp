@@ -1253,7 +1253,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBBezierNv(Scene* scene)
   {
-    BVH4* accel = new BVH4(BezierNv::type,scene);
+    BVH4* accel = new BVH4(BezierNv<4>::type,scene);
     Accel::Intersectors intersectors = BVH4BezierNvIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
@@ -1266,7 +1266,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBBezierNi(Scene* scene)
   {
-    BVH4* accel = new BVH4(BezierNi::type,scene); // FIXME:
+    BVH4* accel = new BVH4(BezierNi<4>::type,scene); // FIXME:
     Accel::Intersectors intersectors = BVH4BezierNiIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
@@ -1279,7 +1279,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBBezierNiMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(BezierNiMB::type,scene);
+    BVH4* accel = new BVH4(BezierNiMB<4>::type,scene);
     Accel::Intersectors intersectors = BVH4OBBBezierNiMBIntersectors_OBB(accel);
 
     Builder* builder = nullptr;

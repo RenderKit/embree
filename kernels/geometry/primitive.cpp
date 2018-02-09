@@ -43,20 +43,37 @@ namespace embree
 
   Bezier1v::Type Bezier1v::type;
 
-  /********************** BezierNv **************************/
-  
-  BezierNv::Type::Type ()
-    : PrimitiveType("bezierNv",sizeof(BezierNv),8) {}
-  
-  size_t BezierNv::Type::size(const char* This) const {
+  /********************** Bezier4v **************************/
+
+  template<>
+  Bezier4v::Type::Type ()
+    : PrimitiveType("bezier4v",sizeof(BezierNv<4>),4) {}
+
+  template<>
+  size_t Bezier4v::Type::size(const char* This) const {
     return *This;
   }
 
-  size_t BezierNv::Type::getBytes(const char* This) const {
-    return BezierNv::bytes(size(This));
+  template<>
+  size_t Bezier4v::Type::getBytes(const char* This) const {
+    return Bezier4v::bytes(size(This));
   }
 
-  BezierNv::Type BezierNv::type;
+  /********************** Bezier8v **************************/
+
+  template<>
+  Bezier8v::Type::Type ()
+    : PrimitiveType("bezier8v",sizeof(BezierNv<8>),8) {}
+
+  template<>
+  size_t Bezier8v::Type::size(const char* This) const {
+    return *This;
+  }
+
+  template<>
+  size_t Bezier8v::Type::getBytes(const char* This) const {
+    return Bezier8v::bytes(size(This));
+  }
 
   /********************** Bezier1i **************************/
 
@@ -69,35 +86,69 @@ namespace embree
 
   Bezier1i::Type Bezier1i::type;
 
-  /********************** BezierNi **************************/
-  
-  BezierNi::Type::Type ()
-    : PrimitiveType("bezierNi",sizeof(BezierNi),8) {}
-  
-  size_t BezierNi::Type::size(const char* This) const {
+  /********************** Bezier4i **************************/
+
+  template<>
+  Bezier4i::Type::Type ()
+    : PrimitiveType("bezier4i",sizeof(BezierNv<4>),4) {}
+
+  template<>
+  size_t Bezier4i::Type::size(const char* This) const {
     return *This;
   }
 
-  size_t BezierNi::Type::getBytes(const char* This) const {
-    return BezierNi::bytes(size(This));
+  template<>
+  size_t Bezier4i::Type::getBytes(const char* This) const {
+    return Bezier4i::bytes(size(This));
   }
 
-  BezierNi::Type BezierNi::type;
+  /********************** Bezier8i **************************/
 
-  /********************** BezierNiMB **************************/
-  
-  BezierNiMB::Type::Type ()
-    : PrimitiveType("bezierNiMB",sizeof(BezierNiMB),8) {}
-  
-  size_t BezierNiMB::Type::size(const char* This) const {
+  template<>
+  Bezier8i::Type::Type ()
+    : PrimitiveType("bezier8i",sizeof(BezierNv<8>),8) {}
+
+  template<>
+  size_t Bezier8i::Type::size(const char* This) const {
     return *This;
   }
 
-  size_t BezierNiMB::Type::getBytes(const char* This) const {
-    return BezierNiMB::bytes(size(This));
+  template<>
+  size_t Bezier8i::Type::getBytes(const char* This) const {
+    return Bezier8i::bytes(size(This));
   }
 
-  BezierNiMB::Type BezierNiMB::type;
+  /********************** Bezier4iMB **************************/
+
+  template<>
+  Bezier4iMB::Type::Type ()
+    : PrimitiveType("bezier4iMB",sizeof(Bezier4iMB),4) {}
+
+  template<>
+  size_t Bezier4iMB::Type::size(const char* This) const {
+    return *This;
+  }
+
+  template<>
+  size_t Bezier4iMB::Type::getBytes(const char* This) const {
+    return Bezier4iMB::bytes(size(This));
+  }
+
+  /********************** Bezier8iMB **************************/
+
+  template<>
+  Bezier8iMB::Type::Type ()
+    : PrimitiveType("bezier8iMB",sizeof(Bezier8iMB),8) {}
+
+  template<>
+  size_t Bezier8iMB::Type::size(const char* This) const {
+    return *This;
+  }
+
+  template<>
+  size_t Bezier8iMB::Type::getBytes(const char* This) const {
+    return Bezier8iMB::bytes(size(This));
+  }
 
   /********************** Line4i **************************/
 

@@ -23,14 +23,16 @@ namespace embree
 {
   namespace isa
   {
-    struct BezierNvIntersector1 : public BezierNiIntersector1
+    template<int M>
+      struct BezierNvIntersector1 : public BezierNiIntersector1<M>
     {
-      typedef BezierNv Primitive;
+      typedef BezierNv<M> Primitive;
+      using typename BezierNiIntersector1<M>::Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
       {
-        vfloat8 tNear;
-        vbool8 valid = BezierNiIntersector1::intersect(ray,prim,tNear);
+        vfloat<M> tNear;
+        vbool<M> valid = BezierNiIntersector1<M>::intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -63,14 +65,14 @@ namespace embree
           else 
             pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,geomID,primID));
 
-          mask &= movemask(tNear <= vfloat8(ray.tfar));
+          mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
-        vfloat8 tNear;
-        vbool8 valid = BezierNiIntersector1::intersect(ray,prim,tNear);
+        vfloat<M> tNear;
+        vbool<M> valid = BezierNiIntersector1<M>::intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -106,16 +108,16 @@ namespace embree
               return true;
           }
 
-          mask &= movemask(tNear <= vfloat8(ray.tfar));
+          mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
         return false;
       }
     };
 
-    template<int K>
-      struct BezierNvIntersectorK : public BezierNiIntersectorK<K>
+    template<int M, int K>
+      struct BezierNvIntersectorK : public BezierNiIntersectorK<M,K>
     {
-      typedef BezierNv Primitive;
+      typedef BezierNv<M> Primitive;
 
       struct Precalculations
       {
@@ -133,8 +135,8 @@ namespace embree
 
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
-        vfloat8 tNear;
-        vbool8 valid = BezierNiIntersectorK<K>::intersect(ray,k,prim,tNear);
+        vfloat<M> tNear;
+        vbool<M> valid = BezierNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -167,7 +169,7 @@ namespace embree
           else 
             pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,geomID,primID));
 
-          mask &= movemask(tNear <= vfloat8(ray.tfar[k]));
+          mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
       
@@ -179,8 +181,8 @@ namespace embree
       
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
-        vfloat8 tNear;
-        vbool8 valid = BezierNiIntersectorK<K>::intersect(ray,k,prim,tNear);
+        vfloat<M> tNear;
+        vbool<M> valid = BezierNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -216,7 +218,7 @@ namespace embree
               return true;
           }
 
-          mask &= movemask(tNear <= vfloat8(ray.tfar[k]));
+          mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
         return false;
       }

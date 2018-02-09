@@ -21,10 +21,9 @@
 
 namespace embree
 {
+  template<int M>
   struct BezierNiMB
   {
-    enum { M = 8 };
-    
     struct Type : public PrimitiveType {
       Type ();
       size_t size(const char* This) const;
@@ -338,4 +337,10 @@ namespace embree
     __forceinline       char* end(size_t N)       { return (char*)this+5+37*N+24; }
     __forceinline const char* end(size_t N) const { return (char*)this+5+37*N+24; }
   };
+
+  template<int M>
+    typename BezierNiMB<M>::Type BezierNiMB<M>::type;
+
+  typedef BezierNiMB<4> Bezier4iMB;
+  typedef BezierNiMB<8> Bezier8iMB;
 }

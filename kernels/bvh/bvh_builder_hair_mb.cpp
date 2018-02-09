@@ -105,11 +105,11 @@ namespace embree
     
     /*! entry functions for the builder */
     Builder* BVH4OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
-    Builder* BVH4OBBBezierNiMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,BezierNiMB>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBBezierNiMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,BezierNiMB<8>>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
-    Builder* BVH8OBBBezierNiMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,BezierNiMB>((BVH8*)bvh,scene); }
+    Builder* BVH8OBBBezierNiMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,BezierNiMB<8>>((BVH8*)bvh,scene); }
 #endif
 
   }

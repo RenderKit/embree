@@ -21,10 +21,12 @@
 
 namespace embree
 {
-  struct BezierNv : public BezierNi
+  template<int M>
+    struct BezierNv : public BezierNi<M>
   {
-    enum { M = 8 };
-    
+    using BezierNi<M>::N;
+    using BezierNi<M>::computeAlignedSpace;
+      
     struct Type : public PrimitiveType {
       Type ();
       size_t size(const char* This) const;
@@ -64,11 +66,11 @@ namespace embree
 
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
-    {  
+    {
 #if EMBREE_HAIR_LEAF_MODE == 0
       
       size_t end = min(begin+M,_end);
-      N = end-begin;
+      this->N = end-begin;
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
 
@@ -82,23 +84,23 @@ namespace embree
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(space,primID);
                 
         space.p -= bounds.lower;
-        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
+        this->space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
 
-        vx_x(N)[i] = space.l.vx.x;
-        vx_y(N)[i] = space.l.vx.y;
-        vx_z(N)[i] = space.l.vx.z;
+        this->vx_x(N)[i] = space.l.vx.x;
+        this->vx_y(N)[i] = space.l.vx.y;
+        this->vx_z(N)[i] = space.l.vx.z;
 
-        vy_x(N)[i] = space.l.vy.x;
-        vy_y(N)[i] = space.l.vy.y;
-        vy_z(N)[i] = space.l.vy.z;
+        this->vy_x(N)[i] = space.l.vy.x;
+        this->vy_y(N)[i] = space.l.vy.y;
+        this->vy_z(N)[i] = space.l.vy.z;
 
-        vz_x(N)[i] = space.l.vz.x;
-        vz_y(N)[i] = space.l.vz.y;
-        vz_z(N)[i] = space.l.vz.z;
+        this->vz_x(N)[i] = space.l.vz.x;
+        this->vz_y(N)[i] = space.l.vz.y;
+        this->vz_z(N)[i] = space.l.vz.z;
 
-        p_x(N)[i] = space.p.x;
-        p_y(N)[i] = space.p.y;
-        p_z(N)[i] = space.p.z;
+        this->p_x(N)[i] = space.p.x;
+        this->p_y(N)[i] = space.p.y;
+        this->p_z(N)[i] = space.p.z;
 
         this->primID(N)[i] = primID;
 
@@ -162,7 +164,7 @@ namespace embree
 #if EMBREE_HAIR_LEAF_MODE == 2
       
       size_t end = min(begin+M,_end);
-      N = end-begin;
+      this->N = end-begin;
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
 
@@ -193,23 +195,23 @@ namespace embree
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
-        bounds_vx_x(N)[i] = (short) space3.vx.x;
-        bounds_vx_y(N)[i] = (short) space3.vx.y;
-        bounds_vx_z(N)[i] = (short) space3.vx.z;
-        bounds_vx_lower(N)[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
-        bounds_vx_upper(N)[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
+        this->bounds_vx_x(N)[i] = (short) space3.vx.x;
+        this->bounds_vx_y(N)[i] = (short) space3.vx.y;
+        this->bounds_vx_z(N)[i] = (short) space3.vx.z;
+        this->bounds_vx_lower(N)[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
+        this->bounds_vx_upper(N)[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
 
-        bounds_vy_x(N)[i] = (short) space3.vy.x;
-        bounds_vy_y(N)[i] = (short) space3.vy.y;
-        bounds_vy_z(N)[i] = (short) space3.vy.z;
-        bounds_vy_lower(N)[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
-        bounds_vy_upper(N)[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
+        this->bounds_vy_x(N)[i] = (short) space3.vy.x;
+        this->bounds_vy_y(N)[i] = (short) space3.vy.y;
+        this->bounds_vy_z(N)[i] = (short) space3.vy.z;
+        this->bounds_vy_lower(N)[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
+        this->bounds_vy_upper(N)[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
 
-        bounds_vz_x(N)[i] = (short) space3.vz.x;
-        bounds_vz_y(N)[i] = (short) space3.vz.y;
-        bounds_vz_z(N)[i] = (short) space3.vz.z;
-        bounds_vz_lower(N)[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
-        bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
+        this->bounds_vz_x(N)[i] = (short) space3.vz.x;
+        this->bounds_vz_y(N)[i] = (short) space3.vz.y;
+        this->bounds_vz_z(N)[i] = (short) space3.vz.z;
+        this->bounds_vz_lower(N)[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
+        this->bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
                
         this->primID(N)[i] = primID;
 
@@ -240,7 +242,13 @@ namespace embree
     
   public:
     unsigned char data[4*16*M];
-    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)BezierNi::end(N)+4*i; }
-    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)BezierNi::end(N)+4*i; }
+    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)BezierNi<M>::end(N)+4*i; }
+    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)BezierNi<M>::end(N)+4*i; }
   };
+
+  template<int M>
+    typename BezierNv<M>::Type BezierNv<M>::type;
+
+  typedef BezierNv<4> Bezier4v;
+  typedef BezierNv<8> Bezier8v;
 }

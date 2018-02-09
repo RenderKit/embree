@@ -1002,7 +1002,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8OBBBezierNv(Scene* scene)
   {
-    BVH8* accel = new BVH8(BezierNv::type,scene);
+    BVH8* accel = new BVH8(BezierNv<8>::type,scene);
     Accel::Intersectors intersectors = BVH8BezierNvIntersectors_OBB(accel);
     Builder* builder = BVH8BezierNvBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -1010,7 +1010,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8OBBBezierNi(Scene* scene)
   {
-    BVH8* accel = new BVH8(BezierNi::type,scene);
+    BVH8* accel = new BVH8(BezierNi<8>::type,scene);
     Accel::Intersectors intersectors = BVH8BezierNiIntersectors_OBB(accel);
     Builder* builder = BVH8BezierNiBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -1018,7 +1018,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8OBBBezierNiMB(Scene* scene)
   {
-    BVH8* accel = new BVH8(BezierNiMB::type,scene);
+    BVH8* accel = new BVH8(BezierNiMB<8>::type,scene);
     Accel::Intersectors intersectors = BVH8OBBBezierNiMBIntersectors_OBB(accel);
 
     Builder* builder = nullptr;

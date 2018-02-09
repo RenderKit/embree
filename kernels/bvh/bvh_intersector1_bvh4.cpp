@@ -38,9 +38,9 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBBezier1iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
     
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4BezierNiIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNiIntersector1> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4BezierNvIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNvIntersector1> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBBezierNiMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<BezierNiMBIntersector1> >));    
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4BezierNiIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNiIntersector1<4>> >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4BezierNvIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNvIntersector1<4>> >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBBezierNiMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<BezierNiMBIntersector1<4>> >));    
 
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_TN_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1Moeller<4 COMMA 4 COMMA true> > >));
 

@@ -53,9 +53,9 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBBezier1iMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
 
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4BezierNvIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA BezierNvIntersectorK<16> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4BezierNiIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA BezierNiIntersectorK<16> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBBezierNiMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA BezierNiIntersectorKMB<16> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4BezierNvIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA BezierNvIntersectorK<4 COMMA 16> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4BezierNiIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA BezierNiIntersectorK<4 COMMA 16> > >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBBezierNiMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA BezierNiIntersectorKMB<4 COMMA 16> > >));
 
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1Intersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1EagerIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector16>));
