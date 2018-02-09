@@ -19,6 +19,7 @@
 #include "bezier1i.h"
 #include "bezierNv.h"
 #include "bezierNi.h"
+#include "bezierNi_mb.h"
 #include "linei.h"
 #include "triangle.h"
 #include "trianglev.h"
@@ -82,6 +83,21 @@ namespace embree
   }
 
   BezierNi::Type BezierNi::type;
+
+  /********************** BezierNiMB **************************/
+  
+  BezierNiMB::Type::Type ()
+    : PrimitiveType("bezierNiMB",sizeof(BezierNiMB),8) {}
+  
+  size_t BezierNiMB::Type::size(const char* This) const {
+    return *This;
+  }
+
+  size_t BezierNiMB::Type::getBytes(const char* This) const {
+    return BezierNiMB::bytes(size(This));
+  }
+
+  BezierNiMB::Type BezierNiMB::type;
 
   /********************** Line4i **************************/
 
