@@ -42,19 +42,9 @@ namespace embree
 
     static __forceinline size_t bytes(size_t N)
     {
-#if EMBREE_HAIR_LEAF_MODE == 0
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNiMB) == 5+13*4*M, "internal data layout issue");
-      return f*sizeof(BezierNiMB) + (r!=0)*(5+13*4*r + 4*max(0,8-3*(int)N));
-#elif EMBREE_HAIR_LEAF_MODE == 1
-      const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNiMB) == 56+10*M, "internal data layout issue");
-      return f*sizeof(BezierNiMB) + (r!=0)*(56 + 10*r);
-#elif EMBREE_HAIR_LEAF_MODE == 2
-      const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNiMB) == 21+25*M, "internal data layout issue");
-      return f*sizeof(BezierNiMB) + (r!=0)*(21 + 25*r);
-#endif
+      static_assert(sizeof(BezierNiMB) == 5+37*M+24, "internal data layout issue");
+      return f*sizeof(BezierNiMB) + (r!=0)*(5+37*r+24);
     }
 
   public:
@@ -85,10 +75,10 @@ namespace embree
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
         const unsigned int vertexID = mesh->curve(primID);
-        const Vec3fa a0 = (mesh->vertex(vertexID+0,t)-ofs)*scale;
-        const Vec3fa a1 = (mesh->vertex(vertexID+1,t)-ofs)*scale;
-        const Vec3fa a2 = (mesh->vertex(vertexID+2,t)-ofs)*scale;
-        const Vec3fa a3 = (mesh->vertex(vertexID+3,t)-ofs)*scale;
+        const Vec3fa a0 = (mesh->vertex(vertexID+0,t)-offset)*scale;
+        const Vec3fa a1 = (mesh->vertex(vertexID+1,t)-offset)*scale;
+        const Vec3fa a2 = (mesh->vertex(vertexID+2,t)-offset)*scale;
+        const Vec3fa a3 = (mesh->vertex(vertexID+3,t)-offset)*scale;
         const Curve3fa curve(a0,a1,a2,a3);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
@@ -104,7 +94,7 @@ namespace embree
     }
 
     /*! fill curve from curve list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t _end, Scene* scene, const BBox1f time_range)
     {
       size_t end = min(begin+M,_end);
       N = end-begin;
@@ -115,26 +105,28 @@ namespace embree
       LBBox3fa lbounds = empty;
       for (size_t i=0; i<N; i++)
       {
-        const PrimRef& prim = prims[begin+i];
+        const PrimRefMB& prim = prims[begin+i];
         const unsigned int geomID = prim.geomID(); assert(geomID == geomID0);
         const unsigned int primID = prim.primID();
         lbounds.extend(scene->get<NativeCurves>(geomID)->linearBounds(primID,time_range));
       }
-      LBBox3fa bounds = lbounds.bounds();
+      BBox3fa bounds = lbounds.bounds();
 
       /* calculate offset and scale */
       Vec3fa loffset = bounds.lower;
       float lscale = reduce_min(256.0f/(bounds.size()*sqrt(3.0f)));
       *this->offset(N) = loffset;
       *this->scale(N) = lscale;
+      this->time_offset(N) = time_range.lower;
+      this->time_scale(N) = 1.0f/time_range.size();
       
       /* encode all primitives */
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
-        const PrimRef& prim = prims[begin];
+        const PrimRefMB& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),loffset,lscale,time_range);
+        const LinearSpace3fa space2 = computeAlignedSpaceMB(scene,prims,range<size_t>(begin),loffset,lscale,time_range);
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const LBBox3fa bounds = scene->get<NativeCurves>(geomID)->linearBounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID,time_range);
@@ -146,7 +138,12 @@ namespace embree
         bounds_vx_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.x),-32767.0f,32767.0f);
         bounds_vx_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.x),-32767.0f,32767.0f);
         bounds_vx_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.x),-32767.0f,32767.0f);
+        /*const short vx_lower1  = (short) clamp(floor(bounds.bounds1.lower.x),-32767.0f,32767.0f);
+        const short vx_upper1  = (short) clamp(ceil (bounds.bounds1.upper.x),-32767.0f,32767.0f);
+        bounds_vx_dlower(N)[i] = (unsigned short) (vx_lower1-bounds_vx_lower0(N)[i]);
+        bounds_vx_dupper(N)[i] = (unsigned short) (vx_upper1-bounds_vx_upper0(N)[i]);*/
 
+        
         bounds_vy_x(N)[i] = (short) space3.vy.x;
         bounds_vy_y(N)[i] = (short) space3.vy.y;
         bounds_vy_z(N)[i] = (short) space3.vy.z;
@@ -154,6 +151,10 @@ namespace embree
         bounds_vy_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.y),-32767.0f,32767.0f);
         bounds_vy_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.y),-32767.0f,32767.0f);
         bounds_vy_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.y),-32767.0f,32767.0f);
+        /*const short vy_lower1  = (short) clamp(floor(bounds.bounds1.lower.y),-32767.0f,32767.0f);
+        const short vy_upper1  = (short) clamp(ceil (bounds.bounds1.upper.y),-32767.0f,32767.0f);
+        bounds_vy_dlower(N)[i] = (unsigned short) (vy_lower1-bounds_vy_lower0(N)[i]);
+        bounds_vy_dupper(N)[i] = (unsigned short) (vy_upper1-bounds_vy_upper0(N)[i]);*/
 
         bounds_vz_x(N)[i] = (short) space3.vz.x;
         bounds_vz_y(N)[i] = (short) space3.vz.y;
@@ -162,20 +163,15 @@ namespace embree
         bounds_vz_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.z),-32767.0f,32767.0f);
         bounds_vz_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.z),-32767.0f,32767.0f);
         bounds_vz_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.z),-32767.0f,32767.0f);
+        /*const short vz_lower1  = (short) clamp(floor(bounds.bounds1.lower.z),-32767.0f,32767.0f);
+        const short vz_upper1  = (short) clamp(ceil (bounds.bounds1.upper.z),-32767.0f,32767.0f);
+        bounds_vz_dlower(N)[i] = (unsigned short) (vz_lower1-bounds_vz_lower0(N)[i]);
+        bounds_vz_dupper(N)[i] = (unsigned short) (vz_upper1-bounds_vz_upper0(N)[i]);*/
                
         this->primID(N)[i] = primID;
       }
       
-      const PrimRefMB& prim = prims[i];
-      i++;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
-      const NativeCurves* curves = scene->get<NativeCurves>(geomID);
-      const unsigned vertexID = curves->curve(primID);
-      /* encode the RTCCurveFlags into the two most significant bits */
-      const unsigned int mask = curves->getStartEndBitMask(primID);
-      new (this) Bezier1i(vertexID,geomID | mask,primID);
-      return curves->linearBounds(primID,time_range);
+      return lbounds;
     }
 
     template<typename BVH, typename SetMB, typename Allocator>
@@ -183,8 +179,9 @@ namespace embree
     {
       size_t start = prims.object_range.begin();
       size_t end   = prims.object_range.end();
-      size_t items = prims.object_range.size();
-      Bezier1i* accel = (Bezier1i*) alloc.malloc1(items*sizeof(Bezier1i));
+      size_t items = BezierNiMB::blocks(prims.object_range.size());
+      size_t numbytes = BezierNiMB::bytes(prims.object_range.size());
+      BezierNiMB* accel = (BezierNiMB*) alloc.malloc1(numbytes,BVH::byteAlignment);
       const typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       
       LBBox3fa bounds = empty;
@@ -199,7 +196,7 @@ namespace embree
     
     // 27.6 - 46 bytes per primitive
     unsigned char N;
-    unsigned char data[4+25*M+16];
+    unsigned char data[4+37*M+24];
 
     /*
     struct Layout
@@ -210,23 +207,32 @@ namespace embree
       char bounds_vx_x[N];
       char bounds_vx_y[N];
       char bounds_vx_z[N];
-      short bounds_vx_lower[N];
-      short bounds_vx_upper[N];
+      short bounds_vx_lower0[N];
+      short bounds_vx_upper0[N];
+      unsigned short bounds_vx_dlower[N];
+      unsigned short bounds_vx_dupper[N];
       
       char bounds_vy_x[N];
       char bounds_vy_y[N];
       char bounds_vy_z[N];
-      short bounds_vy_lower[N];
-      short bounds_vy_upper[N];
+      short bounds_vy_lower0[N];
+      short bounds_vy_upper0[N];
+      unsigned short bounds_vy_dlower[N];
+      unsigned short bounds_vy_dupper[N];
       
       char bounds_vz_x[N];
       char bounds_vz_y[N];
       char bounds_vz_z[N];
-      short bounds_vz_lower[N];
-      short bounds_vz_upper[N];
+      short bounds_vz_lower0[N];
+      short bounds_vz_upper0[N];
+      unsigned short bounds_vz_dlower[N];
+      unsigned short bounds_vz_dupper[N];
       
       Vec3f offset;
       float scale;
+
+      float time_offset;
+      float time_scale;
     };
     */
     
@@ -245,49 +251,91 @@ namespace embree
     __forceinline       char* bounds_vx_z(size_t N)       { return (char*)((char*)this+5+6*N); }
     __forceinline const char* bounds_vx_z(size_t N) const { return (char*)((char*)this+5+6*N); }
     
-    __forceinline       short* bounds_vx_lower(size_t N)       { return (short*)((char*)this+5+7*N); }
-    __forceinline const short* bounds_vx_lower(size_t N) const { return (short*)((char*)this+5+7*N); }
+    __forceinline       short* bounds_vx_lower0(size_t N)       { return (short*)((char*)this+5+7*N); }
+    __forceinline const short* bounds_vx_lower0(size_t N) const { return (short*)((char*)this+5+7*N); }
     
-    __forceinline       short* bounds_vx_upper(size_t N)       { return (short*)((char*)this+5+9*N); }
-    __forceinline const short* bounds_vx_upper(size_t N) const { return (short*)((char*)this+5+9*N); }
-    
-    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+5+11*N); }
-    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+5+11*N); }
-    
-    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+5+12*N); }
-    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+5+12*N); }
-    
-    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+5+13*N); }
-    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+5+13*N); }
-    
-    __forceinline       short* bounds_vy_lower(size_t N)       { return (short*)((char*)this+5+14*N); }
-    __forceinline const short* bounds_vy_lower(size_t N) const { return (short*)((char*)this+5+14*N); }
-    
-    __forceinline       short* bounds_vy_upper(size_t N)       { return (short*)((char*)this+5+16*N); }
-    __forceinline const short* bounds_vy_upper(size_t N) const { return (short*)((char*)this+5+16*N); }
-    
-    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+5+18*N); }
-    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+5+18*N); }
-    
-    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+5+19*N); }
-    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+5+19*N); }
-    
-    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+5+20*N); }
-    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+5+20*N); }
-    
-    __forceinline       short* bounds_vz_lower(size_t N)       { return (short*)((char*)this+5+21*N); }
-    __forceinline const short* bounds_vz_lower(size_t N) const { return (short*)((char*)this+5+21*N); }
-    
-    __forceinline       short* bounds_vz_upper(size_t N)       { return (short*)((char*)this+5+23*N); }
-    __forceinline const short* bounds_vz_upper(size_t N) const { return (short*)((char*)this+5+23*N); }
-    
-    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+5+25*N); }
-    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+5+25*N); }
-    
-    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+5+25*N+12); }
-    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+5+25*N+12); }
+    __forceinline       short* bounds_vx_upper0(size_t N)       { return (short*)((char*)this+5+9*N); }
+    __forceinline const short* bounds_vx_upper0(size_t N) const { return (short*)((char*)this+5+9*N); }
 
-    __forceinline       char* end(size_t N)       { return (char*)this+5+25*N+16; }
-    __forceinline const char* end(size_t N) const { return (char*)this+5+25*N+16; }
+    __forceinline       short* bounds_vx_lower1(size_t N)       { return (short*)((char*)this+5+11*N); }
+    __forceinline const short* bounds_vx_lower1(size_t N) const { return (short*)((char*)this+5+11*N); }
+    
+    __forceinline       short* bounds_vx_upper1(size_t N)       { return (short*)((char*)this+5+13*N); }
+    __forceinline const short* bounds_vx_upper1(size_t N) const { return (short*)((char*)this+5+13*N); }
+
+    __forceinline       short* bounds_vx_dlower(size_t N)       { return (short*)((char*)this+5+11*N); }
+    __forceinline const short* bounds_vx_dlower(size_t N) const { return (short*)((char*)this+5+11*N); }
+    
+    __forceinline       short* bounds_vx_dupper(size_t N)       { return (short*)((char*)this+5+13*N); }
+    __forceinline const short* bounds_vx_dupper(size_t N) const { return (short*)((char*)this+5+13*N); }
+    
+    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+5+15*N); }
+    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+5+15*N); }
+    
+    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+5+16*N); }
+    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+5+16*N); }
+    
+    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+5+17*N); }
+    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+5+17*N); }
+    
+    __forceinline       short* bounds_vy_lower0(size_t N)       { return (short*)((char*)this+5+18*N); }
+    __forceinline const short* bounds_vy_lower0(size_t N) const { return (short*)((char*)this+5+18*N); }
+    
+    __forceinline       short* bounds_vy_upper0(size_t N)       { return (short*)((char*)this+5+20*N); }
+    __forceinline const short* bounds_vy_upper0(size_t N) const { return (short*)((char*)this+5+20*N); }
+
+    __forceinline       short* bounds_vy_lower1(size_t N)       { return (short*)((char*)this+5+22*N); }
+    __forceinline const short* bounds_vy_lower1(size_t N) const { return (short*)((char*)this+5+22*N); }
+    
+    __forceinline       short* bounds_vy_upper1(size_t N)       { return (short*)((char*)this+5+24*N); }
+    __forceinline const short* bounds_vy_upper1(size_t N) const { return (short*)((char*)this+5+24*N); }
+    
+    __forceinline       short* bounds_vy_dlower(size_t N)       { return (short*)((char*)this+5+22*N); }
+    __forceinline const short* bounds_vy_dlower(size_t N) const { return (short*)((char*)this+5+22*N); }
+    
+    __forceinline       short* bounds_vy_dupper(size_t N)       { return (short*)((char*)this+5+24*N); }
+    __forceinline const short* bounds_vy_dupper(size_t N) const { return (short*)((char*)this+5+24*N); }
+    
+    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+5+26*N); }
+    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+5+26*N); }
+    
+    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+5+27*N); }
+    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+5+27*N); }
+    
+    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+5+28*N); }
+    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+5+28*N); }
+    
+    __forceinline       short* bounds_vz_lower0(size_t N)       { return (short*)((char*)this+5+29*N); }
+    __forceinline const short* bounds_vz_lower0(size_t N) const { return (short*)((char*)this+5+29*N); }
+    
+    __forceinline       short* bounds_vz_upper0(size_t N)       { return (short*)((char*)this+5+31*N); }
+    __forceinline const short* bounds_vz_upper0(size_t N) const { return (short*)((char*)this+5+31*N); }
+
+    __forceinline       short* bounds_vz_lower1(size_t N)       { return (short*)((char*)this+5+33*N); }
+    __forceinline const short* bounds_vz_lower1(size_t N) const { return (short*)((char*)this+5+33*N); }
+    
+    __forceinline       short* bounds_vz_upper1(size_t N)       { return (short*)((char*)this+5+35*N); }
+    __forceinline const short* bounds_vz_upper1(size_t N) const { return (short*)((char*)this+5+35*N); }
+
+    __forceinline       short* bounds_vz_dlower(size_t N)       { return (short*)((char*)this+5+33*N); }
+    __forceinline const short* bounds_vz_dlower(size_t N) const { return (short*)((char*)this+5+33*N); }
+    
+    __forceinline       short* bounds_vz_dupper(size_t N)       { return (short*)((char*)this+5+35*N); }
+    __forceinline const short* bounds_vz_dupper(size_t N) const { return (short*)((char*)this+5+35*N); }
+    
+    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+5+37*N); }
+    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+5+37*N); }
+    
+    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+5+37*N+12); }
+    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+5+37*N+12); }
+
+    __forceinline       float& time_offset(size_t N)       { return *(float*)((char*)this+5+37*N+16); }
+    __forceinline const float& time_offset(size_t N) const { return *(float*)((char*)this+5+37*N+16); }
+    
+    __forceinline       float& time_scale(size_t N)       { return *(float*)((char*)this+5+37*N+20); }
+    __forceinline const float& time_scale(size_t N) const { return *(float*)((char*)this+5+37*N+20); }
+
+    __forceinline       char* end(size_t N)       { return (char*)this+5+37*N+24; }
+    __forceinline const char* end(size_t N) const { return (char*)this+5+37*N+24; }
   };
 }

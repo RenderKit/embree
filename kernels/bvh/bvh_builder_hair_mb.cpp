@@ -18,8 +18,8 @@
 #include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
-#include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
+#include "../geometry/bezierNi_mb.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
 
@@ -67,9 +67,9 @@ namespace embree
         BVHBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = 1;
-        settings.minLeafSize = 1;
-        settings.maxLeafSize = BVH::maxLeafBlocks;
+        settings.logBlockSize = __bsf(Primitive::max_size());
+        settings.minLeafSize = Primitive::max_size();
+        settings.maxLeafSize = Primitive::max_size()*BVH::maxLeafBlocks;
 
         /* creates a leaf node */
         auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
@@ -104,7 +104,8 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    //Builder* BVH4OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,BezierNiMB>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }

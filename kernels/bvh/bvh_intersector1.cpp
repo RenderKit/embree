@@ -29,6 +29,7 @@
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/bezierNv_intersector.h"
 #include "../geometry/bezierNi_intersector.h"
+#include "../geometry/bezierNi_mb_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 #include "../geometry/object_intersector.h"

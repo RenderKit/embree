@@ -269,6 +269,11 @@ namespace embree
       return LBBox3fa([&] (size_t itime) { return bounds(space, primID, itime); }, time_range, fnumTimeSegments);
     }
 
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      return LBBox3fa([&] (size_t itime) { return bounds(ofs, scale, r_scale0, space, primID, itime); }, time_range, fnumTimeSegments);
+    }
+
     /*! calculates the build bounds of the i'th primitive, if it's valid */
     __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
     {
