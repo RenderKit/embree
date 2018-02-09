@@ -36,8 +36,6 @@ renderTileFunc renderTile;
 
 extern "C" void tutorial_error_handler(void* userPtr, RTCError code, const char* str);
 
-//extern "C" size_t leaf;
-
 /* error reporting function */
 void error_handler(void* userPtr, RTCError code, const char* str) {
   tutorial_error_handler(userPtr,code,str);
@@ -172,7 +170,6 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  //*(size_t*)&ray.id = leaf;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -182,14 +179,7 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f,0.0f,1.0f);
-  //else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
-  else {
-    size_t leafid = *(size_t*)&ray.u;
-    float u = ((leafid >> 4)&255)/255.0f;
-    float v = ((leafid >> 12)&255)/255.0f;
-    float w = ((leafid >> 20)&255)/255.0f;
-    return Vec3fa(u,v,w);
-  }
+  else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
 void renderTileUV(int taskIndex,
@@ -372,7 +362,6 @@ Vec3fa renderPixelGeomID(float x, float y, const ISPCCamera& camera, RayStats& s
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  //*(size_t*)&ray.id = leaf;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -428,7 +417,6 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera, RaySt
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  //*(size_t*)&ray.id = leaf;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -752,7 +740,6 @@ extern "C" bool device_pick(const float x,
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time() = g_debug;
-  //*(size_t*)&ray.id = 0;
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -766,7 +753,6 @@ extern "C" bool device_pick(const float x,
   }
   else {
     hitPos = ray.org + ray.tfar*ray.dir;
-    //leaf = *(size_t*)&ray.u;
     return true;
   }
 }
