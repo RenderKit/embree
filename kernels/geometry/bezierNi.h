@@ -51,7 +51,7 @@ namespace embree
     /*! Default constructor. */
     __forceinline BezierNi () {}
 
-    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set, const Vec3fa& offset = zero, const float scale = 1.0f)
+    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set)
     {
       Vec3fa axisz(0,0,1);
       Vec3fa axisy(0,1,0);
@@ -66,10 +66,10 @@ namespace embree
         if (geomprimID >= bestGeomPrimID) continue;
         NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
         const unsigned vtxID = mesh->curve(primID);
-        const Vec3fa v0 = (mesh->vertex(vtxID+0)-offset)*scale;
-        const Vec3fa v1 = (mesh->vertex(vtxID+1)-offset)*scale;
-        const Vec3fa v2 = (mesh->vertex(vtxID+2)-offset)*scale;
-        const Vec3fa v3 = (mesh->vertex(vtxID+3)-offset)*scale;
+        const Vec3fa v0 = mesh->vertex(vtxID+0);
+        const Vec3fa v1 = mesh->vertex(vtxID+1);
+        const Vec3fa v2 = mesh->vertex(vtxID+2);
+        const Vec3fa v3 = mesh->vertex(vtxID+3);
         const Curve3fa curve(v0,v1,v2,v3);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
@@ -122,7 +122,7 @@ namespace embree
         const PrimRef& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin),loffset,lscale);
+        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin));
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);

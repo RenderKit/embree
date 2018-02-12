@@ -51,9 +51,7 @@ namespace embree
     /*! Default constructor. */
     __forceinline BezierNiMB () {}
 
-    const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const PrimRefMB* prims, const range<size_t>& object_range,
-                                               const Vec3fa& offset, const float scale, // offset and scale is not required here!?
-                                               const BBox1f time_range)
+    const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const PrimRefMB* prims, const range<size_t>& object_range, const BBox1f time_range)
     {
       Vec3fa axis0(0,0,1);
       uint64_t bestGeomPrimID = -1;
@@ -74,10 +72,10 @@ namespace embree
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
         const unsigned int vertexID = mesh->curve(primID);
-        const Vec3fa a0 = (mesh->vertex(vertexID+0,t)-offset)*scale;
-        const Vec3fa a1 = (mesh->vertex(vertexID+1,t)-offset)*scale;
-        const Vec3fa a2 = (mesh->vertex(vertexID+2,t)-offset)*scale;
-        const Vec3fa a3 = (mesh->vertex(vertexID+3,t)-offset)*scale;
+        const Vec3fa a0 = mesh->vertex(vertexID+0,t);
+        const Vec3fa a1 = mesh->vertex(vertexID+1,t);
+        const Vec3fa a2 = mesh->vertex(vertexID+2,t);
+        const Vec3fa a3 = mesh->vertex(vertexID+3,t);
         const Curve3fa curve(a0,a1,a2,a3);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
@@ -125,7 +123,7 @@ namespace embree
         const PrimRefMB& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpaceMB(scene,prims,range<size_t>(begin),loffset,lscale,time_range);
+        const LinearSpace3fa space2 = computeAlignedSpaceMB(scene,prims,range<size_t>(begin),time_range);
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const LBBox3fa bounds = scene->get<NativeCurves>(geomID)->linearBounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID,time_range);
