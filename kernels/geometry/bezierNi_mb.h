@@ -135,11 +135,8 @@ namespace embree
         bounds_vx_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.x),-32767.0f,32767.0f);
         bounds_vx_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.x),-32767.0f,32767.0f);
         bounds_vx_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.x),-32767.0f,32767.0f);
-        /*const short vx_lower1  = (short) clamp(floor(bounds.bounds1.lower.x),-32767.0f,32767.0f);
-        const short vx_upper1  = (short) clamp(ceil (bounds.bounds1.upper.x),-32767.0f,32767.0f);
-        bounds_vx_dlower(N)[i] = (unsigned short) (vx_lower1-bounds_vx_lower0(N)[i]);
-        bounds_vx_dupper(N)[i] = (unsigned short) (vx_upper1-bounds_vx_upper0(N)[i]);*/
-
+        assert(-32767.0f <= floor(bounds.lower.x) && floor(bounds.lower.x) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.upper.x) && ceil (bounds.upper.x) <= 32767.0f);
         
         bounds_vy_x(N)[i] = (short) space3.vy.x;
         bounds_vy_y(N)[i] = (short) space3.vy.y;
@@ -148,10 +145,8 @@ namespace embree
         bounds_vy_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.y),-32767.0f,32767.0f);
         bounds_vy_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.y),-32767.0f,32767.0f);
         bounds_vy_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.y),-32767.0f,32767.0f);
-        /*const short vy_lower1  = (short) clamp(floor(bounds.bounds1.lower.y),-32767.0f,32767.0f);
-        const short vy_upper1  = (short) clamp(ceil (bounds.bounds1.upper.y),-32767.0f,32767.0f);
-        bounds_vy_dlower(N)[i] = (unsigned short) (vy_lower1-bounds_vy_lower0(N)[i]);
-        bounds_vy_dupper(N)[i] = (unsigned short) (vy_upper1-bounds_vy_upper0(N)[i]);*/
+        assert(-32767.0f <= floor(bounds.lower.y) && floor(bounds.lower.y) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.upper.y) && ceil (bounds.upper.y) <= 32767.0f);
 
         bounds_vz_x(N)[i] = (short) space3.vz.x;
         bounds_vz_y(N)[i] = (short) space3.vz.y;
@@ -160,10 +155,8 @@ namespace embree
         bounds_vz_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.z),-32767.0f,32767.0f);
         bounds_vz_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.z),-32767.0f,32767.0f);
         bounds_vz_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.z),-32767.0f,32767.0f);
-        /*const short vz_lower1  = (short) clamp(floor(bounds.bounds1.lower.z),-32767.0f,32767.0f);
-        const short vz_upper1  = (short) clamp(ceil (bounds.bounds1.upper.z),-32767.0f,32767.0f);
-        bounds_vz_dlower(N)[i] = (unsigned short) (vz_lower1-bounds_vz_lower0(N)[i]);
-        bounds_vz_dupper(N)[i] = (unsigned short) (vz_upper1-bounds_vz_upper0(N)[i]);*/
+        assert(-32767.0f <= floor(bounds.lower.z) && floor(bounds.lower.z) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.upper.z) && ceil (bounds.upper.z) <= 32767.0f);
                
         this->primID(N)[i] = primID;
       }
@@ -260,12 +253,6 @@ namespace embree
     __forceinline       short* bounds_vx_upper1(size_t N)       { return (short*)((char*)this+5+13*N); }
     __forceinline const short* bounds_vx_upper1(size_t N) const { return (short*)((char*)this+5+13*N); }
 
-    __forceinline       short* bounds_vx_dlower(size_t N)       { return (short*)((char*)this+5+11*N); }
-    __forceinline const short* bounds_vx_dlower(size_t N) const { return (short*)((char*)this+5+11*N); }
-    
-    __forceinline       short* bounds_vx_dupper(size_t N)       { return (short*)((char*)this+5+13*N); }
-    __forceinline const short* bounds_vx_dupper(size_t N) const { return (short*)((char*)this+5+13*N); }
-    
     __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+5+15*N); }
     __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+5+15*N); }
     
@@ -286,12 +273,6 @@ namespace embree
     
     __forceinline       short* bounds_vy_upper1(size_t N)       { return (short*)((char*)this+5+24*N); }
     __forceinline const short* bounds_vy_upper1(size_t N) const { return (short*)((char*)this+5+24*N); }
-    
-    __forceinline       short* bounds_vy_dlower(size_t N)       { return (short*)((char*)this+5+22*N); }
-    __forceinline const short* bounds_vy_dlower(size_t N) const { return (short*)((char*)this+5+22*N); }
-    
-    __forceinline       short* bounds_vy_dupper(size_t N)       { return (short*)((char*)this+5+24*N); }
-    __forceinline const short* bounds_vy_dupper(size_t N) const { return (short*)((char*)this+5+24*N); }
     
     __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+5+26*N); }
     __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+5+26*N); }
@@ -314,12 +295,6 @@ namespace embree
     __forceinline       short* bounds_vz_upper1(size_t N)       { return (short*)((char*)this+5+35*N); }
     __forceinline const short* bounds_vz_upper1(size_t N) const { return (short*)((char*)this+5+35*N); }
 
-    __forceinline       short* bounds_vz_dlower(size_t N)       { return (short*)((char*)this+5+33*N); }
-    __forceinline const short* bounds_vz_dlower(size_t N) const { return (short*)((char*)this+5+33*N); }
-    
-    __forceinline       short* bounds_vz_dupper(size_t N)       { return (short*)((char*)this+5+35*N); }
-    __forceinline const short* bounds_vz_dupper(size_t N) const { return (short*)((char*)this+5+35*N); }
-    
     __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+5+37*N); }
     __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+5+37*N); }
     
