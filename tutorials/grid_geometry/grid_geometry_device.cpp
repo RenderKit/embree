@@ -20,8 +20,8 @@ namespace embree {
 
 /* configuration */
 #define NUM_GRIDS 1024
-#define GRID_RESOLUTION_X 2
-#define GRID_RESOLUTION_Y 2
+#define GRID_RESOLUTION_X 10
+#define GRID_RESOLUTION_Y 10
 
 
 #define EDGE_LEVEL 256.0f
@@ -189,9 +189,10 @@ unsigned int addGridPlane (RTCScene scene_i)
 
   RTCGrid* grids = (RTCGrid*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(RTCGrid),NUM_GRIDS);
 
-  PRINT(sizeof(Vertex) * numVertices);
+  PRINT(sizeof(Vec3f));
+  PRINT(sizeof(Vec3f) * numVertices);
   PRINT(sizeof(RTCGrid) * NUM_GRIDS);
-  PRINT(sizeof(Vertex) * numVertices + sizeof(RTCGrid) * NUM_GRIDS);
+  PRINT(sizeof(Vec3f) * numVertices + sizeof(RTCGrid) * NUM_GRIDS);
 
   size_t triangles = 0;
   unsigned int index = 0;
