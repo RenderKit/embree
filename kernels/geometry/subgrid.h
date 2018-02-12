@@ -98,11 +98,9 @@ namespace embree
                                   Vec3vf4& p1,
                                   Vec3vf4& p2,
                                   Vec3vf4& p3,
-                                  const Scene *const scene) const
+                                  const GridMesh* const mesh,
+                                  const GridMesh::Grid &g) const
         {
-          const GridMesh* mesh     = scene->get<GridMesh>(geomID());
-          const GridMesh::Grid &g  = mesh->grid(primID());
-
           /* first quad always valid */
           const size_t vtxID00 = g.startVtxID + x + y * g.lineVtxOffset;
           const size_t vtxID01 = vtxID00 + 1;
@@ -138,6 +136,17 @@ namespace embree
           
         }
 
+        /* Gather the quads */
+        __forceinline void gather(Vec3vf4& p0,
+                                  Vec3vf4& p1,
+                                  Vec3vf4& p2,
+                                  Vec3vf4& p3,
+                                  const Scene *const scene) const
+        {
+          const GridMesh* const mesh = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g    = mesh->grid(primID());
+          gather(p0,p1,p2,p3,mesh,g);
+        }
 
         /* Gather the quads */
         __forceinline void gather(Vec3fa vtx[16], const Scene *const scene) const
