@@ -135,8 +135,10 @@ namespace embree
         bounds_vx_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.x),-32767.0f,32767.0f);
         bounds_vx_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.x),-32767.0f,32767.0f);
         bounds_vx_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.x),-32767.0f,32767.0f);
-        assert(-32767.0f <= floor(bounds.lower.x) && floor(bounds.lower.x) <= 32767.0f);
-        assert(-32767.0f <= ceil (bounds.upper.x) && ceil (bounds.upper.x) <= 32767.0f);
+        assert(-32767.0f <= floor(bounds.bounds0.lower.x) && floor(bounds.bounds0.lower.x) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.bounds0.upper.x) && ceil (bounds.bounds0.upper.x) <= 32767.0f);
+        assert(-32767.0f <= floor(bounds.bounds1.lower.x) && floor(bounds.bounds1.lower.x) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.bounds1.upper.x) && ceil (bounds.bounds1.upper.x) <= 32767.0f);
         
         bounds_vy_x(N)[i] = (short) space3.vy.x;
         bounds_vy_y(N)[i] = (short) space3.vy.y;
@@ -145,8 +147,10 @@ namespace embree
         bounds_vy_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.y),-32767.0f,32767.0f);
         bounds_vy_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.y),-32767.0f,32767.0f);
         bounds_vy_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.y),-32767.0f,32767.0f);
-        assert(-32767.0f <= floor(bounds.lower.y) && floor(bounds.lower.y) <= 32767.0f);
-        assert(-32767.0f <= ceil (bounds.upper.y) && ceil (bounds.upper.y) <= 32767.0f);
+        assert(-32767.0f <= floor(bounds.bounds0.lower.y) && floor(bounds.bounds0.lower.y) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.bounds0.upper.y) && ceil (bounds.bounds0.upper.y) <= 32767.0f);
+        assert(-32767.0f <= floor(bounds.bounds1.lower.y) && floor(bounds.bounds1.lower.y) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.bounds1.upper.y) && ceil (bounds.bounds1.upper.y) <= 32767.0f);
 
         bounds_vz_x(N)[i] = (short) space3.vz.x;
         bounds_vz_y(N)[i] = (short) space3.vz.y;
@@ -155,8 +159,10 @@ namespace embree
         bounds_vz_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.z),-32767.0f,32767.0f);
         bounds_vz_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.z),-32767.0f,32767.0f);
         bounds_vz_upper1(N)[i] = (short) clamp(ceil (bounds.bounds1.upper.z),-32767.0f,32767.0f);
-        assert(-32767.0f <= floor(bounds.lower.z) && floor(bounds.lower.z) <= 32767.0f);
-        assert(-32767.0f <= ceil (bounds.upper.z) && ceil (bounds.upper.z) <= 32767.0f);
+        assert(-32767.0f <= floor(bounds.bounds0.lower.z) && floor(bounds.bounds0.lower.z) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.bounds0.upper.z) && ceil (bounds.bounds0.upper.z) <= 32767.0f);
+        assert(-32767.0f <= floor(bounds.bounds1.lower.z) && floor(bounds.bounds1.lower.z) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.bounds1.upper.z) && ceil (bounds.bounds1.upper.z) <= 32767.0f);
                
         this->primID(N)[i] = primID;
       }
