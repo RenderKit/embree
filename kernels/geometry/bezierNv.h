@@ -58,63 +58,14 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {
       size_t end = min(begin+M,_end);
-      this->N = end-begin;
-      const unsigned int geomID0 = prims[begin].geomID();
-      this->geomID(N) = geomID0;
+      size_t N = end-begin;
 
       /* encode all primitives */
-      BBox3fa bounds = empty;
       for (size_t i=0; i<N; i++)
       {
         const PrimRef& prim = prims[begin+i];
-        const unsigned int geomID = prim.geomID(); assert(geomID == geomID0);
-        const unsigned int primID = prim.primID();
-        bounds.extend(scene->get<NativeCurves>(geomID)->bounds(primID));
-      }
-
-      /* calculate offset and scale */
-      Vec3fa loffset = bounds.lower;
-      float lscale = reduce_min(256.0f/(bounds.size()*sqrt(3.0f)));
-      *this->offset(N) = loffset;
-      *this->scale(N) = lscale;
-      
-      /* encode all primitives */
-      for (size_t i=0; i<M && begin<end; i++, begin++)
-      {
-        const PrimRef& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin));
-        
-        const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
-        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
-        
-        this->bounds_vx_x(N)[i] = (short) space3.vx.x;
-        this->bounds_vx_y(N)[i] = (short) space3.vx.y;
-        this->bounds_vx_z(N)[i] = (short) space3.vx.z;
-        this->bounds_vx_lower(N)[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
-        this->bounds_vx_upper(N)[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
-        assert(-32767.0f <= floor(bounds.lower.x) && floor(bounds.lower.x) <= 32767.0f);
-        assert(-32767.0f <= ceil (bounds.upper.x) && ceil (bounds.upper.x) <= 32767.0f);
-
-        this->bounds_vy_x(N)[i] = (short) space3.vy.x;
-        this->bounds_vy_y(N)[i] = (short) space3.vy.y;
-        this->bounds_vy_z(N)[i] = (short) space3.vy.z;
-        this->bounds_vy_lower(N)[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
-        this->bounds_vy_upper(N)[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
-        assert(-32767.0f <= floor(bounds.lower.y) && floor(bounds.lower.y) <= 32767.0f);
-        assert(-32767.0f <= ceil (bounds.upper.y) && ceil (bounds.upper.y) <= 32767.0f);
-        
-        this->bounds_vz_x(N)[i] = (short) space3.vz.x;
-        this->bounds_vz_y(N)[i] = (short) space3.vz.y;
-        this->bounds_vz_z(N)[i] = (short) space3.vz.z;
-        this->bounds_vz_lower(N)[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
-        this->bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
-        assert(-32767.0f <= floor(bounds.lower.z) && floor(bounds.lower.z) <= 32767.0f);
-        assert(-32767.0f <= ceil (bounds.upper.z) && ceil (bounds.upper.z) <= 32767.0f);
-               
-        this->primID(N)[i] = primID;
-
         NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
         const unsigned vtxID = mesh->curve(primID);
         Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
@@ -132,7 +83,8 @@ namespace embree
       size_t numbytes = BezierNv::bytes(set.size());
       BezierNv* accel = (BezierNv*) alloc.malloc1(numbytes,BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
-        accel[i].fill(prims,start,set.end(),bvh->scene);
+        accel[i].BezierNv<M>::fill(prims,start,set.end(),bvh->scene);
+        accel[i].BezierNi<M>::fill(prims,start,set.end(),bvh->scene);
       }
       return bvh->encodeLeaf((char*)accel,items);
     };
