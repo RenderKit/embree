@@ -109,7 +109,7 @@ namespace embree
 
 #if defined(__AVX__)
     Builder* BVH8OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
-    Builder* BVH4OBBBezier8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier8iMB>((BVH8*)bvh,scene); }
+    Builder* BVH4OBBBezier8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier8iMB>((BVH4*)bvh,scene); }
 #endif
 
   }
