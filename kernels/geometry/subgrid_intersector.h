@@ -281,19 +281,23 @@ namespace embree
           hit.U = select(flags,absDen-U,U);
           hit.V = select(flags,absDen-V,V);
 #endif
-          const int sx = (int)subgrid.x;
-          const int sy = (int)subgrid.y;
-          const float inv_resX = 1.0f / (float)((int)g.resX-1);
-          const float inv_resY = 1.0f / (float)((int)g.resY-1);
+          const vint8 sx((int)subgrid.x);
+          const vint8 sy((int)subgrid.y);
+          const vint8 sx8(sx + vint8(0,1,1,0,0,1,1,0));
+          const vint8 sy8(sy + vint8(0,0,1,1,0,0,1,1));
+          const float inv_resX = rcp((float)((int)g.resX-1));
+          const float inv_resY = rcp((float)((int)g.resY-1));
           
-          const vfloat8 sx_u = hit.U * inv_resX + (float)sx;
-          const vfloat8 sx_v = hit.V * inv_resY + (float)sy;
+          const vfloat8 sx_u = (hit.U + (vfloat8)sx8 * absDen) * inv_resX;
+          const vfloat8 sx_v = (hit.V + (vfloat8)sy8 * absDen) * inv_resY;
           
           hit.U = sx_u;
           hit.V = sx_v;
 
           if (unlikely(epilog(hit.valid,hit)))
+          {
             return true;
+          }
         }
         return false;
       }
