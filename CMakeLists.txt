@@ -104,8 +104,6 @@ MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
 
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
-SET(EMBREE_HAIR_LEAF_MODE 2 CACHE INT "experimental leaf mode") # FIXME: remove
-ADD_DEFINITIONS(-DEMBREE_HAIR_LEAF_MODE=${EMBREE_HAIR_LEAF_MODE})
 
 OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")

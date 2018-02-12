@@ -45,59 +45,6 @@ namespace embree
 
       static __forceinline vbool<M> intersect(Ray& ray, const Primitive& prim, vfloat<M>& tNear_o)
       {
-#if EMBREE_HAIR_LEAF_MODE == 0
-
-        const size_t N = prim.N;
-        AffineSpace3vf<M> space(Vec3vfM(vfloat<M>::loadu(prim.vx_x(N)),vfloat<M>::loadu(prim.vx_y(N)),vfloat<M>::loadu(prim.vx_z(N))),
-                                Vec3vfM(vfloat<M>::loadu(prim.vy_x(N)),vfloat<M>::loadu(prim.vy_y(N)),vfloat<M>::loadu(prim.vy_z(N))),
-                                Vec3vfM(vfloat<M>::loadu(prim.vz_x(N)),vfloat<M>::loadu(prim.vz_y(N)),vfloat<M>::loadu(prim.vz_z(N))),
-                                Vec3vfM(vfloat<M>::loadu(prim.p_x (N)),vfloat<M>::loadu(prim.p_y (N)),vfloat<M>::loadu(prim.p_z (N))));
-        
-        const Vec3vfM dir1 = xfmVector(space,Vec3vfM(ray.dir));
-        const Vec3vfM org1 = xfmPoint (space,Vec3vfM(ray.org));
-        const Vec3vfM nrcp_dir1 = -rcp_safe(dir1);
-        
-        const vfloat<M> t_lower_x = org1.x*nrcp_dir1.x;
-        const vfloat<M> t_lower_y = org1.y*nrcp_dir1.y;
-        const vfloat<M> t_lower_z = org1.z*nrcp_dir1.z;
-        const vfloat<M> t_upper_x = t_lower_x - nrcp_dir1.x;
-        const vfloat<M> t_upper_y = t_lower_y - nrcp_dir1.y;
-        const vfloat<M> t_upper_z = t_lower_z - nrcp_dir1.z;
-
-        const vfloat<M> tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()));
-        const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar));
-        tNear_o = tNear;
-        return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
-
-#endif
-
-#if EMBREE_HAIR_LEAF_MODE == 1
-
-        const size_t N = prim.N;
-        const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
-                                   Vec3fa::loadu(&prim.space.l.vy),
-                                   Vec3fa::loadu(&prim.space.l.vz),
-                                   Vec3fa::loadu(&prim.space.p));
-        
-        const Vec3fa org1 = xfmPoint (space,ray.org);
-        const Vec3fa dir1 = xfmVector(space,ray.dir);
-        const Vec3fa rcp_dir1 = rcp_safe(dir1);
-                
-        const vfloat<M> t_lower_x = (vfloat<M>::load(prim.lower_x(N))-vfloat<M>(org1.x))*vfloat<M>(rcp_dir1.x);
-        const vfloat<M> t_upper_x = (vfloat<M>::load(prim.upper_x(N))-vfloat<M>(org1.x))*vfloat<M>(rcp_dir1.x);
-        const vfloat<M> t_lower_y = (vfloat<M>::load(prim.lower_y(N))-vfloat<M>(org1.y))*vfloat<M>(rcp_dir1.y);
-        const vfloat<M> t_upper_y = (vfloat<M>::load(prim.upper_y(N))-vfloat<M>(org1.y))*vfloat<M>(rcp_dir1.y);
-        const vfloat<M> t_lower_z = (vfloat<M>::load(prim.lower_z(N))-vfloat<M>(org1.z))*vfloat<M>(rcp_dir1.z);
-        const vfloat<M> t_upper_z = (vfloat<M>::load(prim.upper_z(N))-vfloat<M>(org1.z))*vfloat<M>(rcp_dir1.z);
-
-        const vfloat<M> tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()));
-        const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar));
-        tNear_o = tNear;
-        return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
-#endif
-
-#if EMBREE_HAIR_LEAF_MODE == 2
-
         const size_t N = prim.N;
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
@@ -124,7 +71,6 @@ namespace embree
         const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar));
         tNear_o = tNear;
         return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
-#endif
       }
 
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
@@ -229,63 +175,6 @@ namespace embree
 
       static __forceinline vbool<M> intersect(RayK<K>& ray, const size_t k, const Primitive& prim, vfloat<M>& tNear_o)
       {
-#if EMBREE_HAIR_LEAF_MODE == 0
-
-        const size_t N = prim.N;
-        AffineSpace3vf<M> space(Vec3vfM(vfloat<M>::loadu(prim.vx_x(N)),vfloat<M>::loadu(prim.vx_y(N)),vfloat<M>::loadu(prim.vx_z(N))),
-                                Vec3vfM(vfloat<M>::loadu(prim.vy_x(N)),vfloat<M>::loadu(prim.vy_y(N)),vfloat<M>::loadu(prim.vy_z(N))),
-                                Vec3vfM(vfloat<M>::loadu(prim.vz_x(N)),vfloat<M>::loadu(prim.vz_y(N)),vfloat<M>::loadu(prim.vz_z(N))),
-                                Vec3vfM(vfloat<M>::loadu(prim.p_x (N)),vfloat<M>::loadu(prim.p_y (N)),vfloat<M>::loadu(prim.p_z (N))));
-
-        const Vec3f ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-        const Vec3f ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        const Vec3vfM dir1 = xfmVector(space,Vec3vfM(ray_dir));
-        const Vec3vfM org1 = xfmPoint (space,Vec3vfM(ray_org));
-        const Vec3vfM nrcp_dir1 = -rcp_safe(dir1);
-        
-        const vfloat<M> t_lower_x = org1.x*nrcp_dir1.x;
-        const vfloat<M> t_lower_y = org1.y*nrcp_dir1.y;
-        const vfloat<M> t_lower_z = org1.z*nrcp_dir1.z;
-        const vfloat<M> t_upper_x = t_lower_x - nrcp_dir1.x;
-        const vfloat<M> t_upper_y = t_lower_y - nrcp_dir1.y;
-        const vfloat<M> t_upper_z = t_lower_z - nrcp_dir1.z;
-
-        const vfloat<M> tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()[k]));
-        const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar[k]));
-        tNear_o = tNear;
-        return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
-
-#endif
-
-#if EMBREE_HAIR_LEAF_MODE == 1
-
-        const size_t N = prim.N;
-        const AffineSpace3fa space(Vec3fa::loadu(&prim.space.l.vx),
-                                   Vec3fa::loadu(&prim.space.l.vy),
-                                   Vec3fa::loadu(&prim.space.l.vz),
-                                   Vec3fa::loadu(&prim.space.p));
-
-        const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-        const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        const Vec3fa org1 = xfmPoint (space,ray_org);
-        const Vec3fa dir1 = xfmVector(space,ray_dir);
-        const Vec3fa rcp_dir1 = rcp_safe(dir1);
-                
-        const vfloat<M> t_lower_x = (vfloat<M>::load(prim.lower_x(N))-vfloat<M>(org1.x))*vfloat<M>(rcp_dir1.x);
-        const vfloat<M> t_upper_x = (vfloat<M>::load(prim.upper_x(N))-vfloat<M>(org1.x))*vfloat<M>(rcp_dir1.x);
-        const vfloat<M> t_lower_y = (vfloat<M>::load(prim.lower_y(N))-vfloat<M>(org1.y))*vfloat<M>(rcp_dir1.y);
-        const vfloat<M> t_upper_y = (vfloat<M>::load(prim.upper_y(N))-vfloat<M>(org1.y))*vfloat<M>(rcp_dir1.y);
-        const vfloat<M> t_lower_z = (vfloat<M>::load(prim.lower_z(N))-vfloat<M>(org1.z))*vfloat<M>(rcp_dir1.z);
-        const vfloat<M> t_upper_z = (vfloat<M>::load(prim.upper_z(N))-vfloat<M>(org1.z))*vfloat<M>(rcp_dir1.z);
-
-        const vfloat<M> tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()[k]));
-        const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar[k]));
-        tNear_o = tNear;
-        return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
-#endif
-
-#if EMBREE_HAIR_LEAF_MODE == 2
-
         const size_t N = prim.N;
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
@@ -315,7 +204,6 @@ namespace embree
         const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar[k]));
         tNear_o = tNear;
         return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
-#endif
       }
       
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
