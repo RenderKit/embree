@@ -181,6 +181,13 @@ namespace embree
         this->upper_y(N)[i] = (unsigned char) clamp(ceil (upper.y),0.0f,255.0f);
         this->lower_z(N)[i] = (unsigned char) clamp(floor(lower.z),0.0f,255.0f);
         this->upper_z(N)[i] = (unsigned char) clamp(ceil (upper.z),0.0f,255.0f);
+        assert(0.0f <= floor(lower.x) && floor(lower.x) <= 255.0f);
+        assert(0.0f <= ceil (lower.x) && ceil (lower.x) <= 255.0f);
+        assert(0.0f <= floor(lower.y) && floor(lower.y) <= 255.0f);
+        assert(0.0f <= ceil (lower.y) && ceil (lower.y) <= 255.0f);
+        assert(0.0f <= floor(lower.z) && floor(lower.z) <= 255.0f);
+        assert(0.0f <= ceil (lower.z) && ceil (lower.z) <= 255.0f);
+        
         this->primID(N)[i] = primID;
       }
 #endif
@@ -224,18 +231,24 @@ namespace embree
         bounds_vx_z(N)[i] = (short) space3.vx.z;
         bounds_vx_lower(N)[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
         bounds_vx_upper(N)[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
+        assert(-32767.0f <= floor(bounds.lower.x) && floor(bounds.lower.x) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.upper.x) && ceil (bounds.upper.x) <= 32767.0f);
 
         bounds_vy_x(N)[i] = (short) space3.vy.x;
         bounds_vy_y(N)[i] = (short) space3.vy.y;
         bounds_vy_z(N)[i] = (short) space3.vy.z;
         bounds_vy_lower(N)[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
         bounds_vy_upper(N)[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
+        assert(-32767.0f <= floor(bounds.lower.y) && floor(bounds.lower.y) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.upper.y) && ceil (bounds.upper.y) <= 32767.0f);
 
         bounds_vz_x(N)[i] = (short) space3.vz.x;
         bounds_vz_y(N)[i] = (short) space3.vz.y;
         bounds_vz_z(N)[i] = (short) space3.vz.z;
         bounds_vz_lower(N)[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
         bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
+        assert(-32767.0f <= floor(bounds.lower.z) && floor(bounds.lower.z) <= 32767.0f);
+        assert(-32767.0f <= ceil (bounds.upper.z) && ceil (bounds.upper.z) <= 32767.0f);
                
         this->primID(N)[i] = primID;
       }
