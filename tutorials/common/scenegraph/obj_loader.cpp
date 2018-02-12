@@ -170,7 +170,7 @@ namespace embree
     }
 
     /* generate default material */
-    Ref<SceneGraph::MaterialNode> defaultMaterial = new OBJMaterial();
+    Ref<SceneGraph::MaterialNode> defaultMaterial = new OBJMaterial("default");
     curMaterialName = "default";
     curMaterial = defaultMaterial;
 
@@ -388,8 +388,10 @@ namespace embree
 
       if (!strncmp(token, "newmtl", 6)) 
       {
-        if (name != "")
+        if (name != "") {
           material[name] = cur.select();
+          material[name]->name = name;
+        }
         
         parseSep(token+=6);
         name = token;
@@ -457,8 +459,10 @@ namespace embree
       }
     }
 
-    if (name != "")
+    if (name != "") {
       material[name] = cur.select();
+      material[name]->name = name;
+    }
 
     cin.close();
   }

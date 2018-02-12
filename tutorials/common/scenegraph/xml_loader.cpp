@@ -214,10 +214,18 @@ namespace embree
 
   class XMLLoader
   {
+    struct SharedState {
+      std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
+      std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
+      std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+      std::map<std::string,std::shared_ptr<Texture>> textureMap;
+    };
+    
   public:
 
     static Ref<SceneGraph::Node> load(const FileName& fileName, const AffineSpace3fa& space);
-    XMLLoader(const FileName& fileName, const AffineSpace3fa& space);
+    static Ref<SceneGraph::Node> load(const FileName& fileName, const AffineSpace3fa& space, SharedState& state);
+    XMLLoader(const FileName& fileName, const AffineSpace3fa& space, SharedState& state);
    ~XMLLoader();
 
   public:
@@ -284,10 +292,7 @@ namespace embree
     size_t binFileSize;
 
   private:
-    std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
-    std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
-    std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
-    std::map<std::string,std::shared_ptr<Texture>> textureMap; 
+    SharedState& state;
 
   private:
     size_t currentNodeID;
@@ -693,8 +698,8 @@ namespace embree
   std::shared_ptr<Texture> XMLLoader::loadTextureParm(const Ref<XML>& xml)
   {
     const std::string id = xml->parm("id");
-    if (id != "" && textureMap.find(id) != textureMap.end())
-      return textureMap[id];
+    if (id != "" && state.textureMap.find(id) != state.textureMap.end())
+      return state.textureMap[id];
 
     std::shared_ptr<Texture> texture;
     const FileName src = xml->parm("src");
@@ -718,7 +723,7 @@ namespace embree
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
     }
     
-    if (id != "") textureMap[id] = texture;
+    if (id != "") state.textureMap[id] = texture;
     return texture;
   }
   
@@ -766,19 +771,19 @@ namespace embree
   Ref<SceneGraph::MaterialNode> XMLLoader::loadMaterial(const Ref<XML>& xml) 
   {
     const std::string id = xml->parm("id");
-    if (id != "" && materialMap.find(id) != materialMap.end())
-      return materialMap[id];
+    if (id != "" && state.materialMap.find(id) != state.materialMap.end())
+      return state.materialMap[id];
 
     Ref<XML> parameters = xml->child("parameters");
-    if (materialCache.find(parameters) != materialCache.end()) {
-      return materialMap[id] = materialCache[parameters];
+    if (state.materialCache.find(parameters) != state.materialCache.end()) {
+      return state.materialMap[id] = state.materialCache[parameters];
     }
 
     std::string type = load<std::string>(xml->child("code")).c_str();
     Parms parms = loadMaterialParms(parameters);
     Ref<SceneGraph::MaterialNode> material = addMaterial(type,parms);
-    materialCache[parameters] = material;
-    return materialMap[id] = material;
+    state.materialCache[parameters] = material;
+    return state.materialMap[id] = material;
   }
 
   Ref<SceneGraph::MaterialNode> XMLLoader::addMaterial(const std::string& type, const Parms& parms) 
@@ -1194,14 +1199,14 @@ namespace embree
       {
         const std::string id = xml->parm("id");
         Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child(0));
-        materialMap[id] = material;
+        state.materialMap[id] = material;
         material->name = xml->parm("name");
         return nullptr;
       }
       else if (xml->parm("type") == "scene")
       {
         const std::string id = xml->parm("id");
-        sceneMap[id] = loadNode(xml->child(0));
+        state.sceneMap[id] = loadNode(xml->child(0));
         return nullptr;
       }
       else 
@@ -1212,30 +1217,32 @@ namespace embree
       Ref<SceneGraph::Node> node = nullptr;
       const std::string id = xml->parm("id");
       if (xml->name == "extern") 
-        node = sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+        node = state.sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "xml")
+        node = state.sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one,state);
       else if (xml->name == "extern_combine") 
-        node = sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
+        node = state.sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
       else if (xml->name == "obj"             ) {
         const bool subdiv_mode = xml->parm("subdiv") == "1";
-        node = sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
+        node = state.sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
       }
-      else if (xml->name == "ref"             ) node = sceneMap[id] = sceneMap[xml->parm("id")];
-      else if (xml->name == "PointLight"      ) node = sceneMap[id] = loadPointLight      (xml);
-      else if (xml->name == "SpotLight"       ) node = sceneMap[id] = loadSpotLight       (xml);
-      else if (xml->name == "DirectionalLight") node = sceneMap[id] = loadDirectionalLight(xml);
-      else if (xml->name == "DistantLight"    ) node = sceneMap[id] = loadDistantLight    (xml);
-      else if (xml->name == "AmbientLight"    ) node = sceneMap[id] = loadAmbientLight    (xml);
-      else if (xml->name == "TriangleLight"   ) node = sceneMap[id] = loadTriangleLight   (xml);
-      else if (xml->name == "QuadLight"       ) node = sceneMap[id] = loadQuadLight       (xml);
-      else if (xml->name == "TriangleMesh"    ) node = sceneMap[id] = loadTriangleMesh    (xml);
-      else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
-      else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
-      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+      else if (xml->name == "ref"             ) node = state.sceneMap[id] = state.sceneMap[xml->parm("id")];
+      else if (xml->name == "PointLight"      ) node = state.sceneMap[id] = loadPointLight      (xml);
+      else if (xml->name == "SpotLight"       ) node = state.sceneMap[id] = loadSpotLight       (xml);
+      else if (xml->name == "DirectionalLight") node = state.sceneMap[id] = loadDirectionalLight(xml);
+      else if (xml->name == "DistantLight"    ) node = state.sceneMap[id] = loadDistantLight    (xml);
+      else if (xml->name == "AmbientLight"    ) node = state.sceneMap[id] = loadAmbientLight    (xml);
+      else if (xml->name == "TriangleLight"   ) node = state.sceneMap[id] = loadTriangleLight   (xml);
+      else if (xml->name == "QuadLight"       ) node = state.sceneMap[id] = loadQuadLight       (xml);
+      else if (xml->name == "TriangleMesh"    ) node = state.sceneMap[id] = loadTriangleMesh    (xml);
+      else if (xml->name == "QuadMesh"        ) node = state.sceneMap[id] = loadQuadMesh        (xml);
+      else if (xml->name == "SubdivisionMesh" ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
+      else if (xml->name == "Hair"            ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+      else if (xml->name == "BezierHair"      ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "BSplineHair"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+      else if (xml->name == "BezierCurves"    ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
+      else if (xml->name == "BSplineCurves"   ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
       
       else if (xml->name == "Curves")
       {
@@ -1267,23 +1274,23 @@ namespace embree
         else
           THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve basis: "+str_type);
         
-        node = sceneMap[id] = loadCurves(xml,type);
+        node = state.sceneMap[id] = loadCurves(xml,type);
       }
-      else if (xml->name == "PerspectiveCamera") node = sceneMap[id] = loadPerspectiveCamera(xml);
-      else if (xml->name == "Group"           ) node = sceneMap[id] = loadGroupNode       (xml);
-      else if (xml->name == "Transform"       ) node = sceneMap[id] = loadTransformNode   (xml);
-      else if (xml->name == "MultiTransform"  ) node = sceneMap[id] = loadMultiTransformNode(xml);
-      else if (xml->name == "Transform2"      ) node = sceneMap[id] = loadTransform2Node  (xml);
-      else if (xml->name == "TransformAnimation") node = sceneMap[id] = loadTransformAnimationNode(xml);
-      else if (xml->name == "Animation2"      ) node = sceneMap[id] = loadAnimation2Node  (xml);
-      else if (xml->name == "Animation"       ) node = sceneMap[id] = loadAnimationNode   (xml);
+      else if (xml->name == "PerspectiveCamera") node = state.sceneMap[id] = loadPerspectiveCamera(xml);
+      else if (xml->name == "Group"           ) node = state.sceneMap[id] = loadGroupNode       (xml);
+      else if (xml->name == "Transform"       ) node = state.sceneMap[id] = loadTransformNode   (xml);
+      else if (xml->name == "MultiTransform"  ) node = state.sceneMap[id] = loadMultiTransformNode(xml);
+      else if (xml->name == "Transform2"      ) node = state.sceneMap[id] = loadTransform2Node  (xml);
+      else if (xml->name == "TransformAnimation") node = state.sceneMap[id] = loadTransformAnimationNode(xml);
+      else if (xml->name == "Animation2"      ) node = state.sceneMap[id] = loadAnimation2Node  (xml);
+      else if (xml->name == "Animation"       ) node = state.sceneMap[id] = loadAnimationNode   (xml);
 
-      else if (xml->name == "ConvertTrianglesToQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)),inf);
-      else if (xml->name == "ConvertTrianglesToTrianglesAndQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)),0.5f);
-      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = sceneMap[id] = convert_quads_to_subdivs  (loadNode(xml->child(0)));
-      else if (xml->name == "ConvertBezierToLines"   ) node = sceneMap[id] = convert_bezier_to_lines   (loadNode(xml->child(0)));
-      else if (xml->name == "ConvertHairToCurves"    ) node = sceneMap[id] = convert_hair_to_curves    (loadNode(xml->child(0)));
-      else if (xml->name == "Flatten"                ) node = sceneMap[id] = flatten                   (loadNode(xml->child(0)), SceneGraph::INSTANCING_NONE);
+      else if (xml->name == "ConvertTrianglesToQuads") node = state.sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)),inf);
+      else if (xml->name == "ConvertTrianglesToTrianglesAndQuads") node = state.sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)),0.5f);
+      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = state.sceneMap[id] = convert_quads_to_subdivs  (loadNode(xml->child(0)));
+      else if (xml->name == "ConvertBezierToLines"   ) node = state.sceneMap[id] = convert_bezier_to_lines   (loadNode(xml->child(0)));
+      else if (xml->name == "ConvertHairToCurves"    ) node = state.sceneMap[id] = convert_hair_to_curves    (loadNode(xml->child(0)));
+      else if (xml->name == "Flatten"                ) node = state.sceneMap[id] = flatten                   (loadNode(xml->child(0)), SceneGraph::INSTANCING_NONE);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
 
@@ -1371,11 +1378,24 @@ namespace embree
   /*******************************************************************************************/
   
 
-  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space) {
-    XMLLoader loader(fileName,space); return loader.root;
+  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space)
+  {
+    SharedState state;
+    XMLLoader loader(fileName,space,state); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), binFileSize(0), currentNodeID(0)
+  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space, SharedState& state)
+  {
+    if (state.sceneMap.find(fileName) != state.sceneMap.end())
+      return state.sceneMap[fileName];
+    
+    XMLLoader loader(fileName,space,state);
+    state.sceneMap[fileName] = loader.root;
+    return loader.root;
+  }
+
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space, SharedState& state)
+    : binFile(nullptr), binFileSize(0), state(state), currentNodeID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");

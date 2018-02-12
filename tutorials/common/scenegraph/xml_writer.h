@@ -22,7 +22,7 @@ namespace embree
 {
   namespace SceneGraph
   {
-    void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures);
+    void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials);
   }
 }
 
