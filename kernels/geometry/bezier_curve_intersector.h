@@ -20,6 +20,7 @@
 #include "cylinder.h"
 #include "plane.h"
 #include "line_intersector.h"
+#include "bezier_curve_precalculations.h"
 
 namespace embree
 {
@@ -222,14 +223,10 @@ namespace embree
     template<typename NativeCurve3fa>
       struct BezierCurve1Intersector1
     {
-      __forceinline BezierCurve1Intersector1() {}
-
-      __forceinline BezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
-
       template<typename Epilog>
-      __noinline bool intersect(Ray& ray,
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                const Epilog& epilog) const
+                                const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
 
@@ -266,13 +263,10 @@ namespace embree
         
       };
 
-      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {
-      }
-      
       template<typename Epilog>
-      __forceinline bool intersect(RayK<K>& vray, size_t k,
+      __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                   const Epilog& epilog) const
+                                   const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
