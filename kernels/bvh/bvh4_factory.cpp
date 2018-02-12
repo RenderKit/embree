@@ -1275,7 +1275,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene); // FIXME:
+    BVH4* accel = new BVH4(Bezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
 
     Builder* builder = nullptr;

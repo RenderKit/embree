@@ -57,9 +57,6 @@ namespace embree
 
     unsigned int g_numThreads = 0;
 
-    //size_t leaf = 0;
-    //size_t oldleaf = 0;
-
     RTCIntersectContextFlags g_iflags_coherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
     RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
@@ -670,8 +667,6 @@ namespace embree
     case ' ' : {
       Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
       storeImage(image, "screenshot.tga");
-      
-      //std::swap(leaf,oldleaf);
       break;
     }
 
@@ -733,7 +728,6 @@ namespace embree
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
-        //oldleaf = 0;
 
         if (hit) {
           Vec3fa delta = p - camera.to;

@@ -29,7 +29,6 @@ extern "C" int g_instancing_mode;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 bool g_subdiv_mode = false;
-//extern "C" size_t leaf;
   
 #define SPP 1
 
@@ -250,7 +249,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
-  //*(size_t*)&ray.id = leaf;
   rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
