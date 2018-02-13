@@ -490,6 +490,10 @@ namespace embree
         return bounds(ofs,scale,r_scale0,space,i,itime);
       }
 
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
+        return linearBounds(primID,time_range);
+      }
+      
       LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
         return linearBounds(space,primID,time_range);
       }
@@ -631,6 +635,10 @@ namespace embree
         return bounds(ofs,scale,r_scale0,space,i,itime);
       }
 
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
+        return linearBounds(primID,time_range);
+      }
+      
       LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
         return linearBounds(space,primID,time_range);
       }

@@ -302,6 +302,10 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
     }
 
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
+    }
+    
     virtual LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
     }
