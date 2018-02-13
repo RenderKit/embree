@@ -64,9 +64,9 @@ namespace embree
           }
           
           if (likely(geom->subtype == FLAT_CURVE))
-            intersectorHair.intersect(pre,ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,geomID,primID));
+            intersectorHair.intersect(pre,ray,geom,a0,a1,a2,a3,Intersect1EpilogMU<VSIZEX,true>(ray,context,geomID,primID));
           else 
-            intersectorCurve.intersect(pre,ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,geomID,primID));
+            intersectorCurve.intersect(pre,ray,geom,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,geomID,primID));
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
@@ -107,10 +107,10 @@ namespace embree
           }
           
           if (likely(geom->subtype == FLAT_CURVE)) {
-            if (intersectorHair.intersect(pre,ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,geomID,primID)))
+            if (intersectorHair.intersect(pre,ray,geom,a0,a1,a2,a3,Occluded1EpilogMU<VSIZEX,true>(ray,context,geomID,primID)))
               return true;
           } else {
-            if (intersectorCurve.intersect(pre,ray,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,geomID,primID)))
+            if (intersectorCurve.intersect(pre,ray,geom,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,geomID,primID)))
               return true;
           }
 
@@ -161,9 +161,9 @@ namespace embree
           }
           
           if (likely(geom->subtype == FLAT_CURVE))
-            intersectorHair.intersect(pre,ray,k,a0,a1,a2,a3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,geomID,primID));
+            intersectorHair.intersect(pre,ray,k,geom,a0,a1,a2,a3,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,geomID,primID));
           else 
-            intersectorCurve.intersect(pre,ray,k,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,geomID,primID));
+            intersectorCurve.intersect(pre,ray,k,geom,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,geomID,primID));
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
@@ -210,10 +210,10 @@ namespace embree
           }
                      
           if (likely(geom->subtype == FLAT_CURVE)) {
-            if (intersectorHair.intersect(pre,ray,k,a0,a1,a2,a3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,geomID,primID)))
+            if (intersectorHair.intersect(pre,ray,k,geom,a0,a1,a2,a3,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,geomID,primID)))
               return true;
           } else {
-            if (intersectorCurve.intersect(pre,ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,geomID,primID)))
+            if (intersectorCurve.intersect(pre,ray,k,geom,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,geomID,primID)))
               return true;
           }
 

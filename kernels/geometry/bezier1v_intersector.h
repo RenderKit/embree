@@ -38,9 +38,9 @@ namespace embree
         BezierCurve1Intersector1<Curve3fa> intersectorCurve;
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
         if (likely(geom->subtype == FLAT_CURVE))
-          intersectorHair.intersect(pre,ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
+          intersectorHair.intersect(pre,ray,geom,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
-          intersectorCurve.intersect(pre,ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
+          intersectorCurve.intersect(pre,ray,geom,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
@@ -50,9 +50,9 @@ namespace embree
         BezierCurve1Intersector1<Curve3fa> intersectorCurve;
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
         if (likely(geom->subtype == FLAT_CURVE))
-          return intersectorHair.intersect(pre,ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
+          return intersectorHair.intersect(pre,ray,geom,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
-          return intersectorCurve.intersect(pre,ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
+          return intersectorCurve.intersect(pre,ray,geom,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
     };
 
@@ -70,9 +70,9 @@ namespace embree
         BezierCurve1IntersectorK<Curve3fa,K> intersectorCurve;
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
         if (likely(geom->subtype == FLAT_CURVE))
-          intersectorHair.intersect(pre,ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
+          intersectorHair.intersect(pre,ray,k,geom,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else
-          intersectorCurve.intersect(pre,ray,k,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
+          intersectorCurve.intersect(pre,ray,k,geom,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
 
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
@@ -88,9 +88,9 @@ namespace embree
         BezierCurve1IntersectorK<Curve3fa,K> intersectorCurve;
         const NativeCurves* geom = (NativeCurves*)context->scene->get(prim.geomID());
          if (likely(geom->subtype == FLAT_CURVE))
-           return intersectorHair.intersect(pre,ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
+           return intersectorHair.intersect(pre,ray,k,geom,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
          else
-           return intersectorCurve.intersect(pre,ray,k,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
+           return intersectorCurve.intersect(pre,ray,k,geom,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
 
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)

@@ -67,9 +67,11 @@ namespace embree
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre,Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
+        
         /* transform control points into ray space */
         Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
         Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
@@ -143,9 +145,11 @@ namespace embree
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
+        
         /* load ray */
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         

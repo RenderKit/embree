@@ -178,9 +178,10 @@ namespace embree
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
         return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar,
                                                 pre.ray_space,pre.depth_scale,
                                                 v0,v1,v2,v3,N,
@@ -193,9 +194,10 @@ namespace embree
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
