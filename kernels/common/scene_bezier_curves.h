@@ -424,13 +424,14 @@ namespace embree
         return frame(axisz);
       }
 
-      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const // FIXME: improve
+      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const
       {
-        Vec3fa axis0(0,0,1);
+        Vec3fa axisz(0,0,1);
+        Vec3fa axisy(0,1,0);
 
         const unsigned num_time_segments = this->numTimeSegments();
         const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        if (tbounds.size() == 0) return frame(axis0);
+        if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
         const unsigned int vertexID = this->curve(primID);
@@ -441,13 +442,21 @@ namespace embree
         const Curve3fa curve(a0,a1,a2,a3);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
-        const Vec3fa axis1 = p3 - p0;
-        
-        if (sqr_length(axis1) > 1E-18f) {
-          axis0 = normalize(axis1);
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axisz = axisz_;
+          axisy = axisy_;
         }
-           
-        return frame(axis0);
+        
+        if (sqr_length(axisy) > 1E-18) {
+          axisy = normalize(axisy);
+          Vec3fa axisx = normalize(cross(axisy,axisz));
+          return LinearSpace3fa(axisx,axisy,axisz);
+        }
+        return frame(axisz);
       }
       
       Vec3fa computeDirection(unsigned int primID) const
@@ -569,13 +578,14 @@ namespace embree
         return frame(axisz);
       }
 
-      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const // FIXME: improve
+      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const
       {
-        Vec3fa axis0(0,0,1);
+        Vec3fa axisz(0,0,1);
+        Vec3fa axisy(0,1,0);
 
         const unsigned num_time_segments = this->numTimeSegments();
         const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        if (tbounds.size() == 0) return frame(axis0);
+        if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
         const unsigned int vertexID = this->curve(primID);
@@ -584,15 +594,24 @@ namespace embree
         const Vec3fa a2 = this->vertex(vertexID+2,t);
         const Vec3fa a3 = this->vertex(vertexID+3,t);
         const Curve3fa curve(a0,a1,a2,a3);
+
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
-        const Vec3fa axis1 = p3 - p0;
-        
-        if (sqr_length(axis1) > 1E-18f) {
-          axis0 = normalize(axis1);
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axisz = axisz_;
+          axisy = axisy_;
         }
-           
-        return frame(axis0);
+        
+        if (sqr_length(axisy) > 1E-18) {
+          axisy = normalize(axisy);
+          Vec3fa axisx = normalize(cross(axisy,axisz));
+          return LinearSpace3fa(axisx,axisy,axisz);
+        }
+        return frame(axisz);
       }
 
       Vec3fa computeDirection(unsigned int primID) const
