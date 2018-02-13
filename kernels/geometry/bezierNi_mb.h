@@ -66,7 +66,7 @@ namespace embree
         const PrimRefMB& prim = prims[begin+i];
         const unsigned int geomID = prim.geomID(); assert(geomID == geomID0);
         const unsigned int primID = prim.primID();
-        lbounds.extend(scene->get<NativeCurves>(geomID)->linearBounds(primID,time_range));
+        lbounds.extend(scene->get(geomID)->vlinearBounds(primID,time_range));
       }
       BBox3fa bounds = lbounds.bounds();
 

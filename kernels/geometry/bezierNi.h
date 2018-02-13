@@ -66,7 +66,7 @@ namespace embree
         const PrimRef& prim = prims[begin+i];
         const unsigned int geomID = prim.geomID(); assert(geomID == geomID0);
         const unsigned int primID = prim.primID();
-        bounds.extend(scene->get<NativeCurves>(geomID)->bounds(primID));
+        bounds.extend(scene->get(geomID)->vbounds(primID));
       }
 
       /* calculate offset and scale */
@@ -84,7 +84,7 @@ namespace embree
         const LinearSpace3fa space2 = scene->get(geomID)->computeAlignedSpace(primID);
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
-        const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
+        const BBox3fa bounds = scene->get(geomID)->vbounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
         bounds_vx_x(N)[i] = (short) space3.vx.x;
         bounds_vx_y(N)[i] = (short) space3.vx.y;
