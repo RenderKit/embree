@@ -35,7 +35,7 @@
 #include "../geometry/subgrid_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
-#define FORCE_SINGLE_MODE 0
+#define FORCE_SINGLE_MODE 1
 
 #define ENABLE_FAST_COHERENT_CODEPATHS 1
 
