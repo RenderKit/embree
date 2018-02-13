@@ -270,6 +270,10 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
     }
 
+    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
+    }
+
     virtual LinearSpace3fa computeAlignedSpace(const size_t primID) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeAlignedSpace not implemented for this geometry"); 
     }

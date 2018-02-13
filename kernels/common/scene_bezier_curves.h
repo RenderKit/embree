@@ -380,6 +380,20 @@ namespace embree
         return pinfo;
       }
 
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k)
+      {
+        PrimInfoMB pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          LBBox3fa bounds = empty;
+          if (!this->linearBounds(j,t0t1,bounds)) continue;
+          const PrimRefMB prim(bounds,this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          pinfo.add_primref(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
+
       LinearSpace3fa computeAlignedSpace(const size_t primID)
       {
         Vec3fa axisz(0,0,1);
@@ -454,6 +468,20 @@ namespace embree
           if (!buildBounds(j,&bounds)) continue;
           const PrimRef prim(bounds,geomID,unsigned(j));
           pinfo.add_center2(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
+
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k)
+      {
+        PrimInfoMB pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          LBBox3fa bounds = empty;
+          if (!this->linearBounds(j,t0t1,bounds)) continue;
+          const PrimRefMB prim(bounds,this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          pinfo.add_primref(prim);
           prims[k++] = prim;
         }
         return pinfo;

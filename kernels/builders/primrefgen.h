@@ -33,13 +33,15 @@ namespace embree
     template<typename Mesh>
       PrimInfo createGroupPrimRefArray(GeometryGroup* group, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    PrimInfo createPrimRefArray(Geometry::Type types, bool mblur, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    PrimInfo createPrimRefArray(Scene* scene, Geometry::Type types, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
    
     template<typename Mesh, bool mblur>
       PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template<typename Mesh>
       PrimInfo createPrimRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+
+    PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, Geometry::Type types, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f));
 
     template<typename Mesh>
       PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f));
