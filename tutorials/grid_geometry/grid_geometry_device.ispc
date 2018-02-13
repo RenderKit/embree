@@ -18,8 +18,8 @@
 
 /* configuration */
 #define NUM_GRIDS 1
-#define GRID_RESOLUTION_X 3
-#define GRID_RESOLUTION_Y 3
+#define GRID_RESOLUTION_X 10
+#define GRID_RESOLUTION_Y 10
 
 #define EDGE_LEVEL 256.0f
 #define ENABLE_SMOOTH_NORMALS 0
