@@ -223,6 +223,20 @@ namespace embree
     {
       QuadMeshISA (Device* device)
         : QuadMesh(device) {}
+
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k)
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!buildBounds(j,&bounds)) continue;
+          const PrimRef prim(bounds,geomID,unsigned(j));
+          pinfo.add_center2(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
     };
   }
 

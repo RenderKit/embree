@@ -98,6 +98,38 @@ namespace embree
       bool all;
       };
 
+      class Iterator2
+      {
+      public:
+      Iterator2 () {}
+      
+      Iterator2 (Scene* scene, Geometry::Type types, bool mblur) 
+      : scene(scene), types(types), mblur(mblur) {}
+      
+      __forceinline Geometry* at(const size_t i)
+      {
+        Geometry* geom = scene->geometries[i].ptr;
+        if (geom == nullptr) return nullptr;
+        if (!geom->isEnabled()) return nullptr;
+        if (!(geom->getType() & types)) return nullptr;
+        if ((geom->numTimeSteps != 1) != mblur) return nullptr;
+        return geom;
+      }
+
+      __forceinline Geometry* operator[] (const size_t i) {
+        return at(i);
+      }
+
+      __forceinline size_t size() const {
+        return scene->size();
+      }
+      
+    private:
+      Scene* scene;
+      Geometry::Type types;
+      bool mblur;
+    };
+
   public:
     
     /*! Scene construction */

@@ -157,6 +157,29 @@ namespace embree
       return pinfo;
     }
 
+    PrimInfo createPrimRefArray(Geometry::Type types, bool mblur, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    {
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      Scene::Iterator2 iter(scene,types,mblur);
+      
+      /* first try */
+      progressMonitor(0);
+      pstate.init(iter,size_t(1024));
+      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k) -> PrimInfo {
+          return mesh->createPrimRefArray(prims,r,k);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      
+      /* if we need to filter out geometry, run again */
+      if (pinfo.size() != prims.size())
+      {
+        progressMonitor(0);
+        pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
+            return mesh->createPrimRefArray(prims,r,base.size());
+          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      }
+      return pinfo;
+    }
+
     template<typename Mesh>
     PrimInfo createPrimRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {

@@ -19,6 +19,7 @@
 #include "default.h"
 #include "device.h"
 #include "buffer.h"
+#include "../builders/priminfo.h"
 
 namespace embree
 {
@@ -262,6 +263,12 @@ namespace embree
     __forceinline unsigned numTimeSegments () const {
       return numTimeSteps-1;
     }
+
+  public:
+
+    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
+    };
 
   public:
     __forceinline bool hasIntersectionFilter() const { return intersectionFilterN != nullptr; }
