@@ -30,12 +30,11 @@
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
-//#include "../geometry/subdivpatch1cached_intersector.h"
 #include "../geometry/object_intersector.h"
 #include "../geometry/subgrid_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
-#define FORCE_SINGLE_MODE 1
+#define FORCE_SINGLE_MODE 0
 
 #define ENABLE_FAST_COHERENT_CODEPATHS 1
 
@@ -673,10 +672,15 @@ namespace embree
 
         /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
+#if FORCE_SINGLE_MODE == 0
         if (single)
+#endif
         {
           size_t bits = movemask(active);
-          if (unlikely(__popcnt(bits) <= switchThreshold)) {
+#if FORCE_SINGLE_MODE == 0
+          if (unlikely(__popcnt(bits) <= switchThreshold)) 
+#endif
+          {
             for (; bits!=0; ) {
               const size_t i = __bscf(bits);
               if (occluded1(bvh, cur, i, pre, ray, tray, context))

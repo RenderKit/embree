@@ -32,8 +32,11 @@ namespace embree
                                       const vfloat<K>& T,
                                       const vfloat<K>& absDen,
                                       const Vec3vf<K>& Ng,
-                                      const vbool<K>& flags)
-          : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng) {}
+                                      const vbool<K>& flags,
+                                      const GridMesh::Grid &g, 
+                                      const SubGrid& subgrid,
+                                      const size_t i)
+        : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng), g(g), subgrid(subgrid), i(i) {}
 
         __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
         {
@@ -43,8 +46,14 @@ namespace embree
           const vfloat<K> v0 = V * rcpAbsDen;
           const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
           const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
-          const vfloat<K> u = select(flags,u1,u0);
-          const vfloat<K> v = select(flags,v1,v0);
+          const vfloat<K> uu = select(flags,u1,u0);
+          const vfloat<K> vv = select(flags,v1,v0);
+          const int sx = (int)subgrid.x + (i % 2);
+          const int sy = (int)subgrid.y + (i >> 1);
+          const float inv_resX = rcp((float)((int)g.resX-1));
+          const float inv_resY = rcp((float)((int)g.resY-1));          
+          const vfloat<K> u = (uu + (float)sx) * inv_resX;
+          const vfloat<K> v = (vv + (float)sy) * inv_resY;          
           const Vec3vf<K> Ng(tri_Ng.x,tri_Ng.y,tri_Ng.z);
           return std::make_tuple(u,v,t,Ng);
         }
@@ -56,6 +65,10 @@ namespace embree
         const vfloat<K> absDen;
         const vbool<K> flags;
         const Vec3vf<K> tri_Ng;
+
+        const GridMesh::Grid &g;
+        const SubGrid& subgrid;
+        const size_t i;
       };
 
     /* ----------------------------- */
@@ -304,6 +317,9 @@ namespace embree
                                           const Vec3vf<K>& tri_e2,
                                           const Vec3vf<K>& tri_Ng,
                                           const vbool<K>& flags,
+                                          const GridMesh::Grid &g, 
+                                          const SubGrid &subgrid,
+                                          const size_t i,
                                           const Epilog& epilog) const
         { 
           /* calculate denominator */
@@ -344,7 +360,7 @@ namespace embree
 #endif
         
           /* calculate hit information */
-          SubGridQuadHitK<K> hit(U,V,T,absDen,tri_Ng,flags);
+          SubGridQuadHitK<K> hit(U,V,T,absDen,tri_Ng,flags,g,subgrid,i);
           return epilog(valid,hit);
         }
       
@@ -356,12 +372,15 @@ namespace embree
                                           const Vec3vf<K>& tri_v1,
                                           const Vec3vf<K>& tri_v2,
                                           const vbool<K>& flags,
+                                          const GridMesh::Grid &g, 
+                                          const SubGrid &subgrid,
+                                          const size_t i,
                                           const Epilog& epilog) const
         {
           const Vec3vf<K> e1 = tri_v0-tri_v1;
           const Vec3vf<K> e2 = tri_v2-tri_v0;
           const Vec3vf<K> Ng = cross(e2,e1);
-          return intersectK(valid0,ray,tri_v0,e1,e2,Ng,flags,epilog);
+          return intersectK(valid0,ray,tri_v0,e1,e2,Ng,flags,g,subgrid,i,epilog);
         }
 
         /*! Intersects K rays with one of M quads. */
@@ -372,11 +391,14 @@ namespace embree
                                       const Vec3vf<K>& v1,
                                       const Vec3vf<K>& v2,
                                       const Vec3vf<K>& v3,
+                                      const GridMesh::Grid &g, 
+                                      const SubGrid &subgrid,
+                                      const size_t i,
                                       const Epilog& epilog) const
         {
-          intersectK(valid0,ray,v0,v1,v3,vbool<K>(false),epilog);
+          intersectK(valid0,ray,v0,v1,v3,vbool<K>(false),g,subgrid,i,epilog);
           if (none(valid0)) return true;
-          intersectK(valid0,ray,v2,v3,v1,vbool<K>(true ),epilog);
+          intersectK(valid0,ray,v2,v3,v1,vbool<K>(true ),g,subgrid,i,epilog);
           return none(valid0);
         }
 
@@ -444,17 +466,50 @@ namespace embree
       __forceinline void intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
-        Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
-        MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v0,v1,v3,vbool<M>(false),epilog);
-        MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v2,v3,v1,vbool<M>(true ),epilog);
+        const vint<M> gIDs(subgrid.geomID()); // needs to be explicity here, otherwise clang produces wrong code
+        const vint<M> pIDs(subgrid.primID());
+
+        Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,gIDs,pIDs);
+
+        MoellerTrumboreHitM<4> hit;
+        if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
+        {
+          interpolateUV<M>(hit,g,subgrid);
+          epilog(hit.valid,hit);
+        }
+
+        if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v2,v3,v1,hit))
+        {
+          hit.U = hit.absDen - hit.U;
+          hit.V = hit.absDen - hit.V;
+          interpolateUV<M>(hit,g,subgrid);
+          epilog(hit.valid,hit);
+        }
+
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
-        Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
-        if (MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v0,v1,v3,vbool<M>(false),epilog)) return true;
-        if (MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v2,v3,v1,vbool<M>(true ),epilog)) return true;
+        const vint<M> gIDs(subgrid.geomID()); // needs to be explicity here, otherwise clang produces wrong code
+        const vint<M> pIDs(subgrid.primID());
+
+        Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,gIDs,pIDs);
+
+        MoellerTrumboreHitM<4> hit;
+        if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
+        {
+          interpolateUV<M>(hit,g,subgrid);
+          if (epilog(hit.valid,hit)) return true;
+        }
+
+        if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v2,v3,v1,hit))
+        {
+          hit.U = hit.absDen - hit.U;
+          hit.V = hit.absDen - hit.V;
+          interpolateUV<M>(hit,g,subgrid);
+          if (epilog(hit.valid,hit)) return true;
+        }
         return false;
       }
     };
@@ -644,6 +699,9 @@ namespace embree
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& subgrid)
       {
         Vec3fa vtx[16];
+        const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
+        const GridMesh::Grid &g = mesh->grid(subgrid.primID());
+
         subgrid.gather(vtx,context->scene);
         for (size_t i=0;i<4;i++)
         {
@@ -652,7 +710,7 @@ namespace embree
           const Vec3vf<K> p2 = vtx[i*4+2];
           const Vec3vf<K> p3 = vtx[i*4+3];
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<4,K,filter>(ray,context,subgrid.geomID(),subgrid.primID(),i));
+          pre.intersectK(valid_i,ray,p0,p1,p2,p3,g,subgrid,i,IntersectKEpilogM<4,K,filter>(ray,context,subgrid.geomID(),subgrid.primID(),i));
         }
       }
 
@@ -661,6 +719,9 @@ namespace embree
       {
         vbool<K> valid0 = valid_i;
         Vec3fa vtx[16];
+        const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
+        const GridMesh::Grid &g = mesh->grid(subgrid.primID());
+
         subgrid.gather(vtx,context->scene);
         for (size_t i=0;i<4;i++)
         {
@@ -669,7 +730,7 @@ namespace embree
           const Vec3vf<K> p2 = vtx[i*4+2];
           const Vec3vf<K> p3 = vtx[i*4+3];
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<4,K,filter>(valid0,ray,context,subgrid.geomID(),subgrid.primID(),i)))
+          if (pre.intersectK(valid0,ray,p0,p1,p2,p3,g,subgrid,i,OccludedKEpilogM<4,K,filter>(valid0,ray,context,subgrid.geomID(),subgrid.primID(),i)))
             break;
         }
         return !valid0;
@@ -692,7 +753,6 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
-
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }

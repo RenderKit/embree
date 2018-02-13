@@ -1196,7 +1196,6 @@ namespace embree
 
   Accel* BVH8Factory::BVH8Grid(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    PING;
     BVH8* accel = new BVH8(Object::type,scene);
     Accel::Intersectors intersectors = BVH8GridIntersectors(accel,ivariant);
     Builder* builder = nullptr;

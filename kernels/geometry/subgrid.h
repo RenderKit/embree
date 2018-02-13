@@ -184,8 +184,9 @@ namespace embree
 
           vtx[ 0] = vtx00; vtx[ 1] = vtx01; vtx[ 2] = vtx11; vtx[ 3] = vtx10;
           vtx[ 4] = vtx01; vtx[ 5] = vtx02; vtx[ 6] = vtx12; vtx[ 7] = vtx11;
-          vtx[ 8] = vtx11; vtx[ 9] = vtx12; vtx[10] = vtx22; vtx[11] = vtx21;
-          vtx[12] = vtx10; vtx[13] = vtx11; vtx[14] = vtx21; vtx[15] = vtx20;
+          vtx[ 8] = vtx10; vtx[ 9] = vtx11; vtx[10] = vtx21; vtx[11] = vtx20;
+          vtx[12] = vtx11; vtx[13] = vtx12; vtx[14] = vtx22; vtx[15] = vtx21;
+
         }
 
         /* Calculate the bounds of the subgrid */
