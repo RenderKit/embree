@@ -60,7 +60,9 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier8iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNiIntersectorK<8 COMMA 4> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBBezier8iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNiIntersectorKMB<8 COMMA 4> > >));
 #endif
-    
+
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBVirtualCurveIntersector4Hybrid, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<4> >));
+     
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4SubdivPatch1Intersector4, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector4>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4SubdivPatch1EagerIntersector4, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector4>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4SubdivPatch1EagerMBIntersector4, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1EagerMBIntersector4>));

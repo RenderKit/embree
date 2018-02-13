@@ -44,8 +44,8 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNv) == 21+25*M+4*16*M, "internal data layout issue");
-      return f*sizeof(BezierNv) + (r!=0)*(21 + 25*r + 4*16*r);
+      static_assert(sizeof(BezierNv) == 22+25*M+4*16*M, "internal data layout issue");
+      return f*sizeof(BezierNv) + (r!=0)*(22 + 25*r + 4*16*r);
     }
 
   public:

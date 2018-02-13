@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, CurveType type, CurveSubtype subtype)
-    : Geometry(device,BEZIER_CURVES,0,1), type(type), subtype(subtype), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
+    : Geometry(device,BEZIER_CURVES,0,1,gtype), type(type), subtype(subtype), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
@@ -323,8 +323,8 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype) {
-      return new CurvesBezier(device,BEZIER_CURVE,subtype);
+    NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype, RTCGeometryType gtype) {
+      return new CurvesBezier(device,gtype,BEZIER_CURVE,subtype);
     }
     
     void CurvesBezier::preCommit() {
@@ -340,8 +340,8 @@ namespace embree
       interpolate_helper<BezierCurveT<vfloat4>>(args);
     }
     
-    NativeCurves* createCurvesBSpline(Device* device, CurveSubtype subtype) {
-      return new CurvesBSpline(device,BSPLINE_CURVE,subtype);
+    NativeCurves* createCurvesBSpline(Device* device, CurveSubtype subtype, RTCGeometryType gtype) {
+      return new CurvesBSpline(device,gtype,BSPLINE_CURVE,subtype);
     }
     
     void CurvesBSpline::preCommit() {

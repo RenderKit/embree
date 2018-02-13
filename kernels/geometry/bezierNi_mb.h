@@ -18,11 +18,12 @@
 
 #include "primitive.h"
 #include "bezier1i.h"
+#include "bezier_curve_precalculations.h"
 
 namespace embree
 {
   template<int M>
-  struct BezierNiMB
+    struct BezierNiMB
   {
     struct Type : public PrimitiveType {
       Type ();
@@ -42,8 +43,8 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNiMB) == 5+37*M+24, "internal data layout issue");
-      return f*sizeof(BezierNiMB) + (r!=0)*(5+37*r+24);
+      static_assert(sizeof(BezierNiMB) == 6+37*M+24, "internal data layout issue");
+      return f*sizeof(BezierNiMB) + (r!=0)*(6+37*r+24);
     }
 
   public:
@@ -58,6 +59,7 @@ namespace embree
       N = end-begin;
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
+      ty = (unsigned char) scene->get(geomID0)->gtype;
 
       /* encode all primitives */
       LBBox3fa lbounds = empty;
@@ -152,6 +154,7 @@ namespace embree
   public:
     
     // 27.6 - 46 bytes per primitive
+    unsigned char ty;
     unsigned char N;
     unsigned char data[4+37*M+24];
 
@@ -193,89 +196,89 @@ namespace embree
     };
     */
     
-    __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+1); }
-    __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+1); }
+    __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+2); }
+    __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+2); }
     
-    __forceinline       unsigned int* primID(size_t N)       { return (unsigned int*)((char*)this+5); }
-    __forceinline const unsigned int* primID(size_t N) const { return (unsigned int*)((char*)this+5); }
+    __forceinline       unsigned int* primID(size_t N)       { return (unsigned int*)((char*)this+6); }
+    __forceinline const unsigned int* primID(size_t N) const { return (unsigned int*)((char*)this+6); }
     
-    __forceinline       char* bounds_vx_x(size_t N)       { return (char*)((char*)this+5+4*N); }
-    __forceinline const char* bounds_vx_x(size_t N) const { return (char*)((char*)this+5+4*N); }
+    __forceinline       char* bounds_vx_x(size_t N)       { return (char*)((char*)this+6+4*N); }
+    __forceinline const char* bounds_vx_x(size_t N) const { return (char*)((char*)this+6+4*N); }
     
-    __forceinline       char* bounds_vx_y(size_t N)       { return (char*)((char*)this+5+5*N); }
-    __forceinline const char* bounds_vx_y(size_t N) const { return (char*)((char*)this+5+5*N); }
+    __forceinline       char* bounds_vx_y(size_t N)       { return (char*)((char*)this+6+5*N); }
+    __forceinline const char* bounds_vx_y(size_t N) const { return (char*)((char*)this+6+5*N); }
     
-    __forceinline       char* bounds_vx_z(size_t N)       { return (char*)((char*)this+5+6*N); }
-    __forceinline const char* bounds_vx_z(size_t N) const { return (char*)((char*)this+5+6*N); }
+    __forceinline       char* bounds_vx_z(size_t N)       { return (char*)((char*)this+6+6*N); }
+    __forceinline const char* bounds_vx_z(size_t N) const { return (char*)((char*)this+6+6*N); }
     
-    __forceinline       short* bounds_vx_lower0(size_t N)       { return (short*)((char*)this+5+7*N); }
-    __forceinline const short* bounds_vx_lower0(size_t N) const { return (short*)((char*)this+5+7*N); }
+    __forceinline       short* bounds_vx_lower0(size_t N)       { return (short*)((char*)this+6+7*N); }
+    __forceinline const short* bounds_vx_lower0(size_t N) const { return (short*)((char*)this+6+7*N); }
     
-    __forceinline       short* bounds_vx_upper0(size_t N)       { return (short*)((char*)this+5+9*N); }
-    __forceinline const short* bounds_vx_upper0(size_t N) const { return (short*)((char*)this+5+9*N); }
+    __forceinline       short* bounds_vx_upper0(size_t N)       { return (short*)((char*)this+6+9*N); }
+    __forceinline const short* bounds_vx_upper0(size_t N) const { return (short*)((char*)this+6+9*N); }
 
-    __forceinline       short* bounds_vx_lower1(size_t N)       { return (short*)((char*)this+5+11*N); }
-    __forceinline const short* bounds_vx_lower1(size_t N) const { return (short*)((char*)this+5+11*N); }
+    __forceinline       short* bounds_vx_lower1(size_t N)       { return (short*)((char*)this+6+11*N); }
+    __forceinline const short* bounds_vx_lower1(size_t N) const { return (short*)((char*)this+6+11*N); }
     
-    __forceinline       short* bounds_vx_upper1(size_t N)       { return (short*)((char*)this+5+13*N); }
-    __forceinline const short* bounds_vx_upper1(size_t N) const { return (short*)((char*)this+5+13*N); }
+    __forceinline       short* bounds_vx_upper1(size_t N)       { return (short*)((char*)this+6+13*N); }
+    __forceinline const short* bounds_vx_upper1(size_t N) const { return (short*)((char*)this+6+13*N); }
 
-    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+5+15*N); }
-    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+5+15*N); }
+    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+6+15*N); }
+    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+6+15*N); }
     
-    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+5+16*N); }
-    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+5+16*N); }
+    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+6+16*N); }
+    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+6+16*N); }
     
-    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+5+17*N); }
-    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+5+17*N); }
+    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+6+17*N); }
+    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+6+17*N); }
     
-    __forceinline       short* bounds_vy_lower0(size_t N)       { return (short*)((char*)this+5+18*N); }
-    __forceinline const short* bounds_vy_lower0(size_t N) const { return (short*)((char*)this+5+18*N); }
+    __forceinline       short* bounds_vy_lower0(size_t N)       { return (short*)((char*)this+6+18*N); }
+    __forceinline const short* bounds_vy_lower0(size_t N) const { return (short*)((char*)this+6+18*N); }
     
-    __forceinline       short* bounds_vy_upper0(size_t N)       { return (short*)((char*)this+5+20*N); }
-    __forceinline const short* bounds_vy_upper0(size_t N) const { return (short*)((char*)this+5+20*N); }
+    __forceinline       short* bounds_vy_upper0(size_t N)       { return (short*)((char*)this+6+20*N); }
+    __forceinline const short* bounds_vy_upper0(size_t N) const { return (short*)((char*)this+6+20*N); }
 
-    __forceinline       short* bounds_vy_lower1(size_t N)       { return (short*)((char*)this+5+22*N); }
-    __forceinline const short* bounds_vy_lower1(size_t N) const { return (short*)((char*)this+5+22*N); }
+    __forceinline       short* bounds_vy_lower1(size_t N)       { return (short*)((char*)this+6+22*N); }
+    __forceinline const short* bounds_vy_lower1(size_t N) const { return (short*)((char*)this+6+22*N); }
     
-    __forceinline       short* bounds_vy_upper1(size_t N)       { return (short*)((char*)this+5+24*N); }
-    __forceinline const short* bounds_vy_upper1(size_t N) const { return (short*)((char*)this+5+24*N); }
+    __forceinline       short* bounds_vy_upper1(size_t N)       { return (short*)((char*)this+6+24*N); }
+    __forceinline const short* bounds_vy_upper1(size_t N) const { return (short*)((char*)this+6+24*N); }
     
-    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+5+26*N); }
-    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+5+26*N); }
+    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+6+26*N); }
+    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+6+26*N); }
     
-    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+5+27*N); }
-    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+5+27*N); }
+    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+6+27*N); }
+    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+6+27*N); }
     
-    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+5+28*N); }
-    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+5+28*N); }
+    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+6+28*N); }
+    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+6+28*N); }
     
-    __forceinline       short* bounds_vz_lower0(size_t N)       { return (short*)((char*)this+5+29*N); }
-    __forceinline const short* bounds_vz_lower0(size_t N) const { return (short*)((char*)this+5+29*N); }
+    __forceinline       short* bounds_vz_lower0(size_t N)       { return (short*)((char*)this+6+29*N); }
+    __forceinline const short* bounds_vz_lower0(size_t N) const { return (short*)((char*)this+6+29*N); }
     
-    __forceinline       short* bounds_vz_upper0(size_t N)       { return (short*)((char*)this+5+31*N); }
-    __forceinline const short* bounds_vz_upper0(size_t N) const { return (short*)((char*)this+5+31*N); }
+    __forceinline       short* bounds_vz_upper0(size_t N)       { return (short*)((char*)this+6+31*N); }
+    __forceinline const short* bounds_vz_upper0(size_t N) const { return (short*)((char*)this+6+31*N); }
 
-    __forceinline       short* bounds_vz_lower1(size_t N)       { return (short*)((char*)this+5+33*N); }
-    __forceinline const short* bounds_vz_lower1(size_t N) const { return (short*)((char*)this+5+33*N); }
+    __forceinline       short* bounds_vz_lower1(size_t N)       { return (short*)((char*)this+6+33*N); }
+    __forceinline const short* bounds_vz_lower1(size_t N) const { return (short*)((char*)this+6+33*N); }
     
-    __forceinline       short* bounds_vz_upper1(size_t N)       { return (short*)((char*)this+5+35*N); }
-    __forceinline const short* bounds_vz_upper1(size_t N) const { return (short*)((char*)this+5+35*N); }
+    __forceinline       short* bounds_vz_upper1(size_t N)       { return (short*)((char*)this+6+35*N); }
+    __forceinline const short* bounds_vz_upper1(size_t N) const { return (short*)((char*)this+6+35*N); }
 
-    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+5+37*N); }
-    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+5+37*N); }
+    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+6+37*N); }
+    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+6+37*N); }
     
-    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+5+37*N+12); }
-    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+5+37*N+12); }
+    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+6+37*N+12); }
+    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+6+37*N+12); }
 
-    __forceinline       float& time_offset(size_t N)       { return *(float*)((char*)this+5+37*N+16); }
-    __forceinline const float& time_offset(size_t N) const { return *(float*)((char*)this+5+37*N+16); }
+    __forceinline       float& time_offset(size_t N)       { return *(float*)((char*)this+6+37*N+16); }
+    __forceinline const float& time_offset(size_t N) const { return *(float*)((char*)this+6+37*N+16); }
     
-    __forceinline       float& time_scale(size_t N)       { return *(float*)((char*)this+5+37*N+20); }
-    __forceinline const float& time_scale(size_t N) const { return *(float*)((char*)this+5+37*N+20); }
+    __forceinline       float& time_scale(size_t N)       { return *(float*)((char*)this+6+37*N+20); }
+    __forceinline const float& time_scale(size_t N) const { return *(float*)((char*)this+6+37*N+20); }
 
-    __forceinline       char* end(size_t N)       { return (char*)this+5+37*N+24; }
-    __forceinline const char* end(size_t N) const { return (char*)this+5+37*N+24; }
+    __forceinline       char* end(size_t N)       { return (char*)this+6+37*N+24; }
+    __forceinline const char* end(size_t N) const { return (char*)this+6+37*N+24; }
   };
 
   template<int M>

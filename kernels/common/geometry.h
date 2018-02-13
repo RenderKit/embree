@@ -70,7 +70,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps);
+    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCGeometryType gtype = RTC_GEOMETRY_TYPE_TRIANGLE);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -322,7 +322,8 @@ namespace embree
     Device* device;            //!< device this geometry belongs to
     Scene* scene;              //!< pointer to scene this mesh belongs to
     unsigned geomID;           //!< internal geometry ID
-    Type type;                 //!< geometry type 
+    Type type;                 //!< geometry type
+    RTCGeometryType gtype;
     unsigned int numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed
     unsigned int numTimeSteps;     //!< number of time steps

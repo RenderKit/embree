@@ -397,6 +397,7 @@ namespace embree
     else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
     else if (device->hair_accel == "bvh4obb.bezier4v" ) accels.add(device->bvh4_factory->BVH4OBBBezier4v(this));
     else if (device->hair_accel == "bvh4obb.bezier4i" ) accels.add(device->bvh4_factory->BVH4OBBBezier4i(this));
+    else if (device->hair_accel == "bvh4obb.virtualcurve4i" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4i(this));
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
     else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));

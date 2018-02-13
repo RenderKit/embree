@@ -18,6 +18,7 @@
 
 #include "primitive.h"
 #include "bezier1i.h"
+#include "bezier_curve_precalculations.h"
 
 namespace embree
 {
@@ -42,8 +43,8 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNi) == 21+25*M, "internal data layout issue");
-      return f*sizeof(BezierNi) + (r!=0)*(21 + 25*r);
+      static_assert(sizeof(BezierNi) == 22+25*M, "internal data layout issue");
+      return f*sizeof(BezierNi) + (r!=0)*(22 + 25*r);
     }
 
   public:
@@ -58,6 +59,7 @@ namespace embree
       N = end-begin;
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
+      ty = (unsigned char) scene->get(geomID0)->gtype;
 
       /* encode all primitives */
       BBox3fa bounds = empty;
@@ -130,6 +132,7 @@ namespace embree
   public:
     
     // 27.6 - 46 bytes per primitive
+    unsigned char ty;
     unsigned char N;
     unsigned char data[4+25*M+16];
 
@@ -162,65 +165,65 @@ namespace embree
     };
     */
     
-    __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+1); }
-    __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+1); }
+    __forceinline       unsigned int& geomID(size_t N)       { return *(unsigned int*)((char*)this+2); }
+    __forceinline const unsigned int& geomID(size_t N) const { return *(unsigned int*)((char*)this+2); }
     
-    __forceinline       unsigned int* primID(size_t N)       { return (unsigned int*)((char*)this+5); }
-    __forceinline const unsigned int* primID(size_t N) const { return (unsigned int*)((char*)this+5); }
+    __forceinline       unsigned int* primID(size_t N)       { return (unsigned int*)((char*)this+6); }
+    __forceinline const unsigned int* primID(size_t N) const { return (unsigned int*)((char*)this+6); }
     
-    __forceinline       char* bounds_vx_x(size_t N)       { return (char*)((char*)this+5+4*N); }
-    __forceinline const char* bounds_vx_x(size_t N) const { return (char*)((char*)this+5+4*N); }
+    __forceinline       char* bounds_vx_x(size_t N)       { return (char*)((char*)this+6+4*N); }
+    __forceinline const char* bounds_vx_x(size_t N) const { return (char*)((char*)this+6+4*N); }
     
-    __forceinline       char* bounds_vx_y(size_t N)       { return (char*)((char*)this+5+5*N); }
-    __forceinline const char* bounds_vx_y(size_t N) const { return (char*)((char*)this+5+5*N); }
+    __forceinline       char* bounds_vx_y(size_t N)       { return (char*)((char*)this+6+5*N); }
+    __forceinline const char* bounds_vx_y(size_t N) const { return (char*)((char*)this+6+5*N); }
     
-    __forceinline       char* bounds_vx_z(size_t N)       { return (char*)((char*)this+5+6*N); }
-    __forceinline const char* bounds_vx_z(size_t N) const { return (char*)((char*)this+5+6*N); }
+    __forceinline       char* bounds_vx_z(size_t N)       { return (char*)((char*)this+6+6*N); }
+    __forceinline const char* bounds_vx_z(size_t N) const { return (char*)((char*)this+6+6*N); }
     
-    __forceinline       short* bounds_vx_lower(size_t N)       { return (short*)((char*)this+5+7*N); }
-    __forceinline const short* bounds_vx_lower(size_t N) const { return (short*)((char*)this+5+7*N); }
+    __forceinline       short* bounds_vx_lower(size_t N)       { return (short*)((char*)this+6+7*N); }
+    __forceinline const short* bounds_vx_lower(size_t N) const { return (short*)((char*)this+6+7*N); }
     
-    __forceinline       short* bounds_vx_upper(size_t N)       { return (short*)((char*)this+5+9*N); }
-    __forceinline const short* bounds_vx_upper(size_t N) const { return (short*)((char*)this+5+9*N); }
+    __forceinline       short* bounds_vx_upper(size_t N)       { return (short*)((char*)this+6+9*N); }
+    __forceinline const short* bounds_vx_upper(size_t N) const { return (short*)((char*)this+6+9*N); }
     
-    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+5+11*N); }
-    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+5+11*N); }
+    __forceinline       char* bounds_vy_x(size_t N)       { return (char*)((char*)this+6+11*N); }
+    __forceinline const char* bounds_vy_x(size_t N) const { return (char*)((char*)this+6+11*N); }
     
-    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+5+12*N); }
-    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+5+12*N); }
+    __forceinline       char* bounds_vy_y(size_t N)       { return (char*)((char*)this+6+12*N); }
+    __forceinline const char* bounds_vy_y(size_t N) const { return (char*)((char*)this+6+12*N); }
     
-    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+5+13*N); }
-    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+5+13*N); }
+    __forceinline       char* bounds_vy_z(size_t N)       { return (char*)((char*)this+6+13*N); }
+    __forceinline const char* bounds_vy_z(size_t N) const { return (char*)((char*)this+6+13*N); }
     
-    __forceinline       short* bounds_vy_lower(size_t N)       { return (short*)((char*)this+5+14*N); }
-    __forceinline const short* bounds_vy_lower(size_t N) const { return (short*)((char*)this+5+14*N); }
+    __forceinline       short* bounds_vy_lower(size_t N)       { return (short*)((char*)this+6+14*N); }
+    __forceinline const short* bounds_vy_lower(size_t N) const { return (short*)((char*)this+6+14*N); }
     
-    __forceinline       short* bounds_vy_upper(size_t N)       { return (short*)((char*)this+5+16*N); }
-    __forceinline const short* bounds_vy_upper(size_t N) const { return (short*)((char*)this+5+16*N); }
+    __forceinline       short* bounds_vy_upper(size_t N)       { return (short*)((char*)this+6+16*N); }
+    __forceinline const short* bounds_vy_upper(size_t N) const { return (short*)((char*)this+6+16*N); }
     
-    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+5+18*N); }
-    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+5+18*N); }
+    __forceinline       char* bounds_vz_x(size_t N)       { return (char*)((char*)this+6+18*N); }
+    __forceinline const char* bounds_vz_x(size_t N) const { return (char*)((char*)this+6+18*N); }
     
-    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+5+19*N); }
-    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+5+19*N); }
+    __forceinline       char* bounds_vz_y(size_t N)       { return (char*)((char*)this+6+19*N); }
+    __forceinline const char* bounds_vz_y(size_t N) const { return (char*)((char*)this+6+19*N); }
     
-    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+5+20*N); }
-    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+5+20*N); }
+    __forceinline       char* bounds_vz_z(size_t N)       { return (char*)((char*)this+6+20*N); }
+    __forceinline const char* bounds_vz_z(size_t N) const { return (char*)((char*)this+6+20*N); }
     
-    __forceinline       short* bounds_vz_lower(size_t N)       { return (short*)((char*)this+5+21*N); }
-    __forceinline const short* bounds_vz_lower(size_t N) const { return (short*)((char*)this+5+21*N); }
+    __forceinline       short* bounds_vz_lower(size_t N)       { return (short*)((char*)this+6+21*N); }
+    __forceinline const short* bounds_vz_lower(size_t N) const { return (short*)((char*)this+6+21*N); }
     
-    __forceinline       short* bounds_vz_upper(size_t N)       { return (short*)((char*)this+5+23*N); }
-    __forceinline const short* bounds_vz_upper(size_t N) const { return (short*)((char*)this+5+23*N); }
+    __forceinline       short* bounds_vz_upper(size_t N)       { return (short*)((char*)this+6+23*N); }
+    __forceinline const short* bounds_vz_upper(size_t N) const { return (short*)((char*)this+6+23*N); }
     
-    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+5+25*N); }
-    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+5+25*N); }
+    __forceinline       Vec3f* offset(size_t N)       { return (Vec3f*)((char*)this+6+25*N); }
+    __forceinline const Vec3f* offset(size_t N) const { return (Vec3f*)((char*)this+6+25*N); }
     
-    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+5+25*N+12); }
-    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+5+25*N+12); }
+    __forceinline       float* scale(size_t N)       { return (float*)((char*)this+6+25*N+12); }
+    __forceinline const float* scale(size_t N) const { return (float*)((char*)this+6+25*N+12); }
 
-    __forceinline       char* end(size_t N)       { return (char*)this+5+25*N+16; }
-    __forceinline const char* end(size_t N) const { return (char*)this+5+25*N+16; }
+    __forceinline       char* end(size_t N)       { return (char*)this+6+25*N+16; }
+    __forceinline const char* end(size_t N) const { return (char*)this+6+25*N+16; }
   };
 
   template<int M>

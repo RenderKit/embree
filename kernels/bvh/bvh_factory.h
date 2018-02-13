@@ -20,6 +20,7 @@
 #include "../common/isa.h"
 #include "../common/accel.h"
 #include "../common/scene.h"
+#include "../geometry/bezier_curve_precalculations.h"
 
 namespace embree
 {

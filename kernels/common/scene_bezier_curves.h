@@ -48,7 +48,7 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, CurveType type, CurveSubtype subtype);
+    NativeCurves (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype);
     
   public:
     void enabling();
@@ -350,8 +350,8 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, CurveType type, CurveSubtype subtype)
-        : NativeCurves(device,type,subtype) {}
+      NativeCurvesISA (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
+        : NativeCurves(device,gtype,type,subtype) {}
 
       template<typename Curve> void interpolate_helper(const RTCInterpolateArguments* const args);
       
@@ -360,8 +360,8 @@ namespace embree
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, CurveType type, CurveSubtype subtype)
-         : NativeCurvesISA(device,type,subtype) {}
+      CurvesBezier (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
+        : NativeCurvesISA(device,gtype,type,subtype) {}
 
       void preCommit();
       void interpolate(const RTCInterpolateArguments* const args);
@@ -514,8 +514,8 @@ namespace embree
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, CurveType type, CurveSubtype subtype)
-         : NativeCurvesISA(device,type,subtype) {}
+      CurvesBSpline (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
+        : NativeCurvesISA(device,gtype,type,subtype) {}
 
       void preCommit();
       void interpolate(const RTCInterpolateArguments* const args);
@@ -668,6 +668,6 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA CurveSubtype);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA CurveSubtype);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA CurveSubtype COMMA RTCGeometryType);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA CurveSubtype COMMA RTCGeometryType);
 }

@@ -69,7 +69,7 @@ namespace embree
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = __bsf(Primitive::max_size());
         settings.minLeafSize = Primitive::max_size();
-        settings.maxLeafSize = Primitive::max_size()*BVH::maxLeafBlocks;
+        settings.maxLeafSize = Primitive::max_size();
 
         /* creates a leaf node */
         auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
