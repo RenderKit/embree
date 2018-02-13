@@ -67,7 +67,7 @@ namespace embree
       __forceinline float   t(const size_t i) { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
 
-    public:
+    private:
       vfloat<M> U;
       vfloat<M> V;
       vfloat<M> T;
@@ -368,64 +368,6 @@ namespace embree
         const Vec3vf<M> Ng = cross(e2,e1);
         return intersect(ray,k,v0,e1,e2,Ng,flags,epilog);
       }
-
-      /*! Intersect k'th ray from ray packet of size K with M triangles. */
-      template<int M, int K>
-      static  __forceinline bool intersect2(RayK<K>& ray,
-                                           size_t k,
-                                           const Vec3vf<M>& tri_v0,
-                                           const Vec3vf<M>& tri_e1,
-                                           const Vec3vf<M>& tri_e2,
-                                           const Vec3vf<M>& tri_Ng,
-                                           const vbool<M>& flags,
-                                           QuadHitM<M> &hit)
-      {
-        /* calculate denominator */
-        const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
-        const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
-        const Vec3vf<M> C = Vec3vf<M>(tri_v0) - O;
-        const Vec3vf<M> R = cross(C,D);
-        const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);
-        const vfloat<M> absDen = abs(den);
-        const vfloat<M> sgnDen = signmsk(den);
-        
-        /* perform edge tests */
-        const vfloat<M> U = dot(R,Vec3vf<M>(tri_e2)) ^ sgnDen;
-        const vfloat<M> V = dot(R,Vec3vf<M>(tri_e1)) ^ sgnDen;
-        
-        /* perform backface culling */
-#if defined(EMBREE_BACKFACE_CULLING)
-        vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
-#else
-        vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
-#endif
-        if (likely(none(valid))) return false;
-        
-        /* perform depth test */
-        const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
-        valid &= (absDen*vfloat<M>(ray.tnear()[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar[k]));
-        if (likely(none(valid))) return false;
-        
-        /* calculate hit information */
-        new (&hit) QuadHitM<M>(valid,U,V,T,absDen,tri_Ng,flags);
-        return true;
-      }
-
-      template<int M, int K>
-      static __forceinline bool intersect2(RayK<K>& ray,
-                                           size_t k,
-                                           const Vec3vf<M>& v0,
-                                           const Vec3vf<M>& v1,
-                                           const Vec3vf<M>& v2,
-                                           const vbool<M>& flags,
-                                           QuadHitM<M> &hit)
-      {
-        const Vec3vf<M> e1 = v0-v1;
-        const Vec3vf<M> e2 = v2-v0;
-        const Vec3vf<M> Ng = cross(e2,e1);
-        return intersect2(ray,k,v0,e1,e2,Ng,flags,hit);
-      }
-
     };
 
     template<int M, int K, bool filter>
