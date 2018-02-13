@@ -379,6 +379,62 @@ namespace embree
         }
         return pinfo;
       }
+
+      LinearSpace3fa computeAlignedSpace(const size_t primID)
+      {
+        Vec3fa axisz(0,0,1);
+        Vec3fa axisy(0,1,0);
+        
+        const unsigned vtxID = this->curve(primID);
+        const Vec3fa v0 = this->vertex(vtxID+0);
+        const Vec3fa v1 = this->vertex(vtxID+1);
+        const Vec3fa v2 = this->vertex(vtxID+2);
+        const Vec3fa v3 = this->vertex(vtxID+3);
+        const Curve3fa curve(v0,v1,v2,v3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axisz = axisz_;
+          axisy = axisy_;
+        }
+        
+        if (sqr_length(axisy) > 1E-18) {
+          axisy = normalize(axisy);
+          Vec3fa axisx = normalize(cross(axisy,axisz));
+          return LinearSpace3fa(axisx,axisy,axisz);
+        }
+        return frame(axisz);
+      }
+      
+      Vec3fa computeDirection(unsigned int primID)
+      {
+        const unsigned vtxID = curve(primID);
+        const Vec3fa v0 = vertex(vtxID+0);
+        const Vec3fa v1 = vertex(vtxID+1);
+        const Vec3fa v2 = vertex(vtxID+2);
+        const Vec3fa v3 = vertex(vtxID+3);
+        const Curve3fa c(v0,v1,v2,v3);
+        const Vec3fa p0 = c.begin();
+        const Vec3fa p3 = c.end();
+        const Vec3fa axis1 = p3 - p0;
+        return axis1;
+      }
+
+      BBox3fa vbounds(size_t i) const {
+        return bounds(i);
+      }
+      
+      BBox3fa vbounds(const AffineSpace3fa& space, size_t i) const {
+        return bounds(space,i);
+      }
+
+      BBox3fa vbounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return bounds(ofs,scale,r_scale0,space,i,itime);
+      }
     };
     
     struct CurvesBSpline : public NativeCurvesISA
@@ -401,6 +457,62 @@ namespace embree
           prims[k++] = prim;
         }
         return pinfo;
+      }
+
+      LinearSpace3fa computeAlignedSpace(const size_t primID)
+      {
+        Vec3fa axisz(0,0,1);
+        Vec3fa axisy(0,1,0);
+        
+        const unsigned vtxID = this->curve(primID);
+        const Vec3fa v0 = this->vertex(vtxID+0);
+        const Vec3fa v1 = this->vertex(vtxID+1);
+        const Vec3fa v2 = this->vertex(vtxID+2);
+        const Vec3fa v3 = this->vertex(vtxID+3);
+        const Curve3fa curve(v0,v1,v2,v3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axisz = axisz_;
+          axisy = axisy_;
+        }
+        
+        if (sqr_length(axisy) > 1E-18) {
+          axisy = normalize(axisy);
+          Vec3fa axisx = normalize(cross(axisy,axisz));
+          return LinearSpace3fa(axisx,axisy,axisz);
+        }
+        return frame(axisz);
+      }
+
+      Vec3fa computeDirection(unsigned int primID)
+      {
+        const unsigned vtxID = curve(primID);
+        const Vec3fa v0 = vertex(vtxID+0);
+        const Vec3fa v1 = vertex(vtxID+1);
+        const Vec3fa v2 = vertex(vtxID+2);
+        const Vec3fa v3 = vertex(vtxID+3);
+        const Curve3fa c(v0,v1,v2,v3);
+        const Vec3fa p0 = c.begin();
+        const Vec3fa p3 = c.end();
+        const Vec3fa axis1 = p3 - p0;
+        return axis1;
+      }
+
+      BBox3fa vbounds(size_t i) const {
+        return bounds(i);
+      }
+      
+      BBox3fa vbounds(const AffineSpace3fa& space, size_t i) const {
+        return bounds(space,i);
+      }
+
+      BBox3fa vbounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return bounds(ofs,scale,r_scale0,space,i,itime);
       }
     };
   }

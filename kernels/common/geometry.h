@@ -268,7 +268,27 @@ namespace embree
 
     virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
-    };
+    }
+
+    virtual LinearSpace3fa computeAlignedSpace(const size_t primID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeAlignedSpace not implemented for this geometry"); 
+    }
+    
+    virtual Vec3fa computeDirection(unsigned int primID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeDirection not implemented for this geometry"); 
+    }
+
+    virtual BBox3fa vbounds(size_t primID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
+    }
+    
+    virtual BBox3fa vbounds(const AffineSpace3fa& space, size_t primID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
+    }
+
+    virtual BBox3fa vbounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
+    }
 
   public:
     __forceinline bool hasIntersectionFilter() const { return intersectionFilterN != nullptr; }

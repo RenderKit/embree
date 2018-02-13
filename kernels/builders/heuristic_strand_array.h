@@ -64,22 +64,16 @@ namespace embree
       __forceinline HeuristicStrandSplit (Scene* scene, PrimRef* prims)
         : scene(scene), prims(prims) {}
       
-      __forceinline const Vec3fa direction(const PrimRef& prim)
-      {
-        const Curve3fa curve = scene->get<NativeCurves>(prim.geomID())->getCurve(prim.primID());
-        return curve.end()-curve.begin();
+      __forceinline const Vec3fa direction(const PrimRef& prim) {
+        return scene->get(prim.geomID())->computeDirection(prim.primID());
       }
       
-      __forceinline const BBox3fa bounds(const PrimRef& prim)
-      {
-        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
-        return curves->bounds(prim.primID());
+      __forceinline const BBox3fa bounds(const PrimRef& prim) {
+        return scene->get(prim.geomID())->vbounds(prim.primID());
       }
 
-      __forceinline const BBox3fa bounds(const LinearSpace3fa& space, const PrimRef& prim)
-      {
-        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
-        return curves->bounds(space,prim.primID());
+      __forceinline const BBox3fa bounds(const LinearSpace3fa& space, const PrimRef& prim) {
+        return scene->get(prim.geomID())->vbounds(space,prim.primID());
       }
 
       /*! finds the best split */

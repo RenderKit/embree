@@ -51,47 +51,6 @@ namespace embree
     /*! Default constructor. */
     __forceinline BezierNi () {}
 
-    const LinearSpace3fa computeAlignedSpace(Scene* scene, const PrimRef* prims, const range<size_t>& set)
-    {
-      Vec3fa axisz(0,0,1);
-      Vec3fa axisy(0,1,0);
-      uint64_t bestGeomPrimID = -1;
-      
-      /*! find curve with minimum ID that defines valid direction */
-      for (size_t i=set.begin(); i<set.end(); i++)
-      {
-        const unsigned int geomID = prims[i].geomID();
-        const unsigned int primID = prims[i].primID();
-        const uint64_t geomprimID = prims[i].ID64();
-        if (geomprimID >= bestGeomPrimID) continue;
-        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
-        const unsigned vtxID = mesh->curve(primID);
-        const Vec3fa v0 = mesh->vertex(vtxID+0);
-        const Vec3fa v1 = mesh->vertex(vtxID+1);
-        const Vec3fa v2 = mesh->vertex(vtxID+2);
-        const Vec3fa v3 = mesh->vertex(vtxID+3);
-        const Curve3fa curve(v0,v1,v2,v3);
-        const Vec3fa p0 = curve.begin();
-        const Vec3fa p3 = curve.end();
-        const Vec3fa d0 = curve.eval_du(0.0f);
-        //const Vec3fa d1 = curve.eval_du(1.0f);
-        const Vec3fa axisz_ = normalize(p3 - p0);
-        const Vec3fa axisy_ = cross(axisz_,d0);
-        if (sqr_length(p3-p0) > 1E-18f) {
-          axisz = axisz_;
-          axisy = axisy_;
-          bestGeomPrimID = geomprimID;
-        }
-      }
-
-      if (sqr_length(axisy) > 1E-18) {
-        axisy = normalize(axisy);
-        Vec3fa axisx = normalize(cross(axisy,axisz));
-        return LinearSpace3fa(axisx,axisy,axisz);
-      }
-      return frame(axisz);
-    }
-
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {  
@@ -122,7 +81,7 @@ namespace embree
         const PrimRef& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpace(scene,prims,range<size_t>(begin));
+        const LinearSpace3fa space2 = scene->get(geomID)->computeAlignedSpace(primID);
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const BBox3fa bounds = scene->get<NativeCurves>(geomID)->bounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);

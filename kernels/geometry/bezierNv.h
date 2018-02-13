@@ -25,7 +25,6 @@ namespace embree
     struct BezierNv : public BezierNi<M>
   {
     using BezierNi<M>::N;
-    using BezierNi<M>::computeAlignedSpace;
       
     struct Type : public PrimitiveType {
       Type ();
