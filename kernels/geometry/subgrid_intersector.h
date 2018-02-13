@@ -140,17 +140,41 @@ namespace embree
         {
           MoellerTrumboreHitM<M> hit;
           MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
-          Intersect1EpilogM<M,M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
+          const vint<M> gIDs(subgrid.geomID()); // needs to be explicity here, otherwise clang produces wrong code
+          const vint<M> pIDs(subgrid.primID());
+          Intersect1EpilogM<M,M,filter> epilog(ray,context,gIDs,pIDs);
 
           /* intersect first triangle */
           if (intersector.intersect(ray,v0,v1,v3,hit)) 
+          {
+            /* correct U,V interpolation across the entire grid */
+            const vint<M> sx((int)subgrid.x);
+            const vint<M> sy((int)subgrid.y);
+            const vint<M> sxM(sx + vint<M>(0,1,1,0));
+            const vint<M> syM(sy + vint<M>(0,0,1,1));
+            const float inv_resX = rcp((float)((int)g.resX-1));
+            const float inv_resY = rcp((float)((int)g.resY-1));          
+            hit.U = (hit.U + (vfloat<M>)sxM * hit.absDen) * inv_resX;
+            hit.V = (hit.V + (vfloat<M>)syM * hit.absDen) * inv_resY;          
             epilog(hit.valid,hit);
+          }
 
           /* intersect second triangle */
           if (intersector.intersect(ray,v2,v3,v1,hit)) 
           {
             hit.U = hit.absDen - hit.U;
             hit.V = hit.absDen - hit.V;
+
+            /* correct U,V interpolation across the entire grid */
+            const vint<M> sx((int)subgrid.x);
+            const vint<M> sy((int)subgrid.y);
+            const vint<M> sxM(sx + vint<M>(0,1,1,0));
+            const vint<M> syM(sy + vint<M>(0,0,1,1));
+            const float inv_resX = rcp((float)((int)g.resX-1));
+            const float inv_resY = rcp((float)((int)g.resY-1));          
+            hit.U = (hit.U + (vfloat<M>)sxM * hit.absDen) * inv_resX;
+            hit.V = (hit.V + (vfloat<M>)syM * hit.absDen) * inv_resY;          
+
             epilog(hit.valid,hit);
           }
         }
@@ -161,7 +185,8 @@ namespace embree
         {
           MoellerTrumboreHitM<M> hit;
           MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
-          Occluded1EpilogM<M,M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
+          Occluded1EpilogM<M,M,filter> epilog(ray,context,vint<M>(subgrid.geomID()),vint<M>(subgrid.primID()));
+          return false;
 
           /* intersect first triangle */
           if (intersector.intersect(ray,v0,v1,v3,hit)) 
@@ -224,6 +249,17 @@ namespace embree
           hit.U = select(flags,absDen-U,U);
           hit.V = select(flags,absDen-V,V);
 #endif
+
+          /* correct U,V interpolation across the entire grid */
+          const vint16 sx((int)subgrid.x);
+          const vint16 sy((int)subgrid.y);
+          const vint16 sx16(sx + vint16(0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0));
+          const vint16 sy16(sy + vint16(0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1));
+          const float inv_resX = rcp((float)((int)g.resX-1));
+          const float inv_resY = rcp((float)((int)g.resY-1));          
+          hit.U = (hit.U + (vfloat16)sx16 * absDen) * inv_resX;
+          hit.V = (hit.V + (vfloat16)sy16 * absDen) * inv_resY;          
+
           if (likely(epilog(hit.valid,hit)))
             return true;
         }
@@ -281,23 +317,18 @@ namespace embree
           hit.U = select(flags,absDen-U,U);
           hit.V = select(flags,absDen-V,V);
 #endif
+          /* correct U,V interpolation across the entire grid */
           const vint8 sx((int)subgrid.x);
           const vint8 sy((int)subgrid.y);
           const vint8 sx8(sx + vint8(0,1,1,0,0,1,1,0));
           const vint8 sy8(sy + vint8(0,0,1,1,0,0,1,1));
           const float inv_resX = rcp((float)((int)g.resX-1));
-          const float inv_resY = rcp((float)((int)g.resY-1));
-          
-          const vfloat8 sx_u = (hit.U + (vfloat8)sx8 * absDen) * inv_resX;
-          const vfloat8 sx_v = (hit.V + (vfloat8)sy8 * absDen) * inv_resY;
-          
-          hit.U = sx_u;
-          hit.V = sx_v;
+          const float inv_resY = rcp((float)((int)g.resY-1));          
+          hit.U = (hit.U + (vfloat8)sx8 * absDen) * inv_resX;
+          hit.V = (hit.V + (vfloat8)sy8 * absDen) * inv_resY;          
 
           if (unlikely(epilog(hit.valid,hit)))
-          {
             return true;
-          }
         }
         return false;
       }
