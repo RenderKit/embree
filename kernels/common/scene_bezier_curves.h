@@ -366,7 +366,7 @@ namespace embree
       void preCommit();
       void interpolate(const RTCInterpolateArguments* const args);
 
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k)
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -380,7 +380,7 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k)
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const
       {
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -394,7 +394,7 @@ namespace embree
         return pinfo;
       }
 
-      LinearSpace3fa computeAlignedSpace(const size_t primID)
+      LinearSpace3fa computeAlignedSpace(const size_t primID) const
       {
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
@@ -423,14 +423,54 @@ namespace embree
         }
         return frame(axisz);
       }
+
+      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const // FIXME: improve
+      {
+        Vec3fa axis0(0,0,1);
+
+        const unsigned num_time_segments = this->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        if (tbounds.size() == 0) return frame(axis0);
+        
+        const size_t t = (tbounds.begin()+tbounds.end())/2;
+        const unsigned int vertexID = this->curve(primID);
+        const Vec3fa a0 = this->vertex(vertexID+0,t);
+        const Vec3fa a1 = this->vertex(vertexID+1,t);
+        const Vec3fa a2 = this->vertex(vertexID+2,t);
+        const Vec3fa a3 = this->vertex(vertexID+3,t);
+        const Curve3fa curve(a0,a1,a2,a3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa axis1 = p3 - p0;
+        
+        if (sqr_length(axis1) > 1E-18f) {
+          axis0 = normalize(axis1);
+        }
+           
+        return frame(axis0);
+      }
       
-      Vec3fa computeDirection(unsigned int primID)
+      Vec3fa computeDirection(unsigned int primID) const
       {
         const unsigned vtxID = curve(primID);
         const Vec3fa v0 = vertex(vtxID+0);
         const Vec3fa v1 = vertex(vtxID+1);
         const Vec3fa v2 = vertex(vtxID+2);
         const Vec3fa v3 = vertex(vtxID+3);
+        const Curve3fa c(v0,v1,v2,v3);
+        const Vec3fa p0 = c.begin();
+        const Vec3fa p3 = c.end();
+        const Vec3fa axis1 = p3 - p0;
+        return axis1;
+      }
+
+      Vec3fa computeDirection(unsigned int primID, size_t time) const
+      {
+        const unsigned vtxID = curve(primID);
+        const Vec3fa v0 = vertex(vtxID+0,time);
+        const Vec3fa v1 = vertex(vtxID+1,time);
+        const Vec3fa v2 = vertex(vtxID+2,time);
+        const Vec3fa v3 = vertex(vtxID+3,time);
         const Curve3fa c(v0,v1,v2,v3);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
@@ -448,6 +488,14 @@ namespace embree
 
       BBox3fa vbounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
         return bounds(ofs,scale,r_scale0,space,i,itime);
+      }
+
+      LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+        return linearBounds(space,primID,time_range);
+      }
+
+      LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+        return linearBounds(ofs,scale,r_scale0,space,primID,time_range);
       }
     };
     
@@ -459,7 +507,7 @@ namespace embree
       void preCommit();
       void interpolate(const RTCInterpolateArguments* const args);
 
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k)
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -473,7 +521,7 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k)
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const
       {
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -487,7 +535,7 @@ namespace embree
         return pinfo;
       }
 
-      LinearSpace3fa computeAlignedSpace(const size_t primID)
+      LinearSpace3fa computeAlignedSpace(const size_t primID) const
       {
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
@@ -517,13 +565,53 @@ namespace embree
         return frame(axisz);
       }
 
-      Vec3fa computeDirection(unsigned int primID)
+      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const // FIXME: improve
+      {
+        Vec3fa axis0(0,0,1);
+
+        const unsigned num_time_segments = this->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        if (tbounds.size() == 0) return frame(axis0);
+        
+        const size_t t = (tbounds.begin()+tbounds.end())/2;
+        const unsigned int vertexID = this->curve(primID);
+        const Vec3fa a0 = this->vertex(vertexID+0,t);
+        const Vec3fa a1 = this->vertex(vertexID+1,t);
+        const Vec3fa a2 = this->vertex(vertexID+2,t);
+        const Vec3fa a3 = this->vertex(vertexID+3,t);
+        const Curve3fa curve(a0,a1,a2,a3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa axis1 = p3 - p0;
+        
+        if (sqr_length(axis1) > 1E-18f) {
+          axis0 = normalize(axis1);
+        }
+           
+        return frame(axis0);
+      }
+
+      Vec3fa computeDirection(unsigned int primID) const
       {
         const unsigned vtxID = curve(primID);
         const Vec3fa v0 = vertex(vtxID+0);
         const Vec3fa v1 = vertex(vtxID+1);
         const Vec3fa v2 = vertex(vtxID+2);
         const Vec3fa v3 = vertex(vtxID+3);
+        const Curve3fa c(v0,v1,v2,v3);
+        const Vec3fa p0 = c.begin();
+        const Vec3fa p3 = c.end();
+        const Vec3fa axis1 = p3 - p0;
+        return axis1;
+      }
+
+      Vec3fa computeDirection(unsigned int primID, size_t time) const
+      {
+        const unsigned vtxID = curve(primID);
+        const Vec3fa v0 = vertex(vtxID+0,time);
+        const Vec3fa v1 = vertex(vtxID+1,time);
+        const Vec3fa v2 = vertex(vtxID+2,time);
+        const Vec3fa v3 = vertex(vtxID+3,time);
         const Curve3fa c(v0,v1,v2,v3);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
@@ -541,6 +629,14 @@ namespace embree
 
       BBox3fa vbounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
         return bounds(ofs,scale,r_scale0,space,i,itime);
+      }
+
+      LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+        return linearBounds(space,primID,time_range);
+      }
+
+      LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+        return linearBounds(ofs,scale,r_scale0,space,primID,time_range);
       }
     };
   }

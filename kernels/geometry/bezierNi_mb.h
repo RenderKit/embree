@@ -51,45 +51,6 @@ namespace embree
     /*! Default constructor. */
     __forceinline BezierNiMB () {}
 
-    const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const PrimRefMB* prims, const range<size_t>& object_range, const BBox1f time_range)
-    {
-      Vec3fa axis0(0,0,1);
-      uint64_t bestGeomPrimID = -1;
-      
-      /*! find curve with minimum ID that defines valid direction */
-      for (size_t i=object_range.begin(); i<object_range.end(); i++)
-      {
-        const PrimRefMB& prim = prims[i];
-        const unsigned int geomID = prim.geomID();
-        const unsigned int primID = prim.primID();
-        const uint64_t geomprimID = prim.ID64();
-        if (geomprimID >= bestGeomPrimID) continue;
-        
-        const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
-        const unsigned num_time_segments = mesh->numTimeSegments();
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        if (tbounds.size() == 0) continue;
-        
-        const size_t t = (tbounds.begin()+tbounds.end())/2;
-        const unsigned int vertexID = mesh->curve(primID);
-        const Vec3fa a0 = mesh->vertex(vertexID+0,t);
-        const Vec3fa a1 = mesh->vertex(vertexID+1,t);
-        const Vec3fa a2 = mesh->vertex(vertexID+2,t);
-        const Vec3fa a3 = mesh->vertex(vertexID+3,t);
-        const Curve3fa curve(a0,a1,a2,a3);
-        const Vec3fa p0 = curve.begin();
-        const Vec3fa p3 = curve.end();
-        const Vec3fa axis1 = normalize(p3 - p0);
-        
-        if (sqr_length(axis1) > 1E-18f) {
-          axis0 = normalize(axis1);
-          bestGeomPrimID = geomprimID;
-        }
-      }
-      
-      return frame(axis0);
-    }
-
     /*! fill curve from curve list */
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t _end, Scene* scene, const BBox1f time_range)
     {
@@ -123,10 +84,10 @@ namespace embree
         const PrimRefMB& prim = prims[begin];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        const LinearSpace3fa space2 = computeAlignedSpaceMB(scene,prims,range<size_t>(begin),time_range);
+        const LinearSpace3fa space2 = scene->get(geomID)->computeAlignedSpaceMB(primID,time_range);
         
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
-        const LBBox3fa bounds = scene->get<NativeCurves>(geomID)->linearBounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID,time_range);
+        const LBBox3fa bounds = scene->get(geomID)->vlinearBounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID,time_range);
         
         bounds_vx_x(N)[i] = (short) space3.vx.x;
         bounds_vx_y(N)[i] = (short) space3.vx.y;
