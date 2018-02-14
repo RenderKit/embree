@@ -60,6 +60,7 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBBezier8iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA BezierNiMBIntersectorK<8 COMMA 8> > >));
 
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBVirtualCurveIntersector8Hybrid, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<8> >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBVirtualCurveIntersector8HybridMB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersectorK<8> >));
     
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1Intersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1EagerIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector8>));
