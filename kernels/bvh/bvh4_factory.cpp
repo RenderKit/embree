@@ -762,6 +762,21 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.leafIntersector = leafIntersector;
+    intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1MB();
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4HybridMB();
+    intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8HybridMB();
+    intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16HybridMB();
+    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
+#endif
+    return intersectors;
+  }
+
   Accel::Intersectors BVH4Factory::BVH4OBBBezier4iMBIntersectors_OBB(BVH4* bvh)
   {
     Accel::Intersectors intersectors;
@@ -1459,7 +1474,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier4iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4iMB());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector4iMB());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
@@ -1472,7 +1487,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier8iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8iMB());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector8iMB());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);

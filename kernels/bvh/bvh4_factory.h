@@ -96,6 +96,7 @@ namespace embree
     Accel::Intersectors BVH4OBBBezier8iMBIntersectors_OBB(BVH4* bvh);
 
     Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurvePrimitive* leafIntersector);
+    Accel::Intersectors BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurvePrimitive* leafIntersector);
     
     Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh);
 
