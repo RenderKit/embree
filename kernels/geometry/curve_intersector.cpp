@@ -137,6 +137,8 @@ namespace embree
 #endif
       return intersectors;
     }
+
+#if 0
     
     VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector4i()
     {
@@ -201,6 +203,73 @@ namespace embree
     }
   
 #endif
+
+#else
+
+    VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector4i()
+    {
+      static VirtualCurvePrimitive prim;
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNiIntersectors <Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNiIntersectors<Curve3fa,4>();
+      return &prim;
+    }
+
+    VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector4v()
+    {
+      static VirtualCurvePrimitive prim;
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNvIntersectors <Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNvIntersectors<Curve3fa,4>();
+      return &prim;
+    }
+
+    VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector4iMB()
+    {
+      static VirtualCurvePrimitive prim;
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNiMBIntersectors <Curve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNiMBIntersectors<Curve3fa,4>();
+      return &prim;
+    }
+
+#if defined (__AVX__)
     
+    VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector8i()
+    {
+      static VirtualCurvePrimitive prim;
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNiIntersectors <Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNiIntersectors<Curve3fa,8>();
+      return &prim;
+    }
+
+    VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector8v()
+    {
+      static VirtualCurvePrimitive prim;
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNvIntersectors <Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNvIntersectors<Curve3fa,8>();
+      return &prim;
+    }
+    
+    VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector8iMB()
+    {
+      static VirtualCurvePrimitive prim;
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNiMBIntersectors <Curve3fa,8>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNiMBIntersectors<Curve3fa,8>();
+      return &prim;
+    }
+  
+#endif
+
+#endif
   }
 }
