@@ -157,7 +157,7 @@ namespace embree
       return pinfo;
     }
 
-    PrimInfo createPrimRefArray(Scene* scene, Geometry::Type types, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createPrimRefArray(Scene* scene, Geometry::GTypeMask types, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator2 iter(scene,types,mblur);
@@ -240,7 +240,7 @@ namespace embree
       return pinfo;
     }
     
-    PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, Geometry::Type types, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1)
+    PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, Geometry::GTypeMask types, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1)
     {
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       Scene::Iterator2 iter(scene,types,true);
@@ -270,7 +270,7 @@ namespace embree
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       Scene::Iterator<Mesh,true> iter(scene);
       
-      /* first try */
+      /* first try */  
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
       PrimInfoMB pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfoMB {

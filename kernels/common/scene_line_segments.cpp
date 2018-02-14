@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   LineSegments::LineSegments (Device* device)
-    : Geometry(device,LINE_SEGMENTS,0,1)
+    : Geometry(device,GTY_FLAT_LINEAR_CURVE,0,1)
   {
     vertices.resize(numTimeSteps);
   }

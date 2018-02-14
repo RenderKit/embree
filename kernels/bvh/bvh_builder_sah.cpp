@@ -166,7 +166,7 @@ namespace embree
 
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GROUP) {
+        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
           build_group((GeometryGroup*)mesh);
           return;
         }

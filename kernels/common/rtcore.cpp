@@ -809,24 +809,6 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API RTCGeometry rtcNewInstance (RTCDevice hdevice, RTCScene hsource, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    Scene* source = (Scene*) hsource;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewInstance);
-    RTC_VERIFY_HANDLE(hdevice);
-    RTC_VERIFY_HANDLE(hsource);
-#if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = new Instance(device,source,numTimeSteps);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewInstance is not supported");
-#endif
-    RTC_CATCH_END(device);
-    return nullptr;
-  }
-
   RTC_API RTCGeometry rtcNewGeometryInstance (RTCDevice hdevice,  RTCScene hscene, unsigned geomID) 
   {
     Device* device = (Device*) hdevice;
@@ -856,7 +838,7 @@ namespace embree
     for (size_t i=0; i<N; i++) {
       RTC_VERIFY_GEOMID(geomIDs[i]);
       geometries[i] = scene->get_locked(geomIDs[i]);
-      if (geometries[i]->getType() == Geometry::GROUP)
+      if (geometries[i]->getType() == Geometry::GTY_GROUP)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometry groups cannot contain other geometry groups");
       if (geometries[i]->getType() != geometries[0]->getType())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometries inside group have to be of same type");
@@ -1025,11 +1007,11 @@ namespace embree
       
       Geometry* geom;
       switch (type) {
-      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE       : geom = createLineSegments (device); break;
-      case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : geom = createCurvesBezier (device,ROUND_CURVE,type); break;
-      case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE  : geom = createCurvesBezier (device,FLAT_CURVE,type); break;
-      case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE: geom = createCurvesBSpline(device,ROUND_CURVE,type); break;
-      case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE : geom = createCurvesBSpline(device,FLAT_CURVE,type); break;
+      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE  : geom = createLineSegments (device); break;
+      case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : geom = createCurvesBezier (device,Geometry::GTY_ROUND_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE  : geom = createCurvesBezier (device,Geometry::GTY_FLAT_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE: geom = createCurvesBSpline(device,Geometry::GTY_ROUND_BSPLINE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE : geom = createCurvesBSpline(device,Geometry::GTY_FLAT_BSPLINE_CURVE); break;
       default:                                    geom = nullptr; break;
       }
       return (RTCGeometry) geom->refInc();
@@ -1085,7 +1067,7 @@ namespace embree
     RTC_TRACE(rtcSetGeometryUserPrimitiveCount);
     RTC_VERIFY_HANDLE(hgeometry);
     
-    if (unlikely(geometry->type != Geometry::USER_GEOMETRY))
+    if (unlikely(geometry->getType() != Geometry::GTY_USER_GEOMETRY))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
 
     geometry->setNumPrimitives(userPrimitiveCount);

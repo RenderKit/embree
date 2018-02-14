@@ -64,10 +64,10 @@ namespace embree
     VirtualCurvePrimitive* VirtualCurvePrimitiveIntersector4i()
     {
       static VirtualCurvePrimitive prim;
-      prim.vtbl[RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,4>();
-      prim.vtbl[RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,4>();
-      prim.vtbl[RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE] = CurveNiIntersectors <BSplineCurve3fa,4>();
-      prim.vtbl[RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ] = RibbonNiIntersectors<BSplineCurve3fa,4>();
+      prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,4>();
+      prim.vtbl[Geometry::GTY_ROUND_BSPLINE_CURVE] = CurveNiIntersectors <BSplineCurve3fa,4>();
+      prim.vtbl[Geometry::GTY_FLAT_BSPLINE_CURVE ] = RibbonNiIntersectors<BSplineCurve3fa,4>();
       return &prim;
     }
   }

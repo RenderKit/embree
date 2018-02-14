@@ -24,31 +24,16 @@
 
 namespace embree
 {
-  /*! basis of a curve */
-  enum CurveType
-  {
-    LINEAR_CURVE,
-    BEZIER_CURVE,
-    BSPLINE_CURVE
-  };
-
-  /* rendering mode of a curve */
-  enum CurveSubtype
-  {
-    ROUND_CURVE,
-    FLAT_CURVE
-  };
-
   /*! represents an array of bicubic bezier curves */
   struct NativeCurves : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_CURVES;
 
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype);
+    NativeCurves (Device* device, Geometry::GType gtype);
     
   public:
     void enabling();
@@ -175,7 +160,7 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const Curve3fa curve = getCurve(i,itime);
-      if (likely(subtype == FLAT_CURVE))
+      if (likely(!(getType() & GTY_ROUND_CURVE)))
         return curve.tessellatedBounds(tessellationRate);
       else
         return curve.accurateBounds();
@@ -194,8 +179,8 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == FLAT_CURVE)) return curve.tessellatedBounds(tessellationRate);
-      else                               return curve.accurateBounds();
+      if (likely(!(getType() & GTY_ROUND_CURVE))) return curve.tessellatedBounds(tessellationRate);
+      else                                        return curve.accurateBounds();
     }
 
     /*! calculates bounding box of i'th bezier curve */
@@ -212,8 +197,8 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,(v2-ofs)*Vec3fa(scale)); w2.w = v2.w*r_scale;
       Vec3fa w3 = xfmPoint(space,(v3-ofs)*Vec3fa(scale)); w3.w = v3.w*r_scale;
       const Curve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == FLAT_CURVE)) return curve.tessellatedBounds(tessellationRate);
-      else                               return curve.accurateBounds();
+      if (likely(!(getType() & GTY_ROUND_CURVE))) return curve.tessellatedBounds(tessellationRate);
+      else                                        return curve.accurateBounds();
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -337,8 +322,6 @@ namespace embree
     vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
-    CurveType type;                         //!< basis of user provided vertices
-    CurveSubtype subtype;                   //!< round of flat curve
     int tessellationRate;                   //!< tessellation rate for bezier curve
   public:
     BufferView<Vec3fa> native_vertices0;        //!< fast access to first vertex buffer
@@ -350,8 +333,8 @@ namespace embree
   {
     struct NativeCurvesISA : public NativeCurves
     {
-      NativeCurvesISA (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
-        : NativeCurves(device,gtype,type,subtype) {}
+      NativeCurvesISA (Device* device, Geometry::GType gtype)
+        : NativeCurves(device,gtype) {}
 
       template<typename Curve> void interpolate_helper(const RTCInterpolateArguments* const args);
       
@@ -360,8 +343,8 @@ namespace embree
     
     struct CurvesBezier : public NativeCurvesISA
     {
-      CurvesBezier (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
-        : NativeCurvesISA(device,gtype,type,subtype) {}
+      CurvesBezier (Device* device, Geometry::GType gtype)
+        : NativeCurvesISA(device,gtype) {}
 
       void preCommit();
       void interpolate(const RTCInterpolateArguments* const args);
@@ -514,8 +497,8 @@ namespace embree
     
     struct CurvesBSpline : public NativeCurvesISA
     {
-      CurvesBSpline (Device* device, RTCGeometryType gtype, CurveType type, CurveSubtype subtype)
-        : NativeCurvesISA(device,gtype,type,subtype) {}
+      CurvesBSpline (Device* device, Geometry::GType gtype)
+        : NativeCurvesISA(device,gtype) {}
 
       void preCommit();
       void interpolate(const RTCInterpolateArguments* const args);
@@ -668,6 +651,6 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA CurveSubtype COMMA RTCGeometryType);
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA CurveSubtype COMMA RTCGeometryType);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Device* COMMA Geometry::GType);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Device* COMMA Geometry::GType);
 }

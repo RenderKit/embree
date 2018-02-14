@@ -59,7 +59,7 @@ namespace embree
       N = end-begin;
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
-      ty = (unsigned char) scene->get(geomID0)->gtype;
+      ty = (unsigned char) scene->get(geomID0)->getType();
 
       /* encode all primitives */
       LBBox3fa lbounds = empty;

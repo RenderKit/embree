@@ -58,8 +58,43 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, QUAD_MESH = 2, BEZIER_CURVES = 4, LINE_SEGMENTS = 8, SUBDIV_MESH = 16, USER_GEOMETRY = 32, INSTANCE = 64, GROUP = 128 };
-    static const int NUM_TYPES = 8;
+    enum GType
+    {
+      GTY_TRIANGLE_MESH = 0,
+      GTY_QUAD_MESH = 1,
+      GTY_FLAT_LINEAR_CURVE = 2,
+      GTY_ROUND_LINEAR_CURVE = 3,
+      GTY_FLAT_BEZIER_CURVE = 4,
+      GTY_ROUND_BEZIER_CURVE = 5,
+      GTY_FLAT_BSPLINE_CURVE = 6,
+      GTY_ROUND_BSPLINE_CURVE = 7,
+      GTY_SUBDIV_MESH = 8,
+      GTY_USER_GEOMETRY = 9,
+      GTY_INSTANCE = 10,
+      GTY_GROUP = 11,
+      GTY_END = 12,
+      GTY_ROUND_CURVE = 1,
+    };
+
+    enum GTypeMask
+    {
+      MTY_TRIANGLE_MESH = 1 << GTY_TRIANGLE_MESH,
+      MTY_QUAD_MESH = 1 << GTY_QUAD_MESH,
+      MTY_FLAT_LINEAR_CURVE = 1 << GTY_FLAT_LINEAR_CURVE,
+      MTY_ROUND_LINEAR_CURVE = 1 << GTY_ROUND_LINEAR_CURVE,
+      MTY_FLAT_BEZIER_CURVE = 1 << GTY_FLAT_BEZIER_CURVE,
+      MTY_ROUND_BEZIER_CURVE = 1 << GTY_ROUND_BEZIER_CURVE,
+      MTY_FLAT_BSPLINE_CURVE = 1 << GTY_FLAT_BSPLINE_CURVE,
+      MTY_ROUND_BSPLINE_CURVE = 1 << GTY_ROUND_BSPLINE_CURVE,
+      MTY_LINES = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE,
+      MTY_CURVES = MTY_FLAT_BEZIER_CURVE | MTY_ROUND_BEZIER_CURVE | MTY_FLAT_BSPLINE_CURVE | MTY_ROUND_BSPLINE_CURVE,
+      MTY_SUBDIV_MESH = 1 << GTY_SUBDIV_MESH,
+      MTY_USER_GEOMETRY = 1 << GTY_USER_GEOMETRY,
+      MTY_INSTANCE = 1 << GTY_INSTANCE,
+      MTY_GROUP = 1 << GTY_GROUP,
+    };
+
+    static const char* gtype_names[GTY_END];
 
     enum State {
       MODIFIED = 0,
@@ -70,7 +105,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps, RTCGeometryType gtype = RTC_GEOMETRY_TYPE_TRIANGLE);
+    Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -96,7 +131,10 @@ namespace embree
     __forceinline bool isModified() const { return state != BUILD; }
 
     /*! returns geometry type */
-    __forceinline Type getType() const { return type; }
+    __forceinline GType getType() const { return gtype; }
+
+    /*! returns geometry type mask */
+    __forceinline GTypeMask getTypeMask() const { return (GTypeMask)(1 << gtype); }
 
     /*! returns number of primitives */
     __forceinline size_t size() const { return numPrimitives; }
@@ -322,8 +360,7 @@ namespace embree
     Device* device;            //!< device this geometry belongs to
     Scene* scene;              //!< pointer to scene this mesh belongs to
     unsigned geomID;           //!< internal geometry ID
-    Type type;                 //!< geometry type
-    RTCGeometryType gtype;
+    GType gtype;                 //!< geometry type
     unsigned int numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed
     unsigned int numTimeSteps;     //!< number of time steps

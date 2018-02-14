@@ -178,7 +178,7 @@ namespace embree
           {
             Geometry* geom = scene->get(objectID);
             if (geom == nullptr) continue;
-            if (!(geom->getType() & Geometry::INSTANCE)) continue;
+            if (!(geom->getType() & Geometry::GTY_INSTANCE)) continue;
             GeometryInstance* instance = (GeometryInstance*) geom;
             if (!instance->isEnabled()) continue;
             BVH* object = objects[instance->geom->geomID];

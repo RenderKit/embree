@@ -25,7 +25,7 @@ namespace embree
   struct QuadMesh : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::QUAD_MESH;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_QUAD_MESH;
     
     /*! triangle indices */
     struct Quad

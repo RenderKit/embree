@@ -37,7 +37,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           intersectorHair.intersect(pre,ray,geom,a0,a1,a2,a3,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
           intersectorCurve.intersect(pre,ray,geom,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
@@ -50,7 +50,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           return intersectorHair.intersect(pre,ray,geom,a0,a1,a2,a3,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
           return intersectorCurve.intersect(pre,ray,geom,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
@@ -70,7 +70,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           intersectorHair.intersect(pre,ray,k,geom,a0,a1,a2,a3,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else 
           intersectorCurve.intersect(pre,ray,k,geom,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
@@ -89,7 +89,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           return intersectorHair.intersect(pre,ray,k,geom,a0,a1,a2,a3,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else
           return intersectorCurve.intersect(pre,ray,k,geom,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
@@ -120,7 +120,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time());
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           intersectorHair.intersect(pre,ray,geom,p0,p1,p2,p3,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
           intersectorCurve.intersect(pre,ray,geom,p0,p1,p2,p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
@@ -133,7 +133,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time());
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           return intersectorHair.intersect(pre,ray,geom,p0,p1,p2,p3,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
           return intersectorCurve.intersect(pre,ray,geom,p0,p1,p2,p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
@@ -153,7 +153,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());        
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time()[k]);
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           intersectorHair.intersect(pre,ray,k,geom,p0,p1,p2,p3,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else 
           intersectorCurve.intersect(pre,ray,k,geom,p0,p1,p2,p3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
@@ -172,7 +172,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const NativeCurves* geom = (NativeCurves*) context->scene->get(prim.geomID());
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time()[k]);
-        if (likely(geom->subtype == FLAT_CURVE))
+        if (likely(!(geom->getType() & Geometry::GTY_ROUND_CURVE)))
           return intersectorHair.intersect(pre,ray,k,geom,p0,p1,p2,p3,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else
           return intersectorCurve.intersect(pre,ray,k,geom,p0,p1,p2,p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));

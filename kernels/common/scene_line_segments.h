@@ -26,7 +26,7 @@ namespace embree
   struct LineSegments : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::LINE_SEGMENTS;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_LINES;
 
   public:
 
