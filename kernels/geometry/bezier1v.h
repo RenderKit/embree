@@ -39,6 +39,8 @@ namespace embree
     /* Returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
+    static __forceinline size_t bytes(size_t N) { return N*sizeof(Bezier1v); }
+    
   public:
 
     /*! Default constructor. */

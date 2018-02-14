@@ -65,7 +65,7 @@ namespace embree
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
-        const size_t leaf_bytes = pinfo.size()*sizeof(Primitive);
+        const size_t leaf_bytes = Primitive::bytes(pinfo.size());
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         
         /* builder settings */

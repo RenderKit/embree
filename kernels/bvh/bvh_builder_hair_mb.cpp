@@ -60,7 +60,7 @@ namespace embree
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
-        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
+        const size_t leaf_bytes = Primitive::bytes(pinfo.num_time_segments);
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
     
         /* settings for BVH build */
