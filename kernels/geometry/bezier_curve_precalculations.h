@@ -121,7 +121,7 @@ namespace embree
 #endif
   
 #if defined(__AVX512F__)
-  template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<16>(void*& pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect16); intersect16(pre,ray,k,context,primitive); }
-  template<> __forceinline bool VirtualCurvePrimitive::Intersectors::occluded<16> (void*& pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded16); return occluded16(pre,ray,k,context,primitive); }
+  template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<16>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect16); intersect16(pre,ray,k,context,primitive); }
+  template<> __forceinline bool VirtualCurvePrimitive::Intersectors::occluded<16> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded16); return occluded16(pre,ray,k,context,primitive); }
 #endif
 }
