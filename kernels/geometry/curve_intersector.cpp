@@ -28,17 +28,17 @@ namespace embree
     static VirtualCurvePrimitive::Intersectors RibbonNiIntersectors()
     {
       VirtualCurvePrimitive::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiIntersector1<N>::template intersect<Ribbon1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiIntersector1<N>::template occluded <Ribbon1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiIntersectorK<N,4>::template intersect<Ribbon1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiIntersectorK<N,4>::template occluded <Ribbon1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiIntersector1<N>::template intersect_t<Ribbon1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiIntersector1<N>::template occluded_t <Ribbon1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiIntersectorK<N,4>::template intersect_t<Ribbon1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiIntersectorK<N,4>::template occluded_t <Ribbon1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiIntersectorK<N,8>::template intersect<Ribbon1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiIntersectorK<N,8>::template occluded <Ribbon1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiIntersectorK<N,8>::template intersect_t<Ribbon1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiIntersectorK<N,8>::template occluded_t <Ribbon1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiIntersectorK<N,16>::template intersect<Ribbon1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiIntersectorK<N,16>::template occluded <Ribbon1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiIntersectorK<N,16>::template intersect_t<Ribbon1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiIntersectorK<N,16>::template occluded_t <Ribbon1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
@@ -47,17 +47,17 @@ namespace embree
     static VirtualCurvePrimitive::Intersectors RibbonNvIntersectors()
     {
       VirtualCurvePrimitive::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNvIntersector1<N>::template intersect<Ribbon1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNvIntersector1<N>::template occluded <Ribbon1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNvIntersectorK<N,4>::template intersect<Ribbon1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNvIntersectorK<N,4>::template occluded <Ribbon1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNvIntersector1<N>::template intersect_t<Ribbon1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNvIntersector1<N>::template occluded_t <Ribbon1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNvIntersectorK<N,4>::template intersect_t<Ribbon1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNvIntersectorK<N,4>::template occluded_t <Ribbon1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNvIntersectorK<N,8>::template intersect<Ribbon1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNvIntersectorK<N,8>::template occluded <Ribbon1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNvIntersectorK<N,8>::template intersect_t<Ribbon1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNvIntersectorK<N,8>::template occluded_t <Ribbon1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNvIntersectorK<N,16>::template intersect<Ribbon1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNvIntersectorK<N,16>::template occluded <Ribbon1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNvIntersectorK<N,16>::template intersect_t<Ribbon1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNvIntersectorK<N,16>::template occluded_t <Ribbon1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
@@ -66,17 +66,17 @@ namespace embree
     static VirtualCurvePrimitive::Intersectors RibbonNiMBIntersectors()
     {
       VirtualCurvePrimitive::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiMBIntersector1<N>::template intersect<Ribbon1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiMBIntersector1<N>::template occluded <Ribbon1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiMBIntersectorK<N,4>::template intersect<Ribbon1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiMBIntersectorK<N,4>::template occluded <Ribbon1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiMBIntersector1<N>::template intersect_t<Ribbon1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiMBIntersector1<N>::template occluded_t <Ribbon1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiMBIntersectorK<N,4>::template intersect_t<Ribbon1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiMBIntersectorK<N,4>::template occluded_t <Ribbon1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiMBIntersectorK<N,8>::template intersect<Ribbon1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiMBIntersectorK<N,8>::template occluded <Ribbon1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiMBIntersectorK<N,8>::template intersect_t<Ribbon1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiMBIntersectorK<N,8>::template occluded_t <Ribbon1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiMBIntersectorK<N,16>::template intersect<Ribbon1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiMBIntersectorK<N,16>::template occluded <Ribbon1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiMBIntersectorK<N,16>::template intersect_t<Ribbon1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiMBIntersectorK<N,16>::template occluded_t <Ribbon1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
@@ -85,17 +85,17 @@ namespace embree
     static VirtualCurvePrimitive::Intersectors CurveNiIntersectors()
     {
       VirtualCurvePrimitive::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiIntersector1<N>::template intersect<BezierCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiIntersector1<N>::template occluded <BezierCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiIntersectorK<N,4>::template intersect<BezierCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiIntersectorK<N,4>::template occluded <BezierCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiIntersector1<N>::template intersect_t<BezierCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiIntersector1<N>::template occluded_t <BezierCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiIntersectorK<N,4>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiIntersectorK<N,4>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiIntersectorK<N,8>::template intersect<BezierCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiIntersectorK<N,8>::template occluded <BezierCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiIntersectorK<N,8>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiIntersectorK<N,8>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiIntersectorK<N,16>::template intersect<BezierCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiIntersectorK<N,16>::template occluded <BezierCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiIntersectorK<N,16>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiIntersectorK<N,16>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
@@ -104,17 +104,17 @@ namespace embree
     static VirtualCurvePrimitive::Intersectors CurveNvIntersectors()
     {
       VirtualCurvePrimitive::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNvIntersector1<N>::template intersect<BezierCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNvIntersector1<N>::template occluded <BezierCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNvIntersectorK<N,4>::template intersect<BezierCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNvIntersectorK<N,4>::template occluded <BezierCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNvIntersector1<N>::template intersect_t<BezierCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNvIntersector1<N>::template occluded_t <BezierCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNvIntersectorK<N,4>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNvIntersectorK<N,4>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNvIntersectorK<N,8>::template intersect<BezierCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNvIntersectorK<N,8>::template occluded <BezierCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNvIntersectorK<N,8>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNvIntersectorK<N,8>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNvIntersectorK<N,16>::template intersect<BezierCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNvIntersectorK<N,16>::template occluded <BezierCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNvIntersectorK<N,16>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNvIntersectorK<N,16>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
@@ -123,17 +123,17 @@ namespace embree
     static VirtualCurvePrimitive::Intersectors CurveNiMBIntersectors()
     {
       VirtualCurvePrimitive::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiMBIntersector1<N>::template intersect<BezierCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiMBIntersector1<N>::template occluded <BezierCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiMBIntersectorK<N,4>::template intersect<BezierCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiMBIntersectorK<N,4>::template occluded <BezierCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurvePrimitive::Intersect1Ty)&BezierNiMBIntersector1<N>::template intersect_t<BezierCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurvePrimitive::Occluded1Ty) &BezierNiMBIntersector1<N>::template occluded_t <BezierCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurvePrimitive::Intersect4Ty)&BezierNiMBIntersectorK<N,4>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurvePrimitive::Occluded4Ty) &BezierNiMBIntersectorK<N,4>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiMBIntersectorK<N,8>::template intersect<BezierCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiMBIntersectorK<N,8>::template occluded <BezierCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurvePrimitive::Intersect8Ty)&BezierNiMBIntersectorK<N,8>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurvePrimitive::Occluded8Ty) &BezierNiMBIntersectorK<N,8>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiMBIntersectorK<N,16>::template intersect<BezierCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiMBIntersectorK<N,16>::template occluded <BezierCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurvePrimitive::Intersect16Ty)&BezierNiMBIntersectorK<N,16>::template intersect_t<BezierCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurvePrimitive::Occluded16Ty) &BezierNiMBIntersectorK<N,16>::template occluded_t <BezierCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
