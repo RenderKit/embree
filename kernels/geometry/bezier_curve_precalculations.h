@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../common/ray.h"
+#include "../common/geometry.h"
 
 namespace embree
 {
@@ -106,7 +107,7 @@ namespace embree
       Occluded16Ty  occluded16;
     };
     
-    Intersectors vtbl[128];
+    Intersectors vtbl[Geometry::GTY_END];
   };
 
   template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<1>(void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
