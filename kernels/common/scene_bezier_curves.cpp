@@ -376,28 +376,6 @@ namespace embree
         return true;
       }
       
-      /*! calculates the i'th build primitive at the itime'th time segment, if it's valid */
-      __forceinline bool buildPrim(size_t i, size_t itime, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
-      {
-        const unsigned int index = curve(i);
-        if (index+3 >= numVertices()) return false;
-        const Vec3fa a0 = vertex(index+0,itime+0); if (unlikely(!isvalid((vfloat4)a0))) return false;
-        const Vec3fa a1 = vertex(index+1,itime+0); if (unlikely(!isvalid((vfloat4)a1))) return false;
-        const Vec3fa a2 = vertex(index+2,itime+0); if (unlikely(!isvalid((vfloat4)a2))) return false;
-        const Vec3fa a3 = vertex(index+3,itime+0); if (unlikely(!isvalid((vfloat4)a3))) return false;
-        const Vec3fa b0 = vertex(index+0,itime+1); if (unlikely(!isvalid((vfloat4)b0))) return false;
-        const Vec3fa b1 = vertex(index+1,itime+1); if (unlikely(!isvalid((vfloat4)b1))) return false;
-        const Vec3fa b2 = vertex(index+2,itime+1); if (unlikely(!isvalid((vfloat4)b2))) return false;
-        const Vec3fa b3 = vertex(index+3,itime+1); if (unlikely(!isvalid((vfloat4)b3))) return false;
-        if (unlikely(min(a0.w,a1.w,a2.w,a3.w) < 0.0f)) return false;
-        if (unlikely(min(b0.w,b1.w,b2.w,b3.w) < 0.0f)) return false;
-        c0 = 0.5f*(a0+b0);
-        c1 = 0.5f*(a1+b1);
-        c2 = 0.5f*(a2+b2);
-        c3 = 0.5f*(a3+b3);
-        return true;
-      }
-
       /*! check if the i'th primitive is valid at the itime'th timestep */
       __forceinline bool valid(size_t i, size_t itime) const {
         return valid(i, make_range(itime, itime));
