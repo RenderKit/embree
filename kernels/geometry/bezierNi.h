@@ -74,6 +74,7 @@ namespace embree
       /* calculate offset and scale */
       Vec3fa loffset = bounds.lower;
       float lscale = reduce_min(256.0f/(bounds.size()*sqrt(3.0f)));
+      if (bounds.size() == Vec3fa(zero)) lscale = 0.0f;
       *this->offset(N) = loffset;
       *this->scale(N) = lscale;
       
