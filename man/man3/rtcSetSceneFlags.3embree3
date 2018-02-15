@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcSetSceneFlags\ \-\ sets\ flags\ for\ the\ scene
+rtcSetSceneFlags\ \-\ sets\ the\ flags\ for\ the\ scene
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,13 +12,14 @@ rtcSetSceneFlags\ \-\ sets\ flags\ for\ the\ scene
 \f[C]
 #include\ <embree3/rtcore.h>
 
-void\ rtcSetSceneFlags(RTCScene\ scene,\ enum\ RTCSceneFlags\ sflags);
+void\ rtcSetSceneFlags(RTCScene\ scene,\ enum\ RTCSceneFlags\ flags);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
 The \f[C]rtcSetSceneFlags\f[] function sets the scene flags
-\f[C]sflags\f[] for the specified scene \f[C]scene\f[].
+(\f[C]flags\f[] argument) for the specified scene (\f[C]scene\f[]
+argument).
 Possible scene flags are:
 .IP \[bu] 2
 \f[C]RTC_SCENE_FLAG_NONE\f[]: No flags set.
@@ -30,19 +31,20 @@ dynamic scenes (but also higher memory consumption).
 and avoids algorithms that consume much memory.
 .IP \[bu] 2
 \f[C]RTC_SCENE_FLAG_ROBUST\f[]: Uses acceleration structures that allow
-robust traversal and avoids optimizations that reduce arithmetic
+for robust traversal, and avoids optimizations that reduce arithmetic
 accuracy.
-This mode is typically used for final frame rendering as it does not
-suffer from potential light leaks of details geometry.
+This mode is typically used for avoiding artifacts caused by rays
+shooting through edges of neighboring primitives.
 .IP \[bu] 2
-\f[C]RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION\f[]: Enables support for
-filter function inside intersection context.
+\f[C]RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION\f[]: Enables support for a
+filter function inside the intersection context.
+See Section [rtcInitIntersectContext] for more details.
 .PP
-Multiple flags can get enabled using an or operation, e.g.
+Multiple flags can be enabled using an \f[C]or\f[] operation, e.g.
 \f[C]RTC_SCENE_FLAG_COMPACT\ |\ RTC_SCENE_FLAG_ROBUST\f[].
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

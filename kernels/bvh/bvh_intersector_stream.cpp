@@ -23,8 +23,6 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezier1v_intersector.h"
-#include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 //#include "../geometry/subdivpatch1cached_intersector.h"
@@ -66,7 +64,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->intersect(inputPackets[i]->tnear() <= inputPackets[i]->tfar(), *inputPackets[i], context);
+          This->intersect(inputPackets[i]->tnear() <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
@@ -142,8 +140,8 @@ namespace embree
 
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
-          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          p.tfar = min(p.tfar, inputPackets[i]->tfar());
+          PrimitiveIntersector::intersectK(m_valid, This, *inputPackets[i], context, prim, num, lazy_node);
+          p.tfar = min(p.tfar, inputPackets[i]->tfar);
         };
 
       } // traversal + intersection
@@ -181,7 +179,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          This->occluded(inputPackets[i]->tnear() <= inputPackets[i]->tfar(), *inputPackets[i], context);
+          This->occluded(inputPackets[i]->tnear() <= inputPackets[i]->tfar, *inputPackets[i], context);
         return;
       }
 
@@ -257,8 +255,8 @@ namespace embree
           bits &= ~m_isec;
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
-          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          inputPackets[i]->tfar() = select(m_hit & m_valid, vfloat<K>(neg_inf), inputPackets[i]->tfar());
+          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, This, *inputPackets[i], context, prim, num, lazy_node);
+          inputPackets[i]->tfar = select(m_hit & m_valid, vfloat<K>(neg_inf), inputPackets[i]->tfar);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         }
 
@@ -283,7 +281,7 @@ namespace embree
       for (size_t i = 0; i < numPackets; i++)
       {
         const vfloat<K> tnear  = inputPackets[i]->tnear();
-        const vfloat<K> tfar   = inputPackets[i]->tfar();
+        const vfloat<K> tfar   = inputPackets[i]->tfar;
         vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
         m_active |= (size_t)movemask(m_valid) << (K*i);
         const Vec3vf<K>& org = inputPackets[i]->org;
@@ -372,9 +370,9 @@ namespace embree
 
           RayK<K> &ray = *inputPackets[rayID / K];
           const size_t k = rayID % K;
-          if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
+          if (PrimitiveIntersector::occluded(This, ray, k, context, prim, num, lazy_node))
           {
-            ray.tfar()[k] = neg_inf;
+            ray.tfar[k] = neg_inf;
             terminated |= (size_t)1 << rayID;
           }
 
@@ -423,7 +421,7 @@ namespace embree
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
         RayHitK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear() <= ray.tfar();
+        valid &= ray.tnear() <= ray.tfar;
         This->intersect(valid, ray, context);
       }
     }
@@ -440,7 +438,7 @@ namespace embree
         const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
         vbool<K> valid = vi < vint<K>(int(numTotalRays));
         RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear() <= ray.tfar();
+        valid &= ray.tnear() <= ray.tfar;
         This->occluded(valid, ray, context);
       }
     }

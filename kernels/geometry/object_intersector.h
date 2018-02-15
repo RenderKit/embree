@@ -58,7 +58,7 @@ namespace embree
 #endif
 
         accel->occluded(ray,prim.primID(),context,&reportOcclusion1);
-        return ray.tfar() < 0.0f;
+        return ray.tfar < 0.0f;
       }
       
       template<int K>
@@ -108,7 +108,7 @@ namespace embree
         if (none(valid)) return false;
 #endif
         accel->occluded(valid,ray,prim.primID(),context,&reportOcclusion1);
-        return ray.tfar() < 0.0f;
+        return ray.tfar < 0.0f;
       }
 
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
@@ -117,7 +117,7 @@ namespace embree
       
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
         occluded(vbool<K>(1<<int(k)),pre,ray,context,prim);
-        return ray.tfar()[k] < 0.0f; 
+        return ray.tfar[k] < 0.0f; 
       }
     };
 

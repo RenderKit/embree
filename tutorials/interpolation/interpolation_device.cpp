@@ -176,7 +176,9 @@ unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 void setTriangleSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
 {
   Vec3fa* vtx = (Vec3fa*) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_VERTEX, 0);
+  if (vtx == nullptr) return;
   float* level = (float*) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_LEVEL, 0);
+  if (level == nullptr) return;
 
   for (unsigned int i=0; i<NUM_TRI_INDICES; i+=3)
   {
@@ -222,7 +224,9 @@ unsigned int addQuadSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 void setQuadSubdivCubeLevels (RTCGeometry geom, const Vec3fa& cam_pos)
 {
   Vec3fa* vtx = (Vec3fa*) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_VERTEX, 0);
+  if (vtx == nullptr) return;
   float* level = (float*) rtcGetGeometryBufferData(geom, RTC_BUFFER_TYPE_LEVEL, 0);
+  if (level == nullptr) return;
 
   for (unsigned int i=0; i<NUM_QUAD_INDICES; i+=4)
   {
@@ -396,14 +400,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.tfar() >= 0.0f) {
+    if (shadow.tfar >= 0.0f) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
       float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
       float d = clamp(-dot(lightDir,Ng),0.0f,1.0f);

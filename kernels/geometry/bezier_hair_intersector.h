@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/ray.h"
-
+#include "bezier_curve_precalculations.h"
 // FIXME: remove this file later
 //#define Bezier1Intersector1 Hair1Intersector1
 //#define Bezier1IntersectorK Hair1IntersectorK
@@ -65,24 +65,18 @@ namespace embree
     template<typename NativeCurve3fa>
       struct Hair1Intersector1
     {
-      float depth_scale;
-      LinearSpace3fa ray_space;
-
-      __forceinline Hair1Intersector1() {}
-
-      __forceinline Hair1Intersector1(const Ray& ray, const void* ptr)
-         : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
-
       template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
-                                   const Epilog& epilog) const
+      __forceinline bool intersect(const CurvePrecalculations1& pre,Ray& ray,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
+        
         /* transform control points into ray space */
-        Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
-        Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
-        Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
-        Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
+        Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
+        Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
+        Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
+        Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
         NativeCurve3fa curve2D(w0,w1,w2,w3);
       
         /* evaluate the bezier curve */
@@ -97,12 +91,12 @@ namespace embree
         const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
         const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
         const Vec4vfx p = madd(u,v,p0);
-        const vfloatx t = p.z*depth_scale;
+        const vfloatx t = p.z*pre.depth_scale;
         const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
-        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar()));
-        valid &= t > ray.tnear()+2.0f*r*depth_scale; // ignore self intersections
+        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
+        valid &= t > ray.tnear()+2.0f*r*pre.depth_scale; // ignore self intersections
 
         /* update hit information */
         bool ishit = false;
@@ -128,12 +122,12 @@ namespace embree
             const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
             const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
             const Vec4vfx p = madd(u,v,p0);
-            const vfloatx t = p.z*depth_scale;
+            const vfloatx t = p.z*pre.depth_scale;
             const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
             const vfloatx r = p.w;
             const vfloatx r2 = r*r;
-            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar()));
-            valid &= t > ray.tnear()+2.0f*r*depth_scale; // ignore self intersections
+            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
+            valid &= t > ray.tnear()+2.0f*r*pre.depth_scale; // ignore self intersections
 
              /* update hit information */
             if (unlikely(any(valid))) {
@@ -149,39 +143,21 @@ namespace embree
     template<typename NativeCurve3fa, int K>
       struct Hair1IntersectorK
     {
-      vfloat<K> depth_scale;
-      LinearSpace3fa ray_space[K];
-
-      __forceinline Hair1IntersectorK(const vbool<K>& valid, const RayK<K>& ray)
-      {
-        size_t mask = movemask(valid);
-        depth_scale = rsqrt(dot(ray.dir,ray.dir));
-        while (mask) {
-          size_t k = __bscf(mask);
-          ray_space[k] = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed();
-        }
-      }
-
-      __forceinline Hair1IntersectorK(const RayK<K>& ray, size_t k)
-      {
-        Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
-        ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
-      }
-      
       template<typename Epilog>
-      __forceinline bool intersect(RayK<K>& ray, size_t k,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
-                                   const Epilog& epilog) const
+      __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
+        
         /* load ray */
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         
         /* transform control points into ray space */
-        Vec3fa w0 = xfmVector(ray_space[k],v0-ray_org); w0.w = v0.w;
-        Vec3fa w1 = xfmVector(ray_space[k],v1-ray_org); w1.w = v1.w;
-        Vec3fa w2 = xfmVector(ray_space[k],v2-ray_org); w2.w = v2.w;
-        Vec3fa w3 = xfmVector(ray_space[k],v3-ray_org); w3.w = v3.w;
+        Vec3fa w0 = xfmVector(pre.ray_space[k],v0-ray_org); w0.w = v0.w;
+        Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
+        Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
+        Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
         NativeCurve3fa curve2D(w0,w1,w2,w3);
         
         /* process SIMD-size many segments per iteration */
@@ -200,12 +176,12 @@ namespace embree
           const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
           const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
           const Vec4vfx p = madd(u,v,p0);
-          const vfloatx t = p.z*depth_scale[k];
+          const vfloatx t = p.z*pre.depth_scale[k];
           const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
           const vfloatx r = p.w;
           const vfloatx r2 = r*r;
-          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar [k]));
-          valid &= t > ray.tnear[k]+2.0f*r*depth_scale[k]; // ignore self intersections
+          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar[k]));
+          valid &= t > ray.tnear[k]+2.0f*r*pre.depth_scale[k]; // ignore self intersections
           if (likely(none(valid))) continue;
         
           /* update hit information */

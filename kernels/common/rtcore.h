@@ -20,13 +20,13 @@
 
 namespace embree
 {
-/*! maximal number of user vertex buffers */
+/*! maximum number of user vertex buffers */
 #define RTC_MAX_USER_VERTEX_BUFFERS 65536
 
-/*! maximal number of index buffers for subdivision surfaces */
+/*! maximum number of index buffers for subdivision surfaces */
 #define RTC_MAX_INDEX_BUFFERS 65536
 
-   /*! decoding of intersection flags */
+  /*! decoding of intersection flags */
   __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_COHERENT; }
   __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT; }
 
@@ -36,7 +36,7 @@ namespace embree
 #  define USE_TASK_ARENA 0
 #endif
 
-/*! Makros used in the rtcore API implementation */
+/*! Macros used in the rtcore API implementation */
 #define RTC_CATCH_BEGIN try {
   
 #define RTC_CATCH_END(device)                                                \

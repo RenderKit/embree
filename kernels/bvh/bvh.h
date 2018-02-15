@@ -131,12 +131,12 @@ namespace embree
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | (tyLeaf+0);
     static const size_t popRay      = (((size_t)-1) & (~items_mask)) | (tyLeaf+1);
 
-    /*! Maximal depth of the BVH. */
+    /*! Maximum depth of the BVH. */
     static const size_t maxBuildDepth = 32;
     static const size_t maxBuildDepthLeaf = maxBuildDepth+8;
     static const size_t maxDepth = 2*maxBuildDepthLeaf; // 2x because of two level builder
 
-    /*! Maximal number of primitive blocks in a leaf. */
+    /*! Maximum number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
 
   public:
@@ -160,7 +160,7 @@ namespace embree
 
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
-#if defined(__AVX512PF__) // MIC
+#if  defined(__AVX512PF__) // MIC
           if (types != BVH_FLAG_QUANTIZED_NODE) {
             prefetchL2(((char*)ptr)+0*64);
             prefetchL2(((char*)ptr)+1*64);
@@ -1043,6 +1043,13 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! output operator */
+      friend std::ostream& operator<<(std::ostream& o, const UnalignedNode& n)
+      {
+        o << "UnAlignedNode { " << n.naabb << " } " << std::endl;
+        return o;
+      }
 
     public:
       AffineSpace3vf<N> naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)

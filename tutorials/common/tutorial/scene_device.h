@@ -91,6 +91,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
     ~ISPCTriangleMesh ();
+
+  private:
+    ISPCTriangleMesh (const ISPCTriangleMesh& other) DELETED; // do not implement
+    ISPCTriangleMesh& operator= (const ISPCTriangleMesh& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;
@@ -109,6 +115,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
     ~ISPCQuadMesh ();
+
+  private:
+    ISPCQuadMesh (const ISPCQuadMesh& other) DELETED; // do not implement
+    ISPCQuadMesh& operator= (const ISPCQuadMesh& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;
@@ -170,6 +182,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
+
+  private:
+    ISPCHairSet (const ISPCHairSet& other) DELETED; // do not implement
+    ISPCHairSet& operator= (const ISPCHairSet& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;
@@ -194,6 +212,12 @@ namespace embree
 #if !defined(ISPC)
     ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     ~ISPCInstance();
+
+  private:
+    ISPCInstance (const ISPCInstance& other) DELETED; // do not implement
+    ISPCInstance& operator= (const ISPCInstance& other) DELETED; // do not implement
+
+  public:
 #endif
 
     ISPCGeometry geom;

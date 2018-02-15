@@ -25,8 +25,8 @@ namespace embree
   {
     struct BVHBuilderMorton
     {
-      static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximal supported BVH branching factor
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximum supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximum tree depth
 
       /*! settings for morton builder */
       struct Settings
@@ -50,9 +50,9 @@ namespace embree
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t maxDepth;         //!< maximum depth of BVH to build
+        size_t minLeafSize;      //!< minimum size of a leaf
+        size_t maxLeafSize;      //!< maximum size of a leaf
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
 

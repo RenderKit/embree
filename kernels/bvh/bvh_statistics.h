@@ -96,11 +96,13 @@ namespace embree
         LeafStat ( double leafSAH = 0.0f, 
                    size_t numLeaves = 0,
                    size_t numPrims = 0,
-                   size_t numPrimBlocks = 0 )
+                   size_t numPrimBlocks = 0,
+                   size_t numBytes = 0)
         : leafSAH(leafSAH),
           numLeaves(numLeaves),
           numPrims(numPrims),
-          numPrimBlocks(numPrimBlocks) 
+          numPrimBlocks(numPrimBlocks),
+          numBytes(numBytes)
         {
           for (size_t i=0; i<NHIST; i++)
             numPrimBlocksHistogram[i] = 0;
@@ -111,7 +113,7 @@ namespace embree
         }
 
         size_t bytes(BVH* bvh) const {
-          return numPrimBlocks*bvh->primTy->bytes;
+          return numBytes;
         }
 
         size_t size() const {
@@ -127,7 +129,8 @@ namespace embree
           LeafStat stat(a.leafSAH + b.leafSAH,
                         a.numLeaves+b.numLeaves,
                         a.numPrims+b.numPrims,
-                        a.numPrimBlocks+b.numPrimBlocks);
+                        a.numPrimBlocks+b.numPrimBlocks,
+                        a.numBytes+b.numBytes);
           for (size_t i=0; i<NHIST; i++) {
             stat.numPrimBlocksHistogram[i] += a.numPrimBlocksHistogram[i];
             stat.numPrimBlocksHistogram[i] += b.numPrimBlocksHistogram[i];
@@ -162,6 +165,7 @@ namespace embree
         size_t numLeaves;                  //!< Number of leaf nodes.
         size_t numPrims;                   //!< Number of primitives.
         size_t numPrimBlocks;              //!< Number of primitive blocks.
+        size_t numBytes;                   //!< Number of bytes of leaves.
         size_t numPrimBlocksHistogram[8];
       };
 

@@ -3,7 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcSetGeometryTransform\ \-\ sets\ instance\ transformation\ for\ particular\ time\ step
+rtcSetGeometryTransform\ \-\ sets\ the\ transformation\ for\ a\ particular
+\ \ time\ step\ of\ an\ instance\ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,43 +13,37 @@ rtcSetGeometryTransform\ \-\ sets\ instance\ transformation\ for\ particular\ ti
 \f[C]
 #include\ <embree3/rtcore.h>
 
-void\ rtcSetGeometryTransform(RTCGeometry\ geometry,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ ID\ of\ geometry\ 
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ enum\ RTCMatrixType\ layout,\ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ layout\ of\ transformation\ matrix
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ const\ float*\ xfm,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ pointer\ to\ transformation\ matrix
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unsigned\ int\ timeStep\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ //!<\ timestep\ to\ set\ the\ matrix\ for\ 
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ );
+void\ rtcSetGeometryTransform(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCMatrixType\ layout,
+\ \ const\ float*\ xfm,
+\ \ unsigned\ int\ timeStep
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
-The \f[C]rtcSetGeometryTransform\f[] function sets the local to world
-transformation (\f[C]xfm\f[] parameter) of an instance geometry
+The \f[C]rtcSetGeometryTransform\f[] function sets the local\-to\-world
+affine transformation (\f[C]xfm\f[] parameter) of an instance geometry
 (\f[C]geometry\f[] parameter) for a particular time step
 (\f[C]timeStep\f[] parameter).
-The transformation is specified as a 3x4 matrix (3x3 linear
-transformation plus translation) and different layouts (\f[C]layout\f[]
-parameter) are supported:
+The transformation is specified as a 3×4 matrix (3×3 linear
+transformation plus translation), for which the following layouts
+(\f[C]layout\f[] parameter) are supported:
 .IP \[bu] 2
-RTC_MATRIX_ROW_MAJOR: The 3×4 float matrix is laid out in row major
-form.
+\f[C]RTC_FORMAT_FLOAT3X4_ROW_MAJOR\f[]: The 3×4 float matrix is laid out
+in row\-major form.
 .IP \[bu] 2
-RTC_MATRIX_COLUMN_MAJOR: The 3×4 float matrix is laid out in column
-major form.
+\f[C]RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
+out in column\-major form.
 .IP \[bu] 2
-RTC_MATRIX_COLUMN_MAJOR_ALIGNED16: The 3×4 float matrix is laid out in
-column major form, with each column padded by an additional 4th
-component.
-.PP
-Passing a homogeneous 4×4 matrices is possible as long as the last row
-is (0, 0, 0, 1).
-If this homogeneous matrix is laid out in row major form, use the
-\f[C]RTC_MATRIX_ROW_MAJOR\f[] layout and if it is laid out in column
-major form, use the \f[C]RTC_MATRIX_COLUMN_MAJOR_ALIGNED16\f[] mode.
-In both cases, Embree will just ignore the last row of the matrix.
+\f[C]RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
+out in column\-major form as a 4×4 homogeneous matrix with the last row
+being equal to (0, 0, 0, 1).
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
-[rtcNewInstance]
+[RTC_GEOMETRY_TYPE_INSTANCE]

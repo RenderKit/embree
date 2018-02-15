@@ -14,12 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../builders/bvh_builder_hair.h"
 #include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
-#include "../geometry/bezier1v.h"
-#include "../geometry/bezier1i.h"
+#include "../geometry/bezierNi_mb.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
 
@@ -56,41 +54,30 @@ namespace embree
 
         /* create primref array */
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefArrayMSMBlur<NativeCurves>(scene,prims0,bvh->scene->progressInterface);
+        const PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Geometry::MTY_CURVES,prims0,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
-        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
+        const size_t leaf_bytes = Primitive::bytes(pinfo.num_time_segments);
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
     
         /* settings for BVH build */
         BVHBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = 1;
-        settings.minLeafSize = 1;
-        settings.maxLeafSize = BVH::maxLeafBlocks;
+        settings.logBlockSize = __bsf(Primitive::max_size());
+        settings.minLeafSize = Primitive::max_size();
+        settings.maxLeafSize = Primitive::max_size();
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D
-          {
-            size_t start = prims.object_range.begin();
-            size_t end   = prims.object_range.end();
-            size_t items = prims.object_range.size();
-            Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive));
-            const NodeRef node = bvh->encodeLeaf((char*)accel,items);
-
-            LBBox3fa bounds = empty;
-            for (size_t i=0; i<items; i++)
-              bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
-            
-            return NodeRecordMB4D(node,bounds,prims.time_range);
-          };
+        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
+          return Primitive::createLeafMB(bvh,prims,alloc);
+        };
 
         /* build the hierarchy */
         auto root = BVHBuilderHairMSMBlur::build<NodeRef>
           (scene, prims0, pinfo,
-           RecalculatePrimRef<NativeCurves>(scene),
+           VirtualRecalculatePrimRef(scene),
            typename BVH::CreateAlloc(bvh),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
@@ -115,10 +102,10 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBBezier4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier4iMB>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH8OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
+    Builder* BVH4OBBBezier8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier8iMB>((BVH4*)bvh,scene); }
 #endif
 
   }

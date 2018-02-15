@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcGetDeviceProperty\ \-\ queries\ some\ property\ of\ the\ device
+rtcGetDeviceProperty\ \-\ queries\ properties\ of\ the\ device
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,52 +12,46 @@ rtcGetDeviceProperty\ \-\ queries\ some\ property\ of\ the\ device
 \f[C]
 #include\ <embree3/rtcore.h>
 
-ssize_t\ rtcGetDeviceProperty(RTCDevice\ device,\ const\ RTCDeviceProperty\ prop);
+ssize_t\ rtcGetDeviceProperty(
+\ \ RTCDevice\ device,
+\ \ RTCDeviceProperty\ prop
+);
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
-The \f[C]rtcGetDeviceProperty\f[] function can be used to query some
-properties of a device object.
-Input to the function are the device \f[C]device\f[] to query the
-propery of, and the property \f[C]prop\f[] to query.
+The \f[C]rtcGetDeviceProperty\f[] function can be used to query
+properties (\f[C]prop\f[] argument) of a device object (\f[C]device\f[]
+argument).
 The returned property is an integer of type \f[C]ssize_t\f[].
 .PP
 Possible properties to query are:
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_SOFTWARE_CACHE_SIZE\f[]: Queries size of the
-software cache in bytes.
-The software cache is used to cache interpolation data for subdivision
-surfaces.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_INTERSECT1_SUPPORTED\f[]: Queries if
-\f[C]rtcIntersect1\f[] and \f[C]rtcOccluded1\f[] functions are
-supported.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_INTERSECT4_SUPPORTED\f[]: Queries if
-\f[C]rtcIntersect4\f[] and \f[C]rtcOccluded4\f[] functions are
-supported.
+\f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED\f[]: Queries whether the
+\f[C]rtcIntersect4\f[] and \f[C]rtcOccluded4\f[] functions preserve
+packet size and ray order when invoking callback functions.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_RAY_PACKETS\f[] and \f[C]SSE2\f[] (or \f[C]SSE4.2\f[])
-enabled, and if the machine running on supports \f[C]SSE2\f[] (or
+enabled, and if the machine it is running on supports \f[C]SSE2\f[] (or
 \f[C]SSE4.2\f[]).
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_INTERSECT8_SUPPORTED\f[]: Queries if
-\f[C]rtcIntersect8\f[] and \f[C]rtcOccluded8\f[] functions are
-supported.
+\f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED\f[]: Queries whether the
+\f[C]rtcIntersect8\f[] and \f[C]rtcOccluded8\f[] functions preserve
+packet size and ray order when invoking callback functions.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_RAY_PACKETS\f[] and \f[C]AVX\f[] (or \f[C]AVX2\f[]) enabled,
-and if the machine running on supports \f[C]AVX\f[] (or \f[C]AVX2\f[]).
+and if the machine it is running on supports \f[C]AVX\f[] (or
+\f[C]AVX2\f[]).
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_INTERSECT16_SUPPORTED\f[]: Queries if
-\f[C]rtcIntersect16\f[] and \f[C]rtcOccluded16\f[] functions are
-supported.
+\f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED\f[]: Queries whether the
+\f[C]rtcIntersect16\f[] and \f[C]rtcOccluded16\f[] functions preserve
+packet size and ray order when invoking callback functions.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_RAY_PACKETS\f[] and \f[C]AVX512SKX\f[] (or
-\f[C]AVX512KNL\f[]) enabled, and if the machine running on supports
-\f[C]AVX512SKX\f[] (or \f[C]AVX512KNL\f[]).
+\f[C]AVX512KNL\f[]) enabled, and if the machine it is running on
+supports \f[C]AVX512SKX\f[] (or \f[C]AVX512KNL\f[]).
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_INTERSECT_STREAM_SUPPORTED\f[]: Queries if
+\f[C]RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED\f[]: Queries whether
 \f[C]rtcIntersect1M\f[], \f[C]rtcIntersect1Mp\f[],
 \f[C]rtcIntersectNM\f[], \f[C]rtcIntersectNp\f[],
 \f[C]rtcOccluded1M\f[], \f[C]rtcOccluded1Mp\f[], \f[C]rtcOccludedNM\f[],
@@ -65,26 +59,35 @@ and \f[C]rtcOccludedNp\f[] are supported.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_RAY_PACKETS\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED\f[]: Queries if ray masks
-are supported.
+\f[C]RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED\f[]: Queries whether ray
+masks are supported.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_RAY_MASK\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED\f[]: Queries if back
-face culling is supported.
+\f[C]RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED\f[]: Queries whether
+back face culling is enabled.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_BACKFACE_CULLING\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED\f[]: Queries if
-filter functions are enabled, which is the case if Embree is compiled
+\f[C]RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED\f[]: Queries whether
+filter functions are supported, which is the case if Embree is compiled
 with \f[C]EMBREE_FILTER_FUNCTION\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED\f[]: Queries if
-invalid rays are ignored, which is the case if Embree is compiled with
-\f[C]EMBREE_IGNORE_INVALID_RAYS\f[] enabled.
+\f[C]RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED\f[]: Queries
+whether invalid rays are ignored, which is the case if Embree is
+compiled with \f[C]EMBREE_IGNORE_INVALID_RAYS\f[] enabled.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_TASKING_SYSTEM\f[]: Queries the tasking system
-Embree is compiled with (0 = INTERNAL, 1 = TBB, 2 = PPL).
+Embree is compiled with.
+Possible return values are:
+.RS 2
+.IP "0." 3
+internal tasking system
+.IP "1." 3
+Intel Threading Building Blocks (TBB)
+.IP "2." 3
+Parallel Patterns Library (PPL)
+.RE
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_VERSION_MAJOR\f[]: Queries the major version
 number of Embree.
@@ -100,38 +103,38 @@ number (MAJOR.MINOR.PATCH) with two decimal digits per component.
 E.g.
 for Embree 2.8.3 the integer 208003 is returned.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED\f[]: Queries if
-triangles are supported, which is the case if Embree is compiled with
-\f[C]EMBREE_GEOMETRY_TRIANGLES\f[] enabled.
+\f[C]RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED\f[]: Queries
+whether triangles are supported, which is the case if Embree is compiled
+with \f[C]EMBREE_GEOMETRY_TRIANGLES\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED\f[]: Queries if quads
-are supported, which is the case if Embree is compiled with
+\f[C]RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED\f[]: Queries whether
+quads are supported, which is the case if Embree is compiled with
 \f[C]EMBREE_GEOMETRY_QUADS\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED\f[]: Queries if curves
-are supported, which is the case if Embree is compiled with
+\f[C]RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED\f[]: Queries whether
+curves are supported, which is the case if Embree is compiled with
 \f[C]EMBREE_GEOMETRY_CURVES\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED\f[]: Queries if
-subdivision meshes are supported, which is the case if Embree is
+\f[C]RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED\f[]: Queries
+whether subdivision meshes are supported, which is the case if Embree is
 compiled with \f[C]EMBREE_GEOMETRY_SUBDIVISION\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED\f[]: Queries if user
-geometries are supported, which is the case if Embree is compiled with
-\f[C]EMBREE_GEOMETRY_USER\f[] enabled.
+\f[C]RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED\f[]: Queries whether
+user geometries are supported, which is the case if Embree is compiled
+with \f[C]EMBREE_GEOMETRY_USER\f[] enabled.
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED\f[]: Queries if
-\f[C]rtcCommitJoin\f[] is supported.
-This is not the case when Embree is compiled with PPL or some older
-versions of TBB.
+\f[C]RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED\f[]: Queries whether
+\f[C]rtcJoinCommitScene\f[] is supported.
+This is not the case when Embree is compiled with PPL or older versions
+of TBB.
 .SS EXIT STATUS
 .PP
 On success returns the value of the queried property.
 For properties returning a boolean value, the return value 0 denotes
-false and 1 denotes true.
+\f[C]false\f[] and 1 denotes \f[C]true\f[].
 .PP
-On failure zero is returned and an error code is set that can get
-queried using \f[C]rtcDeviceGetError\f[].
+On failure zero is returned and an error code is set that can be queried
+using \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
 [rtcSetDeviceProperty]

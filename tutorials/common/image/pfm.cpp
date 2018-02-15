@@ -47,7 +47,7 @@ namespace embree
     skipSpacesAndComments(file);
     std::string type(cty,2);
 
-    /* read width, height, and maximal color value */
+    /* read width, height, and maximum color value */
     int width; file >> width;
     skipSpacesAndComments(file);
     int height; file >> height;

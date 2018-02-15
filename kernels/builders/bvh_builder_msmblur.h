@@ -153,6 +153,44 @@ namespace embree
         }
       };
 
+    struct VirtualRecalculatePrimRef
+    {
+      Scene* scene;
+      
+      __forceinline VirtualRecalculatePrimRef (Scene* scene)
+        : scene(scene) {}
+      
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Geometry* mesh = scene->get(geomID);
+        const LBBox3fa lbounds = mesh->vlinearBounds(primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+      }
+      
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Geometry* mesh = scene->get(geomID);
+        const LBBox3fa lbounds = mesh->vlinearBounds(space, primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+      }
+      
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
+        return scene->get(prim.geomID())->vlinearBounds(prim.primID(), time_range);
+      }
+      
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const {
+        return scene->get(prim.geomID())->vlinearBounds(space, prim.primID(), time_range);
+      }
+    };
+
     struct BVHBuilderMSMBlur
     {
       /*! settings for msmblur builder */
@@ -166,10 +204,10 @@ namespace embree
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t maxDepth;         //!< maximum depth of BVH to build
         size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t minLeafSize;      //!< minimum size of a leaf
+        size_t maxLeafSize;      //!< maximum size of a leaf
         float travCost;          //!< estimated cost of one traversal step
         float intCost;           //!< estimated cost of one primitive intersection
         bool singleLeafTimeSegment; //!< split time to single time range
@@ -226,8 +264,8 @@ namespace embree
         class BuilderT
         {
           ALIGNED_CLASS;
-          static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
-          static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximal tree depth
+          static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
+          static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximum tree depth
 
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
           typedef BinSplit<MBLUR_NUM_OBJECT_BINS> Split;

@@ -1,0 +1,72 @@
+.TH "RTC_GEOMETRY_TYPE_INSTANCE" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_INSTANCE\ \-\ instance\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =
+\ \ \ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_INSTANCE);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Embree supports instancing of scenes using affine transformations (3x3
+matrix plus translation).
+As the instanced scene is stored only a single time, even if instanced
+to multiple locations, this feature can be used to create very complex
+scenes with small memory footprint.
+Only single\-level instancing is supported natively by Embree, however,
+multi\-level instancing can be manually implemented through user
+geometries.
+.PP
+Instances are created by passing \f[C]RTC_GEOMETRY_TYPE_INSTANCE\f[] to
+the \f[C]rtcNewGeometry\f[] function call.
+The instanced scene can be set using the
+\f[C]rtcSetGeometryInstancedScene\f[] call, and the affine
+transformation can be set using the \f[C]rtcSetGeometryTransform\f[]
+function.
+.PP
+Please note that \f[C]rtcCommitScene\f[] on the instanced scene should
+be called first, followed by \f[C]rtcCommitGeometry\f[] on the instance,
+followed by \f[C]rtcCommitScene\f[] for the top\-level scene containing
+the instance.
+.PP
+If a ray hits the instance, the \f[C]geomID\f[] and \f[C]primID\f[]
+members of the hit are set to the geometry ID and primitive ID of the
+hit primitive in the instanced scene, and the \f[C]instID\f[] member of
+the hit is set to the geometry ID of the instance in the top\-level
+scene.
+.PP
+The instancing scheme can also be implemented using user geometries.
+To achieve this, the user geometry code should set the \f[C]instID\f[]
+member of the intersection context to the geometry ID of the instance,
+then trace the transformed ray, and finally set the \f[C]instID\f[]
+field of the intersection context again to \-1.
+The \f[C]instID\f[] field is copied automatically by each primitive
+intersector into the \f[C]instID\f[] field of the hit structure when the
+primitive is hit.
+See the [User Geometry] tutorial for an example.
+.PP
+For multi\-segment motion blur, the number of time steps must be first
+specified using the \f[C]rtcSetGeometryTimeStepCount\f[] function.
+Then a transformation for each time step can be specified using the
+\f[C]rtcSetGeometryTransform\f[] function.
+.PP
+See tutorial [Instanced Geometry] for an example of how to use
+instances.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry], [rtcSetGeometryInstancedScene],
+[rtcSetGeometryTransform]

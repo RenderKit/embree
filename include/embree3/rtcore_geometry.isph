@@ -105,7 +105,7 @@ struct RTCOccludedFunctionNArguments
 /* Occlusion callback function */
 typedef unmasked void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* uniform args);
 
-/* Arguments for RTCDisplacementFunction */
+/* Arguments for RTCDisplacementFunctionN */
 struct RTCDisplacementFunctionNArguments
 {
   void* uniform geometryUserPtr;
@@ -124,7 +124,7 @@ struct RTCDisplacementFunctionNArguments
 };
 
 /* Displacement mapping callback function */
-typedef unmasked void (*RTCDisplacementFunction)(const struct RTCDisplacementFunctionNArguments* uniform args);
+typedef unmasked void (*RTCDisplacementFunctionN)(const struct RTCDisplacementFunctionNArguments* uniform args);
 
 /* Creates a new geometry of specified type. */
 RTC_API RTCGeometry rtcNewGeometry(RTCDevice device, uniform RTCGeometryType type);
@@ -181,15 +181,15 @@ RTC_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, uniform
 /* Sets the occlusion filter callback function of the geometry. */
 RTC_API void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, uniform RTCFilterFunctionN filter);
 
-/* Sets the user defined data pointer of the geometry. */
+/* Sets the user-defined data pointer of the geometry. */
 RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* uniform ptr);
 
-/* Gets the user defined data pointer of the geometry. */
+/* Gets the user-defined data pointer of the geometry. */
 RTC_API void* uniform rtcGetGeometryUserData(RTCGeometry geometry);
 
 
 /* Sets the number of primitives of a user geometry. */
-RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int userPrimCount);
+RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, uniform unsigned int userPrimitiveCount);
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
 RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, uniform RTCBoundsFunction bounds, void* uniform userPtr);
@@ -200,10 +200,10 @@ RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, uniform RTCIn
 /* Set the occlusion callback function of a user geometry. */
 RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTCOccludedFunctionN occluded);
 
-/* Filters the intersection from the intersection callback function. */
+/* Invokes the intersection filter from the intersection callback function. */
 RTC_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
-/* Filters the occlusion from the occlusion callback function. */
+/* Invokes the occlusion filter from the occlusion callback function. */
 RTC_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 
@@ -217,7 +217,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, uniform unsigned int 
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, uniform float time, uniform RTCFormat format, void* uniform xfm);
 
 
-/* Sets the uniform tessellation rate of a subdivision surface. */
+/* Sets the uniform tessellation rate of the geometry. */
 RTC_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, uniform float tessellationRate);
 
 /* Sets the number of topologies of a subdivision surface. */
@@ -226,11 +226,11 @@ RTC_API void rtcSetGeometryTopologyCount(RTCGeometry geometry, uniform unsigned 
 /* Sets the subdivision interpolation mode. */
 RTC_API void rtcSetGeometrySubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
-/* Binds a topology to a vertex attribute. */
+/* Binds a vertex attribute to a topology of the geometry. */
 RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform unsigned int vertexAttributeID, uniform unsigned int topologyID);
 
 /* Sets the displacement callback function of a subdivision surface. */
-RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunction displacement);
+RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunctionN displacement);
 
 
 /* Arguments for rtcInterpolate */

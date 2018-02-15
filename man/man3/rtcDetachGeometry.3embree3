@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcDetachGeometry\ \-\ detaches\ the\ geometry\ from\ a\ scene
+rtcDetachGeometry\ \-\ detaches\ a\ geometry\ from\ the\ scene
 \f[]
 .fi
 .SS SYNOPSIS
@@ -18,14 +18,14 @@ void\ rtcDetachGeometry(RTCScene\ scene,\ unsigned\ int\ geomID);
 .SS DESCRIPTION
 .PP
 This function detaches a geometry identified by its geometry ID
-\f[C]geomID\f[] from a scene.
-When detached the geometry is no longer contained in the scene.
+(\f[C]geomID\f[] argument) from a scene (\f[C]scene\f[] argument).
+When detached, the geometry is no longer contained in the scene.
 .PP
-This function is thread safe, thus multiple threads can detach
-geometries from some scene.
+This function is thread\-safe, thus multiple threads can detach
+geometries from a scene at the same time.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

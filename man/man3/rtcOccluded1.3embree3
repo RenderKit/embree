@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcOccluded1\ \-\ find\ any\ hit\ for\ single\ ray
+rtcOccluded1\ \-\ finds\ any\ hit\ for\ a\ single\ ray
 \f[]
 .fi
 .SS SYNOPSIS
@@ -22,30 +22,48 @@ void\ rtcOccluded1(
 .SS DESCRIPTION
 .PP
 The \f[C]rtcOccluded1\f[] function checks for a single ray (\f[C]ray\f[]
-argument) if there is any hit with the scene (\f[C]scene\f[] argument).
-No hit is reported, but in case a hit got found the \f[C]geomID\f[]
-component of the ray is set to \f[C]0\f[].
-See Section \f[C]RTCRay\f[] for a description of the ray layout and how
-to setup a ray.
+argument) whether there is any hit with the scene (\f[C]scene\f[]
+argument).
 .PP
-The intersection context (\f[C]context\f[] argument) can specify some
-flags to optimize traversal and a filter callback function to be invoked
-for every intersection.
-Further the pointer to the intersection context is propagated to
-callback functions invoked during traversal and can thus be used to
-extend the ray with additional data.
-See Section \f[C]RTCIntersectContext\f[] for more information.
+The user must initialize the ray origin (\f[C]org\f[] ray member), ray
+direction (\f[C]dir\f[] ray member), ray segment (\f[C]tnear\f[],
+\f[C]tfar\f[] ray members), and must set the ray flags to \f[C]0\f[]
+(\f[C]flags\f[] ray member).
+If the scene contains motion blur geometries, also the ray time
+(\f[C]time\f[] ray member) must be initialized to a value in the range
+[0, 1].
+If ray masks are enabled at compile time, the ray mask (\f[C]mask\f[]
+ray member) must be initialized as well.
+The ray segment must be in the range [0, ∞], thus ranges that start
+behind the ray origin are not valid, but ranges can reach to infinity.
+See Section [RTCRay] for the ray layout description.
 .PP
-The ray pointer passed to callback functions is not guaranteed to be
-identical to the original ray provided.
-To extend the ray with additional data to be accessed in callback
-functions use the intersection context.
+When no intersection is found, the ray data is not updated.
+In case a hit was found, the \f[C]tfar\f[] component of the ray is set
+to \f[C]\-inf\f[].
 .PP
-The ray has to be aligned to 16 bytes.
+The implementation makes no guarantees that primitives whose hit
+distance is exactly at (or very close to) \f[C]tnear\f[] or
+\f[C]tfar\f[] are hit or missed.
+If you want to exclude intersections at \f[C]tnear\f[] just pass a
+slightly enlarged \f[C]tnear\f[], and if you want to include
+intersections at \f[C]tfar\f[] pass a slightly enlarged \f[C]tfar\f[].
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.IP
+.nf
+\f[C]
+\f[]
+.fi
+.PP
+The ray must be aligned to 16 bytes.
 .SS EXIT STATUS
 .PP
 For performance reasons this function does not do any error checks, thus
 will not set any error flags on failure.
 .SS SEE ALSO
 .PP
-[rtcOccluded1]
+[rtcOccluded1], [RTCRay]

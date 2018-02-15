@@ -34,7 +34,7 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time);
+          const Vec3vf<Mx> time(ray.time());
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -45,7 +45,7 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time);
+          const Vec3vf<Mx> time(ray.time());
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -67,7 +67,7 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3vf<K> time(ray.time);
+            const Vec3vf<K> time(ray.time());
             const Vec3vf<K> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3vf<K> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3vf<K> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
@@ -84,7 +84,7 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3vf<K> time(ray.time);
+            const Vec3vf<K> time(ray.time());
             const Vec3vf<K> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3vf<K> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3vf<K> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
@@ -98,7 +98,7 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time[k]);
+          const Vec3vf<Mx> time(ray.time()[k]);
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -109,7 +109,7 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time[k]);
+          const Vec3vf<Mx> time(ray.time()[k]);
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -128,7 +128,7 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time);
+          const Vec3vf<Mx> time(ray.time());
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -139,7 +139,7 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time);
+          const Vec3vf<Mx> time(ray.time());
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -161,7 +161,7 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3vf<K> time(ray.time);
+            const Vec3vf<K> time(ray.time());
             const Vec3vf<K> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3vf<K> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3vf<K> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
@@ -178,7 +178,7 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3vf<K> time(ray.time);
+            const Vec3vf<K> time(ray.time());
             const Vec3vf<K> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3vf<K> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3vf<K> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
@@ -192,7 +192,7 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time[k]);
+          const Vec3vf<Mx> time(ray.time()[k]);
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
@@ -203,7 +203,7 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3vf<Mx> time(ray.time[k]);
+          const Vec3vf<Mx> time(ray.time()[k]);
           const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
           const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
           const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));

@@ -178,11 +178,11 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
         AssertNoError(device);
-        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
+        rtcSetGeometryTimeStepCount(geom,(unsigned int)mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),(unsigned int)mesh->triangles.size());
-        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+        for (unsigned int t=0; t<mesh->numTimeSteps(); t++)
           rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
         AssertNoError(device);
         rtcCommitGeometry(geom);
@@ -194,11 +194,11 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
         AssertNoError(device);
-        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
+        rtcSetGeometryTimeStepCount(geom, (unsigned int)mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT4,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), (unsigned int)mesh->quads.size());
-        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+        for (unsigned int t=0; t<mesh->numTimeSteps(); t++)
           rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
         AssertNoError(device);
         rtcCommitGeometry(geom);
@@ -210,12 +210,12 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION);
         AssertNoError(device);
-        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
+        rtcSetGeometryTimeStepCount(geom, (unsigned int)mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FACE, 0,RTC_FORMAT_UINT,mesh->verticesPerFace.data(),0,sizeof(int), (unsigned int)mesh->verticesPerFace.size());
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,mesh->position_indices.data(),0,sizeof(int), (unsigned int)mesh->position_indices.size());
-        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+        for (unsigned int t=0; t<mesh->numTimeSteps(); t++)
           rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex), (unsigned int)mesh->positions[t].size());
         if (mesh->edge_creases.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,0,RTC_FORMAT_UINT2,mesh->edge_creases.data(),0,2*sizeof(int), (unsigned int)mesh->edge_creases.size());
         if (mesh->edge_crease_weights.size()) rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,0,RTC_FORMAT_FLOAT,mesh->edge_crease_weights.data(),0,sizeof(float),(unsigned int)mesh->edge_crease_weights.size());
@@ -234,10 +234,10 @@ namespace embree
       {
         RTCGeometry geom = rtcNewGeometry (device, mesh->type);
         AssertNoError(device);
-        rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps());
+        rtcSetGeometryTimeStepCount(geom, (unsigned int)mesh->numTimeSteps());
         rtcSetGeometryBuildQuality(geom,quality);
         AssertNoError(device);
-        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+        for (unsigned int t=0; t<mesh->numTimeSteps(); t++)
           rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex), (unsigned int)mesh->positions[t].size());
         rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), (unsigned int)mesh->hairs.size());
         AssertNoError(device);
@@ -4257,10 +4257,10 @@ namespace embree
 
       GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> sflags_quality_memory;
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_ROBUST,RTC_BUILD_QUALITY_MEDIUM),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,RTC_BUILD_QUALITY_LOW),RTC_BUILD_QUALITY_LOW));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE   ,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_ROBUST ,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,RTC_BUILD_QUALITY_LOW)   , RTC_BUILD_QUALITY_LOW));
 
       push(new TestGroup("memory_consumption",false,false));
 
@@ -4659,7 +4659,7 @@ namespace embree
 
     registerOption("benchmark-tolerance", [this] (Ref<ParseStream> cin, const FileName& path) {
         benchmark_tolerance = cin->getFloat();
-      }, "--benchmark-tolerance: maximal relative slowdown to let a test pass");
+      }, "--benchmark-tolerance: maximum relative slowdown to let a test pass");
     registerOptionAlias("benchmark-tolerance","tolerance");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {

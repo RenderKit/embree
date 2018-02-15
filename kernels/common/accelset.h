@@ -51,7 +51,7 @@ namespace embree
   public:
 
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_USER_GEOMETRY;
 
     typedef RTCIntersectFunctionN IntersectFuncN;  
     typedef RTCOccludedFunctionN OccludedFuncN;

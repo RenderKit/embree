@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcGetSceneFlags\ \-\ queries\ the\ scene\ flags\ of\ a\ scene
+rtcGetSceneFlags\ \-\ returns\ the\ flags\ of\ the\ scene
 \f[]
 .fi
 .SS SYNOPSIS
@@ -17,20 +17,21 @@ enum\ RTCSceneFlags\ rtcGetSceneFlags(RTCScene\ scene);
 .fi
 .SS DESCRIPTION
 .PP
-Queries the scene flags of a scene.
-This function can be used to only set individual flags, e.g.
-to just set the robust mode without changing further flags.
+Queries the flags of a scene.
+This function can be useful when setting individual flags, e.g.
+to just set the robust mode without changing other flags the following
+way:
 .IP
 .nf
 \f[C]
-RTCSceneFlags\ flags\ =\ rtcGetSceneFlags(scene)
-rtcSetSceneFlags(scene,RTC_SCENE_FLAG_ROBUST\ |\ flags);
+RTCSceneFlags\ flags\ =\ rtcGetSceneFlags(scene);
+rtcSetSceneFlags(scene,\ RTC_SCENE_FLAG_ROBUST\ |\ flags);
 \f[]
 .fi
 .SS EXIT STATUS
 .PP
 On failure \f[C]RTC_SCENE_FLAG_NONE\f[] is returned and an error code is
-set that can get queried using \f[C]rtcDeviceGetError\f[].
+set that can be queried using \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
 [rtcSetSceneFlags]

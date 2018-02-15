@@ -148,7 +148,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 
   /* calculate hit point */
   float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar() * ray.dir;
+  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
 
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
@@ -167,9 +167,9 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
     Ray& shadow = rays[i];
     bool mask = 1; { // invalidate inactive rays
       shadow.tnear() = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(shadow, hitPos, dir.v, shadow.tnear(), shadow.tfar());
+    init_Ray(shadow, hitPos, dir.v, shadow.tnear(), shadow.tfar);
 
     RayStats_addShadowRay(stats);
   }
@@ -191,7 +191,7 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 
   /* accumulate illumination */
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
-    if (rays[i].tfar() >= 0.0f)
+    if (rays[i].tfar >= 0.0f)
       intensity += 1.0f;
   }
 
@@ -268,8 +268,8 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
 
       /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
+      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
       dg.Ng = xfmVector(space,dg.Ng);
       dg.Ns = xfmVector(space,dg.Ns);
     }
@@ -319,9 +319,9 @@ void renderTileStandard(int taskIndex,
     Ray& ray = rays[N++];
     bool mask = 1; { // invalidates inactive rays
       ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
-      ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar(), RandomSampler_get1D(sampler));
+    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar, RandomSampler_get1D(sampler));
 
     RayStats_addRay(stats);
   }
@@ -361,7 +361,7 @@ void renderTileStandard(int taskIndex,
       dg.primID = ray.primID;
       dg.u = ray.u;
       dg.v = ray.v;
-      dg.P  = ray.org+ray.tfar()*ray.dir;
+      dg.P  = ray.org+ray.tfar*ray.dir;
       dg.Ng = ray.Ng;
       dg.Ns = ray.Ng;
       int materialID = postIntersect(ray,dg);

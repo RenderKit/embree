@@ -38,7 +38,7 @@ namespace embree
     /* primitive supports single time segments */
     static const bool singleTimeSegment = true;
 
-    /* Returns maximal number of stored triangles */
+    /* Returns maximum number of stored triangles */
     static __forceinline size_t max_size() { return M; }
     
     /* Returns required number of primitive blocks for N primitives */

@@ -35,7 +35,7 @@ namespace embree
     unsigned int edge_valence;                          //!< number of adjacent edges (2*face_valence)
     float vertex_crease_weight;                         //!< weight of vertex crease (0 if no vertex crease)
     array_t<float,MAX_RING_FACE_VALENCE> crease_weight; //!< edge crease weights for each adjacent edge
-    float vertex_level;                                 //!< maximal level of all adjacent edges
+    float vertex_level;                                 //!< maximum level of all adjacent edges
     float edge_level;                                   //!< level of first edge
     unsigned int eval_start_index;                      //!< topology dependent index to start evaluation
     unsigned int eval_unique_identifier;                //!< topology dependent unique identifier for this ring 
@@ -184,7 +184,7 @@ namespace embree
         /* if there is no opposite go the long way to the other side of the border */
         else
         {
-          /* find minimal start vertex */
+          /* find minimum start vertex */
           const unsigned index0 = p->getStartVertexIndex();
           if (index0 < min_vertex_index) { min_vertex_index = index0; min_vertex_index_face = i>>1; }
 
@@ -517,7 +517,7 @@ namespace embree
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << std::endl;
       
-      for (size_t i=0; i<c.edge_valence; i++) {
+      for (unsigned int i=0; i<min(c.edge_valence,(unsigned int)MAX_RING_FACE_VALENCE); i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
         o << std::endl;
@@ -552,7 +552,7 @@ namespace embree
     unsigned int edge_valence;
     int border_face;
     float vertex_crease_weight;
-    float vertex_level;                      //!< maximal level of adjacent edges
+    float vertex_level;                      //!< maximum level of adjacent edges
     float edge_level;                        // level of first edge
     bool only_quads;                         // true if all faces are quads
     unsigned int eval_start_face_index;
@@ -608,7 +608,7 @@ namespace embree
          assert(p->hasOpposite() || p->edge_crease_weight == float(inf));
         vertex_level = max(vertex_level,p->edge_level);
 
-        /* find minimal start vertex */
+        /* find minimum start vertex */
         unsigned vertex_index = p_next->getStartVertexIndex();
         if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 
@@ -628,7 +628,7 @@ namespace embree
         /* if there is no opposite go the long way to the other side of the border */
         else
         {
-          /* find minimal start vertex */
+          /* find minimum start vertex */
           unsigned vertex_index = p->getStartVertexIndex();
           if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 

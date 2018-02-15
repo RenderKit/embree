@@ -25,11 +25,13 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezier1v_intersector.h"
-#include "../geometry/bezier1i_intersector.h"
+#include "../geometry/bezierNv_intersector.h"
+#include "../geometry/bezierNi_intersector.h"
+#include "../geometry/bezierNi_mb_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/curve_intersector.h"
 
 namespace embree
 {
@@ -58,11 +60,11 @@ namespace embree
       /* verify correct input */
       assert(ray.valid());
       assert(ray.tnear() >= 0.0f);
-      assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || (ray.time() >= 0.0f && ray.time() <= 1.0f));
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar(), 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
       BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
@@ -81,7 +83,7 @@ namespace embree
         if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray.tfar)))
           continue;
 #else
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar()))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
 #endif
 
@@ -91,7 +93,7 @@ namespace embree
           /* intersect node */
           size_t mask; vfloat<Nx> tNear;
           STAT3(normal.trav_nodes,1,1,1);
-          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time, tNear, mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time(), tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
@@ -111,8 +113,8 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector1::intersect(pre, ray, context, prim, num, lazy_node);
-        tray.tfar = ray.tfar();
+        PrimitiveIntersector1::intersect(This, pre, ray, context, prim, num, lazy_node);
+        tray.tfar = ray.tfar;
 
         /* push lazy node onto stack */
         if (unlikely(lazy_node)) {
@@ -129,7 +131,7 @@ namespace embree
                                                                              IntersectContext* __restrict__ context)
     {
       /* early out for already occluded rays */
-      if (unlikely(ray.tfar() < 0.0f))
+      if (unlikely(ray.tfar < 0.0f))
         return;
 
       /* perform per ray precalculations required by the primitive intersector */
@@ -150,11 +152,11 @@ namespace embree
       /* verify correct input */
       assert(ray.valid());
       assert(ray.tnear() >= 0.0f);
-      assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || (ray.time() >= 0.0f && ray.time() <= 1.0f));
 
       /* load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar(), 0.0f));
+      TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
       BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
@@ -173,7 +175,7 @@ namespace embree
           /* intersect node */
           size_t mask; vfloat<Nx> tNear;
           STAT3(shadow.trav_nodes,1,1,1);
-          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time, tNear, mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray, ray.time(), tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(shadow.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
@@ -193,8 +195,8 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector1::occluded(pre, ray, context, prim, num, lazy_node)) {
-          ray.tfar() = neg_inf;
+        if (PrimitiveIntersector1::occluded(This, pre, ray, context, prim, num, lazy_node)) {
+          ray.tfar = neg_inf;
           break;
         }
 

@@ -3,7 +3,8 @@
 .IP
 .nf
 \f[C]
-rtcGetGeometryUserData\ \-\ returns\ user\ data\ pointer\ of\ geometry
+rtcGetGeometryUserData\ \-\ returns\ the\ user\ data\ pointer
+\ \ of\ the\ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -19,11 +20,11 @@ void*\ rtcGetGeometryUserData(RTCGeometry\ geometry);
 .PP
 The \f[C]rtcGetGeometryUserData\f[] function queries the user data
 pointer previously set with \f[C]rtcSetGeometryUserData\f[].
-When \f[C]rtcSetGeometryUserData\f[] got not called yet \f[C]NULL\f[] is
-returned.
+When \f[C]rtcSetGeometryUserData\f[] was not called yet, \f[C]NULL\f[]
+is returned.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

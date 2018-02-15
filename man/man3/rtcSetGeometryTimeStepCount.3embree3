@@ -1,0 +1,51 @@
+.TH "rtcSetGeometryTimeStepCount" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+rtcSetGeometryTimeStepCount\ \-\ sets\ the\ number\ of\ time\ steps\ of\ the
+\ \ geometry
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+void\ rtcSetGeometryTimeStepCount(
+\ \ RTCGeometry\ geometry,
+\ \ unsigned\ int\ timeStepCount
+);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+The \f[C]rtcSetGeometryTimeStepCount\f[] function sets the number of
+time steps for multi\-segment motion blur (\f[C]timeStepCount\f[]
+parameter) of the specified geometry (\f[C]geometry\f[] parameter).
+.PP
+For triangle meshes (\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[]), quad meshes
+(\f[C]RTC_GEOMETRY_TYPE_QUAD\f[]), curves
+(\f[C]RTC_GEOMETRY_TYPE_CURVE\f[]), and subdivision geometries
+(\f[C]RTC_GEOMETRY_TYPE_SUBDIVISION\f[]), the number of time steps
+directly corresponds to the number of vertex buffer slots available
+(\f[C]RTC_BUFFER_TYPE_VERTEX\f[] buffer type).
+For these geometries, one vertex buffer per time step must be specified
+when creating multi\-segment motion blur geometries.
+.PP
+For instance geometries (\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[]), a
+transformation must be specified for each time step (see
+\f[C]rtcSetGeometryTransform\f[]).
+.PP
+For user geometries, the registered bounding callback function must
+provide a bounding box per primitive and time step, and the intersection
+and occlusion callback functions should properly intersect the
+motion\-blurred geometry at the ray time.
+.SS EXIT STATUS
+.PP
+On failure an error code is set that can be queried using
+\f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

@@ -22,8 +22,8 @@
 
 namespace embree
 {
-  namespace isa
-  {
+  //namespace isa
+  //{
     template<typename BBox>
       class CentGeom
     {
@@ -234,7 +234,7 @@ namespace embree
     public:
       range<size_t> object_range; //!< primitive range
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
-      size_t max_num_time_segments; //!< maximal number of time segments of a primitive
+      size_t max_num_time_segments; //!< maximum number of time segments of a primitive
       BBox1f time_range;
     };
 
@@ -338,5 +338,5 @@ namespace embree
     public:
       PrimRefVector prims;
     };
-  }
+//}
 }

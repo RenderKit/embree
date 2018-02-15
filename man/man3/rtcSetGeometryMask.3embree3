@@ -12,7 +12,10 @@ rtcSetGeometryMask\ \-\ sets\ the\ geometry\ mask
 \f[C]
 #include\ <embree3/rtcore.h>
 
-void\ rtcSetGeometryMask(RTCGeometry\ geometry,\ int\ mask);
+void\ rtcSetGeometryMask(
+\ \ RTCGeometry\ geometry,
+\ \ unsigned\ int\ mask
+);
 \f[]
 .fi
 .SS DESCRIPTION
@@ -20,21 +23,24 @@ void\ rtcSetGeometryMask(RTCGeometry\ geometry,\ int\ mask);
 The \f[C]rtcSetGeometryMask\f[] function sets a 32\-bit geometry mask
 (\f[C]mask\f[] argument) for the specified geometry (\f[C]geometry\f[]
 argument).
+.PP
 This geometry mask is used together with the ray mask stored inside the
 \f[C]mask\f[] field of the ray.
+The primitives of the geometry are hit by the ray only if the bitwise
+\f[C]and\f[] operation of the geometry mask with the ray mask is not 0.
+This feature can be used to disable selected geometries for specifically
+tagged rays, e.g.
+to disable shadow casting for certain geometries.
 .PP
-Only if the bitwise \f[C]and\f[] operation of the geometry mask with the
-ray mask is not 0, primitives of the geometry are hit by the ray.
-This feature can get used to disable selected geometries for
-specifically tagged rays, e.g.
-to disable shadow casting for some geometry.
-.PP
-Ray masks are disabled in Embree by default at compile time, and can get
+Ray masks are disabled in Embree by default at compile time, and can be
 enabled through the \f[C]EMBREE_RAY_MASK\f[] parameter in CMake.
+One can query whether ray masks are enabled by querying the
+\f[C]RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED\f[] device property using
+\f[C]rtcGetDeviceProperty\f[].
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
-Ray Layout
+[RTCRay], [rtcGetDeviceProperty]

@@ -261,9 +261,9 @@ void renderTileStandard(int taskIndex,
     Ray& ray = rays[N++];
     bool mask = 1; { // invalidates inactive rays
       ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
-      ray.tfar()  = mask ? (float)(inf) : (float)(neg_inf);
+      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar());
+    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar);
 
     RayStats_addRay(stats);
   }
@@ -321,11 +321,11 @@ void renderTileStandard(int taskIndex,
       for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
-        for (unsigned int n=0;n<N;n++)
+        for (unsigned int n=0;n<(unsigned int)N;n++)
         {
           Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
-          const Vec3fa hitpos = ray.org + ray.dir * ray.tfar();
+          const Vec3fa hitpos = ray.org + ray.dir * ray.tfar;
           const Vec3fa shadow_org = hitpos - ray.org;
           init_Ray(ray, ls_positions[i], shadow_org, 1E-4f, valid ? 0.99f : -1.0f);
           RayStats_addShadowRay(stats);
@@ -339,7 +339,7 @@ void renderTileStandard(int taskIndex,
 #endif
         /* modify pixel color based on occlusion */
         for (unsigned int n=0;n<N;n++)
-          if (rays[n].tfar() >= 0.0f)
+          if (rays[n].tfar >= 0.0f)
             colors[n] = colors[n] * 0.1f;
 
       }

@@ -28,7 +28,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   SubdivMesh::SubdivMesh (Device* device)
-    : Geometry(device,SUBDIV_MESH,0,1), 
+    : Geometry(device,GTY_SUBDIV_MESH,0,1), 
       displFunc(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
@@ -366,7 +366,7 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunction func) 
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunctionN func) 
   {
     this->displFunc   = func;
     this->displBounds = empty;

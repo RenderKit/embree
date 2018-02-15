@@ -211,10 +211,10 @@ namespace embree
     struct Intersectors 
     {
       Intersectors() 
-        : ptr(nullptr) {}
+        : ptr(nullptr), leafIntersector(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
+      : ptr(nullptr), leafIntersector(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
@@ -347,7 +347,7 @@ namespace embree
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *rayN[i];
-            vbool<VSIZEX> valid = ray.tnear() <= ray.tfar();
+            vbool<VSIZEX> valid = ray.tnear() <= ray.tfar;
             occluded(valid,ray,context);
           }      
         }
@@ -390,6 +390,7 @@ namespace embree
       
     public:
       AccelData* ptr;
+      void* leafIntersector;
       Intersector1 intersector1;
       Intersector4 intersector4;
       Intersector4 intersector4_filter;

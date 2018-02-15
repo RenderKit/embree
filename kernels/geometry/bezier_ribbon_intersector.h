@@ -18,6 +18,7 @@
 
 #include "../common/ray.h"
 #include "quad_intersector.h"
+#include "bezier_curve_precalculations.h"
 
 #define Bezier1Intersector1 Ribbon1Intersector1
 #define Bezier1IntersectorK Ribbon1IntersectorK
@@ -171,30 +172,18 @@ namespace embree
       }
       return ishit;
     }
-    
+        
     template<typename NativeCurve3fa>
       struct Ribbon1Intersector1
     {
-      float depth_scale;
-      LinearSpace3fa ray_space;
-      
-      __forceinline Ribbon1Intersector1() {}
-
-      __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr)
-      {
-        depth_scale = rsqrt(dot(ray.dir,ray.dir));
-        ray_space = frame(depth_scale*ray.dir);
-        ray_space.vz *= depth_scale;
-        ray_space = ray_space.transposed();
-      }
-
       template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
-                                   const Epilog& epilog) const
+      __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog)
       {
-        return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar(),
-                                                ray_space,depth_scale,
+        const int N = geom->tessellationRate;
+        return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar,
+                                                pre.ray_space,pre.depth_scale,
                                                 v0,v1,v2,v3,N,
                                                 epilog);
       }
@@ -203,31 +192,16 @@ namespace embree
     template<typename NativeCurve3fa, int K>
     struct Ribbon1IntersectorK
     {
-      vfloat<K> depth_scale;
-      LinearSpace3fa ray_space[K];
-
-      __forceinline Ribbon1IntersectorK(const vbool<K>& valid, const RayK<K>& ray)
-      {
-        size_t mask = movemask(valid);
-        depth_scale = rsqrt(dot(ray.dir,ray.dir));
-        while (mask) {
-          size_t k = __bscf(mask);
-          LinearSpace3fa ray_space_k = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]));
-          ray_space_k.vz *= depth_scale[k];
-          ray_space_k = ray_space_k.transposed();
-          ray_space[k] = ray_space_k;
-        }
-      }
-
       template<typename Epilog>
-      __forceinline bool intersect(RayK<K>& ray, size_t k,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
-                                   const Epilog& epilog) const
+      __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog)
       {
+        const int N = geom->tessellationRate;
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar()[k],
-                                                ray_space[k],depth_scale[k],
+        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
+                                                pre.ray_space[k],pre.depth_scale[k],
                                                 v0,v1,v2,v3,N,
                                                 epilog);
       }

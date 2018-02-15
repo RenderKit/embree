@@ -35,7 +35,7 @@ namespace embree
     typedef HalfEdge::Edge Edge;
     
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_SUBDIV_MESH;
 
     /*! structure used to sort half edges using radix sort by their key */
     struct KeyHalfEdge 
@@ -78,7 +78,7 @@ namespace embree
     void setTessellationRate(float N);
     bool verify();
     void commit();
-    void setDisplacementFunction (RTCDisplacementFunction func);
+    void setDisplacementFunction (RTCDisplacementFunctionN func);
 
   public:
 
@@ -133,8 +133,8 @@ namespace embree
     }
 
   public:
-    RTCDisplacementFunction displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for maximal displacement 
+    RTCDisplacementFunctionN displFunc;    //!< displacement function
+    BBox3fa             displBounds;  //!< bounds for maximum displacement 
 
     /*! all buffers in this section are provided by the application */
   public:

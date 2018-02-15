@@ -3,13 +3,15 @@
 .IP
 .nf
 \f[C]
-rtcReleaseBVH\ \-\ decrements\ the\ bvh\ reference\ counter
+rtcReleaseBVH\ \-\ decrements\ the\ BVH\ reference\ count
 \f[]
 .fi
 .SS SYNOPSIS
 .IP
 .nf
 \f[C]
+#include\ <embree3/rtcore.h>
+
 void\ rtcReleaseBVH(RTCBVH\ bvh);
 \f[]
 .fi
@@ -17,11 +19,11 @@ void\ rtcReleaseBVH(RTCBVH\ bvh);
 .PP
 BVH objects are reference counted.
 The \f[C]rtcReleaseBVH\f[] function decrements the reference count of
-the passed BVH object.
-When the reference count falls to 0 the BVH gets destroyed.
+the passed BVH object (\f[C]bvh\f[] argument).
+When the reference count falls to 0, the BVH gets destroyed.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

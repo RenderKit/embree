@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   QuadMesh::QuadMesh (Device* device)
-    : Geometry(device,QUAD_MESH,0,1)
+    : Geometry(device,GTY_QUAD_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
   }

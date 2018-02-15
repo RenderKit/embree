@@ -173,7 +173,8 @@ namespace embree
 
   ISPCQuadMesh::~ISPCQuadMesh () {
     if (positions) delete[] positions;
-    if (normals) delete[] normals;  }
+    if (normals) delete[] normals;
+  }
 
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
@@ -317,7 +318,7 @@ namespace embree
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
@@ -334,7 +335,7 @@ namespace embree
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
@@ -351,8 +352,8 @@ namespace embree
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
+    for (unsigned int i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
@@ -406,7 +407,7 @@ namespace embree
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryBuildQuality(geom, quality);
 
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     if (mesh->normals) {

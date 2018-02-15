@@ -26,12 +26,14 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezier1v_intersector.h"
-#include "../geometry/bezier1i_intersector.h"
+#include "../geometry/bezierNv_intersector.h"
+#include "../geometry/bezierNi_intersector.h"
+#include "../geometry/bezierNi_mb_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 //#include "../geometry/subdivpatch1cached_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/curve_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 #define FORCE_SINGLE_MODE 0
@@ -43,7 +45,8 @@ namespace embree
   namespace isa
   {
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, single>::intersect1(const BVH* bvh,
+    void BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, single>::intersect1(Accel::Intersectors* This,
+                                                                                                const BVH* bvh,
                                                                                                 NodeRef root,
                                                                                                 size_t k,
                                                                                                 Precalculations& pre,
@@ -75,7 +78,7 @@ namespace embree
         if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray1.tfar)))
           continue;
 #else
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar()[k]))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
 #endif
 
@@ -89,7 +92,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time[k], tNear, mask);
+          BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
 
           /* if no child is hit, pop next node */
           if (unlikely(mask == 0))
@@ -105,9 +108,9 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
         size_t lazy_node = 0;
-        PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
+        PrimitiveIntersectorK::intersect(This, pre, ray, k, context, prim, num, lazy_node);
 
-        tray1.tfar = ray.tfar()[k];
+        tray1.tfar = ray.tfar[k];
 
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
@@ -142,18 +145,23 @@ namespace embree
 
       /* return if there are no valid rays */
       size_t valid_bits = movemask(valid);
+
+#if defined(__AVX__)
+      STAT3(normal.trav_hit_boxes[__popcnt(movemask(valid))], 1, 1, 1);
+#endif
+
       if (unlikely(valid_bits == 0)) return;
 
       /* verify correct input */
       assert(all(valid, ray.valid()));
       assert(all(valid, ray.tnear() >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
+      assert(!(types & BVH_MB) || all(valid, (ray.time() >= 0.0f) & (ray.time() <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
        /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
@@ -188,9 +196,6 @@ namespace embree
         vbool<K> octant_valid = (count_diff_octant <= 1) & (octant != vint<K>(0xffffffff));
         if (!single || !split) octant_valid = valid; // deactivate octant sorting in pure chunk mode, otherwise instance traversal performance goes down 
 
-#if defined(__AVX__)
-        STAT3(normal.trav_hit_boxes[__popcnt(movemask(octant_valid))], 1, 1, 1);
-#endif
 
         octant = select(octant_valid,vint<K>(0xffffffff),octant);
         valid_bits &= ~(size_t)movemask(octant_valid);
@@ -240,9 +245,9 @@ namespace embree
             {
               for (; bits!=0; ) {
                 const size_t i = __bscf(bits);
-                intersect1(bvh, cur, i, pre, ray, tray, context);
+                intersect1(This, bvh, cur, i, pre, ray, tray, context);
               }
-              tray.tfar = min(tray.tfar, ray.tfar());
+              tray.tfar = min(tray.tfar, ray.tfar);
               continue;
             }
           }
@@ -267,7 +272,7 @@ namespace embree
               if (unlikely(child == BVH::emptyNode)) break;
               vfloat<K> lnearP;
               vbool<K> lhit = valid_node;
-              BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time, lnearP, lhit);
+              BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time(), lnearP, lhit);
 
               /* if we hit the child we choose to continue with that child if it
                  is closer than the current next child, or we push it onto the stack */
@@ -355,8 +360,8 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(valid_leaf, pre, ray, context, prim, items, lazy_node);
-          tray.tfar = select(valid_leaf, ray.tfar(), tray.tfar);
+          PrimitiveIntersectorK::intersect(valid_leaf, This, pre, ray, context, prim, items, lazy_node);
+          tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
 
           if (unlikely(lazy_node)) {
             *sptr_node = lazy_node; sptr_node++;
@@ -388,13 +393,13 @@ namespace embree
       /* verify correct input */
       assert(all(valid, ray.valid()));
       assert(all(valid, ray.tnear() >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
+      assert(!(types & BVH_MB) || all(valid, (ray.time() >= 0.0f) & (ray.time() <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
       vint<K> octant = ray.octant();
       octant = select(valid, octant, vint<K>(0xffffffff));
@@ -451,7 +456,7 @@ namespace embree
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
-              BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time, lnearP, lhit);
+              BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time(), lnearP, lhit);
 
               if (likely(any(lhit)))
               {                                
@@ -505,12 +510,12 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(valid_leaf, pre, ray, context, prim,items, lazy_node);
+          PrimitiveIntersectorK::intersect(valid_leaf, This, pre, ray, context, prim,items, lazy_node);
 
           /* reduce max distance interval on successful intersection */
-          if (likely(any((ray.tfar() < tray.tfar) & valid_leaf)))
+          if (likely(any((ray.tfar < tray.tfar) & valid_leaf)))
           {
-            tray.tfar = select(valid_leaf, ray.tfar(), tray.tfar);
+            tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
             frustum.updateMaxDist(tray.tfar);
           }
 
@@ -529,7 +534,8 @@ namespace embree
     // ===================================================================================================================================================================
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    bool BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, single>::occluded1(const BVH* bvh,
+    bool BVHNIntersectorKHybrid<N, K, types, robust, PrimitiveIntersectorK, single>::occluded1(Accel::Intersectors* This,
+                                                                                               const BVH* bvh,
                                                                                                NodeRef root,
                                                                                                size_t k,
                                                                                                Precalculations& pre,
@@ -564,7 +570,7 @@ namespace embree
             /* intersect node */
             size_t mask = 0;
             vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time[k], tNear, mask);
+            BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
 
             /* if no child is hit, pop next node */
             if (unlikely(mask == 0))
@@ -580,8 +586,8 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(pre, ray, k, context, prim, num, lazy_node)) {
-	    ray.tfar()[k] = neg_inf;
+          if (PrimitiveIntersectorK::occluded(This, pre, ray, k, context, prim, num, lazy_node)) {
+	    ray.tfar[k] = neg_inf;
 	    return true;
 	  }
 
@@ -610,7 +616,7 @@ namespace embree
 #endif
 
       /* filter out already occluded and invalid rays */
-      vbool<K> valid = (*valid_i == -1) & (ray.tfar() >= 0.0f);
+      vbool<K> valid = (*valid_i == -1) & (ray.tfar >= 0.0f);
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
@@ -622,13 +628,13 @@ namespace embree
       /* verify correct input */
       assert(all(valid, ray.valid()));
       assert(all(valid, ray.tnear() >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
+      assert(!(types & BVH_MB) || all(valid, (ray.time() >= 0.0f) & (ray.time() <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
       tray.tnear = select(valid, org_ray_tnear, vfloat<K>(pos_inf));
       tray.tfar  = select(valid, org_ray_tfar , vfloat<K>(neg_inf));
@@ -676,7 +682,7 @@ namespace embree
           if (unlikely(__popcnt(bits) <= switchThreshold)) {
             for (; bits!=0; ) {
               const size_t i = __bscf(bits);
-              if (occluded1(bvh, cur, i, pre, ray, tray, context))
+              if (occluded1(This, bvh, cur, i, pre, ray, tray, context))
                 set(terminated, i);
             }
             if (all(terminated)) break;
@@ -704,7 +710,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit = valid_node;
-            BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time, lnearP, lhit);
+            BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time(), lnearP, lhit);
 
             /* if we hit the child we push the previously hit node onto the stack, and continue with the currently hit child */
             if (likely(any(lhit)))
@@ -754,7 +760,7 @@ namespace embree
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        terminated |= PrimitiveIntersectorK::occluded(!terminated, pre, ray, context, prim, items, lazy_node);
+        terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, lazy_node);
         if (all(terminated)) break;
         tray.tfar = select(terminated, vfloat<K>(neg_inf), tray.tfar); // ignore node intersections for terminated rays
 
@@ -764,7 +770,7 @@ namespace embree
         }
       }
 
-      vfloat<K>::store(valid & terminated, &ray.tfar(), neg_inf);
+      vfloat<K>::store(valid & terminated, &ray.tfar, neg_inf);
     }
 
 
@@ -789,13 +795,13 @@ namespace embree
       /* verify correct input */
       assert(all(valid, ray.valid()));
       assert(all(valid, ray.tnear() >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
+      assert(!(types & BVH_MB) || all(valid, (ray.time() >= 0.0f) & (ray.time() <= 1.0f)));
       Precalculations pre(valid,ray);
 
       /* load ray */
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar() , 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
       vbool<K> terminated = !valid;
 
@@ -854,7 +860,7 @@ namespace embree
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
-              BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time, lnearP, lhit);
+              BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time(), lnearP, lhit);
 
               if (likely(any(lhit)))
               {                                
@@ -885,7 +891,7 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          terminated |= PrimitiveIntersectorK::occluded(!terminated, pre, ray, context, prim, items, lazy_node);
+          terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, lazy_node);
           octant_valid &= !terminated;
           if (unlikely(none(octant_valid))) break;
           tray.tfar = select(terminated, vfloat<K>(neg_inf), tray.tfar); // ignore node intersections for terminated rays
@@ -898,7 +904,7 @@ namespace embree
         }
       } while(valid_bits);
 
-      vfloat<K>::store(valid & terminated, &ray.tfar(), neg_inf);
+      vfloat<K>::store(valid & terminated, &ray.tfar, neg_inf);
     }
   }
 }

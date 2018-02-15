@@ -23,7 +23,7 @@
 typedef uniform struct RTCDeviceTy* uniform RTCDevice;
 
 /* Creates a new Embree device. */
-RTC_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg);
+RTC_API RTCDevice rtcNewDevice(const uniform int8* uniform config);
 
 /* Retains the Embree device (increments the reference count). */
 RTC_API void rtcRetainDevice(RTCDevice device);

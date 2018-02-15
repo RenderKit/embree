@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-RTCHit\ \-\ type\ of\ single\ hit
+RTCHit\ \-\ single\ hit\ structure
 \f[]
 .fi
 .SS SYNOPSIS
@@ -14,37 +14,38 @@ RTCHit\ \-\ type\ of\ single\ hit
 
 struct\ RTCHit
 {
-\ \ float\ Ng_x;\ \ \ \ \ \ \ \ //!<\ x\ coordinate\ of\ geometry\ normal
-\ \ float\ Ng_y;\ \ \ \ \ \ \ \ //!<\ y\ coordinate\ of\ geometry\ normal
-\ \ float\ Ng_z;\ \ \ \ \ \ \ \ //!<\ z\ coordinate\ of\ geometry\ normal
+\ \ float\ Ng_x;\ \ \ \ \ \ \ \ \ \ //\ x\ coordinate\ of\ geometry\ normal
+\ \ float\ Ng_y;\ \ \ \ \ \ \ \ \ \ //\ y\ coordinate\ of\ geometry\ normal
+\ \ float\ Ng_z;\ \ \ \ \ \ \ \ \ \ //\ z\ coordinate\ of\ geometry\ normal
 
-\ \ float\ t;\ \ \ \ \ \ \ \ \ \ //!<\ hit\ distance
-\ \ float\ u;\ \ \ \ \ \ \ \ \ \ //!<\ Barycentric\ u\ coordinate\ of\ hit
-\ \ float\ v;\ \ \ \ \ \ \ \ \ \ //!<\ Barycentric\ v\ coordinate\ of\ hit
+\ \ float\ u;\ \ \ \ \ \ \ \ \ \ \ \ \ //\ barycentric\ u\ coordinate\ of\ hit
+\ \ float\ v;\ \ \ \ \ \ \ \ \ \ \ \ \ //\ barycentric\ v\ coordinate\ of\ hit
 
-\ \ unsigned\ primID;\ \ //!<\ primitive\ ID
-\ \ unsigned\ geomID;\ \ //!<\ geometry\ ID
-\ \ unsigned\ instID;\ \ //!<\ instance\ ID
+\ \ unsigned\ int\ primID;\ //\ geometry\ ID
+\ \ unsigned\ int\ geomID;\ //\ primitive\ ID
+\ \ unsigned\ int\ instID[RTC_MAX_INSTANCE_LEVEL_COUNT];\ //\ instance\ ID
 };
 \f[]
 .fi
 .SS DESCRIPTION
 .PP
 The \f[C]RTCHit\f[] type defines the type of a ray/primitive
-intersection result as passed to some callback functions.
+intersection result.
 The hit contains the unnormalized geometric normal in object space at
 the hit location (\f[C]Ng_x\f[], \f[C]Ng_y\f[], \f[C]Ng_z\f[] members),
-the parametric hit distance (\f[C]t\f[] member), the barycentric u/v
-coordinates of the hit (\f[C]u\f[] and \f[C]v\f[] members), as well as
-the primitive, geometry, and instance ID of the hit (\f[C]primID\f[],
-\f[C]geomID\f[], and \f[C]instID\f[] member).
+the barycentric u/v coordinates of the hit (\f[C]u\f[] and \f[C]v\f[]
+members), as well as the primitive ID (\f[C]primID\f[] member), geometry
+ID (\f[C]geomID\f[] member), and instance ID (\f[C]instID\f[] member) of
+the hit.
+The parametric intersection distance is not stored inside the hit, but
+stored inside the \f[C]tfar\f[] member of the ray.
 .PP
 The \f[C]embree3/rtcore_ray.h\f[] header additionally defines the same
-hit structure in structure of array layout (SOA) for hit packets of size
+hit structure in structure of array (SOA) layout for hit packets of size
 4 (\f[C]RTCHit4\f[] type), size 8 (\f[C]RTCHit8\f[] type), and size 16
 (\f[C]RTCHit16\f[] type).
-The header additionally defines an \f[C]RTCHitNt\f[] template to
-generate hit packets of an arbitrary compile time size.
+The header additionally defines an \f[C]RTCHitNt\f[] template for hit
+packets of an arbitrary compile\-time size.
 .SS EXIT STATUS
 .SS SEE ALSO
 .PP

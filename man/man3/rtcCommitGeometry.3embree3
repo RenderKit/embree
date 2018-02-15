@@ -18,14 +18,14 @@ void\ rtcCommitGeometry(RTCGeometry\ geometry);
 .SS DESCRIPTION
 .PP
 The \f[C]rtcCommitGeometry\f[] function is used to commit all geometry
-changes performed to some geometry (\f[C]geometry\f[] parameter).
-When some geometry got modified, this function has to get called to
-properly update the internal state of the geometry to perform
-interpolations using \f[C]rtcInterpolate\f[] or to commit a scene
-containing the geometry using \f[C]rtcCommitScene\f[].
+changes performed to a geometry (\f[C]geometry\f[] parameter).
+After a geometry gets modified, this function must be called to properly
+update the internal state of the geometry to perform interpolations
+using \f[C]rtcInterpolate\f[] or to commit a scene containing the
+geometry using \f[C]rtcCommitScene\f[].
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

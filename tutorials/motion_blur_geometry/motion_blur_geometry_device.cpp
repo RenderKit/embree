@@ -397,7 +397,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   Ray *ray = (Ray *)rays;
   
   const int time_segments = sphere.num_time_steps-1;
-  const float time = ray->time*(float)(time_segments);
+  const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
   const float ftime = time - (float)(itime);
   const float ft0 = 2.0f*float(pi) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
@@ -416,18 +416,18 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
+  if ((ray->tnear() < t0) & (t0 < ray->tfar)) {
     ray->u = 0.0f;
     ray->v = 0.0f;
-    ray->tfar() = t0;
+    ray->tfar = t0;
     ray->geomID = sphere.geomID;
     ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t0*ray->dir-sphere_p;
   }
-  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
+  if ((ray->tnear() < t1) & (t1 < ray->tfar)) {
     ray->u = 0.0f;
     ray->v = 0.0f;
-    ray->tfar() = t1;
+    ray->tfar = t1;
     ray->geomID = sphere.geomID;
     ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t1*ray->dir-sphere_p;
@@ -449,7 +449,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   
   Ray *ray = (Ray *)rays;
   const int time_segments = sphere.num_time_steps-1;
-  const float time = ray->time*(float)(time_segments);
+  const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
   const float ftime = time - (float)(itime);
   const float ft0 = 2.0f*float(pi) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
@@ -468,11 +468,11 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray->tnear() < t0) & (t0 < ray->tfar())) {
-    ray->tfar() = neg_inf;
+  if ((ray->tnear() < t0) & (t0 < ray->tfar)) {
+    ray->tfar = neg_inf;
   }
-  if ((ray->tnear() < t1) & (t1 < ray->tfar())) {
-    ray->tfar() = neg_inf;
+  if ((ray->tnear() < t1) & (t1 < ray->tfar)) {
+    ray->tfar = neg_inf;
   }
 }
 
@@ -626,14 +626,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar()*ray.dir, neg(lightDir), 0.001f, inf, time);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, time);
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.tfar() >= 0.0f)
+    if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
   return color;

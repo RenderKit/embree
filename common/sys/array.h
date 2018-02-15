@@ -161,5 +161,10 @@ namespace embree
     Ty arr[max_stack_bytes/sizeof(Ty)];
     Ty* data;
     size_t N;
+
+  private:
+    StackArray (const StackArray& other) DELETED; // do not implement
+    StackArray& operator= (const StackArray& other) DELETED; // do not implement
+
   };
 }

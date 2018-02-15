@@ -27,7 +27,7 @@ namespace embree
   public:
 
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::INSTANCE;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE;
 
     GeometryInstance (Device* device, Ref<Geometry> geom); 
     virtual void build() {}
@@ -50,7 +50,7 @@ namespace embree
   public:
 
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::GROUP;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_GROUP;
 
     GeometryGroup (Device* device, const std::vector<Ref<Geometry>>& geometries); 
     virtual void build() {}

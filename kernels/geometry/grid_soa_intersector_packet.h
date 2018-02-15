@@ -235,7 +235,7 @@ namespace embree
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
-        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
+        vint<K> vitime = getTimeSegment(ray.time(), vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
 
         vbool<K> valid1 = valid_i;
         while (any(valid1)) {
@@ -295,7 +295,7 @@ namespace embree
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
-        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
+        vint<K> vitime = getTimeSegment(ray.time(), vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
 
         vbool<K> valid_o = valid_i;
         vbool<K> valid1 = valid_i;
@@ -419,7 +419,7 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       { 
         float ftime;
-        int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
+        int itime = getTimeSegment(ray.time()[k], float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -438,7 +438,7 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         float ftime;
-        int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
+        int itime = getTimeSegment(ray.time()[k], float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;

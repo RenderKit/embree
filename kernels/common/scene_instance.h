@@ -35,6 +35,11 @@ namespace embree
   public:
     Instance (Device* device, Scene* object, unsigned int numTimeSteps);
     ~Instance();
+
+  private:
+    Instance (const Instance& other) DELETED; // do not implement
+    Instance& operator= (const Instance& other) DELETED; // do not implement
+    
   public:
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
     virtual void setInstancedScene(const Ref<Scene>& scene);

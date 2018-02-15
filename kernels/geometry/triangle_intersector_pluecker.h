@@ -119,7 +119,7 @@ namespace embree
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
           valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar());
+          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -212,7 +212,7 @@ namespace embree
           /* perform depth test */
           const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
           valid &= absDen*ray.tnear() < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*ray.tfar();
+          valid &= (T^sgnDen) <= absDen*ray.tfar;
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -268,7 +268,7 @@ namespace embree
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
           valid &= absDen*vfloat<M>(ray.tnear()[k]) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar()[k]);
+          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */

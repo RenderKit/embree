@@ -3,7 +3,7 @@
 .IP
 .nf
 \f[C]
-rtcSetGeometryBuildQuality\ \-\ sets\ build\ quality\ for\ geometry
+rtcSetGeometryBuildQuality\ \-\ sets\ the\ build\ quality\ for\ the\ geometry
 \f[]
 .fi
 .SS SYNOPSIS
@@ -12,7 +12,10 @@ rtcSetGeometryBuildQuality\ \-\ sets\ build\ quality\ for\ geometry
 \f[C]
 #include\ <embree3/rtcore.h>
 
-void\ rtcSetGeometryBuildQuality(RTCGeometry\ geometry,\ enum\ RTCBuildQuality\ quality);
+void\ rtcSetGeometryBuildQuality(
+\ \ RTCGeometry\ geometry,
+\ \ enum\ RTCBuildQuality\ quality
+);
 \f[]
 .fi
 .SS DESCRIPTION
@@ -20,14 +23,15 @@ void\ rtcSetGeometryBuildQuality(RTCGeometry\ geometry,\ enum\ RTCBuildQuality\ 
 The \f[C]rtcSetGeometryBuildQuality\f[] function sets the build quality
 (\f[C]quality\f[] argument) for the specified geometry
 (\f[C]geometry\f[] argument).
-The per geometry build quality is only a hint and may get ignored.
-Embree currently uses the per geometry build quality when the scene
+The per\-geometry build quality is only a hint and may be ignored.
+Embree currently uses the per\-geometry build quality when the scene
 build quality is set to \f[C]RTC_BUILD_QUALITY_LOW\f[].
-In this mode a two level acceleration structure is build, and geometries
-build a separate acceleration structure.
-The per geometry build quality can be one of:
+In this mode a two\-level acceleration structure is build, and
+geometries build a separate acceleration structure using the geometry
+build quality.
+The per\-geometry build quality can be one of:
 .IP \[bu] 2
-\f[C]RTC_BUILD_QUALITY_LOW\f[]: Create lower quality data structures,
+\f[C]RTC_BUILD_QUALITY_LOW\f[]: Creates lower quality data structures,
 e.g.
 for dynamic scenes.
 .IP \[bu] 2
@@ -35,16 +39,15 @@ for dynamic scenes.
 usages.
 Gives a good compromise between build and render performance.
 .IP \[bu] 2
-\f[C]RTC_BUILD_QUALITY_HIGH\f[]: Create higher quality data structures
-for final frame rendering.
-Enables a spatial split builder for some primitive types.
+\f[C]RTC_BUILD_QUALITY_HIGH\f[]: Creates higher quality data structures
+for final\-frame rendering.
+Enables a spatial split builder for certain primitive types.
 .IP \[bu] 2
-\f[C]RTC_BUILD_QUALITY_REFIT\f[]: Use some BVH refitting approach.
-When enabling this mode only the vertex array should change between
-frames.
+\f[C]RTC_BUILD_QUALITY_REFIT\f[]: Uses a BVH refitting approach when
+changing only the vertex buffer.
 .SS EXIT STATUS
 .PP
-On failure an error code is set that can get queried using
+On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP

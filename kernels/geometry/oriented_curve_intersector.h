@@ -851,7 +851,7 @@ namespace embree
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
               const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
               const float t = curve_z.eval(u,v)/length(ray.dir);
-              if (!(t > ray.tnear() && t < ray.tfar())) return; // rejects NaNs
+              if (!(t > ray.tnear() && t < ray.tfar)) return; // rejects NaNs
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
               isHit |= epilog(hit);
@@ -999,7 +999,7 @@ namespace embree
       __forceinline OrientedBezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
-      __noinline bool intersect(Ray& ray,
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const NativeCurves* geom, 
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
                                 const Epilog& epilog) const
