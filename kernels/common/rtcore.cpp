@@ -1022,7 +1022,8 @@ namespace embree
     {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
       createSubdivMeshTy createSubdivMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createSubdivMesh);
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+      //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createSubdivMesh); // FIXME: this does not work for some reason?
       Geometry* geom = createSubdivMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
