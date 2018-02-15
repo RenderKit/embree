@@ -95,19 +95,20 @@ namespace embree
     }
 
     /* print statistics */
-    std::cout << std::setw(20) << "segments" << ": ";
+    std::cout << std::setw(23) << "segments" << ": ";
     for (size_t t=0; t<max_time_steps; t++)
       std::cout << std::setw(10) << t;
     std::cout << std::endl;
 
-    std::cout << "----------------------";
+    std::cout << "-------------------------";
     for (size_t t=0; t<max_time_steps; t++)
       std::cout << "----------";
     std::cout << std::endl;
     
     for (size_t p=0; p<Geometry::GTY_END; p++)
     {
-      std::cout << std::setw(20) << Geometry::gtype_names[p] << ": ";
+      if (std::string(Geometry::gtype_names[p]) == "") continue;
+      std::cout << std::setw(23) << Geometry::gtype_names[p] << ": ";
       for (size_t t=0; t<max_time_steps; t++)
         std::cout << std::setw(10) << statistics[p][t];
       std::cout << std::endl;

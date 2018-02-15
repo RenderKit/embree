@@ -62,6 +62,8 @@ namespace embree
     {
       GTY_TRIANGLE_MESH = 0,
       GTY_QUAD_MESH = 1,
+      GTY_SUBDIV_MESH = 2,
+      GTY_USER_GEOMETRY = 3,
 
       GTY_FLAT_LINEAR_CURVE = 4,
       GTY_ROUND_LINEAR_CURVE = 5,
@@ -75,11 +77,9 @@ namespace embree
       GTY_ROUND_BSPLINE_CURVE = 13,
       GTY_ORIENTED_BSPLINE_CURVE = 14,
       
-      GTY_SUBDIV_MESH = 15,
-      GTY_USER_GEOMETRY = 16,
-      GTY_INSTANCE = 17,
-      GTY_GROUP = 18,
-      GTY_END = 19,
+      GTY_INSTANCE = 15,
+      GTY_GROUP = 16,
+      GTY_END = 17,
 
       GTY_SUBTYPE_FLAT_CURVE = 0,
       GTY_SUBTYPE_ROUND_CURVE = 1,
