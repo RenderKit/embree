@@ -65,7 +65,7 @@ namespace embree
         const PrimRef& prim = prims[begin+i];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+        CurveGeometry* mesh = (CurveGeometry*) scene->get(geomID);
         const unsigned vtxID = mesh->curve(primID);
         Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
         Vec3fa::storeu(&this->vertices(i,N)[1],mesh->vertex(vtxID+1));

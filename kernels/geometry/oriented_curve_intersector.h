@@ -999,7 +999,7 @@ namespace embree
       __forceinline OrientedBezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
-      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const NativeCurves* geom, 
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, 
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
                                 const Epilog& epilog) const

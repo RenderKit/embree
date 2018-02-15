@@ -25,7 +25,7 @@
 namespace embree
 {
   /*! represents an array of bicubic bezier curves */
-  struct NativeCurves : public Geometry
+  struct CurveGeometry : public Geometry
   {
     /*! type of this geometry */
     static const Geometry::GTypeMask geom_type = Geometry::MTY_CURVES;
@@ -33,7 +33,7 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Device* device, Geometry::GType gtype);
+    CurveGeometry (Device* device, Geometry::GType gtype);
     
   public:
     void enabling();
@@ -160,5 +160,5 @@ namespace embree
     int tessellationRate;                   //!< tessellation rate for bezier curve
   };
   
-  DECLARE_ISA_FUNCTION(NativeCurves*, createCurves, Device* COMMA Geometry::GType);
+  DECLARE_ISA_FUNCTION(CurveGeometry*, createCurves, Device* COMMA Geometry::GType);
 }

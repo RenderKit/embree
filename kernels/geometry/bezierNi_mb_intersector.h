@@ -99,7 +99,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID),ray.time());
 
           Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
@@ -121,7 +121,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID),ray.time());
 
           if (Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
@@ -211,7 +211,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID),ray.time()[k]);
 
           Intersector().intersect(pre,ray,k,geom,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
@@ -233,7 +233,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID),ray.time()[k]);
 
           if (Intersector().intersect(pre,ray,k,geom,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))

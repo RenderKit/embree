@@ -77,7 +77,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
@@ -111,7 +111,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
@@ -148,7 +148,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           unsigned int vtx = geom->curve(primID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vtx);
           Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vtx);
@@ -184,7 +184,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           unsigned int vtx = geom->curve(primID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vtx);
           Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vtx);
@@ -265,7 +265,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
@@ -299,7 +299,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;

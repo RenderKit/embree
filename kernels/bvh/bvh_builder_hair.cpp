@@ -47,7 +47,7 @@ namespace embree
           bvh->alloc.unshare(prims);
       
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,false>();
+        const size_t numPrimitives = scene->getNumPrimitives<CurveGeometry,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->set(BVH::emptyNode,empty,0);

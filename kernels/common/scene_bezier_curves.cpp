@@ -21,31 +21,31 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, GType gtype)
+  CurveGeometry::CurveGeometry (Device* device, GType gtype)
     : Geometry(device,gtype,0,1), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
 
-  void NativeCurves::enabling() 
+  void CurveGeometry::enabling() 
   {
     if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
     else                   scene->worldMB.numBezierCurves += numPrimitives; 
   }
   
-  void NativeCurves::disabling() 
+  void CurveGeometry::disabling() 
   {
     if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
     else                   scene->worldMB.numBezierCurves -= numPrimitives;
   }
   
-  void NativeCurves::setMask (unsigned mask) 
+  void CurveGeometry::setMask (unsigned mask) 
   {
     this->mask = mask; 
     Geometry::update();
   }
 
-  void NativeCurves::setNumTimeSteps (unsigned int numTimeSteps)
+  void CurveGeometry::setNumTimeSteps (unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
     if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
@@ -53,13 +53,13 @@ namespace embree
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   
-  void NativeCurves::setVertexAttributeCount (unsigned int N)
+  void CurveGeometry::setVertexAttributeCount (unsigned int N)
   {
     vertexAttribs.resize(N);
     Geometry::update();
   }
 
-  void NativeCurves::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
+  void CurveGeometry::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
     if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
@@ -124,7 +124,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* NativeCurves::getBuffer(RTCBufferType type, unsigned int slot)
+  void* CurveGeometry::getBuffer(RTCBufferType type, unsigned int slot)
   {
     if (type == RTC_BUFFER_TYPE_INDEX)
     {
@@ -157,7 +157,7 @@ namespace embree
     }
   }
 
-  void NativeCurves::updateBuffer(RTCBufferType type, unsigned int slot)
+  void CurveGeometry::updateBuffer(RTCBufferType type, unsigned int slot)
   {
     if (type == RTC_BUFFER_TYPE_INDEX)
     {
@@ -197,12 +197,12 @@ namespace embree
     Geometry::update();
   }
 
-  void NativeCurves::setTessellationRate(float N)
+  void CurveGeometry::setTessellationRate(float N)
   {
     tessellationRate = clamp((int)N,1,16);
   }
 
-  bool NativeCurves::verify () 
+  bool CurveGeometry::verify () 
   {
     /*! verify consistent size of vertex arrays */
     if (vertices.size() == 0)
@@ -233,7 +233,7 @@ namespace embree
     return true;
   }
 
-  void NativeCurves::preCommit()
+  void CurveGeometry::preCommit()
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)
@@ -245,7 +245,7 @@ namespace embree
       normals0 = normals[0];
   }
 
-  void NativeCurves::postCommit() 
+  void CurveGeometry::postCommit() 
   {
     curves.setModified(false);
     for (auto& buf : vertices) buf.setModified(false);
@@ -261,10 +261,10 @@ namespace embree
   namespace isa
   {
     template<typename Curve3fa, typename Curve4f>
-      struct NativeCurvesISA : public NativeCurves
+      struct CurveGeometryISA : public CurveGeometry
     {
-      NativeCurvesISA (Device* device, Geometry::GType gtype)
-        : NativeCurves(device,gtype) {}
+      CurveGeometryISA (Device* device, Geometry::GType gtype)
+        : CurveGeometry(device,gtype) {}
 
       /*! returns the i'th curve */
       __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
@@ -589,15 +589,15 @@ namespace embree
       }
     };
     
-    NativeCurves* createCurves(Device* device, Geometry::GType gtype)
+    CurveGeometry* createCurves(Device* device, Geometry::GType gtype)
     {
       switch (gtype) {
-      case Geometry::GTY_ROUND_BEZIER_CURVE: return new NativeCurvesISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BEZIER_CURVE : return new NativeCurvesISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new NativeCurvesISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new NativeCurvesISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new NativeCurvesISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new NativeCurvesISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }
     }

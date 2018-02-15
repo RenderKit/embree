@@ -42,7 +42,7 @@ namespace embree
       void build() 
       {
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,true>();
+        const size_t numPrimitives = scene->getNumPrimitives<CurveGeometry,true>();
         if (numPrimitives == 0) {
           bvh->set(BVH::emptyNode,empty,0);
           return;

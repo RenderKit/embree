@@ -43,7 +43,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
@@ -80,7 +80,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
@@ -127,7 +127,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
@@ -164,7 +164,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
