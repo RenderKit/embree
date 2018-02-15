@@ -38,14 +38,6 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBBezier1iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
     
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Bezier4vIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNvIntersector1<4>> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Bezier4iIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNiIntersector1<4>> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBBezier4iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<BezierNiMBIntersector1<4>> >));
-#if defined(__AVX__)
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Bezier8iIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<BezierNiIntersector1<8>> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBBezier8iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<BezierNiMBIntersector1<8>> >));    
-#endif
-
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBVirtualCurveIntersector1,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersector1 >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBVirtualCurveIntersector1MB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersector1 >));
 

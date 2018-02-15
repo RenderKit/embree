@@ -31,8 +31,6 @@ namespace embree
     Accel* BVH8OBBBezier1i(Scene* scene);
     Accel* BVH8OBBBezier1iMB(Scene* scene);
 
-    Accel* BVH8OBBBezier8v(Scene* scene);
-
     Accel* BVH8Line4i(Scene* scene);
     Accel* BVH8Line4iMB(Scene* scene);
 
@@ -79,8 +77,6 @@ namespace embree
     Accel::Intersectors BVH8Bezier1iIntersectors_OBB(BVH8* bvh);
     Accel::Intersectors BVH8OBBBezier1iMBIntersectors_OBB(BVH8* bvh);
 
-    Accel::Intersectors BVH8Bezier8vIntersectors_OBB(BVH8* bvh);
-
     Accel::Intersectors BVH8OBBVirtualCurveIntersectors(BVH8* bvh, VirtualCurvePrimitive* leafIntersector);
     
     Accel::Intersectors BVH8Triangle4Intersectors(BVH8* bvh, IntersectVariant ivariant);
@@ -106,8 +102,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBBezier1iMBIntersector1_OBB);
-
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier8vIntersector1_OBB);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualCurveIntersector1);
 
@@ -143,8 +137,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Hybrid_OBB);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8OBBBezier1iMBIntersector4Hybrid_OBB);
 
-    DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier8vIntersector4Hybrid_OBB);
-
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8OBBVirtualCurveIntersector4Hybrid);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoeller);
@@ -177,8 +169,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Bezier1iIntersector8Hybrid_OBB);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8OBBBezier1iMBIntersector8Hybrid_OBB);
 
-    DEFINE_SYMBOL2(Accel::Intersector8,BVH8Bezier8vIntersector8Hybrid_OBB);
-
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8OBBVirtualCurveIntersector8Hybrid);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoeller);
@@ -210,8 +200,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1vIntersector16Hybrid_OBB);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iIntersector16Hybrid_OBB);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8OBBBezier1iMBIntersector16Hybrid_OBB);
-
-    DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier8vIntersector16Hybrid_OBB);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8OBBVirtualCurveIntersector16Hybrid);
 

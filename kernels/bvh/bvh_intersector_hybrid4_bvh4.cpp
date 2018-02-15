@@ -53,14 +53,6 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBBezier1iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
 
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier4vIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNvIntersectorK<4 COMMA 4> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier4iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNiIntersectorK<4 COMMA 4> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBBezier4iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNiMBIntersectorK<4 COMMA 4> > >));
-#if defined (__AVX__)
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier8iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNiIntersectorK<8 COMMA 4> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBBezier8iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA BezierNiMBIntersectorK<8 COMMA 4> > >));
-#endif
-
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBVirtualCurveIntersector4Hybrid, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<4> >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBVirtualCurveIntersector4HybridMB,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersectorK<4> >));
      
