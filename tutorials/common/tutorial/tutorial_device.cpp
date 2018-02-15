@@ -179,7 +179,7 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f,0.0f,1.0f);
-  else return Vec3fa(ray.u,0.0f,0.0f); //ray.v,1.0f-ray.u-ray.v);
+  else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
 void renderTileUV(int taskIndex,

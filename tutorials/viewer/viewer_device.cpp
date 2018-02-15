@@ -235,17 +235,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#define DBG(x)
-
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
-  /*if (x < 407-4) return zero;
-  if (x > 407+4) return zero;
-  if (y < 512-231-4) return zero;
-  if (y > 512-231+4) return zero;*/
-  DBG(if (x != 77 || y != 512-372) return zero);
-  
   /* initialize sampler */
   RandomSampler sampler;
   RandomSampler_init(sampler, (int)x, (int)y, 0);
@@ -264,13 +256,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
   }
-  DBG(
-    PRINT(ray.geomID);
-    PRINT(ray.tfar());
-    PRINT(ray.u);
-    PRINT(ray.v);
-    )
-    //return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.5f);
@@ -410,7 +395,6 @@ extern "C" void device_render (int* pixels,
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   //rtcDebug();
-  DBG(exit(1));
 }
 
 /* called by the C++ code for cleanup */
