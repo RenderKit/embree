@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "scene_bezier_curves.h"
+#include "scene_curves.h"
 #include "scene.h"
 
 namespace embree
