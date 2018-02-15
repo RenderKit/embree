@@ -745,7 +745,6 @@ extern "C" bool device_pick(const float x,
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect1(g_scene,&context,RTCRayHit1_(ray));
-  PRINT2(x,y);
   
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
