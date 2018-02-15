@@ -171,12 +171,12 @@ namespace embree
           return CubicBezierCurve(a*b.p0,a*b.p1,a*b.p2,a*b.p3);
         }
 
-        __forceinline friend CubicBezierCurve madd( const V& a, const CubicBezierCurve& b,  const CubicBezierCurve& c) {
+        __forceinline friend CubicBezierCurve cmadd( const V& a, const CubicBezierCurve& b,  const CubicBezierCurve& c) {
           return CubicBezierCurve(madd(a,b.p0,c.p0),madd(a,b.p1,c.p1),madd(a,b.p2,c.p2),madd(a,b.p3,c.p3));
         }
 
-        __forceinline friend CubicBezierCurve lerp ( const CubicBezierCurve& a, const CubicBezierCurve& b, const V& t ) {
-          return madd((V(1.0f)-t),a,t*b);
+        __forceinline friend CubicBezierCurve clerp ( const CubicBezierCurve& a, const CubicBezierCurve& b, const V& t ) {
+          return cmadd((V(1.0f)-t),a,t*b);
         }
 
         __forceinline friend CubicBezierCurve merge ( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
@@ -481,7 +481,7 @@ namespace embree
         }
         
         __forceinline TensorLinearCubicBezierSurface clip_v(const Interval1f& v) const {
-          return TensorLinearCubicBezierSurface(lerp(L,R,V(v.lower)),lerp(L,R,V(v.upper)));
+          return TensorLinearCubicBezierSurface(clerp(L,R,V(v.lower)),clerp(L,R,V(v.upper)));
         }
 
         __forceinline TensorLinearCubicBezierSurface clip(const Interval1f& u, const Interval1f& v) const {
@@ -502,11 +502,11 @@ namespace embree
         }
 
         __forceinline V eval(const float u, const float v) const {
-          return lerp(L,R,V(v)).eval(u);
+          return clerp(L,R,V(v)).eval(u);
         }
 
         __forceinline V eval_du(const float u, const float v) const {
-          return lerp(L,R,V(v)).eval_dt(u);
+          return clerp(L,R,V(v)).eval_dt(u);
         }
 
         __forceinline V eval_dv(const float u, const float v) const {
@@ -588,7 +588,7 @@ namespace embree
       {
         const CubicBezierCurve<vfloat4> LRx = LR;
         const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.p0),shuffle<1,0,3,2>(LR.p1),shuffle<1,0,3,2>(LR.p2),shuffle<1,0,3,2>(LR.p3));
-        const CubicBezierCurve<vfloat4> LRa = madd(shuffle<0>(vfloat4(axis)),LRx,shuffle<1>(vfloat4(axis))*LRy);
+        const CubicBezierCurve<vfloat4> LRa = cmadd(shuffle<0>(vfloat4(axis)),LRx,shuffle<1>(vfloat4(axis))*LRy);
         const BBox<vfloat4> Lb = LRa.bounds();
         const BBox<vfloat4> Rb(shuffle<3>(Lb.lower),shuffle<3>(Lb.upper));
         const BBox<vfloat4> b = merge(Lb,Rb);
@@ -599,7 +599,7 @@ namespace embree
       {
         const CubicBezierCurve<vfloat4> LRx = LR;
         const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.p0),shuffle<1,0,3,2>(LR.p1),shuffle<1,0,3,2>(LR.p2),shuffle<1,0,3,2>(LR.p3));
-        const CubicBezierCurve<vfloat4> LRa = madd(shuffle<0>(vfloat4(dx)),LRx,shuffle<1>(vfloat4(dx))*LRy);
+        const CubicBezierCurve<vfloat4> LRa = cmadd(shuffle<0>(vfloat4(dx)),LRx,shuffle<1>(vfloat4(dx))*LRy);
         return TensorLinearCubicBezierSurface<float>(CubicBezierCurve<float>(LRa.p0[0],LRa.p1[0],LRa.p2[0],LRa.p3[0]),
                                                      CubicBezierCurve<float>(LRa.p0[2],LRa.p1[2],LRa.p2[2],LRa.p3[2]));
       }
@@ -609,7 +609,7 @@ namespace embree
         const vfloat4 pxyxy = shuffle<0,1,0,1>(vfloat4(p));
         const CubicBezierCurve<vfloat4> LRx = LR-pxyxy;
         const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.p0),shuffle<1,0,3,2>(LR.p1),shuffle<1,0,3,2>(LR.p2),shuffle<1,0,3,2>(LR.p3));
-        const CubicBezierCurve<vfloat4> LRa = madd(shuffle<0>(vfloat4(dx)),LRx,shuffle<1>(vfloat4(dx))*LRy);
+        const CubicBezierCurve<vfloat4> LRa = cmadd(shuffle<0>(vfloat4(dx)),LRx,shuffle<1>(vfloat4(dx))*LRy);
         return TensorLinearCubicBezierSurface<float>(CubicBezierCurve<float>(LRa.p0[0],LRa.p1[0],LRa.p2[0],LRa.p3[0]),
                                                      CubicBezierCurve<float>(LRa.p0[2],LRa.p1[2],LRa.p2[2],LRa.p3[2]));
       }
@@ -622,7 +622,7 @@ namespace embree
       {
         const CubicBezierCurve<vfloat4> LL(shuffle<0,1,0,1>(LR.p0),shuffle<0,1,0,1>(LR.p1),shuffle<0,1,0,1>(LR.p2),shuffle<0,1,0,1>(LR.p3));
         const CubicBezierCurve<vfloat4> RR(shuffle<2,3,2,3>(LR.p0),shuffle<2,3,2,3>(LR.p1),shuffle<2,3,2,3>(LR.p2),shuffle<2,3,2,3>(LR.p3));
-        return TensorLinearCubicBezierSurface(lerp(LL,RR,vfloat4(v.lower,v.lower,v.upper,v.upper)));
+        return TensorLinearCubicBezierSurface(clerp(LL,RR,vfloat4(v.lower,v.lower,v.upper,v.upper)));
       }
       
       __forceinline TensorLinearCubicBezierSurface clip(const Interval1f& u, const Interval1f& v) const {
