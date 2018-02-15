@@ -460,16 +460,6 @@ namespace embree
         else                                        return curve.accurateBounds();
       }
 
-      /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-      __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
-        return LBBox3fa(bounds(i,itime+0),bounds(i,itime+1));
-      }
-      
-      /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-      __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t i, size_t itime) const {
-        return LBBox3fa(bounds(space,i,itime+0),bounds(space,i,itime+1));
-      }
-      
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
       __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
         return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
@@ -547,14 +537,6 @@ namespace embree
         return true;
       }
       
-      /*! calculates the linear bounds of the i'th primitive for the specified time range */
-      __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
-      {
-        if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
-        bbox = linearBounds(i, time_range);
-        return true;
-      }
-      
       PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
         PrimInfo pinfo(empty);
@@ -574,16 +556,14 @@ namespace embree
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
-          LBBox3fa bounds = empty;
-          if (!this->linearBounds(j,t0t1,bounds)) continue;
-          const PrimRefMB prim(bounds,this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
+          const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }
         return pinfo;
       }
      
-
       BBox3fa vbounds(size_t i) const {
         return bounds(i);
       }
