@@ -1004,7 +1004,6 @@ namespace embree
                                 const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
                                 const Epilog& epilog) const
       {
-        asm("//intersect");
         STAT3(normal.trav_prims,1,1,1);
 
         // FIXME: what if n0 or n1 oriented along tangent?
