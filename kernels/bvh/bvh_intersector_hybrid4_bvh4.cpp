@@ -47,8 +47,6 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Line4iIntersector4,  BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 4 COMMA true> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Line4iMBIntersector4,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 4 COMMA true> > >));
 
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Hybrid, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Hybrid, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR4(BVH4OBBBezier1iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));

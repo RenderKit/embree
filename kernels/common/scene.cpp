@@ -380,8 +380,6 @@ namespace embree
         }
       }
     }
-    else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(device->bvh4_factory->BVH4Bezier1v(this));
-    else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
     else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this));
     else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
     else if (device->hair_accel == "bvh4obb.virtualcurve4v" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4v(this));
