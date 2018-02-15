@@ -277,6 +277,144 @@ namespace embree
         return Curve3fa (v0,v1,v2,v3);
       }
 
+      LinearSpace3fa computeAlignedSpace(const size_t primID) const
+      {
+        Vec3fa axisz(0,0,1);
+        Vec3fa axisy(0,1,0);
+        
+        const unsigned vtxID = this->curve(primID);
+        const Vec3fa v0 = this->vertex(vtxID+0);
+        const Vec3fa v1 = this->vertex(vtxID+1);
+        const Vec3fa v2 = this->vertex(vtxID+2);
+        const Vec3fa v3 = this->vertex(vtxID+3);
+        const Curve3fa curve(v0,v1,v2,v3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axisz = axisz_;
+          axisy = axisy_;
+        }
+        
+        if (sqr_length(axisy) > 1E-18) {
+          axisy = normalize(axisy);
+          Vec3fa axisx = normalize(cross(axisy,axisz));
+          return LinearSpace3fa(axisx,axisy,axisz);
+        }
+        return frame(axisz);
+      }
+
+      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const
+      {
+        Vec3fa axisz(0,0,1);
+        Vec3fa axisy(0,1,0);
+
+        const unsigned num_time_segments = this->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        if (tbounds.size() == 0) return frame(axisz);
+        
+        const size_t t = (tbounds.begin()+tbounds.end())/2;
+        const unsigned int vertexID = this->curve(primID);
+        const Vec3fa a0 = this->vertex(vertexID+0,t);
+        const Vec3fa a1 = this->vertex(vertexID+1,t);
+        const Vec3fa a2 = this->vertex(vertexID+2,t);
+        const Vec3fa a3 = this->vertex(vertexID+3,t);
+        const Curve3fa curve(a0,a1,a2,a3);
+        const Vec3fa p0 = curve.begin();
+        const Vec3fa p3 = curve.end();
+        const Vec3fa d0 = curve.eval_du(0.0f);
+        //const Vec3fa d1 = curve.eval_du(1.0f);
+        const Vec3fa axisz_ = normalize(p3 - p0);
+        const Vec3fa axisy_ = cross(axisz_,d0);
+        if (sqr_length(p3-p0) > 1E-18f) {
+          axisz = axisz_;
+          axisy = axisy_;
+        }
+        
+        if (sqr_length(axisy) > 1E-18) {
+          axisy = normalize(axisy);
+          Vec3fa axisx = normalize(cross(axisy,axisz));
+          return LinearSpace3fa(axisx,axisy,axisz);
+        }
+        return frame(axisz);
+      }
+      
+      Vec3fa computeDirection(unsigned int primID) const
+      {
+        const unsigned vtxID = curve(primID);
+        const Vec3fa v0 = vertex(vtxID+0);
+        const Vec3fa v1 = vertex(vtxID+1);
+        const Vec3fa v2 = vertex(vtxID+2);
+        const Vec3fa v3 = vertex(vtxID+3);
+        const Curve3fa c(v0,v1,v2,v3);
+        const Vec3fa p0 = c.begin();
+        const Vec3fa p3 = c.end();
+        const Vec3fa axis1 = p3 - p0;
+        return axis1;
+      }
+
+      Vec3fa computeDirection(unsigned int primID, size_t time) const
+      {
+        const unsigned vtxID = curve(primID);
+        const Vec3fa v0 = vertex(vtxID+0,time);
+        const Vec3fa v1 = vertex(vtxID+1,time);
+        const Vec3fa v2 = vertex(vtxID+2,time);
+        const Vec3fa v3 = vertex(vtxID+3,time);
+        const Curve3fa c(v0,v1,v2,v3);
+        const Vec3fa p0 = c.begin();
+        const Vec3fa p3 = c.end();
+        const Vec3fa axis1 = p3 - p0;
+        return axis1;
+      }
+
+      void interpolate(const RTCInterpolateArguments* const args)
+      {
+        unsigned int primID = args->primID;
+        float u = args->u;
+        RTCBufferType bufferType = args->bufferType;
+        unsigned int bufferSlot = args->bufferSlot;
+        float* P = args->P;
+        float* dPdu = args->dPdu;
+        float* ddPdudu = args->ddPdudu;
+        unsigned int valueCount = args->valueCount;
+        
+        /* calculate base pointer and stride */
+        assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+               (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
+        const char* src = nullptr; 
+        size_t stride = 0;
+        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+          src    = vertexAttribs[bufferSlot].getPtr();
+          stride = vertexAttribs[bufferSlot].getStride();
+        } else {
+          src    = vertices[bufferSlot].getPtr();
+          stride = vertices[bufferSlot].getStride();
+        }
+        
+        for (unsigned int i=0; i<valueCount; i+=4)
+        {
+          size_t ofs = i*sizeof(float);
+          const size_t curve = curves[primID];
+          const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
+          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+          const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+          const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+          
+          const Curve4f bezier(p0,p1,p2,p3);
+          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+        }
+      }
+
+
+
+      
+
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
@@ -444,99 +582,7 @@ namespace embree
         }
         return pinfo;
       }
-
-      LinearSpace3fa computeAlignedSpace(const size_t primID) const
-      {
-        Vec3fa axisz(0,0,1);
-        Vec3fa axisy(0,1,0);
-        
-        const unsigned vtxID = this->curve(primID);
-        const Vec3fa v0 = this->vertex(vtxID+0);
-        const Vec3fa v1 = this->vertex(vtxID+1);
-        const Vec3fa v2 = this->vertex(vtxID+2);
-        const Vec3fa v3 = this->vertex(vtxID+3);
-        const Curve3fa curve(v0,v1,v2,v3);
-        const Vec3fa p0 = curve.begin();
-        const Vec3fa p3 = curve.end();
-        const Vec3fa d0 = curve.eval_du(0.0f);
-        //const Vec3fa d1 = curve.eval_du(1.0f);
-        const Vec3fa axisz_ = normalize(p3 - p0);
-        const Vec3fa axisy_ = cross(axisz_,d0);
-        if (sqr_length(p3-p0) > 1E-18f) {
-          axisz = axisz_;
-          axisy = axisy_;
-        }
-        
-        if (sqr_length(axisy) > 1E-18) {
-          axisy = normalize(axisy);
-          Vec3fa axisx = normalize(cross(axisy,axisz));
-          return LinearSpace3fa(axisx,axisy,axisz);
-        }
-        return frame(axisz);
-      }
-
-      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const
-      {
-        Vec3fa axisz(0,0,1);
-        Vec3fa axisy(0,1,0);
-
-        const unsigned num_time_segments = this->numTimeSegments();
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        if (tbounds.size() == 0) return frame(axisz);
-        
-        const size_t t = (tbounds.begin()+tbounds.end())/2;
-        const unsigned int vertexID = this->curve(primID);
-        const Vec3fa a0 = this->vertex(vertexID+0,t);
-        const Vec3fa a1 = this->vertex(vertexID+1,t);
-        const Vec3fa a2 = this->vertex(vertexID+2,t);
-        const Vec3fa a3 = this->vertex(vertexID+3,t);
-        const Curve3fa curve(a0,a1,a2,a3);
-        const Vec3fa p0 = curve.begin();
-        const Vec3fa p3 = curve.end();
-        const Vec3fa d0 = curve.eval_du(0.0f);
-        //const Vec3fa d1 = curve.eval_du(1.0f);
-        const Vec3fa axisz_ = normalize(p3 - p0);
-        const Vec3fa axisy_ = cross(axisz_,d0);
-        if (sqr_length(p3-p0) > 1E-18f) {
-          axisz = axisz_;
-          axisy = axisy_;
-        }
-        
-        if (sqr_length(axisy) > 1E-18) {
-          axisy = normalize(axisy);
-          Vec3fa axisx = normalize(cross(axisy,axisz));
-          return LinearSpace3fa(axisx,axisy,axisz);
-        }
-        return frame(axisz);
-      }
-      
-      Vec3fa computeDirection(unsigned int primID) const
-      {
-        const unsigned vtxID = curve(primID);
-        const Vec3fa v0 = vertex(vtxID+0);
-        const Vec3fa v1 = vertex(vtxID+1);
-        const Vec3fa v2 = vertex(vtxID+2);
-        const Vec3fa v3 = vertex(vtxID+3);
-        const Curve3fa c(v0,v1,v2,v3);
-        const Vec3fa p0 = c.begin();
-        const Vec3fa p3 = c.end();
-        const Vec3fa axis1 = p3 - p0;
-        return axis1;
-      }
-
-      Vec3fa computeDirection(unsigned int primID, size_t time) const
-      {
-        const unsigned vtxID = curve(primID);
-        const Vec3fa v0 = vertex(vtxID+0,time);
-        const Vec3fa v1 = vertex(vtxID+1,time);
-        const Vec3fa v2 = vertex(vtxID+2,time);
-        const Vec3fa v3 = vertex(vtxID+3,time);
-        const Curve3fa c(v0,v1,v2,v3);
-        const Vec3fa p0 = c.begin();
-        const Vec3fa p3 = c.end();
-        const Vec3fa axis1 = p3 - p0;
-        return axis1;
-      }
+     
 
       BBox3fa vbounds(size_t i) const {
         return bounds(i);
@@ -560,47 +606,6 @@ namespace embree
 
       LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
         return linearBounds(ofs,scale,r_scale0,space,primID,time_range);
-      }
-      
-      void interpolate(const RTCInterpolateArguments* const args)
-      {
-        unsigned int primID = args->primID;
-        float u = args->u;
-        RTCBufferType bufferType = args->bufferType;
-        unsigned int bufferSlot = args->bufferSlot;
-        float* P = args->P;
-        float* dPdu = args->dPdu;
-        float* ddPdudu = args->ddPdudu;
-        unsigned int valueCount = args->valueCount;
-        
-        /* calculate base pointer and stride */
-        assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-               (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
-        const char* src = nullptr; 
-        size_t stride = 0;
-        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-          src    = vertexAttribs[bufferSlot].getPtr();
-          stride = vertexAttribs[bufferSlot].getStride();
-        } else {
-          src    = vertices[bufferSlot].getPtr();
-          stride = vertices[bufferSlot].getStride();
-        }
-        
-        for (unsigned int i=0; i<valueCount; i+=4)
-        {
-          size_t ofs = i*sizeof(float);
-          const size_t curve = curves[primID];
-          const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
-          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-          const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-          const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
-          
-          const Curve4f bezier(p0,p1,p2,p3);
-          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
-          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
-          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
-        }
       }
     };
     
