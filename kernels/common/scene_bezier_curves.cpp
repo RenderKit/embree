@@ -241,7 +241,8 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     vertices0 = vertices[0];
-    normals0 = normals[0];
+    if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
+      normals0 = normals[0];
   }
 
   void NativeCurves::postCommit() 
