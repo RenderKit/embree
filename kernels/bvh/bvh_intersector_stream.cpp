@@ -23,8 +23,6 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezier1v_intersector.h"
-#include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 //#include "../geometry/subdivpatch1cached_intersector.h"

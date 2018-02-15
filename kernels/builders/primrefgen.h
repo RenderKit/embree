@@ -20,7 +20,6 @@
 #include "../common/primref.h"
 #include "../common/primref_mb.h"
 #include "priminfo.h"
-#include "../geometry/bezier1v.h"
 #include "bvh_builder_morton.h"
 
 namespace embree

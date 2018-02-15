@@ -21,8 +21,6 @@
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
 
-#include "../geometry/bezier1v.h"
-#include "../geometry/bezier1i.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"

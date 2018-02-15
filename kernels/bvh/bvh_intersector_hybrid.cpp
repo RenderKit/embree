@@ -26,8 +26,6 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezier1v_intersector.h"
-#include "../geometry/bezier1i_intersector.h"
 #include "../geometry/bezierNv_intersector.h"
 #include "../geometry/bezierNi_intersector.h"
 #include "../geometry/bezierNi_mb_intersector.h"

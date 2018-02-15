@@ -15,8 +15,6 @@
 // ======================================================================== //
 
 #include "primitive.h"
-#include "bezier1v.h"
-#include "bezier1i.h"
 #include "bezierNv.h"
 #include "bezierNi.h"
 #include "bezierNi_mb.h"
@@ -32,17 +30,6 @@
 
 namespace embree
 {
-  /********************** Bezier1v **************************/
-
-  Bezier1v::Type::Type ()
-    : PrimitiveType("bezier1v",sizeof(Bezier1v),1) {}
-
-  size_t Bezier1v::Type::size(const char* This) const {
-    return 1;
-  }
-
-  Bezier1v::Type Bezier1v::type;
-
   /********************** Bezier4v **************************/
 
   template<>
@@ -74,17 +61,6 @@ namespace embree
   size_t Bezier8v::Type::getBytes(const char* This) const {
     return Bezier8v::bytes(size(This));
   }
-
-  /********************** Bezier1i **************************/
-
-  Bezier1i::Type::Type ()
-    : PrimitiveType("bezier1i",sizeof(Bezier1i),1) {}
-
-  size_t Bezier1i::Type::size(const char* This) const {
-    return 1;
-  }
-
-  Bezier1i::Type Bezier1i::type;
 
   /********************** Bezier4i **************************/
 

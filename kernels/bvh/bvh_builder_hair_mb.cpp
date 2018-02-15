@@ -14,11 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../builders/bvh_builder_hair.h"
 #include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
-#include "../geometry/bezier1i.h"
 #include "../geometry/bezierNi_mb.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
@@ -104,11 +102,9 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
     Builder* BVH4OBBBezier4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier4iMB>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH8OBBBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
     Builder* BVH4OBBBezier8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier8iMB>((BVH4*)bvh,scene); }
 #endif
 

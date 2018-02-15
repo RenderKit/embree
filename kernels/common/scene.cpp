@@ -380,13 +380,9 @@ namespace embree
         }
       }
     }
-    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this));
-    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
     else if (device->hair_accel == "bvh4obb.virtualcurve4v" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4v(this));
     else if (device->hair_accel == "bvh4obb.virtualcurve4i" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4i(this));
 #if defined (EMBREE_TARGET_SIMD8)
-    else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
-    else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));
     else if (device->hair_accel == "bvh8obb.virtualcurve8v" ) accels.add(device->bvh8_factory->BVH8OBBVirtualCurve8v(this));
     else if (device->hair_accel == "bvh4obb.virtualcurve8i" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8i(this));
 #endif
@@ -410,10 +406,8 @@ namespace embree
         accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4iMB(this));
       }
     }
-    else if (device->hair_accel_mb == "bvh4.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
     else if (device->hair_accel_mb == "bvh4.virtualcurve4imb") accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4iMB(this));
 #if defined (EMBREE_TARGET_SIMD8)
-    else if (device->hair_accel_mb == "bvh8.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
     else if (device->hair_accel_mb == "bvh4.virtualcurve8imb") accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8iMB(this));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);

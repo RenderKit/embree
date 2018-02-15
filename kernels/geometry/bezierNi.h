@@ -17,7 +17,6 @@
 #pragma once
 
 #include "primitive.h"
-#include "bezier1i.h"
 #include "bezier_curve_precalculations.h"
 
 namespace embree
