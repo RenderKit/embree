@@ -129,21 +129,145 @@ namespace embree
         ddp = eval_dudu(t);
       }
       
+      __forceinline Vec4vfx eval_(const vfloatx& t) const 
+      {
+        const Vec4vfx b = BSplineBasis::eval(t);
+        return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
+      }
+      
+      __forceinline Vec4vfx derivative(const vfloatx& t) const 
+      {
+        const Vec4vfx b = BSplineBasis::derivative(t);
+        return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
+      }
+      
+      __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+      {
+        p = eval_(t);
+        dp = derivative(t);
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBSplineBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bspline_basis0.c0[size][ofs]), Vec4vf<M>(v0),
+                    madd(vfloat<M>::loadu(&bspline_basis0.c1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bspline_basis0.c2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bspline_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBSplineBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bspline_basis1.c0[size][ofs]), Vec4vf<M>(v0), 
+                    madd(vfloat<M>::loadu(&bspline_basis1.c1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bspline_basis1.c2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bspline_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBSplineBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bspline_basis0.d0[size][ofs]), Vec4vf<M>(v0),
+                    madd(vfloat<M>::loadu(&bspline_basis0.d1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bspline_basis0.d2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bspline_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBSplineBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bspline_basis1.d0[size][ofs]), Vec4vf<M>(v0),
+                    madd(vfloat<M>::loadu(&bspline_basis1.d1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bspline_basis1.d2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bspline_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      /* calculates bounds of bspline curve geometry */
+      __forceinline BBox3fa accurateBounds() const
+      {
+        const int N = 7;
+        const float scale = 1.0f/(3.0f*(N-1));
+        Vec4vfx pl(pos_inf), pu(neg_inf);
+        for (int i=0; i<=N; i+=VSIZEX)
+        {
+          vintx vi = vintx(i)+vintx(step);
+          vboolx valid = vi <= vintx(N);
+          const Vec4vfx p  = eval0<VSIZEX>(i,N);
+          const Vec4vfx dp = derivative0<VSIZEX>(i,N);
+          const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
+          const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
+          pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
+          pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
+        }
+        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+        const float r_min = reduce_min(pl.w);
+        const float r_max = reduce_max(pu.w);
+        const Vec3fa upper_r = Vec3fa(max(abs(r_min),abs(r_max)));
+        return enlarge(BBox3fa(lower,upper),upper_r);
+      }
+      
+      /* calculates bounds when tessellated into N line segments */
+      __forceinline BBox3fa tessellatedBounds(int N) const
+      {
+        if (likely(N == 4))
+        {
+          const Vec4vf4 pi = eval0<4>(0,4);
+          const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+          const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+          const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+          const Vec3fa pe = end();
+          return enlarge(BBox3fa(min(lower,pe),max(upper,pe)),max(upper_r,Vec3fa(abs(pe.w))));
+        } 
+        else
+        {
+          Vec3vfx pl(pos_inf), pu(neg_inf); vfloatx ru(0.0f);
+          for (int i=0; i<=N; i+=VSIZEX)
+          {
+            vboolx valid = vintx(i)+vintx(step) <= vintx(N);
+            const Vec4vfx pi = eval0<VSIZEX>(i,N);
+            
+            pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
+            pl.y = select(valid,min(pl.y,pi.y),pl.y); 
+            pl.z = select(valid,min(pl.z,pi.z),pl.z); 
+            
+            pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
+            pu.y = select(valid,max(pu.y,pi.y),pu.y); 
+            pu.z = select(valid,max(pu.z,pi.z),pu.z); 
+            
+            ru = select(valid,max(ru,abs(pi.w)),ru); 
+          }
+          const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+          const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+          const Vec3fa upper_r(reduce_max(ru));
+          return enlarge(BBox3fa(lower,upper),upper_r);
+        }
+      }
+      
       friend inline std::ostream& operator<<(std::ostream& cout, const BSplineCurveT& curve) {
         return cout << "BSplineCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
-
+  
   template<typename Vertex>
     __forceinline void convert(const BezierCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve) {
-     ocurve = icurve;
-   }
-
-   template<typename Vertex>
+    ocurve = icurve;
+  }
+  
+  template<typename Vertex>
     __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve) {
-     ocurve = icurve;
-   }
-
+    ocurve = icurve;
+  }
+  
   template<typename Vertex>
     __forceinline void convert(const BezierCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve)
   {
@@ -153,7 +277,7 @@ namespace embree
     const Vertex v3 = madd(2.0f,icurve.v1,madd(-7.0f,icurve.v2,6.0f*icurve.v3));
     ocurve = BSplineCurveT<Vertex>(v0,v1,v2,v3);
   }
-
+  
   template<typename Vertex>
     __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve)
   {
@@ -163,138 +287,7 @@ namespace embree
     const Vertex v3 = madd(1.0f/6.0f,icurve.v1,madd(2.0f/3.0f,icurve.v2,1.0f/6.0f*icurve.v3));
     ocurve = BezierCurveT<Vertex>(v0,v1,v2,v3);
   }
-
-  struct BSplineCurve3fa : public BSplineCurveT<Vec3fa>
-  {
-    //using BSplineCurveT<Vec3fa>::BSplineCurveT; // FIXME: not supported by VS2010
-    
-    __forceinline BSplineCurve3fa() {}
-
-    __forceinline BSplineCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3)
-      : BSplineCurveT<Vec3fa>(v0,v1,v2,v3) {}
-    
-    __forceinline Vec4vfx eval_(const vfloatx& t) const 
-    {
-      const Vec4vfx b = BSplineBasis::eval(t);
-      return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
-    }
-
-    __forceinline Vec4vfx derivative(const vfloatx& t) const 
-    {
-      const Vec4vfx b = BSplineBasis::derivative(t);
-      return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
-    }
-
-    __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
-    {
-      p = eval_(t);
-      dp = derivative(t);
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBSplineBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bspline_basis0.c0[size][ofs]), Vec4vf<M>(v0),
-                  madd(vfloat<M>::loadu(&bspline_basis0.c1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bspline_basis0.c2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bspline_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-    
-    template<int M>
-      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBSplineBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bspline_basis1.c0[size][ofs]), Vec4vf<M>(v0), 
-                  madd(vfloat<M>::loadu(&bspline_basis1.c1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bspline_basis1.c2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bspline_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBSplineBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bspline_basis0.d0[size][ofs]), Vec4vf<M>(v0),
-                  madd(vfloat<M>::loadu(&bspline_basis0.d1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bspline_basis0.d2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bspline_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBSplineBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bspline_basis1.d0[size][ofs]), Vec4vf<M>(v0),
-                  madd(vfloat<M>::loadu(&bspline_basis1.d1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bspline_basis1.d2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bspline_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-
-    /* calculates bounds of bspline curve geometry */
-    __forceinline BBox3fa accurateBounds() const
-    {
-      const int N = 7;
-      const float scale = 1.0f/(3.0f*(N-1));
-      Vec4vfx pl(pos_inf), pu(neg_inf);
-      for (int i=0; i<=N; i+=VSIZEX)
-      {
-        vintx vi = vintx(i)+vintx(step);
-        vboolx valid = vi <= vintx(N);
-        const Vec4vfx p  = eval0<VSIZEX>(i,N);
-        const Vec4vfx dp = derivative0<VSIZEX>(i,N);
-        const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
-        const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
-        pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
-        pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
-      }
-      const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
-      const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-      const float r_min = reduce_min(pl.w);
-      const float r_max = reduce_max(pu.w);
-      const Vec3fa upper_r = Vec3fa(max(abs(r_min),abs(r_max)));
-      return enlarge(BBox3fa(lower,upper),upper_r);
-    }
-
-    /* calculates bounds when tessellated into N line segments */
-    __forceinline BBox3fa tessellatedBounds(int N) const
-    {
-      if (likely(N == 4))
-      {
-        const Vec4vf4 pi = eval0<4>(0,4);
-        const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-        const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-        const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-        const Vec3fa pe = end();
-        return enlarge(BBox3fa(min(lower,pe),max(upper,pe)),max(upper_r,Vec3fa(abs(pe.w))));
-      } 
-      else
-      {
-        Vec3vfx pl(pos_inf), pu(neg_inf); vfloatx ru(0.0f);
-        for (int i=0; i<=N; i+=VSIZEX)
-        {
-          vboolx valid = vintx(i)+vintx(step) <= vintx(N);
-          const Vec4vfx pi = eval0<VSIZEX>(i,N);
-          
-          pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
-          pl.y = select(valid,min(pl.y,pi.y),pl.y); 
-          pl.z = select(valid,min(pl.z,pi.z),pl.z); 
-          
-          pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
-          pu.y = select(valid,max(pu.y,pi.y),pu.y); 
-          pu.z = select(valid,max(pu.z,pi.z),pu.z); 
-
-          ru = select(valid,max(ru,abs(pi.w)),ru); 
-        }
-        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
-        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-        const Vec3fa upper_r(reduce_max(ru));
-        return enlarge(BBox3fa(lower,upper),upper_r);
-      }
-    }
-  };
+  
+  typedef BSplineCurveT<Vec3fa> BSplineCurve3fa;
 }
+
