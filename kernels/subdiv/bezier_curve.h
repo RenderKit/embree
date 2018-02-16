@@ -137,9 +137,30 @@ namespace embree
         dp = 3.0f*(p21-p20);
         ddp = eval_dudu(t);
       }
+
+      template<int M>
+      __forceinline Vec4vf<M> veval(const vfloat<M>& t) const 
+      {
+        const Vec4vf<M> b = BezierBasis::eval(t);
+        return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
+      }
+
+      template<int M>
+      __forceinline Vec4vf<M> veval_du(const vfloat<M>& t) const 
+      {
+        const Vec4vf<M> b = BezierBasis::derivative(t);
+        return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
+      }
+
+      template<int M>
+      __forceinline Vec4vf<M> veval_dudu(const vfloat<M>& t) const 
+      {
+        const Vec4vf<M> b = BezierBasis::derivative2(t);
+        return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
+      }
       
       template<int M>
-      __forceinline void evalN(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
+      __forceinline void veval(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
       {
         const Vec4vf<M> p00 = v0;
         const Vec4vf<M> p01 = v1;

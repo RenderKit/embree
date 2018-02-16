@@ -128,23 +128,33 @@ namespace embree
         dp = eval_du(t);
         ddp = eval_dudu(t);
       }
-      
-      __forceinline Vec4vfx eval_(const vfloatx& t) const 
+
+      template<int M>
+      __forceinline Vec4vf<M> veval(const vfloat<M>& t) const 
       {
-        const Vec4vfx b = BSplineBasis::eval(t);
-        return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
+        const Vec4vf<M> b = BSplineBasis::eval(t);
+        return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
       }
-      
-      __forceinline Vec4vfx derivative(const vfloatx& t) const 
+
+      template<int M>
+      __forceinline Vec4vf<M> veval_du(const vfloat<M>& t) const 
       {
-        const Vec4vfx b = BSplineBasis::derivative(t);
-        return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
+        const Vec4vf<M> b = BSplineBasis::derivative(t);
+        return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
       }
-      
-      __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+
+      template<int M>
+      __forceinline Vec4vf<M> veval_dudu(const vfloat<M>& t) const 
       {
-        p = eval_(t);
-        dp = derivative(t);
+        const Vec4vf<M> b = BSplineBasis::derivative2(t);
+        return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
+      }
+
+      template<int M>
+      __forceinline void veval(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
+      {
+        p = veval(t);
+        dp = veval_du(t);
       }
       
       template<int M>

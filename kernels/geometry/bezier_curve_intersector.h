@@ -139,7 +139,7 @@ namespace embree
       /* subdivide curve */
       const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
       const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
-      Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
+      Vec4vfx P0, dP0du; curve.veval(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
       const Vec4vfx P3 = shift_right_1(P0);
       const Vec4vfx dP3du = shift_right_1(dP0du); 
       const Vec4vfx P1 = P0 + dP0du; 
