@@ -137,148 +137,135 @@ namespace embree
         dp = 3.0f*(p21-p20);
         ddp = eval_dudu(t);
       }
-
-      template<int M> void evalN(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const;
-
-      template<int M> Vec4vf<M> eval0(const int ofs, const int size) const;
-      template<int M> Vec4vf<M> eval1(const int ofs, const int size) const;
-      template<int M> Vec4vf<M> derivative0(const int ofs, const int size) const;
-      template<int M> Vec4vf<M> derivative1(const int ofs, const int size) const;
-
+      
+      template<int M>
+      __forceinline void evalN(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
+      {
+        const Vec4vf<M> p00 = v0;
+        const Vec4vf<M> p01 = v1;
+        const Vec4vf<M> p02 = v2;
+        const Vec4vf<M> p03 = v3;
+        
+        const Vec4vf<M> p10 = lerp(p00,p01,t);
+        const Vec4vf<M> p11 = lerp(p01,p02,t);
+        const Vec4vf<M> p12 = lerp(p02,p03,t);
+        const Vec4vf<M> p20 = lerp(p10,p11,t);
+        const Vec4vf<M> p21 = lerp(p11,p12,t);
+        const Vec4vf<M> p30 = lerp(p20,p21,t);
+        
+        p = p30;
+        dp = vfloat<M>(3.0f)*(p21-p20);
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBezierBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec4vf<M>(v0),
+                    madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBezierBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec4vf<M>(v0), 
+                    madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBezierBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec4vf<M>(v0),
+                    madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
+      template<int M>
+      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
+      {
+        assert(size <= PrecomputedBezierBasis::N);
+        assert(ofs <= size);
+        return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec4vf<M>(v0),
+                    madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec4vf<M>(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
+                              vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
+      }
+      
       /* calculates bounds of bezier curve geometry */
-      BBox3fa accurateBounds() const;
+      __forceinline BBox3fa accurateBounds() const
+      {
+        const int N = 7;
+        const float scale = 1.0f/(3.0f*(N-1));
+        Vec4vfx pl(pos_inf), pu(neg_inf);
+        for (int i=0; i<=N; i+=VSIZEX)
+        {
+          vintx vi = vintx(i)+vintx(step);
+          vboolx valid = vi <= vintx(N);
+          const Vec4vfx p  = eval0<VSIZEX>(i,N);
+          const Vec4vfx dp = derivative0<VSIZEX>(i,N);
+          const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
+          const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
+          pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
+          pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
+        }
+        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+        const float r_min = reduce_min(pl.w);
+        const float r_max = reduce_max(pu.w);
+        const Vec3fa upper_r = Vec3fa(max(abs(r_min),abs(r_max)));
+        return enlarge(BBox3fa(lower,upper),upper_r);
+      }
       
       /* calculates bounds when tessellated into N line segments */
-      __forceinline BBox3fa tessellatedBounds(int N) const;
+      __forceinline BBox3fa tessellatedBounds(int N) const
+      {
+        if (likely(N == 4))
+        {
+          const Vec4vf4 pi = eval0<4>(0,4);
+          const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+          const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+          const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+          return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
+        } 
+        else
+        {
+          Vec3vfx pl(pos_inf), pu(neg_inf); vfloatx ru(0.0f);
+          for (int i=0; i<N; i+=VSIZEX)
+          {
+            vboolx valid = vintx(i)+vintx(step) < vintx(N);
+            const Vec4vfx pi = eval0<VSIZEX>(i,N);
+            
+            pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
+            pl.y = select(valid,min(pl.y,pi.y),pl.y); 
+            pl.z = select(valid,min(pl.z,pi.z),pl.z); 
+            
+            pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
+            pu.y = select(valid,max(pu.y,pi.y),pu.y); 
+            pu.z = select(valid,max(pu.z,pi.z),pu.z); 
+            
+            ru   = select(valid,max(ru,abs(pi.w)),ru);
+          }
+          const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+          const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+          const Vec3fa upper_r(reduce_max(ru));
+          return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
+        }
+      }
       
       friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
         return cout << "BezierCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
   
-  template<> template<int M>
-    __forceinline void BezierCurveT<Vec3fa>::evalN(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
-    {
-      const Vec4vf<M> p00 = v0;
-      const Vec4vf<M> p01 = v1;
-      const Vec4vf<M> p02 = v2;
-      const Vec4vf<M> p03 = v3;
-      
-      const Vec4vf<M> p10 = lerp(p00,p01,t);
-      const Vec4vf<M> p11 = lerp(p01,p02,t);
-      const Vec4vf<M> p12 = lerp(p02,p03,t);
-      const Vec4vf<M> p20 = lerp(p10,p11,t);
-      const Vec4vf<M> p21 = lerp(p11,p12,t);
-      const Vec4vf<M> p30 = lerp(p20,p21,t);
-      
-      p = p30;
-      dp = vfloat<M>(3.0f)*(p21-p20);
-    }
-
-    template<> template<int M>
-      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::eval0(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBezierBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec4vf<M>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-    
-    template<> template<int M>
-      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::eval1(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBezierBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec4vf<M>(v0), 
-                  madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-
-    template<> template<int M>
-      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::derivative0(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBezierBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec4vf<M>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-
-    template<> template<int M>
-      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::derivative1(const int ofs, const int size) const
-    {
-      assert(size <= PrecomputedBezierBasis::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec4vf<M>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec4vf<M>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
-                            vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
-    }
-
-    template<> 
-      __forceinline BBox3fa BezierCurveT<Vec3fa>::accurateBounds() const
-    {
-      const int N = 7;
-      const float scale = 1.0f/(3.0f*(N-1));
-      Vec4vfx pl(pos_inf), pu(neg_inf);
-      for (int i=0; i<=N; i+=VSIZEX)
-      {
-        vintx vi = vintx(i)+vintx(step);
-        vboolx valid = vi <= vintx(N);
-        const Vec4vfx p  = eval0<VSIZEX>(i,N);
-        const Vec4vfx dp = derivative0<VSIZEX>(i,N);
-        const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
-        const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
-        pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
-        pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
-      }
-      const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
-      const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-      const float r_min = reduce_min(pl.w);
-      const float r_max = reduce_max(pu.w);
-      const Vec3fa upper_r = Vec3fa(max(abs(r_min),abs(r_max)));
-      return enlarge(BBox3fa(lower,upper),upper_r);
-    }
-
-    template<> 
-      __forceinline BBox3fa BezierCurveT<Vec3fa>::tessellatedBounds(int N) const
-    {
-      if (likely(N == 4))
-      {
-        const Vec4vf4 pi = eval0<4>(0,4);
-        const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-        const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-        const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
-      } 
-      else
-      {
-        Vec3vfx pl(pos_inf), pu(neg_inf); vfloatx ru(0.0f);
-        for (int i=0; i<N; i+=VSIZEX)
-        {
-          vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx pi = eval0<VSIZEX>(i,N);
-          
-          pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
-          pl.y = select(valid,min(pl.y,pi.y),pl.y); 
-          pl.z = select(valid,min(pl.z,pi.z),pl.z); 
-          
-          pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
-          pu.y = select(valid,max(pu.y,pi.y),pu.y); 
-          pu.z = select(valid,max(pu.z,pi.z),pu.z); 
-          
-          ru   = select(valid,max(ru,abs(pi.w)),ru);
-        }
-        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
-        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-        const Vec3fa upper_r(reduce_max(ru));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
-      }
-    }
-    
-    typedef BezierCurveT<Vec3fa> BezierCurve3fa;
+  typedef BezierCurveT<Vec3fa> BezierCurve3fa;
 }
