@@ -60,15 +60,6 @@ namespace embree
           ray_space[k] = ray_space_k.transposed();
         }
       }
-
-      __forceinline CurvePrecalculationsK(const RayK<K>& ray, size_t k)
-      {
-        Vec3fa ray_dir_k = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        LinearSpace3fa ray_space_k = frame(depth_scale[k]*ray_dir_k);
-        ray_space_k.vz *= depth_scale[k];
-        space[k] = ray_space_k;
-        ray_space[k] = ray_space_k.transposed();
-      }
     };
   }
 }
