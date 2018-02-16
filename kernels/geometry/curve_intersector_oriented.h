@@ -776,7 +776,7 @@ namespace embree
             const float u = cu.center();
             const float v = cv.center();
             TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
-            const float t = curve_z.eval(u,v)/length(ray.dir);
+            const float t = curve_z.eval(u,v);
             if (t >= ray.tnear() && t <= ray.tfar()) {
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
@@ -853,7 +853,7 @@ namespace embree
               if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
               const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
-              const float t = curve_z.eval(u,v)/length(ray.dir);
+              const float t = curve_z.eval(u,v);
               if (!(t > ray.tnear() && t < ray.tfar)) return; // rejects NaNs
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
