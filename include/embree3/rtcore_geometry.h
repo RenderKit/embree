@@ -344,7 +344,7 @@ struct RTCGrid
 {
   unsigned int startVtxID;
   unsigned int lineOffset;
-  unsigned short resX,resY;
+  unsigned short resX,resY; // max is a 32k x 32k grid
 };
 
 #if defined(__cplusplus)

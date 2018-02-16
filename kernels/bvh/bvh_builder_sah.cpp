@@ -630,9 +630,10 @@ namespace embree
       __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t n = set.size();
-        size_t items = Primitive::blocks(n);
+        PRINT(n);
+        size_t items = n; //Primitive::blocks(n);
         size_t start = set.begin();
-        SubGrid* accel = (SubGrid*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
+        SubGrid* accel = (SubGrid*) alloc.malloc1(items*sizeof(SubGrid),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];          
@@ -916,12 +917,12 @@ namespace embree
 
 
 #if defined(EMBREE_GEOMETRY_GRID)
-    Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,mesh,1,1.0f,1,inf,mode); }
-    Builder* BVH4GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,scene,1,1.0f,1,inf,mode); } // FIXME: check whether cost factors are correct
+    Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
+    Builder* BVH4GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); } // FIXME: check whether cost factors are correct
 
 #if defined(__AVX__)
-    Builder* BVH8GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,mesh,1,1.0f,1,inf,mode); }
-    Builder* BVH8GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,scene,1,1.0f,1,inf,mode); } // FIXME: check whether cost factors are correct
+    Builder* BVH8GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
+    Builder* BVH8GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); } // FIXME: check whether cost factors are correct
 #endif
 #endif
 

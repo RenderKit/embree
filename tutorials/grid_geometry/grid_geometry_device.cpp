@@ -19,7 +19,7 @@
 namespace embree {
 
 /* configuration */
-#define NUM_GRIDS 1
+#define NUM_GRIDS 4
 #define GRID_RESOLUTION_X 3
 #define GRID_RESOLUTION_Y 3
 

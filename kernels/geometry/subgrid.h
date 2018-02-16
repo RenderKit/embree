@@ -61,38 +61,6 @@ namespace embree
         __forceinline bool invalid3x3X() const { return (unsigned int)_x & (1<<15); }
         __forceinline bool invalid3x3Y() const { return (unsigned int)_y & (1<<15); }
 
-
-        __forceinline Vec3fa getVertex(const size_t sx, const size_t sy, const Scene *const scene) const
-        {
-          const GridMesh* mesh = scene->get<GridMesh>(geomID());
-          const GridMesh::Grid &g= mesh->grid(primID());
-          const size_t vtxID = g.startVtxID + sx + sy * g.lineVtxOffset;
-          return mesh->vertex(vtxID);
-        }
-
-        __forceinline Vec3fa getVertex(const size_t sx, const size_t sy, const Scene *const scene, const size_t itime) const
-        {
-          const GridMesh* mesh = scene->get<GridMesh>(geomID());
-          const GridMesh::Grid &g= mesh->grid(primID());
-          const size_t vtxID = g.startVtxID + sx + sy * g.lineVtxOffset;
-          return Vec3fa::loadu(mesh->vertexPtr(vtxID,itime));
-        }
-
-        template<typename T>
-        __forceinline Vec3<T> getVertex(const size_t sx, const size_t sy, const Scene *const scene, const size_t itime, const T& ftime) const
-        {
-          const GridMesh* mesh = scene->get<GridMesh>(geomID());
-          const GridMesh::Grid &g = mesh->grid(primID());
-          const size_t vtxID = g.startVtxID + sx + sy * g.lineVtxOffset;
-          const Vec3fa* vertices0 = (const Vec3fa*) mesh->vertexPtr(0,itime+0);
-          const Vec3fa* vertices1 = (const Vec3fa*) mesh->vertexPtr(0,itime+1);
-          const Vec3fa v0 = Vec3fa::loadu(&vertices0[vtxID]);
-          const Vec3fa v1 = Vec3fa::loadu(&vertices1[vtxID]);
-          const Vec3<T> p0(v0.x,v0.y,v0.z);
-          const Vec3<T> p1(v1.x,v1.y,v1.z);
-          return lerp(p0,p1,ftime);
-        }
-
         /* Gather the quads */
         __forceinline void gather(Vec3vf4& p0,
                                   Vec3vf4& p1,
@@ -237,9 +205,12 @@ namespace embree
       };
 
     /* Stores M quads from an indexed face set */
-      template<int M>
+      template<int N>
       struct SubGridQBVHN
       {
+        static const unsigned char MIN_QUAN = 0;
+        static const unsigned char MAX_QUAN = 255;
+
         /* Virtual interface to query information about the quad type */
         struct Type : public PrimitiveType
         {
@@ -257,7 +228,7 @@ namespace embree
         static __forceinline size_t max_size() { return 1; }
 
         /* Returns required number of primitive blocks for M primitives */
-        static __forceinline size_t blocks(size_t N) { PING; return (N+max_size()-1)/max_size(); }
+        //static __forceinline size_t blocks(size_t N) { PING; return (N+max_size()-1)/max_size(); }
 
       public:
 
@@ -265,27 +236,30 @@ namespace embree
         __forceinline SubGridQBVHN() {  }
 
         /* Construction from vertices and IDs */
-        __forceinline SubGridQBVHN(const unsigned int x[M],
-                                   const unsigned int y[M],
-                                   const unsigned int primID[M],
-                                   const unsigned int geomID)
+        __forceinline SubGridQBVHN(const unsigned int x[N],
+                                   const unsigned int y[N],
+                                   const unsigned int primID[N],
+                                   const unsigned int geomID,
+                                   const unsigned int items)
         {
           _geomID = geomID;
-          for (size_t i=0;i<M;i++)
+          for (size_t i=0;i<items;i++)
             subgridIDs[i] = SubGridID(x[i],y[i],primID[i]);
+          for (size_t i=items;i<N;i++)
+            subgridIDs[i] = SubGridID(0,0,0);            
         }
 
 
         friend std::ostream& operator<<(std::ostream& cout, const SubGridQBVHN& sg) {
           cout << "SubGridQBVHN ";
-          for (size_t i=0;i<M;i++)
+          for (size_t i=0;i<N;i++)
             cout << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " ), ";
           cout << "geomID " << sg._geomID << " ";
           return cout;
         }
 
         __forceinline unsigned int geomID() const { return _geomID; }
-        __forceinline unsigned int primID(const unsigned int i) const { assert(i < M); return subgridIDs[i].primID; }
+        __forceinline unsigned int primID(const unsigned int i) const { assert(i < N); return subgridIDs[i].primID; }
 
 
       public:
@@ -297,10 +271,99 @@ namespace embree
           __forceinline SubGridID(const unsigned int x, const unsigned int y, const unsigned int primID) :
           x(x), y(y), primID(primID) {}
 
-        } subgridIDs[M];
+        } subgridIDs[N];
       private:
         unsigned int _geomID;    // geometry ID of mesh
+
+        Vec3f start;
+        Vec3f scale;
+
+        union {
+          struct {
+            unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
+            unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
+            unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
+            unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
+            unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
+            unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+          };
+          unsigned char all_planes[6*N];
+        };
+
+        static __forceinline void init_dim(const vfloat<N> &lower,
+                                           const vfloat<N> &upper,
+                                           unsigned char lower_quant[N],
+                                           unsigned char upper_quant[N],
+                                           float &start,
+                                           float &scale)
+        {
+          const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
+          const float minF = reduce_min(lower);
+          const float maxF = reduce_max(upper);
+          float diff = maxF - minF; //todo: add extracted difference here
+          float scale_diff = diff / float(MAX_QUAN);
+
+          /* accomodate floating point accuracy issues in 'diff' */
+          size_t iterations = 0;
+          while(minF + scale_diff * float(MAX_QUAN) < maxF)
+          {
+            diff = nextafter(diff, FLT_MAX);
+            scale_diff = diff / float(MAX_QUAN);
+            iterations++;
+          }
+          const float inv_diff   = float(MAX_QUAN) / diff;
+
+          vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
+          vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
+          vint<N> i_floor_lower( floor_lower );
+          vint<N> i_ceil_upper ( ceil_upper  );
+
+          i_ceil_upper = min(i_ceil_upper,(int)MAX_QUAN);
+
+          /* lower/upper correction */
+          vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
+          vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
+          i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
+          i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
+
+          /* disable invalid lanes */
+          i_floor_lower = select(m_valid,i_floor_lower,MAX_QUAN);
+          i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
+
+          /* store as uchar to memory */
+          vint<N>::store(lower_quant,i_floor_lower);
+          vint<N>::store(upper_quant,i_ceil_upper);
+          start = minF;
+          scale = scale_diff;
+
+#if defined(DEBUG)
+          vfloat<N> extract_lower( vint<N>::load(lower_quant) );
+          vfloat<N> extract_upper( vint<N>::load(upper_quant) );
+          vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
+          vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
+          assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
+          assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
+#endif
+        }
+
+
+        __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
+
+        __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
+
+        __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
+
+        __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
+
+        __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
+
+        __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
+
+        template <int M>
+        __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
+
+
       };
 
-
+      typedef SubGridQBVHN<4> SubGridQBVH4;
 }
