@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
  
-#include "curve_intersector.h"
+#include "virtual_curve_intersector.h"
 #include "intersector_epilog.h"
 
 #include "../subdiv/bezier_curve.h"
