@@ -192,37 +192,6 @@ namespace embree
       dp = vfloatx(3.0f)*(p21-p20);
     }
 
-#if 0    
-    template<int M>
-      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bezier_basis0.eval<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-    
-    template<int M>
-      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bezier_basis1.eval<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bezier_basis0.derivative<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bezier_basis1.derivative<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-
-#else
-
     template<int M>
       __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
     {
@@ -266,8 +235,6 @@ namespace embree
                        madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
                             vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
     }
-
-#endif
 
     /* calculates bounds of bezier curve geometry */
     __forceinline BBox3fa accurateBounds() const
