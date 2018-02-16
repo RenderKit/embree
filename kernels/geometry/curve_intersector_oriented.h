@@ -147,11 +147,8 @@ namespace embree
         
         bool solve_bezier_clipping()
         {
-          TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
-          curve2d = TensorLinearCubicBezierSurface2fa(
-            CubicBezierCurve2fa(Vec2fa(curve3dray.L.v0),Vec2fa(curve3dray.L.v1),Vec2fa(curve3dray.L.v2),Vec2fa(curve3dray.L.v3)),
-            CubicBezierCurve2fa(Vec2fa(curve3dray.R.v0),Vec2fa(curve3dray.R.v1),Vec2fa(curve3dray.R.v2),Vec2fa(curve3dray.R.v3))
-            );
+          const TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
+          curve2d = TensorLinearCubicBezierSurface2fa(CubicBezierCurve2fa(curve3dray.L),CubicBezierCurve2fa(curve3dray.R));
           solve_bezier_clipping(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
           return isHit;
         }
@@ -307,12 +304,8 @@ namespace embree
         
         __forceinline bool solve_newton_raphson_main()
         {
-          TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
-          curve2d = TensorLinearCubicBezierSurface2fa(
-            CubicBezierCurve2fa(Vec2fa(curve3dray.L.v0),Vec2fa(curve3dray.L.v1),Vec2fa(curve3dray.L.v2),Vec2fa(curve3dray.L.v3)),
-            CubicBezierCurve2fa(Vec2fa(curve3dray.R.v0),Vec2fa(curve3dray.R.v1),Vec2fa(curve3dray.R.v2),Vec2fa(curve3dray.R.v3))
-            );
-            
+          const TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
+          curve2d = TensorLinearCubicBezierSurface2fa(CubicBezierCurve2fa(curve3dray.L),CubicBezierCurve2fa(curve3dray.R));
           const BBox2fa b2 = curve2d.bounds();
           eps = 8.0f*float(ulp)*reduce_max(max(abs(b2.lower),abs(b2.upper)));
 
