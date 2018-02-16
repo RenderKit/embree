@@ -27,15 +27,16 @@ namespace embree
     {
       float depth_scale;
       LinearSpace3fa ray_space;
+      LinearSpace3fa space;
       
       __forceinline CurvePrecalculations1() {}
 
       __forceinline CurvePrecalculations1(const Ray& ray, const void* ptr)
       {
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
-        ray_space = frame(depth_scale*ray.dir);
-        ray_space.vz *= depth_scale;
-        ray_space = ray_space.transposed();
+        space = frame(depth_scale*ray.dir);
+        space.vz *= depth_scale;
+        ray_space = space.transposed();
       }
     };
     
@@ -44,6 +45,7 @@ namespace embree
     {
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
+      LinearSpace3fa space[K];
 
       __forceinline CurvePrecalculationsK(const vbool<K>& valid, const RayK<K>& ray)
       {
@@ -51,18 +53,21 @@ namespace embree
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
         while (mask) {
           size_t k = __bscf(mask);
-          LinearSpace3fa ray_space_k = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]));
+          Vec3fa ray_dir_k = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+          LinearSpace3fa ray_space_k = frame(depth_scale[k]*ray_dir_k);
           ray_space_k.vz *= depth_scale[k];
-          ray_space_k = ray_space_k.transposed();
-          ray_space[k] = ray_space_k;
+          space[k] = ray_space_k;
+          ray_space[k] = ray_space_k.transposed();
         }
       }
 
       __forceinline CurvePrecalculationsK(const RayK<K>& ray, size_t k)
       {
-        Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
-        ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
+        Vec3fa ray_dir_k = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        LinearSpace3fa ray_space_k = frame(depth_scale[k]*ray_dir_k);
+        ray_space_k.vz *= depth_scale[k];
+        space[k] = ray_space_k;
+        ray_space[k] = ray_space_k.transposed();
       }
     };
   }

@@ -712,8 +712,9 @@ namespace embree
     template<typename Epilog>
       struct TensorLinearCubicBezierSurfaceIntersector
       {
+        const CurvePrecalculations1& pre;
         Ray& ray;
-        LinearSpace3fa space; // FIXME: could get precalculated
+        const LinearSpace3fa& space; // FIXME: could get precalculated
         TensorLinearCubicBezierSurface3fa curve3d;
         TensorLinearCubicBezierSurface2fa curve2d;
         float eps;
@@ -721,8 +722,8 @@ namespace embree
         bool isHit;
         CurveCounters counters;
 
-        __forceinline TensorLinearCubicBezierSurfaceIntersector (Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
-          : ray(ray), space(frame(ray.dir)), curve3d(curve3d), epilog(epilog), isHit(false) {}
+        __forceinline TensorLinearCubicBezierSurfaceIntersector (const CurvePrecalculations1& pre, Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
+          : pre(pre), ray(ray), space(pre.space), curve3d(curve3d), epilog(epilog), isHit(false) {}
         
         __forceinline Interval1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
@@ -1018,8 +1019,8 @@ namespace embree
         CubicBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
         CubicBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
         TensorLinearCubicBezierSurface3fa curve(L,R);
-        //return TensorLinearCubicBezierSurfaceIntersector<Epilog>(ray,curve,epilog).solve_bezier_clipping();
-        return TensorLinearCubicBezierSurfaceIntersector<Epilog>(ray,curve,epilog).solve_newton_raphson_main();
+        //return TensorLinearCubicBezierSurfaceIntersector<Epilog>(pre,ray,curve,epilog).solve_bezier_clipping();
+        return TensorLinearCubicBezierSurfaceIntersector<Epilog>(pre,ray,curve,epilog).solve_newton_raphson_main();
       }
     };
   }
