@@ -138,7 +138,7 @@ namespace embree
         ddp = eval_dudu(t);
       }
 
-      void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const;
+      template<int M> void evalN(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const;
 
       template<int M> Vec4vf<M> eval0(const int ofs, const int size) const;
       template<int M> Vec4vf<M> eval1(const int ofs, const int size) const;
@@ -156,23 +156,23 @@ namespace embree
       }
     };
   
-  template<>
-    __forceinline void BezierCurveT<Vec3fa>::evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+  template<> template<int M>
+    __forceinline void BezierCurveT<Vec3fa>::evalN(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
     {
-      const Vec4vfx p00 = v0;
-      const Vec4vfx p01 = v1;
-      const Vec4vfx p02 = v2;
-      const Vec4vfx p03 = v3;
+      const Vec4vf<M> p00 = v0;
+      const Vec4vf<M> p01 = v1;
+      const Vec4vf<M> p02 = v2;
+      const Vec4vf<M> p03 = v3;
       
-      const Vec4vfx p10 = lerp(p00,p01,t);
-      const Vec4vfx p11 = lerp(p01,p02,t);
-      const Vec4vfx p12 = lerp(p02,p03,t);
-      const Vec4vfx p20 = lerp(p10,p11,t);
-      const Vec4vfx p21 = lerp(p11,p12,t);
-      const Vec4vfx p30 = lerp(p20,p21,t);
+      const Vec4vf<M> p10 = lerp(p00,p01,t);
+      const Vec4vf<M> p11 = lerp(p01,p02,t);
+      const Vec4vf<M> p12 = lerp(p02,p03,t);
+      const Vec4vf<M> p20 = lerp(p10,p11,t);
+      const Vec4vf<M> p21 = lerp(p11,p12,t);
+      const Vec4vf<M> p30 = lerp(p20,p21,t);
       
       p = p30;
-      dp = vfloatx(3.0f)*(p21-p20);
+      dp = vfloat<M>(3.0f)*(p21-p20);
     }
 
     template<> template<int M>
