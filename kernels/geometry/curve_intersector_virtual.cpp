@@ -14,15 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
  
-#include "virtual_curve_intersector.h"
+#include "curve_intersector_virtual.h"
 #include "intersector_epilog.h"
 
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/bspline_curve.h"
 
-#include "bezierNi_intersector.h"
-#include "bezierNv_intersector.h"
-#include "bezierNi_mb_intersector.h"
+#include "curveNi_intersector.h"
+#include "curveNv_intersector.h"
+#include "curveNi_mb_intersector.h"
+
+#include "curve_intersector_distance.h"
+#include "curve_intersector_ribbon.h"
+#include "curve_intersector_oriented.h"
+#include "curve_intersector_sweep.h"
 
 namespace embree
 {

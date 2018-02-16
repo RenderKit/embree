@@ -20,7 +20,7 @@
 #include "cylinder.h"
 #include "plane.h"
 #include "line_intersector.h"
-#include "bezier_curve_precalculations.h"
+#include "curve_intersector_precalculations.h"
 
 namespace embree
 {

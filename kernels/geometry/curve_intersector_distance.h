@@ -17,10 +17,7 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "bezier_curve_precalculations.h"
-// FIXME: remove this file later
-//#define Bezier1Intersector1 Hair1Intersector1
-//#define Bezier1IntersectorK Hair1IntersectorK
+#include "curve_intersector_precalculations.h"
 
 namespace embree
 {

@@ -17,7 +17,8 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "bezier_curve_intersector.h"
+#include "curve_intersector_precalculations.h"
+#include "curve_intersector_sweep.h"
 #include "../../common/math/interval.h"
 
 #define DBG(x)

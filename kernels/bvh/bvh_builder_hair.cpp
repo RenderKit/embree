@@ -17,8 +17,8 @@
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/primrefgen.h"
 
-#include "../geometry/bezierNi.h"
-#include "../geometry/bezierNv.h"
+#include "../geometry/curveNi.h"
+#include "../geometry/curveNv.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
 

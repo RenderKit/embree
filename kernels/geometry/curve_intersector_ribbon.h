@@ -18,7 +18,7 @@
 
 #include "../common/ray.h"
 #include "quad_intersector.h"
-#include "bezier_curve_precalculations.h"
+#include "curve_intersector_precalculations.h"
 
 #define Bezier1Intersector1 Ribbon1Intersector1
 #define Bezier1IntersectorK Ribbon1IntersectorK

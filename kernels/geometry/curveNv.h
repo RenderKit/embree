@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "primitive.h"
-#include "bezierNi.h"
+#include "curveNi.h"
 
 namespace embree
 {

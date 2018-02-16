@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "primitive.h"
-#include "bezierNv.h"
-#include "bezierNi.h"
-#include "bezierNi_mb.h"
+#include "curveNv.h"
+#include "curveNi.h"
+#include "curveNi_mb.h"
 #include "linei.h"
 #include "triangle.h"
 #include "trianglev.h"

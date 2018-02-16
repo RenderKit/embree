@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "bezierNv.h"
-#include "bezierNi_intersector.h"
+#include "curveNv.h"
+#include "curveNi_intersector.h"
 
 namespace embree
 {

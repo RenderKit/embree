@@ -17,9 +17,9 @@
 #include "bvh4_factory.h"
 #include "../bvh/bvh.h"
 
-#include "../geometry/bezierNv.h"
-#include "../geometry/bezierNi.h"
-#include "../geometry/bezierNi_mb.h"
+#include "../geometry/curveNv.h"
+#include "../geometry/curveNi.h"
+#include "../geometry/curveNi_mb.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
