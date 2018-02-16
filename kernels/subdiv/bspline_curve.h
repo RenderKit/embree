@@ -21,12 +21,12 @@
 
 namespace embree
 {
-  class BSplineBasis2 // FIXME: make compatible with basis from bspline_patch.h
+  class BSplineBasis
   {
   public:
 
     template<typename T>
-      static __forceinline Vec4<T>  eval(const T& u) 
+      static __forceinline Vec4<T> eval(const T& u) 
     {
       const T t  = u;
       const T s  = T(1.0f) - u;
@@ -128,19 +128,19 @@ namespace embree
       
       __forceinline Vertex eval(const float t) const 
       {
-        const Vec4<float> b = BSplineBasis2::eval(t);
+        const Vec4<float> b = BSplineBasis::eval(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline Vertex eval_du(const float t) const
       {
-        const Vec4<float> b = BSplineBasis2::derivative(t);
+        const Vec4<float> b = BSplineBasis::derivative(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline Vertex eval_dudu(const float t) const 
       {
-        const Vec4<float> b = BSplineBasis2::derivative2(t);
+        const Vec4<float> b = BSplineBasis::derivative2(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
@@ -197,13 +197,13 @@ namespace embree
     
     __forceinline Vec4vfx eval_(const vfloatx& t) const 
     {
-      const Vec4vfx b = BSplineBasis2::eval(t);
+      const Vec4vfx b = BSplineBasis::eval(t);
       return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
     }
 
     __forceinline Vec4vfx derivative(const vfloatx& t) const 
     {
-      const Vec4vfx b = BSplineBasis2::derivative(t);
+      const Vec4vfx b = BSplineBasis::derivative(t);
       return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
     }
 

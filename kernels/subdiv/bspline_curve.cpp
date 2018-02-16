@@ -25,12 +25,12 @@ namespace embree
       for (size_t j=0; j<=N; j++) 
       {
         const float u = float(j+dj)/float(i);
-        const Vec4f f = BSplineBasis2::eval(u);
+        const Vec4f f = BSplineBasis::eval(u);
         c0[i][j] = f.x;
         c1[i][j] = f.y;
         c2[i][j] = f.z;
         c3[i][j] = f.w;
-        const Vec4f d = BSplineBasis2::derivative(u);
+        const Vec4f d = BSplineBasis::derivative(u);
         d0[i][j] = d.x;
         d1[i][j] = d.y;
         d2[i][j] = d.z;
