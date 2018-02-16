@@ -34,13 +34,16 @@ namespace embree
       unsigned int lineVtxOffset;
       unsigned short resX,resY;
 
-      __forceinline unsigned int get3x3Flags(const unsigned int x, const unsigned int y) const
+      /* border flags due to 3x3 vertex pattern */
+      __forceinline unsigned int get3x3FlagsX(const unsigned int x) const
       {
-        /* border flags due to 3x3 vertex pattern */
-        unsigned int flags = 0;
-        flags |= (x + 2 >= (unsigned int)resX) ? (1<<31) : 0;
-        flags |= (y + 2 >= (unsigned int)resY) ? (1<<30) : 0;
-        return flags;
+        return (x + 2 >= (unsigned int)resX) ? (1<<15) : 0;
+      }
+
+      /* border flags due to 3x3 vertex pattern */
+      __forceinline unsigned int get3x3FlagsY(const unsigned int y) const
+      {
+        return (y + 2 >= (unsigned int)resY) ? (1<<15) : 0;
       }
 
       /*! outputs grid structure */

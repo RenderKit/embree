@@ -54,36 +54,36 @@ namespace embree
                               const unsigned int y,
                               const unsigned int geomID,
                               const unsigned int primID)
-          : x(x), y(y), _geomID(geomID), _primID(primID)
+          : _x(x), _y(y), _geomID(geomID), _primID(primID)
         {
         }
 
-        __forceinline bool invalid3x3X() const { return _geomID & (1<<31); }
-        __forceinline bool invalid3x3Y() const { return _geomID & (1<<30); }
+        __forceinline bool invalid3x3X() const { return (unsigned int)_x & (1<<15); }
+        __forceinline bool invalid3x3Y() const { return (unsigned int)_y & (1<<15); }
 
 
-        __forceinline Vec3fa getVertex(const size_t x, const size_t y, const Scene *const scene) const
+        __forceinline Vec3fa getVertex(const size_t sx, const size_t sy, const Scene *const scene) const
         {
           const GridMesh* mesh = scene->get<GridMesh>(geomID());
           const GridMesh::Grid &g= mesh->grid(primID());
-          const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID = g.startVtxID + sx + sy * g.lineVtxOffset;
           return mesh->vertex(vtxID);
         }
 
-        __forceinline Vec3fa getVertex(const size_t x, const size_t y, const Scene *const scene, const size_t itime) const
+        __forceinline Vec3fa getVertex(const size_t sx, const size_t sy, const Scene *const scene, const size_t itime) const
         {
           const GridMesh* mesh = scene->get<GridMesh>(geomID());
           const GridMesh::Grid &g= mesh->grid(primID());
-          const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID = g.startVtxID + sx + sy * g.lineVtxOffset;
           return Vec3fa::loadu(mesh->vertexPtr(vtxID,itime));
         }
 
         template<typename T>
-        __forceinline Vec3<T> getVertex(const size_t x, const size_t y, const Scene *const scene, const size_t itime, const T& ftime) const
+        __forceinline Vec3<T> getVertex(const size_t sx, const size_t sy, const Scene *const scene, const size_t itime, const T& ftime) const
         {
           const GridMesh* mesh = scene->get<GridMesh>(geomID());
           const GridMesh::Grid &g = mesh->grid(primID());
-          const size_t vtxID = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID = g.startVtxID + sx + sy * g.lineVtxOffset;
           const Vec3fa* vertices0 = (const Vec3fa*) mesh->vertexPtr(0,itime+0);
           const Vec3fa* vertices1 = (const Vec3fa*) mesh->vertexPtr(0,itime+1);
           const Vec3fa v0 = Vec3fa::loadu(&vertices0[vtxID]);
@@ -102,7 +102,7 @@ namespace embree
                                   const GridMesh::Grid &g) const
         {
           /* first quad always valid */
-          const size_t vtxID00 = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID00 = g.startVtxID + x() + y() * g.lineVtxOffset;
           const size_t vtxID01 = vtxID00 + 1;
           const vfloat4 vtx00  = vfloat4::loadu(mesh->vertexPtr(vtxID00));
           const vfloat4 vtx01  = vfloat4::loadu(mesh->vertexPtr(vtxID01));
@@ -155,7 +155,7 @@ namespace embree
           const GridMesh::Grid &g  = mesh->grid(primID());
 
           /* first quad always valid */
-          const size_t vtxID00 = g.startVtxID + x + y * g.lineVtxOffset;
+          const size_t vtxID00 = g.startVtxID + x() + y() * g.lineVtxOffset;
           const size_t vtxID01 = vtxID00 + 1;
           const Vec3fa vtx00  = Vec3fa::loadu(mesh->vertexPtr(vtxID00));
           const Vec3fa vtx01  = Vec3fa::loadu(mesh->vertexPtr(vtxID01));
@@ -221,19 +221,86 @@ namespace embree
 
 
         friend std::ostream& operator<<(std::ostream& cout, const SubGrid& sg) {
-          return cout << "SubGrid " << " ( x " << sg.x << ", y = " << sg.y << ", geomID = " << sg.geomID() << ", primID = " << sg.primID() << " )";
+          return cout << "SubGrid " << " ( x " << sg.x() << ", y = " << sg.y() << ", geomID = " << sg.geomID() << ", primID = " << sg.primID() << " )";
         }
 
-        __forceinline unsigned int geomID() const { return _geomID & 0x3fffffff; }
+        __forceinline unsigned int geomID() const { return _geomID; }
         __forceinline unsigned int primID() const { return _primID; }
+        __forceinline unsigned int x() const { return (unsigned int)_x & 0x7fff; }
+        __forceinline unsigned int y() const { return (unsigned int)_y & 0x7fff; }
 
-
-      public:
-        unsigned short x;
-        unsigned short y;
       private:
+        unsigned short _x;
+        unsigned short _y;
         unsigned int _geomID;    // geometry ID of mesh
         unsigned int _primID;    // primitive ID of primitive inside mesh
       };
+
+    /* Stores M quads from an indexed face set */
+      template<int M>
+      struct SubGridQBVHN
+      {
+        /* Virtual interface to query information about the quad type */
+        struct Type : public PrimitiveType
+        {
+          Type();
+          size_t size(const char* This) const;
+        };
+        static Type type;
+
+      public:
+
+        /* primitive supports multiple time segments */
+        static const bool singleTimeSegment = false;
+
+        /* Returns maximum number of stored quads */
+        static __forceinline size_t max_size() { return 1; }
+
+        /* Returns required number of primitive blocks for M primitives */
+        static __forceinline size_t blocks(size_t N) { PING; return (N+max_size()-1)/max_size(); }
+
+      public:
+
+        /* Default constructor */
+        __forceinline SubGridQBVHN() {  }
+
+        /* Construction from vertices and IDs */
+        __forceinline SubGridQBVHN(const unsigned int x[M],
+                                   const unsigned int y[M],
+                                   const unsigned int primID[M],
+                                   const unsigned int geomID)
+        {
+          _geomID = geomID;
+          for (size_t i=0;i<M;i++)
+            subgridIDs[i] = SubGridID(x[i],y[i],primID[i]);
+        }
+
+
+        friend std::ostream& operator<<(std::ostream& cout, const SubGridQBVHN& sg) {
+          cout << "SubGridQBVHN ";
+          for (size_t i=0;i<M;i++)
+            cout << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " ), ";
+          cout << "geomID " << sg._geomID << " ";
+          return cout;
+        }
+
+        __forceinline unsigned int geomID() const { return _geomID; }
+        __forceinline unsigned int primID(const unsigned int i) const { assert(i < M); return subgridIDs[i].primID; }
+
+
+      public:
+        struct SubGridID {
+          unsigned short x;
+          unsigned short y;
+          unsigned int primID;
+
+          __forceinline SubGridID(const unsigned int x, const unsigned int y, const unsigned int primID) :
+          x(x), y(y), primID(primID) {}
+
+        } subgridIDs[M];
+      private:
+        unsigned int _geomID;    // geometry ID of mesh
+      };
+
 
 }

@@ -750,10 +750,10 @@ namespace embree
               {
                 BBox3fa bounds = empty;
                 if (!gmesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
-                const PrimRef prim(bounds,s | g.get3x3Flags(x,y),p_index);
+                const PrimRef prim(bounds,s,p_index);
                 //PRINT(prim);
                 pinfo.add_center2(prim);
-                sgrids[p_index] = SubGridBuildData(x,y,i);
+                sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), i);
                 prims[p_index++] = prim;                
               }
           }

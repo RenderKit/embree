@@ -1150,15 +1150,9 @@ namespace embree
     struct __aligned(64) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
-#if 0
       typedef unsigned char T;
       static const T MIN_QUAN = 0;
       static const T MAX_QUAN = 255;
-#else
-      typedef unsigned short T;
-      static const T MIN_QUAN = 0;
-      static const T MAX_QUAN = 65535;
-#endif
 
       struct Create2
       {

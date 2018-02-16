@@ -48,8 +48,8 @@ namespace embree
           const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
           const vfloat<K> uu = select(flags,u1,u0);
           const vfloat<K> vv = select(flags,v1,v0);
-          const int sx = (int)subgrid.x + (i % 2);
-          const int sy = (int)subgrid.y + (i >> 1);
+          const int sx = subgrid.x() + (i % 2);
+          const int sy = subgrid.y() + (i >> 1);
           const float inv_resX = rcp((float)((int)g.resX-1));
           const float inv_resY = rcp((float)((int)g.resY-1));          
           const vfloat<K> u = (uu + (float)sx) * inv_resX;
@@ -79,8 +79,8 @@ namespace embree
       __forceinline void interpolateUV(MoellerTrumboreHitM<M> &hit,const GridMesh::Grid &g, const SubGrid& subgrid) 
     {
       /* correct U,V interpolation across the entire grid */
-      const vint<M> sx((int)subgrid.x);
-      const vint<M> sy((int)subgrid.y);
+      const vint<M> sx((int)subgrid.x());
+      const vint<M> sy((int)subgrid.y());
       const vint<M> sxM(sx + vint<M>(0,1,1,0));
       const vint<M> syM(sy + vint<M>(0,0,1,1));
       const float inv_resX = rcp((float)((int)g.resX-1));
@@ -199,8 +199,8 @@ namespace embree
 #endif
 
           /* correct U,V interpolation across the entire grid */
-          const vint16 sx((int)subgrid.x);
-          const vint16 sy((int)subgrid.y);
+          const vint16 sx((int)subgrid.x());
+          const vint16 sy((int)subgrid.y());
           const vint16 sx16(sx + vint16(0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0));
           const vint16 sy16(sy + vint16(0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1));
           const float inv_resX = rcp((float)((int)g.resX-1));
@@ -266,8 +266,8 @@ namespace embree
           hit.V = select(flags,absDen-V,V);
 #endif
           /* correct U,V interpolation across the entire grid */
-          const vint8 sx((int)subgrid.x);
-          const vint8 sy((int)subgrid.y);
+          const vint8 sx((int)subgrid.x());
+          const vint8 sy((int)subgrid.y());
           const vint8 sx8(sx + vint8(0,1,1,0,0,1,1,0));
           const vint8 sy8(sy + vint8(0,0,1,1,0,0,1,1));
           const float inv_resX = rcp((float)((int)g.resX-1));
@@ -557,8 +557,8 @@ namespace embree
 #endif
 
           /* correct U,V interpolation across the entire grid */
-          const vint16 sx((int)subgrid.x);
-          const vint16 sy((int)subgrid.y);
+          const vint16 sx((int)subgrid.x());
+          const vint16 sy((int)subgrid.y());
           const vint16 sx16(sx + vint16(0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0));
           const vint16 sy16(sy + vint16(0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1));
           const float inv_resX = rcp((float)((int)g.resX-1));
@@ -621,8 +621,8 @@ namespace embree
 #endif
 
           /* correct U,V interpolation across the entire grid */
-          const vint8 sx((int)subgrid.x);
-          const vint8 sy((int)subgrid.y);
+          const vint8 sx((int)subgrid.x());
+          const vint8 sy((int)subgrid.y());
           const vint8 sx8(sx + vint8(0,1,1,0,0,1,1,0));
           const vint8 sy8(sy + vint8(0,0,1,1,0,0,1,1));
           const float inv_resX = rcp((float)((int)g.resX-1));
