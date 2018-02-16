@@ -68,28 +68,6 @@ namespace embree
     PrecomputedBezierBasis() {}
     PrecomputedBezierBasis(int shift);
 
-    template<typename T>
-    __forceinline Vec4<T> eval(const int u, const int size) 
-    {
-      assert(size <= N);
-      assert(u <= size);
-      return Vec4<T>(T::loadu(&c0[size][u]),
-                     T::loadu(&c1[size][u]),
-                     T::loadu(&c2[size][u]),
-                     T::loadu(&c3[size][u]));            
-    }
-
-    template<typename T>
-    __forceinline Vec4<T> derivative(const int u, const int size) 
-    {
-      assert(size <= N);
-      assert(u <= size);
-      return Vec4<T>(T::loadu(&d0[size][u]),
-                     T::loadu(&d1[size][u]),
-                     T::loadu(&d2[size][u]),
-                     T::loadu(&d3[size][u]));            
-    }
-    
     /* basis for bezier evaluation */
   public:
     float c0[N+1][N+1];
@@ -159,22 +137,27 @@ namespace embree
         dp = 3.0f*(p21-p20);
         ddp = eval_dudu(t);
       }
+
+      void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const;
+
+      template<int M> Vec4vf<M> eval0(const int ofs, const int size) const;
+      template<int M> Vec4vf<M> eval1(const int ofs, const int size) const;
+      template<int M> Vec4vf<M> derivative0(const int ofs, const int size) const;
+      template<int M> Vec4vf<M> derivative1(const int ofs, const int size) const;
+
+      /* calculates bounds of bezier curve geometry */
+      BBox3fa accurateBounds() const;
+      
+      /* calculates bounds when tessellated into N line segments */
+      __forceinline BBox3fa tessellatedBounds(int N) const;
       
       friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
         return cout << "BezierCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
   
-  struct BezierCurve3fa : public BezierCurveT<Vec3fa>
-  {
-    //using BezierCurveT<Vec3fa>::BezierCurveT; // FIXME: not supported by VS2010
-    
-    __forceinline BezierCurve3fa() {}
-
-    __forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3)
-      : BezierCurveT<Vec3fa>(v0,v1,v2,v3) {}
-    
-    __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+  template<>
+    __forceinline void BezierCurveT<Vec3fa>::evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
     {
       const Vec4vfx p00 = v0;
       const Vec4vfx p01 = v1;
@@ -192,8 +175,8 @@ namespace embree
       dp = vfloatx(3.0f)*(p21-p20);
     }
 
-    template<int M>
-      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
+    template<> template<int M>
+      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::eval0(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
@@ -203,8 +186,8 @@ namespace embree
                             vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
     }
     
-    template<int M>
-      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
+    template<> template<int M>
+      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::eval1(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
@@ -214,8 +197,8 @@ namespace embree
                             vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
     }
 
-    template<int M>
-      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
+    template<> template<int M>
+      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::derivative0(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
@@ -225,8 +208,8 @@ namespace embree
                             vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
     }
 
-    template<int M>
-      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
+    template<> template<int M>
+      __forceinline Vec4vf<M> BezierCurveT<Vec3fa>::derivative1(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
@@ -236,8 +219,8 @@ namespace embree
                             vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
     }
 
-    /* calculates bounds of bezier curve geometry */
-    __forceinline BBox3fa accurateBounds() const
+    template<> 
+      __forceinline BBox3fa BezierCurveT<Vec3fa>::accurateBounds() const
     {
       const int N = 7;
       const float scale = 1.0f/(3.0f*(N-1));
@@ -261,8 +244,8 @@ namespace embree
       return enlarge(BBox3fa(lower,upper),upper_r);
     }
 
-    /* calculates bounds when tessellated into N line segments */
-    __forceinline BBox3fa tessellatedBounds(int N) const
+    template<> 
+      __forceinline BBox3fa BezierCurveT<Vec3fa>::tessellatedBounds(int N) const
     {
       if (likely(N == 4))
       {
@@ -296,5 +279,6 @@ namespace embree
         return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       }
     }
-  };
+    
+    typedef BezierCurveT<Vec3fa> BezierCurve3fa;
 }
