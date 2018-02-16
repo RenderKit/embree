@@ -276,7 +276,7 @@ namespace embree
 
   void BVH8Factory::selectIntersectors(int features)
   {
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,VirtualCurvePrimitiveIntersector8v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8v));
     
     /* select intersectors1 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
