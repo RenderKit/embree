@@ -27,14 +27,13 @@ namespace embree
     {
       float depth_scale;
       LinearSpace3fa ray_space;
-      LinearSpace3fa space;
-      
+           
       __forceinline CurvePrecalculations1() {}
 
       __forceinline CurvePrecalculations1(const Ray& ray, const void* ptr)
       {
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
-        space = frame(depth_scale*ray.dir);
+        LinearSpace3fa space = frame(depth_scale*ray.dir);
         space.vz *= depth_scale;
         ray_space = space.transposed();
       }
@@ -45,7 +44,6 @@ namespace embree
     {
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
-      LinearSpace3fa space[K];
 
       __forceinline CurvePrecalculationsK(const vbool<K>& valid, const RayK<K>& ray)
       {
@@ -56,7 +54,6 @@ namespace embree
           Vec3fa ray_dir_k = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
           LinearSpace3fa ray_space_k = frame(depth_scale[k]*ray_dir_k);
           ray_space_k.vz *= depth_scale[k];
-          space[k] = ray_space_k;
           ray_space[k] = ray_space_k.transposed();
         }
       }

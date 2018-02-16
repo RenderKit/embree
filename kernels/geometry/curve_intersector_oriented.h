@@ -150,6 +150,15 @@ namespace embree
         
         __forceinline CubicBezierCurve<Vec2fa> xfm(const V& dx, const V& dy, const V& p) const;
 
+        __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const
+        {
+          const Vec3fa q0 = xfmVector(space,p0-p);
+          const Vec3fa q1 = xfmVector(space,p1-p);
+          const Vec3fa q2 = xfmVector(space,p2-p);
+          const Vec3fa q3 = xfmVector(space,p3-p);
+          return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+        }
+        
         __forceinline int maxRoots() const;
 
         __forceinline BBox<V> bounds() const {
@@ -476,7 +485,11 @@ namespace embree
         }
         
         __forceinline TensorLinearCubicBezierSurface<Vec2fa> xfm(const V& dx, const V& dy, const V& p) const;
-        
+
+        __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const {
+          return TensorLinearCubicBezierSurface(L.xfm(space,p),R.xfm(space,p));
+        }
+                
         __forceinline TensorLinearCubicBezierSurface clip_u(const Interval1f& u) const {
           return TensorLinearCubicBezierSurface(L.clip(u),R.clip(u));
         }
@@ -714,7 +727,6 @@ namespace embree
       {
         const CurvePrecalculations1& pre;
         Ray& ray;
-        const LinearSpace3fa& space; // FIXME: could get precalculated
         TensorLinearCubicBezierSurface3fa curve3d;
         TensorLinearCubicBezierSurface2fa curve2d;
         float eps;
@@ -723,8 +735,8 @@ namespace embree
         CurveCounters counters;
 
         __forceinline TensorLinearCubicBezierSurfaceIntersector (const CurvePrecalculations1& pre, Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
-          : pre(pre), ray(ray), space(pre.space), curve3d(curve3d), epilog(epilog), isHit(false) {}
-        
+          : pre(pre), ray(ray), curve3d(curve3d), epilog(epilog), isHit(false) {}
+
         __forceinline Interval1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
           if (p1 == p0) {
@@ -775,7 +787,7 @@ namespace embree
           {
             const float u = cu.center();
             const float v = cv.center();
-            TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
+            TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(pre.ray_space.row2(),ray.org);
             const float t = curve_z.eval(u,v);
             if (t >= ray.tnear() && t <= ray.tfar()) {
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
@@ -820,8 +832,12 @@ namespace embree
         
         bool solve_bezier_clipping()
         {
-          TensorLinearCubicBezierSurface2fa curve2 = curve3d.xfm(space.vx,space.vy,ray.org);
-          solve_bezier_clipping(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2);
+          TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
+          curve2d = TensorLinearCubicBezierSurface2fa(
+            CubicBezierCurve2fa(Vec2fa(curve3dray.L.p0),Vec2fa(curve3dray.L.p1),Vec2fa(curve3dray.L.p2),Vec2fa(curve3dray.L.p3)),
+            CubicBezierCurve2fa(Vec2fa(curve3dray.R.p0),Vec2fa(curve3dray.R.p1),Vec2fa(curve3dray.R.p2),Vec2fa(curve3dray.R.p3))
+            );
+          solve_bezier_clipping(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
           return isHit;
         }
 
@@ -852,7 +868,7 @@ namespace embree
               const float v = uv.y;
               if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
-              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(space.vz,ray.org);
+              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(pre.ray_space.row2(),ray.org);
               const float t = curve_z.eval(u,v);
               if (!(t > ray.tnear() && t < ray.tfar)) return; // rejects NaNs
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
@@ -976,7 +992,12 @@ namespace embree
         
         __forceinline bool solve_newton_raphson_main()
         {
-          curve2d = curve3d.xfm(space.vx,space.vy,ray.org);
+          TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
+          curve2d = TensorLinearCubicBezierSurface2fa(
+            CubicBezierCurve2fa(Vec2fa(curve3dray.L.p0),Vec2fa(curve3dray.L.p1),Vec2fa(curve3dray.L.p2),Vec2fa(curve3dray.L.p3)),
+            CubicBezierCurve2fa(Vec2fa(curve3dray.R.p0),Vec2fa(curve3dray.R.p1),Vec2fa(curve3dray.R.p2),Vec2fa(curve3dray.R.p3))
+            );
+            
           const BBox2fa b2 = curve2d.bounds();
           eps = 8.0f*float(ulp)*reduce_max(max(abs(b2.lower),abs(b2.upper)));
 
