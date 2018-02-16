@@ -113,8 +113,6 @@ namespace embree
           return TensorLinearCubicBezierSurface<float>(L.xfm(dx,p),R.xfm(dx,p));
         }
         
-        __forceinline TensorLinearCubicBezierSurface<Vec2fa> xfm(const V& dx, const V& dy, const V& p) const;
-        
         __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const {
           return TensorLinearCubicBezierSurface(L.xfm(space,p),R.xfm(space,p));
         }
@@ -342,11 +340,6 @@ namespace embree
       }
     };
 
-    template<typename V>
-      __forceinline TensorLinearCubicBezierSurface<Vec2fa> TensorLinearCubicBezierSurface<V>::xfm(const V& dx, const V& dy, const V& p) const {
-      return TensorLinearCubicBezierSurface<Vec2fa>(L.xfm(dx,dy,p),R.xfm(dx,dy,p));
-    }
-    
     typedef TensorLinearCubicBezierSurface<float> TensorLinearCubicBezierSurface1f;
     typedef TensorLinearCubicBezierSurface<Vec2fa> TensorLinearCubicBezierSurface2fa;
     typedef TensorLinearCubicBezierSurface<Vec3fa> TensorLinearCubicBezierSurface3fa;
