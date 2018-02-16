@@ -22,7 +22,7 @@
 namespace embree
 {
   template<int M>
-    struct BezierNiMB
+    struct CurveNiMB
   {
     struct Type : public PrimitiveType {
       Type ();
@@ -42,14 +42,14 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNiMB) == 6+37*M+24, "internal data layout issue");
-      return f*sizeof(BezierNiMB) + (r!=0)*(6+37*r+24);
+      static_assert(sizeof(CurveNiMB) == 6+37*M+24, "internal data layout issue");
+      return f*sizeof(CurveNiMB) + (r!=0)*(6+37*r+24);
     }
 
   public:
 
     /*! Default constructor. */
-    __forceinline BezierNiMB () {}
+    __forceinline CurveNiMB () {}
 
     /*! fill curve from curve list */
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t _end, Scene* scene, const BBox1f time_range)
@@ -138,9 +138,9 @@ namespace embree
     {
       size_t start = prims.object_range.begin();
       size_t end   = prims.object_range.end();
-      size_t items = BezierNiMB::blocks(prims.object_range.size());
-      size_t numbytes = BezierNiMB::bytes(prims.object_range.size());
-      BezierNiMB* accel = (BezierNiMB*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      size_t items = CurveNiMB::blocks(prims.object_range.size());
+      size_t numbytes = CurveNiMB::bytes(prims.object_range.size());
+      CurveNiMB* accel = (CurveNiMB*) alloc.malloc1(numbytes,BVH::byteAlignment);
       const typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       
       LBBox3fa bounds = empty;
@@ -282,8 +282,8 @@ namespace embree
   };
 
   template<int M>
-    typename BezierNiMB<M>::Type BezierNiMB<M>::type;
+    typename CurveNiMB<M>::Type CurveNiMB<M>::type;
 
-  typedef BezierNiMB<4> Bezier4iMB;
-  typedef BezierNiMB<8> Bezier8iMB;
+  typedef CurveNiMB<4> Curve4iMB;
+  typedef CurveNiMB<8> Curve8iMB;
 }

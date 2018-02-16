@@ -22,7 +22,7 @@
 namespace embree
 {
   template<int M>
-    struct BezierNi
+    struct CurveNi
   {
     struct Type : public PrimitiveType {
       Type ();
@@ -42,14 +42,14 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNi) == 22+25*M, "internal data layout issue");
-      return f*sizeof(BezierNi) + (r!=0)*(22 + 25*r);
+      static_assert(sizeof(CurveNi) == 22+25*M, "internal data layout issue");
+      return f*sizeof(CurveNi) + (r!=0)*(22 + 25*r);
     }
 
   public:
 
     /*! Default constructor. */
-    __forceinline BezierNi () {}
+    __forceinline CurveNi () {}
 
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
@@ -120,9 +120,9 @@ namespace embree
       __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
     {
       size_t start = set.begin();
-      size_t items = BezierNi::blocks(set.size());
-      size_t numbytes = BezierNi::bytes(set.size());
-      BezierNi* accel = (BezierNi*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      size_t items = CurveNi::blocks(set.size());
+      size_t numbytes = CurveNi::bytes(set.size());
+      CurveNi* accel = (CurveNi*) alloc.malloc1(numbytes,BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,start,set.end(),bvh->scene);
       }
@@ -227,8 +227,8 @@ namespace embree
   };
 
   template<int M>
-    typename BezierNi<M>::Type BezierNi<M>::type;
+    typename CurveNi<M>::Type CurveNi<M>::type;
 
-  typedef BezierNi<4> Bezier4i;
-  typedef BezierNi<8> Bezier8i;
+  typedef CurveNi<4> Curve4i;
+  typedef CurveNi<8> Curve8i;
 }

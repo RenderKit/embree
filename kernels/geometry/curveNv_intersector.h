@@ -24,16 +24,16 @@ namespace embree
   namespace isa
   {
     template<int M>
-      struct BezierNvIntersector1 : public BezierNiIntersector1<M>
+      struct CurveNvIntersector1 : public CurveNiIntersector1<M>
     {
-      typedef BezierNv<M> Primitive;
+      typedef CurveNv<M> Primitive;
       typedef CurvePrecalculations1 Precalculations;
 
       template<typename Intersector, typename Epilog>
         static __forceinline void intersect_t(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersector1<M>::intersect(ray,prim,tNear);
+        vbool<M> valid = CurveNiIntersector1<M>::intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -70,7 +70,7 @@ namespace embree
         static __forceinline bool occluded_t(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersector1<M>::intersect(ray,prim,tNear);
+        vbool<M> valid = CurveNiIntersector1<M>::intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -108,16 +108,16 @@ namespace embree
     };
 
     template<int M, int K>
-      struct BezierNvIntersectorK : public BezierNiIntersectorK<M,K>
+      struct CurveNvIntersectorK : public CurveNiIntersectorK<M,K>
     {
-      typedef BezierNv<M> Primitive;
+      typedef CurveNv<M> Primitive;
       typedef CurvePrecalculationsK<K> Precalculations;
 
       template<typename Intersector, typename Epilog>
         static __forceinline void intersect_t(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
+        vbool<M> valid = CurveNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -154,7 +154,7 @@ namespace embree
         static __forceinline bool occluded_t(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
+        vbool<M> valid = CurveNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);

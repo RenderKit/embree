@@ -174,7 +174,7 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Bezier8vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Curve8vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -229,7 +229,7 @@ namespace embree
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier8vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Curve8vBuilder_OBB_New));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vSceneBuilderSAH));
@@ -845,9 +845,9 @@ namespace embree
 
   Accel* BVH8Factory::BVH8OBBVirtualCurve8v(Scene* scene)
   {
-    BVH8* accel = new BVH8(Bezier8v::type,scene);
+    BVH8* accel = new BVH8(Curve8v::type,scene);
     Accel::Intersectors intersectors = BVH8OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8v());
-    Builder* builder = BVH8Bezier8vBuilder_OBB_New(accel,scene,0);
+    Builder* builder = BVH8Curve8vBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 

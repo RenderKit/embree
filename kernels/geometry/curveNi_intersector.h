@@ -23,9 +23,9 @@ namespace embree
   namespace isa
   {
     template<int M>
-    struct BezierNiIntersector1
+    struct CurveNiIntersector1
     {
-      typedef BezierNi<M> Primitive;
+      typedef CurveNi<M> Primitive;
       typedef Vec3vf<M> Vec3vfM;
       typedef LinearSpace3<Vec3vfM>LinearSpace3vfM;
       typedef CurvePrecalculations1 Precalculations;
@@ -208,9 +208,9 @@ namespace embree
     };
 
     template<int M, int K>
-      struct BezierNiIntersectorK
+      struct CurveNiIntersectorK
     {
-      typedef BezierNi<M> Primitive;
+      typedef CurveNi<M> Primitive;
       typedef Vec3vf<M> Vec3vfM;
       typedef LinearSpace3<Vec3vfM>LinearSpace3vfM;
       typedef CurvePrecalculationsK<K> Precalculations;

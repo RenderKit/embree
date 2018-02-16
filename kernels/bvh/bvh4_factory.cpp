@@ -204,11 +204,11 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createAccelSetAccelTy);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBCurve4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Curve8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBCurve8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -274,11 +274,11 @@ namespace embree
     IF_ENABLED_USER (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelVirtualSAH));
     //IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderInstancingQuadMeshSAH));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier4vBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier4iBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBBezier4iMBBuilder_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4Bezier8iBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4OBBBezier8iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBCurve4iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4Curve8iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4OBBCurve8iMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4vSceneBuilderSAH));
@@ -1049,12 +1049,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier4i::type,scene);
+    BVH4* accel = new BVH4(Curve4i::type,scene);
     Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4i());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier4iBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier4iBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4iBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Curve4iBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4i>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1062,12 +1062,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier8i::type,scene);
+    BVH4* accel = new BVH4(Curve8i::type,scene);
     Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8i());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier8iBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier8iBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve8iBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Curve8iBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve8i>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1075,12 +1075,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier4v::type,scene);
+    BVH4* accel = new BVH4(Curve4v::type,scene);
     Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4v());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier4vBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier4vBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4vBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Curve4vBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4v>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1088,12 +1088,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier4iMB::type,scene);
+    BVH4* accel = new BVH4(Curve4iMB::type,scene);
     Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector4iMB());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve4iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBCurve4iMBBuilder_OBB(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4iMB>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1101,12 +1101,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier8iMB::type,scene);
+    BVH4* accel = new BVH4(Curve8iMB::type,scene);
     Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector8iMB());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve8iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBCurve8iMBBuilder_OBB(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve8iMB>");
 
     return new AccelInstance(accel,builder,intersectors);
