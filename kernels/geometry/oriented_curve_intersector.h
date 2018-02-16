@@ -832,8 +832,9 @@ namespace embree
           solve_newton_raphson_loop(cu,cv,uv,dfdu,dfdv,rcp_J);
         }
 
-        __forceinline void solve_newton_raphson_loop(BBox1f cu, BBox1f cv, Vec2fa uv, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
+        __forceinline void solve_newton_raphson_loop(BBox1f cu, BBox1f cv, const Vec2fa& uv_in, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
         {
+          Vec2fa uv = uv_in;
           counters.numSolve++;
           
           for (size_t i=0; i<200; i++)
