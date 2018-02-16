@@ -17,6 +17,9 @@
 #include "scene_curves.h"
 #include "scene.h"
 
+#include "../subdiv/bezier_curve.h"
+#include "../subdiv/bspline_curve.h"
+
 namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
@@ -236,9 +239,13 @@ namespace embree
   void CurveGeometry::preCommit()
   {
     /* verify that stride of all time steps are identical */
-    for (unsigned int t=0; t<numTimeSteps; t++)
-      if (vertices[t].getStride() != vertices[0].getStride())
+    for (const auto& buffer : vertices)
+      if (buffer.getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+
+    for (const auto& buffer : normals)
+      if (buffer.getStride() != normals[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
 
     vertices0 = vertices[0];
     if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
@@ -410,10 +417,6 @@ namespace embree
           if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
         }
       }
-
-
-
-      
 
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const

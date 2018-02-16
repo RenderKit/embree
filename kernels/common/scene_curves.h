@@ -19,8 +19,6 @@
 #include "default.h"
 #include "geometry.h"
 #include "buffer.h"
-#include "../subdiv/bezier_curve.h"
-#include "../subdiv/bspline_curve.h"
 
 namespace embree
 {

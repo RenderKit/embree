@@ -16,6 +16,10 @@
  
 #include "curve_intersector.h"
 #include "intersector_epilog.h"
+
+#include "../subdiv/bezier_curve.h"
+#include "../subdiv/bspline_curve.h"
+
 #include "bezierNi_intersector.h"
 #include "bezierNv_intersector.h"
 #include "bezierNi_mb_intersector.h"
