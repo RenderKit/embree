@@ -209,14 +209,14 @@ namespace embree
         : LR(LR) {}
       
       __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<Vec2fa>& L, const CubicBezierCurve<Vec2fa>& R)
-        : LR(shuffle<0,1,0,1>(vfloat4(L.p0),vfloat4(R.p0)),shuffle<0,1,0,1>(vfloat4(L.p1),vfloat4(R.p1)),shuffle<0,1,0,1>(vfloat4(L.p2),vfloat4(R.p2)),shuffle<0,1,0,1>(vfloat4(L.p3),vfloat4(R.p3))) {}
+        : LR(shuffle<0,1,0,1>(vfloat4(L.v0),vfloat4(R.v0)),shuffle<0,1,0,1>(vfloat4(L.v1),vfloat4(R.v1)),shuffle<0,1,0,1>(vfloat4(L.v2),vfloat4(R.v2)),shuffle<0,1,0,1>(vfloat4(L.v3),vfloat4(R.v3))) {}
       
       __forceinline CubicBezierCurve<Vec2fa> getL() const {
-        return CubicBezierCurve<Vec2fa>(Vec2fa(LR.p0),Vec2fa(LR.p1),Vec2fa(LR.p2),Vec2fa(LR.p3));
+        return CubicBezierCurve<Vec2fa>(Vec2fa(LR.v0),Vec2fa(LR.v1),Vec2fa(LR.v2),Vec2fa(LR.v3));
       }
       
       __forceinline CubicBezierCurve<Vec2fa> getR() const {
-        return CubicBezierCurve<Vec2fa>(Vec2fa(shuffle<2,3,2,3>(LR.p0)),Vec2fa(shuffle<2,3,2,3>(LR.p1)),Vec2fa(shuffle<2,3,2,3>(LR.p2)),Vec2fa(shuffle<2,3,2,3>(LR.p3)));
+        return CubicBezierCurve<Vec2fa>(Vec2fa(shuffle<2,3,2,3>(LR.v0)),Vec2fa(shuffle<2,3,2,3>(LR.v1)),Vec2fa(shuffle<2,3,2,3>(LR.v2)),Vec2fa(shuffle<2,3,2,3>(LR.v3)));
       }
       
       __forceinline BBox<Vec2fa> bounds() const
@@ -230,7 +230,7 @@ namespace embree
       __forceinline BBox1f bounds(const Vec2fa& axis) const
       {
         const CubicBezierCurve<vfloat4> LRx = LR;
-        const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.p0),shuffle<1,0,3,2>(LR.p1),shuffle<1,0,3,2>(LR.p2),shuffle<1,0,3,2>(LR.p3));
+        const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.v0),shuffle<1,0,3,2>(LR.v1),shuffle<1,0,3,2>(LR.v2),shuffle<1,0,3,2>(LR.v3));
         const CubicBezierCurve<vfloat4> LRa = cmadd(shuffle<0>(vfloat4(axis)),LRx,shuffle<1>(vfloat4(axis))*LRy);
         const BBox<vfloat4> Lb = LRa.bounds();
         const BBox<vfloat4> Rb(shuffle<3>(Lb.lower),shuffle<3>(Lb.upper));
@@ -241,20 +241,20 @@ namespace embree
       __forceinline TensorLinearCubicBezierSurface<float> xfm(const Vec2fa& dx) const
       {
         const CubicBezierCurve<vfloat4> LRx = LR;
-        const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.p0),shuffle<1,0,3,2>(LR.p1),shuffle<1,0,3,2>(LR.p2),shuffle<1,0,3,2>(LR.p3));
+        const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.v0),shuffle<1,0,3,2>(LR.v1),shuffle<1,0,3,2>(LR.v2),shuffle<1,0,3,2>(LR.v3));
         const CubicBezierCurve<vfloat4> LRa = cmadd(shuffle<0>(vfloat4(dx)),LRx,shuffle<1>(vfloat4(dx))*LRy);
-        return TensorLinearCubicBezierSurface<float>(CubicBezierCurve<float>(LRa.p0[0],LRa.p1[0],LRa.p2[0],LRa.p3[0]),
-                                                     CubicBezierCurve<float>(LRa.p0[2],LRa.p1[2],LRa.p2[2],LRa.p3[2]));
+        return TensorLinearCubicBezierSurface<float>(CubicBezierCurve<float>(LRa.v0[0],LRa.v1[0],LRa.v2[0],LRa.v3[0]),
+                                                     CubicBezierCurve<float>(LRa.v0[2],LRa.v1[2],LRa.v2[2],LRa.v3[2]));
       }
       
       __forceinline TensorLinearCubicBezierSurface<float> xfm(const Vec2fa& dx, const Vec2fa& p) const
       {
         const vfloat4 pxyxy = shuffle<0,1,0,1>(vfloat4(p));
         const CubicBezierCurve<vfloat4> LRx = LR-pxyxy;
-        const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.p0),shuffle<1,0,3,2>(LR.p1),shuffle<1,0,3,2>(LR.p2),shuffle<1,0,3,2>(LR.p3));
+        const CubicBezierCurve<vfloat4> LRy(shuffle<1,0,3,2>(LR.v0),shuffle<1,0,3,2>(LR.v1),shuffle<1,0,3,2>(LR.v2),shuffle<1,0,3,2>(LR.v3));
         const CubicBezierCurve<vfloat4> LRa = cmadd(shuffle<0>(vfloat4(dx)),LRx,shuffle<1>(vfloat4(dx))*LRy);
-        return TensorLinearCubicBezierSurface<float>(CubicBezierCurve<float>(LRa.p0[0],LRa.p1[0],LRa.p2[0],LRa.p3[0]),
-                                                     CubicBezierCurve<float>(LRa.p0[2],LRa.p1[2],LRa.p2[2],LRa.p3[2]));
+        return TensorLinearCubicBezierSurface<float>(CubicBezierCurve<float>(LRa.v0[0],LRa.v1[0],LRa.v2[0],LRa.v3[0]),
+                                                     CubicBezierCurve<float>(LRa.v0[2],LRa.v1[2],LRa.v2[2],LRa.v3[2]));
       }
 
       __forceinline TensorLinearCubicBezierSurface clip_u(const Interval1f& u) const {
@@ -263,8 +263,8 @@ namespace embree
       
       __forceinline TensorLinearCubicBezierSurface clip_v(const Interval1f& v) const
       {
-        const CubicBezierCurve<vfloat4> LL(shuffle<0,1,0,1>(LR.p0),shuffle<0,1,0,1>(LR.p1),shuffle<0,1,0,1>(LR.p2),shuffle<0,1,0,1>(LR.p3));
-        const CubicBezierCurve<vfloat4> RR(shuffle<2,3,2,3>(LR.p0),shuffle<2,3,2,3>(LR.p1),shuffle<2,3,2,3>(LR.p2),shuffle<2,3,2,3>(LR.p3));
+        const CubicBezierCurve<vfloat4> LL(shuffle<0,1,0,1>(LR.v0),shuffle<0,1,0,1>(LR.v1),shuffle<0,1,0,1>(LR.v2),shuffle<0,1,0,1>(LR.v3));
+        const CubicBezierCurve<vfloat4> RR(shuffle<2,3,2,3>(LR.v0),shuffle<2,3,2,3>(LR.v1),shuffle<2,3,2,3>(LR.v2),shuffle<2,3,2,3>(LR.v3));
         return TensorLinearCubicBezierSurface(clerp(LL,RR,vfloat4(v.lower,v.lower,v.upper,v.upper)));
       }
       

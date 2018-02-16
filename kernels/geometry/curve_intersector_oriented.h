@@ -75,19 +75,19 @@ namespace embree
         __forceinline Interval1f bezier_clipping(const CubicBezierCurve<Interval1f>& curve)
         {
           Interval1f u = empty;
-          solve_linear(0.0f/3.0f,1.0f/3.0f,curve.p0,curve.p1,u);
-          solve_linear(0.0f/3.0f,2.0f/3.0f,curve.p0,curve.p2,u);
-          solve_linear(0.0f/3.0f,3.0f/3.0f,curve.p0,curve.p3,u);
-          solve_linear(1.0f/3.0f,2.0f/3.0f,curve.p1,curve.p2,u);
-          solve_linear(1.0f/3.0f,3.0f/3.0f,curve.p1,curve.p3,u);
-          solve_linear(2.0f/3.0f,3.0f/3.0f,curve.p2,curve.p3,u);
+          solve_linear(0.0f/3.0f,1.0f/3.0f,curve.v0,curve.v1,u);
+          solve_linear(0.0f/3.0f,2.0f/3.0f,curve.v0,curve.v2,u);
+          solve_linear(0.0f/3.0f,3.0f/3.0f,curve.v0,curve.v3,u);
+          solve_linear(1.0f/3.0f,2.0f/3.0f,curve.v1,curve.v2,u);
+          solve_linear(1.0f/3.0f,3.0f/3.0f,curve.v1,curve.v3,u);
+          solve_linear(2.0f/3.0f,3.0f/3.0f,curve.v2,curve.v3,u);
           return intersect(u,Interval1f(0.0f,1.0f));
         }
         
         __forceinline Interval1f bezier_clipping(const LinearBezierCurve<Interval1f>& curve)
         {
           Interval1f v = empty;
-          solve_linear(0.0f,1.0f,curve.p0,curve.p1,v);
+          solve_linear(0.0f,1.0f,curve.v0,curve.v1,v);
           return intersect(v,Interval1f(0.0f,1.0f));
         }
 
@@ -112,7 +112,6 @@ namespace embree
             }
             return;
           }
-
           
           const Vec2fa dv = curve2.axis_v();
           const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
@@ -150,8 +149,8 @@ namespace embree
         {
           TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
           curve2d = TensorLinearCubicBezierSurface2fa(
-            CubicBezierCurve2fa(Vec2fa(curve3dray.L.p0),Vec2fa(curve3dray.L.p1),Vec2fa(curve3dray.L.p2),Vec2fa(curve3dray.L.p3)),
-            CubicBezierCurve2fa(Vec2fa(curve3dray.R.p0),Vec2fa(curve3dray.R.p1),Vec2fa(curve3dray.R.p2),Vec2fa(curve3dray.R.p3))
+            CubicBezierCurve2fa(Vec2fa(curve3dray.L.v0),Vec2fa(curve3dray.L.v1),Vec2fa(curve3dray.L.v2),Vec2fa(curve3dray.L.v3)),
+            CubicBezierCurve2fa(Vec2fa(curve3dray.R.v0),Vec2fa(curve3dray.R.v1),Vec2fa(curve3dray.R.v2),Vec2fa(curve3dray.R.v3))
             );
           solve_bezier_clipping(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
           return isHit;
@@ -310,8 +309,8 @@ namespace embree
         {
           TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
           curve2d = TensorLinearCubicBezierSurface2fa(
-            CubicBezierCurve2fa(Vec2fa(curve3dray.L.p0),Vec2fa(curve3dray.L.p1),Vec2fa(curve3dray.L.p2),Vec2fa(curve3dray.L.p3)),
-            CubicBezierCurve2fa(Vec2fa(curve3dray.R.p0),Vec2fa(curve3dray.R.p1),Vec2fa(curve3dray.R.p2),Vec2fa(curve3dray.R.p3))
+            CubicBezierCurve2fa(Vec2fa(curve3dray.L.v0),Vec2fa(curve3dray.L.v1),Vec2fa(curve3dray.L.v2),Vec2fa(curve3dray.L.v3)),
+            CubicBezierCurve2fa(Vec2fa(curve3dray.R.v0),Vec2fa(curve3dray.R.v1),Vec2fa(curve3dray.R.v2),Vec2fa(curve3dray.R.v3))
             );
             
           const BBox2fa b2 = curve2d.bounds();

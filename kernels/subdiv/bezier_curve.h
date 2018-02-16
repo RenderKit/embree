@@ -294,64 +294,64 @@ namespace embree
   template<typename V>
     struct LinearBezierCurve
     {
-      V p0,p1;
+      V v0,v1;
       
       __forceinline LinearBezierCurve () {}
       
       __forceinline LinearBezierCurve (const LinearBezierCurve& other)
-        : p0(other.p0), p1(other.p1) {}
+        : v0(other.v0), v1(other.v1) {}
       
       __forceinline LinearBezierCurve& operator= (const LinearBezierCurve& other) {
-        p0 = other.p0; p1 = other.p1; return *this;
+        v0 = other.v0; v1 = other.v1; return *this;
       }
         
-        __forceinline LinearBezierCurve (const V& p0, const V& p1)
-          : p0(p0), p1(p1) {}
+        __forceinline LinearBezierCurve (const V& v0, const V& v1)
+          : v0(v0), v1(v1) {}
       
-      __forceinline V begin() const { return p0; }
-      __forceinline V end  () const { return p1; }
+      __forceinline V begin() const { return v0; }
+      __forceinline V end  () const { return v1; }
       
       bool hasRoot() const;
       
       friend std::ostream& operator<<(std::ostream& cout, const LinearBezierCurve& a) {
-        return cout << "LinearBezierCurve (" << a.p0 << ", " << a.p1 << ")";
+        return cout << "LinearBezierCurve (" << a.v0 << ", " << a.v1 << ")";
       }
     };
   
   template<> __forceinline bool LinearBezierCurve<Interval1f>::hasRoot() const {
-    return numRoots(p0,p1);
+    return numRoots(v0,v1);
   }
   
   template<typename V>
     struct QuadraticBezierCurve
     {
-      V p0,p1,p2;
+      V v0,v1,v2;
       
       __forceinline QuadraticBezierCurve () {}
       
       __forceinline QuadraticBezierCurve (const QuadraticBezierCurve& other)
-        : p0(other.p0), p1(other.p1), p2(other.p2) {}
+        : v0(other.v0), v1(other.v1), v2(other.v2) {}
       
       __forceinline QuadraticBezierCurve& operator= (const QuadraticBezierCurve& other) {
-        p0 = other.p0; p1 = other.p1; p2 = other.p2; return *this;
+        v0 = other.v0; v1 = other.v1; v2 = other.v2; return *this;
       }
         
-        __forceinline QuadraticBezierCurve (const V& p0, const V& p1, const V& p2)
-          : p0(p0), p1(p1), p2(p2) {}
+        __forceinline QuadraticBezierCurve (const V& v0, const V& v1, const V& v2)
+          : v0(v0), v1(v1), v2(v2) {}
       
-      __forceinline V begin() const { return p0; }
-      __forceinline V end  () const { return p2; }
+      __forceinline V begin() const { return v0; }
+      __forceinline V end  () const { return v2; }
       
       __forceinline V interval() const {
-        return merge(p0,p1,p2);
+        return merge(v0,v1,v2);
       }
       
       __forceinline BBox<V> bounds() const {
-        return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2));
+        return merge(BBox<V>(v0),BBox<V>(v1),BBox<V>(v2));
       }
       
       friend std::ostream& operator<<(std::ostream& cout, const QuadraticBezierCurve& a) {
-        return cout << "QuadraticBezierCurve ( (" << a.u.lower << ", " << a.u.upper << "), " << a.p0 << ", " << a.p1 << ", " << a.p2 << ")";
+        return cout << "QuadraticBezierCurve ( (" << a.u.lower << ", " << a.u.upper << "), " << a.v0 << ", " << a.v1 << ", " << a.v2 << ")";
       }
     };
   
@@ -363,71 +363,71 @@ namespace embree
   template<typename V>
     struct CubicBezierCurve
     {
-      V p0,p1,p2,p3;
+      V v0,v1,v2,v3;
       
       __forceinline CubicBezierCurve () {}
       
       template<typename T1>
       __forceinline CubicBezierCurve (const CubicBezierCurve<T1>& other)
-      : p0(other.p0), p1(other.p1), p2(other.p2), p3(other.p3) {}
+      : v0(other.v0), v1(other.v1), v2(other.v2), v3(other.v3) {}
       
       __forceinline CubicBezierCurve& operator= (const CubicBezierCurve& other) {
-        p0 = other.p0; p1 = other.p1; p2 = other.p2; p3 = other.p3; return *this;
+        v0 = other.v0; v1 = other.v1; v2 = other.v2; v3 = other.v3; return *this;
       }
         
-        __forceinline CubicBezierCurve (const V& p0, const V& p1, const V& p2, const V& p3)
-          : p0(p0), p1(p1), p2(p2), p3(p3) {}
+        __forceinline CubicBezierCurve (const V& v0, const V& v1, const V& v2, const V& v3)
+          : v0(v0), v1(v1), v2(v2), v3(v3) {}
       
-      __forceinline V begin() const { return p0; }
-      __forceinline V end  () const { return p3; }
+      __forceinline V begin() const { return v0; }
+      __forceinline V end  () const { return v3; }
       
       __forceinline CubicBezierCurve<float> xfm(const V& dx) const {
-        return CubicBezierCurve<float>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
+        return CubicBezierCurve<float>(dot(v0,dx),dot(v1,dx),dot(v2,dx),dot(v3,dx));
       }
       
       __forceinline CubicBezierCurve<vfloatx> vxfm(const V& dx) const {
-        return CubicBezierCurve<vfloatx>(dot(p0,dx),dot(p1,dx),dot(p2,dx),dot(p3,dx));
+        return CubicBezierCurve<vfloatx>(dot(v0,dx),dot(v1,dx),dot(v2,dx),dot(v3,dx));
       }
       
       __forceinline CubicBezierCurve<float> xfm(const V& dx, const V& p) const {
-        return CubicBezierCurve<float>(dot(p0-p,dx),dot(p1-p,dx),dot(p2-p,dx),dot(p3-p,dx));
+        return CubicBezierCurve<float>(dot(v0-p,dx),dot(v1-p,dx),dot(v2-p,dx),dot(v3-p,dx));
       }
       
       __forceinline CubicBezierCurve<Vec2fa> xfm(const V& dx, const V& dy, const V& p) const;
       
       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const
       {
-        const Vec3fa q0 = xfmVector(space,p0-p);
-        const Vec3fa q1 = xfmVector(space,p1-p);
-        const Vec3fa q2 = xfmVector(space,p2-p);
-        const Vec3fa q3 = xfmVector(space,p3-p);
+        const Vec3fa q0 = xfmVector(space,v0-p);
+        const Vec3fa q1 = xfmVector(space,v1-p);
+        const Vec3fa q2 = xfmVector(space,v2-p);
+        const Vec3fa q3 = xfmVector(space,v3-p);
         return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
       }
       
       __forceinline int maxRoots() const;
       
       __forceinline BBox<V> bounds() const {
-        return merge(BBox<V>(p0),BBox<V>(p1),BBox<V>(p2),BBox<V>(p3));
+        return merge(BBox<V>(v0),BBox<V>(v1),BBox<V>(v2),BBox<V>(v3));
       }
       
       __forceinline friend CubicBezierCurve operator +( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
-        return CubicBezierCurve(a.p0+b.p0,a.p1+b.p1,a.p2+b.p2,a.p3+b.p3);
+        return CubicBezierCurve(a.v0+b.v0,a.v1+b.v1,a.v2+b.v2,a.v3+b.v3);
       }
       
       __forceinline friend CubicBezierCurve operator -( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
-        return CubicBezierCurve(a.p0-b.p0,a.p1-b.p1,a.p2-b.p2,a.p3-b.p3);
+        return CubicBezierCurve(a.v0-b.v0,a.v1-b.v1,a.v2-b.v2,a.v3-b.v3);
       }
       
       __forceinline friend CubicBezierCurve operator -( const CubicBezierCurve& a, const V& b ) {
-        return CubicBezierCurve(a.p0-b,a.p1-b,a.p2-b,a.p3-b);
+        return CubicBezierCurve(a.v0-b,a.v1-b,a.v2-b,a.v3-b);
       }
       
       __forceinline friend CubicBezierCurve operator *( const V& a, const CubicBezierCurve& b ) {
-        return CubicBezierCurve(a*b.p0,a*b.p1,a*b.p2,a*b.p3);
+        return CubicBezierCurve(a*b.v0,a*b.v1,a*b.v2,a*b.v3);
       }
       
       __forceinline friend CubicBezierCurve cmadd( const V& a, const CubicBezierCurve& b,  const CubicBezierCurve& c) {
-        return CubicBezierCurve(madd(a,b.p0,c.p0),madd(a,b.p1,c.p1),madd(a,b.p2,c.p2),madd(a,b.p3,c.p3));
+        return CubicBezierCurve(madd(a,b.v0,c.v0),madd(a,b.v1,c.v1),madd(a,b.v2,c.v2),madd(a,b.v3,c.v3));
       }
       
       __forceinline friend CubicBezierCurve clerp ( const CubicBezierCurve& a, const CubicBezierCurve& b, const V& t ) {
@@ -435,15 +435,15 @@ namespace embree
       }
       
       __forceinline friend CubicBezierCurve merge ( const CubicBezierCurve& a, const CubicBezierCurve& b ) {
-        return CubicBezierCurve(merge(a.p0,b.p0),merge(a.p1,b.p1),merge(a.p2,b.p2),merge(a.p3,b.p3));
+        return CubicBezierCurve(merge(a.v0,b.v0),merge(a.v1,b.v1),merge(a.v2,b.v2),merge(a.v3,b.v3));
       }
       
       __forceinline void split(CubicBezierCurve& left, CubicBezierCurve& right, const float t = 0.5f) const
       {
-        const V p00 = p0;
-        const V p01 = p1;
-        const V p02 = p2;
-        const V p03 = p3;
+        const V p00 = v0;
+        const V p01 = v1;
+        const V p02 = v2;
+        const V p03 = v3;
         
         const V p10 = lerp(p00,p01,t);
         const V p11 = lerp(p01,p02,t);
@@ -484,10 +484,10 @@ namespace embree
       
       __forceinline void eval(float t, V& p, V& dp) const
       {
-        const V p00 = p0;
-        const V p01 = p1;
-        const V p02 = p2;
-        const V p03 = p3;
+        const V p00 = v0;
+        const V p01 = v1;
+        const V p02 = v2;
+        const V p03 = v3;
         
         const V p10 = lerp(p00,p01,t);
         const V p11 = lerp(p01,p02,t);
@@ -502,10 +502,10 @@ namespace embree
       
       __forceinline V eval(float t) const
       {
-        const V p00 = p0;
-        const V p01 = p1;
-        const V p02 = p2;
-        const V p03 = p3;
+        const V p00 = v0;
+        const V p01 = v1;
+        const V p02 = v2;
+        const V p03 = v3;
         
         const V p10 = lerp(p00,p01,t);
         const V p11 = lerp(p01,p02,t);
@@ -519,9 +519,9 @@ namespace embree
       
       __forceinline V eval_dt(float t) const
       {
-        const V p00 = p1-p0;
-        const V p01 = p2-p1;
-        const V p02 = p3-p2;
+        const V p00 = v1-v0;
+        const V p01 = v2-v1;
+        const V p02 = v3-v2;
         const V p10 = lerp(p00,p01,t);
         const V p11 = lerp(p01,p02,t);
         const V p20 = lerp(p10,p11,t);
@@ -530,10 +530,10 @@ namespace embree
       
       __forceinline void evalN(const vfloatx& t, Vec2vfx& p, Vec2vfx& dp) const
       {
-        const Vec2vfx p00 = p0;
-        const Vec2vfx p01 = p1;
-        const Vec2vfx p02 = p2;
-        const Vec2vfx p03 = p3;
+        const Vec2vfx p00 = v0;
+        const Vec2vfx p01 = v1;
+        const Vec2vfx p02 = v2;
+        const Vec2vfx p03 = v3;
         
         const Vec2vfx p10 = lerp(p00,p01,t);
         const Vec2vfx p11 = lerp(p01,p02,t);
@@ -558,9 +558,9 @@ namespace embree
       
       __forceinline QuadraticBezierCurve<V> derivative() const
       {
-        const V q0 = 3.0f*(p1-p0);
-        const V q1 = 3.0f*(p2-p1);
-        const V q2 = 3.0f*(p3-p2);
+        const V q0 = 3.0f*(v1-v0);
+        const V q1 = 3.0f*(v2-v1);
+        const V q2 = 3.0f*(v3-v2);
         return QuadraticBezierCurve<V>(q0,q1,q2);
       }
       
@@ -578,7 +578,7 @@ namespace embree
       }
       
       friend std::ostream& operator<<(std::ostream& cout, const CubicBezierCurve& a) {
-        return cout << "CubicBezierCurve (" << a.p0 << ", " << a.p1 << ", " << a.p2 << ", " << a.p3 << ")";
+        return cout << "CubicBezierCurve (" << a.v0 << ", " << a.v1 << ", " << a.v2 << ", " << a.v3 << ")";
       }
     };
   
@@ -591,7 +591,7 @@ namespace embree
   {
 #if 0
     Vec3<vfloat4> p0123;
-    transpose(vfloat4(p0),vfloat4(p1),vfloat4(p2),vfloat4(p3),p0123.x,p0123.y,p0123.z);
+    transpose(vfloat4(v0),vfloat4(v1),vfloat4(v2),vfloat4(v3),p0123.x,p0123.y,p0123.z);
 #if 0 //defined(__AVX__)
     vfloat8 q0123xy = dot(Vec3<vfloat8>(p0123)-Vec3<vfloat8>(p),Vec3<vfloat8>(vfloat8(vfloat4(dx.x),vfloat4(dy.x)),vfloat8(vfloat4(dx.y),vfloat4(dy.y)),vfloat8(vfloat4(dx.z),vfloat4(dy.z))));
     vfloat4 q0123x = extract4<0>(q0123xy);
@@ -605,20 +605,20 @@ namespace embree
     return CubicBezierCurve<Vec2fa>(Vec2fa(q0),Vec2fa(q1),Vec2fa(q2),Vec2fa(q3));
 #else
 #if defined (__AVX__)
-    const vfloat8 q0xy(dot(vfloat8(vfloat4(p0-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
-    const vfloat8 q1xy(dot(vfloat8(vfloat4(p1-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
-    const vfloat8 q2xy(dot(vfloat8(vfloat4(p2-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
-    const vfloat8 q3xy(dot(vfloat8(vfloat4(p3-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+    const vfloat8 q0xy(dot(vfloat8(vfloat4(v0-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+    const vfloat8 q1xy(dot(vfloat8(vfloat4(v1-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+    const vfloat8 q2xy(dot(vfloat8(vfloat4(v2-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
+    const vfloat8 q3xy(dot(vfloat8(vfloat4(v3-p)),vfloat8(vfloat4(dx),vfloat4(dy))));
     const Vec2fa q0(unpacklo(extract4<0>(q0xy),extract4<1>(q0xy)));
     const Vec2fa q1(unpacklo(extract4<0>(q1xy),extract4<1>(q1xy)));
     const Vec2fa q2(unpacklo(extract4<0>(q2xy),extract4<1>(q2xy)));
     const Vec2fa q3(unpacklo(extract4<0>(q3xy),extract4<1>(q3xy)));
     return CubicBezierCurve<Vec2fa>(q0,q1,q2,q3);
 #else
-    const Vec2fa q0(dot(p0-p,dx), dot(p0-p,dy));
-    const Vec2fa q1(dot(p1-p,dx), dot(p1-p,dy));
-    const Vec2fa q2(dot(p2-p,dx), dot(p2-p,dy));
-    const Vec2fa q3(dot(p3-p,dx), dot(p3-p,dy));
+    const Vec2fa q0(dot(v0-p,dx), dot(v0-p,dy));
+    const Vec2fa q1(dot(v1-p,dx), dot(v1-p,dy));
+    const Vec2fa q2(dot(v2-p,dx), dot(v2-p,dy));
+    const Vec2fa q3(dot(v3-p,dx), dot(v3-p,dy));
     return CubicBezierCurve<Vec2fa>(q0,q1,q2,q3);
 #endif
 #endif
@@ -627,14 +627,14 @@ namespace embree
   template<> inline int CubicBezierCurve<float>::maxRoots() const
   {
     float eps = 1E-4f;
-    bool neg0 = p0 <= 0.0f; bool zero0 = fabs(p0) < eps;
-    bool neg1 = p1 <= 0.0f; bool zero1 = fabs(p1) < eps;
-    bool neg2 = p2 <= 0.0f; bool zero2 = fabs(p2) < eps;
-    bool neg3 = p3 <= 0.0f; bool zero3 = fabs(p3) < eps;
+    bool neg0 = v0 <= 0.0f; bool zero0 = fabs(v0) < eps;
+    bool neg1 = v1 <= 0.0f; bool zero1 = fabs(v1) < eps;
+    bool neg2 = v2 <= 0.0f; bool zero2 = fabs(v2) < eps;
+    bool neg3 = v3 <= 0.0f; bool zero3 = fabs(v3) < eps;
     return (neg0 != neg1 || zero0) + (neg1 != neg2 || zero1) + (neg2 != neg3 || zero2 || zero3);
   }
   
   template<> __forceinline int CubicBezierCurve<Interval1f>::maxRoots() const {
-    return numRoots(p0,p1) + numRoots(p1,p2) + numRoots(p2,p3);
+    return numRoots(v0,v1) + numRoots(v1,v2) + numRoots(v2,v3);
   }
 }
