@@ -69,28 +69,6 @@ namespace embree
     PrecomputedBSplineBasis() {}
     PrecomputedBSplineBasis(int shift);
 
-    template<typename T>
-    __forceinline Vec4<T> eval(const int u, const int size) 
-    {
-      assert(size <= N);
-      assert(u <= size);
-      return Vec4<T>(T::loadu(&c0[size][u]),
-                     T::loadu(&c1[size][u]),
-                     T::loadu(&c2[size][u]),
-                     T::loadu(&c3[size][u]));            
-    }
-
-    template<typename T>
-    __forceinline Vec4<T> derivative(const int u, const int size) 
-    {
-      assert(size <= N);
-      assert(u <= size);
-      return Vec4<T>(T::loadu(&d0[size][u]),
-                     T::loadu(&d1[size][u]),
-                     T::loadu(&d2[size][u]),
-                     T::loadu(&d3[size][u]));            
-    }
-    
     /* basis for bspline evaluation */
   public:
     float c0[N+1][N+1];
@@ -213,38 +191,6 @@ namespace embree
       dp = derivative(t);
     }
 
-#if 0
-    
-    template<int M>
-      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bspline_basis0.eval<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-    
-    template<int M>
-      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bspline_basis1.eval<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bspline_basis0.derivative<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-
-    template<int M>
-      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
-    {
-      const Vec4vf<M> b = bspline_basis1.derivative<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
-    }
-
-#else
-
     template<int M>
       __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
     {
@@ -288,8 +234,6 @@ namespace embree
                        madd(vfloat<M>::loadu(&bspline_basis1.d2[size][ofs]), Vec4vf<M>(v2),
                             vfloat<M>::loadu(&bspline_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
     }
-
-#endif
 
     /* calculates bounds of bspline curve geometry */
     __forceinline BBox3fa accurateBounds() const
