@@ -221,16 +221,12 @@ namespace embree
 
       public:
 
-        /* primitive supports multiple time segments */
-        static const bool singleTimeSegment = false;
-
-        /* Returns maximum number of stored quads */
-        static __forceinline size_t max_size() { return 1; }
-
-        /* Returns required number of primitive blocks for M primitives */
-        //static __forceinline size_t blocks(size_t N) { PING; return (N+max_size()-1)/max_size(); }
-
-      public:
+      __forceinline void clear() {
+        for (size_t i=0;i<N;i++)
+          subgridIDs[i] = SubGridID(0,0,(unsigned int)-1);
+        for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN;
+        for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN;
+      }
 
         /* Default constructor */
         __forceinline SubGridQBVHN() {  }
@@ -239,23 +235,22 @@ namespace embree
         __forceinline SubGridQBVHN(const unsigned int x[N],
                                    const unsigned int y[N],
                                    const unsigned int primID[N],
+                                   const BBox3fa * const subGridBounds,
                                    const unsigned int geomID,
                                    const unsigned int items)
         {
+          PING;
+          clear();
           _geomID = geomID;
+
+          __aligned(64) typename BVHN<N>::AlignedNode node;
+          node.clear();          
           for (size_t i=0;i<items;i++)
+          {
             subgridIDs[i] = SubGridID(x[i],y[i],primID[i]);
-          for (size_t i=items;i<N;i++)
-            subgridIDs[i] = SubGridID(0,0,0);            
-        }
-
-
-        friend std::ostream& operator<<(std::ostream& cout, const SubGridQBVHN& sg) {
-          cout << "SubGridQBVHN ";
-          for (size_t i=0;i<N;i++)
-            cout << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " ), ";
-          cout << "geomID " << sg._geomID << " ";
-          return cout;
+            node.setBounds(i,subGridBounds[i]);
+          }
+          init(node);
         }
 
         __forceinline unsigned int geomID() const { return _geomID; }
@@ -268,15 +263,11 @@ namespace embree
           unsigned short y;
           unsigned int primID;
 
+          __forceinline SubGridID() {}
           __forceinline SubGridID(const unsigned int x, const unsigned int y, const unsigned int primID) :
           x(x), y(y), primID(primID) {}
 
         } subgridIDs[N];
-      private:
-        unsigned int _geomID;    // geometry ID of mesh
-
-        Vec3f start;
-        Vec3f scale;
 
         union {
           struct {
@@ -289,6 +280,11 @@ namespace embree
           };
           unsigned char all_planes[6*N];
         };
+
+        Vec3f start;
+        Vec3f scale;
+
+        unsigned int _geomID;    // geometry ID of mesh
 
         static __forceinline void init_dim(const vfloat<N> &lower,
                                            const vfloat<N> &upper,
@@ -331,14 +327,23 @@ namespace embree
           i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
 
           /* store as uchar to memory */
+          PRINT(i_floor_lower);
+          PRINT(i_ceil_upper);
+
           vint<N>::store(lower_quant,i_floor_lower);
           vint<N>::store(upper_quant,i_ceil_upper);
           start = minF;
           scale = scale_diff;
 
 #if defined(DEBUG)
+          for (size_t i=0;i<N;i++)
+            PRINT((unsigned int)lower_quant[i]);
+
           vfloat<N> extract_lower( vint<N>::load(lower_quant) );
           vfloat<N> extract_upper( vint<N>::load(upper_quant) );
+          PRINT(extract_lower);
+          PRINT(extract_upper);
+
           vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
           vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
           assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
@@ -347,21 +352,45 @@ namespace embree
         }
 
 
-        __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
+        __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::loadu(lower_x)),scale.x,vfloat<N>(start.x)); }
 
-        __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
+        __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x)),scale.x,vfloat<N>(start.x)); }
 
-        __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
+        __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::loadu(lower_y)),scale.y,vfloat<N>(start.y)); }
 
-        __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
+        __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::loadu(upper_y)),scale.y,vfloat<N>(start.y)); }
 
-        __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
+        __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::loadu(lower_z)),scale.z,vfloat<N>(start.z)); }
 
-        __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
+        __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::loadu(upper_z)),scale.z,vfloat<N>(start.z)); }
 
         template <int M>
         __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
+        __forceinline void init(typename BVHN<N>::AlignedNode& node)
+        {
+          PRINT(node);
+          init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
+          init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
+          init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
+        }
+
+        friend std::ostream& operator<<(std::ostream& cout, const SubGridQBVHN& sg) {
+          cout << "SubGridQBVHN " << std::endl;
+          for (size_t i=0;i<N;i++)
+            cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << std::endl;
+          cout << "geomID " << sg._geomID << std::endl;
+          PRINT(size_t(sg.lower_x));
+          PRINT(size_t(sg.lower_x) % 16);
+
+          cout << "lowerX " << sg.dequantizeLowerX() << std::endl;
+          cout << "upperX " << sg.dequantizeUpperX() << std::endl;
+          cout << "lowerY " << sg.dequantizeLowerY() << std::endl;
+          cout << "upperY " << sg.dequantizeUpperY() << std::endl;
+          cout << "lowerZ " << sg.dequantizeLowerZ() << std::endl;
+          cout << "upperZ " << sg.dequantizeUpperZ() << std::endl;
+          return cout;
+        }
 
       };
 
