@@ -24,11 +24,11 @@ namespace embree
   namespace isa
   {
     template<typename NativeCurve3fa, int M>
-      struct HairHit
+      struct DistanceCurveHit
     {
-      __forceinline HairHit() {}
+      __forceinline DistanceCurveHit() {}
 
-      __forceinline HairHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
+      __forceinline DistanceCurveHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
                             const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
         : U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3), valid(valid) {}
       
@@ -60,7 +60,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa>
-      struct Hair1Intersector1
+      struct DistanceCurve1Intersector1
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre,Ray& ray,
@@ -98,7 +98,7 @@ namespace embree
         /* update hit information */
         bool ishit = false;
         if (unlikely(any(valid))) {
-          HairHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
+          DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
 
@@ -128,7 +128,7 @@ namespace embree
 
              /* update hit information */
             if (unlikely(any(valid))) {
-              HairHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+              DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
               ishit = ishit | epilog(valid,hit);
             }
           }
@@ -138,7 +138,7 @@ namespace embree
     };
 
     template<typename NativeCurve3fa, int K>
-      struct Hair1IntersectorK
+      struct DistanceCurve1IntersectorK
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
@@ -182,7 +182,7 @@ namespace embree
           if (likely(none(valid))) continue;
         
           /* update hit information */
-          HairHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+          DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
         return ishit;

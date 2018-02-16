@@ -223,7 +223,7 @@ namespace embree
     }
 
     template<typename NativeCurve3fa>
-      struct BezierCurve1Intersector1
+      struct SweepCurve1Intersector1
     {
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
@@ -246,7 +246,7 @@ namespace embree
     };
 
     template<typename NativeCurve3fa, int K>
-      struct BezierCurve1IntersectorK
+      struct SweepCurve1IntersectorK
     {
       struct Ray1
       {

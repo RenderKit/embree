@@ -20,8 +20,8 @@
 #include "quad_intersector.h"
 #include "curve_intersector_precalculations.h"
 
-#define Bezier1Intersector1 Ribbon1Intersector1
-#define Bezier1IntersectorK Ribbon1IntersectorK
+#define Bezier1Intersector1 RibbonCurve1Intersector1
+#define Bezier1IntersectorK RibbonCurve1IntersectorK
 
 namespace embree
 {
@@ -174,7 +174,7 @@ namespace embree
     }
         
     template<typename NativeCurve3fa>
-      struct Ribbon1Intersector1
+      struct RibbonCurve1Intersector1
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
@@ -190,7 +190,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa, int K>
-    struct Ribbon1IntersectorK
+    struct RibbonCurve1IntersectorK
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,

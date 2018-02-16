@@ -994,11 +994,11 @@ namespace embree
       };
 
     
-    struct OrientedBezierCurve1Intersector1
+    struct OrientedCurve1Intersector1
     {
-      __forceinline OrientedBezierCurve1Intersector1() {}
+      __forceinline OrientedCurve1Intersector1() {}
       
-      __forceinline OrientedBezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
+      __forceinline OrientedCurve1Intersector1(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, 
