@@ -23,7 +23,7 @@
 
 namespace embree
 {
-  struct VirtualCurvePrimitive
+  struct VirtualCurveIntersector
   {
     typedef void (*Intersect1Ty)(void* pre, void* ray, IntersectContext* context, const void* primitive);
     typedef bool (*Occluded1Ty )(void* pre, void* ray, IntersectContext* context, const void* primitive);
@@ -66,20 +66,20 @@ namespace embree
     Intersectors vtbl[Geometry::GTY_END];
   };
 
-  template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<1>(void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
-  template<> __forceinline bool VirtualCurvePrimitive::Intersectors::occluded<1> (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(occluded1); return occluded1(pre,ray,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<1>(void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
+  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<1> (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(occluded1); return occluded1(pre,ray,context,primitive); }
       
-  template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<4>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect4); intersect4(pre,ray,k,context,primitive); }
-  template<> __forceinline bool VirtualCurvePrimitive::Intersectors::occluded<4> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded4); return occluded4(pre,ray,k,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<4>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect4); intersect4(pre,ray,k,context,primitive); }
+  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<4> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded4); return occluded4(pre,ray,k,context,primitive); }
       
 #if defined(__AVX__)
-  template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<8>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect8); intersect8(pre,ray,k,context,primitive); }
-  template<> __forceinline bool VirtualCurvePrimitive::Intersectors::occluded<8> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded8); return occluded8(pre,ray,k,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<8>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect8); intersect8(pre,ray,k,context,primitive); }
+  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<8> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded8); return occluded8(pre,ray,k,context,primitive); }
 #endif
   
 #if defined(__AVX512F__)
-  template<> __forceinline void VirtualCurvePrimitive::Intersectors::intersect<16>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect16); intersect16(pre,ray,k,context,primitive); }
-  template<> __forceinline bool VirtualCurvePrimitive::Intersectors::occluded<16> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded16); return occluded16(pre,ray,k,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<16>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect16); intersect16(pre,ray,k,context,primitive); }
+  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<16> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded16); return occluded16(pre,ray,k,context,primitive); }
 #endif
   
   namespace isa
@@ -94,7 +94,7 @@ namespace embree
         assert(num == 1);
         RTCGeometryType ty = (RTCGeometryType)(*prim);
         assert(This->leafIntersector);
-        VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
+        VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
         leafIntersector.intersect<1>(&pre,&ray,context,prim);
       }
       
@@ -103,7 +103,7 @@ namespace embree
         assert(num == 1);
         RTCGeometryType ty = (RTCGeometryType)(*prim);
         assert(This->leafIntersector);
-        VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
+        VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
         return leafIntersector.occluded<1>(&pre,&ray,context,prim);
       }
     };
@@ -119,7 +119,7 @@ namespace embree
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
           assert(This->leafIntersector);
-          VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
+          VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
           size_t mask = movemask(valid_i);
           while (mask) leafIntersector.intersect<K>(&pre,&ray,__bscf(mask),context,prim);
         }
@@ -129,7 +129,7 @@ namespace embree
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
           assert(This->leafIntersector);
-          VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
+          VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
           vbool<K> valid_o = false;
           size_t mask = movemask(valid_i);
           while (mask) {
@@ -145,7 +145,7 @@ namespace embree
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
           assert(This->leafIntersector);
-          VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
+          VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
           leafIntersector.intersect<K>(&pre,&ray,k,context,prim);
         }
         
@@ -154,7 +154,7 @@ namespace embree
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
           assert(This->leafIntersector);
-          VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
+          VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
           return leafIntersector.occluded<K>(&pre,&ray,k,context,prim);
         }
       };

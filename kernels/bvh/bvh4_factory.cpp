@@ -33,12 +33,12 @@
 
 namespace embree
 {
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4i,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8i,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4v,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8v,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4iMB,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8iMB,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector4i,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8i,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector4v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector4iMB,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8iMB,void);
     
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
@@ -330,12 +330,12 @@ namespace embree
 
   void BVH4Factory::selectIntersectors(int features)
   {
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4i));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8i));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4v));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8v));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4iMB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8iMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector4i));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8i));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector4v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector4iMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8iMB));
     
     /* select intersectors1 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector1));
@@ -534,7 +534,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -549,7 +549,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -1050,7 +1050,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve4i(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve4i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4i());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4i());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4iBuilder_OBB_New(accel,scene,0);
@@ -1063,7 +1063,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve8i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8i());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector8i());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve8iBuilder_OBB_New(accel,scene,0);
@@ -1076,7 +1076,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve4v::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4v());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4v());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4vBuilder_OBB_New(accel,scene,0);
@@ -1089,7 +1089,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve4iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector4iMB());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector4iMB());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve4iMBBuilder_OBB(accel,scene,0);
@@ -1102,7 +1102,7 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve8iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector8iMB());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector8iMB());
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve8iMBBuilder_OBB(accel,scene,0);

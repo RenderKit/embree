@@ -31,7 +31,7 @@ namespace embree
     Accel* BVH8Line4iMB(Scene* scene);
 
     Accel* BVH8OBBVirtualCurve8v(Scene* scene);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8v);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector8v);
     
     Accel* BVH8Triangle4   (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH8Triangle4v  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
@@ -70,7 +70,7 @@ namespace embree
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
 
-    Accel::Intersectors BVH8OBBVirtualCurveIntersectors(BVH8* bvh, VirtualCurvePrimitive* leafIntersector);
+    Accel::Intersectors BVH8OBBVirtualCurveIntersectors(BVH8* bvh, VirtualCurveIntersector* leafIntersector);
     
     Accel::Intersectors BVH8Triangle4Intersectors(BVH8* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH8Triangle4vIntersectors(BVH8* bvh, IntersectVariant ivariant);
