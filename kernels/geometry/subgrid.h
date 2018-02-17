@@ -269,17 +269,12 @@ namespace embree
 
         } subgridIDs[N];
 
-        union {
-          struct {
-            unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
-            unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
-            unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
-            unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
-            unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
-            unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
-          };
-          unsigned char all_planes[6*N];
-        };
+        unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
+        unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
+        unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
+        unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
+        unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
+        unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children     
 
         Vec3f start;
         Vec3f scale;
@@ -288,8 +283,8 @@ namespace embree
 
         static __forceinline void init_dim(const vfloat<N> &lower,
                                            const vfloat<N> &upper,
-                                           unsigned char lower_quant[N],
-                                           unsigned char upper_quant[N],
+                                           unsigned char *lower_quant,
+                                           unsigned char *upper_quant,
                                            float &start,
                                            float &scale)
         {
@@ -327,49 +322,38 @@ namespace embree
           i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
 
           /* store as uchar to memory */
-          PRINT(i_floor_lower);
-          PRINT(i_ceil_upper);
-
           vint<N>::store(lower_quant,i_floor_lower);
           vint<N>::store(upper_quant,i_ceil_upper);
           start = minF;
           scale = scale_diff;
 
-#if defined(DEBUG)
-          for (size_t i=0;i<N;i++)
-            PRINT((unsigned int)lower_quant[i]);
-
           vfloat<N> extract_lower( vint<N>::load(lower_quant) );
           vfloat<N> extract_upper( vint<N>::load(upper_quant) );
-          PRINT(extract_lower);
-          PRINT(extract_upper);
 
           vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
           vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
           assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
           assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
-#endif
         }
 
 
-        __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::loadu(lower_x)),scale.x,vfloat<N>(start.x)); }
+        __forceinline vfloat<N> dequantizeLowerX() const {  return madd(vfloat<N>(vint<N>::load(lower_x)),vfloat<N>(scale.x),vfloat<N>(start.x)); }
 
-        __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x)),scale.x,vfloat<N>(start.x)); }
+        __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x)),vfloat<N>(scale.x),vfloat<N>(start.x)); }
 
-        __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::loadu(lower_y)),scale.y,vfloat<N>(start.y)); }
+        __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),vfloat<N>(scale.y),vfloat<N>(start.y)); }
 
-        __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::loadu(upper_y)),scale.y,vfloat<N>(start.y)); }
+        __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),vfloat<N>(scale.y),vfloat<N>(start.y)); }
 
-        __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::loadu(lower_z)),scale.z,vfloat<N>(start.z)); }
+        __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),vfloat<N>(scale.z),vfloat<N>(start.z)); }
 
-        __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::loadu(upper_z)),scale.z,vfloat<N>(start.z)); }
+        __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),vfloat<N>(scale.z),vfloat<N>(start.z)); }
 
         template <int M>
-        __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
+        __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(lower_x+offset)); }
 
         __forceinline void init(typename BVHN<N>::AlignedNode& node)
         {
-          PRINT(node);
           init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
           init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
           init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
@@ -380,9 +364,6 @@ namespace embree
           for (size_t i=0;i<N;i++)
             cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << std::endl;
           cout << "geomID " << sg._geomID << std::endl;
-          PRINT(size_t(sg.lower_x));
-          PRINT(size_t(sg.lower_x) % 16);
-
           cout << "lowerX " << sg.dequantizeLowerX() << std::endl;
           cout << "upperX " << sg.dequantizeUpperX() << std::endl;
           cout << "lowerY " << sg.dequantizeLowerY() << std::endl;

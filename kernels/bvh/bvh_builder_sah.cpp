@@ -633,7 +633,7 @@ namespace embree
         PRINT(n);
         size_t items = n; //Primitive::blocks(n);
         size_t start = set.begin();
-#if 0
+#if 1
         SubGrid* accel = (SubGrid*) alloc.malloc1(items*sizeof(SubGrid),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
@@ -650,6 +650,7 @@ namespace embree
           if (prims[start+i].geomID() != common_geomID)
             FATAL("non common geomID");
 
+        PRINT(sizeof(SubGridQBVH4));
         SubGridQBVH4* accel = (SubGridQBVH4*) alloc.malloc1(sizeof(SubGridQBVH4),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
         unsigned int x[4];
@@ -667,6 +668,7 @@ namespace embree
         new (accel) SubGridQBVH4(x,y,primID,bounds,common_geomID,items);
         PING;
         PRINT(*accel);
+        exit(0);
 #endif
         return node;
       }
