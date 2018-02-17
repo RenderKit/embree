@@ -1148,7 +1148,7 @@ namespace embree
 
     /*! BVHN Quantized Node */
 
-    struct __aligned(64) QuantizedBaseNode
+    struct __aligned(8) QuantizedBaseNode
     {
       typedef unsigned char T;
       static const T MIN_QUAN = 0;
@@ -1232,6 +1232,13 @@ namespace embree
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
         assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
 #endif
+      }
+
+      __forceinline void init_dim(AlignedNode& node)
+      {
+        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
+        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
+        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
       }
 
       __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
@@ -1326,9 +1333,7 @@ namespace embree
       __forceinline void init(AlignedNode& node)
       {
         for (size_t i=0;i<N;i++) children[i] = emptyNode;
-        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
-        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
-        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
+        init_dim(node);
       }
 
     };

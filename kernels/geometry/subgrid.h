@@ -224,8 +224,7 @@ namespace embree
       __forceinline void clear() {
         for (size_t i=0;i<N;i++)
           subgridIDs[i] = SubGridID(0,0,(unsigned int)-1);
-        for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN;
-        for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN;
+        qnode.clear();
       }
 
         /* Default constructor */
@@ -269,107 +268,22 @@ namespace embree
 
         } subgridIDs[N];
 
-        unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
-        unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
-        unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
-        unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
-        unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
-        unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children     
-
-        Vec3f start;
-        Vec3f scale;
+        typename BVHN<N>::QuantizedBaseNode qnode;
 
         unsigned int _geomID;    // geometry ID of mesh
 
-        static __forceinline void init_dim(const vfloat<N> &lower,
-                                           const vfloat<N> &upper,
-                                           unsigned char *lower_quant,
-                                           unsigned char *upper_quant,
-                                           float &start,
-                                           float &scale)
-        {
-          const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
-          const float minF = reduce_min(lower);
-          const float maxF = reduce_max(upper);
-          float diff = maxF - minF; //todo: add extracted difference here
-          float scale_diff = diff / float(MAX_QUAN);
-
-          /* accomodate floating point accuracy issues in 'diff' */
-          size_t iterations = 0;
-          while(minF + scale_diff * float(MAX_QUAN) < maxF)
-          {
-            diff = nextafter(diff, FLT_MAX);
-            scale_diff = diff / float(MAX_QUAN);
-            iterations++;
-          }
-          const float inv_diff   = float(MAX_QUAN) / diff;
-
-          vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
-          vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
-          vint<N> i_floor_lower( floor_lower );
-          vint<N> i_ceil_upper ( ceil_upper  );
-
-          i_ceil_upper = min(i_ceil_upper,(int)MAX_QUAN);
-
-          /* lower/upper correction */
-          vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
-          vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
-          i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
-          i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
-
-          /* disable invalid lanes */
-          i_floor_lower = select(m_valid,i_floor_lower,MAX_QUAN);
-          i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
-
-          /* store as uchar to memory */
-          vint<N>::store(lower_quant,i_floor_lower);
-          vint<N>::store(upper_quant,i_ceil_upper);
-          start = minF;
-          scale = scale_diff;
-
-          vfloat<N> extract_lower( vint<N>::load(lower_quant) );
-          vfloat<N> extract_upper( vint<N>::load(upper_quant) );
-
-          vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
-          vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
-          assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
-          assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
-        }
-
-
-        __forceinline vfloat<N> dequantizeLowerX() const {  return madd(vfloat<N>(vint<N>::load(lower_x)),vfloat<N>(scale.x),vfloat<N>(start.x)); }
-
-        __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x)),vfloat<N>(scale.x),vfloat<N>(start.x)); }
-
-        __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),vfloat<N>(scale.y),vfloat<N>(start.y)); }
-
-        __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),vfloat<N>(scale.y),vfloat<N>(start.y)); }
-
-        __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),vfloat<N>(scale.z),vfloat<N>(start.z)); }
-
-        __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),vfloat<N>(scale.z),vfloat<N>(start.z)); }
-
-        template <int M>
-        __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(lower_x+offset)); }
-
-        __forceinline void init(typename BVHN<N>::AlignedNode& node)
-        {
-          init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
-          init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
-          init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
-        }
 
         friend std::ostream& operator<<(std::ostream& cout, const SubGridQBVHN& sg) {
           cout << "SubGridQBVHN " << std::endl;
           for (size_t i=0;i<N;i++)
             cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << std::endl;
           cout << "geomID " << sg._geomID << std::endl;
-          cout << "lowerX " << sg.dequantizeLowerX() << std::endl;
-          cout << "upperX " << sg.dequantizeUpperX() << std::endl;
-          cout << "lowerY " << sg.dequantizeLowerY() << std::endl;
-          cout << "upperY " << sg.dequantizeUpperY() << std::endl;
-          cout << "lowerZ " << sg.dequantizeLowerZ() << std::endl;
-          cout << "upperZ " << sg.dequantizeUpperZ() << std::endl;
+          cout << "lowerX " << sg.qnode.dequantizeLowerX() << std::endl;
+          cout << "upperX " << sg.qnode.dequantizeUpperX() << std::endl;
+          cout << "lowerY " << sg.qnode.dequantizeLowerY() << std::endl;
+          cout << "upperY " << sg.qnode.dequantizeUpperY() << std::endl;
+          cout << "lowerZ " << sg.qnode.dequantizeLowerZ() << std::endl;
+          cout << "upperZ " << sg.qnode.dequantizeUpperZ() << std::endl;
           return cout;
         }
 
