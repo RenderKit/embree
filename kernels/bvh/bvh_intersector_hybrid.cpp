@@ -108,7 +108,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
         size_t lazy_node = 0;
-        PrimitiveIntersectorK::intersect(This, pre, ray, k, context, prim, num, lazy_node);
+        PrimitiveIntersectorK::intersect(This, pre, ray, k, context, prim, num, tray1, lazy_node);
 
         tray1.tfar = ray.tfar[k];
 
@@ -586,7 +586,7 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(This, pre, ray, k, context, prim, num, lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(This, pre, ray, k, context, prim, num, tray1, lazy_node)) {
 	    ray.tfar[k] = neg_inf;
 	    return true;
 	  }

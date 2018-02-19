@@ -142,8 +142,9 @@ namespace embree
           }
           return valid_o;
         }
-        
-        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+
+        template<int N, int Nx, bool robust>              
+        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
@@ -152,7 +153,8 @@ namespace embree
           leafIntersector.intersect<K>(&pre,&ray,k,context,prim);
         }
         
-        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        template<int N, int Nx, bool robust>      
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);

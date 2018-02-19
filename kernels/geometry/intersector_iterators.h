@@ -82,15 +82,17 @@ namespace embree
           }
           return !valid0;
         }
-        
-        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+
+        template<int N, int Nx, bool robust>        
+          static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             Intersector::intersect(pre,ray,k,context,prim[i]);
           }
         }
         
-        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        template<int N, int Nx, bool robust>
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector::occluded(pre,ray,k,context,prim[i]))
