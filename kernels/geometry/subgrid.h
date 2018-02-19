@@ -221,6 +221,13 @@ namespace embree
 
       public:
 
+        __forceinline size_t size() const
+        {
+          for (size_t i=0;i<N;i++)
+            if (primID(i) == -1) return i;
+          return N;
+        }
+
       __forceinline void clear() {
         for (size_t i=0;i<N;i++)
           subgridIDs[i] = SubGridID(0,0,(unsigned int)-1);
@@ -249,12 +256,19 @@ namespace embree
             subgridIDs[i] = SubGridID(x[i],y[i],primID[i]);
             node.setBounds(i,subGridBounds[i]);
           }
-          init(node);
+          qnode.init_dim(node);
         }
 
         __forceinline unsigned int geomID() const { return _geomID; }
-        __forceinline unsigned int primID(const unsigned int i) const { assert(i < N); return subgridIDs[i].primID; }
+        __forceinline unsigned int primID(const size_t i) const { assert(i < N); return subgridIDs[i].primID; }
+        __forceinline unsigned int x(const size_t i) const { assert(i < N); return subgridIDs[i].x; }
+        __forceinline unsigned int y(const size_t i) const { assert(i < N); return subgridIDs[i].y; }
 
+        __forceinline SubGrid subgrid(const size_t i) const {
+          assert(i < N);
+          assert(primID(i) != -1);
+          return SubGrid(x(i),y(i),geomID(),primID(i));
+        }
 
       public:
         struct SubGridID {
