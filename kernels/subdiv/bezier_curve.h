@@ -181,6 +181,14 @@ namespace embree
         return v3;
       }
 
+      __forceinline Vertex begin_direction() const {
+        return v1-v0;
+      }
+
+      __forceinline Vertex end_direction() const {
+        return v3-v2;
+      }
+
        __forceinline CubicBezierCurve<float> xfm(const Vertex& dx) const {
         return CubicBezierCurve<float>(dot(v0,dx),dot(v1,dx),dot(v2,dx),dot(v3,dx));
       }
