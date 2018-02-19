@@ -658,11 +658,11 @@ namespace embree
 
 
     /*! Intersects M quads with 1 ray */
-    template<bool filter>
+    template<int N, bool filter>
     struct SubGridIntersector1Moeller
     {
       //typedef SubGrid Primitive;
-      typedef SubGridQBVH4 Primitive;
+      typedef SubGridQBVHN<N> Primitive;
       typedef SubGridQuadMIntersector1MoellerTrumbore<4,filter> Precalculations;
 
       /*! Intersect a ray with the M quads and updates the hit. */
@@ -687,31 +687,27 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
 
-      template<int N, int Nx, bool robust>
+      template<int Nx, bool robust>
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
-        //vfloat<Nx> dist;
-        //size_t mask = intersectNode<N,Nx,robust>(prim->qnode,tray,dist);
-
-        num = prim->size();
-        for (size_t i=0;i<num;i++)
-          intersect(pre,ray,context,prim->subgrid(i));
-
-#if 0
+        vfloat<Nx> dist;
+        size_t mask = intersectNode(&prim->qnode,tray,dist); //FIXME: maybe do node ordering here
         while(mask != 0)
         {
-          const size_t ID = __bscf(mask);
+          const size_t ID = __bscf(mask); 
           intersect(pre,ray,context,prim->subgrid(ID));
         }
-#endif
       }
 
-      template<int N, int Nx, bool robust>        
+      template<int Nx, bool robust>        
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
-        num = prim->size();
-        for (size_t i=0; i<num; i++) {
-          if (occluded(pre,ray,context,prim->subgrid(i)))
+        vfloat<Nx> dist;
+        size_t mask = intersectNode(&prim->qnode,tray,dist); 
+        while(mask != 0)
+        {
+          const size_t ID = __bscf(mask); 
+          if (occluded(pre,ray,context,prim->subgrid(ID)))
             return true;
         }
         return false;

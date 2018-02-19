@@ -642,20 +642,20 @@ namespace embree
         }
 #else
         /* fat leaves */
-        assert(items <= 4);
+        assert(items <= N);
         PRINT(items);
         unsigned int common_geomID = prims[start].geomID();
         for (size_t i=1;i<items;i++)
           if (prims[start+i].geomID() != common_geomID)
             FATAL("non common geomID");
 
-        PRINT(sizeof(SubGridQBVH4));
-        SubGridQBVH4* accel = (SubGridQBVH4*) alloc.malloc1(sizeof(SubGridQBVH4),BVH::byteAlignment);
+        PRINT(sizeof(SubGridQBVHN<N>));
+        SubGridQBVHN<N>* accel = (SubGridQBVHN<N>*) alloc.malloc1(sizeof(SubGridQBVHN<N>),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-        unsigned int x[4];
-        unsigned int y[4];
-        unsigned int primID[4];
-        BBox3fa bounds[4];
+        unsigned int x[N];
+        unsigned int y[N];
+        unsigned int primID[N];
+        BBox3fa bounds[N];
         for (size_t i=0;i<items;i++)
         {
           const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];          
@@ -664,7 +664,7 @@ namespace embree
           primID[i] = sgrid_bd.primID;
           bounds[i] = prims[start+i].bounds();
         }
-        new (accel) SubGridQBVH4(x,y,primID,bounds,common_geomID,items);
+        new (accel) SubGridQBVHN<N>(x,y,primID,bounds,common_geomID,items);
 #endif
         return node;
       }

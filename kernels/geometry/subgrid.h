@@ -304,4 +304,6 @@ namespace embree
       };
 
       typedef SubGridQBVHN<4> SubGridQBVH4;
+      typedef SubGridQBVHN<8> SubGridQBVH8;
+
 }
