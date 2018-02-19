@@ -89,7 +89,7 @@ namespace embree
             }
           }
           
-          Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
+          Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
@@ -123,82 +123,7 @@ namespace embree
             }
           }
 
-          if (Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
-            return true;
-          
-          mask &= movemask(tNear <= vfloat<M>(ray.tfar));
-        }
-        return false;
-      }
-
-      template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_t2(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
-      {
-        vfloat<M> tNear;
-        vbool<M> valid = intersect(ray,prim,tNear);
-
-        const size_t N = prim.N;
-        size_t mask = movemask(valid);
-        while (mask)
-        {
-          const size_t i = __bscf(mask);
-          STAT3(normal.trav_prims,1,1,1);
-          const unsigned int geomID = prim.geomID(N);
-          const unsigned int primID = prim.primID(N)[i];
-          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          unsigned int vtx = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vtx);
-          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vtx);
-
-          size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
-          if (mask) {
-            const unsigned int primID1 = prim.primID(N)[i1];
-            geom->prefetchL1_vertices(geom->curve(primID1));
-            if (mask1) {
-              const size_t i2 = __bsf(mask1);
-              const unsigned int primID2 = prim.primID(N)[i2];
-              geom->prefetchL2_vertices(geom->curve(primID2));
-            }
-          }
-          
-          Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,n0,n1,n2,n3,Epilog(ray,context,geomID,primID));
-          mask &= movemask(tNear <= vfloat<M>(ray.tfar));
-        }
-      }
-
-      template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_t2(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
-      {
-        vfloat<M> tNear;
-        vbool<M> valid = intersect(ray,prim,tNear);
-
-        const size_t N = prim.N;
-        size_t mask = movemask(valid);
-        while (mask)
-        {
-          const size_t i = __bscf(mask);
-          STAT3(shadow.trav_prims,1,1,1);
-          const unsigned int geomID = prim.geomID(N);
-          const unsigned int primID = prim.primID(N)[i];
-          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          unsigned int vtx = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vtx);
-          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vtx);
-
-          size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
-          if (mask) {
-            const unsigned int primID1 = prim.primID(N)[i1];
-            geom->prefetchL1_vertices(geom->curve(primID1));
-            if (mask1) {
-              const size_t i2 = __bsf(mask1);
-              const unsigned int primID2 = prim.primID(N)[i2];
-              geom->prefetchL2_vertices(geom->curve(primID2));
-            }
-          }
-
-          if (Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,n0,n1,n2,n3,Epilog(ray,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
             return true;
           
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
@@ -277,7 +202,7 @@ namespace embree
             }
           }
 
-          Intersector().intersect(pre,ray,k,geom,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
+          Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
@@ -311,7 +236,7 @@ namespace embree
             }
           }
 
-          if (Intersector().intersect(pre,ray,k,geom,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))
             return true;
           
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));

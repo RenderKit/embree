@@ -151,17 +151,17 @@ namespace embree
     static VirtualCurveIntersector::Intersectors OrientedCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_t2<OrientedCurve1Intersector1, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_t2<OrientedCurve1Intersector1, Occluded1Epilog1<true> >;
-      //intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_t<OrientedSweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      //intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_t <OrientedSweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_t<OrientedCurve1Intersector1, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_t<OrientedCurve1Intersector1, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_t<OrientedCurve1IntersectorK<4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_t <OrientedCurve1IntersectorK<4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      //intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<OrientedSweepCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      //intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <OrientedSweepCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<OrientedCurve1IntersectorK<8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <OrientedCurve1IntersectorK<8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      //intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_t<OrientedSweepCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      //intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_t <OrientedSweepCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_t<OrientedCurve1IntersectorK<16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_t <OrientedCurve1IntersectorK<16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
