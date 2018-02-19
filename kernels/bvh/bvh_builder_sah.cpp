@@ -643,13 +643,12 @@ namespace embree
 #else
         /* fat leaves */
         assert(items <= N);
-        PRINT(items);
         unsigned int common_geomID = prims[start].geomID();
         for (size_t i=1;i<items;i++)
           if (prims[start+i].geomID() != common_geomID)
             FATAL("non common geomID");
 
-        PRINT(sizeof(SubGridQBVHN<N>));
+        //PRINT(sizeof(SubGridQBVHN<N>));
         SubGridQBVHN<N>* accel = (SubGridQBVHN<N>*) alloc.malloc1(sizeof(SubGridQBVHN<N>),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
         unsigned int x[N];

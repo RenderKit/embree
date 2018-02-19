@@ -21,9 +21,9 @@
 #include "bvh8_factory.h"
 #include "../bvh/bvh.h"
 
-#include "../geometry/bezierNv.h"
-#include "../geometry/bezierNi.h"
-#include "../geometry/bezierNi_mb.h"
+#include "../geometry/curveNv.h"
+#include "../geometry/curveNi.h"
+#include "../geometry/curveNi_mb.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
@@ -37,7 +37,7 @@
 
 namespace embree
 {
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8v,void);
   
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
@@ -184,7 +184,7 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Bezier8vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Curve8vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -242,7 +242,7 @@ namespace embree
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier8vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH8Curve8vBuilder_OBB_New));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vSceneBuilderSAH));
@@ -291,7 +291,7 @@ namespace embree
 
   void BVH8Factory::selectIntersectors(int features)
   {
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8v));
     
     /* select intersectors1 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
@@ -537,7 +537,7 @@ namespace embree
     }
   }
 
-  Accel::Intersectors BVH8Factory::BVH8OBBVirtualCurveIntersectors(BVH8* bvh, VirtualCurvePrimitive* leafIntersector)
+  Accel::Intersectors BVH8Factory::BVH8OBBVirtualCurveIntersectors(BVH8* bvh, VirtualCurveIntersector* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -870,9 +870,9 @@ namespace embree
 
   Accel* BVH8Factory::BVH8OBBVirtualCurve8v(Scene* scene)
   {
-    BVH8* accel = new BVH8(Bezier8v::type,scene);
-    Accel::Intersectors intersectors = BVH8OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8v());
-    Builder* builder = BVH8Bezier8vBuilder_OBB_New(accel,scene,0);
+    BVH8* accel = new BVH8(Curve8v::type,scene);
+    Accel::Intersectors intersectors = BVH8OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector8v());
+    Builder* builder = BVH8Curve8vBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 

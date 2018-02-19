@@ -17,9 +17,9 @@
 #include "bvh4_factory.h"
 #include "../bvh/bvh.h"
 
-#include "../geometry/bezierNv.h"
-#include "../geometry/bezierNi.h"
-#include "../geometry/bezierNi_mb.h"
+#include "../geometry/curveNv.h"
+#include "../geometry/curveNi.h"
+#include "../geometry/curveNi_mb.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
@@ -33,12 +33,12 @@
 
 namespace embree
 {
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4i,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8i,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4v,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8v,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4iMB,void);
-  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8iMB,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector4i,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8i,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector4v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector4iMB,void);
+  DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8iMB,void);
     
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
@@ -214,11 +214,11 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createAccelSetAccelTy);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBCurve4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Curve8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBCurve8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -286,11 +286,11 @@ namespace embree
     IF_ENABLED_USER (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelVirtualSAH));
     //IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderInstancingQuadMeshSAH));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier4vBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier4iBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBBezier4iMBBuilder_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4Bezier8iBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4OBBBezier8iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBCurve4iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4Curve8iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4OBBCurve8iMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4vSceneBuilderSAH));
@@ -346,12 +346,12 @@ namespace embree
 
   void BVH4Factory::selectIntersectors(int features)
   {
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4i));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8i));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4v));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8v));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4iMB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8iMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector4i));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8i));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector4v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector4iMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurveIntersector8iMB));
     
     /* select intersectors1 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector1));
@@ -559,7 +559,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -574,7 +574,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -1074,12 +1074,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier4i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4i());
+    BVH4* accel = new BVH4(Curve4i::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4i());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier4iBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier4iBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4iBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Curve4iBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4i>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1087,12 +1087,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier8i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8i());
+    BVH4* accel = new BVH4(Curve8i::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector8i());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier8iBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier8iBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve8iBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Curve8iBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve8i>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1100,12 +1100,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier4v::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4v());
+    BVH4* accel = new BVH4(Curve4v::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4v());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier4vBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier4vBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4vBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Curve4vBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4v>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1113,12 +1113,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier4iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector4iMB());
+    BVH4* accel = new BVH4(Curve4iMB::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector4iMB());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve4iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBCurve4iMBBuilder_OBB(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4iMB>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1126,12 +1126,12 @@ namespace embree
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier8iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector8iMB());
+    BVH4* accel = new BVH4(Curve8iMB::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector8iMB());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve8iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBCurve8iMBBuilder_OBB(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve8iMB>");
 
     return new AccelInstance(accel,builder,intersectors);

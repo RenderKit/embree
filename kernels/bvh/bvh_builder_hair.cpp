@@ -17,8 +17,8 @@
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/primrefgen.h"
 
-#include "../geometry/bezierNi.h"
-#include "../geometry/bezierNv.h"
+#include "../geometry/curveNi.h"
+#include "../geometry/curveNv.h"
 
 #if defined(EMBREE_GEOMETRY_CURVES)
 
@@ -47,7 +47,7 @@ namespace embree
           bvh->alloc.unshare(prims);
       
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,false>();
+        const size_t numPrimitives = scene->getNumPrimitives<CurveGeometry,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->set(BVH::emptyNode,empty,0);
@@ -119,12 +119,12 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4Bezier4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier4v>((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier4i>((BVH4*)bvh,scene); }
+    Builder* BVH4Curve4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4v>((BVH4*)bvh,scene); }
+    Builder* BVH4Curve4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH8Bezier8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier8v>((BVH8*)bvh,scene); }
-    Builder* BVH4Bezier8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier8i>((BVH4*)bvh,scene); }
+    Builder* BVH8Curve8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Curve8v>((BVH8*)bvh,scene); }
+    Builder* BVH4Curve8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve8i>((BVH4*)bvh,scene); }
 #endif
 
   }

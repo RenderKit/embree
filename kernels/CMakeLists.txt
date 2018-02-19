@@ -50,7 +50,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_geometry_instance.cpp
   common/scene_triangle_mesh.cpp
   common/scene_quad_mesh.cpp
-  common/scene_bezier_curves.cpp
+  common/scene_curves.cpp
   common/scene_line_segments.cpp
   common/scene_grid_mesh.cpp
 
@@ -59,7 +59,7 @@ SET(EMBREE_LIBRARY_FILES
 
   geometry/primitive.cpp
   geometry/instance_intersector.cpp
-  geometry/curve_intersector.cpp
+  geometry/curve_intersector_virtual.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -103,7 +103,7 @@ MACRO(embree_files TARGET ISA)
       
   SET(${TARGET}
     geometry/instance_intersector.cpp
-    geometry/curve_intersector.cpp
+    geometry/curve_intersector_virtual.cpp
     bvh/bvh_intersector1_bvh4.cpp)
 
   IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA} EQUAL ${AVX512SKX} OR ${ISA_LOWEST} EQUAL ${ISA})
@@ -111,7 +111,7 @@ MACRO(embree_files TARGET ISA)
     LIST(APPEND ${TARGET}
       common/scene_triangle_mesh.cpp
       common/scene_quad_mesh.cpp 
-      common/scene_bezier_curves.cpp
+      common/scene_curves.cpp
       common/scene_line_segments.cpp
       common/scene_grid_mesh.cpp
       

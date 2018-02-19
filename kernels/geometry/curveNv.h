@@ -16,15 +16,14 @@
 
 #pragma once
 
-#include "primitive.h"
-#include "bezierNi.h"
+#include "curveNi.h"
 
 namespace embree
 {
   template<int M>
-    struct BezierNv : public BezierNi<M>
+    struct CurveNv : public CurveNi<M>
   {
-    using BezierNi<M>::N;
+    using CurveNi<M>::N;
       
     struct Type : public PrimitiveType {
       Type ();
@@ -44,14 +43,14 @@ namespace embree
     static __forceinline size_t bytes(size_t N)
     {
       const size_t f = N/M, r = N%M;
-      static_assert(sizeof(BezierNv) == 22+25*M+4*16*M, "internal data layout issue");
-      return f*sizeof(BezierNv) + (r!=0)*(22 + 25*r + 4*16*r);
+      static_assert(sizeof(CurveNv) == 22+25*M+4*16*M, "internal data layout issue");
+      return f*sizeof(CurveNv) + (r!=0)*(22 + 25*r + 4*16*r);
     }
 
   public:
 
     /*! Default constructor. */
-    __forceinline BezierNv () {}
+    __forceinline CurveNv () {}
 
     /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
@@ -65,7 +64,7 @@ namespace embree
         const PrimRef& prim = prims[begin+i];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
-        NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
+        CurveGeometry* mesh = (CurveGeometry*) scene->get(geomID);
         const unsigned vtxID = mesh->curve(primID);
         Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
         Vec3fa::storeu(&this->vertices(i,N)[1],mesh->vertex(vtxID+1));
@@ -78,25 +77,25 @@ namespace embree
       __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
     {
       size_t start = set.begin();
-      size_t items = BezierNv::blocks(set.size());
-      size_t numbytes = BezierNv::bytes(set.size());
-      BezierNv* accel = (BezierNv*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      size_t items = CurveNv::blocks(set.size());
+      size_t numbytes = CurveNv::bytes(set.size());
+      CurveNv* accel = (CurveNv*) alloc.malloc1(numbytes,BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
-        accel[i].BezierNv<M>::fill(prims,start,set.end(),bvh->scene);
-        accel[i].BezierNi<M>::fill(prims,start,set.end(),bvh->scene);
+        accel[i].CurveNv<M>::fill(prims,start,set.end(),bvh->scene);
+        accel[i].CurveNi<M>::fill(prims,start,set.end(),bvh->scene);
       }
       return bvh->encodeLeaf((char*)accel,items);
     };
     
   public:
     unsigned char data[4*16*M];
-    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)BezierNi<M>::end(N)+4*i; }
-    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)BezierNi<M>::end(N)+4*i; }
+    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)CurveNi<M>::end(N)+4*i; }
+    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)CurveNi<M>::end(N)+4*i; }
   };
 
   template<int M>
-    typename BezierNv<M>::Type BezierNv<M>::type;
+    typename CurveNv<M>::Type CurveNv<M>::type;
 
-  typedef BezierNv<4> Bezier4v;
-  typedef BezierNv<8> Bezier8v;
+  typedef CurveNv<4> Curve4v;
+  typedef CurveNv<8> Curve8v;
 }

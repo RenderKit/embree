@@ -14,30 +14,49 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bspline_curve.h"
+#pragma once
+
+#include "../common/ray.h"
+#include "../common/geometry.h"
 
 namespace embree
 {
-  PrecomputedBSplineBasis::PrecomputedBSplineBasis(int dj)
+  namespace isa
   {
-    for (size_t i=0; i<=N; i++) 
+    struct CurvePrecalculations1
     {
-      for (size_t j=0; j<=N; j++) 
+      float depth_scale;
+      LinearSpace3fa ray_space;
+           
+      __forceinline CurvePrecalculations1() {}
+
+      __forceinline CurvePrecalculations1(const Ray& ray, const void* ptr)
       {
-        const float u = float(j+dj)/float(i);
-        const Vec4f f = BSplineBasis::eval(u);
-        c0[i][j] = f.x;
-        c1[i][j] = f.y;
-        c2[i][j] = f.z;
-        c3[i][j] = f.w;
-        const Vec4f d = BSplineBasis::derivative(u);
-        d0[i][j] = d.x;
-        d1[i][j] = d.y;
-        d2[i][j] = d.z;
-        d3[i][j] = d.w;
+        depth_scale = rsqrt(dot(ray.dir,ray.dir));
+        LinearSpace3fa space = frame(depth_scale*ray.dir);
+        space.vz *= depth_scale;
+        ray_space = space.transposed();
       }
-    }
+    };
+    
+    template<int K>
+      struct CurvePrecalculationsK
+    {
+      vfloat<K> depth_scale;
+      LinearSpace3fa ray_space[K];
+
+      __forceinline CurvePrecalculationsK(const vbool<K>& valid, const RayK<K>& ray)
+      {
+        size_t mask = movemask(valid);
+        depth_scale = rsqrt(dot(ray.dir,ray.dir));
+        while (mask) {
+          size_t k = __bscf(mask);
+          Vec3fa ray_dir_k = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+          LinearSpace3fa ray_space_k = frame(depth_scale[k]*ray_dir_k);
+          ray_space_k.vz *= depth_scale[k];
+          ray_space[k] = ray_space_k.transposed();
+        }
+      }
+    };
   }
-  PrecomputedBSplineBasis bspline_basis0(0);
-  PrecomputedBSplineBasis bspline_basis1(1);
 }

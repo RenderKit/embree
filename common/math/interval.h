@@ -128,7 +128,14 @@ namespace embree
   template<typename T> __forceinline Interval<T> select ( const typename T::Bool& s, const Interval<T>& t, const Interval<T>& f ) {
     return Interval<T>(select(s,t.lower,f.lower),select(s,t.upper,f.upper));
   }
-    
+
+  __forceinline int numRoots(const Interval<float>& p0, const Interval<float>& p1)
+  {
+    float eps = 1E-4f;
+    bool neg0 = p0.lower < eps; bool pos0 = p0.upper > -eps;
+    bool neg1 = p1.lower < eps; bool pos1 = p1.upper > -eps;
+    return (neg0 && pos1) || (pos0 && neg1) || (neg0 && pos0) || (neg1 && pos1);
+  }
   
   typedef Interval<float> Interval1f;
   typedef Vec2<Interval<float>> Interval2f;

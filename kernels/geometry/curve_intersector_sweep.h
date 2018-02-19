@@ -20,7 +20,7 @@
 #include "cylinder.h"
 #include "plane.h"
 #include "line_intersector.h"
-#include "bezier_curve_precalculations.h"
+#include "curve_intersector_precalculations.h"
 
 namespace embree
 {
@@ -139,7 +139,7 @@ namespace embree
       /* subdivide curve */
       const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
       const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
-      Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
+      Vec4vfx P0, dP0du; curve.veval(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
       const Vec4vfx P3 = shift_right_1(P0);
       const Vec4vfx dP3du = shift_right_1(dP0du); 
       const Vec4vfx P1 = P0 + dP0du; 
@@ -223,11 +223,11 @@ namespace embree
     }
 
     template<typename NativeCurve3fa>
-      struct BezierCurve1Intersector1
+      struct SweepCurve1Intersector1
     {
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                const CurveGeometry* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
@@ -246,7 +246,7 @@ namespace embree
     };
 
     template<typename NativeCurve3fa, int K>
-      struct BezierCurve1IntersectorK
+      struct SweepCurve1IntersectorK
     {
       struct Ray1
       {
@@ -267,7 +267,7 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
-                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const CurveGeometry* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);

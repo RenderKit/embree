@@ -23,7 +23,7 @@
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
 #include "scene_geometry_instance.h"
-#include "scene_bezier_curves.h"
+#include "scene_curves.h"
 #include "scene_line_segments.h"
 #include "scene_subdiv_mesh.h"
 #include "scene_grid_mesh.h"
@@ -339,8 +339,8 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,true>() const { return worldMB.numTriangles; }
   template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,false>() const { return world.numQuads; }
   template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,true>() const { return worldMB.numQuads; }
-  template<> __forceinline size_t Scene::getNumPrimitives<NativeCurves,false>() const { return world.numBezierCurves; }
-  template<> __forceinline size_t Scene::getNumPrimitives<NativeCurves,true>() const { return worldMB.numBezierCurves; }
+  template<> __forceinline size_t Scene::getNumPrimitives<CurveGeometry,false>() const { return world.numBezierCurves; }
+  template<> __forceinline size_t Scene::getNumPrimitives<CurveGeometry,true>() const { return worldMB.numBezierCurves; }
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,false>() const { return world.numLineSegments; }
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,true>() const { return worldMB.numLineSegments; }
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,false>() const { return world.numSubdivPatches; }

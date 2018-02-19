@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "primitive.h"
-#include "bezierNv.h"
-#include "bezierNi.h"
-#include "bezierNi_mb.h"
+#include "curveNv.h"
+#include "curveNi.h"
+#include "curveNi_mb.h"
 #include "linei.h"
 #include "triangle.h"
 #include "trianglev.h"
@@ -32,100 +32,100 @@
 
 namespace embree
 {
-  /********************** Bezier4v **************************/
+  /********************** Curve4v **************************/
 
   template<>
-  Bezier4v::Type::Type ()
-    : PrimitiveType("bezier4v",sizeof(Bezier4v),4) {}
+  Curve4v::Type::Type ()
+    : PrimitiveType("bezier4v",sizeof(Curve4v),4) {}
 
   template<>
-  size_t Bezier4v::Type::size(const char* This) const {
+  size_t Curve4v::Type::size(const char* This) const {
     return *This;
   }
 
   template<>
-  size_t Bezier4v::Type::getBytes(const char* This) const {
-    return Bezier4v::bytes(size(This));
+  size_t Curve4v::Type::getBytes(const char* This) const {
+    return Curve4v::bytes(size(This));
   }
 
-  /********************** Bezier8v **************************/
+  /********************** Curve8v **************************/
 
   template<>
-  Bezier8v::Type::Type ()
-    : PrimitiveType("bezier8v",sizeof(Bezier8v),8) {}
+  Curve8v::Type::Type ()
+    : PrimitiveType("bezier8v",sizeof(Curve8v),8) {}
 
   template<>
-  size_t Bezier8v::Type::size(const char* This) const {
+  size_t Curve8v::Type::size(const char* This) const {
     return *This;
   }
 
   template<>
-  size_t Bezier8v::Type::getBytes(const char* This) const {
-    return Bezier8v::bytes(size(This));
+  size_t Curve8v::Type::getBytes(const char* This) const {
+    return Curve8v::bytes(size(This));
   }
 
-  /********************** Bezier4i **************************/
+  /********************** Curve4i **************************/
 
   template<>
-  Bezier4i::Type::Type ()
-    : PrimitiveType("bezier4i",sizeof(Bezier4v),4) {}
+  Curve4i::Type::Type ()
+    : PrimitiveType("bezier4i",sizeof(Curve4v),4) {}
 
   template<>
-  size_t Bezier4i::Type::size(const char* This) const {
+  size_t Curve4i::Type::size(const char* This) const {
     return *This;
   }
 
   template<>
-  size_t Bezier4i::Type::getBytes(const char* This) const {
-    return Bezier4i::bytes(size(This));
+  size_t Curve4i::Type::getBytes(const char* This) const {
+    return Curve4i::bytes(size(This));
   }
 
-  /********************** Bezier8i **************************/
+  /********************** Curve8i **************************/
 
   template<>
-  Bezier8i::Type::Type ()
-    : PrimitiveType("bezier8i",sizeof(Bezier8v),8) {}
+  Curve8i::Type::Type ()
+    : PrimitiveType("bezier8i",sizeof(Curve8v),8) {}
 
   template<>
-  size_t Bezier8i::Type::size(const char* This) const {
+  size_t Curve8i::Type::size(const char* This) const {
     return *This;
   }
 
   template<>
-  size_t Bezier8i::Type::getBytes(const char* This) const {
-    return Bezier8i::bytes(size(This));
+  size_t Curve8i::Type::getBytes(const char* This) const {
+    return Curve8i::bytes(size(This));
   }
 
-  /********************** Bezier4iMB **************************/
+  /********************** Curve4iMB **************************/
 
   template<>
-  Bezier4iMB::Type::Type ()
-    : PrimitiveType("bezier4iMB",sizeof(Bezier4iMB),4) {}
+  Curve4iMB::Type::Type ()
+    : PrimitiveType("bezier4iMB",sizeof(Curve4iMB),4) {}
 
   template<>
-  size_t Bezier4iMB::Type::size(const char* This) const {
+  size_t Curve4iMB::Type::size(const char* This) const {
     return *This;
   }
 
   template<>
-  size_t Bezier4iMB::Type::getBytes(const char* This) const {
-    return Bezier4iMB::bytes(size(This));
+  size_t Curve4iMB::Type::getBytes(const char* This) const {
+    return Curve4iMB::bytes(size(This));
   }
 
-  /********************** Bezier8iMB **************************/
+  /********************** Curve8iMB **************************/
 
   template<>
-  Bezier8iMB::Type::Type ()
-    : PrimitiveType("bezier8iMB",sizeof(Bezier8iMB),8) {}
+  Curve8iMB::Type::Type ()
+    : PrimitiveType("bezier8iMB",sizeof(Curve8iMB),8) {}
 
   template<>
-  size_t Bezier8iMB::Type::size(const char* This) const {
+  size_t Curve8iMB::Type::size(const char* This) const {
     return *This;
   }
 
   template<>
-  size_t Bezier8iMB::Type::getBytes(const char* This) const {
-    return Bezier8iMB::bytes(size(This));
+  size_t Curve8iMB::Type::getBytes(const char* This) const {
+    return Curve8iMB::bytes(size(This));
   }
 
   /********************** Line4i **************************/

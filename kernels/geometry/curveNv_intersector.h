@@ -16,24 +16,24 @@
 
 #pragma once
 
-#include "bezierNv.h"
-#include "bezierNi_intersector.h"
+#include "curveNv.h"
+#include "curveNi_intersector.h"
 
 namespace embree
 {
   namespace isa
   {
     template<int M>
-      struct BezierNvIntersector1 : public BezierNiIntersector1<M>
+      struct CurveNvIntersector1 : public CurveNiIntersector1<M>
     {
-      typedef BezierNv<M> Primitive;
+      typedef CurveNv<M> Primitive;
       typedef CurvePrecalculations1 Precalculations;
 
       template<typename Intersector, typename Epilog>
         static __forceinline void intersect_t(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersector1<M>::intersect(ray,prim,tNear);
+        vbool<M> valid = CurveNiIntersector1<M>::intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -43,7 +43,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
@@ -70,7 +70,7 @@ namespace embree
         static __forceinline bool occluded_t(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersector1<M>::intersect(ray,prim,tNear);
+        vbool<M> valid = CurveNiIntersector1<M>::intersect(ray,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -80,7 +80,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
@@ -108,16 +108,16 @@ namespace embree
     };
 
     template<int M, int K>
-      struct BezierNvIntersectorK : public BezierNiIntersectorK<M,K>
+      struct CurveNvIntersectorK : public CurveNiIntersectorK<M,K>
     {
-      typedef BezierNv<M> Primitive;
+      typedef CurveNv<M> Primitive;
       typedef CurvePrecalculationsK<K> Precalculations;
 
       template<typename Intersector, typename Epilog>
         static __forceinline void intersect_t(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
+        vbool<M> valid = CurveNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -127,7 +127,7 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
@@ -154,7 +154,7 @@ namespace embree
         static __forceinline bool occluded_t(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
-        vbool<M> valid = BezierNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
+        vbool<M> valid = CurveNiIntersectorK<M,K>::intersect(ray,k,prim,tNear);
 
         const size_t N = prim.N;
         size_t mask = movemask(valid);
@@ -164,7 +164,7 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const NativeCurves* geom = (NativeCurves*) context->scene->get(geomID);
+          const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
           const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
           const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
           const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);

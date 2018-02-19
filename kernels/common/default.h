@@ -37,6 +37,7 @@
 #include "../../common/math/vec4.h"
 #include "../../common/math/vec2fa.h"
 #include "../../common/math/vec3fa.h"
+#include "../../common/math/interval.h"
 #include "../../common/math/bbox.h"
 #include "../../common/math/obbox.h"
 #include "../../common/math/lbbox.h"

@@ -35,12 +35,12 @@ namespace embree
     Accel* BVH4OBBVirtualCurve8i(Scene* scene);
     Accel* BVH4OBBVirtualCurve4iMB(Scene* scene);
     Accel* BVH4OBBVirtualCurve8iMB(Scene* scene);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4i);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8i);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4v);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8v);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4iMB);
-    DEFINE_SYMBOL2(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8iMB);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector4i);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector8i);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector4v);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector8v);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector4iMB);
+    DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector8iMB);
         
     Accel* BVH4Triangle4   (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH4Triangle4v  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::ROBUST);
@@ -75,8 +75,8 @@ namespace embree
     Accel::Intersectors BVH4Line4iIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4Line4iMBIntersectors(BVH4* bvh);
     
-    Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurvePrimitive* leafIntersector);
-    Accel::Intersectors BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurvePrimitive* leafIntersector);
+    Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector);
+    Accel::Intersectors BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector);
     
     Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh);
 
@@ -302,11 +302,11 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH4Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Bezier4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Bezier4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4OBBBezier4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Bezier8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4OBBBezier8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Curve4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Curve4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4OBBCurve4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Curve8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4OBBCurve8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
 
     DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);

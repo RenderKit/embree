@@ -26,14 +26,14 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezierNv_intersector.h"
-#include "../geometry/bezierNi_intersector.h"
-#include "../geometry/bezierNi_mb_intersector.h"
+#include "../geometry/curveNv_intersector.h"
+#include "../geometry/curveNi_intersector.h"
+#include "../geometry/curveNi_mb_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 #include "../geometry/object_intersector.h"
 #include "../geometry/subgrid_intersector.h"
-#include "../geometry/curve_intersector.h"
+#include "../geometry/curve_intersector_virtual.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 #define FORCE_SINGLE_MODE 0
