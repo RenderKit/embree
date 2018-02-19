@@ -718,14 +718,14 @@ namespace embree
 
 
     /*! Intersects M triangles with K rays. */
-    template<int K, bool filter>
+    template<int N, int K, bool filter>
     struct SubGridIntersectorKMoeller
     {
-      typedef SubGrid Primitive;
+      typedef SubGridQBVHN<N> Primitive;
       typedef SubGridQuadMIntersectorKMoellerTrumbore<4,K,filter> Precalculations;
 
       /*! Intersects K rays with M triangles. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& subgrid)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         Vec3fa vtx[16];
         const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
@@ -744,7 +744,7 @@ namespace embree
       }
 
       /*! Test for K rays if they are occluded by any of the M triangles. */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& subgrid)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         vbool<K> valid0 = valid_i;
         Vec3fa vtx[16];
@@ -766,7 +766,7 @@ namespace embree
       }
 
       /*! Intersect a ray with M triangles and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& subgrid)
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(normal.trav_prims,1,1,1);
         const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
@@ -777,7 +777,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by one of the M triangles. */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& subgrid)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(shadow.trav_prims,1,1,1);
         const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
@@ -785,6 +785,54 @@ namespace embree
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }
+
+        template<bool robust>
+          static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
+        {
+          num = prim->size();
+          for (size_t i=0;i<num;i++)
+            intersect(valid,pre,ray,context,prim->subgrid(i));
+        }
+
+        template<bool robust>        
+        static __forceinline vbool<K> occluded(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
+        {
+          num = prim->size();
+          vbool<K> valid0 = valid;
+          for (size_t i=0; i<num; i++) {
+            valid0 &= !occluded(valid0,pre,ray,context,prim->subgrid(i));
+            if (none(valid0)) break;
+          }
+          return !valid0;
+        }
+
+        template<int Nx, bool robust>        
+          static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        {
+          vfloat<Nx> dist;
+          size_t mask = intersectNode(&prim->qnode,tray,dist); //FIXME: maybe do node ordering here
+          while(mask != 0)
+          {
+            const size_t ID = __bscf(mask); 
+            intersect(pre,ray,k,context,prim->subgrid(ID));
+          }
+        }
+        
+        template<int Nx, bool robust>
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        {
+          vfloat<Nx> dist;
+          size_t mask = intersectNode(&prim->qnode,tray,dist); 
+          while(mask != 0)
+          {
+            const size_t ID = __bscf(mask); 
+            if (occluded(pre,ray,k,context,prim->subgrid(ID)))
+              return true;
+          }
+          return false;
+        }
+
+
     };
 
 

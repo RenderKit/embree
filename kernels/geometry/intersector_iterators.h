@@ -19,6 +19,7 @@
 #include "../common/scene.h"
 #include "../common/ray.h"
 #include "../bvh/node_intersector1.h"
+#include "../bvh/node_intersector_packet.h"
 
 namespace embree
 {
@@ -66,14 +67,16 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
         
-        static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        template<bool robust>
+          static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             Intersector::intersect(valid,pre,ray,context,prim[i]);
           }
         }
-        
-        static __forceinline vbool<K> occluded(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+
+        template<bool robust>        
+        static __forceinline vbool<K> occluded(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {

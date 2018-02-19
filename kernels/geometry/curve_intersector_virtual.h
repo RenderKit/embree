@@ -21,6 +21,8 @@
 #include "../common/primref.h"
 #include "curve_intersector_precalculations.h"
 #include "../bvh/node_intersector1.h"
+#include "../bvh/node_intersector_packet.h"
+
 
 namespace embree
 {
@@ -117,7 +119,8 @@ namespace embree
         typedef unsigned char Primitive;
         typedef CurvePrecalculationsK<K> Precalculations;
         
-        static __forceinline void intersect(const vbool<K>& valid_i, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        template<bool robust>        
+        static __forceinline void intersect(const vbool<K>& valid_i, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
@@ -127,7 +130,8 @@ namespace embree
           while (mask) leafIntersector.intersect<K>(&pre,&ray,__bscf(mask),context,prim);
         }
         
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        template<bool robust>        
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
           assert(num == 1);
           RTCGeometryType ty = (RTCGeometryType)(*prim);
