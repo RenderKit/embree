@@ -47,7 +47,7 @@
             2 0 0 0.3
           </positions>
           <positions>
-            -2 0 0 0.3
+            -2 0 0 1.3
             -1 0 0 0.3
             1 0 0 0.3
             2 0 0 0.3
@@ -207,6 +207,92 @@
         
         <indices>
           0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- mblur closed loop -->
+    <Transform>
+      <AffineSpace translate="10 2 -2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            0 -1.5 0 0.2
+            1 -1.5 0 0.2
+            1.5 -1 0 0.2
+            1.5  0 0 0.2
+            1.5  1 0 0.2
+            1  1.5 0 0.2
+            0  1.5 0 0.2
+            -1  1.5 0 0.2
+            -1.5  1 0 0.2
+            -1.5  0 0 0.2
+            -1.5 -1 0 0.2
+            -1 -1.5 0 0.2
+            0 -1.5 0 0.2
+          </positions>
+          <positions>
+            0 -1.5 0 0.4
+            1 -1.5 0 0.2
+            1.5 -1 0 0.2
+            1.5  0 0 0.2
+            1.5  1 0 0.2
+            1  1.0 0 0.2
+            0  1.0 0 0.2
+            -1  1.0 0 0.2
+            -1.5  1 0 0.2
+            -1.5  0 0 0.2
+            -1.5 -1 0 0.2
+            -1 -1.5 0 0.4
+            0 -1.5 0 0.4
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            -1 0 0
+            0 0 0
+            0 0 0
+            0 -1 0
+            0 0 0
+            0 0 0
+            1 0 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 0 -1
+            0 0 0
+            0 0 0
+            0 -1 0
+            0 0 0
+            0 0 0
+            1 0 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0 3 6 9
         </indices>
         
         <material>
@@ -426,6 +512,56 @@
         
       </Curves>
     </Transform>
+
+    <!-- mblur loop -->
+    <Transform>
+      <AffineSpace translate="10 1 -4"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.2
+            5 3 0 0.2
+            -5 3 0 0.2
+            2 0 -1 0.2
+          </positions>
+          <positions>
+            -2 0 0 0.2
+            8 3 0 0.2
+            -8 3 0 0.2
+            2 0 -1 0.2
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
     
     <!-- loop -->
     <Transform>
@@ -563,6 +699,56 @@
       </Curves>
     </Transform>
 
+    <!-- mblur degenerate loop -->
+    <Transform>
+      <AffineSpace translate="10 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.2
+            2 4 0 0.2
+            -2 4 0 0.2
+            2 0 0 0.2
+          </positions>
+          <positions>
+            -2 0 0 0.4
+            1 2 0 0.2
+            -1 2 0 0.2
+            2 0 0 0.4
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+    
     <!-- degenerate loop -->
     <Transform>
       <AffineSpace translate="5 1 -6"/>
@@ -700,7 +886,6 @@
     </Transform>
 
     <!-- long band using BSpline basis -->
-
     <Transform>
       <AffineSpace translate="-10 1 -8"/>
       
