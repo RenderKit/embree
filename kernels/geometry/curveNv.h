@@ -76,9 +76,12 @@ namespace embree
     template<typename BVH, typename Allocator>
       __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
     {
+      if (set.size() == 0)
+        return BVH::emptyNode;
+      
       /* fall back to CurveNi for oriented curves */
       unsigned int geomID = prims[set.begin()].geomID();
-      if (bvh->scene->get(geomID)->getType() & Geometry::GTY_SUBTYPE_ORIENTED_CURVE) {
+      if (bvh->scene->get(geomID)->getCurveType() == Geometry::GTY_SUBTYPE_ORIENTED_CURVE) {
         return CurveNi<M>::createLeaf(bvh,prims,set,alloc);
       }
       
