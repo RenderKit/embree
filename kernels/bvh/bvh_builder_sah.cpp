@@ -21,8 +21,6 @@
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
 
-#include "../geometry/bezier1v.h"
-#include "../geometry/bezier1i.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
@@ -167,7 +165,7 @@ namespace embree
 
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GROUP) {
+        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
           build_group((GeometryGroup*)mesh);
           return;
         }
@@ -702,7 +700,7 @@ namespace embree
 
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GROUP) {
+        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
           FATAL("NOT YET IMPLEMENTED"); //build_group((GeometryGroup*)mesh);
           return;
         }
@@ -718,7 +716,6 @@ namespace embree
 
 	/* skip build for empty scene */
         const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
-        PRINT(numGrids);
         size_t numPrimitives = 0;
 
         Scene::Iterator<GridMesh,false> iter(scene);
@@ -733,12 +730,14 @@ namespace embree
           }
         }
 
-        PRINT( numPrimitives );
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
           return;
         }
+
+        PRINT(numGrids);
+        PRINT( numPrimitives );
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
@@ -838,11 +837,6 @@ namespace embree
     Builder* BVH8Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode,true); }
     Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
 #endif
-#endif
-
-#if defined(EMBREE_GEOMETRY_CURVES)
-    Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,NativeCurves,Bezier1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode); }
-    Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,NativeCurves,Bezier1i>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
 #endif
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)

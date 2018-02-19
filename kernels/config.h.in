@@ -27,7 +27,6 @@
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_GEOMETRY_GRID
 #cmakedefine EMBREE_RAY_PACKETS
-#cmakedefine EMBREE_NATIVE_CURVE_BSPLINE
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
   #define IF_ENABLED_TRIS(x) x

@@ -35,7 +35,7 @@ namespace embree
     typedef HalfEdge::Edge Edge;
     
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_SUBDIV_MESH;
 
     /*! structure used to sort half edges using radix sort by their key */
     struct KeyHalfEdge 

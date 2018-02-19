@@ -23,8 +23,6 @@
 #include "../geometry/trianglei_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/bezier1v_intersector.h"
-#include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 //#include "../geometry/subdivpatch1cached_intersector.h"
@@ -142,7 +140,7 @@ namespace embree
 
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
-          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
+          PrimitiveIntersector::intersectK(m_valid, This, *inputPackets[i], context, prim, num, lazy_node);
           p.tfar = min(p.tfar, inputPackets[i]->tfar);
         };
 
@@ -257,7 +255,7 @@ namespace embree
           bits &= ~m_isec;
           TravRayKStream<K, robust>& p = packets[i];
           vbool<K> m_valid = p.tnear <= p.tfar;
-          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
+          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, This, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->tfar = select(m_hit & m_valid, vfloat<K>(neg_inf), inputPackets[i]->tfar);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         }
@@ -372,7 +370,7 @@ namespace embree
 
           RayK<K> &ray = *inputPackets[rayID / K];
           const size_t k = rayID % K;
-          if (PrimitiveIntersector::occluded(ray, k, context, prim, num, lazy_node))
+          if (PrimitiveIntersector::occluded(This, ray, k, context, prim, num, lazy_node))
           {
             ray.tfar[k] = neg_inf;
             terminated |= (size_t)1 << rayID;

@@ -25,7 +25,7 @@ namespace embree
   struct TriangleMesh : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::TRIANGLE_MESH;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_TRIANGLE_MESH;
 
     /*! triangle indices */
     struct Triangle 
@@ -221,6 +221,20 @@ namespace embree
     {
       TriangleMeshISA (Device* device)
         : TriangleMesh(device) {}
+
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!buildBounds(j,&bounds)) continue;
+          const PrimRef prim(bounds,geomID,unsigned(j));
+          pinfo.add_center2(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
     };
   }
 

@@ -23,6 +23,7 @@ namespace embree
 {
   /* name of the tutorial */
   bool embedTextures = true;
+  bool referenceMaterials = false;
   bool referenceObjects = true;
   float centerScale = 0.0f;
   Vec3fa centerTranslate(0.0f,0.0f,0.0f);
@@ -259,6 +260,11 @@ namespace embree
         embedTextures = false;
       }
 
+      /* enable material referencing */
+      else if (tag == "-reference-materials") {
+        referenceMaterials = true;
+      }
+
       /* enable object embedding */
       else if (tag == "-embed-objects") {
         referenceObjects = false;
@@ -278,7 +284,7 @@ namespace embree
 
       /* output filename */
       else if (tag == "-o") {
-        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures);
+        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures,referenceMaterials);
       }
 
       /* skip unknown command line parameter */

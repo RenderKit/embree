@@ -88,7 +88,7 @@ namespace embree
     }
 
     static __forceinline Vec3fa loadu( const void* const a ) {
-      return Vec3fa(_mm_and_ps(_mm_loadu_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
+      return Vec3fa(_mm_loadu_ps((float*)a));
     }
 
     static __forceinline void storeu ( void* ptr, const Vec3fa& v ) {
@@ -338,6 +338,10 @@ namespace embree
     return blendv_ps(f, t, s);
   }
 
+  __forceinline Vec3fa lerp(const Vec3fa& v0, const Vec3fa& v1, const float t) {
+    return madd(1.0f-t,v0,t*v1);
+  }
+
   __forceinline int maxDim ( const Vec3fa& a )
   {
     const Vec3fa b = abs(a);
@@ -353,11 +357,11 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__SSE4_1__)
-  //__forceinline Vec3fa trunc( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
+  __forceinline Vec3fa trunc( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
   __forceinline Vec3fa floor( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline Vec3fa ceil ( const Vec3fa& a ) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
 #else
-  //__forceinline Vec3fa trunc( const Vec3fa& a ) { return Vec3fa(truncf(a.x),truncf(a.y),truncf(a.z)); }
+  __forceinline Vec3fa trunc( const Vec3fa& a ) { return Vec3fa(truncf(a.x),truncf(a.y),truncf(a.z)); }
   __forceinline Vec3fa floor( const Vec3fa& a ) { return Vec3fa(floorf(a.x),floorf(a.y),floorf(a.z)); }
   __forceinline Vec3fa ceil ( const Vec3fa& a ) { return Vec3fa(ceilf (a.x),ceilf (a.y),ceilf (a.z)); }
 #endif

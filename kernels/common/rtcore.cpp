@@ -76,6 +76,18 @@ namespace embree
     return 0;
   }
 
+  RTC_API void rtcSetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop, ssize_t val)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetDeviceProperty);
+    const bool internal_prop = (size_t)prop >= 1000000 && (size_t)prop < 1000004;
+    if (!internal_prop) RTC_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
+    Lock<MutexSys> lock(g_mutex);
+    device->setProperty(prop,val);
+    RTC_CATCH_END(device);
+  }
+
   RTC_API RTCError rtcGetDeviceError(RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
@@ -809,24 +821,6 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API RTCGeometry rtcNewInstance (RTCDevice hdevice, RTCScene hsource, unsigned int numTimeSteps)
-  {
-    Device* device = (Device*) hdevice;
-    Scene* source = (Scene*) hsource;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewInstance);
-    RTC_VERIFY_HANDLE(hdevice);
-    RTC_VERIFY_HANDLE(hsource);
-#if defined(EMBREE_GEOMETRY_USER)
-    Geometry* geom = new Instance(device,source,numTimeSteps);
-    return (RTCGeometry) geom->refInc();
-#else
-    throw_RTCError(RTC_ERROR_UNKNOWN,"rtcNewInstance is not supported");
-#endif
-    RTC_CATCH_END(device);
-    return nullptr;
-  }
-
   RTC_API RTCGeometry rtcNewGeometryInstance (RTCDevice hdevice,  RTCScene hscene, unsigned geomID) 
   {
     Device* device = (Device*) hdevice;
@@ -856,7 +850,7 @@ namespace embree
     for (size_t i=0; i<N; i++) {
       RTC_VERIFY_GEOMID(geomIDs[i]);
       geometries[i] = scene->get_locked(geomIDs[i]);
-      if (geometries[i]->getType() == Geometry::GROUP)
+      if (geometries[i]->getType() == Geometry::GTY_GROUP)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometry groups cannot contain other geometry groups");
       if (geometries[i]->getType() != geometries[0]->getType())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometries inside group have to be of same type");
@@ -989,7 +983,7 @@ namespace embree
     {
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
       createTriangleMeshTy createTriangleMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createTriangleMesh);
       Geometry* geom = createTriangleMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1001,7 +995,7 @@ namespace embree
     {
 #if defined(EMBREE_GEOMETRY_QUADS)
       createQuadMeshTy createQuadMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createQuadMesh);
       Geometry* geom = createQuadMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1012,24 +1006,27 @@ namespace embree
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE:
+      
     case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE:
     {
 #if defined(EMBREE_GEOMETRY_CURVES)
       createLineSegmentsTy createLineSegments = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
-      createCurvesBezierTy createCurvesBezier = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
-      createCurvesBSplineTy createCurvesBSpline = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createLineSegments);
+      createCurvesTy createCurves = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createCurves);
       
       Geometry* geom;
       switch (type) {
-      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE       : geom = createLineSegments (device); break;
-      case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : geom = createCurvesBezier (device,ROUND_CURVE); break;
-      case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE  : geom = createCurvesBezier (device,FLAT_CURVE); break;
-      case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE: geom = createCurvesBSpline(device,ROUND_CURVE); break;
-      case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE : geom = createCurvesBSpline(device,FLAT_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE  : geom = createLineSegments (device); break;
+      case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : geom = createCurves(device,Geometry::GTY_ROUND_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE  : geom = createCurves(device,Geometry::GTY_FLAT_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE: geom = createCurves(device,Geometry::GTY_ROUND_BSPLINE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE : geom = createCurves(device,Geometry::GTY_FLAT_BSPLINE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_BSPLINE_CURVE); break;
       default:                                    geom = nullptr; break;
       }
       return (RTCGeometry) geom->refInc();
@@ -1043,6 +1040,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
       createSubdivMeshTy createSubdivMesh = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+      //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createSubdivMesh); // FIXME: this does not work for some reason?
       Geometry* geom = createSubdivMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1097,7 +1095,7 @@ namespace embree
     RTC_TRACE(rtcSetGeometryUserPrimitiveCount);
     RTC_VERIFY_HANDLE(hgeometry);
     
-    if (unlikely(geometry->type != Geometry::USER_GEOMETRY))
+    if (unlikely(geometry->getType() != Geometry::GTY_USER_GEOMETRY))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
 
     geometry->setNumPrimitives(userPrimitiveCount);

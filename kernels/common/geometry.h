@@ -19,6 +19,7 @@
 #include "default.h"
 #include "device.h"
 #include "buffer.h"
+#include "../builders/priminfo.h"
 
 namespace embree
 {
@@ -57,8 +58,66 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, QUAD_MESH = 2, BEZIER_CURVES = 4, LINE_SEGMENTS = 8, SUBDIV_MESH = 16, USER_GEOMETRY = 32, INSTANCE = 64, GROUP = 128, GRID_MESH = 256 };
-    static const int NUM_TYPES = 9;
+    enum GType
+    {
+      GTY_TRIANGLE_MESH = 0,
+      GTY_QUAD_MESH = 1,
+      GTY_SUBDIV_MESH = 2,
+      GTY_USER_GEOMETRY = 3,
+
+      GTY_FLAT_LINEAR_CURVE = 4,
+      GTY_ROUND_LINEAR_CURVE = 5,
+      GTY_ORIENTED_LINEAR_CURVE = 6,
+      
+      GTY_FLAT_BEZIER_CURVE = 8,
+      GTY_ROUND_BEZIER_CURVE = 9,
+      GTY_ORIENTED_BEZIER_CURVE = 10,
+      
+      GTY_FLAT_BSPLINE_CURVE = 12,
+      GTY_ROUND_BSPLINE_CURVE = 13,
+      GTY_ORIENTED_BSPLINE_CURVE = 14,
+      
+      GTY_INSTANCE = 15,
+      GTY_GROUP = 16,
+      GTY_GRID_MESH = 17,
+      GTY_END = 18,
+
+      GTY_SUBTYPE_FLAT_CURVE = 0,
+      GTY_SUBTYPE_ROUND_CURVE = 1,
+      GTY_SUBTYPE_ORIENTED_CURVE = 2,
+      GTY_SUBTYPE_MASK = 3,
+            
+      GTY_ROUND_CURVE = 3,
+    };
+
+    enum GTypeMask
+    {
+      MTY_TRIANGLE_MESH = 1 << GTY_TRIANGLE_MESH,
+      MTY_QUAD_MESH = 1 << GTY_QUAD_MESH,
+      MTY_SUBDIV_MESH = 1 << GTY_SUBDIV_MESH,
+      MTY_USER_GEOMETRY = 1 << GTY_USER_GEOMETRY,
+      
+      MTY_FLAT_LINEAR_CURVE = 1 << GTY_FLAT_LINEAR_CURVE,
+      MTY_ROUND_LINEAR_CURVE = 1 << GTY_ROUND_LINEAR_CURVE,
+      MTY_ORIENTED_LINEAR_CURVE = 1 << GTY_ORIENTED_LINEAR_CURVE,
+      
+      MTY_FLAT_BEZIER_CURVE = 1 << GTY_FLAT_BEZIER_CURVE,
+      MTY_ROUND_BEZIER_CURVE = 1 << GTY_ROUND_BEZIER_CURVE,
+      MTY_ORIENTED_BEZIER_CURVE = 1 << GTY_ORIENTED_BEZIER_CURVE,
+      
+      MTY_FLAT_BSPLINE_CURVE = 1 << GTY_FLAT_BSPLINE_CURVE,
+      MTY_ROUND_BSPLINE_CURVE = 1 << GTY_ROUND_BSPLINE_CURVE,
+      MTY_ORIENTED_BSPLINE_CURVE = 1 << GTY_ORIENTED_BSPLINE_CURVE,
+      
+      MTY_LINES = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE,
+      MTY_CURVES = MTY_FLAT_BEZIER_CURVE | MTY_ROUND_BEZIER_CURVE | MTY_ORIENTED_BEZIER_CURVE | MTY_FLAT_BSPLINE_CURVE | MTY_ROUND_BSPLINE_CURVE | MTY_ORIENTED_BSPLINE_CURVE,
+      
+      MTY_INSTANCE = 1 << GTY_INSTANCE,
+      MTY_GROUP = 1 << GTY_GROUP,
+      MTY_GRID_MESH = 1 << GTY_GRID_MESH,
+    };
+
+    static const char* gtype_names[GTY_END];
 
     enum State {
       MODIFIED = 0,
@@ -69,7 +128,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps);
+    Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -95,7 +154,10 @@ namespace embree
     __forceinline bool isModified() const { return state != BUILD; }
 
     /*! returns geometry type */
-    __forceinline Type getType() const { return type; }
+    __forceinline GType getType() const { return gtype; }
+
+    /*! returns geometry type mask */
+    __forceinline GTypeMask getTypeMask() const { return (GTypeMask)(1 << gtype); }
 
     /*! returns number of primitives */
     __forceinline size_t size() const { return numPrimitives; }
@@ -264,6 +326,56 @@ namespace embree
     }
 
   public:
+
+    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
+    }
+
+    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
+    }
+
+    virtual LinearSpace3fa computeAlignedSpace(const size_t primID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeAlignedSpace not implemented for this geometry"); 
+    }
+
+    virtual LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeAlignedSpace not implemented for this geometry"); 
+    }
+    
+    virtual Vec3fa computeDirection(unsigned int primID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeDirection not implemented for this geometry"); 
+    }
+
+    virtual Vec3fa computeDirection(unsigned int primID, size_t time) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeDirection not implemented for this geometry"); 
+    }
+
+    virtual BBox3fa vbounds(size_t primID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
+    }
+    
+    virtual BBox3fa vbounds(const AffineSpace3fa& space, size_t primID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
+    }
+
+    virtual BBox3fa vbounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
+    }
+
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
+    }
+    
+    virtual LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
+    }
+
+    virtual LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
+    }
+    
+  public:
     __forceinline bool hasIntersectionFilter() const { return intersectionFilterN != nullptr; }
     __forceinline bool hasOcclusionFilter() const { return occlusionFilterN != nullptr; }
 
@@ -271,7 +383,7 @@ namespace embree
     Device* device;            //!< device this geometry belongs to
     Scene* scene;              //!< pointer to scene this mesh belongs to
     unsigned geomID;           //!< internal geometry ID
-    Type type;                 //!< geometry type 
+    GType gtype;                 //!< geometry type
     unsigned int numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed
     unsigned int numTimeSteps;     //!< number of time steps

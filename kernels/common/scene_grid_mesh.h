@@ -25,7 +25,7 @@ namespace embree
   struct GridMesh : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::GRID_MESH;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_GRID_MESH;
 
     /*! grid */
     struct Grid 

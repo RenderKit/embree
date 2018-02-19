@@ -353,9 +353,4 @@ namespace embree
       }
     }
   };
-  
-#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
-  #define CurveT BSplineCurveT
-  typedef BSplineCurve3fa Curve3fa;
-#endif
 }

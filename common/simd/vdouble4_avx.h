@@ -87,6 +87,7 @@ namespace embree
       _mm256_storeu_pd(ptr, v);
     }
 
+    static __forceinline vdouble4 broadcast(const void* a) { return _mm256_set1_pd(*(double*)a); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -139,6 +140,22 @@ namespace embree
   __forceinline vdouble4 max(const vdouble4& a, double          b) { return max(a,vdouble4(b)); }
   __forceinline vdouble4 max(double          a, const vdouble4& b) { return max(vdouble4(a),b); }
   
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__FMA__)
+  __forceinline vdouble4 madd (const vdouble4& a, const vdouble4& b, const vdouble4& c) { return _mm256_fmadd_pd(a,b,c); }
+  __forceinline vdouble4 msub (const vdouble4& a, const vdouble4& b, const vdouble4& c) { return _mm256_fmsub_pd(a,b,c); }
+  __forceinline vdouble4 nmadd(const vdouble4& a, const vdouble4& b, const vdouble4& c) { return _mm256_fnmadd_pd(a,b,c); }
+  __forceinline vdouble4 nmsub(const vdouble4& a, const vdouble4& b, const vdouble4& c) { return _mm256_fnmsub_pd(a,b,c); }
+#else
+  __forceinline vdouble4 madd (const vdouble4& a, const vdouble4& b, const vdouble4& c) { return a*b+c; }
+  __forceinline vdouble4 msub (const vdouble4& a, const vdouble4& b, const vdouble4& c) { return a*b-c; }
+  __forceinline vdouble4 nmadd(const vdouble4& a, const vdouble4& b, const vdouble4& c) { return -a*b+c;}
+  __forceinline vdouble4 nmsub(const vdouble4& a, const vdouble4& b, const vdouble4& c) { return -a*b-c; }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////

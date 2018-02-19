@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Device* device, CurveType type, CurveSubtype subtype)
-    : Geometry(device,BEZIER_CURVES,0,1), type(type), subtype(subtype), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, GType gtype)
+    : Geometry(device,gtype,0,1), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
@@ -48,6 +48,8 @@ namespace embree
   void NativeCurves::setNumTimeSteps (unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
+    if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
+      normals.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   
@@ -73,6 +75,20 @@ namespace embree
       
       vertices[slot].set(buffer, offset, stride, num, format);
       vertices[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if ((getType() & GTY_SUBTYPE_MASK) != GTY_SUBTYPE_ORIENTED_CURVE)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+        
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal buffer format");
+
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal buffer slot");
+      
+      normals[slot].set(buffer, offset, stride, num, format);
+      normals[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -155,6 +171,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertices[slot].setModified(true);
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      normals[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -183,8 +205,14 @@ namespace embree
   bool NativeCurves::verify () 
   {
     /*! verify consistent size of vertex arrays */
-    if (vertices.size() == 0) return false;
+    if (vertices.size() == 0)
+      return false;
+    
     for (const auto& buffer : vertices)
+      if (vertices[0].size() != buffer.size())
+        return false;
+
+    for (const auto& buffer : normals)
       if (vertices[0].size() != buffer.size())
         return false;
 
@@ -212,22 +240,17 @@ namespace embree
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-    native_curves = (BufferView<unsigned>) curves;
-    if (native_vertices.size() != vertices.size())
-      native_vertices.resize(vertices.size());
-
-    native_vertices0 = vertices[0];
-    for (size_t i=0; i<vertices.size(); i++)
-      native_vertices[i] = (BufferView<Vec3fa>) vertices[i];
+    vertices0 = vertices[0];
+    if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
+      normals0 = normals[0];
   }
 
   void NativeCurves::postCommit() 
   {
     curves.setModified(false);
-    for (auto& buf : vertices)
-      buf.setModified(false);
-    for (auto& attrib : vertexAttribs)
-      attrib.setModified(false);
+    for (auto& buf : vertices) buf.setModified(false);
+    for (auto& buf : normals)  buf.setModified(false);
+    for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
     Geometry::postCommit();
@@ -237,8 +260,8 @@ namespace embree
 
   namespace isa
   {
-    template<typename Curve>
-    __forceinline void NativeCurvesISA::interpolate_helper(const RTCInterpolateArguments* const args)
+    template<typename Curve3fa, typename Curve4f>
+    void NativeCurvesISA<Curve3fa,Curve4f>::interpolate(const RTCInterpolateArguments* const args)
     {
       unsigned int primID = args->primID;
       float u = args->u;
@@ -272,89 +295,24 @@ namespace embree
         const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
         const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
         
-        const Curve bezier(p0,p1,p2,p3);
+        const Curve4f bezier(p0,p1,p2,p3);
         if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
         if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
         if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
       }
     }
     
-    template<typename InputCurve3fa, typename OutputCurve3fa>
-    void NativeCurvesISA::commit_helper()
+    NativeCurves* createCurves(Device* device, Geometry::GType gtype)
     {
-      if (native_curves.size() != size()) 
-      {
-        native_curves.set(new Buffer(device, size()*sizeof(unsigned int)), 0, sizeof(unsigned int), size(), RTC_FORMAT_UINT);
-        parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> r) {
-            for (size_t i=r.begin(); i<r.end(); i++) {
-              if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
-              else                              native_curves[i] = unsigned(4*i);
-            }
-          });
+      switch (gtype) {
+      case Geometry::GTY_ROUND_BEZIER_CURVE: return new NativeCurvesISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BEZIER_CURVE : return new NativeCurvesISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new NativeCurvesISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new NativeCurvesISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new NativeCurvesISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new NativeCurvesISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }
-      
-      if (native_vertices.size() != vertices.size())
-        native_vertices.resize(vertices.size());
-      
-      parallel_for(vertices.size(), [&] (const size_t i) {
-          
-          if (native_vertices[i].size() != 4*size())
-            native_vertices[i].set(new Buffer(device, 4*size()*sizeof(Vec3fa)), 0, sizeof(Vec3fa), 4*size(), RTC_FORMAT_FLOAT4);
-          
-          parallel_for(size_t(0), size(), size_t(1024), [&] ( const range<size_t> rj ) {
-              
-              for (size_t j=rj.begin(); j<rj.end(); j++)
-              {
-                const unsigned id = curves[j];
-                if (id+3 >= numVertices()) continue; // ignore invalid curves
-                const Vec3fa v0 = vertices[i][id+0];
-                const Vec3fa v1 = vertices[i][id+1];
-                const Vec3fa v2 = vertices[i][id+2];
-                const Vec3fa v3 = vertices[i][id+3];
-                const InputCurve3fa icurve(v0,v1,v2,v3);
-                OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
-                native_vertices[i].store(4*j+0,ocurve.v0);
-                native_vertices[i].store(4*j+1,ocurve.v1);
-                native_vertices[i].store(4*j+2,ocurve.v2);
-                native_vertices[i].store(4*j+3,ocurve.v3);
-              }
-            });
-        });
-      native_vertices0 = native_vertices[0];
-    }
-    
-    NativeCurves* createCurvesBezier(Device* device, CurveSubtype subtype) {
-      return new CurvesBezier(device,BEZIER_CURVE,subtype);
-    }
-    
-    void CurvesBezier::preCommit() {
-#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
-      if (isEnabled()) commit_helper<BezierCurve3fa,BSplineCurve3fa>();
-#else
-      NativeCurves::preCommit();
-#endif
-      Geometry::preCommit();
-    }
-    
-    void CurvesBezier::interpolate(const RTCInterpolateArguments* const args) {
-      interpolate_helper<BezierCurveT<vfloat4>>(args);
-    }
-    
-    NativeCurves* createCurvesBSpline(Device* device, CurveSubtype subtype) {
-      return new CurvesBSpline(device,BSPLINE_CURVE,subtype);
-    }
-    
-    void CurvesBSpline::preCommit() {
-#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
-      NativeCurves::preCommit();
-#else
-      if (isEnabled()) commit_helper<BSplineCurve3fa,BezierCurve3fa>();
-#endif
-      Geometry::preCommit();
-    }
-    
-    void CurvesBSpline::interpolate(const RTCInterpolateArguments* const args) {
-      interpolate_helper<BSplineCurveT<vfloat4>>(args);
     }
   }
 }

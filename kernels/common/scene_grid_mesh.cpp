@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   GridMesh::GridMesh (Device* device)
-    : Geometry(device,GRID_MESH,0,1)
+    : Geometry(device,GTY_GRID_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
   }

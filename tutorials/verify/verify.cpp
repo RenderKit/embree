@@ -4257,10 +4257,10 @@ namespace embree
 
       GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> sflags_quality_memory;
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_ROBUST,RTC_BUILD_QUALITY_MEDIUM),   RTC_BUILD_QUALITY_MEDIUM));
-      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,RTC_BUILD_QUALITY_LOW),RTC_BUILD_QUALITY_LOW));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE   ,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_ROBUST ,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
+      sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,RTC_BUILD_QUALITY_LOW)   , RTC_BUILD_QUALITY_LOW));
 
       push(new TestGroup("memory_consumption",false,false));
 

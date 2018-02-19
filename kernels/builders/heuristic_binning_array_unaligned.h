@@ -49,18 +49,9 @@ namespace embree
             const unsigned int primID = prims[i].primID();
             const uint64_t geomprimID = prims[i].ID64();
             if (geomprimID >= bestGeomPrimID) continue;
-            NativeCurves* mesh = (NativeCurves*) scene->get(geomID);
-            const unsigned vtxID = mesh->curve(primID);
-            const Vec3fa v0 = mesh->vertex(vtxID+0);
-            const Vec3fa v1 = mesh->vertex(vtxID+1);
-            const Vec3fa v2 = mesh->vertex(vtxID+2);
-            const Vec3fa v3 = mesh->vertex(vtxID+3);
-            const Curve3fa curve(v0,v1,v2,v3);
-            const Vec3fa p0 = curve.begin();
-            const Vec3fa p3 = curve.end();
-            const Vec3fa axis1 = normalize(p3 - p0);
-            if (sqr_length(p3-p0) > 1E-18f) {
-              axis = axis1;
+            const Vec3fa axis1 = scene->get(geomID)->computeDirection(primID);
+            if (sqr_length(axis1) > 1E-18f) {
+              axis = normalize(axis1);
               bestGeomPrimID = geomprimID;
             }
           }
@@ -73,8 +64,8 @@ namespace embree
             {
               CentGeomBBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                NativeCurves* mesh = (NativeCurves*) scene->get(prims[i].geomID());
-                bounds.extend(mesh->bounds(space,prims[i].primID()));
+                Geometry* mesh = scene->get(prims[i].geomID());
+                bounds.extend(mesh->vbounds(space,prims[i].primID()));
               }
               return bounds;
             };
@@ -93,16 +84,16 @@ namespace embree
             /*! returns center for binning */
           __forceinline Vec3fa binCenter(const PrimRef& ref) const
           {
-            NativeCurves* mesh = (NativeCurves*) scene->get(ref.geomID());
-            BBox3fa bounds = mesh->bounds(space,ref.primID());
+            Geometry* mesh = (Geometry*) scene->get(ref.geomID());
+            BBox3fa bounds = mesh->vbounds(space,ref.primID());
             return embree::center2(bounds);
           }
           
           /*! returns bounds and centroid used for binning */
           __forceinline void binBoundsAndCenter(const PrimRef& ref, BBox3fa& bounds_o, Vec3fa& center_o) const
           {
-            NativeCurves* mesh = (NativeCurves*) scene->get(ref.geomID());
-            BBox3fa bounds = mesh->bounds(space,ref.primID());
+            Geometry* mesh = (Geometry*) scene->get(ref.geomID());
+            BBox3fa bounds = mesh->vbounds(space,ref.primID());
             bounds_o = bounds;
             center_o = embree::center2(bounds);
           }
@@ -233,18 +224,15 @@ namespace embree
             const uint64_t geomprimID = prim.ID64();
             if (geomprimID >= bestGeomPrimID) continue;
             
-            const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
+            const Geometry* mesh = scene->get(geomID);
             const unsigned num_time_segments = mesh->numTimeSegments();
             const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
             if (tbounds.size() == 0) continue;
 
             const size_t t = (tbounds.begin()+tbounds.end())/2;
-            const int curve = mesh->curve(primID);
-            const Vec3fa a0 = mesh->vertex(curve+0,t);
-            const Vec3fa a3 = mesh->vertex(curve+3,t);
-            
-            if (sqr_length(a3 - a0) > 1E-18f) {
-              axis0 = normalize(a3 - a0);
+            const Vec3fa axis1 = mesh->computeDirection(primID,t);
+            if (sqr_length(axis1) > 1E-18f) {
+              axis0 = normalize(axis1);
               bestGeomPrimID = geomprimID;
             }
           }
@@ -261,16 +249,16 @@ namespace embree
           template<typename PrimRef>
           __forceinline Vec3fa binCenter(const PrimRef& ref) const
           {
-            NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
-            LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
+            Geometry* mesh = scene->get(ref.geomID());
+            LBBox3fa lbounds = mesh->vlinearBounds(space,ref.primID(),time_range);
             return center2(lbounds.interpolate(0.5f));
           }
 
           /*! returns bounds and centroid used for binning */
           __noinline void binBoundsAndCenter (const PrimRefMB& ref, BBox3fa& bounds_o, Vec3fa& center_o) const // __noinline is workaround for ICC16 bug under MacOSX
           {
-            NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
-            LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
+            Geometry* mesh = scene->get(ref.geomID());
+            LBBox3fa lbounds = mesh->vlinearBounds(space,ref.primID(),time_range);
             bounds_o = lbounds.interpolate(0.5f);
             center_o = center2(bounds_o);
           }
@@ -278,8 +266,8 @@ namespace embree
           /*! returns bounds and centroid used for binning */
           __noinline void binBoundsAndCenter (const PrimRefMB& ref, LBBox3fa& bounds_o, Vec3fa& center_o) const // __noinline is workaround for ICC16 bug under MacOSX
           {
-            NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
-            LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
+            Geometry* mesh = scene->get(ref.geomID());
+            LBBox3fa lbounds = mesh->vlinearBounds(space,ref.primID(),time_range);
             bounds_o = lbounds;
             center_o = center2(lbounds.interpolate(0.5f));
           }

@@ -20,6 +20,8 @@
 
 namespace embree
 {
+  struct Vec2fa;
+  
   ////////////////////////////////////////////////////////////////////////////////
   /// Generic 2D vector Class
   ////////////////////////////////////////////////////////////////////////////////
@@ -40,6 +42,8 @@ namespace embree
     __forceinline          Vec2( const T& x, const T& y ) : x(x), y(y) {}
 
     __forceinline Vec2( const Vec2& other ) { x = other.x; y = other.y; }
+    __forceinline Vec2( const Vec2fa& other );
+
     template<typename T1> __forceinline Vec2( const Vec2<T1>& a ) : x(T(a.x)), y(T(a.y)) {}
     template<typename T1> __forceinline Vec2& operator =( const Vec2<T1>& other ) { x = other.x; y = other.y; return *this; }
 
@@ -133,11 +137,19 @@ namespace embree
   }
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Shift Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline Vec2<T> shift_right_1( const Vec2<T>& a ) {
+    return Vec2<T>(shift_right_1(a.x),shift_right_1(a.y));
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   template<typename T> __forceinline T       dot      ( const Vec2<T>& a, const Vec2<T>& b ) { return madd(a.x,b.x,a.y*b.y); }
-
+  template<typename T> __forceinline Vec2<T> cross    ( const Vec2<T>& a )                   { return Vec2<T>(-a.y,a.x); } 
   template<typename T> __forceinline T       length   ( const Vec2<T>& a )                   { return sqrt(dot(a,a)); }
   template<typename T> __forceinline Vec2<T> normalize( const Vec2<T>& a )                   { return a*rsqrt(dot(a,a)); }
   template<typename T> __forceinline T       distance ( const Vec2<T>& a, const Vec2<T>& b ) { return length(a-b); }
@@ -163,6 +175,11 @@ namespace embree
     return Vec2<T>(select(s,t.x,f.x),select(s,t.y,f.y));
   }
 
+  template<typename T>
+    __forceinline Vec2<T> lerp(const Vec2<T>& v0, const Vec2<T>& v1, const T& t) {
+    return madd(Vec2<T>(T(1.0f)-t),v0,t*v1);
+  }
+
   template<typename T> __forceinline int maxDim ( const Vec2<T>& a )
   {
     const Vec2<T> b = abs(a);
@@ -185,4 +202,35 @@ namespace embree
   typedef Vec2<bool > Vec2b;
   typedef Vec2<int  > Vec2i;
   typedef Vec2<float> Vec2f;
+}
+
+#include "vec2fa.h"
+
+#if defined __SSE__
+#include "../simd/sse.h"
+#endif
+
+#if defined __AVX__
+#include "../simd/avx.h"
+#endif
+
+#if defined(__AVX512F__)
+#include "../simd/avx512.h"
+#endif
+
+namespace embree
+{
+  template<> __forceinline Vec2<float>::Vec2(const Vec2fa& a) : x(a.x), y(a.y) {}
+
+#if defined(__SSE__)
+  template<> __forceinline Vec2<vfloat4>::Vec2(const Vec2fa& a) : x(a.x), y(a.y) {}
+#endif
+
+#if defined(__AVX__)
+  template<> __forceinline Vec2<vfloat8>::Vec2(const Vec2fa& a) : x(a.x), y(a.y) {}
+#endif
+
+#if defined(__AVX512F__)
+  template<> __forceinline Vec2<vfloat16>::Vec2(const Vec2fa& a) : x(a.x), y(a.y) {}
+#endif
 }

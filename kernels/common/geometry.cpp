@@ -19,8 +19,29 @@
 
 namespace embree
 {
-  Geometry::Geometry (Device* device, Type type, unsigned int numPrimitives, unsigned int numTimeSteps) 
-    : device(device), scene(nullptr), geomID(0), type(type), 
+  const char* Geometry::gtype_names[Geometry::GTY_END] =
+  {
+    "triangles",
+    "quads",
+    "subdivs",
+    "usergeom",
+    "flat_linear_curve",
+    "round_linear_curve",
+    "oriented_linear_curve",
+    "",
+    "flat_bezier_curve",
+    "round_bezier_curve",
+    "oriented_bezier_curve",
+    "",
+    "flat_bspline_curve",
+    "round_bspline_curve",
+    "oriented_bspline_curve",
+    "instance",
+    "group"
+    };
+  
+  Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
+    : device(device), scene(nullptr), geomID(0), gtype(gtype),
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), quality(RTC_BUILD_QUALITY_MEDIUM),
       enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1), used(1),
@@ -161,8 +182,8 @@ namespace embree
   }
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
-  { 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY)
+  {
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
@@ -173,8 +194,8 @@ namespace embree
   }
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
-  { 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH && type != USER_GEOMETRY) 
+  {
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {

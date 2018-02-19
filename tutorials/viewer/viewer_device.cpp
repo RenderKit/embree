@@ -29,7 +29,7 @@ extern "C" int g_instancing_mode;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 bool g_subdiv_mode = false;
-
+  
 #define SPP 1
 
 #define FIXED_EDGE_TESSELLATION_VALUE 3
@@ -256,7 +256,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
   }
-
+  
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.5f);
 

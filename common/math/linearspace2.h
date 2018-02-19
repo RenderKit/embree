@@ -157,4 +157,5 @@ namespace embree
 
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace2<Vec2f> LinearSpace2f;
+  typedef LinearSpace2<Vec2fa> LinearSpace2fa;
 }

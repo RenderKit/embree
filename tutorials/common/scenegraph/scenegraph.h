@@ -32,7 +32,7 @@ namespace embree
     struct TriangleMeshNode;
 
     Ref<Node> load(const FileName& fname, bool singleObject = false);
-    void store(Ref<Node> root, const FileName& fname, bool embedTextures);
+    void store(Ref<Node> root, const FileName& fname, bool embedTextures, bool referenceMaterials);
     void extend_animation(Ref<Node> node0, Ref<Node> node1);
     void optimize_animation(Ref<Node> node0);
     void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
@@ -454,6 +454,8 @@ namespace embree
     struct MaterialNode : public Node
     {
       ALIGNED_STRUCT;
+      MaterialNode(const std::string& name = "")
+        : Node(name) {}
 
       virtual Material* material() = 0;
     };
@@ -769,7 +771,7 @@ namespace embree
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)), normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -818,6 +820,7 @@ namespace embree
     public:
       RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
+      std::vector<avector<Vertex>> normals;   //!< hair control normals (nx,ny,nz) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
       std::vector<unsigned char> flags;       //!< left, right end cap flags
 

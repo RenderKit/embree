@@ -92,13 +92,13 @@ def extract(name,modelname,prevname):
     for line in logFile:
       if line.count('BENCHMARK_BUILD ') == 1:
         numbers = line[(line.index('BENCHMARK_BUILD ')+16):].split(" ")
-        buildperf[base] = float(numbers[1])
+        buildperf[base] += float(numbers[1])
         if (prevname != ''):
           buildperf_gain[base] = 100.0*buildperf[base]/buildperf[prevBase]-100.0
-        sah   [base] = float(numbers[2])
+        sah   [base] += float(numbers[2])
         if (prevname != ''):
           sah_gain[base] = 100.0*sah[base]/sah[prevBase]-100.0
-        memory[base] = float(numbers[3])
+        memory[base] += float(numbers[3])
         if (prevname != ''):
           memory_gain[base] = 100.0*memory[base]/memory[prevBase]-100.0
       if line.count('BENCHMARK_RENDER_AVG ') == 1:

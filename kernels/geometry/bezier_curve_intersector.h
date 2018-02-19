@@ -20,6 +20,7 @@
 #include "cylinder.h"
 #include "plane.h"
 #include "line_intersector.h"
+#include "bezier_curve_precalculations.h"
 
 namespace embree
 {
@@ -34,13 +35,15 @@ namespace embree
     static const size_t numBezierSubdivisions = 3;
 #endif
 
-    template<typename NativeCurve3fa>
-      struct BezierCurveHit
+    struct BezierCurveHit
     {
       __forceinline BezierCurveHit() {}
 
       __forceinline BezierCurveHit(const float t, const float u, const Vec3fa& Ng)
         : t(t), u(u), v(0.0f), Ng(Ng) {}
+
+      __forceinline BezierCurveHit(const float t, const float u, const float v, const Vec3fa& Ng)
+        : t(t), u(u), v(v), Ng(Ng) {}
       
       __forceinline void finalize() {}
       
@@ -61,7 +64,7 @@ namespace embree
       Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-      BezierCurveHit<NativeCurve3fa> hit(tp.lower[i]+dt,u[i],Ng_o);
+      BezierCurveHit hit(tp.lower[i]+dt,u[i],Ng_o);
       return epilog(hit);
     }
 
@@ -117,7 +120,7 @@ namespace embree
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
           const Vec3fa V = cross(dPdu,R);
-          BezierCurveHit<NativeCurve3fa> hit(t,u,cross(V,U));
+          BezierCurveHit hit(t,u,cross(V,U));
           return epilog(hit);
         }
       }
@@ -222,14 +225,10 @@ namespace embree
     template<typename NativeCurve3fa>
       struct BezierCurve1Intersector1
     {
-      __forceinline BezierCurve1Intersector1() {}
-
-      __forceinline BezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
-
       template<typename Epilog>
-      __noinline bool intersect(Ray& ray,
-                                const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                const Epilog& epilog) const
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
+                                const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
 
@@ -266,13 +265,10 @@ namespace embree
         
       };
 
-      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {
-      }
-      
       template<typename Epilog>
-      __forceinline bool intersect(RayK<K>& vray, size_t k,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                   const Epilog& epilog) const
+      __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
+                                   const NativeCurves* geom, const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);

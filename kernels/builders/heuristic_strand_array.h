@@ -17,8 +17,6 @@
 #pragma once
 
 #include "priminfo.h"
-#include "../geometry/bezier1v.h"
-
 #include "../../common/algorithms/parallel_reduce.h"
 #include "../../common/algorithms/parallel_partition.h"
 
@@ -64,26 +62,20 @@ namespace embree
       __forceinline HeuristicStrandSplit (Scene* scene, PrimRef* prims)
         : scene(scene), prims(prims) {}
       
-      __forceinline const Vec3fa direction(const PrimRef& prim)
-      {
-        const Curve3fa curve = scene->get<NativeCurves>(prim.geomID())->getCurve(prim.primID());
-        return curve.end()-curve.begin();
+      __forceinline const Vec3fa direction(const PrimRef& prim) {
+        return scene->get(prim.geomID())->computeDirection(prim.primID());
       }
       
-      __forceinline const BBox3fa bounds(const PrimRef& prim)
-      {
-        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
-        return curves->bounds(prim.primID());
+      __forceinline const BBox3fa bounds(const PrimRef& prim) {
+        return scene->get(prim.geomID())->vbounds(prim.primID());
       }
 
-      __forceinline const BBox3fa bounds(const LinearSpace3fa& space, const PrimRef& prim)
-      {
-        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
-        return curves->bounds(space,prim.primID());
+      __forceinline const BBox3fa bounds(const LinearSpace3fa& space, const PrimRef& prim) {
+        return scene->get(prim.geomID())->vbounds(space,prim.primID());
       }
 
       /*! finds the best split */
-      const Split find(const range<size_t>& set)
+      const Split find(const range<size_t>& set, size_t logBlockSize)
       {
         Vec3fa axis0(0,0,1);
         uint64_t bestGeomPrimID = -1;
@@ -140,7 +132,9 @@ namespace embree
           return Split(inf,axis0,axis1);
       
         /*! calculate sah for the split */
-        const float sah = madd(float(lnum),halfArea(lbounds),float(rnum)*halfArea(rbounds));
+        const size_t lblocks = (lnum+(1<<logBlockSize)-1) >> logBlockSize;
+        const size_t rblocks = (rnum+(1<<logBlockSize)-1) >> logBlockSize;
+        const float sah = madd(float(lblocks),halfArea(lbounds),float(rblocks)*halfArea(rbounds));
         return Split(sah,axis0,axis1);
       }
 

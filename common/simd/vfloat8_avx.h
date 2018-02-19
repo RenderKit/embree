@@ -86,9 +86,25 @@ namespace embree
       return _mm256_broadcast_ps((__m128*)ptr); 
     }
 
+    static __forceinline vfloat8 load(const char* ptr) {
+#if defined(__AVX2__)
+      return _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
+#else
+      return vfloat8(vfloat4::load(ptr),vfloat4::load(ptr+4));
+#endif
+    }
+
     static __forceinline vfloat8 load(const unsigned char* ptr) {
 #if defined(__AVX2__)
       return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
+#else
+      return vfloat8(vfloat4::load(ptr),vfloat4::load(ptr+4));
+#endif
+    }
+
+    static __forceinline vfloat8 load(const short* ptr) {
+#if defined(__AVX2__)
+      return _mm256_cvtepi32_ps(_mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i*)ptr)));
 #else
       return vfloat8(vfloat4::load(ptr),vfloat4::load(ptr+4));
 #endif

@@ -156,6 +156,20 @@ namespace embree
           new (&rinfo) PrimInfoRange(center,end,right);
         }
 
+        void splitByGeometry(const range<size_t>& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        {
+          assert(range.size() > 1);
+          CentGeomBBox3fa left(empty);
+          CentGeomBBox3fa right(empty);
+          unsigned int geomID = prims[range.begin()].geomID();
+          size_t center = serial_partitioning(prims,range.begin(),range.end(),left,right,
+                                              [&] ( const PrimRef& prim ) { return prim.geomID() == geomID; },
+                                              [ ] ( CentGeomBBox3fa& a, const PrimRef& ref ) { a.extend_center2(ref); });
+
+          new (&linfo) PrimInfoRange(range.begin(),center,left);
+          new (&rinfo) PrimInfoRange(center,range.end(),right);
+        }
+
       private:
         PrimRef* const prims;
       };

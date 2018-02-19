@@ -55,7 +55,7 @@ namespace embree
         Geometry* geom = scene->geometries[i].ptr;
         if (geom == nullptr) return nullptr;
         if (!all && !geom->isEnabled()) return nullptr;
-        if (geom->getType() != Ty::geom_type) return nullptr;
+        if (!(geom->getTypeMask() & Ty::geom_type)) return nullptr;
         if ((geom->numTimeSteps != 1) != mblur) return nullptr;
         return (Ty*) geom;
       }
@@ -98,6 +98,38 @@ namespace embree
       Scene* scene;
       bool all;
       };
+
+      class Iterator2
+      {
+      public:
+      Iterator2 () {}
+      
+      Iterator2 (Scene* scene, Geometry::GTypeMask typemask, bool mblur) 
+      : scene(scene), typemask(typemask), mblur(mblur) {}
+      
+      __forceinline Geometry* at(const size_t i)
+      {
+        Geometry* geom = scene->geometries[i].ptr;
+        if (geom == nullptr) return nullptr;
+        if (!geom->isEnabled()) return nullptr;
+        if (!(geom->getTypeMask() & typemask)) return nullptr;
+        if ((geom->numTimeSteps != 1) != mblur) return nullptr;
+        return geom;
+      }
+
+      __forceinline Geometry* operator[] (const size_t i) {
+        return at(i);
+      }
+
+      __forceinline size_t size() const {
+        return scene->size();
+      }
+      
+    private:
+      Scene* scene;
+      Geometry::GTypeMask typemask;
+      bool mblur;
+    };
 
   public:
     
@@ -170,13 +202,13 @@ namespace embree
     template<typename Mesh>
       __forceinline       Mesh* get(size_t i)       { 
       assert(i < geometries.size()); 
-      assert(geometries[i]->getType() == Mesh::geom_type);
+      assert(geometries[i]->getTypeMask() & Mesh::geom_type);
       return (Mesh*)geometries[i].ptr; 
     }
     template<typename Mesh>
       __forceinline const Mesh* get(size_t i) const { 
       assert(i < geometries.size()); 
-      assert(geometries[i]->getType() == Mesh::geom_type);
+      assert(geometries[i]->getTypeMask() & Mesh::geom_type);
       return (Mesh*)geometries[i].ptr; 
     }
 
@@ -184,7 +216,7 @@ namespace embree
     __forceinline Mesh* getSafe(size_t i) {
       assert(i < geometries.size());
       if (geometries[i] == null) return nullptr;
-      if (geometries[i]->getType() != Mesh::geom_type) return nullptr;
+      if (!(geometries[i]->getTypeMask() & Mesh::geom_type)) return nullptr;
       else return (Mesh*) geometries[i].ptr;
     }
 

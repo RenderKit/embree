@@ -234,11 +234,18 @@ namespace embree
   }
   
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
-    : geom(CURVES), type(type)
+    : geom(CURVES), normals(nullptr), type(type)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
+
+    if (in->normals.size()) {
+      normals = new Vec3fa*[in->numTimeSteps()];
+      for (size_t i=0; i<in->numTimeSteps(); i++)
+        normals[i] = in->normals[i].data();
+    }
+    
     hairs = (ISPCHair*) in->hairs.data();
     flags = (unsigned char*)in->flags.data();
     numTimeSteps = (unsigned) in->numTimeSteps();
@@ -250,6 +257,7 @@ namespace embree
 
   ISPCHairSet::~ISPCHairSet() {
     delete[] positions;
+    delete[] normals;
   }
 
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
@@ -401,6 +409,11 @@ namespace embree
 
     for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+    }
+    if (mesh->normals) {
+      for (size_t t=0; t<mesh->numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      }
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
     if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)

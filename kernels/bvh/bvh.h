@@ -1044,6 +1044,13 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
+      /*! output operator */
+      friend std::ostream& operator<<(std::ostream& o, const UnalignedNode& n)
+      {
+        o << "UnAlignedNode { " << n.naabb << " } " << std::endl;
+        return o;
+      }
+
     public:
       AffineSpace3vf<N> naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };

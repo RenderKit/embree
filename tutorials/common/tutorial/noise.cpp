@@ -66,7 +66,7 @@ namespace embree
   return t * t * (3 - t * 2); 
   }*/
   
-  __forceinline float lerp(float t, float a, float b) { 
+  __forceinline float mylerp(float t, float a, float b) { 
     return a + t * (b - a); 
   }
   
@@ -92,7 +92,7 @@ namespace embree
     float u = fade(x);
     float g00 = grad(p[X  ],x  );
     float g10 = grad(p[X+1],x-1);
-    return lerp(u,g00,g10);
+    return mylerp(u,g00,g10);
   }
   
   float noise(float x, float y) 
@@ -119,7 +119,7 @@ namespace embree
     float g01 = grad(p[p01],x  ,y-1);
     float g11 = grad(p[p11],x-1,y-1);
     
-    return lerp(v,lerp(u,g00,g10),lerp(u,g01,g11));
+    return mylerp(v,mylerp(u,g00,g10),mylerp(u,g01,g11));
   }
   
   float noise(const Vec3fa& pos)  
@@ -164,9 +164,9 @@ namespace embree
     float g011 = grad(p[p011],x  ,y-1,z-1);
     float g111 = grad(p[p111],x-1,y-1,z-1);
     
-    return lerp(w,
-                lerp(v,lerp(u,g000,g100),lerp(u,g010,g110)),
-                lerp(v,lerp(u,g001,g101),lerp(u,g011,g111)));
+    return mylerp(w,
+                mylerp(v,mylerp(u,g000,g100),mylerp(u,g010,g110)),
+                mylerp(v,mylerp(u,g001,g101),mylerp(u,g011,g111)));
   }
   
   Vec3fa noise3D(const Vec3fa& p)

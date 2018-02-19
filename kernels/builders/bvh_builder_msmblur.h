@@ -153,6 +153,44 @@ namespace embree
         }
       };
 
+    struct VirtualRecalculatePrimRef
+    {
+      Scene* scene;
+      
+      __forceinline VirtualRecalculatePrimRef (Scene* scene)
+        : scene(scene) {}
+      
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Geometry* mesh = scene->get(geomID);
+        const LBBox3fa lbounds = mesh->vlinearBounds(primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+      }
+      
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Geometry* mesh = scene->get(geomID);
+        const LBBox3fa lbounds = mesh->vlinearBounds(space, primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+      }
+      
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
+        return scene->get(prim.geomID())->vlinearBounds(prim.primID(), time_range);
+      }
+      
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const {
+        return scene->get(prim.geomID())->vlinearBounds(space, prim.primID(), time_range);
+      }
+    };
+
     struct BVHBuilderMSMBlur
     {
       /*! settings for msmblur builder */

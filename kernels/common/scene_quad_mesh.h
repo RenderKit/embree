@@ -25,7 +25,7 @@ namespace embree
   struct QuadMesh : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::QUAD_MESH;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_QUAD_MESH;
     
     /*! triangle indices */
     struct Quad
@@ -223,6 +223,20 @@ namespace embree
     {
       QuadMeshISA (Device* device)
         : QuadMesh(device) {}
+
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!buildBounds(j,&bounds)) continue;
+          const PrimRef prim(bounds,geomID,unsigned(j));
+          pinfo.add_center2(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
     };
   }
 

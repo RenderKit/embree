@@ -118,6 +118,16 @@ namespace embree
   }
 
 #if defined(__SSE4_1__)
+    static __forceinline vfloat4 load(const char* ptr) {
+      return _mm_cvtepi32_ps(_mm_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
+    }
+#else
+    static __forceinline vfloat4 load(const char* ptr) {
+      return vfloat4(ptr[0],ptr[1],ptr[2],ptr[3]);
+    }
+#endif
+
+#if defined(__SSE4_1__)
     static __forceinline vfloat4 load(const unsigned char* ptr) {
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     }
@@ -128,10 +138,20 @@ namespace embree
     }
 #endif
 
+#if defined(__SSE4_1__)
+    static __forceinline vfloat4 load(const short* ptr) {
+      return _mm_cvtepi32_ps(_mm_cvtepi16_epi32(_mm_loadu_si128((__m128i*)ptr)));
+    }
+#else
+    static __forceinline vfloat4 load(const short* ptr) {
+      return vfloat4(ptr[0],ptr[1],ptr[2],ptr[3]);
+    }
+#endif
+
     static __forceinline vfloat4 load(const unsigned short* ptr) {
       return _mm_mul_ps(vfloat4(vint4::load(ptr)),vfloat4(1.0f/65535.0f));
-    } 
-
+    }
+    
     static __forceinline void store_nt(void* ptr, const vfloat4& v)
     {
 #if defined (__SSE4_1__)

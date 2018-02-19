@@ -80,46 +80,35 @@ namespace embree
       max_time_steps = max(max_time_steps,get(i)->numTimeSteps);
 
     /* initialize vectors*/
-    std::vector<size_t> statistics[Geometry::NUM_TYPES];
-    for (size_t i=0; i<Geometry::NUM_TYPES; i++)
+    std::vector<size_t> statistics[Geometry::GTY_END];
+    for (size_t i=0; i<Geometry::GTY_END; i++)
       statistics[i].resize(max_time_steps);
 
     /* gather statistics */
     for (size_t i=0; i<size(); i++) 
     {
-      int ty = __bsf(get(i)->type); 
-      assert(ty<Geometry::NUM_TYPES);
+      int ty = get(i)->getType(); 
+      assert(ty<Geometry::GTY_END);
       int timesegments = get(i)->numTimeSegments(); 
       assert((unsigned int)timesegments < max_time_steps);
       statistics[ty][timesegments] += get(i)->size();
     }
 
     /* print statistics */
-    const char* names[Geometry::NUM_TYPES] = {
-      "triangles",
-      "quads",
-      "curves",
-      "segments",
-      "subdivs",
-      "usergeom",
-      "instance",
-      "group",
-      "grids"
-    };
-
-    std::cout << "  segments: ";
+    std::cout << std::setw(23) << "segments" << ": ";
     for (size_t t=0; t<max_time_steps; t++)
       std::cout << std::setw(10) << t;
     std::cout << std::endl;
 
-    std::cout << "------------";
+    std::cout << "-------------------------";
     for (size_t t=0; t<max_time_steps; t++)
       std::cout << "----------";
     std::cout << std::endl;
     
-    for (size_t p=0; p<Geometry::NUM_TYPES; p++)
+    for (size_t p=0; p<Geometry::GTY_END; p++)
     {
-      std::cout << std::setw(10) << names[p] << ": ";
+      if (std::string(Geometry::gtype_names[p]) == "") continue;
+      std::cout << std::setw(23) << Geometry::gtype_names[p] << ": ";
       for (size_t t=0; t<max_time_steps; t++)
         std::cout << std::setw(10) << statistics[p][t];
       std::cout << std::endl;
@@ -371,46 +360,32 @@ namespace embree
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompactAccel() + 1*(int)isRobustAccel();
-      if (quality_flags != RTC_BUILD_QUALITY_LOW)
-      {
 #if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
-        {
-          switch (mode) {
-          case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
-          case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
-          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
-          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
-          }
-        }
-        else
-#endif
-        {
-          switch (mode) {
-          case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this)); break;
-          case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this)); break;
-          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
-          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
-          }
+      if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
+      {
+        switch (mode) {
+        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBVirtualCurve8v(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBVirtualCurve8v(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8i(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8i(this)); break;
         }
       }
       else
+#endif
       {
         switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4v(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4v(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4i(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4i(this)); break;
         }
       }
     }
-    else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(device->bvh4_factory->BVH4Bezier1v(this));
-    else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
-    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this));
-    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
+    else if (device->hair_accel == "bvh4obb.virtualcurve4v" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4v(this));
+    else if (device->hair_accel == "bvh4obb.virtualcurve4i" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4i(this));
 #if defined (EMBREE_TARGET_SIMD8)
-    else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
-    else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));
+    else if (device->hair_accel == "bvh8obb.virtualcurve8v" ) accels.add(device->bvh8_factory->BVH8OBBVirtualCurve8v(this));
+    else if (device->hair_accel == "bvh4obb.virtualcurve8i" ) accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8i(this));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
 #endif
@@ -422,19 +397,19 @@ namespace embree
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX2) && !isCompactAccel()) // only enable on HSW machines, on SNB this codepath is slower
+      if (device->hasISA(AVX2)) // only enable on HSW machines, on SNB this codepath is slower
       {
-        accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
+        accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8iMB(this));
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
+        accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4iMB(this));
       }
     }
-    else if (device->hair_accel_mb == "bvh4.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
+    else if (device->hair_accel_mb == "bvh4.virtualcurve4imb") accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4iMB(this));
 #if defined (EMBREE_TARGET_SIMD8)
-    else if (device->hair_accel_mb == "bvh8.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
+    else if (device->hair_accel_mb == "bvh4.virtualcurve8imb") accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8iMB(this));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
 #endif

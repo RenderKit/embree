@@ -53,9 +53,9 @@ namespace embree
       0;
 
     private:
-      static void intersect1(const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
+      static void intersect1(Accel::Intersectors* This, const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
                              RayHitK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
-      static bool occluded1(const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
+      static bool occluded1(Accel::Intersectors* This, const BVH* bvh, NodeRef root, size_t k, Precalculations& pre,
                             RayK<K>& ray, const TravRayK<K, robust>& tray, IntersectContext* context);
 
     public:

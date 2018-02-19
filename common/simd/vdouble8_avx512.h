@@ -119,6 +119,7 @@ namespace embree
       return _mm512_mask_compress_pd(a, mask, b);
     }
 
+    static __forceinline vdouble8 broadcast(const void* a) { return _mm512_set1_pd(*(double*)a); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -188,6 +189,16 @@ namespace embree
 
   __forceinline vdouble8 mask_and(const vboold8& m,vdouble8& c, const vdouble8& a, const vdouble8& b) { return _mm512_mask_and_pd(c,m,a,b); }
   __forceinline vdouble8 mask_or (const vboold8& m,vdouble8& c, const vdouble8& a, const vdouble8& b) { return _mm512_mask_or_pd(c,m,a,b); }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline vdouble8 madd (const vdouble8& a, const vdouble8& b, const vdouble8& c) { return _mm512_fmadd_pd(a,b,c); }
+  __forceinline vdouble8 msub (const vdouble8& a, const vdouble8& b, const vdouble8& c) { return _mm512_fmsub_pd(a,b,c); }
+  __forceinline vdouble8 nmadd(const vdouble8& a, const vdouble8& b, const vdouble8& c) { return _mm512_fnmadd_pd(a,b,c); }
+  __forceinline vdouble8 nmsub(const vdouble8& a, const vdouble8& b, const vdouble8& c) { return _mm512_fnmsub_pd(a,b,c); }
+
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

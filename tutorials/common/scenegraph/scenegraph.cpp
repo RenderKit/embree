@@ -32,10 +32,10 @@ namespace embree
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
-  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename, bool embedTextures)
+  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename, bool embedTextures, bool referenceMaterials)
   {
     if (toLowerCase(filename.ext()) == std::string("xml")) {
-      storeXML(root,filename,embedTextures);
+      storeXML(root,filename,embedTextures,referenceMaterials);
     }
     else
       throw std::runtime_error("unknown scene format: " + filename.ext());
@@ -177,14 +177,27 @@ namespace embree
   void SceneGraph::HairSetNode::verify() const
   {
     const size_t N = numVertices();
+
     for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+
+    if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE || type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE)
+    {
+      for (const auto& n : normals) 
+        if (n.size() != N) 
+          THROW_RUNTIME_ERROR("incompatible normal array size");
+    }
+    else
+    {
+      if (normals.size())
+        THROW_RUNTIME_ERROR("normal array not supported for this geometry type");
+    }
+
     for (auto hair : hairs)
       if (size_t(hair.vertex) >= N)
-      {
         THROW_RUNTIME_ERROR("invalid hair");
-      }
+
     if (flags.size() != 0 && flags.size() != hairs.size())
       THROW_RUNTIME_ERROR("size of flags array does not match size of curve array");
   }

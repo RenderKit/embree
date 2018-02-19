@@ -17,8 +17,9 @@
 #include "bvh4_factory.h"
 #include "../bvh/bvh.h"
 
-#include "../geometry/bezier1v.h"
-#include "../geometry/bezier1i.h"
+#include "../geometry/bezierNv.h"
+#include "../geometry/bezierNi.h"
+#include "../geometry/bezierNi_mb.h"
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
@@ -32,13 +33,18 @@
 
 namespace embree
 {
+  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4i,void);
+  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8i,void);
+  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8v,void);
+  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector4iMB,void);
+  DECLARE_ISA_FUNCTION(VirtualCurvePrimitive*,VirtualCurvePrimitiveIntersector8iMB,void);
+    
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBBezier1iMBIntersector1_OBB);
+
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1MB);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
 
@@ -77,11 +83,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iMBIntersector4);
 
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Hybrid);
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Hybrid);
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBBezier1iMBIntersector4Hybrid_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersector4Hybrid);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersector4HybridMB);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoellerNoFilter);
@@ -117,11 +120,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Line4iIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Line4iMBIntersector8);
 
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1vIntersector8Hybrid);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1iIntersector8Hybrid);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1vIntersector8Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1iIntersector8Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBBezier1iMBIntersector8Hybrid_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersector8Hybrid);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersector8HybridMB);
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoellerNoFilter);
@@ -156,11 +156,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Line4iIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Line4iMBIntersector16);
 
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1vIntersector16Hybrid);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1iIntersector16Hybrid);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1vIntersector16Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1iIntersector16Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBBezier1iMBIntersector16Hybrid_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersector16Hybrid);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersector16HybridMB);
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoellerNoFilter);
@@ -195,10 +192,6 @@ namespace embree
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4IntersectorStreamPacketFallback);
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Line4iIntersectorStream);
-  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream);
-  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream);
-  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream_OBB);
-  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream_OBB);
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4IntersectorStreamMoeller);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4IntersectorStreamMoellerNoFilter);
@@ -221,9 +214,11 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createAccelSetAccelTy);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier1vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier1iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier1iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBBezier8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -252,8 +247,6 @@ namespace embree
   //DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4iMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Bezier1iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -293,9 +286,11 @@ namespace embree
     IF_ENABLED_USER (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelVirtualSAH));
     //IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderInstancingQuadMeshSAH));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBBezier1iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier4vBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier4iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBBezier4iMBBuilder_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4Bezier8iBuilder_OBB_New));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX(features,BVH4OBBBezier8iMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4vSceneBuilderSAH));
@@ -326,8 +321,6 @@ namespace embree
 
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iSceneBuilderSAH));
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iMBSceneBuilderSAH));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderSAH));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4VirtualSceneBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4VirtualMeshBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualMBSceneBuilderSAH));
@@ -353,14 +346,20 @@ namespace embree
 
   void BVH4Factory::selectIntersectors(int features)
   {
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4i));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8i));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8v));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector4iMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,VirtualCurvePrimitiveIntersector8iMB));
+    
     /* select intersectors1 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector1));
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iMBIntersector1));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector1));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector1));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector1_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector1_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBBezier1iMBIntersector1_OBB));
+
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector1));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector1MB));
+    
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4XfmTriangle4Intersector1Moeller));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector1Moeller));
@@ -400,11 +399,9 @@ namespace embree
     /* select intersectors4 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector4));
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iMBIntersector4));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector4Hybrid));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector4Hybrid));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector4Hybrid_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector4Hybrid_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBBezier1iMBIntersector4Hybrid_OBB));
+
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector4Hybrid));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector4HybridMB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector4HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector4HybridMoellerNoFilter));
@@ -441,11 +438,8 @@ namespace embree
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector8));
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Line4iMBIntersector8));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector8Hybrid));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector8Hybrid));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector8Hybrid_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector8Hybrid_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBBezier1iMBIntersector8Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector8Hybrid));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector8HybridMB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector8HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector8HybridMoellerNoFilter));
@@ -481,11 +475,8 @@ namespace embree
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Line4iIntersector16));
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Line4iMBIntersector16));
 
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1vIntersector16Hybrid));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1iIntersector16Hybrid));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1vIntersector16Hybrid_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1iIntersector16Hybrid_OBB));
-    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBBezier1iMBIntersector16Hybrid_OBB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBVirtualCurveIntersector16Hybrid));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBVirtualCurveIntersector16HybridMB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector16HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector16HybridMoellerNoFilter));
@@ -519,10 +510,6 @@ namespace embree
 
     /* select stream intersectors */
     //IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX    (features,BVH4Line4iIntersectorStream));
-    //IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1vIntersectorStream));
-    //IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1iIntersectorStream));
-    //IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1vIntersectorStream_OBB));
-    //IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1iIntersectorStream_OBB));
 
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4IntersectorStreamPacketFallback);
 
@@ -542,34 +529,6 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4VirtualIntersectorStream));
 
 #endif
-  }
-
-  Accel::Intersectors BVH4Factory::BVH4Bezier1vIntersectors(BVH4* bvh)
-  {
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4Bezier1vIntersector1();
-#if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4Bezier1vIntersector4Hybrid();
-    intersectors.intersector8  = BVH4Bezier1vIntersector8Hybrid();
-    intersectors.intersector16 = BVH4Bezier1vIntersector16Hybrid();
-    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
-#endif
-    return intersectors;
-  }
-
-  Accel::Intersectors BVH4Factory::BVH4Bezier1iIntersectors(BVH4* bvh)
-  {
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4Bezier1iIntersector1();
-#if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4Bezier1iIntersector4Hybrid();
-    intersectors.intersector8  = BVH4Bezier1iIntersector8Hybrid();
-    intersectors.intersector16 = BVH4Bezier1iIntersector16Hybrid();
-    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
-#endif
-    return intersectors;
   }
 
   Accel::Intersectors BVH4Factory::BVH4Line4iIntersectors(BVH4* bvh)
@@ -600,43 +559,31 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4Bezier1vIntersectors_OBB(BVH4* bvh)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4Bezier1vIntersector1_OBB();
+    intersectors.leafIntersector = leafIntersector;
+    intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4Bezier1vIntersector4Hybrid_OBB();
-    intersectors.intersector8  = BVH4Bezier1vIntersector8Hybrid_OBB();
-    intersectors.intersector16 = BVH4Bezier1vIntersector16Hybrid_OBB();
+    intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4Hybrid();
+    intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8Hybrid();
+    intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16Hybrid();
     intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4Bezier1iIntersectors_OBB(BVH4* bvh)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurvePrimitive* leafIntersector)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4Bezier1iIntersector1_OBB();
+    intersectors.leafIntersector = leafIntersector;
+    intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1MB();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4Bezier1iIntersector4Hybrid_OBB();
-    intersectors.intersector8  = BVH4Bezier1iIntersector8Hybrid_OBB();
-    intersectors.intersector16 = BVH4Bezier1iIntersector16Hybrid_OBB();
-    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
-#endif
-    return intersectors;
-  }
-
-  Accel::Intersectors BVH4Factory::BVH4OBBBezier1iMBIntersectors_OBB(BVH4* bvh)
-  {
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4OBBBezier1iMBIntersector1_OBB();
-#if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4OBBBezier1iMBIntersector4Hybrid_OBB();
-    intersectors.intersector8  = BVH4OBBBezier1iMBIntersector8Hybrid_OBB();
-    intersectors.intersector16 = BVH4OBBBezier1iMBIntersector16Hybrid_OBB();
+    intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4HybridMB();
+    intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8HybridMB();
+    intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16HybridMB();
     intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
 #endif
     return intersectors;
@@ -1092,32 +1039,6 @@ namespace embree
     }
   }
 
-  Accel* BVH4Factory::BVH4Bezier1v(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Bezier1v::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
-
-    Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4<Bezier1v>");
-
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH4Factory::BVH4Bezier1i(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
-
-    Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4<Bezier1i>");
-
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
   Accel* BVH4Factory::BVH4Line4i(Scene* scene, BuildVariant bvariant)
   {
     BVH4* accel = new BVH4(Line4i::type,scene);
@@ -1151,45 +1072,71 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBBezier1v(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1v::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
+    BVH4* accel = new BVH4(Bezier4i::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4i());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<Bezier1v>");
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier4iBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier4iBuilder_OBB_New(accel,scene,0);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4i>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
+    BVH4* accel = new BVH4(Bezier8i::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector8i());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<Bezier1i>");
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier8iBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier8iBuilder_OBB_New(accel,scene,0);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve8i>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBBezier1iMBIntersectors_OBB(accel);
+    BVH4* accel = new BVH4(Bezier4v::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurvePrimitiveIntersector4v());
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH4OBBBezier1iMBBuilder_OBB(accel,scene,0);
-    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4OBBBezier1iMBBuilder_OBB(accel,scene,0);
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4OBB<Bezier1iMB>");
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier4vBuilder_OBB_New(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier4vBuilder_OBB_New(accel,scene,0);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4v>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Bezier4iMB::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector4iMB());
+
+    Builder* builder = nullptr;
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBBezier4iMBBuilder_OBB(accel,scene,0);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve4iMB>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Bezier8iMB::type,scene);
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurvePrimitiveIntersector8iMB());
+
+    Builder* builder = nullptr;
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4OBBBezier8iMBBuilder_OBB(accel,scene,0);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<VirtualCurve8iMB>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+  
   Accel* BVH4Factory::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4::type,scene);
