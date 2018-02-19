@@ -33,6 +33,56 @@
       </material>
     </TriangleMesh>
 
+    <!-- mblur band -->
+    <Transform>
+      <AffineSpace translate="10 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.3
+            -1 0 0 0.3
+            1 0 0 0.3
+            2 0 0 0.3
+          </positions>
+          <positions>
+            -2 0 0 0.3
+            -1 0 0 0.3
+            1 0 0 0.3
+            2 0 0 0.3
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 0 0
+            0 0 0
+            0 0 -1
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
     <!-- straight band -->
     <Transform>
       <AffineSpace translate="5 1 0"/>
