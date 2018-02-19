@@ -18,6 +18,7 @@
 
 #include "../common/scene.h"
 #include "../common/ray.h"
+#include "../bvh/node_intersector1.h"
 
 namespace embree
 {
@@ -29,13 +30,15 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
 
-        static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        template<int N, int Nx, bool robust>
+          static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
             Intersector::intersect(pre,ray,context,prim[i]);
         }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+
+        template<int N, int Nx, bool robust>        
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector::occluded(pre,ray,context,prim[i]))
@@ -55,6 +58,43 @@ namespace embree
           return valid;
         }
       };
+
+
+    template<typename Intersector>
+      struct QBVHLeafIntersector1
+      {
+        typedef typename Intersector::Primitive Primitive;
+        typedef typename Intersector::Precalculations Precalculations;
+
+        template<int N, int Nx, bool robust>
+          static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        {
+          for (size_t i=0; i<num; i++)
+            Intersector::intersect(pre,ray,context,prim[i]);
+        }
+
+        template<int N, int Nx, bool robust>        
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        {
+          for (size_t i=0; i<num; i++) {
+            if (Intersector::occluded(pre,ray,context,prim[i]))
+              return true;
+          }
+          return false;
+        }
+
+        template<int K>
+        static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        {
+        }
+
+        template<int K>        
+        static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        {
+          return valid;
+        }
+      };
+
 
     template<int K, typename Intersector>
       struct ArrayIntersectorK_1 
