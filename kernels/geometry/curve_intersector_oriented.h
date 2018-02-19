@@ -332,12 +332,10 @@ namespace embree
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, const unsigned int primID, 
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
-
-        unsigned int vtx = geom->curve(primID);
-        Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vtx);
 
         // FIXME: what if n0 or n1 oriented along tangent?
         const Vec3fa k0 = normalize(cross(n0,v1-v0));
@@ -371,20 +369,17 @@ namespace embree
         //__forceinline float& tfar()  { return _tfar; }
         __forceinline const float& tnear() const { return _tnear; }
         //__forceinline const float& tfar()  const { return _tfar; }
-        
       };
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
                                    const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
-
-        unsigned int vtx = geom->curve(primID);
-        Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vtx);
 
         // FIXME: what if n0 or n1 oriented along tangent?
         const Vec3fa k0 = normalize(cross(n0,v1-v0));
