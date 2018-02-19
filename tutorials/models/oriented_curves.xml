@@ -3,7 +3,11 @@
 <scene>
   <Group>
 
-    <PerspectiveCamera name="default" from="3.835576773 7.581315041 -7.45765686" to="0 0 0" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera0" from="12.83367538 4.15518856 -0.9859005213" to="11.40260315 2.667051315 -1.832547545" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera1" from="7.719883919 4.531505108 -0.8752419949" to="6.16069603 3.087519646 -1.818861723" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera2" from="2.697155952 4.218435764 -1.416107535" to="1.343595505 2.840871334 -2.011230946" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera3" from="-2.363547325 3.914859295 -1.026577711" to="-3.583497524 2.624310017 -1.74011004" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera4" from="-6.937560558 4.564787865 -1.462943673" to="-8.512095451 2.85711503 -2.127221107" up="0 1 0" fov="90"/>
 
      <DirectionalLight>
       <AffineSpace>
