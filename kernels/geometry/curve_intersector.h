@@ -23,6 +23,7 @@
 #include "bezier_ribbon_intersector.h"
 #include "bezier_curve_intersector.h"
 #include "oriented_curve_intersector.h"
+#include "../bvh/node_intersector1.h"
 
 namespace embree
 {
@@ -33,7 +34,8 @@ namespace embree
       typedef unsigned char Primitive;
       typedef CurvePrecalculations1 Precalculations;
       
-      static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+      template<int N, int Nx, bool robust>
+        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
         assert(num == 1);
         RTCGeometryType ty = (RTCGeometryType)(*prim);
@@ -42,7 +44,8 @@ namespace embree
         leafIntersector.intersect<1>(&pre,&ray,context,prim);
       }
       
-      static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+      template<int N, int Nx, bool robust>        
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
         assert(num == 1);
         RTCGeometryType ty = (RTCGeometryType)(*prim);
