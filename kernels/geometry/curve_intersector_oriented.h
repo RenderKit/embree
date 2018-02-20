@@ -27,17 +27,6 @@ namespace embree
 {
   namespace isa
   {
-    struct CurveCounters
-    {
-      __forceinline CurveCounters()
-        : numRecursions(0), numKrawczyk(0), numSolve(0), numSolveIterations(0) {}
-      
-      size_t numRecursions;
-      size_t numKrawczyk;
-      size_t numSolve;
-      size_t numSolveIterations;
-    };
-
     template<typename Ray, typename Epilog>
       struct TensorLinearCubicBezierSurfaceIntersector
       {
@@ -48,7 +37,6 @@ namespace embree
         float eps;
         const Epilog& epilog;
         bool isHit;
-        CurveCounters counters;
 
         __forceinline TensorLinearCubicBezierSurfaceIntersector (const LinearSpace3fa& ray_space, Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
           : ray_space(ray_space), ray(ray), curve3d(curve3d), epilog(epilog), isHit(false)
@@ -169,11 +157,9 @@ namespace embree
         __forceinline void solve_newton_raphson_loop(BBox1f cu, BBox1f cv, const Vec2fa& uv_in, const Vec2fa& dfdu, const Vec2fa& dfdv, const LinearSpace2fa& rcp_J)
         {
           Vec2fa uv = uv_in;
-          counters.numSolve++;
           
           for (size_t i=0; i<200; i++)
           {
-            counters.numSolveIterations++;
             const Vec2fa f = curve2d.eval(uv.x,uv.y);
             const Vec2fa duv = rcp_J*f;
             uv -= duv;
@@ -210,8 +196,6 @@ namespace embree
 
         __forceinline bool solve_krawczyk(BBox1f cu, BBox1f cv)
         {
-          counters.numKrawczyk++;
-
           /* perform bezier clipping in v-direction to get tight v-bounds */
           TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
           const Vec2fa dv = curve2.axis_v();
@@ -261,8 +245,6 @@ namespace embree
         
         void solve_newton_raphson_recursion(BBox1f cu, BBox1f cv)
         {
-          counters.numRecursions++;
-
           /* for very short curve segments we assume convergence */
           if (cu.size() < 0.001f) {
             if (!clip_v(cu,cv)) return;
@@ -311,13 +293,6 @@ namespace embree
           BBox1f vu(0.0f,1.0f);
           BBox1f vv(0.0f,1.0f);
           solve_newton_raphson_recursion(vu,vv);
-          /*if (isHit) {
-            //((RayHit&)ray).u = counters.numRecursions/16.0f;
-            //((RayHit&)ray).u = counters.numKrawczyk/4.0f;
-            //((RayHit&)ray).u = counters.numSolve/4.0f;
-            ((RayHit&)ray).u = counters.numSolveIterations/20.0f;
-            ((RayHit&)ray).v = 0.0f;
-            }*/
           return isHit;
         }
       };
