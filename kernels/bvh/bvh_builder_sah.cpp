@@ -627,43 +627,53 @@ namespace embree
 
       __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
-        size_t n = set.size();
-        size_t items = n; //Primitive::blocks(n);
-        size_t start = set.begin();
-#if 0
-        SubGrid* accel = (SubGrid*) alloc.malloc1(items*sizeof(SubGrid),BVH::byteAlignment);
-        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
-        for (size_t i=0; i<items; i++) {
-          const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];          
-          const unsigned int geomID = prims[start+i].geomID();
-          accel[i] = SubGrid(sgrid_bd.sx,sgrid_bd.sy,geomID,sgrid_bd.primID);
-          //PRINT(accel[i]);
-        }
-#else
-        /* fat leaves */
+        const size_t items = set.size(); //Primitive::blocks(n);
+        const size_t start = set.begin();
+
+        /* collect all subsets with unique geomIDs */
         assert(items <= N);
-        unsigned int common_geomID = prims[start].geomID();
+        unsigned int geomIDs[N];
+        unsigned int num_geomIDs = 1;
+        geomIDs[0] = prims[start].geomID();
+
         for (size_t i=1;i<items;i++)
-          if (prims[start+i].geomID() != common_geomID)
-            FATAL("non common geomID");
+        {
+          bool found = false;
+          const unsigned int new_geomID = prims[start+i].geomID();
+          for (size_t j=0;j<num_geomIDs;j++)
+            if (new_geomID == geomIDs[j])
+            { found = true; break; }
+          if (!found) 
+            geomIDs[num_geomIDs++] = new_geomID;
+        }
 
         //PRINT(sizeof(SubGridQBVHN<N>));
-        SubGridQBVHN<N>* accel = (SubGridQBVHN<N>*) alloc.malloc1(sizeof(SubGridQBVHN<N>),BVH::byteAlignment);
-        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-        unsigned int x[N];
-        unsigned int y[N];
-        unsigned int primID[N];
-        BBox3fa bounds[N];
-        for (size_t i=0;i<items;i++)
+
+        /* allocate all leaf memory in one single block */
+        SubGridQBVHN<N>* accel = (SubGridQBVHN<N>*) alloc.malloc1(num_geomIDs*sizeof(SubGridQBVHN<N>),BVH::byteAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,num_geomIDs);
+
+        for (size_t g=0;g<num_geomIDs;g++)
         {
-          const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];          
-          x[i] = sgrid_bd.sx;
-          y[i] = sgrid_bd.sy;
-          primID[i] = sgrid_bd.primID;
-          bounds[i] = prims[start+i].bounds();
+          unsigned int x[N];
+          unsigned int y[N];
+          unsigned int primID[N];
+          BBox3fa bounds[N];
+          unsigned int pos = 0;
+          for (size_t i=0;i<items;i++)
+          {
+            if (unlikely(prims[start+i].geomID() != geomIDs[g])) continue;
+
+            const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];                      
+            x[pos] = sgrid_bd.sx;
+            y[pos] = sgrid_bd.sy;
+            primID[pos] = sgrid_bd.primID;
+            bounds[pos] = prims[start+i].bounds();
+            pos++;
+          }
+          new (&accel[g]) SubGridQBVHN<N>(x,y,primID,bounds,geomIDs[g],pos);
         }
-        new (accel) SubGridQBVHN<N>(x,y,primID,bounds,common_geomID,items);
-#endif
+
         return node;
       }
 

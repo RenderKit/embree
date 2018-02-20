@@ -17,7 +17,8 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define NUM_GRIDS 4
+#define NUM_GRID_OBJECTS 4
+#define NUM_GRIDS_PER_OBJECT 4
 #define GRID_RESOLUTION_X 3
 #define GRID_RESOLUTION_Y 3
 
@@ -169,24 +170,26 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 
-uniform unsigned int addGridPlane (RTCScene scene_i)
+uniform unsigned int addGridPlane (RTCScene scene_i, uniform unsigned int gridObjectID)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS;
+  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS_PER_OBJECT;
   uniform float startX = 10.0f;
   uniform float startY = 10.0f;
   uniform float sizeX  = 20.0f;
   uniform float sizeY  = 20.0f;
 
+  startX += gridObjectID * sizeX;
+
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
 
 
-  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(uniform RTCGrid),NUM_GRIDS);
+  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(uniform RTCGrid),NUM_GRIDS_PER_OBJECT);
 
   uniform unsigned int index = 0;
-  for (uniform unsigned int g=0;g<NUM_GRIDS;g++)
+  for (uniform unsigned int g=0;g<NUM_GRIDS_PER_OBJECT;g++)
   {
     grids[g].startVtxID = index;
     grids[g].lineOffset = GRID_RESOLUTION_X;
@@ -201,7 +204,7 @@ uniform unsigned int addGridPlane (RTCScene scene_i)
         index++;
       }
     
-    startX += sizeY;
+    startY += sizeY;
   }
   assert(index == numVertices);
 
@@ -232,7 +235,8 @@ export void device_init (uniform int8* uniform cfg)
   /* add cube */
   //addCube(g_scene);
 
-  addGridPlane(g_scene);
+  for (uniform unsigned int i=0;i<NUM_GRID_OBJECTS;i++)
+    addGridPlane(g_scene,i);
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);

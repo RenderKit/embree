@@ -19,7 +19,8 @@
 namespace embree {
 
 /* configuration */
-#define NUM_GRIDS 4
+#define NUM_GRID_OBJECTS 4
+#define NUM_GRIDS_PER_OBJECT 4
 #define GRID_RESOLUTION_X 3
 #define GRID_RESOLUTION_Y 3
 
@@ -172,31 +173,33 @@ unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 
-unsigned int addGridPlane (RTCScene scene_i)
+  unsigned int addGridPlane (RTCScene scene_i, const size_t gridObjectID)
 {
   PING;
   /* create a triangulated plane with 2 triangles and 4 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS;
-  float startX = 10.0f;
-  float startY = 10.0f;
+  unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS_PER_OBJECT;
   const float sizeX  = 20.0f;
   const float sizeY  = 20.0f;
+  float startX = 10.0f;
+  float startY = 10.0f;
 
+  startX += gridObjectID * sizeX;
+  
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
 
 
-  RTCGrid* grids = (RTCGrid*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(RTCGrid),NUM_GRIDS);
+  RTCGrid* grids = (RTCGrid*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(RTCGrid),NUM_GRIDS_PER_OBJECT);
 
   PRINT(sizeof(Vec3f));
   PRINT(sizeof(Vec3f) * numVertices);
-  PRINT(sizeof(RTCGrid) * NUM_GRIDS);
-  PRINT(sizeof(Vec3f) * numVertices + sizeof(RTCGrid) * NUM_GRIDS);
+  PRINT(sizeof(RTCGrid) * NUM_GRIDS_PER_OBJECT);
+  PRINT(sizeof(Vec3f) * numVertices + sizeof(RTCGrid) * NUM_GRIDS_PER_OBJECT);
 
   size_t triangles = 0;
   unsigned int index = 0;
-  for (unsigned int g=0;g<NUM_GRIDS;g++)
+  for (unsigned int g=0;g<NUM_GRIDS_PER_OBJECT;g++)
   {
     grids[g].startVtxID = index;
     grids[g].lineOffset = GRID_RESOLUTION_X;
@@ -212,7 +215,7 @@ unsigned int addGridPlane (RTCScene scene_i)
         index++;
       }
     
-    startX += sizeY;
+    startY += sizeY;
   }
   assert(index == numVertices);
 
@@ -245,7 +248,8 @@ extern "C" void device_init (char* cfg)
   /* add cube */
   //addCube(g_scene);
 
-  addGridPlane(g_scene);
+  for (unsigned int i=0;i<NUM_GRID_OBJECTS;i++)
+    addGridPlane(g_scene,i);
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);

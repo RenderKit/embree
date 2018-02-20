@@ -690,27 +690,33 @@ namespace embree
       template<int Nx, bool robust>
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
-        vfloat<Nx> dist;
-        /* QBVH intersection test */
-        size_t mask = intersectNode(&prim->qnode,tray,dist); //FIXME: maybe do node ordering here
-        while(mask != 0)
+        for (size_t i=0;i<num;i++)
         {
-          const size_t ID = __bscf(mask); 
-          intersect(pre,ray,context,prim->subgrid(ID));
+          vfloat<Nx> dist;
+          /* QBVH intersection test */
+          size_t mask = intersectNode(&prim[i].qnode,tray,dist); //FIXME: maybe do node ordering here
+          while(mask != 0)
+          {
+            const size_t ID = __bscf(mask); 
+            intersect(pre,ray,context,prim[i].subgrid(ID));
+          }
         }
       }
 
       template<int Nx, bool robust>        
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
-        vfloat<Nx> dist;
-        /* QBVH intersection test */
-        size_t mask = intersectNode(&prim->qnode,tray,dist); 
-        while(mask != 0)
+        for (size_t i=0;i<num;i++)
         {
-          const size_t ID = __bscf(mask); 
-          if (occluded(pre,ray,context,prim->subgrid(ID)))
-            return true;
+          vfloat<Nx> dist;
+          /* QBVH intersection test */
+          size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+          while(mask != 0)
+          {
+            const size_t ID = __bscf(mask); 
+            if (occluded(pre,ray,context,prim[i].subgrid(ID)))
+              return true;
+          }
         }
         return false;
       }
@@ -791,25 +797,31 @@ namespace embree
         template<bool robust>
           static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
-          num = prim->size();
-          vfloat<K> dist;
-          for (size_t i=0;i<num;i++)
+          for (size_t j=0;j<num;j++)
           {
-            if (none(valid & intersectNodeK<N>(&prim->qnode,i,tray,dist))) continue;
-            intersect(valid,pre,ray,context,prim->subgrid(i));
+            const size_t items = prim[j].size();
+            vfloat<K> dist;
+            for (size_t i=0;i<items;i++)
+            {
+              if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              intersect(valid,pre,ray,context,prim[j].subgrid(i));
+            }
           }
         }
 
         template<bool robust>        
         static __forceinline vbool<K> occluded(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
-          num = prim->size();
-          vfloat<K> dist;
           vbool<K> valid0 = valid;
-          for (size_t i=0; i<num; i++) {
-            if (none(valid0 & intersectNodeK<N>(&prim->qnode,i,tray,dist))) continue;
-            valid0 &= !occluded(valid0,pre,ray,context,prim->subgrid(i));
-            if (none(valid0)) break;
+          for (size_t j=0;j<num;j++)
+          {
+            const size_t items = prim[j].size();
+            vfloat<K> dist;
+            for (size_t i=0; i<items; i++) {
+              if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
+              if (none(valid0)) break;
+            }
           }
           return !valid0;
         }
@@ -817,27 +829,33 @@ namespace embree
         template<int Nx, bool robust>        
           static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
-          vfloat<Nx> dist;
-          /* QBVH intersection test */
-          size_t mask = intersectNode(&prim->qnode,tray,dist); //FIXME: maybe do node ordering here
-          while(mask != 0)
+          for (size_t i=0;i<num;i++)
           {
-            const size_t ID = __bscf(mask); 
-            intersect(pre,ray,k,context,prim->subgrid(ID));
+            vfloat<Nx> dist;
+            /* QBVH intersection test */
+            size_t mask = intersectNode(&prim[i].qnode,tray,dist); //FIXME: maybe do node ordering here
+            while(mask != 0)
+            {
+              const size_t ID = __bscf(mask); 
+              intersect(pre,ray,k,context,prim[i].subgrid(ID));
+            }
           }
         }
         
         template<int Nx, bool robust>
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
-          vfloat<Nx> dist;
-        /* QBVH intersection test */
-          size_t mask = intersectNode(&prim->qnode,tray,dist); 
-          while(mask != 0)
+          for (size_t i=0;i<num;i++)
           {
-            const size_t ID = __bscf(mask); 
-            if (occluded(pre,ray,k,context,prim->subgrid(ID)))
-              return true;
+            vfloat<Nx> dist;
+            /* QBVH intersection test */
+            size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+            while(mask != 0)
+            {
+              const size_t ID = __bscf(mask); 
+              if (occluded(pre,ray,k,context,prim[i].subgrid(ID)))
+                return true;
+            }
           }
           return false;
         }
