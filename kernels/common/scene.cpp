@@ -90,9 +90,6 @@ namespace embree
       int ty = get(i)->getType(); 
       assert(ty<Geometry::GTY_END);
       int timesegments = get(i)->numTimeSegments(); 
-      PRINT(ty);
-      PRINT(timesegments);
-
       assert((unsigned int)timesegments < max_time_steps);
       statistics[ty][timesegments] += get(i)->size();
     }

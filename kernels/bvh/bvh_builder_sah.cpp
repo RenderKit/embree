@@ -628,7 +628,6 @@ namespace embree
       __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t n = set.size();
-        PRINT(n);
         size_t items = n; //Primitive::blocks(n);
         size_t start = set.begin();
 #if 0
@@ -712,7 +711,7 @@ namespace embree
           bvh->alloc.unshare(prims);
 
 	/* skip build for empty scene */
-        const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
+        //const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
         size_t numPrimitives = 0;
 
         Scene::Iterator<GridMesh,false> iter(scene);
@@ -721,10 +720,7 @@ namespace embree
           GridMesh *gmesh = iter.at(s);
           if (gmesh == nullptr) continue;
           for (size_t i=0;i<gmesh->size();i++)
-          {
-            //PRINT( gmesh->getNumSubGrids(i) );
             numPrimitives += gmesh->getNumSubGrids(i);
-          }
         }
 
         if (numPrimitives == 0) {
@@ -732,9 +728,6 @@ namespace embree
           prims.clear();
           return;
         }
-
-        PRINT(numGrids);
-        PRINT( numPrimitives );
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
@@ -777,7 +770,6 @@ namespace embree
                 BBox3fa bounds = empty;
                 if (!gmesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
                 const PrimRef prim(bounds,s,p_index);
-                //PRINT(prim);
                 pinfo.add_center2(prim);
                 sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), i);
                 prims[p_index++] = prim;                
@@ -812,7 +804,6 @@ namespace embree
         }
 	bvh->cleanup();
         bvh->postBuild(t0);
-        PRINT("BUILD DONE");
       }
 
       void clear() {

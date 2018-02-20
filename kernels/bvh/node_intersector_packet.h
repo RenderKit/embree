@@ -446,6 +446,66 @@ namespace embree
       return lhit;
     }
 
+
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    // Fast AlignedNode intersection
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    template<int N, int K, bool robust>
+    __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::QuantizedBaseNode* node, size_t i,
+                                          const TravRayK<K,robust>& ray, vfloat<K>& dist)
+
+    {
+      const vfloat<N> lower_x = node->dequantizeLowerX();
+      const vfloat<N> upper_x = node->dequantizeUpperX();
+      const vfloat<N> lower_y = node->dequantizeLowerY();
+      const vfloat<N> upper_y = node->dequantizeUpperY();
+      const vfloat<N> lower_z = node->dequantizeLowerZ();
+      const vfloat<N> upper_z = node->dequantizeUpperZ();
+
+  #if defined(__AVX2__)
+      const vfloat<K> lclipMinX = msub(lower_x[i], ray.rdir.x, ray.org_rdir.x);
+      const vfloat<K> lclipMinY = msub(lower_y[i], ray.rdir.y, ray.org_rdir.y);
+      const vfloat<K> lclipMinZ = msub(lower_z[i], ray.rdir.z, ray.org_rdir.z);
+      const vfloat<K> lclipMaxX = msub(upper_x[i], ray.rdir.x, ray.org_rdir.x);
+      const vfloat<K> lclipMaxY = msub(upper_y[i], ray.rdir.y, ray.org_rdir.y);
+      const vfloat<K> lclipMaxZ = msub(upper_z[i], ray.rdir.z, ray.org_rdir.z);
+  #else
+      const vfloat<K> lclipMinX = (lower_x[i] - ray.org.x) * ray.rdir.x;
+      const vfloat<K> lclipMinY = (lower_y[i] - ray.org.y) * ray.rdir.y;
+      const vfloat<K> lclipMinZ = (lower_z[i] - ray.org.z) * ray.rdir.z;
+      const vfloat<K> lclipMaxX = (upper_x[i] - ray.org.x) * ray.rdir.x;
+      const vfloat<K> lclipMaxY = (upper_y[i] - ray.org.y) * ray.rdir.y;
+      const vfloat<K> lclipMaxZ = (upper_z[i] - ray.org.z) * ray.rdir.z;
+  #endif
+
+  #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      if (K == 16)
+      {
+        /* use mixed float/int min/max */
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K> lhit    = asInt(maxi(lnearP, ray.tnear)) <= asInt(mini(lfarP, ray.tfar));
+        dist = lnearP;
+        return lhit;
+      }
+      else
+  #endif
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+  #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+        const vbool<K> lhit    = asInt(maxi(lnearP, ray.tnear)) <= asInt(mini(lfarP, ray.tfar));
+  #else
+        const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
+  #endif
+        dist = lnearP;
+        return lhit;
+      }
+    }
+
+
     //////////////////////////////////////////////////////////////////////////////////////
     // Node intersectors used in hybrid traversal
     //////////////////////////////////////////////////////////////////////////////////////

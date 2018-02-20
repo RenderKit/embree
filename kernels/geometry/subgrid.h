@@ -245,7 +245,6 @@ namespace embree
                                    const unsigned int geomID,
                                    const unsigned int items)
         {
-          PING;
           clear();
           _geomID = geomID;
 
