@@ -194,7 +194,7 @@ namespace embree
           return true;
         }
 
-        __forceinline bool solve_krawczyk(BBox1f cu, BBox1f cv)
+        __forceinline bool solve_krawczyk(BBox1f& cu, BBox1f& cv)
         {
           /* perform bezier clipping in v-direction to get tight v-bounds */
           TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
