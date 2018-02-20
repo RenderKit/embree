@@ -261,19 +261,19 @@ namespace embree
           /* split the curve into VSIZEX-1 segments in u-direction */
           vboolx valid = true;
           TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).vsplit_u(valid,cu);
-          
-          /* slabs test in v-direction */
-          Vec2vfx ndu = cross(subcurves.axis_u());
-          BBox<vfloatx> boundsu = subcurves.vxfm(ndu).bounds();
-          valid &= boundsu.lower <= eps;
-          valid &= boundsu.upper >= -eps;
-          if (none(valid)) return;
 
           /* slabs test in u-direction */
           Vec2vfx ndv = cross(subcurves.axis_v());
           BBox<vfloatx> boundsv = subcurves.vxfm(ndv).bounds();
           valid &= boundsv.lower <= eps;
           valid &= boundsv.upper >= -eps;
+          if (none(valid)) return;
+          
+          /* slabs test in v-direction */
+          Vec2vfx ndu = cross(subcurves.axis_u());
+          BBox<vfloatx> boundsu = subcurves.vxfm(ndu).bounds();
+          valid &= boundsu.lower <= eps;
+          valid &= boundsu.upper >= -eps;
           if (none(valid)) return;
 
           /* recurse into each hit curve segment */
