@@ -495,40 +495,6 @@ namespace embree
         return LBBox3fa([&] (size_t itime) { return bounds(ofs, scale, r_scale0, space, primID, itime); }, time_range, fnumTimeSegments);
       }
       
-      /*! calculates the build bounds of the i'th primitive, if it's valid */
-      __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
-      {
-        const unsigned int index = curve(i);
-        if (index+3 >= numVertices()) return false;
-        
-        for (size_t t=0; t<numTimeSteps; t++)
-        {
-          const float r0 = radius(index+0,t);
-          const float r1 = radius(index+1,t);
-          const float r2 = radius(index+2,t);
-          const float r3 = radius(index+3,t);
-          if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
-            return false;
-          //if (min(r0,r1,r2,r3) < 0.0f)
-          //  return false;
-          
-          const Vec3fa v0 = vertex(index+0,t);
-          const Vec3fa v1 = vertex(index+1,t);
-          const Vec3fa v2 = vertex(index+2,t);
-          const Vec3fa v3 = vertex(index+3,t);
-          if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
-            return false;
-        }
-        
-        if (bbox) *bbox = bounds(i);
-        return true;
-      }
-      
-      /*! check if the i'th primitive is valid at the itime'th timestep */
-      __forceinline bool valid(size_t i, size_t itime) const {
-        return valid(i, make_range(itime, itime));
-      }
-      
       /*! check if the i'th primitive is valid at the itime'th time step */
       __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
       {
@@ -543,8 +509,6 @@ namespace embree
           const float r3 = radius(index+3,itime);
           if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
             return false;
-          //if (min(r0,r1,r2,r3) < 0.0f)
-          //return false;
           
           const Vec3fa v0 = vertex(index+0,itime);
           const Vec3fa v1 = vertex(index+1,itime);
@@ -556,15 +520,14 @@ namespace embree
         
         return true;
       }
-      
+
       PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
-          BBox3fa bounds = empty;
-          if (!buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,geomID,unsigned(j));
+          if (!valid(j, make_range<size_t>(0, numTimeSegments()))) continue;
+          const PrimRef prim(bounds(j),geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
