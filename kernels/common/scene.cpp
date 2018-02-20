@@ -465,17 +465,11 @@ namespace embree
   void Scene::createSubdivAccel()
   {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
-    if (device->subdiv_accel == "default") 
-    {
-      //if (quality_flags != RTC_BUILD_QUALITY_LOW)
-        accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
-      //else
-      //accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
+    if (device->subdiv_accel == "default") {
+      accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
     }
     else if (device->subdiv_accel == "bvh4.grid.eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
     else if (device->subdiv_accel == "bvh4.subdivpatch1eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
-    //else if (device->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,false));
-    //else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
 #endif
   }
@@ -483,15 +477,9 @@ namespace embree
   void Scene::createSubdivMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
-    if (device->subdiv_accel_mb == "default") 
-    {
-      //if (quality_flags != RTC_BUILD_QUALITY_LOW)
+    if (device->subdiv_accel_mb == "default") {
       accels.add(device->bvh4_factory->BVH4SubdivPatch1EagerMB(this));
-      //else
-      //accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
     }
-    // else if (device->subdiv_accel_mb == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
-    // else if (device->subdiv_accel_mb == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
 #endif
   }

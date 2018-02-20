@@ -50,11 +50,8 @@ namespace embree
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBVirtualCurveIntersector8Hybrid, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<8> >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR8(BVH4OBBVirtualCurveIntersector8HybridMB,BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersectorK<8> >));
     
-    //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1Intersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1EagerIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector8>));
-    //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1CachedIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1EagerMBIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1EagerMBIntersector8>));
-    //IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1CachedMBIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1CachedMBIntersector8>));
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA ObjectIntersector8> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR8(BVH4VirtualMBIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<8 COMMA ObjectIntersector8MB> >));
