@@ -609,6 +609,33 @@ namespace embree
         return cout << "CubicBezierCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
+
+#if defined(__AVX__)
+  template<>
+    __forceinline CubicBezierCurve<vfloat4> CubicBezierCurve<vfloat4>::clip(const Interval1f& u1) const
+  {
+    const vfloat8 p00 = vfloat8(v0);
+    const vfloat8 p01 = vfloat8(v1);
+    const vfloat8 p02 = vfloat8(v2);
+    const vfloat8 p03 = vfloat8(v3);
+
+    const vfloat8 t(vfloat4(u1.lower),vfloat4(u1.upper));
+    const vfloat8 p10 = lerp(p00,p01,t);
+    const vfloat8 p11 = lerp(p01,p02,t);
+    const vfloat8 p12 = lerp(p02,p03,t);
+    const vfloat8 p20 = lerp(p10,p11,t);
+    const vfloat8 p21 = lerp(p11,p12,t);
+    const vfloat8 p30 = lerp(p20,p21,t);
+    
+    const vfloat8 f01  = p30;
+    const vfloat8 df01 = vfloat8(3.0f)*(p21-p20);
+        
+    const vfloat4 f0  = extract4<0>(f01),  f1  = extract4<1>(f01);
+    const vfloat4 df0 = extract4<0>(df01), df1 = extract4<1>(df01);
+    const float s = u1.upper-u1.lower;
+    return CubicBezierCurve(f0,f0+s*(1.0f/3.0f)*df0,f1-s*(1.0f/3.0f)*df1,f1);
+  }
+#endif
   
   template<typename Vertex> using BezierCurveT = CubicBezierCurve<Vertex>;
   

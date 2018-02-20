@@ -201,9 +201,9 @@ namespace embree
           const Vec2fa dv = curve2.axis_v();
           const TensorLinearCubicBezierSurface1f curve1v = curve2.xfm(dv);
           LinearBezierCurve<Interval1f> curve0v = curve1v.reduce_u();
-          if (!curve0v.hasRoot()) return true;
+          if (unlikely(!curve0v.hasRoot())) return true;
           Interval1f v = bezier_clipping(curve0v);
-          if (isEmpty(v)) return true;
+          if (unlikely(isEmpty(v))) return true;
           v = intersect(v + Interval1f(-0.1f,+0.1f),Interval1f(0.0f,1.0f));
           curve2 = curve2.clip_v(v);
           cv = BBox1f(lerp(cv.lower,cv.upper,v.lower),lerp(cv.lower,cv.upper,v.upper));
@@ -233,10 +233,10 @@ namespace embree
 
           /* test if there is no solution */
           const Vec2<Interval1f> KK = intersect(K,x);
-          if (isEmpty(KK.x) || isEmpty(KK.y)) return true;
+          if (unlikely(isEmpty(KK.x) || isEmpty(KK.y))) return true;
 
           /* exit if convergence cannot get proven */
-          if (!subset(K,x)) return false;
+          if (unlikely(!subset(K,x))) return false;
 
           /* solve using newton raphson iteration of convergence is guarenteed */
           solve_newton_raphson_loop(cu,cv,c1,dfdu,dfdv,rcp_J);
