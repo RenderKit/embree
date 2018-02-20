@@ -86,11 +86,33 @@ namespace embree
           L = other.L; R = other.R; return *this;
         }
           
-          __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
-            : L(L), R(R) {}
+        __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
+          : L(L), R(R) {}
+
+        template<typename SourceCurve3fa>
+        __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve3fa& center, const SourceCurve3fa& normal)
+        {
+          CubicBezierCurve3fa vcurve; convert(center,vcurve);
+          CubicBezierCurve3fa ncurve; convert(normal,ncurve);
+          
+          const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
+          const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
+          const Vec3fa d0 = vcurve.v0.w*k0;
+          const Vec3fa d1 = vcurve.v1.w*k0;
+          const Vec3fa d2 = vcurve.v2.w*k3;
+          const Vec3fa d3 = vcurve.v3.w*k3;
+          
+          CubicBezierCurve<V> L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
+          CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
+          return TensorLinearCubicBezierSurface(L,R);
+        }
         
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
+        }
+
+        __forceinline BBox3fa accurateBounds() const {
+          return merge(L.accurateBounds(),R.accurateBounds());
         }
         
         __forceinline CubicBezierCurve<Interval1f> reduce_v() const {
@@ -112,11 +134,19 @@ namespace embree
         __forceinline TensorLinearCubicBezierSurface<float> xfm(const V& dx, const V& p) const {
           return TensorLinearCubicBezierSurface<float>(L.xfm(dx,p),R.xfm(dx,p));
         }
+
+        __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space) const {
+          return TensorLinearCubicBezierSurface(L.xfm(space),R.xfm(space));
+        }
         
         __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const {
           return TensorLinearCubicBezierSurface(L.xfm(space,p),R.xfm(space,p));
         }
-        
+
+        __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p, const float s) const {
+          return TensorLinearCubicBezierSurface(L.xfm(space,p,s),R.xfm(space,p,s));
+        }
+
         __forceinline TensorLinearCubicBezierSurface clip_u(const Interval1f& u) const {
           return TensorLinearCubicBezierSurface(L.clip(u),R.clip(u));
         }

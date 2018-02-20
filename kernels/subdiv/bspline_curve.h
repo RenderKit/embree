@@ -202,7 +202,7 @@ namespace embree
       }
       
       /* calculates bounds of bspline curve geometry */
-      __forceinline BBox3fa accurateBounds() const
+      __forceinline BBox3fa accurateRoundBounds() const
       {
         const int N = 7;
         const float scale = 1.0f/(3.0f*(N-1));
@@ -227,7 +227,7 @@ namespace embree
       }
       
       /* calculates bounds when tessellated into N line segments */
-      __forceinline BBox3fa tessellatedBounds(int N) const
+      __forceinline BBox3fa accurateFlatBounds(int N) const
       {
         if (likely(N == 4))
         {

@@ -90,6 +90,7 @@ namespace embree
       Vec3fa w2 = xfmVector(ray_space,v2-ray_org); w2.w = v2.w;
       Vec3fa w3 = xfmVector(ray_space,v3-ray_org); w3.w = v3.w;
       NativeCurve3fa curve2D(w0,w1,w2,w3);
+      float eps = 4.0f*float(ulp)*reduce_max(max(abs(w0),abs(w1),abs(w2),abs(w3)));
       
       /* evaluate the bezier curve */
       bool ishit = false;
@@ -100,8 +101,10 @@ namespace embree
       
       if (any(valid)) 
       {
-        const Vec3vfx dp0dt = curve2D.template derivative0<VSIZEX>(0,N);
-        const Vec3vfx dp1dt = curve2D.template derivative1<VSIZEX>(0,N);
+        Vec3vfx dp0dt = curve2D.template derivative0<VSIZEX>(0,N);
+        Vec3vfx dp1dt = curve2D.template derivative1<VSIZEX>(0,N);
+        dp0dt = select(reduce_max(abs(dp0dt)) < vfloatx(eps),Vec3vfx(p1-p0),dp0dt);
+        dp1dt = select(reduce_max(abs(dp1dt)) < vfloatx(eps),Vec3vfx(p1-p0),dp1dt);
         const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
         const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
         const Vec3vfx nn0 = normalize(n0);
@@ -141,8 +144,10 @@ namespace embree
           valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
           if (none(valid)) continue;
           
-          const Vec3vfx dp0dt = curve2D.template derivative0<VSIZEX>(i,N);
-          const Vec3vfx dp1dt = curve2D.template derivative1<VSIZEX>(i,N);
+          Vec3vfx dp0dt = curve2D.template derivative0<VSIZEX>(i,N);
+          Vec3vfx dp1dt = curve2D.template derivative1<VSIZEX>(i,N);
+          dp0dt = select(reduce_max(abs(dp0dt)) < vfloatx(eps),Vec3vfx(p1-p0),dp0dt);
+          dp1dt = select(reduce_max(abs(dp1dt)) < vfloatx(eps),Vec3vfx(p1-p0),dp1dt);
           const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
           const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
           const Vec3vfx nn0 = normalize(n0);

@@ -200,6 +200,15 @@ namespace embree
       __forceinline CubicBezierCurve<float> xfm(const Vertex& dx, const Vertex& p) const {
         return CubicBezierCurve<float>(dot(v0-p,dx),dot(v1-p,dx),dot(v2-p,dx),dot(v3-p,dx));
       }
+
+       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space) const
+      {
+        const Vec3fa q0 = xfmVector(space,v0);
+        const Vec3fa q1 = xfmVector(space,v1);
+        const Vec3fa q2 = xfmVector(space,v2);
+        const Vec3fa q3 = xfmVector(space,v3);
+        return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+      }
       
       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const
       {
@@ -207,6 +216,15 @@ namespace embree
         const Vec3fa q1 = xfmVector(space,v1-p);
         const Vec3fa q2 = xfmVector(space,v2-p);
         const Vec3fa q3 = xfmVector(space,v3-p);
+        return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+      }
+
+      __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p, const float s) const
+      {
+        const Vec3fa q0 = xfmVector(space,s*(v0-p));
+        const Vec3fa q1 = xfmVector(space,s*(v1-p));
+        const Vec3fa q2 = xfmVector(space,s*(v2-p));
+        const Vec3fa q3 = xfmVector(space,s*(v3-p));
         return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
       }
       
@@ -231,7 +249,7 @@ namespace embree
       __forceinline friend CubicBezierCurve operator *( const Vertex& a, const CubicBezierCurve& b ) {
         return CubicBezierCurve(a*b.v0,a*b.v1,a*b.v2,a*b.v3);
       }
-      
+
       __forceinline friend CubicBezierCurve cmadd( const Vertex& a, const CubicBezierCurve& b,  const CubicBezierCurve& c) {
         return CubicBezierCurve(madd(a,b.v0,c.v0),madd(a,b.v1,c.v1),madd(a,b.v2,c.v2),madd(a,b.v3,c.v3));
       }
@@ -503,9 +521,31 @@ namespace embree
                          madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
                               vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
       }
-      
+
       /* calculates bounds of bezier curve geometry */
       __forceinline BBox3fa accurateBounds() const
+      {
+        const int N = 7;
+        const float scale = 1.0f/(3.0f*(N-1));
+        Vec4vfx pl(pos_inf), pu(neg_inf);
+        for (int i=0; i<=N; i+=VSIZEX)
+        {
+          vintx vi = vintx(i)+vintx(step);
+          vboolx valid = vi <= vintx(N);
+          const Vec4vfx p  = eval0<VSIZEX>(i,N);
+          const Vec4vfx dp = derivative0<VSIZEX>(i,N);
+          const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
+          const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
+          pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
+          pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
+        }
+        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+        return BBox3fa(lower,upper);
+      }
+      
+      /* calculates bounds of bezier curve geometry */
+      __forceinline BBox3fa accurateRoundBounds() const
       {
         const int N = 7;
         const float scale = 1.0f/(3.0f*(N-1));
@@ -530,7 +570,7 @@ namespace embree
       }
       
       /* calculates bounds when tessellated into N line segments */
-      __forceinline BBox3fa tessellatedBounds(int N) const
+      __forceinline BBox3fa accurateFlatBounds(int N) const
       {
         if (likely(N == 4))
         {
