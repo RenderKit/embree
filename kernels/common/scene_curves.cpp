@@ -526,8 +526,8 @@ namespace embree
           const float r3 = radius(index+3,itime);
           if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
             return false;
-          if (min(r0,r1,r2,r3) < 0.0f)
-            return false;
+          //if (min(r0,r1,r2,r3) < 0.0f)
+          //return false;
           
           const Vec3fa v0 = vertex(index+0,itime);
           const Vec3fa v1 = vertex(index+1,itime);
