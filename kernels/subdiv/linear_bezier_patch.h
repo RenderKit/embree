@@ -110,6 +110,10 @@ namespace embree
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
         }
+
+        __forceinline BBox3fa accurateBounds() const {
+          return merge(L.accurateBounds(),L.accurateBounds());
+        }
         
         __forceinline CubicBezierCurve<Interval1f> reduce_v() const {
           return merge(CubicBezierCurve<Interval<V>>(L),CubicBezierCurve<Interval<V>>(R));
@@ -131,6 +135,10 @@ namespace embree
           return TensorLinearCubicBezierSurface<float>(L.xfm(dx,p),R.xfm(dx,p));
         }
 
+        __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space) const {
+          return TensorLinearCubicBezierSurface(L.xfm(space),R.xfm(space));
+        }
+        
         __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const {
           return TensorLinearCubicBezierSurface(L.xfm(space,p),R.xfm(space,p));
         }

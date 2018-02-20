@@ -200,6 +200,15 @@ namespace embree
       __forceinline CubicBezierCurve<float> xfm(const Vertex& dx, const Vertex& p) const {
         return CubicBezierCurve<float>(dot(v0-p,dx),dot(v1-p,dx),dot(v2-p,dx),dot(v3-p,dx));
       }
+
+       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space) const
+      {
+        const Vec3fa q0 = xfmVector(space,v0);
+        const Vec3fa q1 = xfmVector(space,v1);
+        const Vec3fa q2 = xfmVector(space,v2);
+        const Vec3fa q3 = xfmVector(space,v3);
+        return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+      }
       
       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const
       {
