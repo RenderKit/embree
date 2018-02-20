@@ -86,8 +86,26 @@ namespace embree
           L = other.L; R = other.R; return *this;
         }
           
-          __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
-            : L(L), R(R) {}
+        __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
+          : L(L), R(R) {}
+
+        template<typename SourceCurve3fa>
+        __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve3fa& center, const SourceCurve3fa& normal)
+        {
+          CubicBezierCurve3fa vcurve; convert(center,vcurve);
+          CubicBezierCurve3fa ncurve; convert(normal,ncurve);
+          
+          const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
+          const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
+          const Vec3fa d0 = vcurve.v0.w*k0;
+          const Vec3fa d1 = vcurve.v1.w*k0;
+          const Vec3fa d2 = vcurve.v2.w*k3;
+          const Vec3fa d3 = vcurve.v3.w*k3;
+          
+          CubicBezierCurve<V> L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
+          CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
+          return TensorLinearCubicBezierSurface(L,R);
+        }
         
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());

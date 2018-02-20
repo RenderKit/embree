@@ -337,20 +337,8 @@ namespace embree
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
-
-        BezierCurve3fa vcurve; convert(SourceCurve3fa(v0i,v1i,v2i,v3i),vcurve);
-        BezierCurve3fa ncurve; convert(SourceCurve3fa(n0i,n1i,n2i,n3i),ncurve);
-
-        // FIXME: what if n0 or n1 oriented along tangent?
-        const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
-        const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
-        const Vec3fa d0 = vcurve.v0.w*k0;
-        const Vec3fa d1 = vcurve.v1.w*k0;
-        const Vec3fa d2 = vcurve.v2.w*k3;
-        const Vec3fa d3 = vcurve.v3.w*k3; 
-        CubicBezierCurve3fa L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
-        CubicBezierCurve3fa R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
-        TensorLinearCubicBezierSurface3fa curve(L,R);
+        TensorLinearCubicBezierSurface3fa curve =
+          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
         //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
       }
@@ -384,20 +372,8 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
-
-        BezierCurve3fa vcurve; convert(SourceCurve3fa(v0i,v1i,v2i,v3i),vcurve);
-        BezierCurve3fa ncurve; convert(SourceCurve3fa(n0i,n1i,n2i,n3i),ncurve);
-
-        // FIXME: what if n0 or n1 oriented along tangent?
-        const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
-        const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
-        const Vec3fa d0 = vcurve.v0.w*k0;
-        const Vec3fa d1 = vcurve.v1.w*k0;
-        const Vec3fa d2 = vcurve.v2.w*k3;
-        const Vec3fa d3 = vcurve.v3.w*k3; 
-        CubicBezierCurve3fa L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
-        CubicBezierCurve3fa R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
-        TensorLinearCubicBezierSurface3fa curve(L,R);
+        TensorLinearCubicBezierSurface3fa curve =
+          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
         //return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
       }
