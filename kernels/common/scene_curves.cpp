@@ -545,6 +545,16 @@ namespace embree
           const Vec3fa v3 = vertex(index+3,itime);
           if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
             return false;
+
+          if (ctype == GTY_SUBTYPE_ORIENTED_CURVE)
+          {
+            const Vec3fa n0 = normal(index+0,itime);
+            const Vec3fa n1 = normal(index+1,itime);
+            const Vec3fa n2 = normal(index+2,itime);
+            const Vec3fa n3 = normal(index+3,itime);
+            if (!isvalid(n0) || !isvalid(n1) || !isvalid(n2) || !isvalid(n3))
+              return false;
+          }
         }
         
         return true;
