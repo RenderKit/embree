@@ -209,6 +209,15 @@ namespace embree
         const Vec3fa q3 = xfmVector(space,v3-p);
         return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
       }
+
+      __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p, const float s) const
+      {
+        const Vec3fa q0 = xfmVector(space,s*(v0-p));
+        const Vec3fa q1 = xfmVector(space,s*(v1-p));
+        const Vec3fa q2 = xfmVector(space,s*(v2-p));
+        const Vec3fa q3 = xfmVector(space,s*(v3-p));
+        return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+      }
       
       __forceinline int maxRoots() const;
       
@@ -231,7 +240,7 @@ namespace embree
       __forceinline friend CubicBezierCurve operator *( const Vertex& a, const CubicBezierCurve& b ) {
         return CubicBezierCurve(a*b.v0,a*b.v1,a*b.v2,a*b.v3);
       }
-      
+
       __forceinline friend CubicBezierCurve cmadd( const Vertex& a, const CubicBezierCurve& b,  const CubicBezierCurve& c) {
         return CubicBezierCurve(madd(a,b.v0,c.v0),madd(a,b.v1,c.v1),madd(a,b.v2,c.v2),madd(a,b.v3,c.v3));
       }

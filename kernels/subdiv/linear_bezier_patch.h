@@ -130,11 +130,15 @@ namespace embree
         __forceinline TensorLinearCubicBezierSurface<float> xfm(const V& dx, const V& p) const {
           return TensorLinearCubicBezierSurface<float>(L.xfm(dx,p),R.xfm(dx,p));
         }
-        
+
         __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p) const {
           return TensorLinearCubicBezierSurface(L.xfm(space,p),R.xfm(space,p));
         }
-        
+
+        __forceinline TensorLinearCubicBezierSurface<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p, const float s) const {
+          return TensorLinearCubicBezierSurface(L.xfm(space,p,s),R.xfm(space,p,s));
+        }
+
         __forceinline TensorLinearCubicBezierSurface clip_u(const Interval1f& u) const {
           return TensorLinearCubicBezierSurface(L.clip(u),R.clip(u));
         }

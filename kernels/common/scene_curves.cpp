@@ -19,6 +19,7 @@
 
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/bspline_curve.h"
+#include "../subdiv/linear_bezier_patch.h"
 
 namespace embree
 {
@@ -322,52 +323,22 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-#if 0
-      
-      /*! returns the i'th curve */
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
       {
         const Curve3fa center = getCurve(i,itime);
         const Curve3fa normal = getNormalCurve(i,itime);
         const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
-        return ocurve.bounds();
+        return ocurve;
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const AffineSpace3fa& space, size_t i, size_t itime = 0) const 
-      {
-        const Curve3fa center = getCurve(i,itime);
-        const Curve3fa normal = getNormalCurve(i,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
-
-        
-        const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        Vec3fa w0 = xfmPoint(space,v0); w0.w = v0.w;
-        Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
-        Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
-        Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
-        return Curve3fa(w0,w1,w2,w3);
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const AffineSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurve(i,itime).xfm(space);
       }
 
-       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
-      {
-        const float r_scale = r_scale0*scale;
-        const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        Vec3fa w0 = xfmPoint(space,(v0-ofs)*Vec3fa(scale)); w0.w = v0.w*r_scale;
-        Vec3fa w1 = xfmPoint(space,(v1-ofs)*Vec3fa(scale)); w1.w = v1.w*r_scale;
-        Vec3fa w2 = xfmPoint(space,(v2-ofs)*Vec3fa(scale)); w2.w = v2.w*r_scale;
-        Vec3fa w3 = xfmPoint(space,(v3-ofs)*Vec3fa(scale)); w3.w = v3.w*r_scale;
-        return Curve3fa(w0,w1,w2,w3);
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurve(i,itime).xfm(space,ofs,scale);
       }
-#endif
-      
+
       LinearSpace3fa computeAlignedSpace(const size_t primID) const
       {
         Vec3fa axisz(0,0,1);
