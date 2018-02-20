@@ -647,8 +647,6 @@ namespace embree
             geomIDs[num_geomIDs++] = new_geomID;
         }
 
-        //PRINT(sizeof(SubGridQBVHN<N>));
-
         /* allocate all leaf memory in one single block */
         SubGridQBVHN<N>* accel = (SubGridQBVHN<N>*) alloc.malloc1(num_geomIDs*sizeof(SubGridQBVHN<N>),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,num_geomIDs);

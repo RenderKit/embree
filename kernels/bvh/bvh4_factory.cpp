@@ -29,6 +29,7 @@
 #include "../geometry/quadi.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
+#include "../geometry/subgrid.h"
 #include "../common/accelinstance.h"
 
 namespace embree
@@ -1453,7 +1454,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4Grid(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Object::type,scene);
+    BVH4* accel = new BVH4(SubGridQBVH4::type,scene);
     Accel::Intersectors intersectors = BVH4GridIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -1467,7 +1468,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4GridMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Object::type,scene);
+    BVH4* accel = new BVH4(SubGridQBVH4::type,scene);
     Accel::Intersectors intersectors;
     Builder* builder = nullptr;
     FATAL("not implemented yet");

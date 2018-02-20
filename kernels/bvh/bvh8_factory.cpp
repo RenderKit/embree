@@ -33,6 +33,7 @@
 #include "../geometry/quadi.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
+#include "../geometry/subgrid.h"
 #include "../common/accelinstance.h"
 
 namespace embree
@@ -1131,7 +1132,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8Grid(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Object::type,scene);
+    BVH8* accel = new BVH8(SubGridQBVH8::type,scene);
     Accel::Intersectors intersectors = BVH8GridIntersectors(accel,ivariant);
     Builder* builder = nullptr;
     if (scene->device->object_builder == "default") {
@@ -1144,7 +1145,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8GridMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Object::type,scene);
+    BVH8* accel = new BVH8(SubGridQBVH8::type,scene);
     Accel::Intersectors intersectors = BVH8GridMBIntersectors(accel,ivariant);
     Builder* builder = nullptr;
     return new AccelInstance(accel,builder,intersectors);        
