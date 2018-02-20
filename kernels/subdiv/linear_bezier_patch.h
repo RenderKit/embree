@@ -111,8 +111,8 @@ namespace embree
           return merge(L.bounds(),R.bounds());
         }
 
-        __forceinline BBox3fa accurateCurveBounds() const {
-          return merge(L.accurateCurveBounds(),R.accurateCurveBounds());
+        __forceinline BBox3fa accurateBounds() const {
+          return merge(L.accurateBounds(),R.accurateBounds());
         }
         
         __forceinline CubicBezierCurve<Interval1f> reduce_v() const {

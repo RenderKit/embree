@@ -477,9 +477,9 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).tessellatedBounds(tessellationRate);
-        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateCurveBounds();
+        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).accurateFlatBounds(tessellationRate);
+        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateRoundBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateBounds();
         default: return empty;
         }
       }
@@ -488,9 +488,9 @@ namespace embree
       __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).tessellatedBounds(tessellationRate);
-        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateCurveBounds();
+        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).accurateFlatBounds(tessellationRate);
+        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateRoundBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateBounds();
         default: return empty;
         }
       }
@@ -499,9 +499,9 @@ namespace embree
       __forceinline BBox3fa bounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).tessellatedBounds(tessellationRate);
-        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateCurveBounds();
+        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate);
+        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateBounds();
         default: return empty;
         }
       }
