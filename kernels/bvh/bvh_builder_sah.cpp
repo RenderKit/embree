@@ -786,7 +786,6 @@ namespace embree
               }
           }
         }
-        assert(p_index == numPrimitives);
 
         /* pinfo might has zero size due to invalid geometry */
         if (unlikely(pinfo.size() == 0))
@@ -796,6 +795,8 @@ namespace embree
           prims.clear();
           return;
         }
+
+        assert(p_index == numPrimitives);
 
         /* call BVH builder */
         NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafGrid<N,SubGrid>(bvh,sgrids.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
