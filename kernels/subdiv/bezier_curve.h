@@ -521,6 +521,28 @@ namespace embree
                          madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
                               vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
       }
+
+      /* calculates bounds of bezier curve geometry */
+      __forceinline BBox3fa accurateCurveBounds() const
+      {
+        const int N = 7;
+        const float scale = 1.0f/(3.0f*(N-1));
+        Vec4vfx pl(pos_inf), pu(neg_inf);
+        for (int i=0; i<=N; i+=VSIZEX)
+        {
+          vintx vi = vintx(i)+vintx(step);
+          vboolx valid = vi <= vintx(N);
+          const Vec4vfx p  = eval0<VSIZEX>(i,N);
+          const Vec4vfx dp = derivative0<VSIZEX>(i,N);
+          const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
+          const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
+          pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
+          pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
+        }
+        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+        return BBox3fa(lower,upper);
+      }
       
       /* calculates bounds of bezier curve geometry */
       __forceinline BBox3fa accurateBounds() const

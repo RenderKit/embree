@@ -479,8 +479,7 @@ namespace embree
         switch (ctype) {
         case GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).tessellatedBounds(tessellationRate);
         case GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getCurve(i,itime).accurateBounds();
-        //case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateCurveBounds();
         default: return empty;
         }
       }
@@ -491,8 +490,7 @@ namespace embree
         switch (ctype) {
         case GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).tessellatedBounds(tessellationRate);
         case GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getCurve(space,i,itime).accurateBounds();
-        //case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateCurveBounds();
         default: return empty;
         }
       }
@@ -503,8 +501,7 @@ namespace embree
         switch (ctype) {
         case GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).tessellatedBounds(tessellationRate);
         case GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateBounds();
-        //case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateCurveBounds();
         default: return empty;
         }
       }
