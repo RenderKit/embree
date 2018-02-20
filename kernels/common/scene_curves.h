@@ -146,6 +146,24 @@ namespace embree
       p2 = madd(Vec3fa(t0),a2,t1*b2);
       p3 = madd(Vec3fa(t0),a3,t1*b3);
     }
+
+    /*! loads curve vertices for specified time */
+    __forceinline void gather_normals(Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, float time) const
+    {
+      float ftime;
+      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+
+      const float t0 = 1.0f - ftime;
+      const float t1 = ftime;
+      Vec3fa a0,a1,a2,a3;
+      gather_normals(a0,a1,a2,a3,i,itime);
+      Vec3fa b0,b1,b2,b3;
+      gather_normals(b0,b1,b2,b3,i,itime+1);
+      n0 = madd(Vec3fa(t0),a0,t1*b0);
+      n1 = madd(Vec3fa(t0),a1,t1*b1);
+      n2 = madd(Vec3fa(t0),a2,t1*b2);
+      n3 = madd(Vec3fa(t0),a3,t1*b3);
+    }
     
   public:
     BufferView<unsigned int> curves;        //!< array of curve indices

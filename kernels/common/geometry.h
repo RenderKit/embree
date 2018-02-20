@@ -156,6 +156,9 @@ namespace embree
     /*! returns geometry type */
     __forceinline GType getType() const { return gtype; }
 
+    /*! returns curve type */
+    __forceinline GType getCurveType() const { return (GType)(gtype & GTY_SUBTYPE_MASK); }
+
     /*! returns geometry type mask */
     __forceinline GTypeMask getTypeMask() const { return (GTypeMask)(1 << gtype); }
 

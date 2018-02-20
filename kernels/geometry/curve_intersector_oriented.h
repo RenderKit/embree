@@ -38,10 +38,10 @@ namespace embree
       size_t numSolveIterations;
     };
 
-    template<typename Epilog>
+    template<typename Ray, typename Epilog>
       struct TensorLinearCubicBezierSurfaceIntersector
       {
-        const CurvePrecalculations1& pre;
+        const LinearSpace3fa& ray_space;
         Ray& ray;
         TensorLinearCubicBezierSurface3fa curve3d;
         TensorLinearCubicBezierSurface2fa curve2d;
@@ -50,15 +50,15 @@ namespace embree
         bool isHit;
         CurveCounters counters;
 
-        __forceinline TensorLinearCubicBezierSurfaceIntersector (const CurvePrecalculations1& pre, Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
-          : pre(pre), ray(ray), curve3d(curve3d), epilog(epilog), isHit(false)
+        __forceinline TensorLinearCubicBezierSurfaceIntersector (const LinearSpace3fa& ray_space, Ray& ray, const TensorLinearCubicBezierSurface3fa& curve3d, const Epilog& epilog)
+          : ray_space(ray_space), ray(ray), curve3d(curve3d), epilog(epilog), isHit(false)
         {
-          const TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(pre.ray_space,ray.org);
+          const TensorLinearCubicBezierSurface3fa curve3dray = curve3d.xfm(ray_space,ray.org);
           curve2d = TensorLinearCubicBezierSurface2fa(CubicBezierCurve2fa(curve3dray.L),CubicBezierCurve2fa(curve3dray.R));
           const BBox2fa b2 = curve2d.bounds();
           eps = 8.0f*float(ulp)*reduce_max(max(abs(b2.lower),abs(b2.upper)));
         }
-
+        
         __forceinline Interval1f solve_linear(const float u0, const float u1, const float& p0, const float& p1)
         {
           if (p1 == p0) {
@@ -109,7 +109,7 @@ namespace embree
           {
             const float u = cu.center();
             const float v = cv.center();
-            TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(pre.ray_space.row2(),ray.org);
+            TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(ray_space.row2(),ray.org);
             const float t = curve_z.eval(u,v);
             if (t >= ray.tnear() && t <= ray.tfar) {
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
@@ -184,7 +184,7 @@ namespace embree
               const float v = uv.y;
               if (!(u >= 0.0f && u <= 1.0f)) return; // rejects NaNs
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
-              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(pre.ray_space.row2(),ray.org);
+              const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(ray_space.row2(),ray.org);
               const float t = curve_z.eval(u,v);
               if (!(t > ray.tnear() && t < ray.tfar)) return; // rejects NaNs
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
@@ -322,33 +322,84 @@ namespace embree
         }
       };
 
-    
-    struct OrientedCurve1Intersector1
+
+    template<typename SourceCurve3fa>
+      struct OrientedCurve1Intersector1
     {
       __forceinline OrientedCurve1Intersector1() {}
       
       __forceinline OrientedCurve1Intersector1(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
-      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, 
-                                const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                const Vec3fa& n0, const Vec3fa& n1, const Vec3fa& n2, const Vec3fa& n3,
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, const unsigned int primID, 
+                                const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
+                                const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
 
+        BezierCurve3fa vcurve; convert(SourceCurve3fa(v0i,v1i,v2i,v3i),vcurve);
+        BezierCurve3fa ncurve; convert(SourceCurve3fa(n0i,n1i,n2i,n3i),ncurve);
+
         // FIXME: what if n0 or n1 oriented along tangent?
-        const Vec3fa k0 = normalize(cross(n0,v1-v0));
-        const Vec3fa k3 = normalize(cross(n3,v3-v2));
-        const Vec3fa d0 = v0.w*k0;
-        const Vec3fa d1 = v1.w*k0;
-        const Vec3fa d2 = v2.w*k3;
-        const Vec3fa d3 = v3.w*k3;
-        CubicBezierCurve3fa L(v0-d0,v1-d1,v2-d2,v3-d3);
-        CubicBezierCurve3fa R(v0+d0,v1+d1,v2+d2,v3+d3);
+        const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
+        const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
+        const Vec3fa d0 = vcurve.v0.w*k0;
+        const Vec3fa d1 = vcurve.v1.w*k0;
+        const Vec3fa d2 = vcurve.v2.w*k3;
+        const Vec3fa d3 = vcurve.v3.w*k3; 
+        CubicBezierCurve3fa L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
+        CubicBezierCurve3fa R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
         TensorLinearCubicBezierSurface3fa curve(L,R);
-        //return TensorLinearCubicBezierSurfaceIntersector<Epilog>(pre,ray,curve,epilog).solve_bezier_clipping();
-        return TensorLinearCubicBezierSurfaceIntersector<Epilog>(pre,ray,curve,epilog).solve_newton_raphson_main();
+        //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
+        return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
+      }
+    };
+
+    template<typename SourceCurve3fa, int K>
+      struct OrientedCurve1IntersectorK
+    {
+      struct Ray1
+      {
+        __forceinline Ray1(RayK<K>& ray, size_t k)
+          : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), _tnear(ray.tnear()[k]), tfar(ray.tfar[k]) {}
+
+        Vec3fa org;
+        Vec3fa dir;
+        float _tnear;
+        float& tfar;
+
+        __forceinline float& tnear() { return _tnear; }
+        //__forceinline float& tfar()  { return _tfar; }
+        __forceinline const float& tnear() const { return _tnear; }
+        //__forceinline const float& tfar()  const { return _tfar; }
+      };
+
+      template<typename Epilog>
+      __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
+                                   const CurveGeometry* geom, const unsigned int primID,
+                                   const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
+                                   const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
+                                   const Epilog& epilog)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Ray1 ray(vray,k);
+
+        BezierCurve3fa vcurve; convert(SourceCurve3fa(v0i,v1i,v2i,v3i),vcurve);
+        BezierCurve3fa ncurve; convert(SourceCurve3fa(n0i,n1i,n2i,n3i),ncurve);
+
+        // FIXME: what if n0 or n1 oriented along tangent?
+        const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
+        const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
+        const Vec3fa d0 = vcurve.v0.w*k0;
+        const Vec3fa d1 = vcurve.v1.w*k0;
+        const Vec3fa d2 = vcurve.v2.w*k3;
+        const Vec3fa d3 = vcurve.v3.w*k3; 
+        CubicBezierCurve3fa L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
+        CubicBezierCurve3fa R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
+        TensorLinearCubicBezierSurface3fa curve(L,R);
+        //return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_bezier_clipping();
+        return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
       }
     };
   }

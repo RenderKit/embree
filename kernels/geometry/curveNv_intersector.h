@@ -61,7 +61,7 @@ namespace embree
             }
           }
 
-          Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
+          Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
@@ -98,7 +98,7 @@ namespace embree
             }
           }
           
-          if (Intersector().intersect(pre,ray,geom,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
             return true;
           
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
@@ -145,7 +145,7 @@ namespace embree
             }
           }
 
-          Intersector().intersect(pre,ray,k,geom,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
+          Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
@@ -182,7 +182,7 @@ namespace embree
             }
           }
 
-          if (Intersector().intersect(pre,ray,k,geom,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))
             return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
