@@ -293,7 +293,7 @@ namespace embree
         return Curve3fa (n0,n1,n2,n3);
       }
 
-      __forceinline const Curve3fa getCurve(const AffineSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const Curve3fa getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
         const Vec3fa v0 = vertex(index+0,itime);
@@ -514,7 +514,7 @@ namespace embree
       }
       
       /*! calculates bounding box of i'th bezier curve */
-      __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t itime = 0) const
+      __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
         case GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).tessellatedBounds(tessellationRate);
@@ -541,7 +541,7 @@ namespace embree
       }
       
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
-      __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      __forceinline LBBox3fa linearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
         return LBBox3fa([&] (size_t itime) { return bounds(space, primID, itime); }, time_range, fnumTimeSegments);
       }
       
@@ -606,7 +606,7 @@ namespace embree
         return bounds(i);
       }
       
-      BBox3fa vbounds(const AffineSpace3fa& space, size_t i) const {
+      BBox3fa vbounds(const LinearSpace3fa& space, size_t i) const {
         return bounds(space,i);
       }
 
@@ -618,7 +618,7 @@ namespace embree
         return linearBounds(primID,time_range);
       }
       
-      LBBox3fa vlinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
         return linearBounds(space,primID,time_range);
       }
 
