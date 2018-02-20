@@ -267,7 +267,7 @@ namespace embree
 
   namespace isa
   {
-    template<typename Curve3fa, typename Curve4f>
+    template<Geometry::GType ctype, typename Curve3fa, typename Curve4f>
       struct CurveGeometryISA : public CurveGeometry
     {
       CurveGeometryISA (Device* device, Geometry::GType gtype)
@@ -282,6 +282,35 @@ namespace embree
         const Vec3fa v2 = vertex(index+2,itime);
         const Vec3fa v3 = vertex(index+3,itime);
         return Curve3fa (v0,v1,v2,v3);
+      }
+
+      __forceinline const Curve3fa getCurve(const AffineSpace3fa& space, size_t i, size_t itime = 0) const 
+      {
+        const unsigned int index = curve(i);
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa v2 = vertex(index+2,itime);
+        const Vec3fa v3 = vertex(index+3,itime);
+        Vec3fa w0 = xfmPoint(space,v0); w0.w = v0.w;
+        Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
+        Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
+        Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
+        return Curve3fa(w0,w1,w2,w3);
+      }
+
+       __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      {
+        const float r_scale = r_scale0*scale;
+        const unsigned int index = curve(i);
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa v2 = vertex(index+2,itime);
+        const Vec3fa v3 = vertex(index+3,itime);
+        Vec3fa w0 = xfmPoint(space,(v0-ofs)*Vec3fa(scale)); w0.w = v0.w*r_scale;
+        Vec3fa w1 = xfmPoint(space,(v1-ofs)*Vec3fa(scale)); w1.w = v1.w*r_scale;
+        Vec3fa w2 = xfmPoint(space,(v2-ofs)*Vec3fa(scale)); w2.w = v2.w*r_scale;
+        Vec3fa w3 = xfmPoint(space,(v3-ofs)*Vec3fa(scale)); w3.w = v3.w*r_scale;
+        return Curve3fa(w0,w1,w2,w3);
       }
 
       LinearSpace3fa computeAlignedSpace(const size_t primID) const
@@ -421,46 +450,34 @@ namespace embree
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
-        const Curve3fa curve = getCurve(i,itime);
-        if (likely(!(getType() & GTY_ROUND_CURVE)))
-          return curve.tessellatedBounds(tessellationRate);
-        else
-          return curve.accurateBounds();
+        switch (ctype) {
+        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).tessellatedBounds(tessellationRate);
+        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getCurve(i,itime).accurateBounds(); //return getOrientedCurve(i,itime).accurateBounds();
+        default: return empty;
+        }
       }
       
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t itime = 0) const
       {
-        const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        Vec3fa w0 = xfmPoint(space,v0); w0.w = v0.w;
-        Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
-        Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
-        Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
-        const Curve3fa curve(w0,w1,w2,w3);
-        if (likely(!(getType() & GTY_ROUND_CURVE))) return curve.tessellatedBounds(tessellationRate);
-        else                                        return curve.accurateBounds();
+        switch (ctype) {
+        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).tessellatedBounds(tessellationRate);
+        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getCurve(space,i,itime).accurateBounds(); //return getOrientedCurve(space,i,itime).accurateBounds();
+        default: return empty;
+        }
       }
       
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
-        const float r_scale = r_scale0*scale;
-        const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        Vec3fa w0 = xfmPoint(space,(v0-ofs)*Vec3fa(scale)); w0.w = v0.w*r_scale;
-        Vec3fa w1 = xfmPoint(space,(v1-ofs)*Vec3fa(scale)); w1.w = v1.w*r_scale;
-        Vec3fa w2 = xfmPoint(space,(v2-ofs)*Vec3fa(scale)); w2.w = v2.w*r_scale;
-        Vec3fa w3 = xfmPoint(space,(v3-ofs)*Vec3fa(scale)); w3.w = v3.w*r_scale;
-        const Curve3fa curve(w0,w1,w2,w3);
-        if (likely(!(getType() & GTY_ROUND_CURVE))) return curve.tessellatedBounds(tessellationRate);
-        else                                        return curve.accurateBounds();
+        switch (ctype) {
+        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).tessellatedBounds(tessellationRate);
+        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateBounds();
+        case GTY_SUBTYPE_ORIENTED_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateBounds(); //return getOrientedCurve(ofs,scale,r_scale0,i,itime).accurateBounds();
+        default: return empty;
+        }
       }
 
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
@@ -595,12 +612,12 @@ namespace embree
     CurveGeometry* createCurves(Device* device, Geometry::GType gtype)
     {
       switch (gtype) {
-      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }
     }
