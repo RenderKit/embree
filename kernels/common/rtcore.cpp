@@ -1067,6 +1067,18 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_INSTANCE is not supported");
 #endif
     }
+
+    case RTC_GEOMETRY_TYPE_GRID:
+    {
+#if defined(EMBREE_GEOMETRY_GRID)
+      createGridMeshTy createGridMesh = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createGridMesh);
+      Geometry* geom = createGridMesh(device);
+      return (RTCGeometry) geom->refInc();
+#else
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_GRID is not supported");
+#endif
+    }
     
     default:
       throw_RTCError(RTC_ERROR_UNKNOWN,"invalid geometry type");

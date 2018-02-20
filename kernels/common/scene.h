@@ -26,6 +26,7 @@
 #include "scene_curves.h"
 #include "scene_line_segments.h"
 #include "scene_subdiv_mesh.h"
+#include "scene_grid_mesh.h"
 
 #include "../subdiv/tessellation_cache.h"
 
@@ -145,8 +146,8 @@ namespace embree
 
   public:
     void createTriangleAccel();
-    void createQuadAccel();
     void createTriangleMBAccel();
+    void createQuadAccel();
     void createQuadMBAccel();
     void createHairAccel();
     void createHairMBAccel();
@@ -156,6 +157,8 @@ namespace embree
     void createSubdivMBAccel();
     void createUserGeometryAccel();
     void createUserGeometryMBAccel();
+    void createGridAccel();
+    void createGridMBAccel();
 
     /*! prints statistics about the scene */
     void printStatistics();
@@ -290,10 +293,10 @@ namespace embree
     struct GeometryCounts 
     {
       __forceinline GeometryCounts()
-        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0) {}
+        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numGrids(0) {}
 
       __forceinline size_t size() const {
-        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries;
+        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numGrids;
       }
 
       std::atomic<size_t> numTriangles;             //!< number of enabled triangles
@@ -302,6 +305,8 @@ namespace embree
       std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
       std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
       std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
+      std::atomic<size_t> numGrids;              //!< number of enabled grid geometries
+
     };
     
     GeometryCounts world;               //!< counts for non-motion blurred geometry
@@ -342,4 +347,7 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
   template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,false>() const { return world.numUserGeometries; }
   template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,true>() const { return worldMB.numUserGeometries; }
+  template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,false>() const { return world.numGrids; }
+  template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; }
+
 }

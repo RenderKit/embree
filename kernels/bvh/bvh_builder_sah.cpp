@@ -29,6 +29,7 @@
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/object.h"
+#include "../geometry/subgrid.h"
 
 #include "../common/state.h"
 
@@ -607,6 +608,227 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    struct SubGridBuildData {
+      unsigned short sx,sy;
+      unsigned int primID;
+
+      __forceinline SubGridBuildData() {};
+      __forceinline SubGridBuildData(const unsigned int sx, const unsigned int sy, const unsigned int primID) : sx(sx), sy(sy), primID(primID) {};
+
+    };
+
+    template<int N, typename Primitive>
+    struct CreateLeafGrid
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+      __forceinline CreateLeafGrid (BVH* bvh, const SubGridBuildData * const sgrids) : bvh(bvh),sgrids(sgrids) {}
+
+      __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+      {
+        const size_t items = set.size(); //Primitive::blocks(n);
+        const size_t start = set.begin();
+
+        /* collect all subsets with unique geomIDs */
+        assert(items <= N);
+        unsigned int geomIDs[N];
+        unsigned int num_geomIDs = 1;
+        geomIDs[0] = prims[start].geomID();
+
+        for (size_t i=1;i<items;i++)
+        {
+          bool found = false;
+          const unsigned int new_geomID = prims[start+i].geomID();
+          for (size_t j=0;j<num_geomIDs;j++)
+            if (new_geomID == geomIDs[j])
+            { found = true; break; }
+          if (!found) 
+            geomIDs[num_geomIDs++] = new_geomID;
+        }
+
+        /* allocate all leaf memory in one single block */
+        SubGridQBVHN<N>* accel = (SubGridQBVHN<N>*) alloc.malloc1(num_geomIDs*sizeof(SubGridQBVHN<N>),BVH::byteAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,num_geomIDs);
+
+        for (size_t g=0;g<num_geomIDs;g++)
+        {
+          unsigned int x[N];
+          unsigned int y[N];
+          unsigned int primID[N];
+          BBox3fa bounds[N];
+          unsigned int pos = 0;
+          for (size_t i=0;i<items;i++)
+          {
+            if (unlikely(prims[start+i].geomID() != geomIDs[g])) continue;
+
+            const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];                      
+            x[pos] = sgrid_bd.sx;
+            y[pos] = sgrid_bd.sy;
+            primID[pos] = sgrid_bd.primID;
+            bounds[pos] = prims[start+i].bounds();
+            pos++;
+          }
+          new (&accel[g]) SubGridQBVHN<N>(x,y,primID,bounds,geomIDs[g],pos);
+        }
+
+        return node;
+      }
+
+      BVH* bvh;
+      const SubGridBuildData * const sgrids;
+    };
+
+
+    template<int N>
+    struct BVHNBuilderSAHGrid : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+      
+      BVH* bvh;
+      Scene* scene;
+      GridMesh* mesh;
+      mvector<PrimRef> prims;
+      mvector<SubGridBuildData> sgrids;
+      GeneralBVHBuilder::Settings settings;
+      bool primrefarrayalloc;
+
+      BVHNBuilderSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, bool primrefarrayalloc = false)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
+
+      BVHNBuilderSAHGrid (BVH* bvh, GridMesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
+
+      // FIXME: shrink bvh->alloc in destructor here and in other builders too
+
+      void build()
+      {
+        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
+          FATAL("NOT YET IMPLEMENTED"); //build_group((GeometryGroup*)mesh);
+          return;
+        }
+
+        /* we reset the allocator when the mesh size changed */
+        if (mesh && mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+        }
+
+        /* if we use the primrefarray for allocations we have to take it back from the BVH */
+        if (settings.primrefarrayalloc != size_t(inf))
+          bvh->alloc.unshare(prims);
+
+	/* skip build for empty scene */
+        //const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
+        size_t numPrimitives = 0;
+
+        Scene::Iterator<GridMesh,false> iter(scene);
+        for (size_t s=0;s<scene->size();s++)
+        {
+          GridMesh *gmesh = iter.at(s);
+          if (gmesh == nullptr) continue;
+          for (size_t i=0;i<gmesh->size();i++)
+            numPrimitives += gmesh->getNumSubGrids(i);
+        }
+
+        if (numPrimitives == 0) {
+          bvh->clear();
+          prims.clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
+
+        /* create primref array */
+        if (primrefarrayalloc) {
+          settings.primrefarrayalloc = numPrimitives/1000;
+          if (settings.primrefarrayalloc < 1000)
+            settings.primrefarrayalloc = inf;
+        }
+
+        /* enable os_malloc for two level build */
+        if (mesh)
+          bvh->alloc.setOSallocation(true);
+
+        /* initialize allocator */
+        const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*(float)numPrimitives/N * sizeof(SubGridQBVHN<N>));
+        //PRINT(node_bytes);
+        //PRINT(leaf_bytes);
+        //PRINT(sizeof(SubGridQBVHN<N>));
+
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
+        prims.resize(numPrimitives); 
+        sgrids.resize(numPrimitives); 
+
+        // TODO: replace this with proper PrimRefArray generation
+        //PrimInfo pinfo = mesh ?
+        //  createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
+        //  createPrimRefArray<GridMesh,false>(scene,prims,bvh->scene->progressInterface);
+
+        PrimInfo pinfo(empty);
+        size_t p_index = 0;
+        for (size_t s=0;s<scene->size();s++)
+        {
+          GridMesh *gmesh = iter.at(s);
+          if (gmesh == nullptr) continue;
+          for (size_t i=0;i<gmesh->size();i++)
+          {
+            const GridMesh::Grid &g = gmesh->grid(i);
+            for (size_t y=0;y<(size_t)g.resY-1;y+=2)
+              for (size_t x=0;x<(size_t)g.resX-1;x+=2)
+              {
+                BBox3fa bounds = empty;
+                if (!gmesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
+                const PrimRef prim(bounds,s,p_index);
+                pinfo.add_center2(prim);
+                sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), i);
+                prims[p_index++] = prim;                
+              }
+          }
+        }
+
+        /* pinfo might has zero size due to invalid geometry */
+        if (unlikely(pinfo.size() == 0))
+        {
+          bvh->clear();
+          sgrids.clear();
+          prims.clear();
+          return;
+        }
+
+        assert(p_index == numPrimitives);
+
+        /* call BVH builder */
+        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafGrid<N,SubGridQBVHN<N>>(bvh,sgrids.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
+
+
+        /* if we allocated using the primrefarray we have to keep it alive */
+        if (settings.primrefarrayalloc != size_t(inf))
+          bvh->alloc.share(prims);
+
+        /* for static geometries we can do some cleanups */
+        else if (scene && scene->isStaticAccel()) {
+          bvh->shrink();
+          prims.clear();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        sgrids.clear();
+        prims.clear();
+      }
+    };
+
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
 
 #if defined(EMBREE_GEOMETRY_CURVES)
     Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
@@ -716,5 +938,17 @@ namespace embree
 
 #endif
 #endif
+
+
+#if defined(EMBREE_GEOMETRY_GRID)
+    Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,mesh,4,1.0f,1,4,mode); }
+    Builder* BVH4GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,scene,4,1.0f,1,4,mode); } // FIXME: check whether cost factors are correct
+
+#if defined(__AVX__)
+    Builder* BVH8GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,mesh,8,1.0f,4,8,mode); }
+    Builder* BVH8GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,scene,8,1.0f,4,8,mode); } // FIXME: check whether cost factors are correct
+#endif
+#endif
+
   }
 }

@@ -25,6 +25,7 @@
 #cmakedefine EMBREE_GEOMETRY_CURVES
 #cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
+#cmakedefine EMBREE_GEOMETRY_GRID
 #cmakedefine EMBREE_RAY_PACKETS
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
@@ -57,6 +58,11 @@
   #define IF_ENABLED_USER(x)
 #endif
 
+#if defined(EMBREE_GEOMETRY_GRID)
+  #define IF_ENABLED_GRIDS(x) x
+#else
+  #define IF_ENABLED_GRIDS(x)
+#endif
 
 
 

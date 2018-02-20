@@ -47,6 +47,8 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE  = 40, // flat normal oriented Bezier curves
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE  = 41, // flat normal oriented B-spline curves
 
+  RTC_GEOMETRY_TYPE_GRID = 80, // grid mesh
+
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };
@@ -341,6 +343,14 @@ struct RTCInterpolateNArguments
 
 /* Interpolates vertex data to an array of u/v locations. */
 RTC_API void rtcInterpolateN(const struct RTCInterpolateNArguments* args);
+
+/* RTCGrid primitive for grid mesh */
+struct RTCGrid
+{
+  unsigned int startVtxID;
+  unsigned int lineOffset;
+  unsigned short resX,resY; // max is a 32k x 32k grid
+};
 
 #if defined(__cplusplus)
 }

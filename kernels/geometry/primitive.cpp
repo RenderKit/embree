@@ -27,6 +27,8 @@
 #include "quadi.h"
 #include "subdivpatch1cached.h"
 #include "object.h"
+#include "subgrid.h"
+
 
 namespace embree
 {
@@ -235,4 +237,39 @@ namespace embree
   }
 
   Object::Type Object::type;
+
+  /********************** SubGrid **************************/
+
+  SubGrid::Type::Type ()
+    : PrimitiveType("subgrid",sizeof(SubGrid),1) {}
+
+  size_t SubGrid::Type::size(const char* This) const {
+    return 1;
+  }
+
+  SubGrid::Type SubGrid::type;
+
+
+  /********************** SubGridQBVH4 **************************/
+
+  template<>
+  SubGridQBVH4::Type::Type ()
+    : PrimitiveType("SubGridQBVH4",sizeof(SubGridQBVH4),1) {}
+
+  template<>
+  size_t SubGridQBVH4::Type::size(const char* This) const {
+    return 1;
+  }
+
+  /********************** SubGridQBVH8 **************************/
+
+  template<>
+  SubGridQBVH8::Type::Type ()
+    : PrimitiveType("SubGridQBVH8",sizeof(SubGridQBVH8),1) {}
+
+  template<>
+  size_t SubGridQBVH8::Type::size(const char* This) const {
+    return 1;
+  }
+
 }

@@ -52,6 +52,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_quad_mesh.cpp
   common/scene_curves.cpp
   common/scene_line_segments.cpp
+  common/scene_grid_mesh.cpp
 
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
@@ -112,6 +113,7 @@ MACRO(embree_files TARGET ISA)
       common/scene_quad_mesh.cpp 
       common/scene_curves.cpp
       common/scene_line_segments.cpp
+      common/scene_grid_mesh.cpp
       
       bvh/bvh_refit.cpp
       bvh/bvh_builder.cpp

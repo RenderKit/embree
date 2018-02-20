@@ -64,6 +64,9 @@ namespace embree
 
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
 
+    Accel* BVH4Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+
   private:
     void selectBuilders(int features);
     void selectIntersectors(int features);
@@ -97,6 +100,9 @@ namespace embree
     //Accel::Intersectors BVH4SubdivPatch1CachedIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4SubdivPatch1EagerMBIntersectors(BVH4* bvh);
     //Accel::Intersectors BVH4SubdivPatch1CachedMBIntersectors(BVH4* bvh);
+
+    Accel::Intersectors BVH4GridIntersectors(BVH4* bvh, IntersectVariant ivariant);
+    Accel::Intersectors BVH4GridMBIntersectors(BVH4* bvh, IntersectVariant ivariant);
     
     static void createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder);
 
@@ -151,6 +157,9 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
         
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4GridIntersector1Moeller);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4GridMBIntersector1Moeller);
+
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Line4iIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Line4iMBIntersector4);
 
@@ -185,7 +194,11 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualMBIntersector4Chunk);
-    
+
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4GridIntersector4HybridMoellerNoFilter);
+
+    // ==============
+
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Line4iIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Line4iMBIntersector8);
 
@@ -220,7 +233,11 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualMBIntersector8Chunk);
-    
+
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4GridIntersector8HybridMoellerNoFilter);
+
+    // ==============
+
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Line4iIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Line4iMBIntersector16);
 
@@ -255,6 +272,10 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
+
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4GridIntersector16HybridMoellerNoFilter);
+
+    // ==============
 
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iIntersectorStream);
 
@@ -306,6 +327,8 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
+    DEFINE_ISA_FUNCTION(Builder*,BVH4GridSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+
     // spatial scene builder
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4SceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
@@ -329,6 +352,8 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA AccelSet* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA size_t);
+
 
     // mesh refitters
   private:
@@ -343,7 +368,7 @@ namespace embree
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t)
     DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderMortonGeneral,void* COMMA AccelSet* COMMA size_t);
   };

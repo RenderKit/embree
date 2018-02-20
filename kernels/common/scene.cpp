@@ -546,6 +546,35 @@ namespace embree
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
 #endif
   }
+
+  void Scene::createGridAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    if (device->grid_accel == "default") 
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->hasISA(AVX) && !isCompactAccel())
+      {
+        accels.add(device->bvh8_factory->BVH8Grid(this,BVHFactory::BuildVariant::STATIC));
+      }
+      else
+#endif
+      {
+        accels.add(device->bvh4_factory->BVH4Grid(this,BVHFactory::BuildVariant::STATIC));
+      }
+    }
+    else if (device->grid_accel == "bvh4.grid") accels.add(device->bvh4_factory->BVH4Grid(this));
+#if defined (EMBREE_TARGET_SIMD8)
+    else if (device->grid_accel == "bvh8.grid") accels.add(device->bvh8_factory->BVH8Grid(this));
+#endif
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry accel "+device->grid_accel);
+#endif
+
+  }
+
+  void Scene::createGridMBAccel()
+  {
+  }
   
   void Scene::clear() {
   }
@@ -625,6 +654,8 @@ namespace embree
       createHairMBAccel();
       createLineAccel();
       createLineMBAccel();
+      createGridAccel();
+      createGridMBAccel();
       
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
       accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));

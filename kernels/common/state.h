@@ -110,6 +110,10 @@ namespace embree
     std::string subdiv_accel_mb;           //!< acceleration structure to use for subdivision surfaces
 
   public:
+    std::string grid_accel;              //!< acceleration structure to use for grids
+    std::string grid_accel_mb;           //!< acceleration structure to use for grids
+
+  public:
     float max_spatial_split_replications;  //!< maximally replications*N many primitives in accel for spatial splits
     size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
 

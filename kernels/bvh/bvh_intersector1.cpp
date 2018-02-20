@@ -31,6 +31,7 @@
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/subgrid_intersector.h"
 #include "../geometry/curve_intersector_virtual.h"
 
 namespace embree
@@ -113,7 +114,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector1::intersect(This, pre, ray, context, prim, num, lazy_node);
+        PrimitiveIntersector1::intersect(This, pre, ray, context, prim, num, tray, lazy_node);
         tray.tfar = ray.tfar;
 
         /* push lazy node onto stack */
@@ -195,7 +196,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector1::occluded(This, pre, ray, context, prim, num, lazy_node)) {
+        if (PrimitiveIntersector1::occluded(This, pre, ray, context, prim, num, tray, lazy_node)) {
           ray.tfar = neg_inf;
           break;
         }

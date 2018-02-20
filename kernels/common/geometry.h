@@ -79,7 +79,8 @@ namespace embree
       
       GTY_INSTANCE = 15,
       GTY_GROUP = 16,
-      GTY_END = 17,
+      GTY_GRID_MESH = 17,
+      GTY_END = 18,
 
       GTY_SUBTYPE_FLAT_CURVE = 0,
       GTY_SUBTYPE_ROUND_CURVE = 1,
@@ -113,6 +114,7 @@ namespace embree
       
       MTY_INSTANCE = 1 << GTY_INSTANCE,
       MTY_GROUP = 1 << GTY_GROUP,
+      MTY_GRID_MESH = 1 << GTY_GRID_MESH,
     };
 
     static const char* gtype_names[GTY_END];

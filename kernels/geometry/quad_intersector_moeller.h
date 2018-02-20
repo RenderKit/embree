@@ -26,6 +26,8 @@ namespace embree
     template<int M>
     struct QuadHitM
     {
+      __forceinline QuadHitM() {}
+
       __forceinline QuadHitM(const vbool<M>& valid,
                              const vfloat<M>& U,
                              const vfloat<M>& V,

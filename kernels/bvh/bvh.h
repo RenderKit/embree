@@ -1154,56 +1154,17 @@ namespace embree
     };
 
     /*! BVHN Quantized Node */
-    struct __aligned(64) QuantizedNode : public BaseNode
+
+    struct __aligned(8) QuantizedBaseNode
     {
-      using BaseNode::children;
-#if 0
       typedef unsigned char T;
       static const T MIN_QUAN = 0;
       static const T MAX_QUAN = 255;
-#else
-      typedef unsigned short T;
-      static const T MIN_QUAN = 0;
-      static const T MAX_QUAN = 65535;
-#endif
-
-      struct Create2
-      {
-        template<typename BuildRecord>
-        __forceinline NodeRef operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
-        {
-          __aligned(64) AlignedNode node;
-          node.clear();
-          for (size_t i=0; i<n; i++) {
-            node.setBounds(i,children[i].bounds());
-          }
-          QuantizedNode *qnode = (QuantizedNode*) alloc.malloc0(sizeof(QuantizedNode), byteAlignment);
-          qnode->init(node);
-          
-          return (size_t)qnode | tyQuantizedNode;
-        }
-      };
-
-      struct Set2
-      {
-        template<typename BuildRecord>
-        __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
-        {
-          QuantizedNode* node = ref.quantizedNode();
-          for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
-          return ref;
-        }
-      };
 
       /*! Clears the node. */
       __forceinline void clear() {
         for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN;
         for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN;
-        BaseNode::clear();
-      }
-
-      __forceinline void setRef(size_t i, NodeRef ref) {
-        children[i] = ref;
       }
       
       /*! Returns bounds of specified child. */
@@ -1280,9 +1241,8 @@ namespace embree
 #endif
       }
 
-      __forceinline void init(AlignedNode& node)
+      __forceinline void init_dim(AlignedNode& node)
       {
-        for (size_t i=0;i<N;i++) children[i] = emptyNode;
         init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
         init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
@@ -1328,6 +1288,61 @@ namespace embree
 
       Vec3f start;
       Vec3f scale;
+    };
+
+
+    struct __aligned(64) QuantizedNode : public BaseNode, QuantizedBaseNode
+    {
+      using BaseNode::children;
+      using QuantizedBaseNode::lower_x;
+      using QuantizedBaseNode::upper_x;
+      using QuantizedBaseNode::lower_y;
+      using QuantizedBaseNode::upper_y;
+      using QuantizedBaseNode::lower_z;
+      using QuantizedBaseNode::upper_z;
+      using QuantizedBaseNode::start;
+      using QuantizedBaseNode::scale;
+      using QuantizedBaseNode::init_dim;
+
+      __forceinline void setRef(size_t i, const NodeRef& ref) {
+        assert(i < N);
+        children[i] = ref;
+      }
+
+      struct Create2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
+        {
+          __aligned(64) AlignedNode node;
+          node.clear();
+          for (size_t i=0; i<n; i++) {
+            node.setBounds(i,children[i].bounds());
+          }
+          QuantizedNode *qnode = (QuantizedNode*) alloc.malloc0(sizeof(QuantizedNode), byteAlignment);
+          qnode->init(node);
+          
+          return (size_t)qnode | tyQuantizedNode;
+        }
+      };
+
+      struct Set2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
+        {
+          QuantizedNode* node = ref.quantizedNode();
+          for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
+          return ref;
+        }
+      };
+
+      __forceinline void init(AlignedNode& node)
+      {
+        for (size_t i=0;i<N;i++) children[i] = emptyNode;
+        init_dim(node);
+      }
+
     };
 
     /*! swap the children of two nodes */

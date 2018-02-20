@@ -32,6 +32,7 @@
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1eager_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/subgrid_intersector.h"
 #include "../geometry/curve_intersector_virtual.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
@@ -107,7 +108,7 @@ namespace embree
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
         size_t lazy_node = 0;
-        PrimitiveIntersectorK::intersect(This, pre, ray, k, context, prim, num, lazy_node);
+        PrimitiveIntersectorK::intersect(This, pre, ray, k, context, prim, num, tray1, lazy_node);
 
         tray1.tfar = ray.tfar[k];
 
@@ -359,7 +360,7 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(valid_leaf, This, pre, ray, context, prim, items, lazy_node);
+          PrimitiveIntersectorK::intersect(valid_leaf, This, pre, ray, context, prim, items, tray, lazy_node);
           tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
 
           if (unlikely(lazy_node)) {
@@ -509,7 +510,7 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(valid_leaf, This, pre, ray, context, prim,items, lazy_node);
+          PrimitiveIntersectorK::intersect(valid_leaf, This, pre, ray, context, prim, items, tray, lazy_node);
 
           /* reduce max distance interval on successful intersection */
           if (likely(any((ray.tfar < tray.tfar) & valid_leaf)))
@@ -585,7 +586,7 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(This, pre, ray, k, context, prim, num, lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(This, pre, ray, k, context, prim, num, tray1, lazy_node)) {
 	    ray.tfar[k] = neg_inf;
 	    return true;
 	  }
@@ -675,10 +676,15 @@ namespace embree
 
         /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
+#if FORCE_SINGLE_MODE == 0
         if (single)
+#endif
         {
           size_t bits = movemask(active);
-          if (unlikely(__popcnt(bits) <= switchThreshold)) {
+#if FORCE_SINGLE_MODE == 0
+          if (unlikely(__popcnt(bits) <= switchThreshold)) 
+#endif
+          {
             for (; bits!=0; ) {
               const size_t i = __bscf(bits);
               if (occluded1(This, bvh, cur, i, pre, ray, tray, context))
@@ -759,7 +765,7 @@ namespace embree
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, lazy_node);
+        terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, tray, lazy_node);
         if (all(terminated)) break;
         tray.tfar = select(terminated, vfloat<K>(neg_inf), tray.tfar); // ignore node intersections for terminated rays
 
@@ -890,7 +896,7 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, lazy_node);
+          terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, tray, lazy_node);
           octant_valid &= !terminated;
           if (unlikely(none(octant_valid))) break;
           tray.tfar = select(terminated, vfloat<K>(neg_inf), tray.tfar); // ignore node intersections for terminated rays

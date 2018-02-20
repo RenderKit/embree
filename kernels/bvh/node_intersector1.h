@@ -541,14 +541,14 @@ namespace embree
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
-    // Fast QuantizedNode intersection
+    // Fast QuantizedBaseNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx, bool robust>
-      __forceinline size_t intersectNode(const typename BVHN<N>::QuantizedNode* node, const TravRay<N,Nx,robust>& ray, vfloat<Nx>& dist);
+      __forceinline size_t intersectNode(const typename BVHN<N>::QuantizedBaseNode* node, const TravRay<N,Nx,robust>& ray, vfloat<Nx>& dist);
 
     template<>
-      __forceinline size_t intersectNode<4,4>(const typename BVH4::QuantizedNode* node, const TravRay<4,4,false>& ray, vfloat4& dist)
+      __forceinline size_t intersectNode<4,4>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,4,false>& ray, vfloat4& dist)
     {
       const vfloat4 start_x(node->start.x);
       const vfloat4 scale_x(node->scale.x);
@@ -602,7 +602,7 @@ namespace embree
 #if defined(__AVX__)
 
     template<>
-      __forceinline size_t intersectNode<8,8>(const typename BVH8::QuantizedNode* node, const TravRay<8,8,false>& ray, vfloat8& dist)
+      __forceinline size_t intersectNode<8,8>(const typename BVH8::QuantizedBaseNode* node, const TravRay<8,8,false>& ray, vfloat8& dist)
     {
       const vfloat8 start_x(node->start.x);
       const vfloat8 scale_x(node->scale.x);
@@ -658,7 +658,7 @@ namespace embree
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
 
     template<>
-      __forceinline size_t intersectNode<4,16>(const typename BVH4::QuantizedNode* node, const TravRay<4,16,false>& ray, vfloat16& dist)
+      __forceinline size_t intersectNode<4,16>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,16,false>& ray, vfloat16& dist)
     {
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
@@ -688,13 +688,14 @@ namespace embree
     }
 
     template<>
-      __forceinline size_t intersectNode<8,16>(const typename BVH8::QuantizedNode* node, const TravRay<8,16,false>& ray, vfloat16& dist)
+      __forceinline size_t intersectNode<8,16>(const typename BVH8::QuantizedBaseNode* node, const TravRay<8,16,false>& ray, vfloat16& dist)
     {
-      const vllong8 invalid((size_t)BVH8::emptyNode);
-      const vboold8 m_valid(invalid != vllong8::loadu(node->children));
-      const vfloat16 bminmaxX = node->dequantizeLowerUpperX<16>(ray.permX);
-      const vfloat16 bminmaxY = node->dequantizeLowerUpperY<16>(ray.permY);
-      const vfloat16 bminmaxZ = node->dequantizeLowerUpperZ<16>(ray.permZ);
+      //const vllong8 invalid((size_t)BVH8::emptyNode);
+      //const vboold8 m_valid(invalid != vllong8::loadu(node->children));
+      const vfloat16 bminmaxX  = node->dequantizeLowerUpperX<16>(ray.permX);
+      const vfloat16 bminmaxY  = node->dequantizeLowerUpperY<16>(ray.permY);
+      const vfloat16 bminmaxZ  = node->dequantizeLowerUpperZ<16>(ray.permZ);
+      const vbool16 m_valid    = le(0xff,bminmaxX,align_shift_right<8>(bminmaxX,bminmaxX));
       const vfloat16 tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
       const vfloat16 tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
