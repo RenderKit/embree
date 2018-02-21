@@ -25,7 +25,7 @@
 #include "trianglei.h"
 #include "quadv.h"
 #include "quadi.h"
-#include "subdivpatch1cached.h"
+#include "subdivpatch1.h"
 #include "object.h"
 #include "subgrid.h"
 
@@ -207,25 +207,14 @@ namespace embree
 
   /********************** SubdivPatch1 **************************/
 
-  SubdivPatch1Cached::Type::Type ()
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1) {}
+  SubdivPatch1::Type::Type ()
+    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1) {}
 
-  size_t SubdivPatch1Cached::Type::size(const char* This) const {
+  size_t SubdivPatch1::Type::size(const char* This) const {
     return 1;
   }
 
-  SubdivPatch1Cached::Type SubdivPatch1Cached::type;
-
-  /********************** SubdivPatch1Cached **************************/
-
-  SubdivPatch1Cached::TypeCached::TypeCached ()
-    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {}
-
-  size_t SubdivPatch1Cached::TypeCached::size(const char* This) const {
-    return 1;
-  }
-
-  SubdivPatch1Cached::TypeCached SubdivPatch1Cached::type_cached;
+  SubdivPatch1::Type SubdivPatch1::type;
 
   /********************** Virtual Object **************************/
 

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "subdivpatch1cached.h"
+#include "subdivpatch1.h"
 #include "grid_soa.h"
 #include "grid_soa_intersector1.h"
 #include "grid_soa_intersector_packet.h"
@@ -27,26 +27,26 @@ namespace embree
   namespace isa
   {
     template<typename T>
-      class SubdivPatch1EagerPrecalculations : public T
+      class SubdivPatch1Precalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculations (const Ray& ray, const void* ptr)
+      __forceinline SubdivPatch1Precalculations (const Ray& ray, const void* ptr)
         : T(ray,ptr) {}
     };
 
     template<int K, typename T>
-      class SubdivPatch1EagerPrecalculationsK : public T
+      class SubdivPatch1PrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
+      __forceinline SubdivPatch1PrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
         : T(valid,ray) {}
     };
 
-    class SubdivPatch1EagerIntersector1
+    class SubdivPatch1Intersector1
     {
     public:
       typedef GridSOA Primitive;
-      typedef SubdivPatch1EagerPrecalculations<GridSOAIntersector1::Precalculations> Precalculations;
+      typedef SubdivPatch1Precalculations<GridSOAIntersector1::Precalculations> Precalculations;
 
       static __forceinline bool processLazyNode(Precalculations& pre, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
@@ -82,10 +82,10 @@ namespace embree
       }
     };
 
-    class SubdivPatch1EagerMBIntersector1
+    class SubdivPatch1MBIntersector1
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
+      typedef SubdivPatch1 Primitive;
       typedef GridSOAMBIntersector1::Precalculations Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim_i, size_t& lazy_node)
@@ -127,10 +127,10 @@ namespace embree
     };
 
     template <int K>
-      struct SubdivPatch1EagerIntersectorK
+      struct SubdivPatch1IntersectorK
     {
       typedef GridSOA Primitive;
-      typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAIntersectorK<K>::Precalculations> Precalculations;
+      typedef SubdivPatch1PrecalculationsK<K,typename GridSOAIntersectorK<K>::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
@@ -168,16 +168,16 @@ namespace embree
       }
     };
 
-    typedef SubdivPatch1EagerIntersectorK<4>  SubdivPatch1EagerIntersector4;
-    typedef SubdivPatch1EagerIntersectorK<8>  SubdivPatch1EagerIntersector8;
-    typedef SubdivPatch1EagerIntersectorK<16> SubdivPatch1EagerIntersector16;
+    typedef SubdivPatch1IntersectorK<4>  SubdivPatch1Intersector4;
+    typedef SubdivPatch1IntersectorK<8>  SubdivPatch1Intersector8;
+    typedef SubdivPatch1IntersectorK<16> SubdivPatch1Intersector16;
 
     template <int K>
-      struct SubdivPatch1EagerMBIntersectorK
+      struct SubdivPatch1MBIntersectorK
     {
-      typedef SubdivPatch1Cached Primitive;
+      typedef SubdivPatch1 Primitive;
       //typedef GridSOAMBIntersectorK<K>::Precalculations Precalculations;
-      typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAMBIntersectorK<K>::Precalculations> Precalculations;
+      typedef SubdivPatch1PrecalculationsK<K,typename GridSOAMBIntersectorK<K>::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, IntersectContext* context, const Primitive* prim_i, size_t& lazy_node)
       {
@@ -217,8 +217,8 @@ namespace embree
       }
     };
 
-    typedef SubdivPatch1EagerMBIntersectorK<4>  SubdivPatch1EagerMBIntersector4;
-    typedef SubdivPatch1EagerMBIntersectorK<8>  SubdivPatch1EagerMBIntersector8;
-    typedef SubdivPatch1EagerMBIntersectorK<16> SubdivPatch1EagerMBIntersector16;
+    typedef SubdivPatch1MBIntersectorK<4>  SubdivPatch1MBIntersector4;
+    typedef SubdivPatch1MBIntersectorK<8>  SubdivPatch1MBIntersector8;
+    typedef SubdivPatch1MBIntersectorK<16> SubdivPatch1MBIntersector16;
   }
 }

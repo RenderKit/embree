@@ -26,18 +26,18 @@ namespace embree
   namespace isa
   {
     template<typename T>
-      class SubdivPatch1EagerPrecalculations : public T
+      class SubdivPatch1Precalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculations (const Ray& ray, const void* ptr)
+      __forceinline SubdivPatch1Precalculations (const Ray& ray, const void* ptr)
         : T(ray,ptr) {}
     };
 
     template<int K, typename T>
-      class SubdivPatch1EagerPrecalculationsK : public T
+      class SubdivPatch1PrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
+      __forceinline SubdivPatch1PrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
         : T(valid,ray) {}
     };
 
@@ -70,7 +70,7 @@ namespace embree
       struct GridIntersectorK
     {
       typedef GridSOA Primitive;
-      typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAIntersectorK<K>::Precalculations> Precalculations;
+      typedef SubdivPatch1PrecalculationsK<K,typename GridSOAIntersectorK<K>::Precalculations> Precalculations;
       
       
       static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
@@ -94,9 +94,9 @@ namespace embree
       }
     };
 
-    typedef Grid1IntersectorK<4>  SubdivPatch1EagerIntersector4;
-    typedef Grid1IntersectorK<8>  SubdivPatch1EagerIntersector8;
-    typedef Grid1IntersectorK<16> SubdivPatch1EagerIntersector16;
+    typedef Grid1IntersectorK<4>  SubdivPatch1Intersector4;
+    typedef Grid1IntersectorK<8>  SubdivPatch1Intersector8;
+    typedef Grid1IntersectorK<16> SubdivPatch1Intersector16;
 
   }
 }

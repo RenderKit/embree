@@ -466,10 +466,10 @@ namespace embree
   {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
     if (device->subdiv_accel == "default") {
-      accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
+      accels.add(device->bvh4_factory->BVH4SubdivPatch1(this));
     }
-    else if (device->subdiv_accel == "bvh4.grid.eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
-    else if (device->subdiv_accel == "bvh4.subdivpatch1eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
+    else if (device->subdiv_accel == "bvh4.grid.eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1(this));
+    else if (device->subdiv_accel == "bvh4.subdivpatch1eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1(this));
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
 #endif
   }
@@ -478,7 +478,7 @@ namespace embree
   {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
     if (device->subdiv_accel_mb == "default") {
-      accels.add(device->bvh4_factory->BVH4SubdivPatch1EagerMB(this));
+      accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this));
     }
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
 #endif

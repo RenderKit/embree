@@ -31,7 +31,7 @@
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/bspline_curve.h"
 
-#include "../geometry/subdivpatch1cached.h"
+#include "../geometry/subdivpatch1.h"
 #include "../geometry/grid_soa.h"
 
 namespace embree
@@ -41,7 +41,7 @@ namespace embree
     typedef FastAllocator::CachedAllocator Allocator;
 
     template<int N>
-    struct BVHNSubdivPatch1EagerBuilderSAH : public Builder
+    struct BVHNSubdivPatch1BuilderSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -53,7 +53,7 @@ namespace embree
       mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVHNSubdivPatch1EagerBuilderSAH (BVH* bvh, Scene* scene)
+      BVHNSubdivPatch1BuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device,0) {}
 
 #define SUBGRID 9
@@ -98,7 +98,7 @@ namespace embree
           return;
         }
  
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1BuilderSAH");
 
         //bvh->alloc.reset();
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
@@ -202,9 +202,9 @@ namespace embree
     struct SubdivRecalculatePrimRef
     {
       mvector<BBox3fa>& bounds;
-      SubdivPatch1Cached* patches;
+      SubdivPatch1* patches;
 
-      __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1Cached* patches)
+      __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1* patches)
         : bounds(bounds), patches(patches) {}
 
       __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
@@ -224,7 +224,7 @@ namespace embree
     };
 
     template<int N>
-    struct BVHNSubdivPatch1CachedMBlurBuilderSAH : public Builder
+    struct BVHNSubdivPatch1MBlurBuilderSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -243,7 +243,7 @@ namespace embree
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
 
-      BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene)
+      BVHNSubdivPatch1MBlurBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0) {}
 
       void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
@@ -271,7 +271,7 @@ namespace embree
 
       void rebuild(size_t numPrimitives)
       {
-        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+        SubdivPatch1* const subdiv_patches = (SubdivPatch1*) bvh->subdiv_patches.data();
         SubdivRecalculatePrimRef recalculatePrimRef(bounds,subdiv_patches);
         bvh->alloc.reset();
 
@@ -295,7 +295,7 @@ namespace embree
               for (size_t t=0; t<mesh->numTimeSteps; t++)
               {
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                new (&patch) SubdivPatch1Cached(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
+                new (&patch) SubdivPatch1(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
               SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
               patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
@@ -362,7 +362,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedMBlurBuilderSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1MBlurBuilderSAH");
         
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
@@ -378,7 +378,7 @@ namespace embree
         }
         
         /* Allocate memory for gregory and b-spline patches */
-        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatchesMB);
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1) * numSubPatchesMB);
 
         /* rebuild BVH */
         rebuild(numSubPatches);
@@ -398,8 +398,8 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivPatch1EagerBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderSAH<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedMBlurBuilderSAH<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1BuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1BuilderSAH<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1MBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1MBlurBuilderSAH<4>((BVH4*)bvh,scene); }
   }
 }
 #endif
