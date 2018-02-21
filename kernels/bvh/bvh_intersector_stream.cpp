@@ -24,8 +24,7 @@
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
 #include "../geometry/linei_intersector.h"
-#include "../geometry/subdivpatch1eager_intersector.h"
-//#include "../geometry/subdivpatch1cached_intersector.h"
+#include "../geometry/subdivpatch1_intersector.h"
 #include "../geometry/object_intersector.h"
 
 #include "../common/scene.h"
@@ -129,11 +128,11 @@ namespace embree
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
 #if defined(__SSE4_2__)
-        STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
+        STAT_USER(1,(popcnt(bits)+K-1)/K*4);
 #endif
         while(bits)
         {
-          size_t i = __bsf(bits) / K;
+          size_t i = bsf(bits) / K;
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
@@ -245,11 +244,11 @@ namespace embree
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
 #if defined(__SSE4_2__)
-        STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
+        STAT_USER(1,(popcnt(bits)+K-1)/K*4);
 #endif
         while (bits)
         {
-          size_t i = __bsf(bits) / K;
+          size_t i = bsf(bits) / K;
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
@@ -327,7 +326,7 @@ namespace embree
           vint<Nx>::storeu(child_mask, vmask); // this explicit store here causes much better code generation
           
           /*! one child is hit, continue with that child */
-          size_t r = __bscf(mask);
+          size_t r = bscf(mask);
           assert(r < N);
           cur = node->child(r);         
           cur.prefetch(types);
@@ -342,7 +341,7 @@ namespace embree
 
           for (; ;)
           {
-            r = __bscf(mask);
+            r = bscf(mask);
             assert(r < N);
 
             cur = node->child(r);          
@@ -366,7 +365,7 @@ namespace embree
 
         for (; bits != 0;)
         {
-          const size_t rayID = __bscf(bits);
+          const size_t rayID = bscf(bits);
 
           RayK<K> &ray = *inputPackets[rayID / K];
           const size_t k = rayID % K;

@@ -22,7 +22,7 @@
 namespace embree
 {
 
-  struct __aligned(64) SubdivPatch1Cached : public SubdivPatch1Base
+  struct __aligned(64) SubdivPatch1 : public SubdivPatch1Base
   {
     struct Type : public PrimitiveType 
     {
@@ -32,18 +32,10 @@ namespace embree
     
     static Type type;
 
-    struct TypeCached : public PrimitiveType 
-    {
-      TypeCached ();
-      size_t size(const char* This) const;
-    };
-    
-    static TypeCached type_cached;
-
   public:
 
     /*! constructor for cached subdiv patch */
-    SubdivPatch1Cached (const unsigned int gID,
+    SubdivPatch1 (const unsigned int gID,
                         const unsigned int pID,
                         const unsigned int subPatch,
                         const SubdivMesh *const mesh,

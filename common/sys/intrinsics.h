@@ -71,7 +71,7 @@ namespace embree
     return (size_t)li.QuadPart;
   }
   
-  __forceinline int __bsf(int v) {
+  __forceinline int bsf(int v) {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
 #else
@@ -79,7 +79,7 @@ namespace embree
 #endif
   }
   
-  __forceinline unsigned __bsf(unsigned v) {
+  __forceinline unsigned bsf(unsigned v) {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
 #else
@@ -88,7 +88,7 @@ namespace embree
   }
   
 #if defined(__X86_64__)
-  __forceinline size_t __bsf(size_t v) {
+  __forceinline size_t bsf(size_t v) {
 #if defined(__AVX2__) 
     return _tzcnt_u64(v);
 #else
@@ -97,30 +97,30 @@ namespace embree
   }
 #endif
   
-  __forceinline int __bscf(int& v) 
+  __forceinline int bscf(int& v) 
   {
-    int i = __bsf(v);
+    int i = bsf(v);
     v &= v-1;
     return i;
   }
   
-  __forceinline unsigned __bscf(unsigned& v) 
+  __forceinline unsigned bscf(unsigned& v) 
   {
-    unsigned i = __bsf(v);
+    unsigned i = bsf(v);
     v &= v-1;
     return i;
   }
   
 #if defined(__X86_64__)
-  __forceinline size_t __bscf(size_t& v) 
+  __forceinline size_t bscf(size_t& v) 
   {
-    size_t i = __bsf(v);
+    size_t i = bsf(v);
     v &= v-1;
     return i;
   }
 #endif
   
-  __forceinline int __bsr(int v) {
+  __forceinline int bsr(int v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
 #else
@@ -128,7 +128,7 @@ namespace embree
 #endif
   }
   
-  __forceinline unsigned __bsr(unsigned v) {
+  __forceinline unsigned bsr(unsigned v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
 #else
@@ -137,11 +137,11 @@ namespace embree
   }
   
 #if defined(__X86_64__)
-  __forceinline size_t __bsr(size_t v) {
+  __forceinline size_t bsr(size_t v) {
 #if defined(__AVX2__) 
     return 63 -_lzcnt_u64(v);
 #else
-	  unsigned long r = 0; _BitScanReverse64(&r, v); return r;
+    unsigned long r = 0; _BitScanReverse64(&r, v); return r;
 #endif
   }
 #endif
@@ -152,33 +152,33 @@ namespace embree
     return _lzcnt_u32(x);
 #else
     if (unlikely(x == 0)) return 32;
-    return 31 - __bsr(x);    
+    return 31 - bsr(x);    
 #endif
   }
   
-  __forceinline int __btc(int v, int i) {
+  __forceinline int btc(int v, int i) {
     long r = v; _bittestandcomplement(&r,i); return r;
   }
   
-  __forceinline int __bts(int v, int i) {
+  __forceinline int bts(int v, int i) {
     long r = v; _bittestandset(&r,i); return r;
   }
   
-  __forceinline int __btr(int v, int i) {
+  __forceinline int btr(int v, int i) {
     long r = v; _bittestandreset(&r,i); return r;
   }
   
 #if defined(__X86_64__)
   
-  __forceinline size_t __btc(size_t v, size_t i) {
+  __forceinline size_t btc(size_t v, size_t i) {
     size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
   }
   
-  __forceinline size_t __bts(size_t v, size_t i) {
+  __forceinline size_t bts(size_t v, size_t i) {
     __int64 r = v; _bittestandset64(&r,i); return r;
   }
   
-  __forceinline size_t __btr(size_t v, size_t i) {
+  __forceinline size_t btr(size_t v, size_t i) {
     __int64 r = v; _bittestandreset64(&r,i); return r;
   }
   
@@ -232,7 +232,7 @@ namespace embree
     return (((uint64_t)high) << 32) + (uint64_t)low;
   }
   
-  __forceinline int __bsf(int v) {
+  __forceinline int bsf(int v) {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
 #else
@@ -241,7 +241,7 @@ namespace embree
   }
   
 #if defined(__X86_64__)
-  __forceinline unsigned __bsf(unsigned v) 
+  __forceinline unsigned bsf(unsigned v) 
   {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
@@ -251,7 +251,7 @@ namespace embree
   }
 #endif
   
-  __forceinline size_t __bsf(size_t v) {
+  __forceinline size_t bsf(size_t v) {
 #if defined(__AVX2__)
 #if defined(__X86_64__)
     return _tzcnt_u64(v);
@@ -263,30 +263,30 @@ namespace embree
 #endif
   }
 
-  __forceinline int __bscf(int& v) 
+  __forceinline int bscf(int& v) 
   {
-    int i = __bsf(v);
+    int i = bsf(v);
     v &= v-1;
     return i;
   }
   
 #if defined(__X86_64__)
-  __forceinline unsigned int __bscf(unsigned int& v) 
+  __forceinline unsigned int bscf(unsigned int& v) 
   {
-    unsigned int i = __bsf(v);
+    unsigned int i = bsf(v);
     v &= v-1;
     return i;
   }
 #endif
   
-  __forceinline size_t __bscf(size_t& v) 
+  __forceinline size_t bscf(size_t& v) 
   {
-    size_t i = __bsf(v);
+    size_t i = bsf(v);
     v &= v-1;
     return i;
   }
   
-  __forceinline int __bsr(int v) {
+  __forceinline int bsr(int v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
 #else
@@ -295,7 +295,7 @@ namespace embree
   }
   
 #if defined(__X86_64__)
-  __forceinline unsigned __bsr(unsigned v) {
+  __forceinline unsigned bsr(unsigned v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
 #else
@@ -304,7 +304,7 @@ namespace embree
   }
 #endif
   
-  __forceinline size_t __bsr(size_t v) {
+  __forceinline size_t bsr(size_t v) {
 #if defined(__AVX2__)
 #if defined(__X86_64__)
     return 63 - _lzcnt_u64(v);
@@ -322,14 +322,14 @@ namespace embree
     return _lzcnt_u32(x);
 #else
     if (unlikely(x == 0)) return 32;
-    return 31 - __bsr(x);    
+    return 31 - bsr(x);    
 #endif
   }
 
-  __forceinline size_t __blsr(size_t v) {
+  __forceinline size_t blsr(size_t v) {
 #if defined(__AVX2__) 
 #if defined(__INTEL_COMPILER)
-    return _blsr_u64(v);
+    return __blsr_u64(v);
 #else
 #if defined(__X86_64__)
     return __blsr_u64(v);
@@ -342,27 +342,27 @@ namespace embree
 #endif
   }
   
-  __forceinline int __btc(int v, int i) {
+  __forceinline int btc(int v, int i) {
     int r = 0; asm ("btc %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags" ); return r;
   }
   
-  __forceinline int __bts(int v, int i) {
+  __forceinline int bts(int v, int i) {
     int r = 0; asm ("bts %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
   
-  __forceinline int __btr(int v, int i) {
+  __forceinline int btr(int v, int i) {
     int r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
   
-  __forceinline size_t __btc(size_t v, size_t i) {
+  __forceinline size_t btc(size_t v, size_t i) {
     size_t r = 0; asm ("btc %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags" ); return r;
   }
   
-  __forceinline size_t __bts(size_t v, size_t i) {
+  __forceinline size_t bts(size_t v, size_t i) {
     size_t r = 0; asm ("bts %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
   
-  __forceinline size_t __btr(size_t v, size_t i) {
+  __forceinline size_t btr(size_t v, size_t i) {
     size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
 
@@ -393,16 +393,16 @@ namespace embree
 
 #if defined(__SSE4_2__)
   
-  __forceinline int __popcnt(int in) {
+  __forceinline int popcnt(int in) {
     return _mm_popcnt_u32(in);
   }
   
-  __forceinline unsigned __popcnt(unsigned in) {
+  __forceinline unsigned popcnt(unsigned in) {
     return _mm_popcnt_u32(in);
   }
   
 #if defined(__X86_64__)
-  __forceinline size_t __popcnt(size_t in) {
+  __forceinline size_t popcnt(size_t in) {
     return _mm_popcnt_u64(in);
   }
 #endif
@@ -418,7 +418,7 @@ namespace embree
     return clock;
   }
   
-  __forceinline void __pause_cpu(const size_t N = 8)
+  __forceinline void pause_cpu(const size_t N = 8)
   {
     for (size_t i=0; i<N; i++)
       _mm_pause();    

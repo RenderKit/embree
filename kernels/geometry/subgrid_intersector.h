@@ -697,7 +697,7 @@ namespace embree
           size_t mask = intersectNode(&prim[i].qnode,tray,dist); //FIXME: maybe do node ordering here
           while(mask != 0)
           {
-            const size_t ID = __bscf(mask); 
+            const size_t ID = bscf(mask); 
             intersect(pre,ray,context,prim[i].subgrid(ID));
           }
         }
@@ -713,7 +713,7 @@ namespace embree
           size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
           while(mask != 0)
           {
-            const size_t ID = __bscf(mask); 
+            const size_t ID = bscf(mask); 
             if (occluded(pre,ray,context,prim[i].subgrid(ID)))
               return true;
           }
@@ -836,7 +836,7 @@ namespace embree
             size_t mask = intersectNode(&prim[i].qnode,tray,dist); //FIXME: maybe do node ordering here
             while(mask != 0)
             {
-              const size_t ID = __bscf(mask); 
+              const size_t ID = bscf(mask); 
               intersect(pre,ray,k,context,prim[i].subgrid(ID));
             }
           }
@@ -852,7 +852,7 @@ namespace embree
             size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
-              const size_t ID = __bscf(mask); 
+              const size_t ID = bscf(mask); 
               if (occluded(pre,ray,k,context,prim[i].subgrid(ID)))
                 return true;
             }

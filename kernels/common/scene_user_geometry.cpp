@@ -19,6 +19,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
     : AccelSet(device,items,numTimeSteps) {}
   
@@ -43,5 +45,14 @@ namespace embree
 
   void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) {
     intersectors.intersectorN.occluded = occluded;
+  }
+  
+#endif
+
+  namespace isa
+  {
+    UserGeometry* createUserGeometry(Device* device) {
+      return new UserGeometryISA(device);
+    }
   }
 }

@@ -181,7 +181,7 @@ namespace embree
 
       /* >=5 hits: reverse to descending order for writing to stack */
 
-      const size_t hits = 4 + __popcnt(mask);
+      const size_t hits = 4 + popcnt(mask);
       const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
       vfloat16 dist(neg_inf);
       vllong8 ptr(zero);
@@ -384,7 +384,7 @@ namespace embree
 
       /* >=5 hits: reverse to descending order for writing to stack */
 
-      const size_t hits = 4 + __popcnt(mask);
+      const size_t hits = 4 + popcnt(mask);
       const vfloat<N> dist_A2  = select(m_dist3, dist_A1, d3);
       vfloat<N> dist(neg_inf);
       vint<N> ptr(zero);
@@ -456,7 +456,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
         if (likely(mask == 0)) {
@@ -467,7 +467,7 @@ namespace embree
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur;
         const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c1 = node->child(r);
         c1.prefetch(types);
         const unsigned int d1 = ((unsigned int*)&tNear)[r];
@@ -482,7 +482,7 @@ namespace embree
 #if NEW_SORTING_CODE == 1
         vint4 s0((size_t)c0,(size_t)d0);
         vint4 s1((size_t)c1,(size_t)d1);
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c2 = node->child(r); c2.prefetch(types); unsigned int d2 = ((unsigned int*)&tNear)[r]; 
         vint4 s2((size_t)c2,(size_t)d2);
         /* 3 hits */
@@ -493,7 +493,7 @@ namespace embree
           stackPtr+=2;
           return;
         }
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c3 = node->child(r); c3.prefetch(types); unsigned int d3 = ((unsigned int*)&tNear)[r]; 
         vint4 s3((size_t)c3,(size_t)d3);
         /* 4 hits */
@@ -511,7 +511,7 @@ namespace embree
 
         /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -522,7 +522,7 @@ namespace embree
 
         /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
@@ -541,7 +541,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r); 
         cur.prefetch(types);
 
@@ -553,7 +553,7 @@ namespace embree
 
         for (; ;)
         {
-          r = __bscf(mask);
+          r = bscf(mask);
           cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) return;
@@ -593,7 +593,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
         if (likely(mask == 0)) {
@@ -604,7 +604,7 @@ namespace embree
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur;
         const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c1 = node->child(r);
         c1.prefetch(types);
         const unsigned int d1 = ((unsigned int*)&tNear)[r];
@@ -620,7 +620,7 @@ namespace embree
         vint4 s0((size_t)c0,(size_t)d0);
         vint4 s1((size_t)c1,(size_t)d1);
 
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c2 = node->child(r); c2.prefetch(types); unsigned int d2 = ((unsigned int*)&tNear)[r]; 
         vint4 s2((size_t)c2,(size_t)d2);
         /* 3 hits */
@@ -631,7 +631,7 @@ namespace embree
           stackPtr+=2;
           return;
         }
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c3 = node->child(r); c3.prefetch(types); unsigned int d3 = ((unsigned int*)&tNear)[r]; 
         vint4 s3((size_t)c3,(size_t)d3);
         /* 4 hits */
@@ -649,7 +649,7 @@ namespace embree
         while (1)
         {
           assert(stackPtr < stackEnd);
-          r = __bscf(mask);
+          r = bscf(mask);
           NodeRef c = node->child(r); c.prefetch(types); unsigned int d = *(unsigned int*)&tNear[r]; 
           const vint4 s((size_t)c,(size_t)d);
           *(vint4*)stackPtr++ = s;
@@ -668,7 +668,7 @@ namespace embree
 
         /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -679,7 +679,7 @@ namespace embree
 
         /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -692,7 +692,7 @@ namespace embree
         while (1)
         {
           assert(stackPtr < stackEnd);
-          r = __bscf(mask);
+          r = bscf(mask);
           c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH::emptyNode);
           if (unlikely(mask == 0)) break;
@@ -712,7 +712,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
 
@@ -724,7 +724,7 @@ namespace embree
 
         for (; ;)
         {
-          r = __bscf(mask);
+          r = bscf(mask);
           cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) return;
@@ -732,270 +732,6 @@ namespace embree
           *stackPtr = cur; stackPtr++;
         }
       }
-    };
-
-
-    /*! BVH transform node traversal for single rays. */
-    template<int N, int Nx, bool robust, int types, bool transform>
-    class BVHNNodeTraverser1Transform;
-
-#define ENABLE_TRANSFORM_CACHE 0
-
-    template<int N, int Nx, bool robust, int types>
-      class BVHNNodeTraverser1Transform<N, Nx, robust, types, true>
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::TransformNode TransformNode;
-
-    public:
-      __forceinline explicit BVHNNodeTraverser1Transform(const TravRayBase<N,Nx,robust>& tray)
-#if ENABLE_TRANSFORM_CACHE
-        : cacheSlot(0), cacheTag(-1)
-#endif
-      {
-        new (&topRay) TravRayBase<N,Nx,robust>(tray);
-      }
-
-      /* If a transform node is passed, traverses the node and returns true. */
-      __forceinline bool traverseTransform(NodeRef& cur,
-                                           RayHit& ray,
-                                           TravRayBase<N,Nx,robust>& tray,
-                                           IntersectContext* context,
-                                           StackItemT<NodeRef>*& stackPtr,
-                                           StackItemT<NodeRef>* stackEnd)
-      {
-        /*! process transformation node */
-        if (unlikely(cur.isTransformNode(types)))
-        {
-          STAT3(normal.trav_xfm_nodes,1,1,1);
-          const TransformNode* node = cur.transformNode();
-#if defined(EMBREE_RAY_MASK)
-          if (unlikely((ray.mask & node->mask) == 0)) return true;
-#endif          
-          //context->geomID_to_instID = &node->instID;
-          context->instID = ray.instID;
-          context->geomID = ray.geomID;
-          ray.instID = node->instID;
-          ray.geomID = -1;
-
-#if ENABLE_TRANSFORM_CACHE
-          const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
-          if (likely(any(xfm_hit))) {
-            const int slot = __bsf(movemask(xfm_hit));
-            tray = cacheEntry[slot];
-            ray.org = Vec3fa(tray.org_xyz,ray.tnear());
-            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
-          } 
-          else 
-#endif
-            //if (likely(!node->identity)) 
-          {
-            const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
-            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar);
-            new (&tray) TravRayBase<N,Nx,robust>(ray_org,ray_dir);
-            ray.org = ray_org;
-            ray.dir = ray_dir;
-#if ENABLE_TRANSFORM_CACHE
-            cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
-            cacheEntry[cacheSlot&(VSIZEX-1)] = tray;
-            cacheSlot++;
-#endif
-          }
-          stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++;
-          stackPtr->ptr = node->child; stackPtr->dist = neg_inf; stackPtr++;
-          return true;
-        }
-
-        /*! restore toplevel ray */
-        if (cur == BVH::popRay)
-        {
-          //context->geomID_to_instID = nullptr;
-          tray = (TravRayBase<N,Nx,robust>&)topRay;
-          ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
-          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar);
-          if (ray.geomID == -1) {
-            ray.instID = context->instID;
-            ray.geomID = context->geomID;
-          }
-          return true;
-        }
-
-        return false;
-      }
-
-      /* If a transform node is passed, traverses the node and returns true. */
-      __forceinline bool traverseTransform(NodeRef& cur,
-                                           RayHit& ray,
-                                           TravRayBase<N,Nx,robust>& tray,
-                                           IntersectContext* context,
-                                           NodeRef*& stackPtr,
-                                           NodeRef* stackEnd)
-      {
-        /*! process transformation node */
-        if (unlikely(cur.isTransformNode(types)))
-        {
-          STAT3(shadow.trav_xfm_nodes,1,1,1);
-          const TransformNode* node = cur.transformNode();
-#if defined(EMBREE_RAY_MASK)
-          if (unlikely((ray.mask & node->mask) == 0)) return true;
-#endif
-          //context->geomID_to_instID = &node->instID;
-          context->instID = ray.instID;
-          context->geomID = ray.geomID;
-          ray.instID = node->instID;
-          ray.geomID = -1;
-
-#if ENABLE_TRANSFORM_CACHE
-          const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
-          if (likely(any(xfm_hit))) {
-            const int slot = __bsf(movemask(xfm_hit));
-            tray = cacheEntry[slot];
-            ray.org = Vec3fa(tray.org_xyz,ray.tnear());
-            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
-          } 
-          else 
-#endif
-            //if (likely(!node->identity)) 
-          {
-            const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
-            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar);
-            new (&tray) TravRayBase<N,Nx,robust>(ray_org, ray_dir);
-            ray.org = ray_org;
-            ray.dir = ray_dir;
-#if ENABLE_TRANSFORM_CACHE
-            cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
-            cacheEntry[cacheSlot&(VSIZEX-1)] = tray;
-            cacheSlot++;
-#endif
-          }
-          *stackPtr = BVH::popRay; stackPtr++;
-          *stackPtr = node->child; stackPtr++;
-          return true;
-        }
-
-        /*! restore toplevel ray */
-        if (cur == BVH::popRay)
-        {
-          //context->geomID_to_instID = nullptr;
-          tray = (TravRayBase<N,Nx,robust>&)topRay;
-          ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
-          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar);
-          if (ray.geomID == -1) {
-            ray.instID = context->instID;
-            ray.geomID = context->geomID;
-          }
-          return true;
-        }
-
-        return false;
-      }
-
-      __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
-                                           TravRayBase<N,Nx,robust>& tray,
-                                           IntersectContext* context,
-                                           NodeRef*& stackPtr,
-                                           NodeRef* stackEnd)
-      {
-        /*! process transformation node */
-        if (unlikely(cur.isTransformNode(types)))
-        {
-          STAT3(shadow.trav_xfm_nodes,1,1,1);
-          const TransformNode* node = cur.transformNode();
-#if defined(EMBREE_RAY_MASK)
-          if (unlikely((ray.mask & node->mask) == 0)) return true;
-#endif
-          //context->geomID_to_instID = &node->instID;
-
-#if ENABLE_TRANSFORM_CACHE
-          const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
-          if (likely(any(xfm_hit))) {
-            const int slot = __bsf(movemask(xfm_hit));
-            tray = cacheEntry[slot];
-            ray.org = Vec3fa(tray.org_xyz,ray.tnear());
-            ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
-          }
-          else
-#endif
-            //if (likely(!node->identity))
-          {
-            const Vec3fa ray_org = Vec3fa(xfmPoint (node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).org_xyz),ray.tnear());
-            const Vec3fa ray_dir = Vec3fa(xfmVector(node->world2local, ((TravRayBase<N,Nx,robust>&)topRay).dir_xyz),ray.tfar);
-            new (&tray) TravRayBase<N,Nx,robust>(ray_org, ray_dir);
-            ray.org = ray_org;
-            ray.dir = ray_dir;
-#if ENABLE_TRANSFORM_CACHE
-            cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
-            cacheEntry[cacheSlot&(VSIZEX-1)] = tray;
-            cacheSlot++;
-#endif
-          }
-          *stackPtr = BVH::popRay; stackPtr++;
-          *stackPtr = node->child; stackPtr++;
-          return true;
-        }
-
-        /*! restore toplevel ray */
-        if (cur == BVH::popRay)
-        {
-          //context->geomID_to_instID = nullptr;
-          tray = (TravRayBase<N,Nx,robust>&)topRay;
-          ray.org = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).org_xyz,ray.tnear());
-          ray.dir = Vec3fa(((TravRayBase<N,Nx,robust>&)topRay).dir_xyz,ray.tfar);
-          return true;
-        }
-
-        return false;
-      }
-
-    private:
-      TravRayBase<N,Nx,robust> topRay;
-
-#if ENABLE_TRANSFORM_CACHE
-    private:
-      unsigned int cacheSlot;
-      vintx cacheTag;
-      TravRayBase<N,Nx,robust> cacheEntry[VSIZEX];
-#endif
-    };
-
-    template<int N, int Nx, bool robust, int types>
-      class BVHNNodeTraverser1Transform<N, Nx, robust, types, false>
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-
-    public:
-      __forceinline explicit BVHNNodeTraverser1Transform(const TravRayBase<N,Nx,robust>& tray) {}
-
-      __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
-                                           TravRayBase<N,Nx,robust>& tray,
-                                           IntersectContext* context,
-                                           StackItemT<NodeRef>*& stackPtr,
-                                           StackItemT<NodeRef>* stackEnd)
-      {
-        return false;
-      }
-
-      __forceinline bool traverseTransform(NodeRef& cur,
-                                           Ray& ray,
-                                           TravRayBase<N,Nx,robust>& tray,
-                                           IntersectContext* context,
-                                           NodeRef*& stackPtr,
-                                           NodeRef* stackEnd)
-      {
-        return false;
-      }
-    };
-
-    /*! BVH node traversal for single rays. */
-    template<int N, int Nx, bool robust, int types>
-      class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, Nx, types>, public BVHNNodeTraverser1Transform<N, Nx, robust, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
-    {
-    public:
-      __forceinline explicit BVHNNodeTraverser1(const TravRayBase<N,Nx,robust>& tray) : BVHNNodeTraverser1Transform<N, Nx, robust, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(tray) {}
     };
   }
 }

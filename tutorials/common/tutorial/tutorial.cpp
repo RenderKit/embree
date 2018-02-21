@@ -504,16 +504,6 @@ namespace embree
         scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial));
       }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
 
-    registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
-        subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-        rtcore += subdiv_mode;
-      }, "--cache: enabled cached subdiv mode");
-
-    registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
-        subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-        rtcore += subdiv_mode;
-      }, "--pregenerate: enabled pregenerate subdiv mode");
-
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_scene_cameras = true;
       }, "--print-cameras: prints all camera names of the scene");

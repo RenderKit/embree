@@ -62,7 +62,7 @@ namespace embree
     {
       cntr++;
       while (cntr.load() != numThreads) 
-        __pause_cpu();
+        pause_cpu();
     }
 
   private:
@@ -79,13 +79,13 @@ namespace embree
     void wait (size_t threadCount) 
     {
       cntr0.fetch_add(1);
-      while (cntr0 != threadCount) __pause_cpu();
+      while (cntr0 != threadCount) pause_cpu();
       cntr1.fetch_add(1);
-      while (cntr1 != threadCount) __pause_cpu();
+      while (cntr1 != threadCount) pause_cpu();
       cntr0.fetch_add(-1);
-      while (cntr0 != 0) __pause_cpu();
+      while (cntr0 != 0) pause_cpu();
       cntr1.fetch_add(-1);
-      while (cntr1 != 0) __pause_cpu();
+      while (cntr1 != 0) pause_cpu();
     }
 
   private:

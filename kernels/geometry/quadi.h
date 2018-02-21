@@ -65,7 +65,7 @@ namespace embree
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
 
     /* Returns the number of stored quads */
-    __forceinline size_t size() const { return __bsf(~movemask(valid())); }
+    __forceinline size_t size() const { return bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
@@ -102,7 +102,7 @@ namespace embree
       Vec3<T> p0, p1;
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
 
-      for (size_t mask=movemask(valid), i=__bsf(mask); mask; mask=__btc(mask,i), i=__bsf(mask))
+      for (size_t mask=movemask(valid), i=bsf(mask); mask; mask=btc(mask,i), i=bsf(mask))
       {
         const int* vertices0 = (const int*) mesh->vertexPtr(0,itime[i]+0);
         const int* vertices1 = (const int*) mesh->vertexPtr(0,itime[i]+1);
@@ -144,7 +144,7 @@ namespace embree
       vfloat<K> ftime;
       const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
 
-      const size_t first = __bsf(movemask(valid));
+      const size_t first = bsf(movemask(valid));
       if (likely(all(valid,itime[first] == itime)))
       {
         p0 = getVertex(v0, index, scene, itime[first], ftime);

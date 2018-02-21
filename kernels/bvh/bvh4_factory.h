@@ -55,9 +55,8 @@ namespace embree
     Accel* BVH4QuantizedTriangle4i(Scene* scene);
     Accel* BVH4QuantizedQuad4i(Scene* scene);
  
-    Accel* BVH4SubdivPatch1Eager(Scene* scene);
-    //Accel* BVH4SubdivPatch1(Scene* scene, bool cached);
-    Accel* BVH4SubdivPatch1EagerMB(Scene* scene);
+    Accel* BVH4SubdivPatch1(Scene* scene);
+    Accel* BVH4SubdivPatch1MB(Scene* scene);
 
     Accel* BVH4UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH4UserGeometryMB(Scene* scene);
@@ -78,8 +77,6 @@ namespace embree
     Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector);
     Accel::Intersectors BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector);
     
-    Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh);
-
     Accel::Intersectors BVH4Triangle4Intersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4Triangle4vIntersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4Triangle4iIntersectors(BVH4* bvh, IntersectVariant ivariant);
@@ -95,11 +92,8 @@ namespace embree
 
     Accel::Intersectors BVH4UserGeometryIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4UserGeometryMBIntersectors(BVH4* bvh);
-    //Accel::Intersectors BVH4SubdivPatch1Intersectors(BVH4* bvh);
-    Accel::Intersectors BVH4SubdivPatch1EagerIntersectors(BVH4* bvh);
-    //Accel::Intersectors BVH4SubdivPatch1CachedIntersectors(BVH4* bvh);
-    Accel::Intersectors BVH4SubdivPatch1EagerMBIntersectors(BVH4* bvh);
-    //Accel::Intersectors BVH4SubdivPatch1CachedMBIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4SubdivPatch1Intersectors(BVH4* bvh);
+    Accel::Intersectors BVH4SubdivPatch1MBIntersectors(BVH4* bvh);
 
     Accel::Intersectors BVH4GridIntersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4GridMBIntersectors(BVH4* bvh, IntersectVariant ivariant);
@@ -125,8 +119,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1MB);
     
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
-
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle4iIntersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle4vIntersector1Pluecker);
@@ -148,11 +140,8 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,QBVH4Triangle4iIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,QBVH4Quad4iIntersector1Pluecker);
 
-    //DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1Intersector1);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1EagerIntersector1);
-    //DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1CachedIntersector1);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1EagerMBIntersector1);
-    //DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1CachedMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1Intersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1MBIntersector1);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
@@ -186,11 +175,8 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Quad4iMBIntersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Quad4iMBIntersector4HybridPluecker);
 
-    //DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1Intersector4);
-    DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1EagerIntersector4);
-    //DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1CachedIntersector4);
-    DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1EagerMBIntersector4);
-    //DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1CachedMBIntersector4);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1Intersector4);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4SubdivPatch1MBIntersector4);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualMBIntersector4Chunk);
@@ -225,11 +211,8 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Quad4iMBIntersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Quad4iMBIntersector8HybridPluecker);
 
-    //DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1Intersector8);
-    DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1EagerIntersector8);
-    //DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1CachedIntersector8);
-    DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1EagerMBIntersector8);
-    //DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1CachedMBIntersector8);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1Intersector8);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4SubdivPatch1MBIntersector8);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualMBIntersector8Chunk);
@@ -264,11 +247,8 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Quad4iMBIntersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Quad4iMBIntersector16HybridPluecker);
 
-    //DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1Intersector16);
-    DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1EagerIntersector16);
-    //DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1CachedIntersector16);
-    DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1EagerMBIntersector16);
-    //DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1CachedMBIntersector16);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1Intersector16);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4SubdivPatch1MBIntersector16);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
@@ -293,7 +273,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vIntersectorStreamPluecker);
     DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4iIntersectorStreamPluecker);
 
-    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4SubdivPatch1CachedIntersectorStream);
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH4VirtualIntersectorStream);
     //DEFINE_SYMBOL2(Accel::IntersectorN,QBVH4Triangle4IntersectorStreamMoeller);
        
@@ -320,9 +299,8 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4QuantizedQuad4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     
-    DEFINE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1EagerBuilderSAH,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1CachedBuilderSAH,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1CachedMBBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1BuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1MBBuilderSAH,void* COMMA Scene* COMMA size_t);
     
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -340,7 +318,6 @@ namespace embree
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelLineSegmentsSAH,void* COMMA Scene* COMMA const createLineSegmentsAccelTy);
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangleMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderInstancingTriangleMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createAccelSetAccelTy);
  

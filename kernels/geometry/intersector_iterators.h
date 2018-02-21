@@ -159,7 +159,7 @@ namespace embree
             size_t bits = cur_mask & (~m_occluded);
             for (; bits!=0; ) 
             {
-              const size_t rayID = __bscf(bits);
+              const size_t rayID = bscf(bits);
               RayHitK<K> &ray = *inputPackets[rayID / K];
               const size_t k = rayID % K;            
               PrecalculationsK pre(ray.tnear() <= ray.tfar,ray); // FIXME: might cause trouble

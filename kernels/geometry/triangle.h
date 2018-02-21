@@ -58,7 +58,7 @@ namespace embree
     __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
     
     /* Returns the number of stored triangles */
-    __forceinline size_t size() const { return __bsf(~movemask(valid()));  }
+    __forceinline size_t size() const { return bsf(~movemask(valid()));  }
 
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs;  }

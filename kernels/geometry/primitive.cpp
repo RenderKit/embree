@@ -25,7 +25,7 @@
 #include "trianglei.h"
 #include "quadv.h"
 #include "quadi.h"
-#include "subdivpatch1cached.h"
+#include "subdivpatch1.h"
 #include "object.h"
 #include "subgrid.h"
 
@@ -36,7 +36,7 @@ namespace embree
 
   template<>
   Curve4v::Type::Type ()
-    : PrimitiveType("bezier4v",sizeof(Curve4v),4) {}
+    : PrimitiveType("curve4v",sizeof(Curve4v),4) {}
 
   template<>
   size_t Curve4v::Type::size(const char* This) const {
@@ -52,7 +52,7 @@ namespace embree
 
   template<>
   Curve8v::Type::Type ()
-    : PrimitiveType("bezier8v",sizeof(Curve8v),8) {}
+    : PrimitiveType("curve8v",sizeof(Curve8v),8) {}
 
   template<>
   size_t Curve8v::Type::size(const char* This) const {
@@ -68,7 +68,7 @@ namespace embree
 
   template<>
   Curve4i::Type::Type ()
-    : PrimitiveType("bezier4i",sizeof(Curve4v),4) {}
+    : PrimitiveType("curve4i",sizeof(Curve4v),4) {}
 
   template<>
   size_t Curve4i::Type::size(const char* This) const {
@@ -84,7 +84,7 @@ namespace embree
 
   template<>
   Curve8i::Type::Type ()
-    : PrimitiveType("bezier8i",sizeof(Curve8v),8) {}
+    : PrimitiveType("curve8i",sizeof(Curve8v),8) {}
 
   template<>
   size_t Curve8i::Type::size(const char* This) const {
@@ -100,7 +100,7 @@ namespace embree
 
   template<>
   Curve4iMB::Type::Type ()
-    : PrimitiveType("bezier4iMB",sizeof(Curve4iMB),4) {}
+    : PrimitiveType("curve4imb",sizeof(Curve4iMB),4) {}
 
   template<>
   size_t Curve4iMB::Type::size(const char* This) const {
@@ -116,7 +116,7 @@ namespace embree
 
   template<>
   Curve8iMB::Type::Type ()
-    : PrimitiveType("bezier8iMB",sizeof(Curve8iMB),8) {}
+    : PrimitiveType("curve8imb",sizeof(Curve8iMB),8) {}
 
   template<>
   size_t Curve8iMB::Type::size(const char* This) const {
@@ -207,25 +207,14 @@ namespace embree
 
   /********************** SubdivPatch1 **************************/
 
-  SubdivPatch1Cached::Type::Type ()
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1) {}
+  SubdivPatch1::Type::Type ()
+    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1) {}
 
-  size_t SubdivPatch1Cached::Type::size(const char* This) const {
+  size_t SubdivPatch1::Type::size(const char* This) const {
     return 1;
   }
 
-  SubdivPatch1Cached::Type SubdivPatch1Cached::type;
-
-  /********************** SubdivPatch1Cached **************************/
-
-  SubdivPatch1Cached::TypeCached::TypeCached ()
-    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {}
-
-  size_t SubdivPatch1Cached::TypeCached::size(const char* This) const {
-    return 1;
-  }
-
-  SubdivPatch1Cached::TypeCached SubdivPatch1Cached::type_cached;
+  SubdivPatch1::Type SubdivPatch1::type;
 
   /********************** Virtual Object **************************/
 

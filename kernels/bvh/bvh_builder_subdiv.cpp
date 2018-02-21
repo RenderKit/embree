@@ -31,7 +31,7 @@
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/bspline_curve.h"
 
-#include "../geometry/subdivpatch1cached.h"
+#include "../geometry/subdivpatch1.h"
 #include "../geometry/grid_soa.h"
 
 namespace embree
@@ -41,7 +41,7 @@ namespace embree
     typedef FastAllocator::CachedAllocator Allocator;
 
     template<int N>
-    struct BVHNSubdivPatch1EagerBuilderSAH : public Builder
+    struct BVHNSubdivPatch1BuilderSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -53,7 +53,7 @@ namespace embree
       mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVHNSubdivPatch1EagerBuilderSAH (BVH* bvh, Scene* scene)
+      BVHNSubdivPatch1BuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device,0) {}
 
 #define SUBGRID 9
@@ -98,7 +98,7 @@ namespace embree
           return;
         }
  
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1BuilderSAH");
 
         //bvh->alloc.reset();
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
@@ -170,7 +170,7 @@ namespace embree
 
         /* settings for BVH build */
         GeneralBVHBuilder::Settings settings;
-        settings.logBlockSize = __bsr(N);
+        settings.logBlockSize = bsr(N);
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;
@@ -199,258 +199,12 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-
-    template<int N>
-    struct BVHNSubdivPatch1CachedBuilderSAH : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
-    {
-      ALIGNED_STRUCT;
-
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::NodeRecordMB NodeRecordMB;
-      typedef typename BVHN<N>::Allocator BVH_Allocator;
-
-      BVH* bvh;
-      std::unique_ptr<BVHNRefitter<N>> refitter;
-      Scene* scene;
-      mvector<PrimRef> prims; 
-      mvector<BBox3fa> bounds; 
-      ParallelForForPrefixSumState<PrimInfo> pstate;
-      size_t numSubdivEnableDisableEvents;
-      bool cached;
-
-      BVHNSubdivPatch1CachedBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device,0), bounds(scene->device,0), numSubdivEnableDisableEvents(0), cached(cached) {}
-      
-      virtual const BBox3fa leafBounds (NodeRef& ref) const
-      {
-        if (ref == BVH::emptyNode) return BBox3fa(empty);
-        size_t num; SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
-        const size_t index = ((size_t)sptr - (size_t)bvh->subdiv_patches.data()) / sizeof(SubdivPatch1Cached);
-        return prims[index].bounds(); 
-      }
-
-      void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
-      {
-        Scene::Iterator<SubdivMesh,false> iter(scene);
-        pstate.init(iter,size_t(1024));
-
-        PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
-        { 
-          size_t s = 0;
-          size_t sMB = 0;
-          for (size_t f=r.begin(); f!=r.end(); ++f) 
-          {          
-            if (!mesh->valid(f)) continue;
-            size_t count = patch_eval_subdivision_count(mesh->getHalfEdge(0,f));
-            s += count;
-            sMB += count * mesh->numTimeSteps;
-          }
-          return PrimInfo(s,sMB,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
-
-        numSubPatches = pinfo.begin;
-        numSubPatchesMB = pinfo.end;
-      }
-
-      PrimInfo updatePrimRefArray(size_t t)
-      {
-        const PrimInfo pinfo = parallel_reduce(size_t(0), prims.size(), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
-        {
-          PrimInfo pinfo(empty);
-          for (size_t i = r.begin(); i < r.end(); i++) {
-            size_t patchIndexMB = prims[i].ID();
-            BBox3fa bound = bounds[patchIndexMB];
-            prims[i] = PrimRef(bound,patchIndexMB);
-            pinfo.add_center2(prims[i]);
-          }
-          return pinfo;
-        }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-
-        return pinfo;
-      }
-
-      void rebuild(size_t numPrimitives, size_t numSubPatchesMB)
-      {
-        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
-        //bvh->alloc.reset();
-        bvh->alloc.init_estimate(numSubPatchesMB*sizeof(PrimRef));
-
-        Scene::Iterator<SubdivMesh,false> iter(scene);
-        parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        {
-          size_t s = 0;
-          size_t sMB = 0;
-          for (size_t f=r.begin(); f!=r.end(); ++f) 
-          {
-            if (!mesh->valid(f)) continue;
-            
-            BVH_Allocator alloc(bvh);
-            patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
-            {
-              const size_t patchIndex = base.begin+s;
-              const size_t patchIndexMB = base.end+sMB;
-              assert(patchIndex < numPrimitives);
-
-              for (size_t t=0; t<mesh->numTimeSteps; t++)
-              {
-                SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                new (&patch) SubdivPatch1Cached(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
-              }
-
-              if (cached)
-              {
-                for (size_t t=0; t<mesh->numTimeSteps; t++)
-                {
-                  SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                  bounds[patchIndexMB+t] = bound;
-                }
-              }
-              else
-              {
-                SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
-              }
-
-              prims[patchIndex] = PrimRef(empty,patchIndexMB);
-              s++;
-              sMB += mesh->numTimeSteps;
-            });
-          }
-          return PrimInfo(s,sMB,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
-
-        auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
-            //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
-          });
-        
-        /* build normal BVH over patches */
-        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& range, const Allocator& alloc) -> NodeRef {
-          assert(range.size() == 1);
-          const size_t patchIndex = prims[range.begin()].ID();
-          return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-        };
-        
-        /* create primrefs */
-        const PrimInfo pinfo = updatePrimRefArray(0);
-
-        /* settings for BVH build */
-        GeneralBVHBuilder::Settings settings;
-        settings.logBlockSize = __bsr(N);
-        settings.minLeafSize = 1;
-        settings.maxLeafSize = 1;
-        settings.travCost = 1.0f;
-        settings.intCost = 1.0f;
-        settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
-        
-        /* call BVH builder */
-        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,createLeaf,virtualprogress,prims.data(),pinfo,settings);
-        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
-      }
-
-      void cachedUpdate(size_t numPrimitives)
-      {
-        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
-
-        Scene::Iterator<SubdivMesh,false> iter(scene);
-        parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        {
-          size_t s = 0;
-          for (size_t f=r.begin(); f!=r.end(); ++f) 
-          {
-            if (!mesh->valid(f)) continue;
-            
-            patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
-            {
-              const size_t patchIndex = base.begin+s;
-              assert(patchIndex < numPrimitives);
-              SubdivPatch1Base& patch = subdiv_patches[patchIndex];
-              BBox3fa bound = empty;
-              
-              bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,VSIZEX);
-              if (grid_changed) {
-                patch.resetRootRef();
-                bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-              }
-              else {
-                bound = bounds[patchIndex];
-              }
-
-              bounds[patchIndex] = bound;
-              prims[patchIndex] = PrimRef(bound,patchIndex);
-              s++;
-            });
-          }
-          return PrimInfo(s,s,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
-
-        /* refit BVH over patches */
-        if (!refitter)
-          refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
-        
-        refitter->refit();
-      }
-
-      void build() 
-      {
-        /* initialize all half edge structures */
-        size_t numPatches = scene->getNumPrimitives<SubdivMesh,false>();
-
-        /* skip build for empty scene */
-        if (numPatches == 0) {
-          prims.resize(numPatches);
-          bounds.resize(numPatches);
-          bvh->set(BVH::emptyNode,empty,0);
-          return;
-        }
-
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (cached ? "Cached" : "") + "BuilderSAH");
-        
-        /* calculate number of primitives (some patches need initial subdivision) */
-        size_t numSubPatches, numSubPatchesMB;
-        countSubPatches(numSubPatches, numSubPatchesMB);
-        prims.resize(numSubPatches);
-        bounds.resize(numSubPatchesMB);
-        
-        /* exit if there are no primitives to process */
-        if (numSubPatches == 0) {
-          bvh->set(BVH::emptyNode,empty,0);
-          bvh->postBuild(t0);
-          return;
-        }
-        
-        /* Allocate memory for gregory and b-spline patches */
-        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatchesMB);
-
-        /* switch between fast and slow mode */
-        rebuild(numSubPatches,numSubPatchesMB);
-        
-	/* clear temporary data for static geometry */
-	if (scene->isStaticAccel()) {
-          prims.clear();
-          bvh->shrink();
-        }
-        bvh->cleanup();
-        bvh->postBuild(t0);        
-      }
-      
-      void clear() {
-        prims.clear();
-      }
-    };
-
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-
     struct SubdivRecalculatePrimRef
     {
       mvector<BBox3fa>& bounds;
-      SubdivPatch1Cached* patches;
+      SubdivPatch1* patches;
 
-      __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1Cached* patches)
+      __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1* patches)
         : bounds(bounds), patches(patches) {}
 
       __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
@@ -470,7 +224,7 @@ namespace embree
     };
 
     template<int N>
-    struct BVHNSubdivPatch1CachedMBlurBuilderSAH : public Builder
+    struct BVHNSubdivPatch1MBlurBuilderSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -488,10 +242,9 @@ namespace embree
       mvector<PrimRefMB> primsMB;
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
-      bool cached;
 
-      BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0), cached(cached) {}
+      BVHNSubdivPatch1MBlurBuilderSAH (BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0) {}
 
       void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
       {
@@ -518,7 +271,7 @@ namespace embree
 
       void rebuild(size_t numPrimitives)
       {
-        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+        SubdivPatch1* const subdiv_patches = (SubdivPatch1*) bvh->subdiv_patches.data();
         SubdivRecalculatePrimRef recalculatePrimRef(bounds,subdiv_patches);
         bvh->alloc.reset();
 
@@ -542,22 +295,10 @@ namespace embree
               for (size_t t=0; t<mesh->numTimeSteps; t++)
               {
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                new (&patch) SubdivPatch1Cached(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
+                new (&patch) SubdivPatch1(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
-              if (cached)
-              {
-                for (size_t t=0; t<mesh->numTimeSteps; t++)
-                {
-                  SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                  bounds[patchIndexMB+t] = bound;
-                }
-              }
-              else
-              {
-                SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
-              }
+              SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
+              patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
               s++;
               sMB += mesh->numTimeSteps;
@@ -587,7 +328,7 @@ namespace embree
         BVHBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
-        settings.logBlockSize = __bsr(N);
+        settings.logBlockSize = bsr(N);
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;
@@ -621,7 +362,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedMBlurBuilderSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1MBlurBuilderSAH");
         
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
@@ -637,7 +378,7 @@ namespace embree
         }
         
         /* Allocate memory for gregory and b-spline patches */
-        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatchesMB);
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1) * numSubPatchesMB);
 
         /* rebuild BVH */
         rebuild(numSubPatches);
@@ -657,9 +398,8 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivPatch1EagerBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderSAH<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderSAH<4>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4SubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedMBlurBuilderSAH<4>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1BuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1BuilderSAH<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1MBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1MBlurBuilderSAH<4>((BVH4*)bvh,scene); }
   }
 }
 #endif

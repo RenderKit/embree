@@ -127,7 +127,7 @@ namespace embree
           assert(This->leafIntersector);
           VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
           size_t mask = movemask(valid_i);
-          while (mask) leafIntersector.intersect<K>(&pre,&ray,__bscf(mask),context,prim);
+          while (mask) leafIntersector.intersect<K>(&pre,&ray,bscf(mask),context,prim);
         }
         
         template<bool robust>        
@@ -140,7 +140,7 @@ namespace embree
           vbool<K> valid_o = false;
           size_t mask = movemask(valid_i);
           while (mask) {
-            size_t k = __bscf(mask);
+            size_t k = bscf(mask);
             if (leafIntersector.occluded<K>(&pre,&ray,k,context,prim))
               set(valid_o, k);
           }

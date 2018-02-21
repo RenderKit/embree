@@ -55,8 +55,8 @@ namespace embree
       const __m256i c = _mm256_and_si256(b,mask);
       v = _mm256_castsi256_pd(_mm256_cmpeq_epi64(c,mask));
 #else
-      vl = _mm_lookupmask_pd[a & 0x3];
-      vh = _mm_lookupmask_pd[a >> 2];
+      vl = mm_lookupmask_pd[a & 0x3];
+      vh = mm_lookupmask_pd[a >> 2];
 #endif
     }
     
@@ -143,7 +143,7 @@ namespace embree
   __forceinline bool none(const vboold4& valid, const vboold4& b) { return none(valid & b); }
 
   __forceinline unsigned int movemask(const vboold4& a) { return _mm256_movemask_pd(a); }
-  __forceinline size_t       popcnt  (const vboold4& a) { return __popcnt((size_t)_mm256_movemask_pd(a)); }
+  __forceinline size_t       popcnt  (const vboold4& a) { return popcnt((size_t)_mm256_movemask_pd(a)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions
