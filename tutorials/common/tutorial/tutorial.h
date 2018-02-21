@@ -190,6 +190,7 @@ namespace embree
     bool convert_hair_to_curves;
     bool convert_bezier_to_bspline;
     bool convert_bspline_to_bezier;
+    bool convert_tris_to_grids;
     bool remove_mblur;
     bool remove_non_mblur;
     FileName sceneFilename;

@@ -313,6 +313,7 @@ namespace embree
       convert_hair_to_curves(false),
       convert_bezier_to_bspline(false),
       convert_bspline_to_bezier(false),
+      convert_tris_to_grids(false),
       remove_mblur(false),
       remove_non_mblur(false),
       sceneFilename(""),
@@ -368,6 +369,10 @@ namespace embree
     registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_bspline_to_bezier = true;
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
+
+    registerOption("convert-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_tris_to_grids = true;
+      }, "--convert-triangles-to-grids: converts all triangles to grids when loading");
 
     registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
          remove_mblur = true;
@@ -1007,6 +1012,7 @@ namespace embree
     if (convert_hair_to_curves   ) scene->hair_to_curves();
     if (convert_bezier_to_bspline) scene->bezier_to_bspline();
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
+    if (convert_tris_to_grids    ) scene->triangles_to_grids();
 
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode));
