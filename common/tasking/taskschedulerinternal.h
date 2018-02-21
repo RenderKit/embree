@@ -107,7 +107,7 @@ namespace embree
       }
 
       /*! run this task */
-      __dllexport void run(Thread& thread);
+      dllexport void run(Thread& thread);
 
       void run_internal(Thread& thread);
 
@@ -150,7 +150,7 @@ namespace embree
 	if (left >= right-1) left = right-1;
       }
 
-      __dllexport bool execute_local(Thread& thread, Task* parent);
+      dllexport bool execute_local(Thread& thread, Task* parent);
       bool execute_local_internal(Thread& thread, Task* parent);
       bool steal(Thread& thread);
       size_t getTaskSizeAtLeft();
@@ -194,16 +194,16 @@ namespace embree
       ~ThreadPool ();
 
       /*! starts the threads */
-      __dllexport void startThreads();
+      dllexport void startThreads();
 
       /*! sets number of threads to use */
       void setNumThreads(size_t numThreads, bool startThreads = false);
 
       /*! adds a task scheduler object for scheduling */
-      __dllexport void add(const Ref<TaskScheduler>& scheduler);
+      dllexport void add(const Ref<TaskScheduler>& scheduler);
 
       /*! remove the task scheduler object again */
-      __dllexport void remove(const Ref<TaskScheduler>& scheduler);
+      dllexport void remove(const Ref<TaskScheduler>& scheduler);
 
       /*! returns number of threads of the thread pool */
       size_t size() const { return numThreads; }
@@ -238,7 +238,7 @@ namespace embree
     void reset();
 
     /*! let a worker thread allocate a thread index */
-    __dllexport ssize_t allocThreadIndex();
+    dllexport ssize_t allocThreadIndex();
 
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
@@ -327,36 +327,36 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-    __dllexport static bool wait();
+    dllexport static bool wait();
 
     /* returns the ID of the current thread */
-    __dllexport static size_t threadID();
+    dllexport static size_t threadID();
 
     /* returns the index (0..threadCount-1) of the current thread */
-    __dllexport static size_t threadIndex();
+    dllexport static size_t threadIndex();
 
     /* returns the total number of threads */
-    __dllexport static size_t threadCount();
+    dllexport static size_t threadCount();
 
   private:
 
     /* returns the thread local task list of this worker thread */
-    __dllexport static Thread* thread();
+    dllexport static Thread* thread();
 
     /* sets the thread local task list of this worker thread */
-    __dllexport static Thread* swapThread(Thread* thread);
+    dllexport static Thread* swapThread(Thread* thread);
 
     /*! returns the taskscheduler object to be used by the master thread */
-    __dllexport static TaskScheduler* instance();
+    dllexport static TaskScheduler* instance();
 
     /*! starts the threads */
-    __dllexport static void startThreads();
+    dllexport static void startThreads();
 
     /*! adds a task scheduler object for scheduling */
-    __dllexport static void addScheduler(const Ref<TaskScheduler>& scheduler);
+    dllexport static void addScheduler(const Ref<TaskScheduler>& scheduler);
 
     /*! remove the task scheduler object again */
-    __dllexport static void removeScheduler(const Ref<TaskScheduler>& scheduler);
+    dllexport static void removeScheduler(const Ref<TaskScheduler>& scheduler);
 
   private:
     std::vector<atomic<Thread*>> threadLocal;

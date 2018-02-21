@@ -101,16 +101,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __WIN32__
-#define __dllexport __declspec(dllexport)
-#define __dllimport __declspec(dllimport)
+#define dllexport __declspec(dllexport)
+#define dllimport __declspec(dllimport)
 #else
-#define __dllexport __attribute__ ((visibility ("default")))
-#define __dllimport 
+#define dllexport __attribute__ ((visibility ("default")))
+#define dllimport 
 #endif
 
 #ifdef __WIN32__
-#undef __noinline
+#if !defined(__noinline)
 #define __noinline             __declspec(noinline)
+#endif
 //#define __forceinline        __forceinline
 //#define __restrict           __restrict
 #if defined(__INTEL_COMPILER)
@@ -118,8 +119,12 @@
 #else
 #define __restrict__           //__restrict // causes issues with MSVC
 #endif
+#if !defined(__thread)
 #define __thread               __declspec(thread)
+#endif
+#if !defined(__aligned)
 #define __aligned(...)           __declspec(align(__VA_ARGS__))
+#endif
 //#define __FUNCTION__           __FUNCTION__
 #define debugbreak()           __debugbreak()
 
