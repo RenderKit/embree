@@ -124,52 +124,8 @@ namespace embree
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
-      void build_group(GeometryGroup* group)
-      {
-        /* we reset the allocator when the group size changed */
-        if (group && group->numPrimitivesChanged) {
-          bvh->alloc.clear();
-        }
-
-	/* skip build for empty scene */
-        size_t numPrimitives = 0;
-        for (size_t i=0; i<group->size(); i++)
-          numPrimitives += (*group)[i]->size();
-
-        if (numPrimitives == 0) {
-          prims.clear();
-          bvh->clear();
-          return;
-        }
-
-        /* create primref array */
-        prims.resize(numPrimitives);
-        PrimInfo pinfo = createGroupPrimRefArray<Mesh>(group ,prims,bvh->scene->progressInterface);
-
-        /* pinfo might has zero size due to invalid geometry */
-        if (unlikely(pinfo.size() == 0)) {
-          prims.clear(); bvh->clear(); return;
-        }
-
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
-
-	/* clear temporary data for static geometry */
-        prims.clear();
-        bvh->shrink();
-	bvh->cleanup();
-      }
-
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
-          build_group((GeometryGroup*)mesh);
-          return;
-        }
-
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
@@ -704,11 +660,6 @@ namespace embree
 
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
-          FATAL("NOT YET IMPLEMENTED"); //build_group((GeometryGroup*)mesh);
-          return;
-        }
-
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();

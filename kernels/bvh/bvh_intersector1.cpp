@@ -64,11 +64,10 @@ namespace embree
       assert(!(types & BVH_MB) || (ray.time() >= 0.0f && ray.time() <= 1.0f));
 
       /* load the ray into SIMD registers */
-      context->geomID_to_instID = nullptr;
       TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
-      BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
+      BVHNNodeTraverser1Hit<N, Nx, types> nodeTraverser;
 
       /* pop loop */
       while (true) pop:
@@ -104,10 +103,6 @@ namespace embree
           /* select next child and push other children */
           nodeTraverser.traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
-
-        /* ray transformation support */
-        if (unlikely(nodeTraverser.traverseTransform(cur, ray, tray, context, stackPtr, stackEnd)))
-          goto pop;
 
         /* this is a leaf node */
         assert(cur != BVH::emptyNode);
@@ -156,11 +151,10 @@ namespace embree
       assert(!(types & BVH_MB) || (ray.time() >= 0.0f && ray.time() <= 1.0f));
 
       /* load the ray into SIMD registers */
-      context->geomID_to_instID = nullptr;
       TravRay<N,Nx,robust> tray(ray.org, ray.dir, max(ray.tnear(), 0.0f), max(ray.tfar, 0.0f));
 
       /* initialize the node traverser */
-      BVHNNodeTraverser1<N, Nx, robust, types> nodeTraverser(tray);
+      BVHNNodeTraverser1Hit<N, Nx, types> nodeTraverser;
 
       /* pop loop */
       while (true) pop:
@@ -186,10 +180,6 @@ namespace embree
           /* select next child and push other children */
           nodeTraverser.traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
         }
-
-        /* ray transformation support */
-        if (unlikely(nodeTraverser.traverseTransform(cur, ray, tray, context, stackPtr, stackEnd)))
-          goto pop;
 
         /* this is a leaf node */
         assert(cur != BVH::emptyNode);

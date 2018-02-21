@@ -821,46 +821,6 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API RTCGeometry rtcNewGeometryInstance (RTCDevice hdevice,  RTCScene hscene, unsigned geomID) 
-  {
-    Device* device = (Device*) hdevice;
-    Scene* scene = (Scene*) hscene;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewGeometryInstance);
-    RTC_VERIFY_HANDLE(hdevice);
-    RTC_VERIFY_HANDLE(hscene);
-    RTC_VERIFY_GEOMID(geomID);
-    Geometry* geom = new GeometryInstance(device,scene->get_locked(geomID));
-    return (RTCGeometry) geom->refInc();
-    RTC_CATCH_END(device);
-    return nullptr;
-  }
-
-  RTC_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, unsigned* geomIDs, unsigned int N)
-  {
-    Device* device = (Device*) hdevice;
-    Scene* scene = (Scene*) hscene;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewGeometryGroup);
-    RTC_VERIFY_HANDLE(hdevice);
-    RTC_VERIFY_HANDLE(hscene);
-    if (N) RTC_VERIFY_HANDLE(geomIDs);
-
-    std::vector<Ref<Geometry>> geometries(N);
-    for (size_t i=0; i<N; i++) {
-      RTC_VERIFY_GEOMID(geomIDs[i]);
-      geometries[i] = scene->get_locked(geomIDs[i]);
-      if (geometries[i]->getType() == Geometry::GTY_GROUP)
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometry groups cannot contain other geometry groups");
-      if (geometries[i]->getType() != geometries[0]->getType())
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometries inside group have to be of same type");
-    }
-    Geometry* geom = new GeometryGroup(device,geometries);
-    return (RTCGeometry) geom->refInc();
-    RTC_CATCH_END(device);
-    return nullptr;
-  }
-
   RTC_API void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

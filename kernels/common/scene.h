@@ -22,7 +22,6 @@
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
-#include "scene_geometry_instance.h"
 #include "scene_curves.h"
 #include "scene_line_segments.h"
 #include "scene_subdiv_mesh.h"

@@ -47,7 +47,6 @@ SET(EMBREE_LIBRARY_FILES
   common/geometry.cpp
   common/scene_user_geometry.cpp
   common/scene_instance.cpp
-  common/scene_geometry_instance.cpp
   common/scene_triangle_mesh.cpp
   common/scene_quad_mesh.cpp
   common/scene_curves.cpp
@@ -75,7 +74,6 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_morton.cpp
   bvh/bvh_builder_sah.cpp
   bvh/bvh_builder_twolevel.cpp
-  bvh/bvh_builder_instancing.cpp
 
   bvh/bvh_intersector1_bvh4.cpp
   )
@@ -120,8 +118,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_builder_hair.cpp
       bvh/bvh_builder_hair_mb.cpp
       bvh/bvh_builder_sah.cpp
-      bvh/bvh_builder_twolevel.cpp
-      bvh/bvh_builder_instancing.cpp)
+      bvh/bvh_builder_twolevel.cpp)
 
     IF (EMBREE_GEOMETRY_SUBDIVISION)
       LIST(APPEND ${TARGET} bvh/bvh_builder_subdiv.cpp)

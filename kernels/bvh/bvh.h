@@ -33,7 +33,6 @@ namespace embree
     BVH_FLAG_ALIGNED_NODE_MB = 0x00010,
     BVH_FLAG_UNALIGNED_NODE = 0x00100,
     BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
-    BVH_FLAG_TRANSFORM_NODE = 0x10000,
     BVH_FLAG_QUANTIZED_NODE = 0x100000,
     BVH_FLAG_ALIGNED_NODE_MB4D = 0x1000000,
 
@@ -47,8 +46,6 @@ namespace embree
     BVH_AN1_UN1 = BVH_FLAG_ALIGNED_NODE | BVH_FLAG_UNALIGNED_NODE,
     BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_AN2_AN4D_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D | BVH_FLAG_UNALIGNED_NODE_MB,
-    BVH_TN_AN1 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE,
-    BVH_TN_AN1_AN2 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE | BVH_FLAG_ALIGNED_NODE_MB,
     BVH_QN1 = BVH_FLAG_QUANTIZED_NODE
   };
 
@@ -100,7 +97,6 @@ namespace embree
     struct AlignedNodeMB4D;
     struct UnalignedNode;
     struct UnalignedNodeMB;
-    struct TransformNode;
     struct QuantizedNode;
 
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
@@ -120,7 +116,6 @@ namespace embree
     static const size_t tyAlignedNodeMB4D = 6;
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
-    static const size_t tyTransformNode = 4;
     static const size_t tyQuantizedNode = 5;
     static const size_t tyLeaf = 8;
 
@@ -319,10 +314,6 @@ namespace embree
       /*! checks if this is a motion blur node with unaligned bounding boxes */
       __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
 
-      /*! checks if this is a transformation node */
-      __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
-      __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
-
       /*! checks if this is a quantized node */
       __forceinline int isQuantizedNode() const { return (ptr & (size_t)align_mask) == tyQuantizedNode; }
 
@@ -330,22 +321,12 @@ namespace embree
       __forceinline BaseNode* baseNode(int types)
       {
         assert(!isLeaf());
-        if ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) {
-          assert((ptr & (size_t)align_mask) == 0);
-          return (BaseNode*)ptr;
-        }
-        else
-          return (BaseNode*)(ptr & ~(size_t)align_mask);
+        return (BaseNode*)(ptr & ~(size_t)align_mask);
       }
       __forceinline const BaseNode* baseNode(int types) const
       {
         assert(!isLeaf());
-        if ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) {
-          assert((ptr & (size_t)align_mask) == 0);
-          return (const BaseNode*)ptr;
-        }
-        else
-          return (const BaseNode*)(ptr & ~(size_t)align_mask);
+        return (const BaseNode*)(ptr & ~(size_t)align_mask);
       }
 
       /*! returns node pointer */
@@ -367,10 +348,6 @@ namespace embree
       /*! returns unaligned motion blur node pointer */
       __forceinline       UnalignedNodeMB* unalignedNodeMB()       { assert(isUnalignedNodeMB()); return (      UnalignedNodeMB*)(ptr & ~(size_t)align_mask); }
       __forceinline const UnalignedNodeMB* unalignedNodeMB() const { assert(isUnalignedNodeMB()); return (const UnalignedNodeMB*)(ptr & ~(size_t)align_mask); }
-
-      /*! returns transformation pointer */
-      __forceinline       TransformNode* transformNode()       { assert(isTransformNode()); return (      TransformNode*)(ptr & ~(size_t)align_mask); }
-      __forceinline const TransformNode* transformNode() const { assert(isTransformNode()); return (const TransformNode*)(ptr & ~(size_t)align_mask); }
 
       /*! returns quantized node pointer */
       __forceinline       QuantizedNode* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode*)(ptr  & ~(size_t)align_mask ); }
@@ -1135,26 +1112,7 @@ namespace embree
       BBox3vf<N> b1;
     };
 
-    struct TransformNode
-    {
-      __forceinline TransformNode () {}
-
-      __forceinline TransformNode(const AffineSpace3fa& local2world, const BBox3fa& localBounds, NodeRef child, unsigned mask, unsigned int instID, unsigned int xfmID, unsigned int type)
-        : local2world(local2world), world2local(rcp(local2world)), localBounds(localBounds), identity(local2world == AffineSpace3fa(one)), child(child), mask(mask), instID(instID), xfmID(xfmID), type(type) {}
-
-      AffineSpace3fa local2world; //!< transforms from local space to world space
-      AffineSpace3fa world2local; //!< transforms from world space to local space
-      BBox3fa localBounds;
-      bool identity;
-      NodeRef child;
-      unsigned mask;
-      unsigned int instID;
-      unsigned int xfmID;
-      unsigned int type;
-    };
-
     /*! BVHN Quantized Node */
-
     struct __aligned(8) QuantizedBaseNode
     {
       typedef unsigned char T;
@@ -1483,11 +1441,6 @@ namespace embree
     /*! Encodes an unaligned motion blur node */
     static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) {
       return NodeRef((size_t) node | tyUnalignedNodeMB);
-    }
-
-    /*! Encodes a transformation node */
-    static __forceinline NodeRef encodeNode(TransformNode* node) {
-      return NodeRef((size_t) node | tyTransformNode);
     }
 
     /*! Encodes a leaf */
