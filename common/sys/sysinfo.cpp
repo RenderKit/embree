@@ -88,7 +88,7 @@ namespace embree
   std::string getCPUVendor()
   {
     int cpuinfo[4]; 
-    __cpuid (cpuinfo, 0); 
+    cpuid (cpuinfo, 0); 
     int name[4];
     name[0] = cpuinfo[1];
     name[1] = cpuinfo[3];
@@ -100,9 +100,9 @@ namespace embree
   CPUModel getCPUModel() 
   {
     int out[4];
-    __cpuid(out, 0);
+    cpuid(out, 0);
     if (out[0] < 1) return CPU_UNKNOWN;
-    __cpuid(out, 1);
+    cpuid(out, 1);
     int family = ((out[0] >> 8) & 0x0F) + ((out[0] >> 20) & 0xFF);
     int model  = ((out[0] >> 4) & 0x0F) | ((out[0] >> 12) & 0xF0);
     if (family !=   6) return CPU_UNKNOWN;           // earlier than P6
@@ -201,28 +201,28 @@ namespace embree
 
     /* get number of CPUID leaves */
     int cpuid_leaf0[4]; 
-    __cpuid(cpuid_leaf0, 0x00000000);
+    cpuid(cpuid_leaf0, 0x00000000);
     unsigned nIds = cpuid_leaf0[EAX];  
 
     /* get number of extended CPUID leaves */
     int cpuid_leafe[4]; 
-    __cpuid(cpuid_leafe, 0x80000000);
+    cpuid(cpuid_leafe, 0x80000000);
     unsigned nExIds = cpuid_leafe[EAX];
 
     /* get CPUID leaves for EAX = 1,7, and 0x80000001 */
     int cpuid_leaf_1[4] = { 0,0,0,0 };
     int cpuid_leaf_7[4] = { 0,0,0,0 };
     int cpuid_leaf_e1[4] = { 0,0,0,0 };
-    if (nIds >= 1) __cpuid (cpuid_leaf_1,0x00000001);
+    if (nIds >= 1) cpuid (cpuid_leaf_1,0x00000001);
 #if _WIN32
 #if _MSC_VER && (_MSC_FULL_VER < 160040219)
 #else
-    if (nIds >= 7) __cpuidex(cpuid_leaf_7,0x00000007,0);
+    if (nIds >= 7) cpuidex(cpuid_leaf_7,0x00000007,0);
 #endif
 #else
-    if (nIds >= 7) __cpuid_count(cpuid_leaf_7,0x00000007,0);
+    if (nIds >= 7) cpuid_count(cpuid_leaf_7,0x00000007,0);
 #endif
-    if (nExIds >= 0x80000001) __cpuid(cpuid_leaf_e1,0x80000001);
+    if (nExIds >= 0x80000001) cpuid(cpuid_leaf_e1,0x80000001);
 
     /* detect if OS saves XMM, YMM, and ZMM states */
     bool xmm_enabled = true;

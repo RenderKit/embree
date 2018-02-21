@@ -453,7 +453,7 @@ namespace embree
         GeneralBVHBuilder::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = __bsr(sahBlockSize);
+        settings.logBlockSize = bsr(sahBlockSize);
         settings.minLeafSize = minLeafSize;
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
@@ -484,7 +484,7 @@ namespace embree
         BVHBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
-        settings.logBlockSize = __bsr(sahBlockSize);
+        settings.logBlockSize = bsr(sahBlockSize);
         settings.minLeafSize = minLeafSize;
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;

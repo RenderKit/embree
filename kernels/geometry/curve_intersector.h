@@ -68,7 +68,7 @@ namespace embree
           assert(This->leafIntersector);
           VirtualCurvePrimitive::Intersectors& leafIntersector = ((VirtualCurvePrimitive*) This->leafIntersector)->vtbl[ty];
           size_t mask = movemask(valid_i);
-          while (mask) leafIntersector.intersect<K>(&pre,&ray,__bscf(mask),context,prim);
+          while (mask) leafIntersector.intersect<K>(&pre,&ray,bscf(mask),context,prim);
         }
         
         static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
@@ -80,7 +80,7 @@ namespace embree
           vbool<K> valid_o = false;
           size_t mask = movemask(valid_i);
           while (mask) {
-            size_t k = __bscf(mask);
+            size_t k = bscf(mask);
             if (leafIntersector.occluded<K>(&pre,&ray,k,context,prim))
               set(valid_o, k);
           }

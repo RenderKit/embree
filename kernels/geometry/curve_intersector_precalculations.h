@@ -50,7 +50,7 @@ namespace embree
         size_t mask = movemask(valid);
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
         while (mask) {
-          size_t k = __bscf(mask);
+          size_t k = bscf(mask);
           Vec3fa ray_dir_k = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
           LinearSpace3fa ray_space_k = frame(depth_scale[k]*ray_dir_k);
           ray_space_k.vz *= depth_scale[k];

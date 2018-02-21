@@ -62,7 +62,7 @@ namespace embree
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
 
     /* Returns the number of stored line segments */
-    __forceinline size_t size() const { return __bsf(~movemask(valid())); }
+    __forceinline size_t size() const { return bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
     template<class T>

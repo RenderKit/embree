@@ -280,7 +280,7 @@ namespace embree
           size_t mask = movemask(valid);
           while (mask)
           {
-            const size_t i = __bscf(mask);
+            const size_t i = bscf(mask);
             const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
             const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
             const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));

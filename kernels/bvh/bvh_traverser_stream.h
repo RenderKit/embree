@@ -46,7 +46,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        const size_t r0 = __bscf(mask);
+        const size_t r0 = bscf(mask);
         assert(r0 < 8);
         cur = node->child(r0);
         cur.prefetch(types);
@@ -59,7 +59,7 @@ namespace embree
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur;
         unsigned int d0 = tNear_i[r0];
-        const size_t r1 = __bscf(mask);
+        const size_t r1 = bscf(mask);
         assert(r1 < 8);
         NodeRef c1 = node->child(r1);
         c1.prefetch(types);
@@ -110,7 +110,7 @@ namespace embree
           m_trav_active = tMask[index];
           assert(m_trav_active);
           cur.prefetch(types);
-          __bscf(hits);
+          bscf(hits);
           if (unlikely(hits==0)) break;
           i++;
           assert(cur != BVH::emptyNode);
@@ -135,7 +135,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
         m_trav_active = tMask[r];
@@ -150,7 +150,7 @@ namespace embree
 
         for (; ;)
         {
-          r = __bscf(mask);
+          r = bscf(mask);
           cur = node->child(r);
           cur.prefetch(types);
           m_trav_active = tMask[r];

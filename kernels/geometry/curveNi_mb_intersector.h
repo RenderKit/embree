@@ -92,7 +92,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -114,7 +114,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -139,7 +139,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -164,7 +164,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -257,7 +257,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -279,7 +279,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -305,7 +305,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -330,7 +330,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];

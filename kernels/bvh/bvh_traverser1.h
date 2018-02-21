@@ -181,7 +181,7 @@ namespace embree
 
       /* >=5 hits: reverse to descending order for writing to stack */
 
-      const size_t hits = 4 + __popcnt(mask);
+      const size_t hits = 4 + popcnt(mask);
       const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
       vfloat16 dist(neg_inf);
       vllong8 ptr(zero);
@@ -384,7 +384,7 @@ namespace embree
 
       /* >=5 hits: reverse to descending order for writing to stack */
 
-      const size_t hits = 4 + __popcnt(mask);
+      const size_t hits = 4 + popcnt(mask);
       const vfloat<N> dist_A2  = select(m_dist3, dist_A1, d3);
       vfloat<N> dist(neg_inf);
       vint<N> ptr(zero);
@@ -456,7 +456,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
         if (likely(mask == 0)) {
@@ -467,7 +467,7 @@ namespace embree
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur;
         const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c1 = node->child(r);
         c1.prefetch(types);
         const unsigned int d1 = ((unsigned int*)&tNear)[r];
@@ -482,7 +482,7 @@ namespace embree
 #if NEW_SORTING_CODE == 1
         vint4 s0((size_t)c0,(size_t)d0);
         vint4 s1((size_t)c1,(size_t)d1);
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c2 = node->child(r); c2.prefetch(types); unsigned int d2 = ((unsigned int*)&tNear)[r]; 
         vint4 s2((size_t)c2,(size_t)d2);
         /* 3 hits */
@@ -493,7 +493,7 @@ namespace embree
           stackPtr+=2;
           return;
         }
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c3 = node->child(r); c3.prefetch(types); unsigned int d3 = ((unsigned int*)&tNear)[r]; 
         vint4 s3((size_t)c3,(size_t)d3);
         /* 4 hits */
@@ -511,7 +511,7 @@ namespace embree
 
         /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -522,7 +522,7 @@ namespace embree
 
         /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
@@ -541,7 +541,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r); 
         cur.prefetch(types);
 
@@ -553,7 +553,7 @@ namespace embree
 
         for (; ;)
         {
-          r = __bscf(mask);
+          r = bscf(mask);
           cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) return;
@@ -593,7 +593,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
         if (likely(mask == 0)) {
@@ -604,7 +604,7 @@ namespace embree
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur;
         const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c1 = node->child(r);
         c1.prefetch(types);
         const unsigned int d1 = ((unsigned int*)&tNear)[r];
@@ -620,7 +620,7 @@ namespace embree
         vint4 s0((size_t)c0,(size_t)d0);
         vint4 s1((size_t)c1,(size_t)d1);
 
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c2 = node->child(r); c2.prefetch(types); unsigned int d2 = ((unsigned int*)&tNear)[r]; 
         vint4 s2((size_t)c2,(size_t)d2);
         /* 3 hits */
@@ -631,7 +631,7 @@ namespace embree
           stackPtr+=2;
           return;
         }
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c3 = node->child(r); c3.prefetch(types); unsigned int d3 = ((unsigned int*)&tNear)[r]; 
         vint4 s3((size_t)c3,(size_t)d3);
         /* 4 hits */
@@ -649,7 +649,7 @@ namespace embree
         while (1)
         {
           assert(stackPtr < stackEnd);
-          r = __bscf(mask);
+          r = bscf(mask);
           NodeRef c = node->child(r); c.prefetch(types); unsigned int d = *(unsigned int*)&tNear[r]; 
           const vint4 s((size_t)c,(size_t)d);
           *(vint4*)stackPtr++ = s;
@@ -668,7 +668,7 @@ namespace embree
 
         /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -679,7 +679,7 @@ namespace embree
 
         /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
         assert(stackPtr < stackEnd);
-        r = __bscf(mask);
+        r = bscf(mask);
         c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -692,7 +692,7 @@ namespace embree
         while (1)
         {
           assert(stackPtr < stackEnd);
-          r = __bscf(mask);
+          r = bscf(mask);
           c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH::emptyNode);
           if (unlikely(mask == 0)) break;
@@ -712,7 +712,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
+        size_t r = bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
 
@@ -724,7 +724,7 @@ namespace embree
 
         for (; ;)
         {
-          r = __bscf(mask);
+          r = bscf(mask);
           cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) return;
@@ -782,7 +782,7 @@ namespace embree
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
           if (likely(any(xfm_hit))) {
-            const int slot = __bsf(movemask(xfm_hit));
+            const int slot = bsf(movemask(xfm_hit));
             tray = cacheEntry[slot];
             ray.org = Vec3fa(tray.org_xyz,ray.tnear());
             ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
@@ -849,7 +849,7 @@ namespace embree
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
           if (likely(any(xfm_hit))) {
-            const int slot = __bsf(movemask(xfm_hit));
+            const int slot = bsf(movemask(xfm_hit));
             tray = cacheEntry[slot];
             ray.org = Vec3fa(tray.org_xyz,ray.tnear());
             ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);
@@ -911,7 +911,7 @@ namespace embree
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
           if (likely(any(xfm_hit))) {
-            const int slot = __bsf(movemask(xfm_hit));
+            const int slot = bsf(movemask(xfm_hit));
             tray = cacheEntry[slot];
             ray.org = Vec3fa(tray.org_xyz,ray.tnear());
             ray.dir = Vec3fa(tray.dir_xyz,ray.tfar);

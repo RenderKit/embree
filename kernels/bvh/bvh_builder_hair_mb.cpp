@@ -65,7 +65,7 @@ namespace embree
         BVHBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = __bsf(Primitive::max_size());
+        settings.logBlockSize = bsf(Primitive::max_size());
         settings.minLeafSize = Primitive::max_size();
         settings.maxLeafSize = Primitive::max_size();
 

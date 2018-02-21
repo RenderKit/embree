@@ -784,7 +784,7 @@ namespace embree
       group->wait();
 #endif
       while (!buildMutex.try_lock()) {
-        __pause_cpu();
+        pause_cpu();
         yield();
 #if USE_TASK_ARENA
         device->arena->execute([&]{ group->wait(); });

@@ -432,11 +432,11 @@ namespace embree
   __forceinline int reduce_max(const vint8& v) { return toScalar(vreduce_max(v)); }
   __forceinline int reduce_add(const vint8& v) { return toScalar(vreduce_add(v)); }
 
-  __forceinline size_t select_min(const vint8& v) { return __bsf(movemask(v == vreduce_min(v))); }
-  __forceinline size_t select_max(const vint8& v) { return __bsf(movemask(v == vreduce_max(v))); }
+  __forceinline size_t select_min(const vint8& v) { return bsf(movemask(v == vreduce_min(v))); }
+  __forceinline size_t select_max(const vint8& v) { return bsf(movemask(v == vreduce_max(v))); }
 
-  __forceinline size_t select_min(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
-  __forceinline size_t select_max(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
+  __forceinline size_t select_min(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(pos_inf)); return bsf(movemask(valid & (a == vreduce_min(a)))); }
+  __forceinline size_t select_max(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(neg_inf)); return bsf(movemask(valid & (a == vreduce_max(a)))); }
 
 
   __forceinline vint8 assign(const vint4& a) { return _mm256_castsi128_si256(a); }

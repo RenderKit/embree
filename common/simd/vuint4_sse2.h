@@ -408,11 +408,11 @@ namespace embree
   __forceinline unsigned int reduce_max(const vuint4& v) { return toScalar(vreduce_max(v)); }
   __forceinline unsigned int reduce_add(const vuint4& v) { return toScalar(vreduce_add(v)); }
 
-  __forceinline size_t select_min(const vuint4& v) { return __bsf(movemask(v == vreduce_min(v))); }
-  __forceinline size_t select_max(const vuint4& v) { return __bsf(movemask(v == vreduce_max(v))); }
+  __forceinline size_t select_min(const vuint4& v) { return bsf(movemask(v == vreduce_min(v))); }
+  __forceinline size_t select_max(const vuint4& v) { return bsf(movemask(v == vreduce_max(v))); }
 
-  //__forceinline size_t select_min(const vboolf4& valid, const vuint4& v) { const vuint4 a = select(valid,v,vuint4(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
-  //__forceinline size_t select_max(const vboolf4& valid, const vuint4& v) { const vuint4 a = select(valid,v,vuint4(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
+  //__forceinline size_t select_min(const vboolf4& valid, const vuint4& v) { const vuint4 a = select(valid,v,vuint4(pos_inf)); return bsf(movemask(valid & (a == vreduce_min(a)))); }
+  //__forceinline size_t select_max(const vboolf4& valid, const vuint4& v) { const vuint4 a = select(valid,v,vuint4(neg_inf)); return bsf(movemask(valid & (a == vreduce_max(a)))); }
 
 #else
 

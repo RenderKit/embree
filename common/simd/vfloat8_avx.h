@@ -666,14 +666,14 @@ namespace embree
   { 
     const vfloat8 a = select(valid,v,vfloat8(pos_inf)); 
     const vbool8 valid_min = valid & (a == vreduce_min(a));
-    return __bsf(movemask(any(valid_min) ? valid_min : valid)); 
+    return bsf(movemask(any(valid_min) ? valid_min : valid)); 
   }
 
   __forceinline size_t select_max(const vboolf8& valid, const vfloat8& v) 
   { 
     const vfloat8 a = select(valid,v,vfloat8(neg_inf)); 
     const vbool8 valid_max = valid & (a == vreduce_max(a));
-    return __bsf(movemask(any(valid_max) ? valid_max : valid)); 
+    return bsf(movemask(any(valid_max) ? valid_max : valid)); 
   }
 
 

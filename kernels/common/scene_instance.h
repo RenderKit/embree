@@ -67,7 +67,7 @@ namespace embree
       vfloat<K> ftime;
       const vint<K> itime_k = getTimeSegment(t, vfloat<K>(fnumTimeSegments), ftime);
       assert(any(valid));
-      const size_t index = __bsf(movemask(valid));
+      const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
       const vfloat<K> t0 = vfloat<K>(1.0f)-ftime, t1 = ftime;
       if (likely(all(valid,itime_k == vint<K>(itime)))) {

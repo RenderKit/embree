@@ -239,7 +239,7 @@ namespace embree
 
         vbool<K> valid1 = valid_i;
         while (any(valid1)) {
-          const size_t j = __bsf(movemask(valid1));
+          const size_t j = bsf(movemask(valid1));
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
@@ -300,7 +300,7 @@ namespace embree
         vbool<K> valid_o = valid_i;
         vbool<K> valid1 = valid_i;
         while (any(valid1)) {
-          const int j = int(__bsf(movemask(valid1)));
+          const int j = int(bsf(movemask(valid1)));
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;

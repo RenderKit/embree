@@ -307,7 +307,7 @@ namespace embree
   void TaskScheduler::wait_for_threads(size_t threadCount)
   {
     while (threadCounter < threadCount-1)
-      __pause_cpu();
+      pause_cpu();
   }
 
   __dllexport TaskScheduler::Thread* TaskScheduler::thread() {
@@ -382,7 +382,7 @@ namespace embree
 
     for (size_t i=1; i<threadCount; i++)
     {
-      __pause_cpu(32);
+      pause_cpu(32);
       size_t otherThreadIndex = threadIndex+i;
       if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
 

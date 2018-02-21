@@ -68,7 +68,7 @@ namespace embree
         /* builder settings */
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = __bsf(Primitive::max_size());
+        settings.logBlockSize = bsf(Primitive::max_size());
         settings.minLeafSize = Primitive::max_size();
         settings.maxLeafSize = Primitive::max_size();
         settings.finished_range_threshold = numPrimitives/1000;

@@ -417,7 +417,7 @@ namespace embree
         {
           if (unlikely(m == 0)) return false;
         entry:
-          size_t i=__bsf(m);
+          size_t i=bsf(m);
 
           const int geomID = geomIDs[i];
           const int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
@@ -426,7 +426,7 @@ namespace embree
 #if defined(EMBREE_RAY_MASK)
           /* goto next hit if mask test fails */
           if ((geometry->mask & ray.mask) == 0) {
-            m=__btc(m,i);
+            m=btc(m,i);
             continue;
           }
 #endif
@@ -442,7 +442,7 @@ namespace embree
               ray.tfar = hit.t(i);
               if (runOcclusionFilter1(geometry,ray,context,h)) return true;
               ray.tfar = old_t;
-              m=__btc(m,i);
+              m=btc(m,i);
               continue;
             }
           }
@@ -554,7 +554,7 @@ namespace embree
         if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
         {
           hit.finalize();
-          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
+          for (size_t m=movemask(valid), i=bsf(m); m!=0; m=btc(m,i), i=bsf(m))
           {
             const Vec2f uv = hit.uv(i);
             const float old_t = ray.tfar;
@@ -923,7 +923,7 @@ namespace embree
         {
           if (unlikely(m == 0)) return false;
         entry:
-          size_t i=__bsf(m);
+          size_t i=bsf(m);
 
           const int geomID = geomIDs[i];
           Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
@@ -931,7 +931,7 @@ namespace embree
 #if defined(EMBREE_RAY_MASK)
           /* goto next hit if mask test fails */
           if ((geometry->mask & ray.mask[k]) == 0) {
-            m=__btc(m,i);
+            m=btc(m,i);
             continue;
           }
 #endif
@@ -947,7 +947,7 @@ namespace embree
               HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               if (any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h))) return true;
               ray.tfar[k] = old_t;
-              m=__btc(m,i);
+              m=btc(m,i);
               continue;
             }
           }
@@ -1069,7 +1069,7 @@ namespace embree
           if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
           {
             hit.finalize();
-            for (size_t m=movemask(valid_i), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
+            for (size_t m=movemask(valid_i), i=bsf(m); m!=0; m=btc(m,i), i=bsf(m))
             {
               const Vec2f uv = hit.uv(i);
               const float old_t = ray.tfar[k];

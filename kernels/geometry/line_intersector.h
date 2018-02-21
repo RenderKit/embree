@@ -108,7 +108,7 @@ namespace embree
             size_t mask = movemask(valid);
             depth_scale = rsqrt(dot(ray.dir,ray.dir));
             while (mask) {
-              size_t k = __bscf(mask);
+              size_t k = bscf(mask);
               ray_space[k] = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed();
             }
           }
