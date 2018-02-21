@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### New Features in Embree 2.17.3
+-   Fixed GCC compile warning in debug mode.
+-   Fixed bug of ribbon curve intersector when derivative was zero.
+-   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
+
 ### New Features in Embree 2.17.2
 -   Made BVH build of curve geometry deterministic.
 
@@ -502,3 +507,4 @@ Version History
 -   Integration with the Intel® SPMD Program Compiler (ISPC)
 -   Instantiation and fast BVH reconstruction
 -   Example photo-realistic rendering engine for both C++ and ISPC
+
