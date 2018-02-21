@@ -196,7 +196,7 @@ namespace embree
   
 #if defined(__i386__) && defined(__PIC__)
   
-  __forceinline void cpuid(int out[4], int op) 
+  __forceinline void __cpuid(int out[4], int op) 
   {
     asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
                   "cpuid\n\t"
@@ -205,7 +205,7 @@ namespace embree
                   : "0"(op)); 
   }
   
-  __forceinline void cpuid_count(int out[4], int op1, int op2) 
+  __forceinline void __cpuid_count(int out[4], int op1, int op2) 
   {
     asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
                   "cpuid\n\t"
@@ -216,11 +216,11 @@ namespace embree
   
 #else
   
-  __forceinline void cpuid(int out[4], int op) {
+  __forceinline void __cpuid(int out[4], int op) {
     asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op)); 
   }
   
-  __forceinline void cpuid_count(int out[4], int op1, int op2) {
+  __forceinline void __cpuid_count(int out[4], int op1, int op2) {
     asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2)); 
   }
   
@@ -412,9 +412,9 @@ namespace embree
   __forceinline uint64_t rdtsc()
   {
     int dummy[4]; 
-    cpuid(dummy,0); 
+    __cpuid(dummy,0); 
     uint64_t clock = read_tsc(); 
-    cpuid(dummy,0); 
+    __cpuid(dummy,0); 
     return clock;
   }
   
