@@ -99,11 +99,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __WIN32__
-#define dllexport __declspec(dllexport)
-#define dllimport __declspec(dllimport)
+#define dll_export __declspec(dllexport)
+#define dll_import __declspec(dllimport)
 #else
-#define dllexport __attribute__ ((visibility ("default")))
-#define dllimport 
+#define dll_export __attribute__ ((visibility ("default")))
+#define dll_import 
 #endif
 
 #ifdef __WIN32__
