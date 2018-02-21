@@ -398,7 +398,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
-        const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(0,scene,prims,bvh->scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface,0);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
