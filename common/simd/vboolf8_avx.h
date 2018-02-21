@@ -55,8 +55,8 @@ namespace embree
       const __m256i c = _mm256_and_si256(b,mask);
       v = _mm256_castsi256_ps(_mm256_cmpeq_epi32(c,mask));
 #else
-      vl = _mm_lookupmask_ps[a & 0xF];
-      vh = _mm_lookupmask_ps[a >> 4];
+      vl = mm_lookupmask_ps[a & 0xF];
+      vh = mm_lookupmask_ps[a >> 4];
 #endif
     }
 
