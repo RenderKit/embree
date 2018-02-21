@@ -242,10 +242,9 @@ namespace embree
       mvector<PrimRefMB> primsMB;
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
-      bool cached;
 
-      BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0), cached(cached) {}
+      BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0) {}
 
       void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
       {
@@ -298,20 +297,8 @@ namespace embree
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
                 new (&patch) SubdivPatch1Cached(mesh->geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
-              if (cached)
-              {
-                for (size_t t=0; t<mesh->numTimeSteps; t++)
-                {
-                  SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                  bounds[patchIndexMB+t] = bound;
-                }
-              }
-              else
-              {
-                SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
-              }
+              SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
+              patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
               s++;
               sMB += mesh->numTimeSteps;
@@ -412,7 +399,7 @@ namespace embree
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivPatch1EagerBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderSAH<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedMBlurBuilderSAH<4>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedMBlurBuilderSAH<4>((BVH4*)bvh,scene); }
   }
 }
 #endif
