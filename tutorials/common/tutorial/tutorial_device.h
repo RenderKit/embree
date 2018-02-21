@@ -16,8 +16,6 @@
 
 #pragma once
 
-#define _CRT_SECURE_NO_WARNINGS
-
 /* size of screen tiles */
 #define TILE_SIZE_X 8
 #define TILE_SIZE_Y 8
