@@ -168,8 +168,8 @@ namespace embree
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
-              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) :
-              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
 
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
@@ -254,8 +254,8 @@ namespace embree
             /* create primref array */
             prims.resize(numPrimitives);
             PrimInfo pinfo = mesh ?
-              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) :
-              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
 
             /* enable os_malloc for two level build */
             if (mesh)
@@ -429,7 +429,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
-        PrimInfoMB pinfo = createPrimRefArrayMSMBlur<Mesh>(scene,prims,bvh->scene->progressInterface);
+        PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -514,8 +514,8 @@ namespace embree
         const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ?
-          createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) :
-          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
+          createPrimRefArray(mesh,prims0,bvh->scene->progressInterface) :
+          createPrimRefArray(scene,Mesh::geom_type,false,prims0,bvh->scene->progressInterface);
 
         Splitter splitter(scene);
 
@@ -715,8 +715,8 @@ namespace embree
 
         // TODO: replace this with proper PrimRefArray generation
         //PrimInfo pinfo = mesh ?
-        //  createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
-        //  createPrimRefArray<GridMesh,false>(scene,prims,bvh->scene->progressInterface);
+        //  createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
+        //  createPrimRefArray(scene,GridMesh::geom_type,false,prims,bvh->scene->progressInterface);
 
         PrimInfo pinfo(empty);
         size_t p_index = 0;

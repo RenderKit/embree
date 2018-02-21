@@ -33,7 +33,7 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
-    Instance (Device* device, Scene* object, unsigned int numTimeSteps);
+    Instance (Device* device, Scene* object = nullptr, unsigned int numTimeSteps = 1);
     ~Instance();
 
   private:
@@ -88,4 +88,42 @@ namespace embree
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
     AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
   };
+
+  namespace isa
+  {
+    struct InstanceISA : public Instance
+    {
+      InstanceISA (Device* device)
+        : Instance(device) {}
+
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!buildBounds(j,&bounds)) continue;
+          const PrimRef prim(bounds,geomID,unsigned(j));
+          pinfo.add_center2(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
+
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const
+      {
+        PrimInfoMB pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
+          const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          pinfo.add_primref(prim);
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }
+    };
+  }
+  
+  DECLARE_ISA_FUNCTION(Instance*, createInstance, Device*);
 }

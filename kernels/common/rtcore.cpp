@@ -1011,7 +1011,9 @@ namespace embree
     case RTC_GEOMETRY_TYPE_USER:
     {
 #if defined(EMBREE_GEOMETRY_USER)
-      Geometry* geom = new UserGeometry(device,0,1);
+      createUserGeometryTy createUserGeometry = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createUserGeometry);
+      Geometry* geom = createUserGeometry(device);
       return (RTCGeometry) geom->refInc();
 #else
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_USER is not supported");
@@ -1021,7 +1023,9 @@ namespace embree
     case RTC_GEOMETRY_TYPE_INSTANCE:
     {
 #if defined(EMBREE_GEOMETRY_USER)
-      Geometry* geom = new Instance(device,nullptr,1);
+      createInstanceTy createInstance = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createInstance);
+      Geometry* geom = createInstance(device);
       return (RTCGeometry) geom->refInc();
 #else
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_INSTANCE is not supported");
@@ -1032,7 +1036,7 @@ namespace embree
     {
 #if defined(EMBREE_GEOMETRY_GRID)
       createGridMeshTy createGridMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createGridMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createGridMesh);
       Geometry* geom = createGridMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
