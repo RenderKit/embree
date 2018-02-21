@@ -34,13 +34,13 @@ namespace embree
     {
       RayHit& ray;
       IntersectContext* context;
-      const int geomID;
-      const int primID;
+      const unsigned int geomID;
+      const unsigned int primID;
 
       __forceinline Intersect1Epilog1(RayHit& ray,
                                       IntersectContext* context,
-                                      const int geomID,
-                                      const int primID)
+                                      const unsigned int geomID,
+                                      const unsigned int primID)
         : ray(ray), context(context), geomID(geomID), primID(primID) {}
 
       template<typename Hit>
@@ -53,13 +53,12 @@ namespace embree
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
         hit.finalize();
-        int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
 
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-            HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.Ng);
+            HitK<1> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
             const float old_t = ray.tfar;
             ray.tfar = hit.t;
             bool found = runIntersectionFilter1(geometry,ray,context,h);
@@ -75,7 +74,7 @@ namespace embree
         ray.u = hit.u;
         ray.v = hit.v;
         ray.primID = primID;
-        ray.geomID = instID;
+        ray.geomID = geomID;
         ray.instID = context->instID;
         return true;
       }
@@ -86,13 +85,13 @@ namespace embree
     {
       Ray& ray;
       IntersectContext* context;
-      const int geomID;
-      const int primID;
+      const unsigned int geomID;
+      const unsigned int primID;
 
       __forceinline Occluded1Epilog1(Ray& ray,
                                      IntersectContext* context,
-                                     const int geomID,
-                                     const int primID)
+                                     const unsigned int geomID,
+                                     const unsigned int primID)
         : ray(ray), context(context), geomID(geomID), primID(primID) {}
 
       template<typename Hit>
@@ -105,13 +104,12 @@ namespace embree
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
         hit.finalize();
-        int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
 
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
-            HitK<1> h(context->instID,instID,primID,hit.u,hit.v,hit.Ng);
+            HitK<1> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
             const float old_t = ray.tfar;
             ray.tfar = hit.t;
             const bool found = runOcclusionFilter1(geometry,ray,context,h);
@@ -245,8 +243,8 @@ namespace embree
         if (Mx > M) valid &= (1<<M)-1;
         hit.finalize();
         size_t i = select_min(valid,hit.vt);
-        int geomID = geomIDs[i];
-        int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
+        unsigned int geomID = geomIDs[i];
+
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
         bool foundhit = false;
@@ -257,7 +255,6 @@ namespace embree
           i = select_min(valid,hit.vt);
 
           geomID = geomIDs[i];
-          instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
         entry:
           Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
@@ -274,7 +271,7 @@ namespace embree
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<1> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar;
               ray.tfar = hit.t(i);
               const bool found = runIntersectionFilter1(geometry,ray,context,h);
@@ -299,7 +296,7 @@ namespace embree
         ray.u = uv.x;
         ray.v = uv.y;
         ray.primID = primIDs[i];
-        ray.geomID = instID;
+        ray.geomID = geomID;
         ray.instID = context->instID;
         return true;
 
@@ -330,8 +327,7 @@ namespace embree
         if (Mx > M) valid &= (1<<M)-1;
         hit.finalize();
         size_t i = select_min(valid,hit.vt);
-        int geomID = geomIDs[i];
-        int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
+        unsigned int geomID = geomIDs[i];
 
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
@@ -343,7 +339,6 @@ namespace embree
           i = select_min(valid,hit.vt);
 
           geomID = geomIDs[i];
-          instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
         entry:
           Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
@@ -360,7 +355,7 @@ namespace embree
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<1> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar;
               ray.tfar = hit.t(i);
               const bool found = runIntersectionFilter1(geometry,ray,context,h);
@@ -377,7 +372,7 @@ namespace embree
 #endif
 
         vbool<Mx> finalMask(((unsigned int)1 << i));
-        ray.update(finalMask,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,instID,primIDs);
+        ray.update(finalMask,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,geomID,primIDs);
         ray.instID = context->instID;
         return true;
 
@@ -419,8 +414,7 @@ namespace embree
         entry:
           size_t i=bsf(m);
 
-          const int geomID = geomIDs[i];
-          const int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
+          const unsigned int geomID = geomIDs[i];
           Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
 #if defined(EMBREE_RAY_MASK)
@@ -437,7 +431,7 @@ namespace embree
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
             {
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,instID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<1> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar;
               ray.tfar = hit.t(i);
               if (runOcclusionFilter1(geometry,ray,context,h)) return true;
@@ -597,8 +591,8 @@ namespace embree
 
         std::tie(u,v,t,Ng) = hit();
 
-        const int geomID = geomIDs[i];
-        const int primID = primIDs[i];
+        const unsigned int geomID = geomIDs[i];
+        const unsigned int primID = primIDs[i];
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
         /* ray masking test */
@@ -660,8 +654,8 @@ namespace embree
 
         /* ray masking test */
         Scene* scene = context->scene;
-        const int geomID = geomIDs[i];
-        const int primID = primIDs[i];
+        const unsigned int geomID = geomIDs[i];
+        const unsigned int primID = primIDs[i];
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         valid &= (geometry->mask & ray.mask) != 0;
@@ -825,7 +819,7 @@ namespace embree
         if (Mx > M) valid &= (1<<M)-1;
         size_t i = select_min(valid,hit.vt);
         assert(i<M);
-        int geomID = geomIDs[i];
+        unsigned int geomID = geomIDs[i];
 
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
@@ -925,7 +919,7 @@ namespace embree
         entry:
           size_t i=bsf(m);
 
-          const int geomID = geomIDs[i];
+          const unsigned int geomID = geomIDs[i];
           Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
 #if defined(EMBREE_RAY_MASK)

@@ -78,9 +78,8 @@ namespace embree
       GTY_ORIENTED_BSPLINE_CURVE = 14,
       
       GTY_INSTANCE = 15,
-      GTY_GROUP = 16,
-      GTY_GRID_MESH = 17,
-      GTY_END = 18,
+      GTY_GRID_MESH = 16,
+      GTY_END = 17,
 
       GTY_SUBTYPE_FLAT_CURVE = 0,
       GTY_SUBTYPE_ROUND_CURVE = 1,
@@ -113,7 +112,6 @@ namespace embree
       MTY_CURVES = MTY_FLAT_BEZIER_CURVE | MTY_ROUND_BEZIER_CURVE | MTY_ORIENTED_BEZIER_CURVE | MTY_FLAT_BSPLINE_CURVE | MTY_ROUND_BSPLINE_CURVE | MTY_ORIENTED_BSPLINE_CURVE,
       
       MTY_INSTANCE = 1 << GTY_INSTANCE,
-      MTY_GROUP = 1 << GTY_GROUP,
       MTY_GRID_MESH = 1 << GTY_GRID_MESH,
     };
 
@@ -332,6 +330,10 @@ namespace embree
 
     virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
+    }
+
+    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }
 
     virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const {

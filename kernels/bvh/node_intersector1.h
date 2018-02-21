@@ -881,29 +881,6 @@ namespace embree
     };
 
     template<int N, int Nx>
-    struct BVHNNodeIntersector1<N, Nx, BVH_TN_AN1, false>
-    {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
-      {
-        if (likely(node.isAlignedNode())) mask = intersectNode(node.alignedNode(), ray, dist);
-        else return false;
-        return true;
-      }
-    };
-
-    template<int N, int Nx>
-    struct BVHNNodeIntersector1<N, Nx, BVH_TN_AN1_AN2, false>
-    {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
-      {
-        if (likely(node.isAlignedNode()))        mask = intersectNode(node.alignedNode(),ray, dist);
-        else if (likely(node.isAlignedNodeMB())) mask = intersectNode(node.alignedNodeMB(),ray, time, dist);
-        else return false;
-        return true;
-      }
-    };
-
-    template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_QN1, false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)

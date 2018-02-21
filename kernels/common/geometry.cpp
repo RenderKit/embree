@@ -37,7 +37,6 @@ namespace embree
     "round_bspline_curve",
     "oriented_bspline_curve",
     "instance",
-    "group",
     "grid"
     };
   

@@ -19,6 +19,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   DECLARE_SYMBOL2(RTCBoundsFunction,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
 
@@ -93,5 +95,14 @@ namespace embree
   {
     this->mask = mask; 
     Geometry::update();
+  }
+  
+#endif
+
+  namespace isa
+  {
+    Instance* createInstance(Device* device) {
+      return new InstanceISA(device);
+    }
   }
 }

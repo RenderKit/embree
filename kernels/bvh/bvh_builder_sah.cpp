@@ -124,52 +124,8 @@ namespace embree
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
-      void build_group(GeometryGroup* group)
-      {
-        /* we reset the allocator when the group size changed */
-        if (group && group->numPrimitivesChanged) {
-          bvh->alloc.clear();
-        }
-
-	/* skip build for empty scene */
-        size_t numPrimitives = 0;
-        for (size_t i=0; i<group->size(); i++)
-          numPrimitives += (*group)[i]->size();
-
-        if (numPrimitives == 0) {
-          prims.clear();
-          bvh->clear();
-          return;
-        }
-
-        /* create primref array */
-        prims.resize(numPrimitives);
-        PrimInfo pinfo = createGroupPrimRefArray<Mesh>(group ,prims,bvh->scene->progressInterface);
-
-        /* pinfo might has zero size due to invalid geometry */
-        if (unlikely(pinfo.size() == 0)) {
-          prims.clear(); bvh->clear(); return;
-        }
-
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
-
-	/* clear temporary data for static geometry */
-        prims.clear();
-        bvh->shrink();
-	bvh->cleanup();
-      }
-
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
-          build_group((GeometryGroup*)mesh);
-          return;
-        }
-
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
@@ -212,8 +168,8 @@ namespace embree
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
-              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) :
-              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
 
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
@@ -298,8 +254,8 @@ namespace embree
             /* create primref array */
             prims.resize(numPrimitives);
             PrimInfo pinfo = mesh ?
-              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) :
-              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
 
             /* enable os_malloc for two level build */
             if (mesh)
@@ -442,7 +398,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
-        const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(0,scene,prims,bvh->scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface,0);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
@@ -473,7 +429,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
-        PrimInfoMB pinfo = createPrimRefArrayMSMBlur<Mesh>(scene,prims,bvh->scene->progressInterface);
+        PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -558,8 +514,8 @@ namespace embree
         const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ?
-          createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) :
-          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
+          createPrimRefArray(mesh,prims0,bvh->scene->progressInterface) :
+          createPrimRefArray(scene,Mesh::geom_type,false,prims0,bvh->scene->progressInterface);
 
         Splitter splitter(scene);
 
@@ -704,11 +660,6 @@ namespace embree
 
       void build()
       {
-        if (mesh && mesh->getType() == Geometry::GTY_GROUP) {
-          FATAL("NOT YET IMPLEMENTED"); //build_group((GeometryGroup*)mesh);
-          return;
-        }
-
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
@@ -764,8 +715,8 @@ namespace embree
 
         // TODO: replace this with proper PrimRefArray generation
         //PrimInfo pinfo = mesh ?
-        //  createPrimRefArray<GridMesh>  (mesh ,prims,bvh->scene->progressInterface) :
-        //  createPrimRefArray<GridMesh,false>(scene,prims,bvh->scene->progressInterface);
+        //  createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
+        //  createPrimRefArray(scene,GridMesh::geom_type,false,prims,bvh->scene->progressInterface);
 
         PrimInfo pinfo(empty);
         size_t p_index = 0;
