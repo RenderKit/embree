@@ -329,12 +329,12 @@ namespace embree
   __forceinline size_t blsr(size_t v) {
 #if defined(__AVX2__) 
 #if defined(__INTEL_COMPILER)
-    return _blsr_u64(v);
+    return __blsr_u64(v);
 #else
 #if defined(__X86_64__)
-    return blsr_u64(v);
+    return __blsr_u64(v);
 #else
-    return blsr_u32(v);
+    return __blsr_u32(v);
 #endif
 #endif
 #else
