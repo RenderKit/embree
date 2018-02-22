@@ -710,6 +710,21 @@ namespace embree
       i++;
     }
 
+    avector<SceneGraph::GridMeshNode::Vertex> &pos = gmesh->positions[0];
+
+    for (auto& q : quads)
+    {
+      const unsigned int startVtx = pos.size();      
+      const unsigned int lineOffset = 2;
+      const unsigned int resX = 2;
+      const unsigned int resY = 2;
+      pos.push_back(tmesh->positions[0][q.v0]);
+      pos.push_back(tmesh->positions[0][q.v1]);
+      pos.push_back(tmesh->positions[0][q.v2]);
+      pos.push_back(tmesh->positions[0][q.v3]);
+      gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
+    }
+        
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
