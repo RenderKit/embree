@@ -52,7 +52,7 @@ namespace embree
     struct Node : public RefCount
     {
       Node (bool closed = false)
-        : indegree(0), closed(closed) {}
+        : indegree(0), closed(closed), hasLightOrCamera(false) {}
 
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false) {}
@@ -100,6 +100,7 @@ namespace embree
       std::string name;     // name of this node
       size_t indegree;      // number of nodes pointing to us
       bool closed;          // determines if the subtree may represent an instance
+      bool hasLightOrCamera;
     };
 
     struct Transformations
@@ -289,7 +290,9 @@ namespace embree
 
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
         : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
-        
+
+      virtual bool calculateClosed();
+      
     public:
       Vec3fa from;   //!< position of camera
       Vec3fa to;     //!< look at point
@@ -449,6 +452,8 @@ namespace embree
       LightNode (Ref<Light> light)
         : light(light) {}
 
+      virtual bool calculateClosed();
+      
       Ref<Light> light;
     };
     

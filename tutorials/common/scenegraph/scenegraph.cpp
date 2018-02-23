@@ -67,13 +67,31 @@ namespace embree
   {
     assert(indegree);
     closed = true;
-    return closed && (indegree == 1);
+    hasLightOrCamera = false;
+    return indegree == 1;
+  }
+
+  bool SceneGraph::LightNode::calculateClosed()
+  {
+    assert(indegree);
+    closed = true;
+    hasLightOrCamera = true;
+    return indegree == 1;
+  }
+
+  bool SceneGraph::PerspectiveCameraNode::calculateClosed()
+  {
+    assert(indegree);
+    closed = true;
+    hasLightOrCamera = true;
+    return indegree == 1;
   }
 
   bool SceneGraph::TransformNode::calculateClosed() 
   {
     assert(indegree);
     closed = child->calculateClosed();
+    hasLightOrCamera = child->hasLightOrCamera;
     return closed && (indegree == 1);
   }
 
@@ -81,8 +99,11 @@ namespace embree
   {
     assert(indegree);
     closed = true;
-    for (auto c : children)
+    hasLightOrCamera = false;
+    for (auto c : children) {
       closed &= c->calculateClosed();
+      hasLightOrCamera |= c->hasLightOrCamera;
+    }
     return closed && (indegree == 1);
   }
 
@@ -913,34 +934,17 @@ namespace embree
         std::cout << "extracting instances ";
         if (instancing == SceneGraph::INSTANCING_SCENE_GROUP || instancing == SceneGraph::INSTANCING_GEOMETRY_GROUP) 
         {
-          double t0 = getSeconds();
           in->calculateInDegree();
-          double t1 = getSeconds();
-          std::cout << "flatten scene indegree " << t1-t0 << " seconds" << std::endl;
           in->calculateClosed();
-          double t2 = getSeconds();
-          std::cout << "flatten scene closed " << t2-t1 << " seconds" << std::endl;
           in->resetInDegree();
-          double t3 = getSeconds();
-          std::cout << "flatten scene reset indegree " << t3-t2 << " seconds" << std::endl;
         }
-        double t0 = getSeconds();
-        std::cout << "flatten scene convert ..." << std::endl;
         convertInstances(geometries,in,spaces);
-        double t1 = getSeconds();
-        std::cout << "flatten scene convert " << t1-t0 << " seconds" << std::endl;
-        
         std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
       else
         convertGeometries(geometries,in,spaces);
 
-
-      double t0 = getSeconds();
-      std::cout << "flatten scene end ..." << std::endl;
       convertLightsAndCameras(geometries,in,spaces);
-      double t1 = getSeconds();
-      std::cout << "flatten scene end " << t1-t0 << " seconds" << std::endl;
 
       node = new SceneGraph::GroupNode(geometries);
     }
@@ -961,6 +965,8 @@ namespace embree
 
     void convertLightsAndCameras(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
     {
+      if (!node->hasLightOrCamera) return;
+      
       if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
         convertLightsAndCameras(group,xfmNode->child, spaces*xfmNode->spaces);
       } 
