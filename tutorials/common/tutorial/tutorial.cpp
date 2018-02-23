@@ -1015,12 +1015,19 @@ namespace embree
     std::cout << "convert scene end " << t2-t1 << " seconds" << std::endl;
     std::cout << "flatten scene begin ..." << std::endl;
 
-    /* convert model */
-    obj_scene.add(SceneGraph::flatten(scene,instancing_mode));
-    scene = nullptr;
+    Ref<SceneGraph::GroupNode> flattened_scene = SceneGraph::flatten(scene,instancing_mode);
 
     double t3 = getSeconds();
     std::cout << "flatten scene end " << t3-t2 << " seconds" << std::endl;
+    std::cout << "obj_scene_add begin ..." << std::endl;
+      
+    /* convert model */
+    obj_scene.add(flattened_scene);
+    flattened_scene = nullptr;
+    scene = nullptr;
+
+    double t4 = getSeconds();
+    std::cout << "obj_scene_add end " << t4-t3 << " seconds" << std::endl;
     std::cout << "set scene begin ..." << std::endl;
 
     /* print all cameras */
@@ -1044,8 +1051,8 @@ namespace embree
     /* send model */
     set_scene(&obj_scene);
 
-    double t4 = getSeconds();
-    std::cout << "set scene end " << t4-t3 << " seconds" << std::endl;
+    double t5 = getSeconds();
+    std::cout << "set scene end " << t5-t4 << " seconds" << std::endl;
 
     /* start tutorial */
     run(argc,argv);
