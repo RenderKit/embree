@@ -774,6 +774,10 @@ namespace embree
     if (id != "" && state.materialMap.find(id) != state.materialMap.end())
       return state.materialMap[id];
 
+    if (!xml->hasChild("parameters")) {
+      std::cout << "Warning: material " << id << " is not defined" << std::endl;
+      return new MatteMaterial(Vec3fa(0.5f,0.0f,0.0f));
+    }
     Ref<XML> parameters = xml->child("parameters");
     if (state.materialCache.find(parameters) != state.materialCache.end()) {
       return state.materialMap[id] = state.materialCache[parameters];
@@ -1392,6 +1396,7 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space)
   {
+    //PRINT(fileName.str());
     SharedState state;
     XMLLoader loader(fileName,space,state); return loader.root;
   }
@@ -1400,7 +1405,8 @@ namespace embree
   {
     if (state.sceneMap.find(fileName) != state.sceneMap.end())
       return state.sceneMap[fileName];
-    
+
+    //PRINT(fileName.str());
     XMLLoader loader(fileName,space,state);
     state.sceneMap[fileName] = loader.root;
     return loader.root;
