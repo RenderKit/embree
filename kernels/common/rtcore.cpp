@@ -1154,8 +1154,13 @@ namespace embree
     RTC_TRACE(rtcSetGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(hbuffer);
+    
     if (geometry->device != buffer->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
+    
+    if (itemCount > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+    
     geometry->setBuffer(type, slot, format, buffer, byteOffset, byteStride, (unsigned int)itemCount);
     RTC_CATCH_END2(geometry);
   }
@@ -1166,6 +1171,10 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSharedGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
+    
+    if (itemCount > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+    
     Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride, (char*)ptr + byteOffset);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
     RTC_CATCH_END2(geometry);
@@ -1177,6 +1186,10 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetNewGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
+    
+    if (itemCount > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+    
     Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
     return buffer->data();
