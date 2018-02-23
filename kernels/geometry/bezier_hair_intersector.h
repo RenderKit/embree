@@ -27,7 +27,7 @@ namespace embree
   namespace isa
   {
     template<typename NativeCurve3fa, int M>
-      struct HairHit
+    struct HairHit
     {
       __forceinline HairHit() {}
 
@@ -63,7 +63,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa>
-      struct Hair1Intersector1
+    struct Hair1Intersector1
     {
       float depth_scale;
       LinearSpace3fa ray_space;
@@ -147,7 +147,7 @@ namespace embree
     };
 
     template<typename NativeCurve3fa, int K>
-      struct Hair1IntersectorK
+    struct Hair1IntersectorK
     {
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];

@@ -78,7 +78,7 @@ namespace embree
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
     template<int K>
-      struct Bezier1vIntersectorK
+    struct Bezier1vIntersectorK
     {
       typedef Bezier1v Primitive;
 
