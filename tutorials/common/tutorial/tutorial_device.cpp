@@ -745,7 +745,7 @@ extern "C" bool device_pick(const float x,
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   rtcIntersect1(g_scene,&context,RTCRayHit1_(ray));
-  
+
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     hitPos = Vec3fa(0.0f,0.0f,0.0f);

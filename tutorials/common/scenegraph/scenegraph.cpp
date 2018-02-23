@@ -147,6 +147,18 @@ namespace embree
     }
   }
 
+  void SceneGraph::GridMeshNode::verify() const
+  {
+    const size_t N = numVertices();
+    for (const auto& p : positions) 
+      if (p.size() != N) 
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto grid : grids) {
+      if (size_t(grid.startVtx) >= N || size_t(grid.lineOffset) >= N || size_t(grid.resX) >= 0x7fff || size_t(grid.resY) >= 0x7fff)
+        THROW_RUNTIME_ERROR("invalid grid");
+    }
+  }
+
   void SceneGraph::SubdivMeshNode::verify() const
   {
     const size_t N = numPositions();
@@ -485,6 +497,13 @@ namespace embree
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) 
+    {
+      avector<Vec3fa> positions1;
+      for (auto P : mesh->positions.back()) 
+        positions1.push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
+    }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
       avector<Vec3fa> positions1;
@@ -522,6 +541,16 @@ namespace embree
       }
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) 
     {
       avector<Vec3fa> positions = std::move(mesh->positions[0]);
       mesh->positions.clear();
@@ -719,8 +748,8 @@ namespace embree
       const unsigned int resY = 2;
       pos.push_back(tmesh->positions[0][quads[i].v0]);
       pos.push_back(tmesh->positions[0][quads[i].v1]);
-      pos.push_back(tmesh->positions[0][quads[i].v2]);
       pos.push_back(tmesh->positions[0][quads[i].v3]);
+      pos.push_back(tmesh->positions[0][quads[i].v2]);
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
     gmesh->positions.push_back(pos);
@@ -974,6 +1003,9 @@ namespace embree
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
         group.push_back(new SceneGraph::QuadMeshNode(mesh,spaces));
+      }
+      else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+        group.push_back(new SceneGraph::GridMeshNode(mesh,spaces));
       }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
         group.push_back(new SceneGraph::SubdivMeshNode(mesh,spaces));
