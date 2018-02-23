@@ -65,62 +65,62 @@ namespace embree
 
     /*! Type of intersect function pointer for single rays. */
     typedef void (*IntersectFunc)(Intersectors* This,  /*!< this pointer to accel */
-                                  RTCRayHit& ray,         /*!< ray to intersect */
+                                  RTCRayHit& ray,      /*!< ray to intersect */
                                   IntersectContext* context);
     
     /*! Type of intersect function pointer for ray packets of size 4. */
     typedef void (*IntersectFunc4)(const void* valid,  /*!< pointer to valid mask */
                                    Intersectors* This, /*!< this pointer to accel */
-                                   RTCRayHit4& ray,       /*!< ray packet to intersect */
+                                   RTCRayHit4& ray,    /*!< ray packet to intersect */
                                    IntersectContext* context);
     
     /*! Type of intersect function pointer for ray packets of size 8. */
     typedef void (*IntersectFunc8)(const void* valid,  /*!< pointer to valid mask */
                                    Intersectors* This, /*!< this pointer to accel */
-                                   RTCRayHit8& ray,       /*!< ray packet to intersect */
+                                   RTCRayHit8& ray,    /*!< ray packet to intersect */
                                    IntersectContext* context);
     
     /*! Type of intersect function pointer for ray packets of size 16. */
     typedef void (*IntersectFunc16)(const void* valid,  /*!< pointer to valid mask */
                                     Intersectors* This, /*!< this pointer to accel */
-                                    RTCRayHit16& ray,      /*!< ray packet to intersect */
+                                    RTCRayHit16& ray,   /*!< ray packet to intersect */
                                     IntersectContext* context);
 
     /*! Type of intersect function pointer for ray packets of size N. */
-    typedef void (*IntersectFuncN)(Intersectors* This,  /*!< this pointer to accel */
-                                   RayHitK<VSIZEX>** ray,  /*!< ray stream to intersect */
-                                   const size_t N,      /*!< number of rays in stream */
-                                   IntersectContext* context   /*!< layout flags */);
+    typedef void (*IntersectFuncN)(Intersectors* This, /*!< this pointer to accel */
+                                   RTCRayHitN** ray,   /*!< ray stream to intersect */
+                                   const size_t N,     /*!< number of rays in stream */
+                                   IntersectContext* context /*!< layout flags */);
     
     
     /*! Type of occlusion function pointer for single rays. */
-    typedef void (*OccludedFunc) (Intersectors* This,  /*!< this pointer to accel */ 
-                                  RTCRay& ray,         /*!< ray to test occlusion */
+    typedef void (*OccludedFunc) (Intersectors* This, /*!< this pointer to accel */
+                                  RTCRay& ray,        /*!< ray to test occlusion */
                                   IntersectContext* context);
     
     /*! Type of occlusion function pointer for ray packets of size 4. */
-    typedef void (*OccludedFunc4) (const void* valid,  /*! pointer to valid mask */
+    typedef void (*OccludedFunc4) (const void* valid,  /*!< pointer to valid mask */
                                    Intersectors* This, /*!< this pointer to accel */
-                                   RTCRay4& ray,       /*!< Ray packet to test occlusion. */
+                                   RTCRay4& ray,       /*!< ray packet to test occlusion. */
                                    IntersectContext* context);
     
     /*! Type of occlusion function pointer for ray packets of size 8. */
-    typedef void (*OccludedFunc8) (const void* valid,  /*! pointer to valid mask */
+    typedef void (*OccludedFunc8) (const void* valid,  /*!< pointer to valid mask */
                                    Intersectors* This, /*!< this pointer to accel */
-                                   RTCRay8& ray,       /*!< Ray packet to test occlusion. */
+                                   RTCRay8& ray,       /*!< ray packet to test occlusion. */
                                    IntersectContext* context);
     
     /*! Type of occlusion function pointer for ray packets of size 16. */
-    typedef void (*OccludedFunc16) (const void* valid, /*! pointer to valid mask */
-                                    Intersectors* This,/*!< this pointer to accel */
-                                    RTCRay16& ray,     /*!< Ray packet to test occlusion. */
+    typedef void (*OccludedFunc16) (const void* valid,  /*!< pointer to valid mask */
+                                    Intersectors* This, /*!< this pointer to accel */
+                                    RTCRay16& ray,      /*!< ray packet to test occlusion. */
                                     IntersectContext* context);
 
     /*! Type of intersect function pointer for ray packets of size N. */
-    typedef void (*OccludedFuncN)(Intersectors* This,  /*!< this pointer to accel */
-                                  RayK<VSIZEX>** ray,  /*!< ray stream to intersect */
-                                  const size_t N,      /*!< number of rays in stream */
-                                  IntersectContext* context   /*!< layout flags */);
+    typedef void (*OccludedFuncN)(Intersectors* This, /*!< this pointer to accel */
+                                  RTCRayN** ray,      /*!< ray stream to test occlusion */
+                                  const size_t N,     /*!< number of rays in stream */
+                                  IntersectContext* context /*!< layout flags */);
     typedef void (*ErrorFunc) ();
 
     struct Intersector1
@@ -284,10 +284,10 @@ namespace embree
         intersector16.intersect(valid,this,ray,context);
       }
       
-      /*! Intersects a packet of N rays in SOA layout with the scene. */
-      __forceinline void intersectN (RayHitK<VSIZEX>** rayN, const size_t N, IntersectContext* context)
+      /*! Intersects a stream of N rays in SOA layout with the scene. */
+      __forceinline void intersectN (RTCRayHitN** rayN, const size_t N, IntersectContext* context)
       {
-        assert(intersectorN.intersect);      
+        assert(intersectorN.intersect);
         intersectorN.intersect(this,rayN,N,context);
       }
       
@@ -310,6 +310,11 @@ namespace embree
       }
 #endif
       
+      template<int K>
+      __forceinline void intersectN (RayHitK<K>** rayN, const size_t N, IntersectContext* context)
+      {
+        intersectN((RTCRayHitN**)rayN,N,context);
+      }
 
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (RTCRay& ray, IntersectContext* context) {
@@ -335,22 +340,10 @@ namespace embree
         intersector16.occluded(valid,this,ray,context);
       }
       
-      /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
-      __forceinline void occludedN (RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context)
+      /*! Tests if a stream of N rays in SOA layout is occluded by the scene. */
+      __forceinline void occludedN (RTCRayN** rayN, const size_t N, IntersectContext* context)
       {
-        //assert(intersectorN.occluded);
-        if (intersectorN.occluded)
-          intersectorN.occluded(this,rayN,N,context);
-        else
-        {
-          const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
-          for (size_t i=0; i<numPackets; i++)
-          {
-            RayK<VSIZEX> &ray = *rayN[i];
-            vbool<VSIZEX> valid = ray.tnear() <= ray.tfar;
-            occluded(valid,ray,context);
-          }      
-        }
+        intersectorN.occluded(this,rayN,N,context);
       }
       
 #if defined(__SSE__)
@@ -372,6 +365,12 @@ namespace embree
       }
 #endif
 
+      template<int K>
+      __forceinline void occludedN (RayK<K>** rayN, const size_t N, IntersectContext* context)
+      {
+        occludedN((RTCRayN**)rayN,N,context);
+      }
+
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void intersect(RTCRay& ray, IntersectContext* context) {
         occluded(ray, context);
@@ -384,7 +383,8 @@ namespace embree
       }
 
       /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
-      __forceinline void intersectN(RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context) {
+      template<int K>
+      __forceinline void intersectN(RayK<K>** rayN, const size_t N, IntersectContext* context) {
         occludedN(rayN, N, context);
       }
       
