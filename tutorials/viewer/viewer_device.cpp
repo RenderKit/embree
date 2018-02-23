@@ -129,6 +129,9 @@ void device_key_pressed_handler(int key)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
+  double t0 = getSeconds();
+  std::cout << "convert scene begin" << std::endl;
+
   for (unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
@@ -139,6 +142,10 @@ RTCScene convertScene(ISPCScene* scene_in)
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
 
+  double t1 = getSeconds();
+  std::cout << "convert scene end " << t1-t0 << " seconds" << std::endl;
+  std::cout << "commit objects begin" << std::endl;
+   
   /* commit individual objects in case of instancing */
   if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
@@ -147,6 +154,9 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
+  double t2 = getSeconds();
+  std::cout << "commit objects end " << t2-t1 << " seconds" << std::endl;
+ 
   /* commit changes to scene */
   return scene_out;
 }
@@ -364,10 +374,20 @@ extern "C" void device_render (int* pixels,
   bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
-  if (g_scene == nullptr) {
+  if (g_scene == nullptr)
+  {
+   
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+
+    double t1 = getSeconds();
+    std::cout << "commit scene begin" << std::endl;
+     
     rtcCommitScene (g_scene);
+
+    double t2 = getSeconds();
+    std::cout << "commit scene end " << t2-t1 << " seconds" << std::endl;
+   
     old_p = camera.xfm.p;
   }
 

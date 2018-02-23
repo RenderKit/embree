@@ -969,6 +969,9 @@ namespace embree
       std::cout << "Error: " << e.what() << std::endl;
     }
 
+    double t0 = getSeconds();
+    std::cout << "loading scene begin ..." << std::endl;
+
     /* load scene */
     if (sceneFilename != "")
     {
@@ -989,6 +992,10 @@ namespace embree
       std::cout << "done" << std::endl << std::flush;
     }
 
+    double t1 = getSeconds();
+    std::cout << "loading scene end " << t1-t0 << " seconds" << std::endl;
+    std::cout << "convert scene begin ..." << std::endl;
+
     /* clear texture cache */
     Texture::clearTextureCache();
 
@@ -1004,9 +1011,17 @@ namespace embree
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
     if (convert_tris_to_grids    ) scene->triangles_to_grids();
 
+    double t2 = getSeconds();
+    std::cout << "convert scene end " << t2-t1 << " seconds" << std::endl;
+    std::cout << "flatten scene begin ..." << std::endl;
+
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode));
     scene = nullptr;
+
+    double t3 = getSeconds();
+    std::cout << "flatten scene end " << t3-t2 << " seconds" << std::endl;
+    std::cout << "set scene begin ..." << std::endl;
 
     /* print all cameras */
     if (print_scene_cameras) {
@@ -1028,6 +1043,9 @@ namespace embree
 
     /* send model */
     set_scene(&obj_scene);
+
+    double t4 = getSeconds();
+    std::cout << "set scene end " << t4-t3 << " seconds" << std::endl;
 
     /* start tutorial */
     run(argc,argv);

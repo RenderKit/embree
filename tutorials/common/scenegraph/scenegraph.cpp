@@ -41,31 +41,6 @@ namespace embree
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
-  void SceneGraph::Node::resetNode(std::set<Ref<Node>>& done)
-  {
-    indegree = 0;
-    closed = true;
-  }
-
-  void SceneGraph::TransformNode::resetNode(std::set<Ref<Node>>& done)
-  {
-    if (done.find(this) != done.end()) return;
-    else done.insert(this);
-    indegree = 0;
-    closed = false;
-    child->resetNode(done);
-  }
-
-  void SceneGraph::GroupNode::resetNode(std::set<Ref<Node>>& done)
-  {
-    if (done.find(this) != done.end()) return;
-    else done.insert(this);
-    indegree = 0;
-    closed = false;
-    for (auto& c : children)
-      c->resetNode(done);
-  }
-
   void SceneGraph::Node::calculateInDegree() {
     indegree++;
   }
@@ -109,6 +84,28 @@ namespace embree
     for (auto c : children)
       closed &= c->calculateClosed();
     return closed && (indegree == 1);
+  }
+
+  void SceneGraph::Node::resetInDegree() {
+    indegree--;
+  }
+
+  void SceneGraph::TransformNode::resetInDegree()
+  {
+    if (indegree == 1) {
+      child->resetInDegree();
+      if (spaces.size() > 1) child->resetInDegree(); // break instance up when motion blur is used
+    }
+    indegree--;
+  }
+
+  void SceneGraph::GroupNode::resetInDegree()
+  {
+    if (indegree == 1) {
+      for (auto&  c : children)
+        c->resetInDegree();
+    }
+    indegree--;
   }
   
   void SceneGraph::TriangleMeshNode::verify() const
@@ -916,17 +913,34 @@ namespace embree
         std::cout << "extracting instances ";
         if (instancing == SceneGraph::INSTANCING_SCENE_GROUP || instancing == SceneGraph::INSTANCING_GEOMETRY_GROUP) 
         {
-          in->reset();
+          double t0 = getSeconds();
           in->calculateInDegree();
+          double t1 = getSeconds();
+          std::cout << "flatten scene indegree " << t1-t0 << " seconds" << std::endl;
           in->calculateClosed();
+          double t2 = getSeconds();
+          std::cout << "flatten scene closed " << t2-t1 << " seconds" << std::endl;
+          in->resetInDegree();
+          double t3 = getSeconds();
+          std::cout << "flatten scene reset indegree " << t3-t2 << " seconds" << std::endl;
         }
+        double t0 = getSeconds();
+        std::cout << "flatten scene convert ..." << std::endl;
         convertInstances(geometries,in,spaces);
+        double t1 = getSeconds();
+        std::cout << "flatten scene convert " << t1-t0 << " seconds" << std::endl;
+        
         std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
       else
         convertGeometries(geometries,in,spaces);
 
+
+      double t0 = getSeconds();
+      std::cout << "flatten scene end ..." << std::endl;
       convertLightsAndCameras(geometries,in,spaces);
+      double t1 = getSeconds();
+      std::cout << "flatten scene end " << t1-t0 << " seconds" << std::endl;
 
       node = new SceneGraph::GroupNode(geometries);
     }

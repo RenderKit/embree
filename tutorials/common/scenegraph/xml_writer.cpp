@@ -640,13 +640,12 @@ namespace embree
     bin.exceptions (std::fstream::failbit | std::fstream::badbit);
     bin.open (binFileName, std::fstream::out | std::fstream::binary);
 
-    root->reset();
-    root->calculateInDegree();
-
     xml << "<?xml version=\"1.0\"?>" << std::endl;
+    root->calculateInDegree();
     open("scene");
     store(root);
     close("scene");
+    root->resetInDegree();
   }
 
   void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) {

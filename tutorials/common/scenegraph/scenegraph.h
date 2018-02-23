@@ -57,24 +57,17 @@ namespace embree
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false) {}
 
-      /* resets indegree and closed parameters */
-      void reset()
-      {
-        std::set<Ref<Node>> done;
-        resetNode(done);
-      }
-
       /* sets material */
       virtual void setMaterial(Ref<MaterialNode> material) {};
-
-      /* resets indegree and closed parameters */
-      virtual void resetNode(std::set<Ref<Node>>& done);
 
       /* calculates the number of parent nodes pointing to this node */
       virtual void calculateInDegree();
 
       /* calculates for each node if its subtree is closed, indegrees have to be calculated first */
       virtual bool calculateClosed();
+
+      /* resets the number of parent nodes pointing to this node */
+      virtual void resetInDegree();
 
       /* checks if the node is closed */
       __forceinline bool isClosed() const { return closed; }
@@ -324,9 +317,9 @@ namespace embree
         child->setMaterial(material);
       }
 
-      virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
+      virtual void resetInDegree();
       
       virtual BBox3fa bounds() const {
         return spaces.bounds(child->bounds());
@@ -443,9 +436,9 @@ namespace embree
         for (auto& child : children) child->setMaterial(material);
       }
 
-      virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
+      virtual void resetInDegree();
       
     public:
       std::vector<Ref<Node> > children;
