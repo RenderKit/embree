@@ -706,7 +706,7 @@ namespace embree
   }
 
 
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids ( Ref<SceneGraph::TriangleMeshNode> tmesh )
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids ( Ref<SceneGraph::TriangleMeshNode> tmesh , const unsigned resX, const unsigned resY )
   {
     Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(tmesh->material);
 
@@ -743,31 +743,37 @@ namespace embree
     for (size_t i=0;i<quads.size();i++)
     {
       const unsigned int startVtx = pos.size();      
-      const unsigned int lineOffset = 2;
-      const unsigned int resX = 2;
-      const unsigned int resY = 2;
-      pos.push_back(tmesh->positions[0][quads[i].v0]);
-      pos.push_back(tmesh->positions[0][quads[i].v1]);
-      pos.push_back(tmesh->positions[0][quads[i].v3]);
-      pos.push_back(tmesh->positions[0][quads[i].v2]);
+      const unsigned int lineOffset = resX;
+      for (size_t y=0;y<resY;y++)
+        for (size_t x=0;x<resY;x++)
+        {
+          const float u = (float)x / (resX-1);
+          const float v = (float)y / (resY-1);
+          const SceneGraph::GridMeshNode::Vertex v00 = tmesh->positions[0][quads[i].v0];
+          const SceneGraph::GridMeshNode::Vertex v01 = tmesh->positions[0][quads[i].v1];
+          const SceneGraph::GridMeshNode::Vertex v10 = tmesh->positions[0][quads[i].v3];
+          const SceneGraph::GridMeshNode::Vertex v11 = tmesh->positions[0][quads[i].v2];
+          const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v10 * u * (1.0f-v) + v01 * (1.0f-u) * v + v11 * u * v;
+          pos.push_back( vtx );
+        }
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
     gmesh->positions.push_back(pos);
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids(Ref<SceneGraph::Node> node)
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = convert_triangles_to_grids(xfmNode->child);
+      xfmNode->child = convert_triangles_to_grids(xfmNode->child, resX, resY);
     } 
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = convert_triangles_to_grids(groupNode->children[i]);
+        groupNode->children[i] = convert_triangles_to_grids(groupNode->children[i], resX, resY);
     }
     else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
-      return convert_triangles_to_grids(tmesh);
+      return convert_triangles_to_grids(tmesh, resX, resY);
     }
     return node;
   }

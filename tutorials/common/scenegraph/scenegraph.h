@@ -39,14 +39,14 @@ namespace embree
     void set_motion_vector(Ref<Node> node, const avector<Vec3fa>& motion_vector);
     void resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N);
     Ref<Node> convert_triangles_to_quads(Ref<Node> node, float prop);
-    Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh );
+    Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
-    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh );
-    Ref<Node> convert_triangles_to_grids( Ref<Node> node );
+    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh,  const unsigned resX, const unsigned resY );
+    Ref<Node> convert_triangles_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
     
     struct Node : public RefCount
@@ -397,10 +397,10 @@ namespace embree
           children[i] = convert_triangles_to_quads(children[i],prop);
       }
 
-      void triangles_to_grids()
+      void triangles_to_grids(unsigned int resX, unsigned int resY)
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_grids(children[i]);        
+          children[i] = convert_triangles_to_grids(children[i],resX, resY);        
       }
 
       void quads_to_subdivs()

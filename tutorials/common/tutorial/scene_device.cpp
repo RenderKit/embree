@@ -378,9 +378,6 @@ namespace embree
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }    
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_UINT3, mesh->grids, 0, sizeof(ISPCGrid), mesh->numGrids);
-    PRINT(mesh->numVertices);
-    PRINT(mesh->numGrids);
-
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene_out,geom);
     mesh->geom.geometry = geom;
