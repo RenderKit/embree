@@ -178,7 +178,7 @@ namespace embree
 
 
   ISPCGridMesh::ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
-    : geom(QUAD_MESH), positions(nullptr)
+    : geom(GRID_MESH), positions(nullptr)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
