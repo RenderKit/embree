@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     template<bool mblur>
-      struct ObjectIntersector1
+    struct ObjectIntersector1
     {
       typedef Object Primitive;
      
@@ -76,7 +76,7 @@ namespace embree
     };
 
     template<int K, bool mblur>
-      struct ObjectIntersectorK
+    struct ObjectIntersectorK
     {
       typedef Object Primitive;
       
