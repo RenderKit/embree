@@ -261,6 +261,8 @@ namespace embree
       static void intersect(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
 
+      static void intersectCoherent(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void occludedCoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occludedIncoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
     };
 

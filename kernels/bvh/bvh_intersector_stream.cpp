@@ -50,6 +50,18 @@ namespace embree
                                                                                                        size_t numOctantRays,
                                                                                                        IntersectContext* context)
     {
+      // Only the coherent code path is implemented
+      intersectCoherent(This, inputPackets, numOctantRays, context);
+    }
+
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(Accel::Intersectors* __restrict__ This,
+                                                                                                               RayHitK<K>** inputPackets,
+                                                                                                               size_t numOctantRays,
+                                                                                                               IntersectContext* context)
+    {
+      assert(isCoherent(context->user->flags));
+
       BVH* __restrict__ bvh = (BVH*) This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
@@ -155,12 +167,19 @@ namespace embree
                                                                                                       size_t numOctantRays,
                                                                                                       IntersectContext* context)
     {
-      /* special path for incoherent rays */
-      if (unlikely(!isCoherent(context->user->flags)))
-      {
-        occludedIncoherent(This,inputPackets,numOctantRays,context);
-        return;
-      }
+      if (unlikely(isCoherent(context->user->flags)))
+        occludedCoherent(This, inputPackets, numOctantRays, context);
+      else
+        occludedIncoherent(This, inputPackets, numOctantRays, context);
+    }
+
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(Accel::Intersectors* __restrict__ This,
+                                                                                                           RayK<K>** inputPackets,
+                                                                                                           size_t numOctantRays,
+                                                                                                           IntersectContext* context)
+    {
+      assert(isCoherent(context->user->flags));
 
       BVH* __restrict__ bvh = (BVH*)This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
