@@ -30,7 +30,7 @@
 #include "../geometry/curveNi_intersector.h"
 #include "../geometry/curveNi_mb_intersector.h"
 #include "../geometry/linei_intersector.h"
-#include "../geometry/subdivpatch1eager_intersector.h"
+#include "../geometry/subdivpatch1_intersector.h"
 #include "../geometry/object_intersector.h"
 #include "../geometry/subgrid_intersector.h"
 #include "../geometry/curve_intersector_virtual.h"
@@ -99,7 +99,7 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNNodeTraverser1<N, Nx, robust, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
+          BVHNNodeTraverser1Hit<N, Nx, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /* this is a leaf node */
@@ -147,7 +147,7 @@ namespace embree
       size_t valid_bits = movemask(valid);
 
 #if defined(__AVX__)
-      STAT3(normal.trav_hit_boxes[__popcnt(movemask(valid))], 1, 1, 1);
+      STAT3(normal.trav_hit_boxes[popcnt(movemask(valid))], 1, 1, 1);
 #endif
 
       if (unlikely(valid_bits == 0)) return;
@@ -176,7 +176,7 @@ namespace embree
         vbool<K> vsplit( false );
         do
         {
-          const size_t valid_index = __bsf(bits);
+          const size_t valid_index = bsf(bits);
           vbool<K> octant_valid = octant[valid_index] == octant;
           bits &= ~(size_t)movemask(octant_valid);
           vsplit |= vint<K>(octant[valid_index]) == (octant^vint<K>(0x7));
@@ -186,7 +186,7 @@ namespace embree
 
       do
       {
-        const size_t valid_index = __bsf(valid_bits);
+        const size_t valid_index = bsf(valid_bits);
         const vint<K> diff_octant = vint<K>(octant[valid_index])^octant;
         const vint<K> count_diff_octant = \
           ((diff_octant >> 2) & 1) +
@@ -240,11 +240,11 @@ namespace embree
           {
             size_t bits = movemask(active);
 #if FORCE_SINGLE_MODE == 0
-            if (unlikely(__popcnt(bits) <= switchThreshold))
+            if (unlikely(popcnt(bits) <= switchThreshold))
 #endif
             {
               for (; bits!=0; ) {
-                const size_t i = __bscf(bits);
+                const size_t i = bscf(bits);
                 intersect1(This, bvh, cur, i, pre, ray, tray, context);
               }
               tray.tfar = min(tray.tfar, ray.tfar);
@@ -406,7 +406,7 @@ namespace embree
 
       do
       {
-        const size_t valid_index = __bsf(valid_bits);
+        const size_t valid_index = bsf(valid_bits);
         const vbool<K> octant_valid = octant[valid_index] == octant;
         valid_bits &= ~(size_t)movemask(octant_valid);
 
@@ -448,11 +448,11 @@ namespace embree
             curDist = pos_inf;
             
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_frustum_node)], 1, 1, 1);
+            //STAT3(normal.trav_hit_boxes[popcnt(m_frustum_node)], 1, 1, 1);
 #endif
             size_t num_child_hits = 0;
             do {
-              const size_t i = __bscf(m_frustum_node);
+              const size_t i = bscf(m_frustum_node);
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
@@ -577,7 +577,7 @@ namespace embree
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N, Nx, robust, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
+            BVHNNodeTraverser1Hit<N, Nx, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
           }
 
           /* this is a leaf node */
@@ -682,11 +682,11 @@ namespace embree
         {
           size_t bits = movemask(active);
 #if FORCE_SINGLE_MODE == 0
-          if (unlikely(__popcnt(bits) <= switchThreshold)) 
+          if (unlikely(popcnt(bits) <= switchThreshold)) 
 #endif
           {
             for (; bits!=0; ) {
-              const size_t i = __bscf(bits);
+              const size_t i = bscf(bits);
               if (occluded1(This, bvh, cur, i, pre, ray, tray, context))
                 set(terminated, i);
             }
@@ -815,7 +815,7 @@ namespace embree
 
       do
       {
-        const size_t valid_index = __bsf(valid_bits);
+        const size_t valid_index = bsf(valid_bits);
         vbool<K> octant_valid = octant[valid_index] == octant;
         valid_bits &= ~(size_t)movemask(octant_valid);
 
@@ -857,11 +857,11 @@ namespace embree
             m_active = 0;
 
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_frustum_node)], 1, 1, 1);
+            //STAT3(normal.trav_hit_boxes[popcnt(m_frustum_node)], 1, 1, 1);
 #endif
             size_t num_child_hits = 0;
             do {
-              const size_t i = __bscf(m_frustum_node);
+              const size_t i = bscf(m_frustum_node);
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
@@ -890,7 +890,7 @@ namespace embree
           assert(cur != BVH::invalidNode);
           assert(cur != BVH::emptyNode);
 #if defined(__AVX__)
-          STAT3(normal.trav_leaves, 1, __popcnt(m_active), K);
+          STAT3(normal.trav_leaves, 1, popcnt(m_active), K);
 #endif
           if (unlikely(!m_active)) continue;
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);

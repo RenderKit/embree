@@ -70,7 +70,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -78,12 +78,12 @@ namespace embree
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -104,7 +104,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -112,12 +112,12 @@ namespace embree
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -141,7 +141,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -152,12 +152,12 @@ namespace embree
           Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -178,7 +178,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -189,12 +189,12 @@ namespace embree
           Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -260,7 +260,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -268,12 +268,12 @@ namespace embree
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -294,7 +294,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -302,12 +302,12 @@ namespace embree
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -331,7 +331,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -342,12 +342,12 @@ namespace embree
           Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }
@@ -368,7 +368,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -379,12 +379,12 @@ namespace embree
           Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             const unsigned int primID1 = prim.primID(N)[i1];
             geom->prefetchL1_vertices(geom->curve(primID1));
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               const unsigned int primID2 = prim.primID(N)[i2];
               geom->prefetchL2_vertices(geom->curve(primID2));
             }

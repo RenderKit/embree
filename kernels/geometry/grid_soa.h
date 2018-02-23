@@ -21,7 +21,7 @@
 #include "../bvh/bvh.h"
 #include "../subdiv/tessellation.h"
 #include "../subdiv/tessellation_cache.h"
-#include "subdivpatch1cached.h"
+#include "subdivpatch1.h"
 
 namespace embree
 {

@@ -676,6 +676,74 @@ namespace embree
     return node;
   }
 
+
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids ( Ref<SceneGraph::TriangleMeshNode> tmesh )
+  {
+    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(tmesh->material);
+
+    std::vector<SceneGraph::QuadMeshNode::Quad> quads;
+
+    for (size_t i=0; i<tmesh->triangles.size(); i++)
+    {
+      const int a0 = tmesh->triangles[i+0].v0;
+      const int a1 = tmesh->triangles[i+0].v1;
+      const int a2 = tmesh->triangles[i+0].v2;
+      if (i+1 == tmesh->triangles.size()) {
+        quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      const int b0 = tmesh->triangles[i+1].v0;
+      const int b1 = tmesh->triangles[i+1].v1;
+      const int b2 = tmesh->triangles[i+1].v2;
+      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+      const int a3 = q.second;
+      if (a3 == -1) {
+        quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      if      (q.first == -1) quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0));
+      else if (q.first ==  0) quads.push_back(SceneGraph::QuadMeshNode::Quad(a3,a1,a2,a0));
+      else if (q.first ==  1) quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a3,a2));
+      else if (q.first ==  2) quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
+      i++;
+    }
+
+    avector<SceneGraph::GridMeshNode::Vertex> pos;
+    for (size_t i=0;i<quads.size();i++)
+    {
+      const unsigned int startVtx = pos.size();      
+      const unsigned int lineOffset = 2;
+      const unsigned int resX = 2;
+      const unsigned int resY = 2;
+      pos.push_back(tmesh->positions[0][quads[i].v0]);
+      pos.push_back(tmesh->positions[0][quads[i].v1]);
+      pos.push_back(tmesh->positions[0][quads[i].v2]);
+      pos.push_back(tmesh->positions[0][quads[i].v3]);
+      gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
+    }
+    gmesh->positions.push_back(pos);
+    return gmesh.dynamicCast<SceneGraph::Node>();
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_triangles_to_grids(xfmNode->child);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = convert_triangles_to_grids(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+      return convert_triangles_to_grids(tmesh);
+    }
+    return node;
+  }
+
+
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_subdivs(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {

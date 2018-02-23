@@ -43,13 +43,13 @@ namespace embree
     __forceinline operator const __m128d() const { return _mm_castps_pd(v); }
     
     __forceinline vboolf(bool a)
-      : v(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]) {}
+      : v(mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]) {}
     __forceinline vboolf(bool a, bool b)
-      : v(_mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
+      : v(mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
     __forceinline vboolf(bool a, bool b, bool c, bool d)
-      : v(_mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
-    __forceinline vboolf(int mask) { assert(mask >= 0 && mask < 16); v = _mm_lookupmask_ps[mask]; }
-    __forceinline vboolf(unsigned int mask) { assert(mask < 16); v = _mm_lookupmask_ps[mask]; }
+      : v(mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
+    __forceinline vboolf(int mask) { assert(mask >= 0 && mask < 16); v = mm_lookupmask_ps[mask]; }
+    __forceinline vboolf(unsigned int mask) { assert(mask < 16); v = mm_lookupmask_ps[mask]; }
 
     /* return int32 mask */
     __forceinline __m128i mask32() const { 
@@ -159,7 +159,7 @@ namespace embree
   
   __forceinline size_t movemask(const vboolf4& a) { return _mm_movemask_ps(a); }
 #if defined(__SSE4_2__)
-  __forceinline size_t popcnt(const vboolf4& a) { return __popcnt((size_t)_mm_movemask_ps(a)); }
+  __forceinline size_t popcnt(const vboolf4& a) { return popcnt((size_t)_mm_movemask_ps(a)); }
 #else
   __forceinline size_t popcnt(const vboolf4& a) { return bool(a[0])+bool(a[1])+bool(a[2])+bool(a[3]); }
 #endif

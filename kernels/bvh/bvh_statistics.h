@@ -30,7 +30,6 @@ namespace embree
     typedef typename BVH::AlignedNodeMB AlignedNodeMB;
     typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
     typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
-    typedef typename BVH::TransformNode TransformNode;
     typedef typename BVH::QuantizedNode QuantizedNode;
 
     typedef typename BVH::NodeRef NodeRef;
@@ -177,7 +176,6 @@ namespace embree
                   NodeStat<AlignedNodeMB> statAlignedNodesMB = NodeStat<AlignedNodeMB>(),
                   NodeStat<AlignedNodeMB4D> statAlignedNodesMB4D = NodeStat<AlignedNodeMB4D>(),
                   NodeStat<UnalignedNodeMB> statUnalignedNodesMB = NodeStat<UnalignedNodeMB>(),
-                  NodeStat<TransformNode> statTransformNodes = NodeStat<TransformNode>(),
                   NodeStat<QuantizedNode> statQuantizedNodes = NodeStat<QuantizedNode>())
 
       : depth(depth), 
@@ -187,7 +185,6 @@ namespace embree
         statAlignedNodesMB(statAlignedNodesMB),
         statAlignedNodesMB4D(statAlignedNodesMB4D),
         statUnalignedNodesMB(statUnalignedNodesMB),
-        statTransformNodes(statTransformNodes),
         statQuantizedNodes(statQuantizedNodes) {}
 
       double sah(BVH* bvh) const 
@@ -198,7 +195,6 @@ namespace embree
           statAlignedNodesMB.sah(bvh) + 
           statAlignedNodesMB4D.sah(bvh) + 
           statUnalignedNodesMB.sah(bvh) + 
-          statTransformNodes.sah(bvh) + 
           statQuantizedNodes.sah(bvh);
       }
       
@@ -209,7 +205,6 @@ namespace embree
           statAlignedNodesMB.bytes() + 
           statAlignedNodesMB4D.bytes() + 
           statUnalignedNodesMB.bytes() + 
-          statTransformNodes.bytes() + 
           statQuantizedNodes.bytes();
       }
 
@@ -221,7 +216,6 @@ namespace embree
           statAlignedNodesMB.size() + 
           statAlignedNodesMB4D.size() + 
           statUnalignedNodesMB.size() + 
-          statTransformNodes.size() + 
           statQuantizedNodes.size();
       }
 
@@ -233,7 +227,6 @@ namespace embree
           statAlignedNodesMB.fillRateNom() + 
           statAlignedNodesMB4D.fillRateNom() + 
           statUnalignedNodesMB.fillRateNom() + 
-          statTransformNodes.fillRateNom() + 
           statQuantizedNodes.fillRateNom();
         double den = statLeaf.fillRateDen(bvh) +
           statAlignedNodes.fillRateDen() + 
@@ -241,7 +234,6 @@ namespace embree
           statAlignedNodesMB.fillRateDen() + 
           statAlignedNodesMB4D.fillRateDen() + 
           statUnalignedNodesMB.fillRateDen() + 
-          statTransformNodes.fillRateDen() + 
           statQuantizedNodes.fillRateDen();
         return nom/den;
       }
@@ -255,7 +247,6 @@ namespace embree
                           a.statAlignedNodesMB + b.statAlignedNodesMB,
                           a.statAlignedNodesMB4D + b.statAlignedNodesMB4D,
                           a.statUnalignedNodesMB + b.statUnalignedNodesMB,
-                          a.statTransformNodes + b.statTransformNodes,
                           a.statQuantizedNodes + b.statQuantizedNodes);
       }
 
@@ -271,7 +262,6 @@ namespace embree
       NodeStat<AlignedNodeMB> statAlignedNodesMB;
       NodeStat<AlignedNodeMB4D> statAlignedNodesMB4D;
       NodeStat<UnalignedNodeMB> statUnalignedNodesMB;
-      NodeStat<TransformNode> statTransformNodes;
       NodeStat<QuantizedNode> statQuantizedNodes;
     };
 

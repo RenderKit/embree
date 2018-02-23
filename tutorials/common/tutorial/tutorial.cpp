@@ -313,6 +313,7 @@ namespace embree
       convert_hair_to_curves(false),
       convert_bezier_to_bspline(false),
       convert_bspline_to_bezier(false),
+      convert_tris_to_grids(false),
       remove_mblur(false),
       remove_non_mblur(false),
       sceneFilename(""),
@@ -368,6 +369,10 @@ namespace embree
     registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_bspline_to_bezier = true;
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
+
+    registerOption("convert-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_tris_to_grids = true;
+      }, "--convert-triangles-to-grids: converts all triangles to grids when loading");
 
     registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
          remove_mblur = true;
@@ -498,16 +503,6 @@ namespace embree
         const float tessellationRate = cin->getFloat();
         scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial));
       }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
-
-    registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
-        subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-        rtcore += subdiv_mode;
-      }, "--cache: enabled cached subdiv mode");
-
-    registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
-        subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-        rtcore += subdiv_mode;
-      }, "--pregenerate: enabled pregenerate subdiv mode");
 
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_scene_cameras = true;
@@ -1007,6 +1002,7 @@ namespace embree
     if (convert_hair_to_curves   ) scene->hair_to_curves();
     if (convert_bezier_to_bspline) scene->bezier_to_bspline();
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
+    if (convert_tris_to_grids    ) scene->triangles_to_grids();
 
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode));

@@ -31,7 +31,7 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
-#include "../geometry/subdivpatch1cached.h"
+#include "../geometry/subdivpatch1.h"
 #include "../geometry/object.h"
 #include "../geometry/subgrid.h"
 #include "../common/accelinstance.h"

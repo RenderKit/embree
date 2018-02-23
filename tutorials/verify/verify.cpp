@@ -14,8 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "verify.h"
 #include "../common/scenegraph/scenegraph.h"
 #include "../common/scenegraph/geometry_creation.h"

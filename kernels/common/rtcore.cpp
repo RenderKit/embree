@@ -821,46 +821,6 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API RTCGeometry rtcNewGeometryInstance (RTCDevice hdevice,  RTCScene hscene, unsigned geomID) 
-  {
-    Device* device = (Device*) hdevice;
-    Scene* scene = (Scene*) hscene;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewGeometryInstance);
-    RTC_VERIFY_HANDLE(hdevice);
-    RTC_VERIFY_HANDLE(hscene);
-    RTC_VERIFY_GEOMID(geomID);
-    Geometry* geom = new GeometryInstance(device,scene->get_locked(geomID));
-    return (RTCGeometry) geom->refInc();
-    RTC_CATCH_END(device);
-    return nullptr;
-  }
-
-  RTC_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, unsigned* geomIDs, unsigned int N)
-  {
-    Device* device = (Device*) hdevice;
-    Scene* scene = (Scene*) hscene;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewGeometryGroup);
-    RTC_VERIFY_HANDLE(hdevice);
-    RTC_VERIFY_HANDLE(hscene);
-    if (N) RTC_VERIFY_HANDLE(geomIDs);
-
-    std::vector<Ref<Geometry>> geometries(N);
-    for (size_t i=0; i<N; i++) {
-      RTC_VERIFY_GEOMID(geomIDs[i]);
-      geometries[i] = scene->get_locked(geomIDs[i]);
-      if (geometries[i]->getType() == Geometry::GTY_GROUP)
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometry groups cannot contain other geometry groups");
-      if (geometries[i]->getType() != geometries[0]->getType())
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geometries inside group have to be of same type");
-    }
-    Geometry* geom = new GeometryGroup(device,geometries);
-    return (RTCGeometry) geom->refInc();
-    RTC_CATCH_END(device);
-    return nullptr;
-  }
-
   RTC_API void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
@@ -1051,7 +1011,9 @@ namespace embree
     case RTC_GEOMETRY_TYPE_USER:
     {
 #if defined(EMBREE_GEOMETRY_USER)
-      Geometry* geom = new UserGeometry(device,0,1);
+      createUserGeometryTy createUserGeometry = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createUserGeometry);
+      Geometry* geom = createUserGeometry(device);
       return (RTCGeometry) geom->refInc();
 #else
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_USER is not supported");
@@ -1061,7 +1023,9 @@ namespace embree
     case RTC_GEOMETRY_TYPE_INSTANCE:
     {
 #if defined(EMBREE_GEOMETRY_USER)
-      Geometry* geom = new Instance(device,nullptr,1);
+      createInstanceTy createInstance = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createInstance);
+      Geometry* geom = createInstance(device);
       return (RTCGeometry) geom->refInc();
 #else
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_INSTANCE is not supported");
@@ -1072,7 +1036,7 @@ namespace embree
     {
 #if defined(EMBREE_GEOMETRY_GRID)
       createGridMeshTy createGridMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createGridMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createGridMesh);
       Geometry* geom = createGridMesh(device);
       return (RTCGeometry) geom->refInc();
 #else

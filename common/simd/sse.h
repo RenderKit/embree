@@ -33,8 +33,8 @@ namespace embree
   }
 #endif
 
-  extern const __m128  _mm_lookupmask_ps[16];
-  extern const __m128d _mm_lookupmask_pd[4];
+  extern const __m128  mm_lookupmask_ps[16];
+  extern const __m128d mm_lookupmask_pd[4];
 }
 
 #if defined(__AVX512VL__)

@@ -39,7 +39,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -50,12 +50,12 @@ namespace embree
           const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             prefetchL1(&prim.vertices(i1,N)[0]);
             prefetchL1(&prim.vertices(i1,N)[4]);
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               prefetchL2(&prim.vertices(i2,N)[0]);
               prefetchL2(&prim.vertices(i2,N)[4]);
             }
@@ -76,7 +76,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -87,12 +87,12 @@ namespace embree
           const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             prefetchL1(&prim.vertices(i1,N)[0]);
             prefetchL1(&prim.vertices(i1,N)[4]);
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               prefetchL2(&prim.vertices(i2,N)[0]);
               prefetchL2(&prim.vertices(i2,N)[4]);
             }
@@ -123,7 +123,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -134,12 +134,12 @@ namespace embree
           const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             prefetchL1(&prim.vertices(i1,N)[0]);
             prefetchL1(&prim.vertices(i1,N)[4]);
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               prefetchL2(&prim.vertices(i2,N)[0]);
               prefetchL2(&prim.vertices(i2,N)[4]);
             }
@@ -160,7 +160,7 @@ namespace embree
         size_t mask = movemask(valid);
         while (mask)
         {
-          const size_t i = __bscf(mask);
+          const size_t i = bscf(mask);
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
@@ -171,12 +171,12 @@ namespace embree
           const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
-          const size_t i1 = __bscf(mask1);
+          const size_t i1 = bscf(mask1);
           if (mask) {
             prefetchL1(&prim.vertices(i1,N)[0]);
             prefetchL1(&prim.vertices(i1,N)[4]);
             if (mask1) {
-              const size_t i2 = __bsf(mask1);
+              const size_t i2 = bsf(mask1);
               prefetchL2(&prim.vertices(i2,N)[0]);
               prefetchL2(&prim.vertices(i2,N)[4]);
             }

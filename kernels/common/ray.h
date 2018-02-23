@@ -833,7 +833,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           const size_t ofs = offset[k];
 
           *tfar(ofs) = ray.tfar[k];
@@ -865,7 +865,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           const size_t ofs = offset[k];
 
           *tfar(ofs) = ray.tfar[k];
@@ -1116,7 +1116,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           const size_t ofs = offset[k];
 
           *(float* __restrict__)((char*)tfar + ofs) = ray.tfar[k];
@@ -1148,7 +1148,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           const size_t ofs = offset[k];
 
           *(float* __restrict__)((char*)tfar + ofs) = ray.tfar[k];
@@ -1229,7 +1229,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           RayHit* __restrict__ ray_k = (RayHit*)((char*)ptr + offset[k]);
           ray_k->tfar   = ray.tfar[k];
           ray_k->Ng.x   = ray.Ng.x[k];
@@ -1259,7 +1259,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
           ray_k->tfar = ray.tfar[k];
         }
@@ -1432,7 +1432,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           RayHit* __restrict__ ray_k = (RayHit*)ptr[index[k]];
 
           ray_k->tfar = ray.tfar[k];
@@ -1459,7 +1459,7 @@ namespace embree
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
         {
-          const size_t k = __bscf(valid_bits);
+          const size_t k = bscf(valid_bits);
           Ray* __restrict__ ray_k = ptr[index[k]];
 
           ray_k->tfar = ray.tfar[k];

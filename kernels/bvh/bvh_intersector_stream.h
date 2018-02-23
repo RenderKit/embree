@@ -122,8 +122,8 @@ namespace embree
                                                              const NearFarPrecalculations& nf)
       {
         assert(m_active);
-        const size_t startPacketID = __bsf(m_active) / K;
-        const size_t endPacketID   = __bsr(m_active) / K;
+        const size_t startPacketID = bsf(m_active) / K;
+        const size_t endPacketID   = bsr(m_active) / K;
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
@@ -141,7 +141,7 @@ namespace embree
                                                          vfloat<Nx>& dist)
       {
         size_t m_node_hit = intersectNodeFrustum<N,Nx>(node, frustum, dist);
-        const size_t first_index    = __bsf(m_active);
+        const size_t first_index    = bsf(m_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
         size_t m_first_hit = intersectNode1<N,Nx>(node, packets[first_packetID], first_rayID, frustum.nf);
@@ -150,7 +150,7 @@ namespace embree
         size_t m_node = m_node_hit ^ m_first_hit;
         while (unlikely(m_node))
         {
-          const size_t boxID = __bscf(m_node);
+          const size_t boxID = bscf(m_node);
           const size_t m_current = m_active & intersectAlignedNodePacket(m_active, packets, node, boxID, frustum.nf);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << boxID);
           maskK[boxID] = m_current;
@@ -176,7 +176,7 @@ namespace embree
         do
         {   
           STAT3(shadow.trav_nodes,1,1,1);
-          const size_t rayID = __bscf(m_active);
+          const size_t rayID = bscf(m_active);
           assert(rayID < MAX_INTERNAL_STREAM_SIZE);
           TravRayKStream<K,robust> &p = packets[rayID / K];
           const size_t i = rayID % K;
@@ -223,7 +223,7 @@ namespace embree
         do
         {   
           STAT3(shadow.trav_nodes,1,1,1);
-          const size_t rayID = __bscf(m_active);
+          const size_t rayID = bscf(m_active);
           assert(rayID < MAX_INTERNAL_STREAM_SIZE);
           TravRayKStream<K,robust> &p = packets[rayID / K];
           const size_t i = rayID % K;

@@ -122,7 +122,7 @@ namespace embree
   __forceinline int none(const vboold8& valid, const vboold8& b) { return none(valid & b); }
   
   __forceinline size_t movemask(const vboold8& a) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  (const vboold8& a) { return __popcnt(a.v); }
+  __forceinline size_t popcnt  (const vboold8& a) { return popcnt(a.v); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations

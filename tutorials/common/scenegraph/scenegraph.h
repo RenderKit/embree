@@ -45,6 +45,8 @@ namespace embree
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
+    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh );
+    Ref<Node> convert_triangles_to_grids( Ref<Node> node );
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
     
     struct Node : public RefCount
@@ -393,6 +395,12 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_triangles_to_quads(children[i],prop);
+      }
+
+      void triangles_to_grids()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_triangles_to_grids(children[i]);        
       }
 
       void quads_to_subdivs()
@@ -827,6 +835,83 @@ namespace embree
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
     };
+
+
+
+    struct GridMeshNode : public Node
+    {
+      typedef Vec3fa Vertex;
+
+      struct Grid
+      {
+      public:
+        Grid() {}
+        Grid (unsigned int startVtx, unsigned int lineOffset, unsigned int resX, unsigned int resY) : startVtx(startVtx), lineOffset(lineOffset), resX(resX), resY(resY) {
+        }
+      public:
+        unsigned int startVtx;
+        unsigned int lineOffset;
+        unsigned short resX,resY;
+      };
+      
+    public:
+      GridMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
+        : Node(true), material(material) 
+      {
+        for (size_t i=0; i<numTimeSteps; i++)
+          positions.push_back(avector<Vertex>());
+      }
+
+      GridMeshNode (Ref<SceneGraph::GridMeshNode> imesh, const Transformations& spaces)
+        : Node(true),
+          positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        grids(imesh->grids), material(imesh->material) {}
+   
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (const auto& p : positions)
+          for (auto x : p)
+            b.extend(x);
+        return b;
+      }
+
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t]) b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
+      }
+      
+      virtual size_t numPrimitives() const {
+        return grids.size();
+      }
+
+      size_t numVertices() const {
+        assert(positions.size());
+        return positions[0].size();
+      }
+
+      size_t numTimeSteps() const {
+        return positions.size();
+      }
+
+      void verify() const;
+
+    public:
+      std::vector<avector<Vertex>> positions; 
+      std::vector<Grid> grids;
+      Ref<MaterialNode> material;
+    };
+
     
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GEOMETRY_GROUP, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
