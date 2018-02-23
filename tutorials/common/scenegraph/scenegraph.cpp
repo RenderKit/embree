@@ -63,7 +63,7 @@ namespace embree
     }
   }
 
-  bool SceneGraph::Node::calculateClosed() 
+  bool SceneGraph::Node::calculateClosed(bool group_instancing) 
   {
     assert(indegree);
     closed = true;
@@ -71,7 +71,7 @@ namespace embree
     return indegree == 1;
   }
 
-  bool SceneGraph::LightNode::calculateClosed()
+  bool SceneGraph::LightNode::calculateClosed(bool group_instancing)
   {
     assert(indegree);
     closed = true;
@@ -79,7 +79,7 @@ namespace embree
     return indegree == 1;
   }
 
-  bool SceneGraph::PerspectiveCameraNode::calculateClosed()
+  bool SceneGraph::PerspectiveCameraNode::calculateClosed(bool group_instancing)
   {
     assert(indegree);
     closed = true;
@@ -87,21 +87,22 @@ namespace embree
     return indegree == 1;
   }
 
-  bool SceneGraph::TransformNode::calculateClosed() 
+  bool SceneGraph::TransformNode::calculateClosed(bool group_instancing) 
   {
     assert(indegree);
-    closed = child->calculateClosed();
+    closed = group_instancing;
+    closed &= child->calculateClosed(group_instancing);
     hasLightOrCamera = child->hasLightOrCamera;
     return closed && (indegree == 1);
   }
 
-  bool SceneGraph::GroupNode::calculateClosed()
+  bool SceneGraph::GroupNode::calculateClosed(bool group_instancing)
   {
     assert(indegree);
-    closed = true;
+    closed = group_instancing;
     hasLightOrCamera = false;
     for (auto c : children) {
-      closed &= c->calculateClosed();
+      closed &= c->calculateClosed(group_instancing);
       hasLightOrCamera |= c->hasLightOrCamera;
     }
     return closed && (indegree == 1);
@@ -927,25 +928,25 @@ namespace embree
     std::map<std::string,int> unique_id;
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
-    { 
+    {
+       in->calculateInDegree();
+       in->calculateClosed(SceneGraph::INSTANCING_SCENE_GROUP || instancing == SceneGraph::INSTANCING_GEOMETRY_GROUP);
+       in->resetInDegree();
+        
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
         std::cout << "extracting instances ";
-        if (instancing == SceneGraph::INSTANCING_SCENE_GROUP || instancing == SceneGraph::INSTANCING_GEOMETRY_GROUP) 
-        {
-          in->calculateInDegree();
-          in->calculateClosed();
-          in->resetInDegree();
-        }
         convertInstances(geometries,in,spaces);
+        convertLightsAndCameras(geometries,in,spaces);
         std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
       else
+      {
         convertGeometries(geometries,in,spaces);
-
-      convertLightsAndCameras(geometries,in,spaces);
-
+        convertLightsAndCameras(geometries,in,spaces);
+      }
+    
       node = new SceneGraph::GroupNode(geometries);
     }
 

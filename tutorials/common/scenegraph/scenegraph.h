@@ -64,7 +64,7 @@ namespace embree
       virtual void calculateInDegree();
 
       /* calculates for each node if its subtree is closed, indegrees have to be calculated first */
-      virtual bool calculateClosed();
+      virtual bool calculateClosed(bool group_instancing);
 
       /* resets the number of parent nodes pointing to this node */
       virtual void resetInDegree();
@@ -291,7 +291,7 @@ namespace embree
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
         : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
 
-      virtual bool calculateClosed();
+      virtual bool calculateClosed(bool group_instancing);
       
     public:
       Vec3fa from;   //!< position of camera
@@ -321,7 +321,7 @@ namespace embree
       }
 
       virtual void calculateInDegree();
-      virtual bool calculateClosed();
+      virtual bool calculateClosed(bool group_instancing);
       virtual void resetInDegree();
       
       virtual BBox3fa bounds() const {
@@ -440,7 +440,7 @@ namespace embree
       }
 
       virtual void calculateInDegree();
-      virtual bool calculateClosed();
+      virtual bool calculateClosed(bool group_instancing);
       virtual void resetInDegree();
       
     public:
@@ -452,7 +452,7 @@ namespace embree
       LightNode (Ref<Light> light)
         : light(light) {}
 
-      virtual bool calculateClosed();
+      virtual bool calculateClosed(bool group_instancing);
       
       Ref<Light> light;
     };
