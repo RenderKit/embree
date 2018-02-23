@@ -63,7 +63,18 @@ namespace embree
     unsigned int id;
   };
 
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH };
+  struct ISPCGrid
+  {
+    unsigned int startVtxID;
+    unsigned int lineOffset;
+#if !defined(ISPC)
+    unsigned short resX,resY; // max is a 32k x 32k grid
+#else
+    int16 resX,resY;
+#endif
+  };
+
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH, GRID_MESH };
   
   struct ISPCGeometry
   {
@@ -206,6 +217,29 @@ namespace embree
     unsigned int numHairCurves;
     unsigned int tessellation_rate;
   };
+
+  struct ISPCGridMesh
+  {
+#if !defined(ISPC)
+    ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in);
+    ~ISPCGridMesh ();
+
+  private:
+    ISPCGridMesh (const ISPCGridMesh& other) DELETED; // do not implement
+    ISPCGridMesh& operator= (const ISPCGridMesh& other) DELETED; // do not implement
+
+  public:
+#endif
+
+    ISPCGeometry geom;
+    Vec3fa** positions;    //!< vertex position array
+    ISPCGrid* grids;      //!< list of quads
+    
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
+    unsigned int numGrids;
+  };
+
   
   struct ISPCInstance
   {

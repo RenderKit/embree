@@ -176,6 +176,26 @@ namespace embree
     if (normals) delete[] normals;
   }
 
+
+  ISPCGridMesh::ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
+    : geom(QUAD_MESH), positions(nullptr)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+
+    grids = (ISPCGrid*) in->grids.data();
+    numTimeSteps = (unsigned) in->numTimeSteps();
+    numVertices = (unsigned) in->numVertices();
+    numGrids = (unsigned) in->numPrimitives();
+    geom.materialID = scene_in->materialID(in->material);
+  }
+
+  ISPCGridMesh::~ISPCGridMesh () {
+    if (positions) delete[] positions;
+  }
+
+
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
   {
@@ -302,6 +322,8 @@ namespace embree
       geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
       geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh);
+    else if (Ref<SceneGraph::GridMeshNode> mesh = in.dynamicCast<SceneGraph::GridMeshNode>())
+      geom = (ISPCGeometry*) new ISPCGridMesh(scene,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
       geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
@@ -346,6 +368,24 @@ namespace embree
     mesh->geom.geomID = geomID;
     return geomID;
   }
+
+  unsigned int ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
+  {
+    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryBuildQuality(geom, quality);
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+    }
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_UINT3, mesh->grids, 0, sizeof(ISPCGrid), mesh->numGrids);
+    rtcCommitGeometry(geom);
+    unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+    mesh->geom.geometry = geom;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
+    return geomID;
+  }
+
   
   unsigned int ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCScene scene_out)
   {
@@ -442,6 +482,8 @@ namespace embree
         ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, quality, scene_out);
       else if (geometry->type == CURVES)
         ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, scene_out);
+      else if (geometry->type == GRID_MESH)
+        ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, scene_out);
       else
         assert(false);
     }
@@ -550,6 +592,11 @@ namespace embree
           assert(geomID == i);
           rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
         }
+        else if (geometry->type == GRID_MESH) {
+          unsigned int geomID = ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, scene_out);
+          assert(geomID == i);
+          rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
+        }
 #if 0
         else if (geometry->type == GROUP) {
           unsigned int geomID = ConvertGroupGeometry(g_device,(ISPCGroup*) geometry, quality, scene_out);
@@ -602,6 +649,13 @@ namespace embree
           scene_in->geomID_to_scene[i] = objscene;
           //rtcCommitScene(objscene);
         }
+        else if (geometry->type == GRID_MESH) {
+          RTCScene objscene = rtcNewScene(g_device);
+          ConvertGridMesh(g_device,(ISPCGridMesh*) geometry,quality,objscene);
+          scene_in->geomID_to_scene[i] = objscene;
+          //rtcCommitScene(objscene);
+        }
+
         else if (geometry->type == INSTANCE) {
           unsigned int geomID = ConvertInstance(g_device,scene_in, (ISPCInstance*) geometry, i, scene_out);
           scene_in->geomID_to_scene[i] = nullptr; scene_in->geomID_to_inst[geomID] = (ISPCInstance*) geometry;
@@ -633,6 +687,11 @@ namespace embree
           unsigned int geomID MAYBE_UNUSED = ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, scene_out);
           assert(geomID == i);
         }
+        else if (geometry->type == GRID_MESH) {
+          unsigned int geomID MAYBE_UNUSED = ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, scene_out);
+          assert(geomID == i);
+        }
+
         else
           assert(false);
       }
