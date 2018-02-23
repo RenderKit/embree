@@ -25,19 +25,21 @@ namespace embree
   namespace isa 
   {
     /*! BVH ray stream intersector. */
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
     class BVHNIntersectorStream
     {
       static const int Nxd = (Nx == N) ? N : Nx/2;
 
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::PrimitiveK Primitive;
+      template<int K> using PrimitiveIntersectorK = typename PrimitiveIntersector::template Type<K>;
+      template<int K> using PrimitiveK = typename PrimitiveIntersectorK<K>::PrimitiveK;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
 
+      template<int K>
       __forceinline static size_t initPacketsAndFrustum(RayK<K>** inputPackets, size_t numOctantRays,
                                                         TravRayKStream<K, robust>* packets, Frustum<robust>& frustum, bool& commonOctant)
       {
@@ -114,7 +116,7 @@ namespace embree
         return m_active;
       }
 
-      
+      template<int K>
       __forceinline static size_t intersectAlignedNodePacket(size_t m_active,
                                                              const TravRayKStream<K,robust>* packets,
                                                              const AlignedNode* __restrict__ node,
@@ -133,6 +135,7 @@ namespace embree
         return m_trav_active;
       }
       
+      template<int K>
       __forceinline static size_t traverseCoherentStream(size_t m_active,
                                                          TravRayKStream<K, robust>* packets,
                                                          const AlignedNode* __restrict__ node,
@@ -159,6 +162,7 @@ namespace embree
       }
       
       // TODO: explicit 16-wide path for KNL
+      template<int K>
       __forceinline static vint<Nx> traverseIncoherentStream(size_t m_active,
                                                              TravRayKStreamFast<K>* __restrict__ packets,
                                                              const AlignedNode* __restrict__ node,
@@ -206,6 +210,7 @@ namespace embree
         return vmask;        
       }
 
+      template<int K>
       __forceinline static vint<Nx> traverseIncoherentStream(size_t m_active,
                                                              TravRayKStreamRobust<K>* __restrict__ packets,
                                                              const AlignedNode* __restrict__ node,
@@ -258,22 +263,39 @@ namespace embree
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
     public:
-      static void intersect(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
-      static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
 
+    private:
+      template<int K>
       static void intersectCoherent(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
+
+      template<int K>
       static void occludedCoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+
+      template<int K>
       static void occludedIncoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
     };
 
 
     /*! BVH ray stream intersector with direct fallback to packets. */
-    template<int N, int Nx, int K>
+    template<int N, int Nx>
     class BVHNIntersectorStreamPacketFallback
     {
     public:
-      static void intersect(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
-      static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
+
+    private:
+      template<int K>
+      static void intersectK(Accel::Intersectors* This, RayHitK<K>** inputRays, size_t numRays, IntersectContext* context);
+
+      template<int K>
+      static void occludedK(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+
+      // We need these in separate functions to isolate 16-wide code on SKX
+      static void intersectCoherent(Accel::Intersectors* This, RayHitK<VSIZEX>** inputRays, size_t numRays, IntersectContext* context);
+      static void occludedCoherent(Accel::Intersectors* This, RayK<VSIZEX>** inputRays, size_t numRays, IntersectContext* context);
     };
   }
 }
