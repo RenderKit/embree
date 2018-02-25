@@ -91,6 +91,8 @@ namespace embree
   __forceinline vboold4 operator |(const vboold4& a, const vboold4& b) { return _mm256_or_pd (a, b); }
   __forceinline vboold4 operator ^(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(a, b); }
 
+  __forceinline vboold4 andn(const vboold4& a, const vboold4& b) { return _mm256_andnot_pd(b, a); }
+
   __forceinline vboold4& operator &=(vboold4& a, const vboold4& b) { return a = a & b; }
   __forceinline vboold4& operator |=(vboold4& a, const vboold4& b) { return a = a | b; }
   __forceinline vboold4& operator ^=(vboold4& a, const vboold4& b) { return a = a ^ b; }
