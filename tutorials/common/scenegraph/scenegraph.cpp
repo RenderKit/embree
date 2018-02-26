@@ -938,7 +938,7 @@ namespace embree
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
     {
        in->calculateInDegree();
-       in->calculateClosed(instancing == SceneGraph::INSTANCING_SCENE_GROUP);
+       in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
                
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 

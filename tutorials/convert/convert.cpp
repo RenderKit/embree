@@ -202,12 +202,12 @@ namespace embree
 
       /* flatten scene */
       else if (tag == "-flatten-group") {
-        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GROUP);
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_GROUP);
       }
 
       /* flatten scene */
       else if (tag == "-flatten-geometry") {
-        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GEOMETRY);
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_GEOMETRY);
       }
 
       /* flatten scene */

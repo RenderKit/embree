@@ -385,8 +385,10 @@ namespace embree
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
         if      (mode == "none"    ) instancing_mode = SceneGraph::INSTANCING_NONE;
-        else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_SCENE_GEOMETRY;
-        else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_SCENE_GROUP;
+        else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY; // for compatibility
+        else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_GROUP; // for compatibility
+        else if (mode == "geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY;
+        else if (mode == "group"   ) instancing_mode = SceneGraph::INSTANCING_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
         g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
