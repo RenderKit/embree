@@ -1018,9 +1018,7 @@ namespace embree
       {
         std::vector<Ref<SceneGraph::Node>> geometries;
         convertGeometries(geometries,node,one);
-        
-        if (geometries.size() == 1) object_mapping[node] = geometries[0];
-        else object_mapping[node] = new SceneGraph::GroupNode(geometries);
+        object_mapping[node] = new SceneGraph::GroupNode(geometries);
       }
       
       return object_mapping[node];
