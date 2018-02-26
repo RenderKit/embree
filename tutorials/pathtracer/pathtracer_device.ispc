@@ -978,7 +978,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
+  if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
@@ -1241,7 +1241,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   foreach_unique (instID in dg.instID) {
     foreach_unique (geomID in dg.geomID) {
       ISPCGeometry* uniform geometry = NULL;
-      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
         ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
