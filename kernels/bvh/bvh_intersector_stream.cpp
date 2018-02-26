@@ -51,7 +51,7 @@ namespace embree
                                                                                                     IntersectContext* context)
     {
       // Only the coherent code path is implemented
-      intersectCoherent(This, (RayHitK<VSIZEX>**)inputPackets, numOctantRays, context);
+      intersectCoherent(This, (RayHitK<VSIZEL>**)inputPackets, numOctantRays, context);
     }
 
     template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
@@ -169,7 +169,7 @@ namespace embree
                                                                                                    IntersectContext* context)
     {
       if (unlikely(isCoherent(context->user->flags)))
-        occludedCoherent(This, (RayK<VSIZEX>**)inputPackets, numOctantRays, context);
+        occludedCoherent(This, (RayK<VSIZEL>**)inputPackets, numOctantRays, context);
       else
         occludedIncoherent(This, (RayK<VSIZEX>**)inputPackets, numOctantRays, context);
     }
@@ -472,7 +472,7 @@ namespace embree
                                                                IntersectContext* context)
     {
       if (unlikely(isCoherent(context->user->flags)))
-        intersectK(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
+        intersectK(This, (RayHitK<VSIZEL>**)inputRays, numTotalRays, context);
       else
         intersectK(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
     }
@@ -484,7 +484,7 @@ namespace embree
                                                               IntersectContext* context)
     {
       if (unlikely(isCoherent(context->user->flags)))
-        occludedK(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
+        occludedK(This, (RayK<VSIZEL>**)inputRays, numTotalRays, context);
       else
         occludedK(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
     }

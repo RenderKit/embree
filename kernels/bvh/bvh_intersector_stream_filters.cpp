@@ -21,32 +21,30 @@ namespace embree
 {
   namespace isa
   {
-    MAYBE_UNUSED static const size_t MAX_INTERNAL_PACKET_STREAM_SIZE = MAX_INTERNAL_STREAM_SIZE / VSIZEX;
-
-    template<bool intersect>
-    __forceinline void RayStreamFilter::filterAOS(Scene* scene, void* _rayN, size_t N, size_t stride, IntersectContext* context)
+    template<int K, bool intersect>
+    __noinline void RayStreamFilter::filterAOS(Scene* scene, void* _rayN, size_t N, size_t stride, IntersectContext* context)
     {
       RayStreamAOS rayN(_rayN);
 
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
-        __aligned(64) RayTypeK<VSIZEX, intersect> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayTypeK<VSIZEX, intersect>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayTypeK<K, intersect> rays[MAX_INTERNAL_STREAM_SIZE / K];
+        __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
         for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
           const size_t size = min(N - i, MAX_INTERNAL_STREAM_SIZE);
 
           /* convert from AOS to SOA */
-          for (size_t j = 0; j < size; j += VSIZEX)
+          for (size_t j = 0; j < size; j += K)
           {
-            const vintx vij = vintx(int(i+j)) + vintx(step);
-            const vboolx valid = vij < vintx(int(N));
-            const vintx offset = vij * int(stride);
-            const size_t packetIndex = j / VSIZEX;
+            const vint<K> vij = vint<K>(int(i+j)) + vint<K>(step);
+            const vbool<K> valid = vij < vint<K>(int(N));
+            const vint<K> offset = vij * int(stride);
+            const size_t packetIndex = j / K;
 
-            RayTypeK<VSIZEX, intersect> ray = rayN.getRayByOffset(valid, offset);
+            RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -58,12 +56,12 @@ namespace embree
           scene->intersectors.intersectN(rayPtrs, size, context);
 
           /* convert from SOA to AOS */
-          for (size_t j = 0; j < size; j += VSIZEX)
+          for (size_t j = 0; j < size; j += K)
           {
-            const vintx vij = vintx(int(i+j)) + vintx(step);
-            const vboolx valid = vij < vintx(int(N));
-            const vintx offset = vij * int(stride);
-            const size_t packetIndex = j / VSIZEX;
+            const vint<K> vij = vint<K>(int(i+j)) + vint<K>(step);
+            const vbool<K> valid = vij < vint<K>(int(N));
+            const vint<K> offset = vij * int(stride);
+            const size_t packetIndex = j / K;
             rayN.setHitByOffset(valid, offset, rays[packetIndex]);
           }
         }
@@ -72,8 +70,8 @@ namespace embree
       {
         /* octant sorting for occlusion rays */
         __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<K> rays[MAX_INTERNAL_STREAM_SIZE / K];
+        __aligned(64) RayK<K>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
         unsigned int raysInOctant[8];
         for (unsigned int i = 0; i < 8; i++)
@@ -122,13 +120,13 @@ namespace embree
           const unsigned int numOctantRays = raysInOctant[curOctant];
           assert(numOctantRays);
 
-          for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+          for (unsigned int j = 0; j < numOctantRays; j += K)
           {
-            const vintx vi = vintx(int(j)) + vintx(step);
-            const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx offset = *(vintx*)&rayIDs[j] * int(stride);
-            RayK<VSIZEX>& ray = rays[j/VSIZEX];
-            rayPtrs[j/VSIZEX] = &ray;
+            const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+            const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+            const vint<K> offset = *(vint<K>*)&rayIDs[j] * int(stride);
+            RayK<K>& ray = rays[j/K];
+            rayPtrs[j/K] = &ray;
             ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
@@ -136,12 +134,12 @@ namespace embree
 
           scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
 
-          for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+          for (unsigned int j = 0; j < numOctantRays; j += K)
           {
-            const vintx vi = vintx(int(j)) + vintx(step);
-            const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx offset = *(vintx*)&rayIDs[j] * int(stride);
-            rayN.setHitByOffset(valid, offset, rays[j/VSIZEX]);
+            const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+            const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+            const vint<K> offset = *(vint<K>*)&rayIDs[j] * int(stride);
+            rayN.setHitByOffset(valid, offset, rays[j/K]);
           }
 
           raysInOctant[curOctant] = 0;
@@ -150,13 +148,13 @@ namespace embree
       else
       {
         /* fallback to packets */
-        for (size_t i = 0; i < N; i += VSIZEX)
+        for (size_t i = 0; i < N; i += K)
         {
-          const vintx vi = vintx(int(i)) + vintx(step);
-          vboolx valid = vi < vintx(int(N));
-          const vintx offset = vi * int(stride);
+          const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+          vbool<K> valid = vi < vint<K>(int(N));
+          const vint<K> offset = vi * int(stride);
 
-          RayTypeK<VSIZEX, intersect> ray = rayN.getRayByOffset(valid, offset);
+          RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
           valid &= ray.tnear() <= ray.tfar;
 
           scene->intersectors.intersect(valid, ray, context);
@@ -166,29 +164,29 @@ namespace embree
       }
     }
 
-    template<bool intersect>
-    __forceinline void RayStreamFilter::filterAOP(Scene* scene, void** _rayN, size_t N, IntersectContext* context)
+    template<int K, bool intersect>
+    __noinline void RayStreamFilter::filterAOP(Scene* scene, void** _rayN, size_t N, IntersectContext* context)
     {
       RayStreamAOP rayN(_rayN);
 
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
-        __aligned(64) RayTypeK<VSIZEX, intersect> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayTypeK<VSIZEX, intersect>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayTypeK<K, intersect> rays[MAX_INTERNAL_STREAM_SIZE / K];
+        __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
         for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
           const size_t size = min(N - i, MAX_INTERNAL_STREAM_SIZE);
 
           /* convert from AOP to SOA */
-          for (size_t j = 0; j < size; j += VSIZEX)
+          for (size_t j = 0; j < size; j += K)
           {
-            const vintx vij = vintx(int(i+j)) + vintx(step);
-            const vboolx valid = vij < vintx(int(N));
-            const size_t packetIndex = j / VSIZEX;
+            const vint<K> vij = vint<K>(int(i+j)) + vint<K>(step);
+            const vbool<K> valid = vij < vint<K>(int(N));
+            const size_t packetIndex = j / K;
 
-            RayTypeK<VSIZEX, intersect> ray = rayN.getRayByIndex(valid, vij);
+            RayTypeK<K, intersect> ray = rayN.getRayByIndex(valid, vij);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -200,11 +198,11 @@ namespace embree
           scene->intersectors.intersectN(rayPtrs, size, context);
 
           /* convert from SOA to AOP */
-          for (size_t j = 0; j < size; j += VSIZEX)
+          for (size_t j = 0; j < size; j += K)
           {
-            const vintx vij = vintx(int(i+j)) + vintx(step);
-            const vboolx valid = vij < vintx(int(N));
-            const size_t packetIndex = j / VSIZEX;
+            const vint<K> vij = vint<K>(int(i+j)) + vint<K>(step);
+            const vbool<K> valid = vij < vint<K>(int(N));
+            const size_t packetIndex = j / K;
 
             rayN.setHitByIndex(valid, vij, rays[packetIndex]);
           }
@@ -214,8 +212,8 @@ namespace embree
       {
         /* octant sorting for occlusion rays */
         __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<K> rays[MAX_INTERNAL_STREAM_SIZE / K];
+        __aligned(64) RayK<K>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
         unsigned int raysInOctant[8];
         for (unsigned int i = 0; i < 8; i++)
@@ -264,13 +262,13 @@ namespace embree
           const unsigned int numOctantRays = raysInOctant[curOctant];
           assert(numOctantRays);
 
-          for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+          for (unsigned int j = 0; j < numOctantRays; j += K)
           {
-            const vintx vi = vintx(int(j)) + vintx(step);
-            const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx index = *(vintx*)&rayIDs[j];
-            RayK<VSIZEX>& ray = rays[j/VSIZEX];
-            rayPtrs[j/VSIZEX] = &ray;
+            const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+            const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+            const vint<K> index = *(vint<K>*)&rayIDs[j];
+            RayK<K>& ray = rays[j/K];
+            rayPtrs[j/K] = &ray;
             ray = rayN.getRayByIndex(valid, index);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
@@ -278,12 +276,12 @@ namespace embree
 
           scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
 
-          for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+          for (unsigned int j = 0; j < numOctantRays; j += K)
           {
-            const vintx vi = vintx(int(j)) + vintx(step);
-            const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx index = *(vintx*)&rayIDs[j];
-            rayN.setHitByIndex(valid, index, rays[j/VSIZEX]);
+            const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+            const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+            const vint<K> index = *(vint<K>*)&rayIDs[j];
+            rayN.setHitByIndex(valid, index, rays[j/K]);
           }
 
           raysInOctant[curOctant] = 0;
@@ -292,12 +290,12 @@ namespace embree
       else
       {
         /* fallback to packets */
-        for (size_t i = 0; i < N; i += VSIZEX)
+        for (size_t i = 0; i < N; i += K)
         {
-          const vintx vi = vintx(int(i)) + vintx(step);
-          vboolx valid = vi < vintx(int(N));
+          const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+          vbool<K> valid = vi < vint<K>(int(N));
 
-          RayTypeK<VSIZEX, intersect> ray = rayN.getRayByIndex(valid, vi);
+          RayTypeK<K, intersect> ray = rayN.getRayByIndex(valid, vi);
           valid &= ray.tnear() <= ray.tfar;
 
           scene->intersectors.intersect(valid, ray, context);
@@ -307,32 +305,32 @@ namespace embree
       }
     }
 
-    template<bool intersect>
-    __forceinline void RayStreamFilter::filterSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context)
+    template<int K, bool intersect>
+    __noinline void RayStreamFilter::filterSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context)
     {
-      const size_t rayDataAlignment = (size_t)rayData % (VSIZEX*sizeof(float));
-      const size_t offsetAlignment  = (size_t)stride  % (VSIZEX*sizeof(float));
+      const size_t rayDataAlignment = (size_t)rayData % (K*sizeof(float));
+      const size_t offsetAlignment  = (size_t)stride  % (K*sizeof(float));
 
       /* fast path for packets with the correct width and data alignment */
-      if (likely(N == VSIZEX &&
+      if (likely(N == K &&
                  !rayDataAlignment &&
                  !offsetAlignment))
       {
         if (unlikely(isCoherent(context->user->flags)))
         {
-          __aligned(64) RayTypeK<VSIZEX, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
+          __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
           size_t packetIndex = 0;
           for (size_t i = 0; i < numPackets; i++)
           {
             const size_t offset = i * stride;
-            RayTypeK<VSIZEX, intersect>& ray = *(RayTypeK<VSIZEX, intersect>*)(rayData + offset);
+            RayTypeK<K, intersect>& ray = *(RayTypeK<K, intersect>*)(rayData + offset);
             rayPtrs[packetIndex++] = &ray;
 
             /* trace as stream */
-            if (unlikely(packetIndex == MAX_INTERNAL_PACKET_STREAM_SIZE))
+            if (unlikely(packetIndex == MAX_INTERNAL_STREAM_SIZE / K))
             {
-              const size_t size = packetIndex*VSIZEX;
+              const size_t size = packetIndex*K;
               scene->intersectors.intersectN(rayPtrs, size, context);
               packetIndex = 0;
             }
@@ -341,18 +339,18 @@ namespace embree
           /* flush remaining packets */
           if (unlikely(packetIndex > 0))
           {
-            const size_t size = packetIndex*VSIZEX;
+            const size_t size = packetIndex*K;
             scene->intersectors.intersectN(rayPtrs, size, context);
           }
         }
         else if (unlikely(!intersect))
         {
           /* octant sorting for occlusion rays */
-          RayStreamSOA rayN(rayData, VSIZEX);
+          RayStreamSOA rayN(rayData, K);
 
           __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-          __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+          __aligned(64) RayK<K> rays[MAX_INTERNAL_STREAM_SIZE / K];
+          __aligned(64) RayK<K>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
           unsigned int raysInOctant[8];
           for (unsigned int i = 0; i < 8; i++)
@@ -366,7 +364,7 @@ namespace embree
             /* sort rays into octants */
             for (; inputRayID < N*numPackets;)
             {
-              const size_t offset = (inputRayID / VSIZEX) * stride + (inputRayID % VSIZEX) * sizeof(float);
+              const size_t offset = (inputRayID / K) * stride + (inputRayID % K) * sizeof(float);
 
               /* skip invalid rays */
               if (unlikely(!rayN.isValidByOffset(offset))) { inputRayID++; continue; } // ignore invalid or already occluded rays
@@ -402,13 +400,13 @@ namespace embree
             const unsigned int numOctantRays = raysInOctant[curOctant];
             assert(numOctantRays);
 
-            for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+            for (unsigned int j = 0; j < numOctantRays; j += K)
             {
-              const vintx vi = vintx(int(j)) + vintx(step);
-              const vboolx valid = vi < vintx(int(numOctantRays));
-              const vintx offset = *(vintx*)&rayOffsets[j];
-              RayK<VSIZEX>& ray = rays[j/VSIZEX];
-              rayPtrs[j/VSIZEX] = &ray;
+              const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+              const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+              const vint<K> offset = *(vint<K>*)&rayOffsets[j];
+              RayK<K>& ray = rays[j/K];
+              rayPtrs[j/K] = &ray;
               ray = rayN.getRayByOffset(valid, offset);
               ray.tnear() = select(valid, ray.tnear(), zero);
               ray.tfar  = select(valid, ray.tfar,  neg_inf);
@@ -416,12 +414,12 @@ namespace embree
 
             scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
 
-            for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+            for (unsigned int j = 0; j < numOctantRays; j += K)
             {
-              const vintx vi = vintx(int(j)) + vintx(step);
-              const vboolx valid = vi < vintx(int(numOctantRays));
-              const vintx offset = *(vintx*)&rayOffsets[j];
-              rayN.setHitByOffset(valid, offset, rays[j/VSIZEX]);
+              const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+              const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+              const vint<K> offset = *(vint<K>*)&rayOffsets[j];
+              rayN.setHitByOffset(valid, offset, rays[j/K]);
             }
             raysInOctant[curOctant] = 0;
           }
@@ -432,8 +430,8 @@ namespace embree
           for (size_t i = 0; i < numPackets; i++)
           {
             const size_t offset = i * stride;
-            RayTypeK<VSIZEX, intersect>& ray = *(RayTypeK<VSIZEX, intersect>*)(rayData + offset);
-            const vboolx valid = ray.tnear() <= ray.tfar;
+            RayTypeK<K, intersect>& ray = *(RayTypeK<K, intersect>*)(rayData + offset);
+            const vbool<K> valid = ray.tnear() <= ray.tfar;
 
             scene->intersectors.intersect(valid, ray, context);
           }
@@ -447,11 +445,11 @@ namespace embree
           const size_t offsetN = i * stride;
           RayStreamSOA rayN(rayData + offsetN, N);
 
-          for (size_t j = 0; j < N; j += VSIZEX)
+          for (size_t j = 0; j < N; j += K)
           {
             const size_t offset = j * sizeof(float);
-            vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(int(N));
-            RayTypeK<VSIZEX, intersect> ray = rayN.getRayByOffset(valid, offset);
+            vbool<K> valid = (vint<K>(int(j)) + vint<K>(step)) < vint<K>(int(N));
+            RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
             valid &= ray.tnear() <= ray.tfar;
 
             scene->intersectors.intersect(valid, ray, context);
@@ -462,30 +460,30 @@ namespace embree
       }
     }
 
-    template<bool intersect>
-    __forceinline void RayStreamFilter::filterSOP(Scene* scene, const void* _rayN, size_t N, IntersectContext* context)
+    template<int K, bool intersect>
+    __noinline void RayStreamFilter::filterSOP(Scene* scene, const void* _rayN, size_t N, IntersectContext* context)
     { 
       RayStreamSOP& rayN = *(RayStreamSOP*)_rayN;
 
       /* use fast path for coherent ray mode */
       if (unlikely(isCoherent(context->user->flags)))
       {
-        __aligned(64) RayTypeK<VSIZEX, intersect> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayTypeK<VSIZEX, intersect>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayTypeK<K, intersect> rays[MAX_INTERNAL_STREAM_SIZE / K];
+        __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
         for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
           const size_t size = min(N - i, MAX_INTERNAL_STREAM_SIZE);
 
           /* convert from SOP to SOA */
-          for (size_t j = 0; j < size; j += VSIZEX)
+          for (size_t j = 0; j < size; j += K)
           {
-            const vintx vij = vintx(int(i+j)) + vintx(step);
-            const vboolx valid = vij < vintx(int(N));
+            const vint<K> vij = vint<K>(int(i+j)) + vint<K>(step);
+            const vbool<K> valid = vij < vint<K>(int(N));
             const size_t offset = (i+j) * sizeof(float);
-            const size_t packetIndex = j / VSIZEX;
+            const size_t packetIndex = j / K;
 
-            RayTypeK<VSIZEX, intersect> ray = rayN.getRayByOffset(valid, offset);
+            RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -497,12 +495,12 @@ namespace embree
           scene->intersectors.intersectN(rayPtrs, size, context);
 
           /* convert from SOA to SOP */
-          for (size_t j = 0; j < size; j += VSIZEX)
+          for (size_t j = 0; j < size; j += K)
           {
-            const vintx vij = vintx(int(i+j)) + vintx(step);
-            const vboolx valid = vij < vintx(int(N));
+            const vint<K> vij = vint<K>(int(i+j)) + vint<K>(step);
+            const vbool<K> valid = vij < vint<K>(int(N));
             const size_t offset = (i+j) * sizeof(float);
-            const size_t packetIndex = j / VSIZEX;
+            const size_t packetIndex = j / K;
 
             rayN.setHitByOffset(valid, offset, rays[packetIndex]);
           }
@@ -512,8 +510,8 @@ namespace embree
       {
         /* octant sorting for occlusion rays */
         __aligned(64) unsigned int octants[8][MAX_INTERNAL_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX> rays[MAX_INTERNAL_PACKET_STREAM_SIZE];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<K> rays[MAX_INTERNAL_STREAM_SIZE / K];
+        __aligned(64) RayK<K>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
         unsigned int raysInOctant[8];
         for (unsigned int i = 0; i < 8; i++)
@@ -562,13 +560,13 @@ namespace embree
           const unsigned int numOctantRays = raysInOctant[curOctant];
           assert(numOctantRays);
 
-          for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+          for (unsigned int j = 0; j < numOctantRays; j += K)
           {
-            const vintx vi = vintx(int(j)) + vintx(step);
-            const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx offset = *(vintx*)&rayOffsets[j];
-            RayK<VSIZEX>& ray = rays[j/VSIZEX];
-            rayPtrs[j/VSIZEX] = &ray;
+            const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+            const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+            const vint<K> offset = *(vint<K>*)&rayOffsets[j];
+            RayK<K>& ray = rays[j/K];
+            rayPtrs[j/K] = &ray;
             ray = rayN.getRayByOffset(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
@@ -576,12 +574,12 @@ namespace embree
 
           scene->intersectors.occludedN(rayPtrs, numOctantRays, context);
 
-          for (unsigned int j = 0; j < numOctantRays; j += VSIZEX)
+          for (unsigned int j = 0; j < numOctantRays; j += K)
           {
-            const vintx vi = vintx(int(j)) + vintx(step);
-            const vboolx valid = vi < vintx(int(numOctantRays));
-            const vintx offset = *(vintx*)&rayOffsets[j];
-            rayN.setHitByOffset(valid, offset, rays[j/VSIZEX]);
+            const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
+            const vbool<K> valid = vi < vint<K>(int(numOctantRays));
+            const vint<K> offset = *(vint<K>*)&rayOffsets[j];
+            rayN.setHitByOffset(valid, offset, rays[j/K]);
           }
 
           raysInOctant[curOctant] = 0;
@@ -590,13 +588,13 @@ namespace embree
       else
       {
         /* fallback to packets */
-        for (size_t i = 0; i < N; i += VSIZEX)
+        for (size_t i = 0; i < N; i += K)
         {
-          const vintx vi = vintx(int(i)) + vintx(step);
-          vboolx valid = vi < vintx(int(N));
+          const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+          vbool<K> valid = vi < vint<K>(int(N));
           const size_t offset = i * sizeof(float);
 
-          RayTypeK<VSIZEX, intersect> ray = rayN.getRayByOffset(valid, offset);
+          RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
           valid &= ray.tnear() <= ray.tfar;
 
           scene->intersectors.intersect(valid, ray, context);
@@ -608,35 +606,59 @@ namespace embree
 
 
     void RayStreamFilter::intersectAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context) {
-      filterAOS<true>(scene, _rayN, N, stride, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterAOS<VSIZEL, true>(scene, _rayN, N, stride, context);
+      else
+        filterAOS<VSIZEX, true>(scene, _rayN, N, stride, context);
     }
 
     void RayStreamFilter::occludedAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context) {
-      filterAOS<false>(scene, _rayN, N, stride, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterAOS<VSIZEL, false>(scene, _rayN, N, stride, context);
+      else
+        filterAOS<VSIZEX, false>(scene, _rayN, N, stride, context);
     }
 
     void RayStreamFilter::intersectAOP(Scene* scene, RTCRayHit** _rayN, size_t N, IntersectContext* context) {
-      filterAOP<true>(scene, (void**)_rayN, N, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterAOP<VSIZEL, true>(scene, (void**)_rayN, N, context);
+      else
+        filterAOP<VSIZEX, true>(scene, (void**)_rayN, N, context);
     }
 
     void RayStreamFilter::occludedAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context) {
-      filterAOP<false>(scene, (void**)_rayN, N, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterAOP<VSIZEL, false>(scene, (void**)_rayN, N, context);
+      else
+        filterAOP<VSIZEX, false>(scene, (void**)_rayN, N, context);
     }
 
     void RayStreamFilter::intersectSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context) {
-      filterSOA<true>(scene, rayData, N, numPackets, stride, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterSOA<VSIZEL, true>(scene, rayData, N, numPackets, stride, context);
+      else
+        filterSOA<VSIZEX, true>(scene, rayData, N, numPackets, stride, context);
     }
 
     void RayStreamFilter::occludedSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context) {
-      filterSOA<false>(scene, rayData, N, numPackets, stride, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterSOA<VSIZEL, false>(scene, rayData, N, numPackets, stride, context);
+      else
+        filterSOA<VSIZEX, false>(scene, rayData, N, numPackets, stride, context);
     }
 
     void RayStreamFilter::intersectSOP(Scene* scene, const RTCRayHitNp* _rayN, size_t N, IntersectContext* context) {
-      filterSOP<true>(scene, _rayN, N, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterSOP<VSIZEL, true>(scene, _rayN, N, context);
+      else
+        filterSOP<VSIZEX, true>(scene, _rayN, N, context);
     }
 
     void RayStreamFilter::occludedSOP(Scene* scene, const RTCRayNp* _rayN, size_t N, IntersectContext* context) {
-      filterSOP<false>(scene, _rayN, N, context);
+      if (unlikely(isCoherent(context->user->flags)))
+        filterSOP<VSIZEL, false>(scene, _rayN, N, context);
+      else
+        filterSOP<VSIZEX, false>(scene, _rayN, N, context);
     }
 
 

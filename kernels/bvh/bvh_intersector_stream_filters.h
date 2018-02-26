@@ -38,16 +38,16 @@ namespace embree
       static void occludedSOP(Scene* scene, const RTCRayNp* rays, size_t N, IntersectContext* context);
 
     private:
-      template<bool intersect>
+      template<int K, bool intersect>
       static void filterAOS(Scene* scene, void* rays, size_t N, size_t stride, IntersectContext* context);
 
-      template<bool intersect>
+      template<int K, bool intersect>
       static void filterAOP(Scene* scene, void** rays, size_t N, IntersectContext* context);
 
-      template<bool intersect>
+      template<int K, bool intersect>
       static void filterSOA(Scene* scene, char* rays, size_t N, size_t numPackets, size_t stride, IntersectContext* context);
 
-      template<bool intersect>
+      template<int K, bool intersect>
       static void filterSOP(Scene* scene, const void* rays, size_t N, IntersectContext* context);
     };
   }
