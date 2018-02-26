@@ -90,30 +90,37 @@ namespace embree
   bool SceneGraph::TransformNode::calculateClosed(bool group_instancing) 
   {
     assert(indegree);
-    closed = group_instancing;
-    closed &= child->calculateClosed(group_instancing);
-    hasLightOrCamera = child->hasLightOrCamera;
+    if (!closed) {
+      closed = group_instancing;
+      closed &= child->calculateClosed(group_instancing);
+      hasLightOrCamera = child->hasLightOrCamera;
+    }
     return closed && (indegree == 1);
   }
 
   bool SceneGraph::GroupNode::calculateClosed(bool group_instancing)
   {
     assert(indegree);
-    closed = group_instancing;
-    hasLightOrCamera = false;
-    for (auto c : children) {
-      closed &= c->calculateClosed(group_instancing);
-      hasLightOrCamera |= c->hasLightOrCamera;
+    if (!closed) {
+      closed = group_instancing;
+      hasLightOrCamera = false;
+      for (auto c : children) {
+        closed &= c->calculateClosed(group_instancing);
+        hasLightOrCamera |= c->hasLightOrCamera;
+      }
     }
     return closed && (indegree == 1);
   }
 
-  void SceneGraph::Node::resetInDegree() {
+  void SceneGraph::Node::resetInDegree()
+  {
+    closed = false;
     indegree--;
   }
 
   void SceneGraph::TransformNode::resetInDegree()
   {
+    closed = false;
     if (indegree == 1) {
       child->resetInDegree();
       if (spaces.size() > 1) child->resetInDegree(); // break instance up when motion blur is used
@@ -123,6 +130,7 @@ namespace embree
 
   void SceneGraph::GroupNode::resetInDegree()
   {
+    closed = false;
     if (indegree == 1) {
       for (auto&  c : children)
         c->resetInDegree();
@@ -931,8 +939,7 @@ namespace embree
     {
        in->calculateInDegree();
        in->calculateClosed(instancing == SceneGraph::INSTANCING_SCENE_GROUP || instancing == SceneGraph::INSTANCING_GEOMETRY_GROUP);
-       in->resetInDegree();
-        
+               
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
@@ -946,7 +953,8 @@ namespace embree
         convertGeometries(geometries,in,spaces);
         convertLightsAndCameras(geometries,in,spaces);
       }
-    
+      in->resetInDegree();
+      
       node = new SceneGraph::GroupNode(geometries);
     }
 
