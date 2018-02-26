@@ -471,48 +471,27 @@ namespace embree
   
   unsigned int ConvertInstance(RTCDevice device, ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
-#if 0
-    if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP)
-    {
-      if (instance->numTimeSteps == 1) {
-        unsigned int geom_inst = instance->geom.geomID;
-        DISABLE_DEPRECATED_WARNING;
-        RTCGeometry geom = rtcNewGeometryInstance(device, scene_out, geom_inst);
-        ENABLE_DEPRECATED_WARNING;
-        rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x);
-        rtcCommitGeometry(geom);
-        unsigned int geomID = rtcAttachGeometry(scene_out,geom);
-        rtcReleaseGeometry(geom);
-        return geomID;
-      } 
-      else
-        throw std::runtime_error("motion blur not yet supported for geometry instances");
-    } 
-    else
-#endif
-    {
-      RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
-      if (instance->numTimeSteps == 1) {
-        RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-         rtcSetGeometryInstancedScene(geom,scene_inst);
-         rtcSetGeometryTimeStepCount(geom,1);
-        rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x);
-        rtcCommitGeometry(geom);
-        unsigned int geomID = rtcAttachGeometry(scene_out,geom);
-        rtcReleaseGeometry(geom);
-        return geomID;
-      }
-      else {
-        RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-         rtcSetGeometryInstancedScene(geom,scene_inst);
-         rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
-        for (size_t t=0; t<instance->numTimeSteps; t++)
-          rtcSetGeometryTransform(geom,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x);
-        rtcCommitGeometry(geom);
-        unsigned int geomID = rtcAttachGeometry(scene_out,geom);
-        rtcReleaseGeometry(geom);
-        return geomID;
-      }
+    RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
+    if (instance->numTimeSteps == 1) {
+      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+      rtcSetGeometryInstancedScene(geom,scene_inst);
+      rtcSetGeometryTimeStepCount(geom,1);
+      rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x);
+      rtcCommitGeometry(geom);
+      unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+      rtcReleaseGeometry(geom);
+      return geomID;
+    }
+    else {
+      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+      rtcSetGeometryInstancedScene(geom,scene_inst);
+      rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
+      for (size_t t=0; t<instance->numTimeSteps; t++)
+        rtcSetGeometryTransform(geom,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x);
+      rtcCommitGeometry(geom);
+      unsigned int geomID = rtcAttachGeometry(scene_out,geom);
+      rtcReleaseGeometry(geom);
+      return geomID;
     }
   }
   
@@ -524,50 +503,8 @@ namespace embree
     node2geom.clear();
     RTCScene scene_out = rtcNewScene(g_device);
     
-    /* use geometry instancing feature */
-    if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP)
-    {
-      for (unsigned int i=0; i<scene_in->numGeometries; i++)
-      {
-        ISPCGeometry* geometry = scene_in->geometries[i];
-        if (geometry->type == SUBDIV_MESH) {
-          unsigned int geomID = ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, scene_out);
-          assert(geomID == i);
-          rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
-        }
-        else if (geometry->type == TRIANGLE_MESH) {
-          unsigned int geomID = ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, scene_out);
-          assert(geomID == i);
-          rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
-        }
-        else if (geometry->type == QUAD_MESH) {
-          unsigned int geomID = ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, scene_out);
-          assert(geomID == i);
-          rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
-        }
-        else if (geometry->type == CURVES) {
-          unsigned int geomID = ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, scene_out);
-          assert(geomID == i);
-          rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
-        }
-#if 0
-        else if (geometry->type == GROUP) {
-          unsigned int geomID = ConvertGroupGeometry(g_device,(ISPCGroup*) geometry, quality, scene_out);
-          assert(geomID == i);
-          rtcDisableGeometry(rtcGetGeometry(scene_out,geomID));
-        }
-#endif
-        else if (geometry->type == INSTANCE) {
-          unsigned int geomID = ConvertInstance(g_device, scene_in, (ISPCInstance*) geometry, i, scene_out);
-          assert(geomID == i); scene_in->geomID_to_inst[geomID] = (ISPCInstance*) geometry;
-        }
-        else
-          assert(false);
-      }
-    }
-    
     /* use scene instancing feature */
-    else if (g_instancing_mode == SceneGraph::INSTANCING_SCENE_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_SCENE_GROUP)
+    if (g_instancing_mode != SceneGraph::INSTANCING_NONE)
     {
       for (unsigned int i=0; i<scene_in->numGeometries; i++)
       {
