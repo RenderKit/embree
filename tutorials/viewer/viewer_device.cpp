@@ -212,7 +212,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   unsigned int instID = ray.instID; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
         ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {

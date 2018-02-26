@@ -192,7 +192,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   foreach_unique (instID in ray.instID) {
     foreach_unique (geomID in ray.geomID) {
       ISPCGeometry* uniform geometry = NULL;
-      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
         ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
