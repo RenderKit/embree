@@ -57,7 +57,5 @@ namespace embree
   public:
     std::map<Ref<SceneGraph::MaterialNode>, unsigned> material2id;
     std::map<Ref<SceneGraph::Node>, unsigned> geometry2id;
-  public:
-    std::vector<RTCScene> geomID_to_scene;           //!< map a geometry ID to the scene it might have been created for it in case of instancing
   };
 }

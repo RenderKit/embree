@@ -983,7 +983,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
+      ISPCGeometry* geometry = g_ispc_scene->geometries[i];
+      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
     }
   }
 

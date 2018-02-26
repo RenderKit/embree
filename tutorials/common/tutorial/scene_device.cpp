@@ -45,8 +45,6 @@ namespace embree
       Light* light = convertLight(in->lights[i]);
       if (light) lights[numLights++] = light;
     }
-    
-    geomID_to_scene = in->geomID_to_scene.data();
   }
   
   ISPCScene::~ISPCScene()
@@ -287,6 +285,8 @@ namespace embree
     for (size_t i=0; i<numGeometries; i++)
       delete geometries[i];
     delete[] geometries;
+
+    rtcReleaseScene(geom.scene);
   }
 
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
@@ -452,7 +452,7 @@ namespace embree
 
   unsigned int ConvertInstance(RTCDevice device, ISPCScene* scene_in, ISPCInstance* instance, RTCScene scene_out, unsigned int geomID)
   {
-    RTCScene scene_inst = scene_in->geomID_to_scene[instance->child->geomID];
+    RTCScene scene_inst = instance->child->scene;
     if (instance->numTimeSteps == 1) {
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
       rtcSetGeometryInstancedScene(geom,scene_inst);
@@ -497,12 +497,10 @@ namespace embree
         if (geometry->type == GROUP) {
           RTCScene objscene = rtcNewScene(g_device);
           ConvertGroup(g_device,(ISPCGroup*) geometry,quality,objscene,i);
-          scene_in->geomID_to_scene[i] = objscene;
           //rtcCommitScene(objscene);
         }
         else if (geometry->type == INSTANCE) {
           ConvertInstance(g_device,scene_in, (ISPCInstance*) geometry, scene_out, i);
-          scene_in->geomID_to_scene[i] = nullptr;
         }
         else
           assert(false);

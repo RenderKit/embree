@@ -265,8 +265,6 @@ namespace embree
     
     Light** lights;              //!< list of lights
     unsigned int numLights;               //!< number of lights
-
-    RTCScene* geomID_to_scene;
   };
 
 #if !defined(ISPC)  
