@@ -52,10 +52,10 @@ namespace embree
     struct Node : public RefCount
     {
       Node (bool closed = false)
-        : indegree(0), closed(closed), hasLightOrCamera(false), id(-1) {}
+        : indegree(0), closed(closed), hasLightOrCamera(false), id(-1), geometry(nullptr) {}
 
       Node (const std::string& name) 
-        : name(name), indegree(0), closed(false), id(-1) {}
+        : name(name), indegree(0), closed(false), id(-1), geometry(nullptr) {}
 
       /* sets material */
       virtual void setMaterial(Ref<MaterialNode> material) {};
@@ -102,6 +102,7 @@ namespace embree
       bool closed;          // determines if the subtree may represent an instance
       bool hasLightOrCamera;
       unsigned int id;
+      void* geometry;
     };
 
     struct Transformations

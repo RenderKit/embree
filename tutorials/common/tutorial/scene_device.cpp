@@ -24,8 +24,6 @@ namespace embree
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
   }
 
-  std::map<Ref<SceneGraph::Node>,ISPCGeometry*> node2geom;
-
   ISPCScene::ISPCScene(TutorialScene* in)
   {
     geometries = new ISPCGeometry*[in->geometries.size()];
@@ -292,8 +290,8 @@ namespace embree
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
   {
     ISPCGeometry* geom = nullptr;
-    if (node2geom.find(in) != node2geom.end())
-      return node2geom[in];
+    if (in->geometry)
+      return (ISPCGeometry*) in->geometry;
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
       geom = (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
     else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
@@ -309,7 +307,7 @@ namespace embree
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
 
-    node2geom[in] = geom;
+    in->geometry = geom;
     return geom;
   }
 
@@ -485,7 +483,6 @@ namespace embree
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality)
   {
-    node2geom.clear();
     RTCScene scene_out = rtcNewScene(g_device);
     
     /* use scene instancing feature */
