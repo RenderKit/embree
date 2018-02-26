@@ -221,6 +221,7 @@ namespace embree
 #endif
 
     ISPCGeometry geom;
+    ISPCGeometry* child;
     unsigned int numTimeSteps;
     AffineSpace3fa* spaces;
   };

@@ -244,7 +244,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
       ISPCGeometry* uniform geometry = NULL;
       if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
         ISPCInstance* uniform instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
-        geometry = g_ispc_scene->geometries[instance->geom.geomID];
+        geometry = instance->child;
       } else {
         geometry = g_ispc_scene->geometries[geomID];
       }
