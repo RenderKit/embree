@@ -54,8 +54,5 @@ namespace embree
     std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials
     std::vector<Ref<SceneGraph::Node> > geometries;   //!< list of geometries
     std::vector<Ref<SceneGraph::Light>> lights;       //!< list of lights
-  public:
-    std::map<Ref<SceneGraph::MaterialNode>, unsigned> material2id;
-    std::map<Ref<SceneGraph::Node>, unsigned> geometry2id;
   };
 }

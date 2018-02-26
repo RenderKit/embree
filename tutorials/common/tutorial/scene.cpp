@@ -48,26 +48,26 @@ namespace embree
   
   unsigned TutorialScene::addGeometry(Ref<SceneGraph::Node> node) 
   {
-    if (geometry2id.find(node) == geometry2id.end()) {
+    if (node->id == -1) {
       geometries.push_back(node);
-      geometry2id[node] = unsigned(geometries.size()-1);
+      node->id = unsigned(geometries.size()-1);
     }
-    return geometry2id[node];
+    return node->id;
   }
   
   unsigned TutorialScene::materialID(Ref<SceneGraph::MaterialNode> material) 
   {
-    if (material2id.find(material) == material2id.end()) {
+    if (material->id == -1) {
       materials.push_back(material);
-      material2id[material] = unsigned(materials.size()-1);
+      material->id = unsigned(materials.size()-1);
     }
-    return material2id[material];
+    return material->id;
   }
   
   unsigned TutorialScene::geometryID(Ref<SceneGraph::Node> geometry) 
   {
-    assert(geometry2id.find(geometry) != geometry2id.end());
-    return geometry2id[geometry];
+    assert(geometry->id != -1);
+    return geometry->id;
   }
   
   void TutorialScene::print_camera_names ()
