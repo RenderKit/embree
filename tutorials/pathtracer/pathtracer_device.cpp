@@ -1235,6 +1235,8 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
+typedef ISPCInstance* ISPCInstancePtr;
+
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
@@ -1244,7 +1246,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
     unsigned int geomID = dg.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+        ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
         geometry = g_ispc_scene->geometries[geomID];
@@ -1258,7 +1260,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
     unsigned int instID = dg.instID;
     {
       /* get instance and geometry pointers */
-      ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+      ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
 
       /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);

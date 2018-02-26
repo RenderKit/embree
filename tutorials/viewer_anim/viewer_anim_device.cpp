@@ -321,7 +321,7 @@ void renderTileStandard(int taskIndex,
       for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
-        for (unsigned int n=0;n<(unsigned int)N;n++)
+        for (unsigned int n=0;n<N;n++)
         {
           Ray& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;

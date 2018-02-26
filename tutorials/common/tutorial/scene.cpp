@@ -49,7 +49,6 @@ namespace embree
         addGeometry(node);
       }
       geomID_to_scene.resize(geometries.size(),nullptr);
-      geomID_to_inst.resize(geometries.size());
     }
   }
   

@@ -127,7 +127,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = ConvertScene(g_device, scene_in,RTC_BUILD_QUALITY_MEDIUM);
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommitScene(scene_in->geomID_to_scene[i]);
@@ -244,14 +244,16 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
+typedef ISPCInstance* ISPCInstancePtr;
+
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned int instID = ray.instID; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+        ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
         geometry = g_ispc_scene->geometries[geomID];
@@ -265,7 +267,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
     unsigned int instID = ray.instID;
     {
       /* get instance and geometry pointers */
-      ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+      ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
 
       /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);

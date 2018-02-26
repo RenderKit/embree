@@ -29,7 +29,7 @@ extern "C" int g_instancing_mode;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 bool g_subdiv_mode = false;
-  
+
 #define SPP 1
 
 #define FIXED_EDGE_TESSELLATION_VALUE 3
@@ -129,9 +129,6 @@ void device_key_pressed_handler(int key)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  double t0 = getSeconds();
-  std::cout << "convert scene begin" << std::endl;
-
   for (unsigned int i=0; i<scene_in->numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
@@ -142,10 +139,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
 
-  double t1 = getSeconds();
-  std::cout << "convert scene end " << t1-t0 << " seconds" << std::endl;
-  std::cout << "commit objects begin" << std::endl;
-   
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
@@ -154,9 +147,6 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
-  double t2 = getSeconds();
-  std::cout << "commit objects end " << t2-t1 << " seconds" << std::endl;
- 
   /* commit changes to scene */
   return scene_out;
 }
@@ -206,6 +196,8 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
+typedef ISPCInstance* ISPCInstancePtr;
+
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
@@ -213,7 +205,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+        ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
         geometry = g_ispc_scene->geometries[geomID];
@@ -227,7 +219,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
     unsigned int instID = ray.instID;
     {
       /* get instance and geometry pointers */
-      ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+      ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
 
       /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
@@ -266,7 +258,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
   }
-  
+
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.5f);
 
@@ -374,20 +366,10 @@ extern "C" void device_render (int* pixels,
   bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
-  if (g_scene == nullptr)
-  {
-   
+  if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-
-    double t1 = getSeconds();
-    std::cout << "commit scene begin" << std::endl;
-     
     rtcCommitScene (g_scene);
-
-    double t2 = getSeconds();
-    std::cout << "commit scene end " << t2-t1 << " seconds" << std::endl;
-   
     old_p = camera.xfm.p;
   }
 
