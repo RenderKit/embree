@@ -292,10 +292,6 @@ namespace embree
 
       template<int K>
       static void occludedK(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
-
-      // We need these in separate functions to isolate 16-wide code on SKX
-      static void intersectCoherent(Accel::Intersectors* This, RayHitK<VSIZEX>** inputRays, size_t numRays, IntersectContext* context);
-      static void occludedCoherent(Accel::Intersectors* This, RayK<VSIZEX>** inputRays, size_t numRays, IntersectContext* context);
     };
   }
 }

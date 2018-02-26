@@ -472,7 +472,7 @@ namespace embree
                                                                IntersectContext* context)
     {
       if (unlikely(isCoherent(context->user->flags)))
-        intersectCoherent(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
+        intersectK(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
       else
         intersectK(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
     }
@@ -484,32 +484,14 @@ namespace embree
                                                               IntersectContext* context)
     {
       if (unlikely(isCoherent(context->user->flags)))
-        occludedCoherent(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
+        occludedK(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
       else
         occludedK(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
     }
 
     template<int N, int Nx>
-    __noinline void BVHNIntersectorStreamPacketFallback<N, Nx>::intersectCoherent(Accel::Intersectors* __restrict__ This,
-                                                                                  RayHitK<VSIZEX>** inputRays,
-                                                                                  size_t numTotalRays,
-                                                                                  IntersectContext* context)
-    {
-      intersectK(This, inputRays, numTotalRays, context);
-    }
-
-    template<int N, int Nx>
-    __noinline void BVHNIntersectorStreamPacketFallback<N, Nx>::occludedCoherent(Accel::Intersectors* __restrict__ This,
-                                                                                 RayK<VSIZEX>** inputRays,
-                                                                                 size_t numTotalRays,
-                                                                                 IntersectContext* context)
-    {
-      occludedK(This, inputRays, numTotalRays, context);
-    }
-
-    template<int N, int Nx>
     template<int K>
-    __forceinline void BVHNIntersectorStreamPacketFallback<N, Nx>::intersectK(Accel::Intersectors* __restrict__ This,
+    __noinline void BVHNIntersectorStreamPacketFallback<N, Nx>::intersectK(Accel::Intersectors* __restrict__ This,
                                                                               RayHitK<K>** inputRays,
                                                                               size_t numTotalRays,
                                                                               IntersectContext* context)
@@ -527,7 +509,7 @@ namespace embree
 
     template<int N, int Nx>
     template<int K>
-    __forceinline void BVHNIntersectorStreamPacketFallback<N, Nx>::occludedK(Accel::Intersectors* __restrict__ This,
+    __noinline void BVHNIntersectorStreamPacketFallback<N, Nx>::occludedK(Accel::Intersectors* __restrict__ This,
                                                                              RayK<K>** inputRays,
                                                                              size_t numTotalRays,
                                                                              IntersectContext* context)
