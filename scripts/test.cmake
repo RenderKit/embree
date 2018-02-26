@@ -73,7 +73,7 @@ MACRO(update_test_models)
   ENDIF()
   MESSAGE("checking out test models: ${TEST_MODELS_HASH}")
   EXECUTE_PROCESS(
-    COMMAND ${CTEST_GIT_COMMAND} "checkout" ${TEST_MODELS_HASH}
+    COMMAND ${CTEST_GIT_COMMAND} "checkout" "-f" ${TEST_MODELS_HASH}
     WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
     RESULT_VARIABLE retcode)
   check_return_code()

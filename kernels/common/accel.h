@@ -343,6 +343,7 @@ namespace embree
       /*! Tests if a stream of N rays in SOA layout is occluded by the scene. */
       __forceinline void occludedN (RTCRayN** rayN, const size_t N, IntersectContext* context)
       {
+        assert(intersectorN.occluded);
         intersectorN.occluded(this,rayN,N,context);
       }
       
