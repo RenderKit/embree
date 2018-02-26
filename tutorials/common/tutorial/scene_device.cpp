@@ -447,28 +447,6 @@ namespace embree
     }
   }
 
-#if 0
-  unsigned int ConvertGroupGeometry(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCScene scene_out)
-  {
-    std::vector<unsigned> geometries(group->numGeometries);
-    for (size_t i=0; i<group->numGeometries; i++) {
-      geometries[i] = group->geometries[i]->geomID;
-      assert(geometries[i] != -1);
-    }
-    DISABLE_DEPRECATED_WARNING;
-    RTCGeometry geom = rtcNewGeometryGroup (device, scene_out, geometries.data(), (unsigned int)geometries.size());
-    ENABLE_DEPRECATED_WARNING;
-    rtcSetGeometryBuildQuality(geom, quality);
-    rtcCommitGeometry(geom);
-
-    unsigned int geomID = rtcAttachGeometry(scene_out,geom);
-    group->geom.geometry = geom;
-    group->geom.scene = scene_out;
-    group->geom.geomID = geomID;
-    return geomID;
-  }
-#endif
-  
   unsigned int ConvertInstance(RTCDevice device, ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
     RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
