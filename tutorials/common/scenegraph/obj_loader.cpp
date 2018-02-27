@@ -506,14 +506,21 @@ namespace embree
   {
     const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
-    mesh->positions[0].push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
+    
+    if (i.v >= v.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
+    else mesh->positions[0].push_back(v[i.v]);
+      
     if (i.vn >= 0) {
       while (mesh->normals[0].size() < mesh->positions[0].size()) mesh->normals[0].push_back(zero); // some vertices might not had a normal
-      mesh->normals[0][mesh->positions[0].size()-1] = vn[i.vn];
+
+      if (i.vn >= vn.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
+      else mesh->normals[0][mesh->positions[0].size()-1] = vn[i.vn];
     }
     if (i.vt >= 0) {
       while (mesh->texcoords.size() < mesh->positions[0].size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
-      mesh->texcoords[mesh->positions[0].size()-1] = vt[i.vt];
+
+      if (i.vt >= vt.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
+      else mesh->texcoords[mesh->positions[0].size()-1] = vt[i.vt];
     }
     return(vertexMap[i] = int(mesh->positions[0].size()) - 1);
   }
