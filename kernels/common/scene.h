@@ -247,7 +247,7 @@ namespace embree
 
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
-    std::vector<Ref<Geometry>> geometries; //!< list of all user geometries
+    vector<Ref<Geometry>> geometries; //!< list of all user geometries
     vector<int*> vertices;
     
   public:
@@ -320,7 +320,7 @@ namespace embree
     }
 
     template<typename Mesh, bool mblur> __forceinline size_t getNumPrimitives() const;
-
+    
     template<typename Mesh, bool mblur>
     __forceinline unsigned getNumTimeSteps()
     {
