@@ -137,13 +137,10 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
-  double t0 = getSeconds();
-  std::cout << "create Embree geometry" << std::endl;
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
-  double t1 = getSeconds();
-  std::cout << "create Embree geometry " << t1-t0 << " seconds" << std::endl;
 
-  std::cout << "commit objects" << std::endl;
+  //double t1 = getSeconds();
+  //std::cout << "commit objects" << std::endl;
   
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
@@ -153,8 +150,8 @@ RTCScene convertScene(ISPCScene* scene_in)
       if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
     }
   }
-  double t2 = getSeconds();
-  std::cout << "commit objects " << t2-t1 << " seconds" << std::endl;
+  //double t2 = getSeconds();
+  //std::cout << "commit objects " << t2-t1 << " seconds" << std::endl;
 
   /* commit changes to scene */
   return scene_out;
@@ -181,6 +178,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   else if (geometry->type == CURVES)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->geom.materialID;
+  }
+  else if (geometry->type == GRID_MESH)
+  {
+    ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;
     materialID = mesh->geom.materialID;
   }
   else if (geometry->type == GROUP) {
@@ -379,11 +381,11 @@ extern "C" void device_render (int* pixels,
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
 
-    double t0 = getSeconds();
-    std::cout << "commit scene" << std::endl;
+    //double t0 = getSeconds();
+    //std::cout << "commit scene" << std::endl;
     rtcCommitScene (g_scene);
-    double t1 = getSeconds();
-    std::cout << "commit scene " << t1-t0 << " seconds" << std::endl;
+    //double t1 = getSeconds();
+    //std::cout << "commit scene " << t1-t0 << " seconds" << std::endl;
     old_p = camera.xfm.p;
   }
 

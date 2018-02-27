@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "scene_device.h"
+#include "application.h"
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
@@ -171,6 +172,26 @@ namespace embree
     if (normals) delete[] normals;
   }
 
+
+  ISPCGridMesh::ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
+    : geom(GRID_MESH), positions(nullptr)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+
+    grids = (ISPCGrid*) in->grids.data();
+    numTimeSteps = (unsigned) in->numTimeSteps();
+    numVertices = (unsigned) in->numVertices();
+    numGrids = (unsigned) in->numPrimitives();
+    geom.materialID = scene_in->materialID(in->material);
+  }
+
+  ISPCGridMesh::~ISPCGridMesh () {
+    if (positions) delete[] positions;
+  }
+
+
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
   {
@@ -300,6 +321,8 @@ namespace embree
       geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
       geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh);
+    else if (Ref<SceneGraph::GridMeshNode> mesh = in.dynamicCast<SceneGraph::GridMeshNode>())
+      geom = (ISPCGeometry*) new ISPCGridMesh(scene,mesh); 
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
       geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
@@ -337,6 +360,23 @@ namespace embree
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+    rtcCommitGeometry(geom);
+    rtcAttachGeometryByID(scene_out,geom,geomID);
+    mesh->geom.geometry = geom;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
+    return geomID;
+  }
+
+  unsigned int ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  {
+    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryBuildQuality(geom, quality);
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+    }    
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_UINT3, mesh->grids, 0, sizeof(ISPCGrid), mesh->numGrids);
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
@@ -440,6 +480,8 @@ namespace embree
         ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, quality, scene_out, i);
       else if (geometry->type == CURVES)
         ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, scene_out, i);
+      else if (geometry->type == GRID_MESH)
+        ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, scene_out, i);
       else
         assert(false);
     }
@@ -483,6 +525,9 @@ namespace embree
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality)
   {
+    double t0 = getSeconds();
+    if (Application::instance->verbosity >= 1) std::cout << "creating Embree objects ..." << std::flush;
+  
     RTCScene scene_out = rtcNewScene(g_device);
     
     /* use scene instancing feature */
@@ -518,10 +563,16 @@ namespace embree
           ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, scene_out, i);
         else if (geometry->type == CURVES)
           ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, scene_out, i);
+         else if (geometry->type == GRID_MESH)
+          ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, scene_out, i);
         else
           assert(false);
       }
     }
+
+    double t1 = getSeconds();
+    if (Application::instance->verbosity >= 1) std::cout << " [DONE] (" << t1-t0 << " seconds)" << std::endl;
+
     return scene_out;
   }
 }

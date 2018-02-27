@@ -39,15 +39,49 @@ namespace embree
     void set_motion_vector(Ref<Node> node, const avector<Vec3fa>& motion_vector);
     void resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N);
     Ref<Node> convert_triangles_to_quads(Ref<Node> node, float prop);
-    Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh );
+    Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
-    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh );
-    Ref<Node> convert_triangles_to_grids( Ref<Node> node );
+    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh,  const unsigned resX, const unsigned resY );
+    Ref<Node> convert_triangles_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
+
+    struct Statistics
+    {
+      Statistics ()
+      : numTriangleMeshes(0), 
+        numTriangles(0), 
+        numQuadMeshes(0), 
+        numQuads(0), 
+        numSubdivMeshes(0), 
+        numPatches(0), 
+        numCurveSets(0), 
+        numCurves(0), 
+        numTransformNodes(0), 
+        numTransformedObjects(0),
+        numLights(0),
+        numCameras(0),
+        numMaterials(0) {}
+
+      void print();
+      
+      size_t numTriangleMeshes;
+      size_t numTriangles;
+      size_t numQuadMeshes;
+      size_t numQuads;
+      size_t numSubdivMeshes;
+      size_t numPatches;
+      size_t numCurveSets;
+      size_t numCurves;
+      size_t numTransformNodes;
+      size_t numTransformedObjects;
+      size_t numLights;
+      size_t numCameras;
+      size_t numMaterials;
+    };
     
     struct Node : public RefCount
     {
@@ -68,6 +102,9 @@ namespace embree
 
       /* resets the number of parent nodes pointing to this node */
       virtual void resetInDegree();
+
+      /* calculates statistics */
+      virtual void calculateStatistics(Statistics& stat);
 
       /* checks if the node is closed */
       __forceinline bool isClosed() const { return closed; }
@@ -293,8 +330,9 @@ namespace embree
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
         : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
 
+      virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
-      
+            
     public:
       Vec3fa from;   //!< position of camera
       Vec3fa to;     //!< look at point
@@ -322,6 +360,7 @@ namespace embree
         child->setMaterial(material);
       }
 
+      virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual bool calculateClosed(bool group_instancing);
       virtual void resetInDegree();
@@ -395,10 +434,10 @@ namespace embree
           children[i] = convert_triangles_to_quads(children[i],prop);
       }
 
-      void triangles_to_grids()
+      void triangles_to_grids(unsigned int resX, unsigned int resY)
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_grids(children[i]);        
+          children[i] = convert_triangles_to_grids(children[i],resX, resY);        
       }
 
       void quads_to_subdivs()
@@ -441,6 +480,7 @@ namespace embree
         for (auto& child : children) child->setMaterial(material);
       }
 
+      virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual bool calculateClosed(bool group_instancing);
       virtual void resetInDegree();
@@ -454,6 +494,7 @@ namespace embree
       LightNode (Ref<Light> light)
         : light(light) {}
 
+      virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
       
       Ref<Light> light;
@@ -466,6 +507,8 @@ namespace embree
         : Node(name) {}
 
       virtual Material* material() = 0;
+
+      virtual void calculateStatistics(Statistics& stat);
     };
     
     /*! Mesh. */
@@ -549,6 +592,8 @@ namespace embree
 
       void verify() const;
 
+      virtual void calculateStatistics(Statistics& stat);
+
     public:
       std::vector<avector<Vertex>> positions;
       std::vector<avector<Vertex>> normals;
@@ -627,6 +672,8 @@ namespace embree
 
       void verify() const;
 
+      virtual void calculateStatistics(Statistics& stat);
+      
     public:
       std::vector<avector<Vertex>> positions;
       std::vector<avector<Vertex>> normals;
@@ -729,6 +776,8 @@ namespace embree
 
       void verify() const;
 
+      virtual void calculateStatistics(Statistics& stat);
+
     public:
       std::vector<avector<Vertex>> positions; //!< vertex positions for multiple timesteps
       std::vector<avector<Vertex>> normals;    //!< vertex normals
@@ -825,6 +874,8 @@ namespace embree
 
       void verify() const;
 
+      virtual void calculateStatistics(Statistics& stat);
+
     public:
       RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
@@ -916,6 +967,8 @@ namespace embree
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GROUP, INSTANCING_FLATTENED };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode);
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode);
+
+    Statistics calculateStatistics(Ref<Node> node);
 
     enum CurveSubtype
     {

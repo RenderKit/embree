@@ -313,6 +313,8 @@ namespace embree
       convert_hair_to_curves(false),
       convert_bezier_to_bspline(false),
       convert_bspline_to_bezier(false),
+      grid_resX(2),
+      grid_resY(2),
       convert_tris_to_grids(false),
       remove_mblur(false),
       remove_non_mblur(false),
@@ -373,6 +375,11 @@ namespace embree
     registerOption("convert-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_tris_to_grids = true;
       }, "--convert-triangles-to-grids: converts all triangles to grids when loading");
+
+    registerOption("grid-res", [this] (Ref<ParseStream> cin, const FileName& path) {
+        grid_resX = cin->getInt();
+        grid_resY = cin->getInt();
+      }, "--grid-res: sets tessellation resolution for the grid primitive");
 
     registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
          remove_mblur = true;
@@ -970,7 +977,7 @@ namespace embree
     }
 
     double t0 = getSeconds();
-    std::cout << "loading scene begin ..." << std::endl;
+    if (verbosity >= 1) std::cout << "loading scene ..." << std::flush;
 
     /* load scene */
     if (sceneFilename != "")
@@ -993,8 +1000,9 @@ namespace embree
     }
 
     double t1 = getSeconds();
-    std::cout << "loading scene end " << t1-t0 << " seconds" << std::endl;
-    std::cout << "convert scene begin ..." << std::endl;
+    if (verbosity >= 1) std::cout << " [DONE] (" << t1-t0 << " seconds)" << std::endl;
+
+    if (verbosity >= 1) std::cout << "convert scene " << std::flush;
 
     /* clear texture cache */
     Texture::clearTextureCache();
@@ -1009,22 +1017,37 @@ namespace embree
     if (convert_hair_to_curves   ) scene->hair_to_curves();
     if (convert_bezier_to_bspline) scene->bezier_to_bspline();
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
-    if (convert_tris_to_grids    ) scene->triangles_to_grids();
+    if (convert_tris_to_grids    ) scene->triangles_to_grids(grid_resX,grid_resY);
 
     double t2 = getSeconds();
-    std::cout << "convert scene end " << t2-t1 << " seconds" << std::endl;
-    std::cout << "flatten scene begin ..." << std::endl;
+    if (verbosity >= 1) std::cout << " [DONE] (" << t2-t1 << " seconds)" << std::endl;
+
+    if (verbosity >= 1) {
+      std::cout << std::endl;
+      std::cout << "scene statistics (pre-flattening):" << std::endl;
+      SceneGraph::calculateStatistics(scene.dynamicCast<SceneGraph::Node>()).print();
+      std::cout << std::endl;
+    }
+    
+    if (verbosity >= 1) std::cout << "flattening scene ..." << std::flush;
     Ref<SceneGraph::GroupNode> flattened_scene = SceneGraph::flatten(scene,instancing_mode);
     double t3 = getSeconds();
-    std::cout << "flatten scene end " << t3-t2 << " seconds" << std::endl;
-      
+    if (verbosity >= 1) std::cout << " [DONE] (" << t3-t2 << " seconds)" << std::endl;
+
+    if (verbosity >= 1) {
+      std::cout << std::endl;
+      std::cout << "scene statistics (post-flattening):" << std::endl;
+      SceneGraph::calculateStatistics(flattened_scene.dynamicCast<SceneGraph::Node>()).print();
+      std::cout << std::endl;
+    }
+   
     /* convert model */
-    std::cout << "obj_scene_add begin ..." << std::endl;
+    if (verbosity >= 1) std::cout << "populating tutorial scene ..." << std::flush;
     obj_scene.add(flattened_scene);
     flattened_scene = nullptr;
     scene = nullptr;
     double t4 = getSeconds();
-    std::cout << "obj_scene_add end " << t4-t3 << " seconds" << std::endl;
+    if (verbosity >= 1) std::cout << " [DONE] (" << t4-t3 << " seconds)" << std::endl;
     
     /* print all cameras */
     if (print_scene_cameras) {
@@ -1045,10 +1068,10 @@ namespace embree
     }
 
     /* send model */
-    std::cout << "set scene begin ..." << std::endl;
+    if (verbosity >= 1) std::cout << "creating ISPC compatible scene ..." << std::flush;
     set_scene(&obj_scene);
     double t5 = getSeconds();
-    std::cout << "set scene end " << t5-t4 << " seconds" << std::endl;
+    if (verbosity >= 1) std::cout << " [DONE] (" << t5-t4 << " seconds)" << std::endl;
 
     /* start tutorial */
     run(argc,argv);

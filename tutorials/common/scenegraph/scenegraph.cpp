@@ -41,6 +41,117 @@ namespace embree
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
+  void SceneGraph::Node::calculateStatistics(Statistics& stat) {
+    indegree++;
+  }
+
+  void SceneGraph::PerspectiveCameraNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) stat.numCameras++;
+  }
+
+  void SceneGraph::LightNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) stat.numLights++;
+  }
+
+  void SceneGraph::MaterialNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) stat.numMaterials++;
+  }
+
+  void SceneGraph::TriangleMeshNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      stat.numTriangleMeshes++;
+      stat.numTriangles += numPrimitives();
+      material->calculateStatistics(stat);
+    }
+  }
+
+  void SceneGraph::QuadMeshNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      stat.numQuadMeshes++;
+      stat.numQuads += numPrimitives();
+      material->calculateStatistics(stat);
+    }
+  }
+
+  void SceneGraph::SubdivMeshNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      stat.numSubdivMeshes++;
+      stat.numPatches += numPrimitives();
+      material->calculateStatistics(stat);
+    }
+  }
+
+  void SceneGraph::HairSetNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      stat.numCurveSets++;
+      stat.numCurves += numPrimitives();
+      material->calculateStatistics(stat);
+    }
+  }
+
+  void SceneGraph::TransformNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1)
+    {
+      child->calculateStatistics(stat);
+      
+      stat.numTransformNodes++;
+      if (child->indegree == 1)
+        stat.numTransformedObjects++;
+      
+      if (spaces.size() > 1) child->calculateStatistics(stat); // break instance up when motion blur is used
+    }
+  }
+
+  void SceneGraph::GroupNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      for (auto&  c : children)
+        c->calculateStatistics(stat);
+    }
+  }
+
+  void SceneGraph::Statistics::print()
+  {
+    std::cout << "  # transform nodes : " << numTransformNodes << std::endl;
+    std::cout << "    # objects       : " << numTransformedObjects << std::endl;
+    std::cout << "  # triangle meshes : " << numTriangleMeshes << std::endl;
+    std::cout << "    # triangles     : " << numTriangles << std::endl;
+    std::cout << "  # quad meshes     : " << numQuadMeshes << std::endl;
+    std::cout << "    # quads         : " << numQuads << std::endl;
+    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << std::endl;
+    std::cout << "    # patches       : " << numPatches << std::endl;
+    std::cout << "  # curve sets      : " << numCurveSets << std::endl;
+    std::cout << "    # curves        : " << numCurves << std::endl;
+    std::cout << "  # lights          : " << numLights << std::endl;
+    std::cout << "  # cameras         : " << numCameras << std::endl;
+    std::cout << "  # materials       : " << numMaterials << std::endl;
+  }
+
+  SceneGraph::Statistics SceneGraph::calculateStatistics(Ref<Node> node)
+  {
+    SceneGraph::Statistics stat;
+    node->calculateStatistics(stat);
+    node->resetInDegree();
+    return stat;
+  }
+
   void SceneGraph::Node::calculateInDegree() {
     indegree++;
   }
@@ -171,6 +282,18 @@ namespace embree
     for (auto quad : quads) {
       if (size_t(quad.v0) >= N || size_t(quad.v1) >= N || size_t(quad.v2) >= N || size_t(quad.v3) >= N)
         THROW_RUNTIME_ERROR("invalid quad");
+    }
+  }
+
+  void SceneGraph::GridMeshNode::verify() const
+  {
+    const size_t N = numVertices();
+    for (const auto& p : positions) 
+      if (p.size() != N) 
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto grid : grids) {
+      if (size_t(grid.startVtx) >= N || size_t(grid.lineOffset) >= N || size_t(grid.resX) >= 0x7fff || size_t(grid.resY) >= 0x7fff)
+        THROW_RUNTIME_ERROR("invalid grid");
     }
   }
 
@@ -512,6 +635,13 @@ namespace embree
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) 
+    {
+      avector<Vec3fa> positions1;
+      for (auto P : mesh->positions.back()) 
+        positions1.push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
+    }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
       avector<Vec3fa> positions1;
@@ -549,6 +679,16 @@ namespace embree
       }
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) 
     {
       avector<Vec3fa> positions = std::move(mesh->positions[0]);
       mesh->positions.clear();
@@ -704,7 +844,7 @@ namespace embree
   }
 
 
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids ( Ref<SceneGraph::TriangleMeshNode> tmesh )
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids ( Ref<SceneGraph::TriangleMeshNode> tmesh , const unsigned resX, const unsigned resY )
   {
     Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(tmesh->material);
 
@@ -741,31 +881,37 @@ namespace embree
     for (size_t i=0;i<quads.size();i++)
     {
       const unsigned int startVtx = pos.size();      
-      const unsigned int lineOffset = 2;
-      const unsigned int resX = 2;
-      const unsigned int resY = 2;
-      pos.push_back(tmesh->positions[0][quads[i].v0]);
-      pos.push_back(tmesh->positions[0][quads[i].v1]);
-      pos.push_back(tmesh->positions[0][quads[i].v2]);
-      pos.push_back(tmesh->positions[0][quads[i].v3]);
+      const unsigned int lineOffset = resX;
+      for (size_t y=0;y<resY;y++)
+        for (size_t x=0;x<resY;x++)
+        {
+          const float u = (float)x / (resX-1);
+          const float v = (float)y / (resY-1);
+          const SceneGraph::GridMeshNode::Vertex v00 = tmesh->positions[0][quads[i].v0];
+          const SceneGraph::GridMeshNode::Vertex v01 = tmesh->positions[0][quads[i].v1];
+          const SceneGraph::GridMeshNode::Vertex v10 = tmesh->positions[0][quads[i].v3];
+          const SceneGraph::GridMeshNode::Vertex v11 = tmesh->positions[0][quads[i].v2];
+          const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v10 * u * (1.0f-v) + v01 * (1.0f-u) * v + v11 * u * v;
+          pos.push_back( vtx );
+        }
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
     gmesh->positions.push_back(pos);
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids(Ref<SceneGraph::Node> node)
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = convert_triangles_to_grids(xfmNode->child);
+      xfmNode->child = convert_triangles_to_grids(xfmNode->child, resX, resY);
     } 
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = convert_triangles_to_grids(groupNode->children[i]);
+        groupNode->children[i] = convert_triangles_to_grids(groupNode->children[i], resX, resY);
     }
     else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
-      return convert_triangles_to_grids(tmesh);
+      return convert_triangles_to_grids(tmesh, resX, resY);
     }
     return node;
   }
@@ -943,11 +1089,9 @@ namespace embree
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
-        std::cout << "extracting instances ";
         if (instancing == SceneGraph::INSTANCING_FLATTENED) convertFlattenedInstances(geometries,in);
         else                                                convertInstances(geometries,in,one);
         convertLightsAndCameras(geometries,in,one);
-        std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
       else
       {
@@ -1005,6 +1149,9 @@ namespace embree
       else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
         group.push_back(new SceneGraph::QuadMeshNode(mesh,spaces));
       }
+      else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+        group.push_back(new SceneGraph::GridMeshNode(mesh,spaces));
+      }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
         group.push_back(new SceneGraph::SubdivMeshNode(mesh,spaces));
       }
@@ -1028,7 +1175,7 @@ namespace embree
     void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node, const SceneGraph::Transformations& spaces)
     {
       if (node->isClosed()) {
-        if (group.size() % 10000 == 0) std::cout << "." << std::flush;
+        //if (group.size() % 10000 == 0) std::cout << "." << std::flush;
         group.push_back(new SceneGraph::TransformNode(spaces,lookupGeometries(node)));
       }
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {

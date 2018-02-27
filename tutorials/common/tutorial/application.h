@@ -26,6 +26,9 @@ namespace embree
     enum Features { FEATURE_RTCORE = 1, FEATURE_STREAM = 2 };
 
     Application (int features);
+    virtual ~Application();
+
+    static Application* instance;
     
     /* virtual interface for command line option processing */
     struct CommandLineOption : public RefCount 
@@ -85,7 +88,7 @@ namespace embree
     virtual int main(int argc, char** argv) = 0;
 
   public:
-    /* embree configuration */
-    std::string rtcore;
+    std::string rtcore;      // embree configuration
+    int verbosity;           // verbosity of output
   };
 }

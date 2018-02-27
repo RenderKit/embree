@@ -18,9 +18,16 @@
 
 namespace embree
 {
+  Application* Application::instance = nullptr;
+  
   Application::Application(int features)
-    : rtcore("start_threads=1,set_affinity=1")
+    : rtcore("start_threads=1,set_affinity=1"), verbosity(0)
   {
+    if (instance)
+      throw std::runtime_error("internal error: applicaton already created");
+
+    instance = this;
+    
     registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
         printCommandLineHelp();
         exit(1);
@@ -51,7 +58,8 @@ namespace embree
       registerOptionAlias("start_threads","start-threads");
       
       registerOption("verbose", [this] (Ref<ParseStream> cin, const FileName& path) {
-          rtcore += ",verbose=" + toString(cin->getInt());
+          verbosity = cin->getInt();
+          rtcore += ",verbose=" + toString(verbosity);
         }, "--verbose <int>: sets verbosity level");
       
       registerOption("isa", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -69,6 +77,12 @@ namespace embree
         "  avx512knl: select AVX512 codepath for KNL\n"
         "  avx512skx: select AVX512 codepath for SKX\n");
     } 
+  }
+
+  Application::~Application()
+  {
+    assert(instance == this);
+    instance = nullptr;
   }
   
   void Application::registerOptionAlias(const std::string& name, const std::string& alternativeName) {
