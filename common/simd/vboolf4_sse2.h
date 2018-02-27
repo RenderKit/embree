@@ -38,7 +38,7 @@ namespace embree
     __forceinline vboolf4& operator =(const vboolf4& other) { v = other.v; return *this; }
 
     __forceinline vboolf(__m128 input) : v(input) {}
-    __forceinline vboolf(__m128i input) : v(_mm_castps_si128(input)) {}
+    __forceinline vboolf(__m128i input) : v(_mm_castsi128_ps(input)) {}
     __forceinline operator const __m128&() const { return v; }
     __forceinline operator const __m128i() const { return _mm_castps_si128(v); }
     __forceinline operator const __m128d() const { return _mm_castps_pd(v); }
