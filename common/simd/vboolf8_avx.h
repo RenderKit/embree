@@ -42,6 +42,7 @@ namespace embree
     __forceinline vboolf8& operator =(const vboolf8& a) { v = a.v; return *this; }
 
     __forceinline vboolf(__m256 a) : v(a) {}
+    __forceinline vboolf(__m256i a) : v(_mm256_castsi256_ps(a)) {}
     __forceinline operator const __m256&() const { return v; }
     __forceinline operator const __m256i() const { return _mm256_castps_si256(v); }
     __forceinline operator const __m256d() const { return _mm256_castps_pd(v); }

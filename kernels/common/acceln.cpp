@@ -89,7 +89,7 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->intersectors.occluded4(valid,ray,context);
 #if defined(__SSE2__)
-      vbool4 valid0 = ((vbool4*)valid)[0];
+      vbool4 valid0(((vint4*)valid)[0]);
       vbool4 hit0   = ((vint4*)ray.geomID)[0] != vint4(0);
       if (unlikely(none(valid0 & hit0))) break;
 #endif
@@ -102,9 +102,9 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->intersectors.occluded8(valid,ray,context);
 #if defined(__SSE2__) // FIXME: use higher ISA
-      vbool4 valid0 = ((vbool4*)valid)[0];
+      vbool4 valid0(((vint4*)valid)[0]);
       vbool4 hit0   = ((vint4*)ray.geomID)[0] != vint4(0);
-      vbool4 valid1 = ((vbool4*)valid)[1];
+      vbool4 valid1(((vint4*)valid)[1]);
       vbool4 hit1   = ((vint4*)ray.geomID)[1] != vint4(0);
       if (unlikely((none((valid0 & hit0) | (valid1 & hit1))))) break;
 #endif
@@ -117,13 +117,13 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->intersectors.occluded16(valid,ray,context);
 #if defined(__SSE2__) // FIXME: use higher ISA
-      vbool4 valid0 = ((vbool4*)valid)[0];
+      vbool4 valid0(((vint4*)valid)[0]);
       vbool4 hit0   = ((vint4*)ray.geomID)[0] != vint4(0);
-      vbool4 valid1 = ((vbool4*)valid)[1];
+      vbool4 valid1(((vint4*)valid)[1]);
       vbool4 hit1   = ((vint4*)ray.geomID)[1] != vint4(0);
-      vbool4 valid2 = ((vbool4*)valid)[2];
+      vbool4 valid2(((vint4*)valid)[2]);
       vbool4 hit2   = ((vint4*)ray.geomID)[2] != vint4(0);
-      vbool4 valid3 = ((vbool4*)valid)[3];
+      vbool4 valid3(((vint4*)valid)[3]);
       vbool4 hit3   = ((vint4*)ray.geomID)[3] != vint4(0);
       if (unlikely((none((valid0 & hit0) | (valid1 & hit1) | (valid2 & hit2) | (valid3 & hit3))))) break;
 #endif
