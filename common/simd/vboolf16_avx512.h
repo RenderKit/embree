@@ -39,6 +39,8 @@ namespace embree
 
     __forceinline vboolf(const __mmask16& t) { v = t; }
     __forceinline operator __mmask16() const { return v; }
+
+    __forceinline vboolf(__m512i input) : v(_mm512_movepi32_mask(input)) {}
     
     __forceinline vboolf(bool b) { v = b ? 0xFFFF : 0x0000; }
     __forceinline vboolf(int t) { v = (__mmask16)t; }
