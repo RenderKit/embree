@@ -935,7 +935,7 @@ namespace embree
     std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
     std::map<std::string,int> unique_id;
     
-    SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
+    SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing)
     {
        in->calculateInDegree();
        in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
@@ -944,14 +944,14 @@ namespace embree
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
         std::cout << "extracting instances ";
-        convertInstances(geometries,in,spaces);
-        convertLightsAndCameras(geometries,in,spaces);
+        convertInstances(geometries,in,one);
+        convertLightsAndCameras(geometries,in,one);
         std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
       else
       {
-        convertGeometries(geometries,in,spaces);
-        convertLightsAndCameras(geometries,in,spaces);
+        convertGeometries(geometries,in,one);
+        convertLightsAndCameras(geometries,in,one);
       }
       in->resetInDegree();
       
@@ -1039,11 +1039,11 @@ namespace embree
     }
   };
 
-  Ref<SceneGraph::Node> SceneGraph::flatten(Ref<Node> node, InstancingMode mode, const Transformations& spaces) {
-    return SceneGraphFlattener(node,mode,spaces).node;
+  Ref<SceneGraph::Node> SceneGraph::flatten(Ref<Node> node, InstancingMode mode) {
+    return SceneGraphFlattener(node,mode).node;
   }
 
-  Ref<SceneGraph::GroupNode> SceneGraph::flatten(Ref<SceneGraph::GroupNode> node, SceneGraph::InstancingMode mode, const SceneGraph::Transformations& spaces) {
-    return flatten(node.dynamicCast<SceneGraph::Node>(),mode,spaces).dynamicCast<SceneGraph::GroupNode>();
+  Ref<SceneGraph::GroupNode> SceneGraph::flatten(Ref<SceneGraph::GroupNode> node, SceneGraph::InstancingMode mode) {
+    return flatten(node.dynamicCast<SceneGraph::Node>(),mode).dynamicCast<SceneGraph::GroupNode>();
   }
 }

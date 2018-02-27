@@ -914,8 +914,8 @@ namespace embree
 
     
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GROUP };
-    Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
-    Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
+    Ref<Node> flatten(Ref<Node> node, InstancingMode mode);
+    Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode);
 
     enum CurveSubtype
     {
