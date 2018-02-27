@@ -972,7 +972,7 @@ namespace embree
       }
     }
 
-    void convertLightsAndCameras(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    void convertLightsAndCameras(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node, const SceneGraph::Transformations& spaces)
     {
       if (!node->hasLightOrCamera) return;
       
@@ -990,7 +990,7 @@ namespace embree
       }
     }
 
-    void convertGeometries(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    void convertGeometries(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node, const SceneGraph::Transformations& spaces)
     {
       if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
         convertGeometries(group,xfmNode->child, spaces*xfmNode->spaces);
@@ -1024,7 +1024,7 @@ namespace embree
       return object_mapping[node];
     }
 
-    void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node, const SceneGraph::Transformations& spaces)
     {
       if (node->isClosed()) {
         if (group.size() % 10000 == 0) std::cout << "." << std::flush;
