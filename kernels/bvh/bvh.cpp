@@ -128,14 +128,14 @@ namespace embree
     if (builderName == "") 
       return inf;
 
-    if (device->verbosity(1))
+    if (device->verbosity(2))
     {
       Lock<MutexSys> lock(g_printMutex);
       std::cout << "building BVH" << N << (builderName.find("MBlur") != std::string::npos ? "MB" : "") << "<" << primTy->name << "> using " << builderName << " ..." << std::endl << std::flush;
     }
 
     double t0 = 0.0;
-    if (device->benchmark || device->verbosity(1)) t0 = getSeconds();
+    if (device->benchmark || device->verbosity(2)) t0 = getSeconds();
     return t0;
   }
 
@@ -146,13 +146,13 @@ namespace embree
       return;
     
     double dt = 0.0;
-    if (device->benchmark || device->verbosity(1)) 
+    if (device->benchmark || device->verbosity(2)) 
       dt = getSeconds()-t0;
 
     std::unique_ptr<BVHNStatistics<N>> stat;
 
     /* print statistics */
-    if (device->verbosity(1))
+    if (device->verbosity(2))
     {
       if (!stat) stat.reset(new BVHNStatistics<N>(this));
       const size_t usedBytes = alloc.getUsedBytes();
