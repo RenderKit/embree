@@ -389,14 +389,14 @@ namespace embree
         else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_GROUP; // for compatibility
         else if (mode == "geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY;
         else if (mode == "group"   ) instancing_mode = SceneGraph::INSTANCING_GROUP;
+        else if (mode == "flattened") instancing_mode = SceneGraph::INSTANCING_FLATTENED;
         else throw std::runtime_error("unknown instancing mode: "+mode);
         g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
       "  none: no instancing\n"
-      "  geometry: instance individual geometries\n"
-      "  geometry_group: instance geometry groups\n"
-      "  scene_geometry: instance individual geometries as scenes\n"
-      "  scene_group: instance geometry groups as scenes");
+      "  geometry: instance individual geometries as scenes\n"
+      "  group: instance geometry groups as scenes\n"
+      "  flattened: assume flattened scene graph");
 
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa L = cin->getVec3fa();

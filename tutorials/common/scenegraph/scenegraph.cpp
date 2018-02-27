@@ -944,7 +944,8 @@ namespace embree
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
         std::cout << "extracting instances ";
-        convertInstances(geometries,in,one);
+        if (instancing == SceneGraph::INSTANCING_FLATTENED) convertFlattenedInstances(geometries,in);
+        else                                                convertInstances(geometries,in,one);
         convertLightsAndCameras(geometries,in,one);
         std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
@@ -1035,6 +1036,16 @@ namespace embree
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertInstances(group,child,spaces);
+      }
+    }
+
+    void convertFlattenedInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node)
+    {
+      if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        group.push_back(node);
+      } 
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertFlattenedInstances(group,child);
       }
     }
   };

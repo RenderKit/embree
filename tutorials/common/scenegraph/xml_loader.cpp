@@ -1132,16 +1132,12 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadMultiTransformNode(const Ref<XML>& xml) 
   {
     avector<AffineSpace3fa> spaces = loadAffineSpace3faArray(xml->children[0]);
-    
-    /* group all provided objects */
-    Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-    for (size_t i=1; i<xml->size(); i++)
-      group->add(loadNode(xml->children[i]));
+    Ref<SceneGraph::Node> child = loadNode(xml->children[1]);
     
     /* instantiate the object group with all transformations */
     Ref<SceneGraph::GroupNode> igroup = new SceneGraph::GroupNode;
     for (size_t i=0; i<spaces.size(); i++)
-      igroup->add(new SceneGraph::TransformNode(spaces[i],group.cast<SceneGraph::Node>()));
+      igroup->add(new SceneGraph::TransformNode(spaces[i],child));
     
     return igroup.dynamicCast<SceneGraph::Node>();
   }
