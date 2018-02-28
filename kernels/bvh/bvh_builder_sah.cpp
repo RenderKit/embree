@@ -671,16 +671,35 @@ namespace embree
 
 	/* skip build for empty scene */
         //const size_t numGrids = mesh ? mesh->size() : scene->getNumPrimitives<GridMesh,false>();
-        size_t numPrimitives = 0;
 
+        size_t numGrids = 0;
         Scene::Iterator<GridMesh,false> iter(scene);
         for (size_t s=0;s<scene->size();s++)
         {
           GridMesh *gmesh = iter.at(s);
           if (gmesh == nullptr) continue;
-          for (size_t i=0;i<gmesh->size();i++)
-            numPrimitives += gmesh->getNumSubGrids(i);
+          numGrids+=gmesh->size();
         }
+        PRINT(numGrids);
+
+        avector<unsigned int> gridOffsets;
+        gridOffsets.resize(numGrids);
+
+        size_t gridID = 0;
+        size_t numPrimitives = 0; // = numSubGrids over all grids in the scene
+        for (size_t s=0;s<scene->size();s++)
+        {
+          GridMesh *gmesh = iter.at(s);
+          if (gmesh == nullptr) continue;
+
+          for (size_t i=0;i<gmesh->size();i++)
+          {
+            gridOffsets[gridID++] = numPrimitives;
+            numPrimitives += gmesh->getNumSubGrids(i);
+          }
+        }
+
+        PRINT(numPrimitives);
 
         if (numPrimitives == 0) {
           bvh->clear();
@@ -719,7 +738,7 @@ namespace embree
         //  createPrimRefArray(scene,GridMesh::geom_type,false,prims,bvh->scene->progressInterface);
 
         PrimInfo pinfo(empty);
-        size_t p_index = 0;
+        gridID = 0;
         for (size_t s=0;s<scene->size();s++)
         {
           GridMesh *gmesh = iter.at(s);
@@ -727,6 +746,7 @@ namespace embree
           for (size_t i=0;i<gmesh->size();i++)
           {
             const GridMesh::Grid &g = gmesh->grid(i);
+            size_t p_index = gridOffsets[gridID++];
             for (size_t y=0;y<(size_t)g.resY-1;y+=2)
               for (size_t x=0;x<(size_t)g.resX-1;x+=2)
               {
@@ -749,7 +769,6 @@ namespace embree
           return;
         }
 
-        assert(p_index == numPrimitives);
 
         /* call BVH builder */
         NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafGrid<N,SubGridQBVHN<N>>(bvh,sgrids.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);

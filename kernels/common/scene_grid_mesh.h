@@ -72,7 +72,11 @@ namespace embree
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
 
-    unsigned int getNumSubGrids(const size_t gridID);
+    __forceinline unsigned int getNumSubGrids(const size_t gridID)
+    {
+      const Grid &g = grid(gridID);
+      return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
+    }
 
   public:
 
