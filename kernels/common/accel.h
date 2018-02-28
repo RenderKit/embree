@@ -27,6 +27,7 @@ namespace embree
   /*! Base class for the acceleration structure data. */
   class AccelData : public RefCount 
   {
+    ALIGNED_CLASS_(16);
   public:
     enum Type { TY_UNKNOWN = 0, TY_ACCELN = 1, TY_ACCEL_INSTANCE = 2, TY_BVH4 = 3, TY_BVH8 = 4 };
 
@@ -58,7 +59,7 @@ namespace embree
   /*! Base class for all intersectable and buildable acceleration structures. */
   class Accel : public AccelData
   {
-    ALIGNED_CLASS;
+     ALIGNED_CLASS_(16);
   public:
 
     struct Intersectors;

@@ -93,7 +93,7 @@ namespace embree
       if (device)
         device->memoryMonitor(this->bytes(), false);
       size_t b = (this->bytes()+15) & ssize_t(-16);
-      ptr = (char*)alignedMalloc(b);
+      ptr = (char*)alignedMalloc(b,16);
     }
     
     /*! frees the buffer */

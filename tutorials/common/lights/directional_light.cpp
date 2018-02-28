@@ -95,7 +95,7 @@ extern "C" void DirectionalLight_set(void* super,
 //! Create an ispc-side DirectionalLight object
 extern "C" void* DirectionalLight_create()
 {
-  DirectionalLight* self = (DirectionalLight*) alignedMalloc(sizeof(DirectionalLight));
+  DirectionalLight* self = (DirectionalLight*) alignedMalloc(sizeof(DirectionalLight),16);
   Light_Constructor(&self->super);
   self->super.sample = DirectionalLight_sample;
   self->super.eval = DirectionalLight_eval;

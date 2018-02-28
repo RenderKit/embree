@@ -32,7 +32,7 @@ namespace embree
 {
   struct TaskScheduler : public RefCount
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(64);
     friend class Device;
 
     static const size_t TASK_STACK_SIZE = 2*1024;           //!< task structure stack
@@ -172,7 +172,7 @@ namespace embree
     /*! thread local structure for each thread */
     struct Thread
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(64);
 
       Thread (size_t threadIndex, const Ref<TaskScheduler>& scheduler)
       : threadIndex(threadIndex), task(nullptr), scheduler(scheduler) {}

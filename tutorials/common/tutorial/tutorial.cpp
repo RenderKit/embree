@@ -523,7 +523,7 @@ namespace embree
   void TutorialApplication::initRayStats()
   {
     if (!g_stats)
-      g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
+      g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), 64);
 
     for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
       g_stats[i].numRays = 0;
@@ -976,9 +976,8 @@ namespace embree
       std::cout << "Error: " << e.what() << std::endl;
     }
 
-    double t0 = getSeconds();
-    if (verbosity >= 1) std::cout << "loading scene ..." << std::flush;
-
+    log(1,"application start");
+    
     /* load scene */
     if (sceneFilename != "")
     {
@@ -988,21 +987,22 @@ namespace embree
         scene->add(SceneGraph::load(sceneFilename));
     }
 
+    Application::instance->log(1,"loading scene done");
+
     /* load key frames for animation */
-    for (size_t i=0;i<keyFramesFilenames.size();i++)
+    for (size_t i=0; i<keyFramesFilenames.size(); i++)
     {
-      std::cout << "Adding ["<< keyFramesFilenames[i] << "] to scene..." << std::flush;
+      if (verbosity >= 1) 
+        std::cout << "Adding ["<< keyFramesFilenames[i] << "] to scene..." << std::flush;
+      
       if (toLowerCase(keyFramesFilenames[i].ext()) == std::string("obj"))
         scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != "",true));
       else if (keyFramesFilenames[i].ext() != "")
         scene->add(SceneGraph::load(keyFramesFilenames[i]));
-      std::cout << "done" << std::endl << std::flush;
+      
+      if (verbosity >= 1) 
+        std::cout << " [DONE]" << std::endl << std::flush;
     }
-
-    double t1 = getSeconds();
-    if (verbosity >= 1) std::cout << " [DONE] (" << t1-t0 << " seconds)" << std::endl;
-
-    if (verbosity >= 1) std::cout << "convert scene " << std::flush;
 
     /* clear texture cache */
     Texture::clearTextureCache();
@@ -1019,8 +1019,7 @@ namespace embree
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
     if (convert_tris_to_grids    ) scene->triangles_to_grids(grid_resX,grid_resY);
 
-    double t2 = getSeconds();
-    if (verbosity >= 1) std::cout << " [DONE] (" << t2-t1 << " seconds)" << std::endl;
+    Application::instance->log(1,"converting scene done");
 
     if (verbosity >= 1) {
       std::cout << std::endl;
@@ -1029,10 +1028,8 @@ namespace embree
       std::cout << std::endl;
     }
     
-    if (verbosity >= 1) std::cout << "flattening scene ..." << std::flush;
     Ref<SceneGraph::GroupNode> flattened_scene = SceneGraph::flatten(scene,instancing_mode);
-    double t3 = getSeconds();
-    if (verbosity >= 1) std::cout << " [DONE] (" << t3-t2 << " seconds)" << std::endl;
+    Application::instance->log(1,"flattening scene done");
 
     if (verbosity >= 1) {
       std::cout << std::endl;
@@ -1042,12 +1039,10 @@ namespace embree
     }
    
     /* convert model */
-    if (verbosity >= 1) std::cout << "populating tutorial scene ..." << std::flush;
     obj_scene.add(flattened_scene);
     flattened_scene = nullptr;
     scene = nullptr;
-    double t4 = getSeconds();
-    if (verbosity >= 1) std::cout << " [DONE] (" << t4-t3 << " seconds)" << std::endl;
+    Application::instance->log(1,"populating tutorial scene done");
     
     /* print all cameras */
     if (print_scene_cameras) {
@@ -1068,10 +1063,8 @@ namespace embree
     }
 
     /* send model */
-    if (verbosity >= 1) std::cout << "creating ISPC compatible scene ..." << std::flush;
     set_scene(&obj_scene);
-    double t5 = getSeconds();
-    if (verbosity >= 1) std::cout << " [DONE] (" << t5-t4 << " seconds)" << std::endl;
+    Application::instance->log(1,"creating ISPC compatible scene done");
 
     /* start tutorial */
     run(argc,argv);

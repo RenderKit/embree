@@ -31,8 +31,8 @@ unsigned int addCube (RTCScene scene_i)
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* create face and vertex color arrays */
-  face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
-  vertex_colors = (Vec3fa*) alignedMalloc(8*sizeof(Vec3fa));
+  face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa),16);
+  vertex_colors = (Vec3fa*) alignedMalloc(8*sizeof(Vec3fa),16);
 
   /* set vertices and vertex colors */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),8);

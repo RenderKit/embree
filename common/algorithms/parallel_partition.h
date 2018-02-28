@@ -64,7 +64,7 @@ namespace embree
   template<typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
     class __aligned(64) parallel_partition_task
   {
-    ALIGNED_CLASS;
+    ALIGNED_CLASS_(64);
   private:
 
     static const size_t MAX_TASKS = 512;

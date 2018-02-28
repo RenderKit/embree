@@ -28,7 +28,7 @@ namespace embree
 
   class Device : public State, public MemoryMonitorInterface
   {
-    ALIGNED_CLASS;
+    ALIGNED_CLASS_(16);
 
   public:
 

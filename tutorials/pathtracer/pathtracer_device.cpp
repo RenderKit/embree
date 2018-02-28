@@ -1712,7 +1712,7 @@ extern "C" void device_render (int* pixels,
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     alignedFree(g_accu);
-    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
+    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa),16);
     g_accu_width = width;
     g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)

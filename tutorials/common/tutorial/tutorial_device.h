@@ -113,7 +113,7 @@ void renderTileStandard(int taskIndex,
 unsigned int getNumHWThreads();
 
 #if defined(ISPC)
-#define ALIGNED_STRUCT
+#define ALIGNED_STRUCT_(x)
 #define __aligned(x)
 #define MAYBE_UNUSED
 #endif

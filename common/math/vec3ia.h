@@ -28,7 +28,7 @@ namespace embree
 
   struct __aligned(16) Vec3ia
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(16);
 
     union {
       __m128i m128;

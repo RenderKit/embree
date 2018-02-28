@@ -37,7 +37,7 @@ namespace embree
   /*! Base class all scenes are derived from */
   class Scene : public Accel
   {
-    ALIGNED_CLASS;
+    ALIGNED_CLASS_(16);
 
   public:
     template<typename Ty, bool mblur = false>

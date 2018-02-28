@@ -39,7 +39,7 @@ void renderTileStandardStream(int taskIndex,
 
 struct Instance
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   RTCGeometry geometry;
   RTCScene object;
   int userID;
@@ -236,7 +236,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
 Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec3fa& lower, const Vec3fa& upper)
 {
-  Instance* instance = (Instance*) alignedMalloc(sizeof(Instance));
+  Instance* instance = (Instance*) alignedMalloc(sizeof(Instance),16);
   instance->object = object;
   instance->userID = userID;
   instance->lower = lower;
@@ -278,7 +278,7 @@ void updateInstance (RTCScene scene, Instance* instance)
 
 struct Sphere
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   Vec3fa p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   RTCGeometry geometry;
@@ -768,7 +768,7 @@ void sphereFilterFunctionN(const RTCFilterFunctionNArguments* args)
 Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
+  Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere),16);
   sphere->p = p;
   sphere->r = r;
   sphere->geometry = geom;
@@ -794,7 +794,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
+  Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere),16);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (unsigned int i=0; i<N; i++) {
     spheres[i].geometry = geom;

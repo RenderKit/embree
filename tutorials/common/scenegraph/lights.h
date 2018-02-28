@@ -35,7 +35,7 @@ namespace embree
 
     class Light : public RefCount
     {
-      ALIGNED_CLASS
+      ALIGNED_CLASS_(16)
 
     public:
       Light(LightType type) : type(type) {}

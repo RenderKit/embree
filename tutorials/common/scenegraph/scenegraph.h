@@ -59,7 +59,9 @@ namespace embree
         numSubdivMeshes(0), 
         numPatches(0), 
         numCurveSets(0), 
-        numCurves(0), 
+        numCurves(0),
+        numGridMeshNodes(0),
+        numGrids(0),
         numTransformNodes(0), 
         numTransformedObjects(0),
         numLights(0),
@@ -76,6 +78,8 @@ namespace embree
       size_t numPatches;
       size_t numCurveSets;
       size_t numCurves;
+      size_t numGridMeshNodes;
+      size_t numGrids;
       size_t numTransformNodes;
       size_t numTransformedObjects;
       size_t numLights;
@@ -322,7 +326,7 @@ namespace embree
 
     struct PerspectiveCameraNode : public Node
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(16);
 
       PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
         : from(from), to(to), up(up), fov(fov) {}
@@ -342,7 +346,7 @@ namespace embree
 
     struct TransformNode : public Node
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(16);
 
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
         : spaces(xfm), child(child) {}
@@ -502,7 +506,7 @@ namespace embree
     
     struct MaterialNode : public Node
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(16);
       MaterialNode(const std::string& name = "")
         : Node(name) {}
 
@@ -510,7 +514,7 @@ namespace embree
 
       virtual void calculateStatistics(Statistics& stat);
     };
-    
+
     /*! Mesh. */
     struct TriangleMeshNode : public Node
     {
@@ -593,7 +597,9 @@ namespace embree
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
-
+      virtual void calculateInDegree();
+      virtual void resetInDegree();
+      
     public:
       std::vector<avector<Vertex>> positions;
       std::vector<avector<Vertex>> normals;
@@ -673,7 +679,9 @@ namespace embree
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
-      
+      virtual void calculateInDegree();
+      virtual void resetInDegree();
+            
     public:
       std::vector<avector<Vertex>> positions;
       std::vector<avector<Vertex>> normals;
@@ -777,6 +785,8 @@ namespace embree
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
+      virtual void calculateInDegree();
+      virtual void resetInDegree();
 
     public:
       std::vector<avector<Vertex>> positions; //!< vertex positions for multiple timesteps
@@ -875,6 +885,8 @@ namespace embree
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
+      virtual void calculateInDegree();
+      virtual void resetInDegree();
 
     public:
       RTCGeometryType type;                   //!< type of curve
@@ -886,8 +898,6 @@ namespace embree
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
     };
-
-
 
     struct GridMeshNode : public Node
     {
@@ -956,6 +966,10 @@ namespace embree
       }
 
       void verify() const;
+
+      virtual void calculateStatistics(Statistics& stat);
+      virtual void calculateInDegree();
+      virtual void resetInDegree();
 
     public:
       std::vector<avector<Vertex>> positions; 

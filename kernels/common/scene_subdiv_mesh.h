@@ -29,7 +29,7 @@ namespace embree
 {
   class SubdivMesh : public Geometry
   {
-    ALIGNED_CLASS;
+    ALIGNED_CLASS_(16);
   public:
 
     typedef HalfEdge::Edge Edge;
@@ -134,7 +134,6 @@ namespace embree
 
   public:
     RTCDisplacementFunctionN displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for maximum displacement 
 
     /*! all buffers in this section are provided by the application */
   public:

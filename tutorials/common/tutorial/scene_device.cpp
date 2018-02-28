@@ -279,7 +279,7 @@ namespace embree
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
     : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size())) 
   {
-    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa));
+    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
     geom.geomID = scene->geometryID(in->child);
     child = ISPCScene::convertGeometry(scene,in->child);
     for (size_t i=0; i<numTimeSteps; i++)
@@ -525,9 +525,6 @@ namespace embree
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality)
   {
-    double t0 = getSeconds();
-    if (Application::instance->verbosity >= 1) std::cout << "creating Embree objects ..." << std::flush;
-  
     RTCScene scene_out = rtcNewScene(g_device);
     
     /* use scene instancing feature */
@@ -570,9 +567,8 @@ namespace embree
       }
     }
 
-    double t1 = getSeconds();
-    if (Application::instance->verbosity >= 1) std::cout << " [DONE] (" << t1-t0 << " seconds)" << std::endl;
-
+    Application::instance->log(1,"creating Embree objects done");
+  
     return scene_out;
   }
 }

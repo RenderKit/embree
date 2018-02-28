@@ -86,7 +86,7 @@ namespace embree
   template<int N>
   class BVHN : public AccelData
   {
-    ALIGNED_CLASS;
+    ALIGNED_CLASS_(16);
   public:
 
     /*! forward declaration of node type */

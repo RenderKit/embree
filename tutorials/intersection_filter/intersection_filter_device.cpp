@@ -633,7 +633,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_tri_indices, 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
 
   /* create per-triangle color array */
-  colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
+  colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa),16);
   colors[0] = Vec3fa(1,0,0); // left side
   colors[1] = Vec3fa(1,0,0);
   colors[2] = Vec3fa(0,1,0); // right side
@@ -677,7 +677,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   for (unsigned int i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */
-  colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa));
+  colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa),16);
   colors[0] = Vec3fa(1,0,0); // left side
   colors[1] = Vec3fa(0,1,0); // right side
   colors[2] = Vec3fa(0.5f);  // bottom side

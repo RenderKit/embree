@@ -72,7 +72,6 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     class BVHNRefitT : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
-      ALIGNED_CLASS;
     public:
       
       /*! Type shortcuts */

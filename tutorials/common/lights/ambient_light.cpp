@@ -80,7 +80,7 @@ void AmbientLight_Constructor(AmbientLight* self,
 //! Create an ispc-side AmbientLight object
 extern "C" void *AmbientLight_create()
 {
-  AmbientLight* self = (AmbientLight*) alignedMalloc(sizeof(AmbientLight));
+  AmbientLight* self = (AmbientLight*) alignedMalloc(sizeof(AmbientLight),16);
   AmbientLight_Constructor(self, Vec3fa(1.f));
   return self;
 }
