@@ -477,6 +477,7 @@ namespace embree
     switch (mesh->type) {
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       str_type = "linear";
+      str_subtype = "flat";
       break;
 
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
