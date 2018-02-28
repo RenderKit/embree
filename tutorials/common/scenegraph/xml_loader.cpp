@@ -637,7 +637,8 @@ namespace embree
     const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa I = load<Vec3f>(xml->child("I"));
     const Vec3fa P = Vec3fa(zero);
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::PointLight(P,I)));
+    const Ref<SceneGraph::Light> light = new SceneGraph::PointLight(P,I);
+    return new SceneGraph::LightNode(light->transform(space));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadSpotLight(const Ref<XML>& xml) 
@@ -648,7 +649,8 @@ namespace embree
     const Vec3fa D = Vec3fa(0,0,1);
     const float angleMin = load<float>(xml->child("angleMin"));
     const float angleMax = load<float>(xml->child("angleMax"));
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::SpotLight(P,D,I,angleMin,angleMax)));
+    const Ref<SceneGraph::Light> light = new SceneGraph::SpotLight(P,D,I,angleMin,angleMax);
+    return new SceneGraph::LightNode(light->transform(space));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadDirectionalLight(const Ref<XML>& xml) 
@@ -656,7 +658,8 @@ namespace embree
     const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa E = load<Vec3fa>(xml->child("E"));
     const Vec3fa D = Vec3fa(0,0,1);
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E)));
+    const Ref<SceneGraph::Light> light = new SceneGraph::DirectionalLight(D,E);
+    return new SceneGraph::LightNode(light->transform(space));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadDistantLight(const Ref<XML>& xml) 
@@ -665,7 +668,8 @@ namespace embree
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
     const Vec3fa D = Vec3fa(0,0,1);
     const float halfAngle = load<float>(xml->child("halfAngle"));
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::DistantLight(D,L,halfAngle)));
+    const Ref<SceneGraph::Light> light = new SceneGraph::DistantLight(D,L,halfAngle);
+    return new SceneGraph::LightNode(light->transform(space));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadAmbientLight(const Ref<XML>& xml) 
