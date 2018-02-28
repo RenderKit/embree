@@ -21,7 +21,7 @@
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
 
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
 
 namespace embree
 {

@@ -987,7 +987,7 @@ namespace embree
     {
     case RTC_GEOMETRY_TYPE_TRIANGLE:
     {
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLE)
       createTriangleMeshTy createTriangleMesh = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
       Geometry* geom = createTriangleMesh(device);
@@ -999,7 +999,7 @@ namespace embree
     
     case RTC_GEOMETRY_TYPE_QUAD:
     {
-#if defined(EMBREE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUAD)
       createQuadMeshTy createQuadMesh = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
       Geometry* geom = createQuadMesh(device);
@@ -1015,7 +1015,7 @@ namespace embree
     case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:
     {
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
       createLineSegmentsTy createLineSegments = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
       createCurvesBezierTy createCurvesBezier = nullptr;

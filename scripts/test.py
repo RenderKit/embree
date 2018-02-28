@@ -257,11 +257,11 @@ def runConfig(config):
   if "STAT_COUNTERS" in config:
     conf.append("-D EMBREE_STAT_COUNTERS="+config["STAT_COUNTERS"])
   if "TRIS" in config:
-    conf.append("-D EMBREE_GEOMETRY_TRIANGLES="+config["TRIS"])
+    conf.append("-D EMBREE_GEOMETRY_TRIANGLE="+config["TRIS"])
   if "QUADS" in config:
-    conf.append("-D EMBREE_GEOMETRY_QUADS="+config["QUADS"])
+    conf.append("-D EMBREE_GEOMETRY_QUAD="+config["QUADS"])
   if "CURVES" in config:
-    conf.append("-D EMBREE_GEOMETRY_CURVES="+config["CURVES"])
+    conf.append("-D EMBREE_GEOMETRY_CURVE="+config["CURVES"])
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
