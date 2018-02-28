@@ -169,4 +169,10 @@ namespace embree
 
   /*! sleeps the specified number of seconds */
   void sleepSeconds(double t);
+
+  /*! returns virtual address space occupied by process */
+  size_t getVirtualMemoryBytes();
+
+  /*! returns resident memory required by process */
+  size_t getResidentMemoryBytes();
 }

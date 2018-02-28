@@ -77,6 +77,9 @@ namespace embree
     /* prints help for all supported command line options */
     void printCommandLineHelp();
 
+    /* print log message */
+    void log(int verbose, const std::string& str);
+    
     /* command line options database */
   public:
     std::vector<         Ref<CommandLineOption> > commandLineOptionList;
@@ -88,6 +91,8 @@ namespace embree
     virtual int main(int argc, char** argv) = 0;
 
   public:
+    double start_time;       // start time of application
+    double last_time;        // last log time of application
     std::string rtcore;      // embree configuration
     int verbosity;           // verbosity of output
   };

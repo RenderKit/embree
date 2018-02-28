@@ -18,6 +18,7 @@
 #include "../common/core/differential_geometry.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/tutorial/application.h"
 
 namespace embree {
 
@@ -139,9 +140,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
 
-  //double t1 = getSeconds();
-  //std::cout << "commit objects" << std::endl;
-  
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
@@ -150,8 +148,7 @@ RTCScene convertScene(ISPCScene* scene_in)
       if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
     }
   }
-  //double t2 = getSeconds();
-  //std::cout << "commit objects " << t2-t1 << " seconds" << std::endl;
+  Application::instance->log(1,"commit objects done");
 
   /* commit changes to scene */
   return scene_out;
@@ -381,11 +378,9 @@ extern "C" void device_render (int* pixels,
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
 
-    //double t0 = getSeconds();
-    //std::cout << "commit scene" << std::endl;
     rtcCommitScene (g_scene);
-    //double t1 = getSeconds();
-    //std::cout << "commit scene " << t1-t0 << " seconds" << std::endl;
+    Application::instance->log(1,"commit scene done");
+
     old_p = camera.xfm.p;
   }
 

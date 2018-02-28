@@ -27,7 +27,9 @@ namespace embree
       throw std::runtime_error("internal error: applicaton already created");
 
     instance = this;
-    
+
+    start_time = last_time = getSeconds();
+   
     registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
         printCommandLineHelp();
         exit(1);
@@ -132,5 +134,21 @@ namespace embree
     for (auto& c : commandLineOptionList) {
       std::cout << c->description << std::endl;
     }
+  }
+
+  void Application::log(int verbose, const std::string& str)
+  {
+    if (verbosity < verbose)
+      return;
+    
+    double t = getSeconds();
+    std::cout << "[ "
+              << std::setw(8) << std::setprecision(3) << std::fixed << t-start_time << "s, "
+              << std::setw(8) << std::setprecision(3) << std::fixed << t-last_time << "s, "
+              << std::setw(8) << std::setprecision(2) << std::fixed << getVirtualMemoryBytes()/1E6 << " MB virtual, "
+              << std::setw(8) << std::setprecision(2) << std::fixed << getResidentMemoryBytes()/1E6 << " MB resident ] "
+              << str<< std::fixed 
+              << std::endl << std::flush;
+    last_time = t;
   }
 }
