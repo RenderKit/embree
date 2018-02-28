@@ -477,26 +477,27 @@ namespace embree
     switch (mesh->type) {
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       str_type = "linear";
+      str_subtype = "flat";
       break;
 
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
       str_type = "bezier";
-      str_subtype = "surface";
+      str_subtype = "round";
       break;
 
     case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:
       str_type = "bezier";
-      str_subtype = "ribbon";
+      str_subtype = "flat";
       break;
 
     case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
       str_type = "bspline";
-      str_subtype = "surface";
+      str_subtype = "round";
       break;
 
     case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:
       str_type = "bspline";
-      str_subtype = "ribbon";
+      str_subtype = "flat";
       break;
 
     default:
@@ -510,14 +511,14 @@ namespace embree
       hairid[i] = mesh->hairs[i].id;
     }
     
-    open("Curve type=\""+str_subtype+"\" basis=\""+str_type+"\"",id);
+    open("Curves type=\""+str_subtype+"\" basis=\""+str_type+"\"",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store4f("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("indices",indices);
     store("hairid",hairid);
-    close("Curve");
+    close("Curves");
   }
 
   void XMLWriter::store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id)
