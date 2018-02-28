@@ -44,7 +44,7 @@ namespace embree
     : device(device), scene(nullptr), geomID(0), gtype(gtype),
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), quality(RTC_BUILD_QUALITY_MEDIUM),
-      enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1), used(1),
+      enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr)
   {
     device->refInc();
@@ -157,7 +157,6 @@ namespace embree
       enabling();
     }
 
-    used++;
     enabled = true;
   }
 
@@ -172,7 +171,6 @@ namespace embree
       disabling();
     }
     
-    used--;
     enabled = false;
   }
 

@@ -142,12 +142,6 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
-    /*! tests if geomery is used by any instance (including world space instance) */
-    __forceinline bool isUsed() const { return used; }
-
-     /*! tests if geometry is used by any non-world space instance */
-    __forceinline bool isInstanced() const { return used-enabled; }
-
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return state != BUILD; }
 
@@ -398,7 +392,6 @@ namespace embree
     State state;
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
-    std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunctionN intersectionFilterN;
