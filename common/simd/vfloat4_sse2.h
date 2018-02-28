@@ -246,7 +246,8 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 asFloat(const __m128i& a) { return _mm_castsi128_ps(a); }
+  __forceinline vfloat4 asFloat(const vint4&   a) { return _mm_castsi128_ps(a); }
+  __forceinline vint4   asInt  (const vfloat4& a) { return _mm_castps_si128(a); }
 
   __forceinline vfloat4 operator +(const vfloat4& a) { return a; }
   __forceinline vfloat4 operator -(const vfloat4& a) { return _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
