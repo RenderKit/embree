@@ -680,7 +680,7 @@ namespace embree
           if (gmesh == nullptr) continue;
           numGrids+=gmesh->size();
         }
-        PRINT(numGrids);
+        //PRINT(numGrids);
 
         avector<unsigned int> gridOffsets;
         gridOffsets.resize(numGrids);
@@ -699,7 +699,7 @@ namespace embree
           }
         }
 
-        PRINT(numPrimitives);
+        //PRINT(numPrimitives);
 
         if (numPrimitives == 0) {
           bvh->clear();
