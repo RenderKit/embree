@@ -287,7 +287,7 @@ namespace embree
 
     struct PerspectiveCameraNode : public Node
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(16);
 
       PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
         : from(from), to(to), up(up), fov(fov) {}
@@ -304,7 +304,7 @@ namespace embree
 
     struct TransformNode : public Node
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(16);
 
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
         : spaces(xfm), child(child) {}
@@ -453,7 +453,10 @@ namespace embree
     
     struct MaterialNode : public Node
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(16);
+      
+      MaterialNode(const std::string& name = "")
+        : Node(name) {}
 
       virtual Material* material() = 0;
     };

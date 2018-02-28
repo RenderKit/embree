@@ -255,7 +255,7 @@ namespace embree
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
     : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size())) 
   {
-    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa));
+    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
     geom.geomID = scene->geometryID(in->child);
     for (size_t i=0; i<numTimeSteps; i++)
       spaces[i] = in->spaces[i];
