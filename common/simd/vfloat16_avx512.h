@@ -190,7 +190,8 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 asFloat(const __m512i&  a) { return _mm512_castsi512_ps(a); }
+  __forceinline vfloat16 asFloat(const vint16&   a) { return _mm512_castsi512_ps(a); }
+  __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a); }
 
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
