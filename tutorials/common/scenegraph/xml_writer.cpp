@@ -490,6 +490,11 @@ namespace embree
       str_subtype = "flat";
       break;
 
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE:
+      str_type = "bezier";
+      str_subtype = "oriented";
+      break;
+
     case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:
       str_type = "bspline";
       str_subtype = "round";
@@ -498,6 +503,11 @@ namespace embree
     case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:
       str_type = "bspline";
       str_subtype = "flat";
+      break;
+
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE:
+      str_type = "bspline";
+      str_subtype = "oriented";
       break;
 
     default:
@@ -516,6 +526,11 @@ namespace embree
     if (mesh->numTimeSteps() != 1) open("animated_positions");
     for (const auto& p : mesh->positions) store4f("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
+    if (mesh->normals.size()) {
+      if (mesh->numTimeSteps() != 1) open("animated_normals");
+      for (const auto& p : mesh->normals) store4f("normals",p);
+      if (mesh->numTimeSteps() != 1) close("animated_normals");
+    }
     store("indices",indices);
     store("hairid",hairid);
     close("Curves");
