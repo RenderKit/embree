@@ -103,6 +103,16 @@ namespace embree
     }
   }
 
+  void SceneGraph::GridMeshNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      stat.numGridMeshNodes++;
+      stat.numGrids += numPrimitives();
+      material->calculateStatistics(stat);
+    }
+  }
+
   void SceneGraph::TransformNode::calculateStatistics(Statistics& stat)
   {
     indegree++;
@@ -127,6 +137,14 @@ namespace embree
     }
   }
 
+  SceneGraph::Statistics SceneGraph::calculateStatistics(Ref<Node> node)
+  {
+    SceneGraph::Statistics stat;
+    node->calculateStatistics(stat);
+    node->resetInDegree();
+    return stat;
+  }
+
   void SceneGraph::Statistics::print()
   {
     std::cout << "  # transform nodes : " << numTransformNodes << std::endl;
@@ -139,21 +157,50 @@ namespace embree
     std::cout << "    # patches       : " << numPatches << std::endl;
     std::cout << "  # curve sets      : " << numCurveSets << std::endl;
     std::cout << "    # curves        : " << numCurves << std::endl;
+    std::cout << "  # grid meshes     : " << numGridMeshNodes << std::endl;
+    std::cout << "    # grids         : " << numGrids << std::endl;
     std::cout << "  # lights          : " << numLights << std::endl;
     std::cout << "  # cameras         : " << numCameras << std::endl;
     std::cout << "  # materials       : " << numMaterials << std::endl;
   }
 
-  SceneGraph::Statistics SceneGraph::calculateStatistics(Ref<Node> node)
-  {
-    SceneGraph::Statistics stat;
-    node->calculateStatistics(stat);
-    node->resetInDegree();
-    return stat;
-  }
-
   void SceneGraph::Node::calculateInDegree() {
     indegree++;
+  }
+
+  void SceneGraph::TriangleMeshNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1)
+      material->calculateInDegree();
+  }
+
+  void SceneGraph::QuadMeshNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) 
+      material->calculateInDegree();
+  }
+
+  void SceneGraph::SubdivMeshNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) 
+      material->calculateInDegree();
+  }
+
+  void SceneGraph::HairSetNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) 
+      material->calculateInDegree();
+  }
+
+  void SceneGraph::GridMeshNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) 
+      material->calculateInDegree();
   }
 
   void SceneGraph::TransformNode::calculateInDegree()
@@ -226,6 +273,46 @@ namespace embree
   void SceneGraph::Node::resetInDegree()
   {
     closed = false;
+    indegree--;
+  }
+
+  void SceneGraph::TriangleMeshNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1)
+      material->resetInDegree();
+    indegree--;
+  }
+
+  void SceneGraph::QuadMeshNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1)
+      material->resetInDegree();
+    indegree--;
+  }
+
+  void SceneGraph::SubdivMeshNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1)
+      material->resetInDegree();
+    indegree--;
+  }
+
+  void SceneGraph::HairSetNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1)
+      material->resetInDegree();
+    indegree--;
+  }
+
+  void SceneGraph::GridMeshNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1)
+      material->resetInDegree();
     indegree--;
   }
 
