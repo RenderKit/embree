@@ -21,15 +21,18 @@ namespace embree
   Application* Application::instance = nullptr;
   
   Application::Application(int features)
-    : rtcore("start_threads=1,set_affinity=1"), verbosity(0)
+    : rtcore("start_threads=1,set_affinity=1"), verbosity(0),
+      log_delta(false),
+      start_time(getSeconds()),
+      last_time(start_time),
+      last_virtual_memory(0),
+      last_resident_memory(0)
   {
     if (instance)
       throw std::runtime_error("internal error: applicaton already created");
 
     instance = this;
 
-    start_time = last_time = getSeconds();
-   
     registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
         printCommandLineHelp();
         exit(1);
@@ -63,6 +66,10 @@ namespace embree
           verbosity = cin->getInt();
           rtcore += ",verbose=" + toString(verbosity);
         }, "--verbose <int>: sets verbosity level");
+
+      registerOption("delta", [this] (Ref<ParseStream> cin, const FileName& path) {
+          log_delta = true;
+        }, "--delta: print delta numbers in log");
       
       registerOption("isa", [this] (Ref<ParseStream> cin, const FileName& path) {
           rtcore += ",isa=" + cin->getString();
@@ -141,14 +148,23 @@ namespace embree
     if (verbosity < verbose)
       return;
     
-    double t = getSeconds();
+    double time = getSeconds();
+    ssize_t virtual_memory = getVirtualMemoryBytes();
+    ssize_t resident_memory = getResidentMemoryBytes();
+
+    double log_time = log_delta ? time-last_time : time-start_time;
+    double log_virtual_memory = log_delta ? virtual_memory-last_virtual_memory : virtual_memory;
+    double log_resident_memory = log_delta ? resident_memory-last_resident_memory : resident_memory;
+      
     std::cout << "[ "
-              << std::setw(8) << std::setprecision(3) << std::fixed << t-start_time << "s, "
-              << std::setw(8) << std::setprecision(3) << std::fixed << t-last_time << "s, "
-              << std::setw(8) << std::setprecision(2) << std::fixed << getVirtualMemoryBytes()/1E6 << " MB virtual, "
-              << std::setw(8) << std::setprecision(2) << std::fixed << getResidentMemoryBytes()/1E6 << " MB resident ] "
-              << str<< std::fixed 
+              << std::setw(8) << std::setprecision(3) << std::fixed << log_time << "s, "
+              << std::setw(8) << std::setprecision(2) << std::fixed << log_virtual_memory/1E6 << " MB virtual, "
+              << std::setw(8) << std::setprecision(2) << std::fixed << log_resident_memory/1E6 << " MB resident ] "
+              << str << std::fixed 
               << std::endl << std::flush;
-    last_time = t;
+    
+    last_time = time;
+    last_virtual_memory = virtual_memory;
+    last_resident_memory = resident_memory;
   }
 }
