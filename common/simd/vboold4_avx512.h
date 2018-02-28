@@ -39,8 +39,6 @@ namespace embree
     __forceinline vboold(const __mmask8 &t) { v = t; }
     __forceinline operator __mmask8() const { return v; }
 
-    __forceinline vboold(__m256i input) : v(_mm256_movepi64_mask(input)) {}
-  
     __forceinline vboold(bool b) { v = b ? 0xf : 0x0; }
     __forceinline vboold(int t)  { v = (__mmask8)t; }
     __forceinline vboold(unsigned int t) { v = (__mmask8)t; }
