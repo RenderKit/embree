@@ -48,7 +48,7 @@ Supported Platforms
 -------------------
 
 Embree supports Windows (32-bit and 64-bit), Linux (64-bit) and Mac
-OS X (64-bit). The code compiles with the Intel Compiler, GCC, Clang
+OS X (64-bit). The code compiles with the Intel Compiler, GCC, Clang
 and the Microsoft Compiler.
 
 Using the Intel Compiler improves performance by approximately
@@ -197,10 +197,10 @@ version provided through the tar.gz file.
 We recommend adding a relative RPATH to your application that points
 to the location Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
 
-Mac OS X PKG Installer
+Mac OS X PKG Installer
 -----------------------
 
-To install the Embree library on your Mac OS X system use the
+To install the Embree library on your Mac OS X system use the
 provided package installer inside
 [embree-3.0.0-beta.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
@@ -220,10 +220,10 @@ to the TBB library.
 To uninstall Embree again execute the uninstaller script
 `/Applications/Embree3/uninstall.command`.
 
-Mac OS X tar.gz file
+Mac OS X tar.gz file
 ---------------------
 
-The Mac OS X version of Embree is also delivered as a tar.gz file
+The Mac OS X version of Embree is also delivered as a tar.gz file
 [embree-3.0.0-beta.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
@@ -245,12 +245,12 @@ Compiling Embree
 We recommend to use CMake to build Embree. Do not enable fast-math
 optimization, these might break Embree.
 
-Linux and Mac OS X
+Linux and Mac OS X
 -------------------
 
 To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 17.0 (Update 1), Intel®
-Compiler 16.0 (Update 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
+Embree is tested with Intel® Compiler 17.0 (Update 1), Intel®
+Compiler 16.0 (Update 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
 (supports AVX512) and GCC
 5.4.0. If the GCC that comes with your Fedora/Red Hat/CentOS
 distribution is too old then you can run the provided script
@@ -276,7 +276,7 @@ environment variable or you need to correctly set the
 You additionally have to install CMake 2.8.11 or higher and the developer
 version of GLUT.
 
-Under Mac OS X, all these dependencies can be installed
+Under Mac OS X, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
     sudo port install cmake tbb freeglut
@@ -353,9 +353,9 @@ Windows
 -------
 
 Embree is tested under Windows using the Visual Studio 2017, Visual
-Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
-(Update 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update 1)
-(Win32 and x64), Intel® Compiler 16.0 (Update 1) (Win32 and x64), and
+Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
+(Update 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update 1)
+(Win32 and x64), Intel® Compiler 16.0 (Update 1) (Win32 and x64), and
 Clang 3.9 (Win32 and x64). Using the Visual Studio 2015 compiler,
 Visual Studio 2013 compiler, Intel® Compiler, and Clang you can
 compile Embree for AVX2. To compile Embree for AVX-512 you have to use
@@ -433,7 +433,7 @@ the Visual Studio solution files.
 
 Use the generated Visual Studio solution file `embree2.sln` to compile
 the project. To build Embree with support for the AVX2 instruction set
-you need at least Visual Studio 2013 (Update 4).
+you need at least Visual Studio 2013 (Update 4).
 
 We recommend enabling syntax highlighting for the `.ispc` source and
 `.isph` header files. To do so open Visual Studio, go to Tools ⇒
@@ -547,10 +547,10 @@ parameters that can be configured in CMake:
   EMBREE_ISA_AVX512SKX           Enables AVX-512 for Skylake when  OFF
                                  EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_GEOMETRY_TRIANGLES      Enables support for triangle      ON
+  EMBREE_GEOMETRY_TRIANGLE      Enables support for triangle      ON
                                  geometries.
 
-  EMBREE_GEOMETRY_QUADS          Enables support for quad          ON
+  EMBREE_GEOMETRY_QUAD          Enables support for quad          ON
                                  geometries.
 
   EMBREE_GEOMETRY_CURVE_LINEAR   Enables support for line          ON
@@ -1961,7 +1961,7 @@ Find Embree
 -----------
 
 This tutorial demonstrates how to use the `FIND_PACKAGE` CMake feature
-to use an installed Embree. Under Linux and Mac OS X the tutorial finds
+to use an installed Embree. Under Linux and Mac OS X the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable has to be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.

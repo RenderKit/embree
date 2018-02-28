@@ -105,15 +105,15 @@ for Embree 2.8.3 the integer 208003 is returned.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED\f[]: Queries
 whether triangles are supported, which is the case if Embree is compiled
-with \f[C]EMBREE_GEOMETRY_TRIANGLES\f[] enabled.
+with \f[C]EMBREE_GEOMETRY_TRIANGLE\f[] enabled.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED\f[]: Queries whether
 quads are supported, which is the case if Embree is compiled with
-\f[C]EMBREE_GEOMETRY_QUADS\f[] enabled.
+\f[C]EMBREE_GEOMETRY_QUAD\f[] enabled.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED\f[]: Queries whether
 curves are supported, which is the case if Embree is compiled with
-\f[C]EMBREE_GEOMETRY_CURVES\f[] enabled.
+\f[C]EMBREE_GEOMETRY_CURVE\f[] enabled.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED\f[]: Queries
 whether subdivision meshes are supported, which is the case if Embree is
