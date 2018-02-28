@@ -27,8 +27,6 @@ namespace embree
     template<int N, typename Mesh>
     class BVHNBuilderTwoLevel : public Builder
     {
-      ALIGNED_CLASS;
-
       typedef BVHN<N> BVH;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;

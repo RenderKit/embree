@@ -212,7 +212,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryType type, 
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetGeometryTessellationRate (geom,16.0f);
 
-  Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
+  Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa),16);
   for (int i=0; i<16; i++) {
     float f = (float)(i)/16.0f;
     bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
@@ -247,7 +247,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
 
-  Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
+  Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa),16);
   for (int i=0; i<16; i++) {
     float f = (float)(i)/16.0f;
     bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
@@ -358,7 +358,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
 
 struct Sphere
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   Vec3fa p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   unsigned int geomID;
@@ -479,7 +479,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigned int num_time_steps)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
+  Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere),16);
   sphere->p = p;
   sphere->r = r;
   sphere->geomID = rtcAttachGeometry(scene,geom);
@@ -694,7 +694,7 @@ extern "C" void device_render (int* pixels,
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     alignedFree(g_accu);
-    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
+    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa),16);
     g_accu_width = width;
     g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)

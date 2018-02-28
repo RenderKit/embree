@@ -36,7 +36,7 @@ enum LazyState
 /* representation for our lazy geometry */
 struct LazyGeometry
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   RTCGeometry geometry;
   LazyState state;
   RTCScene object;
@@ -210,7 +210,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
 {
-  LazyGeometry* instance = (LazyGeometry*) alignedMalloc(sizeof(LazyGeometry));
+  LazyGeometry* instance = (LazyGeometry*) alignedMalloc(sizeof(LazyGeometry),16);
   instance->state = LAZY_INVALID;
   instance->object = nullptr;
   instance->userID = userID;

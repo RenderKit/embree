@@ -523,7 +523,7 @@ namespace embree
   void TutorialApplication::initRayStats()
   {
     if (!g_stats)
-      g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
+      g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), 64);
 
     for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
       g_stats[i].numRays = 0;

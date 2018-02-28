@@ -89,7 +89,7 @@ extern "C" void QuadLight_set(void* super,
 //! Create an ispc-side QuadLight object
 extern "C" void* QuadLight_create()
 {
-  QuadLight* self = (QuadLight*) alignedMalloc(sizeof(QuadLight));
+  QuadLight* self = (QuadLight*) alignedMalloc(sizeof(QuadLight),16);
 
   Light_Constructor(&self->super);
   self->super.sample = QuadLight_sample;

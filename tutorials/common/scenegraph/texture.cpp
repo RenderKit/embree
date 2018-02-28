@@ -40,7 +40,7 @@ namespace embree
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
 
-    data = alignedMalloc(4*width*height,64);
+    data = alignedMalloc(4*width*height,16);
     img->convertToRGBA8((unsigned char*)data);
   }
 
@@ -50,7 +50,7 @@ namespace embree
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
 
-    data = alignedMalloc(bytesPerTexel*width*height,64);
+    data = alignedMalloc(bytesPerTexel*width*height,16);
     if (in) {
       for (size_t i=0; i<bytesPerTexel*width*height; i++)
 	((char*)data)[i] = in[i];

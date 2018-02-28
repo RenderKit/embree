@@ -28,7 +28,7 @@ namespace embree
 
   struct __aligned(16) Vec2fa
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(16);
 
     typedef float Scalar;
     enum { N = 2 };

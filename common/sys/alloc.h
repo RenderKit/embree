@@ -22,22 +22,11 @@
 
 namespace embree
 {
-#define ALIGNED_STRUCT                                           \
-  void* operator new(size_t size) { return alignedMalloc(size); }       \
-  void operator delete(void* ptr) { alignedFree(ptr); }      \
-  void* operator new[](size_t size) { return alignedMalloc(size); }  \
-  void operator delete[](void* ptr) { alignedFree(ptr); }
-
 #define ALIGNED_STRUCT_(align)                                           \
   void* operator new(size_t size) { return alignedMalloc(size,align); } \
   void operator delete(void* ptr) { alignedFree(ptr); }                 \
   void* operator new[](size_t size) { return alignedMalloc(size,align); } \
   void operator delete[](void* ptr) { alignedFree(ptr); }
-
-#define ALIGNED_CLASS                                                \
-  public:                                                            \
-    ALIGNED_STRUCT                                                  \
-  private:
 
 #define ALIGNED_CLASS_(align)                                           \
  public:                                                               \
@@ -45,11 +34,11 @@ namespace embree
  private:
   
   /*! aligned allocation */
-  void* alignedMalloc(size_t size, size_t align = 64);
+  void* alignedMalloc(size_t size, size_t align);
   void alignedFree(void* ptr);
   
   /*! allocator that performs aligned allocations */
-  template<typename T, size_t alignment = 64>
+  template<typename T, size_t alignment>
     struct aligned_allocator
     {
       typedef T value_type;

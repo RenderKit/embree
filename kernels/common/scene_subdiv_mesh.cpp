@@ -30,7 +30,6 @@ namespace embree
   SubdivMesh::SubdivMesh (Device* device)
     : Geometry(device,GTY_SUBDIV_MESH,0,1), 
       displFunc(nullptr),
-      displBounds(empty),
       tessellationRate(2.0f),
       numHalfEdges(0),
       faceStartEdge(device,0),
@@ -368,8 +367,7 @@ namespace embree
 
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunctionN func) 
   {
-    this->displFunc   = func;
-    this->displBounds = empty;
+    this->displFunc = func;
   }
 
   void SubdivMesh::setTessellationRate(float N)

@@ -134,7 +134,7 @@ extern "C" void PointLight_set(void* super,
 //! Create an ispc-side PointLight object
 extern "C" void* PointLight_create()
 {
-  PointLight* self = (PointLight*) alignedMalloc(sizeof(PointLight));
+  PointLight* self = (PointLight*) alignedMalloc(sizeof(PointLight),16);
   Light_Constructor(&self->super);
   self->super.sample = PointLight_sample;
   self->super.eval = PointLight_eval;

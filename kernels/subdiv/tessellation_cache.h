@@ -56,7 +56,7 @@ namespace embree
 
  struct __aligned(64) ThreadWorkState 
  {
-   ALIGNED_STRUCT;
+   ALIGNED_STRUCT_(64);
 
    std::atomic<size_t> counter;
    ThreadWorkState* next;

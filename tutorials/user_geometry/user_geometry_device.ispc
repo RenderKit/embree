@@ -37,7 +37,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
 struct Instance
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   RTCGeometry geometry;
   RTCScene object;
   uniform int userID;
@@ -276,7 +276,7 @@ void updateInstance (RTCScene scene, uniform Instance* uniform instance)
 
 struct Sphere
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   Vec3f p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   RTCGeometry geometry;

@@ -415,7 +415,7 @@ namespace embree
     
     void tbbRadixSort(const size_t numTasks)
     {
-      radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
+      radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount),64);
       
       if (sizeof(Key) == sizeof(uint32_t)) {
         tbbRadixIteration(0*BITS,0,src,tmp,numTasks);

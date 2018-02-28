@@ -131,7 +131,7 @@ extern "C" void SpotLight_set(void* super,
 //! Create an ispc-side SpotLight object
 extern "C" void* SpotLight_create()
 {
-  SpotLight* self = (SpotLight*) alignedMalloc(sizeof(SpotLight));
+  SpotLight* self = (SpotLight*) alignedMalloc(sizeof(SpotLight),16);
 
   Light_Constructor(&self->super);
   self->super.sample = SpotLight_sample;

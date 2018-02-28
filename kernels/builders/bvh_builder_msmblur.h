@@ -263,7 +263,7 @@ namespace embree
 
         class BuilderT
         {
-          ALIGNED_CLASS;
+          ALIGNED_CLASS_(16);
           static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
           static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximum tree depth
 

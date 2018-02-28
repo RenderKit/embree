@@ -47,7 +47,6 @@ namespace embree
   /*! Base class for set of acceleration structures. */
   class AccelSet : public Geometry
   {
-    ALIGNED_CLASS;
   public:
 
     /*! type of this geometry */

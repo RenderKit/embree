@@ -43,7 +43,7 @@ namespace embree
     template<int N>
     struct BVHNSubdivPatch1BuilderSAH : public Builder
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(64);
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -226,7 +226,7 @@ namespace embree
     template<int N>
     struct BVHNSubdivPatch1MBlurBuilderSAH : public Builder
     {
-      ALIGNED_STRUCT;
+      ALIGNED_STRUCT_(64);
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;

@@ -34,7 +34,7 @@ enum LazyState
 /* representation for our lazy geometry */
 struct LazyGeometry
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   RTCGeometry geometry;
   uniform LazyState state;
   RTCScene object;

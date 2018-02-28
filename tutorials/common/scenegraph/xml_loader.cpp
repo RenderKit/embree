@@ -22,7 +22,7 @@ namespace embree
 {
   struct Variant
   {
-    ALIGNED_CLASS
+    ALIGNED_CLASS_(16)
   public:
 
     /*! Determines which kind of value is stored in the variant. */

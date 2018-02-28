@@ -127,7 +127,7 @@ namespace embree
 
   struct Sphere
   {
-    ALIGNED_CLASS;
+    ALIGNED_CLASS_(16);
   public:
     Sphere () : pos(zero), r(zero) {}
     Sphere (const Vec3fa& pos, float r) : pos(pos), r(r) {}
@@ -2632,7 +2632,7 @@ namespace embree
 
   struct WatertightTest : public VerifyApplication::IntersectTest
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(16);
     SceneFlags sflags;
     std::string model;
     Vec3fa pos;
@@ -2710,7 +2710,7 @@ namespace embree
 
   struct SmallTriangleHitTest : public VerifyApplication::IntersectTest
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(16);
     SceneFlags sflags;
     Vec3fa pos;
     float radius;
@@ -2779,7 +2779,7 @@ namespace embree
 
   struct RayAlignmentTest : public VerifyApplication::IntersectTest
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(16);
     SceneFlags sflags;
     std::string model;
     static const size_t N = 10;

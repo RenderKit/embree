@@ -356,7 +356,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
 
 struct Sphere
 {
-  ALIGNED_STRUCT
+  ALIGNED_STRUCT_(16)
   Vec3f p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   unsigned int geomID;
