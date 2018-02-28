@@ -31,7 +31,8 @@ namespace embree
   /*! Instanced acceleration structure */
   struct Instance : public AccelSet
   {
-    ALIGNED_STRUCT;
+    ALIGNED_STRUCT_(16);
+    
   public:
     Instance (Device* device, Scene* object = nullptr, unsigned int numTimeSteps = 1);
     ~Instance();

@@ -35,7 +35,7 @@ namespace embree
   {
     if (object) object->refInc();
     world2local0 = one;
-    local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa));
+    local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
     intersectors.ptr = this;
@@ -54,7 +54,7 @@ namespace embree
     if (numTimeSteps_in == numTimeSteps)
       return;
     
-    AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa));
+    AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa),16);
      
     for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++)
       local2world2[i] = local2world[i];
