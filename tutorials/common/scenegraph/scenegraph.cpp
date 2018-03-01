@@ -970,7 +970,7 @@ namespace embree
       const unsigned int startVtx = pos.size();      
       const unsigned int lineOffset = resX;
       for (size_t y=0;y<resY;y++)
-        for (size_t x=0;x<resY;x++)
+        for (size_t x=0;x<resX;x++)
         {
           const float u = (float)x / (resX-1);
           const float v = (float)y / (resY-1);
@@ -981,6 +981,7 @@ namespace embree
           const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v10 * u * (1.0f-v) + v01 * (1.0f-u) * v + v11 * u * v;
           pos.push_back( vtx );
         }
+      assert(startVtx + resX * resY == pos.size());
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
     gmesh->positions.push_back(pos);
