@@ -456,7 +456,7 @@ namespace embree
       vuint4   _counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL
 
    /*! mapping into bins */
    template<>
