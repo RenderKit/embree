@@ -97,8 +97,6 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory = make_unique(new InstanceFactory(enabled_cpu_features));
-
     bvh4_factory = make_unique(new BVH4Factory(enabled_builder_cpu_features, enabled_cpu_features));
 
 #if defined(EMBREE_TARGET_SIMD8)

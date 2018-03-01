@@ -29,6 +29,7 @@
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/object.h"
+#include "../geometry/instance.h"
 #include "../geometry/subgrid.h"
 
 #include "../common/state.h"
@@ -910,12 +911,12 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-    Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Instance,Object>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
-    Builder* BVH4InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,Instance,Object>((BVH4*)bvh,scene,4,1.0f,1,1); }
+    Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
+    Builder* BVH4InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1); }
 
 #if defined(__AVX__)
-    Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Instance,Object>((BVH8*)bvh,scene,8,1.0f,1,1,mode); }
-    Builder* BVH8InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,Instance,Object>((BVH8*)bvh,scene,8,1.0f,1,1); }
+    Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,mode); }
+    Builder* BVH8InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1); }
 #endif
 #endif
 

@@ -76,8 +76,10 @@ namespace embree
   {
     /* calculate maximum number of time segments */
     unsigned max_time_steps = 0;
-    for (size_t i=0; i<size(); i++)
+    for (size_t i=0; i<size(); i++) {
+      if (!get(i)) continue;
       max_time_steps = max(max_time_steps,get(i)->numTimeSteps);
+    }
 
     /* initialize vectors*/
     std::vector<size_t> statistics[Geometry::GTY_END];
@@ -87,6 +89,7 @@ namespace embree
     /* gather statistics */
     for (size_t i=0; i<size(); i++) 
     {
+      if (!get(i)) continue;
       int ty = get(i)->getType(); 
       assert(ty<Geometry::GTY_END);
       int timesegments = get(i)->numTimeSegments(); 

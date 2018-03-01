@@ -24,7 +24,6 @@ namespace embree
 {
   class BVH4Factory;
   class BVH8Factory;
-  class InstanceFactory;
 
   class Device : public State, public MemoryMonitorInterface
   {
@@ -86,7 +85,6 @@ namespace embree
   public:
     bool singledevice;      //!< true if this is the device created implicitely through rtcInit
 
-    std::unique_ptr<InstanceFactory> instance_factory;
     std::unique_ptr<BVH4Factory> bvh4_factory;
 #if defined(EMBREE_TARGET_SIMD8)
     std::unique_ptr<BVH8Factory> bvh8_factory;

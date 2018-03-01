@@ -33,6 +33,7 @@
 #include "../geometry/quadi.h"
 #include "../geometry/subdivpatch1.h"
 #include "../geometry/object.h"
+#include "../geometry/instance.h"
 #include "../geometry/subgrid.h"
 #include "../common/accelinstance.h"
 
@@ -1167,7 +1168,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8Instance(Scene* scene, BuildVariant bvariant)
   {
-    BVH8* accel = new BVH8(Object::type,scene);
+    BVH8* accel = new BVH8(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH8InstanceIntersectors(accel);
     Builder* builder = BVH8InstanceSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -1175,7 +1176,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8InstanceMB(Scene* scene)
   {
-    BVH8* accel = new BVH8(Object::type,scene);
+    BVH8* accel = new BVH8(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH8InstanceMBIntersectors(accel);
     Builder* builder = BVH8InstanceMBSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
