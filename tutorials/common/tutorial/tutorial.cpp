@@ -377,8 +377,8 @@ namespace embree
       }, "--convert-triangles-to-grids: converts all triangles to grids when loading");
 
     registerOption("grid-res", [this] (Ref<ParseStream> cin, const FileName& path) {
-        grid_resX = cin->getInt();
-        grid_resY = cin->getInt();
+        grid_resX = min(max(cin->getInt(),2),0x7fff);
+        grid_resY = min(max(cin->getInt(),2),0x7fff);        
       }, "--grid-res: sets tessellation resolution for the grid primitive");
 
     registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
