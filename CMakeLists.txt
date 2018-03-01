@@ -115,6 +115,7 @@ OPTION(EMBREE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
 OPTION(EMBREE_GEOMETRY_CURVES "Enables support for curve geometries." ON)
 OPTION(EMBREE_GEOMETRY_SUBDIVISION "Enables support for subdiv geometries." ON)
 OPTION(EMBREE_GEOMETRY_USER "Enables support for user geometries." ON)
+OPTION(EMBREE_GEOMETRY_INSTANCE "Enables support for instances." ON)
 OPTION(EMBREE_GEOMETRY_GRID "Enables support for grid geometries." ON)
 OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 

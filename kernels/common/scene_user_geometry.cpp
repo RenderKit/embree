@@ -22,7 +22,17 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
-    : AccelSet(device,items,numTimeSteps) {}
+    : AccelSet(device,Geometry::GTY_USER_GEOMETRY,items,numTimeSteps) {}
+
+  void UserGeometry::enabling () {
+    if (numTimeSteps == 1) scene->world.numUserGeometries += numPrimitives;
+    else                   scene->worldMB.numUserGeometries += numPrimitives;
+  }
+  
+  void UserGeometry::disabling() { 
+    if (numTimeSteps == 1) scene->world.numUserGeometries -= numPrimitives;
+    else                   scene->worldMB.numUserGeometries -= numPrimitives;
+  }
   
   void UserGeometry::setUserData (void* ptr) {
     intersectors.ptr = ptr;

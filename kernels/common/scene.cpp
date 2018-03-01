@@ -535,6 +535,38 @@ namespace embree
 #endif
   }
 
+  void Scene::createInstanceAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    //if (device->object_accel == "default") 
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->hasISA(AVX) && !isCompactAccel())
+        accels.add(device->bvh8_factory->BVH8Instance(this,BVHFactory::BuildVariant::STATIC));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4Instance(this,BVHFactory::BuildVariant::STATIC));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+#endif
+  }
+
+  void Scene::createInstanceMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    //if (device->instance_accel_mb == "default")
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->hasISA(AVX) && !isCompactAccel())
+        accels.add(device->bvh8_factory->BVH8InstanceMB(this));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4InstanceMB(this));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
+#endif
+  }
+
   void Scene::createGridAccel()
   {
 #if defined(EMBREE_GEOMETRY_USER)
@@ -644,10 +676,10 @@ namespace embree
       createLineMBAccel();
       createGridAccel();
       createGridMBAccel();
-      
-      // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
       createUserGeometryAccel();
       createUserGeometryMBAccel();
+      createInstanceAccel();
+      createInstanceMBAccel();
       flags_modified = false;
     }
     

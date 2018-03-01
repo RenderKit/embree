@@ -43,5 +43,7 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iIntersectorStreamPluecker,        BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Quad4iIntersectorStreamPluecker>));
 
     IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH8VirtualIntersectorStream,BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ObjectIntersectorStream>));
+
+    IF_ENABLED_INSTANCE(DEFINE_INTERSECTORN(BVH8InstanceIntersectorStream,BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ObjectIntersectorStream>));
   }
 }

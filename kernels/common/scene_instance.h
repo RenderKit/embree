@@ -32,6 +32,7 @@ namespace embree
   struct Instance : public AccelSet
   {
     ALIGNED_STRUCT_(16);
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE;
     
   public:
     Instance (Device* device, Scene* object = nullptr, unsigned int numTimeSteps = 1);
@@ -42,6 +43,8 @@ namespace embree
     Instance& operator= (const Instance& other) DELETED; // do not implement
     
   public:
+    virtual void enabling ();
+    virtual void disabling();
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
     virtual void setInstancedScene(const Ref<Scene>& scene);
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);

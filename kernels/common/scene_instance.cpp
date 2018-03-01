@@ -32,7 +32,7 @@ namespace embree
   }
 
   Instance::Instance (Device* device, Scene* object, unsigned int numTimeSteps) 
-    : AccelSet(device,1,numTimeSteps), object(object), local2world(nullptr)
+    : AccelSet(device,Geometry::GTY_INSTANCE,1,numTimeSteps), object(object), local2world(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
@@ -50,6 +50,16 @@ namespace embree
     if (object) object->refDec();
   }
 
+  void Instance::enabling () {
+    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
+    else                   scene->worldMB.numInstances += numPrimitives;
+  }
+  
+  void Instance::disabling() { 
+    if (numTimeSteps == 1) scene->world.numInstances -= numPrimitives;
+    else                   scene->worldMB.numInstances -= numPrimitives;
+  }
+  
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
     if (numTimeSteps_in == numTimeSteps)

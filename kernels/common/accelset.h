@@ -48,10 +48,6 @@ namespace embree
   class AccelSet : public Geometry
   {
   public:
-
-    /*! type of this geometry */
-    static const Geometry::GTypeMask geom_type = Geometry::MTY_USER_GEOMETRY;
-
     typedef RTCIntersectFunctionN IntersectFuncN;  
     typedef RTCOccludedFunctionN OccludedFuncN;
     typedef void (*ErrorFunc) ();
@@ -73,7 +69,7 @@ namespace embree
     public:
       
       /*! construction */
-      AccelSet (Device* device, size_t items, size_t numTimeSteps);
+      AccelSet (Device* device, Geometry::GType gtype, size_t items, size_t numTimeSteps);
       
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
@@ -153,9 +149,6 @@ namespace embree
       bool topologyChanged() const {
         return numPrimitivesChanged;
       }
-
-      void enabling ();
-      void disabling();
 
   public:
 

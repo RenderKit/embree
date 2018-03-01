@@ -23,8 +23,13 @@ namespace embree
   /*! User geometry with user defined intersection functions */
   struct UserGeometry : public AccelSet
   {
+    /*! type of this geometry */
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_USER_GEOMETRY;
+
   public:
-    UserGeometry (Device* device, unsigned int items = 0, unsigned int numTimeSteps = 1); 
+    UserGeometry (Device* device, unsigned int items = 0, unsigned int numTimeSteps = 1);
+    virtual void enabling ();
+    virtual void disabling();
     virtual void setUserData (void* ptr);
     virtual void setMask (unsigned mask);
     virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr);
