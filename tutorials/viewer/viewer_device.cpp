@@ -18,7 +18,6 @@
 #include "../common/core/differential_geometry.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
-#include "../common/tutorial/application.h"
 
 namespace embree {
 
@@ -148,7 +147,6 @@ RTCScene convertScene(ISPCScene* scene_in)
       if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
     }
   }
-  Application::instance->log(1,"commit objects done");
 
   /* commit changes to scene */
   return scene_out;
@@ -377,10 +375,7 @@ extern "C" void device_render (int* pixels,
   if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-
     rtcCommitScene (g_scene);
-    Application::instance->log(1,"commit scene done");
-
     old_p = camera.xfm.p;
   }
 

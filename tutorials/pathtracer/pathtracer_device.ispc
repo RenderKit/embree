@@ -945,6 +945,25 @@ void assignShaders(ISPCGeometry* uniform geometry)
       }
     }
   }
+  else if (geometry->type == GRID_MESH)
+  {
+    ISPCGridMesh* uniform mesh = (ISPCGridMesh* uniform) geometry;
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterOpaque);
+
+    ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
+    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
+    //  rtcSetGeometryOccludedFilterFunction(geom,intersectionFilterReject);
+    //else
+    if (material->type == MATERIAL_OBJ)
+    {
+      ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
+      if (obj->d != 1.0f || obj->map_d) {
+        rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,occlusionFilterOBJ);
+      }
+    }
+  }
+
   else if (geometry->type == CURVES)
   {
     rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterHair);
@@ -1157,6 +1176,10 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,dg.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
+  }
+  else if (geometry->type == GRID_MESH)
+  {
+    /* do nothing for now */
   }
   else if (geometry->type == CURVES)
   {
