@@ -88,16 +88,16 @@ namespace embree
     // force code generation
     __aligned(64) char temp[64*24];
 
-    _mm512_store_pd(temp + 64*0, a0);
-    _mm512_store_pd(temp + 64*1, a1);
-    _mm512_store_pd(temp + 64*2, a2);
-    _mm512_store_pd(temp + 64*3, a3);
-    _mm512_store_pd(temp + 64*4, a4);
-    _mm512_store_pd(temp + 64*5, a5);
-    _mm512_store_pd(temp + 64*6, a6);
-    _mm512_store_pd(temp + 64*7, a7);
-    _mm512_store_pd(temp + 64*8, a8);
-    _mm512_store_pd(temp + 64*9, a9);
+    _mm512_store_pd(temp + 64*0,  a0);
+    _mm512_store_pd(temp + 64*1,  a1);
+    _mm512_store_pd(temp + 64*2,  a2);
+    _mm512_store_pd(temp + 64*3,  a3);
+    _mm512_store_pd(temp + 64*4,  a4);
+    _mm512_store_pd(temp + 64*5,  a5);
+    _mm512_store_pd(temp + 64*6,  a6);
+    _mm512_store_pd(temp + 64*7,  a7);
+    _mm512_store_pd(temp + 64*8,  a8);
+    _mm512_store_pd(temp + 64*9,  a9);
     _mm512_store_pd(temp + 64*10, a10);
     _mm512_store_pd(temp + 64*11, a11);
 
@@ -162,16 +162,16 @@ namespace embree
     // force code generation
     __aligned(64) char temp[64*12];
 
-    _mm512_store_pd(temp + 64*0, a0);
-    _mm512_store_pd(temp + 64*1, a1);
-    _mm512_store_pd(temp + 64*2, a2);
-    _mm512_store_pd(temp + 64*3, a3);
-    _mm512_store_pd(temp + 64*4, a4);
-    _mm512_store_pd(temp + 64*5, a5);
-    _mm512_store_pd(temp + 64*6, a6);
-    _mm512_store_pd(temp + 64*7, a7);
-    _mm512_store_pd(temp + 64*8, a8);
-    _mm512_store_pd(temp + 64*9, a9);
+    _mm512_store_pd(temp + 64*0,  a0);
+    _mm512_store_pd(temp + 64*1,  a1);
+    _mm512_store_pd(temp + 64*2,  a2);
+    _mm512_store_pd(temp + 64*3,  a3);
+    _mm512_store_pd(temp + 64*4,  a4);
+    _mm512_store_pd(temp + 64*5,  a5);
+    _mm512_store_pd(temp + 64*6,  a6);
+    _mm512_store_pd(temp + 64*7,  a7);
+    _mm512_store_pd(temp + 64*8,  a8);
+    _mm512_store_pd(temp + 64*9,  a9);
     _mm512_store_pd(temp + 64*10, a10);
     _mm512_store_pd(temp + 64*11, a11);
 

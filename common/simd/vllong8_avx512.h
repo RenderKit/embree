@@ -20,7 +20,7 @@ namespace embree
 { 
   /* 8-wide AVX-512 64-bit long long type */
   template<>
-    struct vllong<8>
+  struct vllong<8>
   {
     typedef vboold8 Bool;
 

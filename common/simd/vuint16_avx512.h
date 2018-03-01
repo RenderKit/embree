@@ -20,7 +20,7 @@ namespace embree
 { 
   /* 16-wide AVX-512 unsigned integer type */
   template<>
-    struct vuint<16>
+  struct vuint<16>
   {
     typedef vboolf16 Bool;
     typedef vuint16  UInt;
