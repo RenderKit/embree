@@ -26,6 +26,7 @@ namespace embree
 
   InstanceFactory::InstanceFactory(int features)
   {
+    //PRINT(sizeof(Instance));
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersectorN);
   }
