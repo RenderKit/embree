@@ -18,6 +18,9 @@
 #include "intrinsics.h"
 #include "string.h"
 #include "ref.h"
+#if defined(EMBREE_TARGET_AVX512SKX)
+#include "sysinfo_skx.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -179,6 +182,10 @@ namespace embree
   /* cpuid[eax=7,ecx=0].ecx */
   static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
 
+  bool hasISA(int features, int isa) {
+    return (features & isa) == isa;
+  }
+
   __noinline int64_t get_xcr0() 
   {
 #if defined (__WIN32__)
@@ -261,6 +268,13 @@ namespace embree
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
+#if defined(EMBREE_TARGET_AVX512SKX)
+    if (hasISA(cpu_features, AVX512SKX)) {
+      if (getNumberOfAVX512FMAUnits() >= 2)
+        cpu_features |= CPU_FEATURE_AVX512_2FMA;
+    }
+#endif
+
     return cpu_features;
   }
 
@@ -291,6 +305,7 @@ namespace embree
     if (features & CPU_FEATURE_AVX512VL) str += "AVX512VL ";
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
+    if (features & CPU_FEATURE_AVX512_2FMA) str += "AVX512_2FMA ";
     return str;
   }
   
@@ -307,10 +322,6 @@ namespace embree
     if (isa == AVX512KNL) return "AVX512KNL";
     if (isa == AVX512SKX) return "AVX512SKX";
     return "UNKNOWN";
-  }
-
-  bool hasISA(int features, int isa) {
-    return (features & isa) == isa;
   }
   
   std::string supportedTargetList (int features)

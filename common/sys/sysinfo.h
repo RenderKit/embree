@@ -132,6 +132,7 @@ namespace embree
   static const int CPU_FEATURE_AVX512VL = 1 << 22;
   static const int CPU_FEATURE_AVX512IFMA = 1 << 23;
   static const int CPU_FEATURE_AVX512VBMI = 1 << 24;
+  static const int CPU_FEATURE_AVX512_2FMA = 1 << 25;
  
   /*! get CPU features */
   int getCPUFeatures();
