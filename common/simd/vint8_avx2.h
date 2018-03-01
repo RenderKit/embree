@@ -199,7 +199,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline vboolf8 asBool(const vint8& a) { return _mm256_cmp_epi32_mask(a, _mm256_set1_epi32(-1), _MM_CMPINT_EQ); }
+  __forceinline vboolf8 asBool(const vint8& a) { return _mm256_movepi32_mask(a); }
 #else
   __forceinline vboolf8 asBool(const vint8& a) { return _mm256_castsi256_ps(a); }
 #endif

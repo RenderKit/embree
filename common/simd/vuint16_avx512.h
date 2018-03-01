@@ -183,7 +183,8 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint16 asUInt(const __m512& a) { return _mm512_castps_si512(a); }
+  __forceinline vboolf16 asBool(const vuint16& a) { return _mm512_movepi32_mask(a); }
+
   __forceinline vuint16 operator +(const vuint16& a) { return a; }
   __forceinline vuint16 operator -(const vuint16& a) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
 
