@@ -100,6 +100,11 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(__AVX2__)
+  __forceinline vdouble4 asDouble(const vllong4&  a) { return _mm256_castsi256_pd(a); }
+  __forceinline vllong4  asLLong (const vdouble4& a) { return _mm256_castpd_si256(a); }
+#endif
+
   __forceinline vdouble4 operator +(const vdouble4& a) { return a; }
   __forceinline vdouble4 operator -(const vdouble4& a) { return _mm256_sub_pd(_mm256_setzero_pd(), a); }
 

@@ -157,7 +157,8 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vllong8 asLong    (const __m512& a) { return _mm512_castps_si512(a); }
+  __forceinline vboold8 asBool(const vllong8& a) { return _mm512_movepi64_mask(a); }
+
   __forceinline vllong8 operator +(const vllong8& a) { return a; }
   __forceinline vllong8 operator -(const vllong8& a) { return _mm512_sub_epi64(_mm512_setzero_epi32(), a); }
 
