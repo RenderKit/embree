@@ -49,8 +49,7 @@ namespace embree
   static std::map<Device*,size_t> g_cache_size_map;
   static std::map<Device*,size_t> g_num_threads_map;
 
-  Device::Device (const char* cfg, bool singledevice)
-    : State(singledevice)
+  Device::Device (const char* cfg)
   {
     /* check CPU */
     if (!hasISA(ISA)) 
