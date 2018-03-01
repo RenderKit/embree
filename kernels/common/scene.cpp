@@ -537,7 +537,7 @@ namespace embree
 
   void Scene::createGridAccel()
   {
-#if defined(EMBREE_GEOMETRY_USER)
+#if defined(EMBREE_GEOMETRY_GRID)
     if (device->grid_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
