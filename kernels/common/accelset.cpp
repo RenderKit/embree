@@ -20,10 +20,7 @@
 namespace embree
 {
   AccelSet::AccelSet (Device* device, Geometry::GType gtype, size_t numItems, size_t numTimeSteps) 
-    : Geometry(device,gtype,(unsigned int)numItems,(unsigned int)numTimeSteps), boundsFunc(nullptr)
-  {
-    intersectors.ptr = nullptr; 
-  }
+    : Geometry(device,gtype,(unsigned int)numItems,(unsigned int)numTimeSteps), boundsFunc(nullptr) {}
 
   AccelSet::IntersectorN::IntersectorN (ErrorFunc error) 
     : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}

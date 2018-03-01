@@ -34,11 +34,6 @@ namespace embree
     else                   scene->worldMB.numUserGeometries -= numPrimitives;
   }
   
-  void UserGeometry::setUserData (void* ptr) {
-    intersectors.ptr = ptr;
-    Geometry::setUserData(ptr);
-  }
-
   void UserGeometry::setMask (unsigned mask) 
   {
     this->mask = mask; 
@@ -50,11 +45,11 @@ namespace embree
   }
 
   void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) {
-    intersectors.intersectorN.intersect = intersect;
+    intersectorN.intersect = intersect;
   }
 
   void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) {
-    intersectors.intersectorN.occluded = occluded;
+    intersectorN.occluded = occluded;
   }
   
 #endif
