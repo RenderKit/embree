@@ -192,6 +192,7 @@ namespace embree
     bool convert_bspline_to_bezier;
     unsigned grid_resX, grid_resY;
     bool convert_tris_to_grids;
+    bool convert_tris_to_grids_to_quads;
     bool remove_mblur;
     bool remove_non_mblur;
     FileName sceneFilename;
