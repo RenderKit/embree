@@ -330,7 +330,7 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (AccelSet* mesh, BVHBuilderMorton::BuildPrim* morton)
+      __forceinline CreateMortonLeaf (UserGeometry* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
@@ -345,7 +345,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,items);
 
         const unsigned geomID = this->mesh->geomID;
-        const AccelSet* mesh = this->mesh;
+        const UserGeometry* mesh = this->mesh;
         
         BBox3fa bounds = empty;
         for (size_t i=0; i<items; i++)
@@ -363,7 +363,7 @@ namespace embree
         return NodeRecord(ref,box_o);
       }
     private:
-      AccelSet* mesh;
+      UserGeometry* mesh;
       BVHBuilderMorton::BuildPrim* morton;
     };
 
@@ -481,9 +481,9 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,AccelSet,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
+    Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,UserGeometry,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,AccelSet,Object>((BVH8*)bvh,mesh,1,BVH4::maxLeafBlocks); }    
+    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,UserGeometry,Object>((BVH8*)bvh,mesh,1,BVH4::maxLeafBlocks); }    
 #endif
 #endif
 

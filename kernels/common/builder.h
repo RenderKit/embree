@@ -61,13 +61,13 @@ namespace embree
   struct LineSegments;
   struct TriangleMesh;
   struct QuadMesh;
-  class AccelSet;
+  struct UserGeometry;
 
   class Scene;
 
   typedef void (*createLineSegmentsAccelTy)(LineSegments* mesh, AccelData*& accel, Builder*& builder);
   typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
   typedef void (*createQuadMeshAccelTy)(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createAccelSetAccelTy)(AccelSet* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createUserGeometryAccelTy)(UserGeometry* mesh, AccelData*& accel, Builder*& builder);
 
 }

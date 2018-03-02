@@ -47,7 +47,7 @@ namespace embree
     return stored_error;
   }
 
-  State::State (bool singledevice) 
+  State::State () 
     : enabled_cpu_features(getCPUFeatures()),
       enabled_builder_cpu_features(enabled_cpu_features)
   {
@@ -96,13 +96,6 @@ namespace embree
     max_spatial_split_replications = 2.0f;
 
     tessellation_cache_size = 128*1024*1024;
-
-    /* large default cache size only for old mode single device mode */
-#if defined(__X86_64__)
-      if (singledevice) tessellation_cache_size = 1024*1024*1024;
-#else
-      if (singledevice) tessellation_cache_size = 128*1024*1024;
-#endif
 
     subdiv_accel = "default";
     subdiv_accel_mb = "default";

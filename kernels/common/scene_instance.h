@@ -16,25 +16,19 @@
 
 #pragma once
 
-#include "accelset.h"
+#include "geometry.h"
+#include "accel.h"
 
 namespace embree
 {
-  class InstanceFactory
-  {
-  public:
-    InstanceFactory(int features);
-    DEFINE_SYMBOL2(RTCBoundsFunction,InstanceBoundsFunc);
-    DEFINE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
-  };
-
   /*! Instanced acceleration structure */
-  struct Instance : public AccelSet
+  struct Instance : public Geometry
   {
     ALIGNED_STRUCT_(16);
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE;
     
   public:
-    Instance (Device* device, Scene* object = nullptr, unsigned int numTimeSteps = 1);
+    Instance (Device* device, Accel* object = nullptr, unsigned int numTimeSteps = 1);
     ~Instance();
 
   private:
@@ -42,6 +36,8 @@ namespace embree
     Instance& operator= (const Instance& other) DELETED; // do not implement
     
   public:
+    virtual void enabling ();
+    virtual void disabling();
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
     virtual void setInstancedScene(const Ref<Scene>& scene);
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
@@ -51,6 +47,40 @@ namespace embree
 
   public:
 
+     /*! calculates the bounds of instance */
+    __forceinline BBox3fa bounds(size_t i) const {
+      assert(i == 0);
+      return xfmBounds(local2world[0],object->bounds.bounds());
+    }
+
+     /*! calculates the bounds of instance */
+    __forceinline BBox3fa bounds(size_t i, size_t itime) const {
+      assert(i == 0);
+      return xfmBounds(local2world[itime],object->bounds.bounds());
+    }
+
+     /*! calculates the linear bounds at the itimeGlobal'th time segment */
+    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
+      assert(i == 0);
+      return LBBox3fa(bounds(i,itime+0),bounds(i,itime+1));
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(size_t i, const BBox1f& time_range) const {
+      assert(i == 0);
+      return LBBox3fa([&] (size_t itime) { return bounds(i, itime); }, time_range, fnumTimeSegments);
+    }
+
+    /*! check if the i'th primitive is valid between the specified time range */
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
+    {
+      assert(i == 0);
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+        if (!isvalid(bounds(i,itime))) return false;
+      
+      return true;
+    }
+      
     __forceinline AffineSpace3fa getWorld2Local() const {
       return world2local0;
     }
@@ -85,7 +115,7 @@ namespace embree
     }
     
   public:
-    Scene* object;                 //!< pointer to instanced acceleration structure
+    Accel* object;                 //!< pointer to instanced acceleration structure
     AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
   };
@@ -99,42 +129,42 @@ namespace embree
 
       PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
+        assert(r.begin() == 0);
+        assert(r.end()   == 1);
+        
         PrimInfo pinfo(empty);
-        for (size_t j=r.begin(); j<r.end(); j++)
-        {
-          BBox3fa bounds = empty;
-          if (!buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,geomID,unsigned(j));
-          pinfo.add_center2(prim);
-          prims[k++] = prim;
-        }
+        const BBox3fa b = bounds(0);
+        if (!isvalid(b)) return pinfo;
+        
+        const PrimRef prim(b,geomID,unsigned(0));
+        pinfo.add_center2(prim);
+        prims[k++] = prim;
         return pinfo;
       }
 
       PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const
       {
+        assert(r.begin() == 0);
+        assert(r.end()   == 1);
+        
         PrimInfo pinfo(empty);
-        for (size_t j=r.begin(); j<r.end(); j++)
-        {
-          BBox3fa bounds = empty;
-          if (!buildBounds(j,itime,bounds)) continue;
-          const PrimRef prim(bounds,geomID,unsigned(j));
-          pinfo.add_center2(prim);
-          prims[k++] = prim;
-        }
+        if (!valid(0,range<size_t>(itime))) return pinfo;
+        const PrimRef prim(linearBounds(0,itime).bounds(),geomID,unsigned(0));
+        pinfo.add_center2(prim);
+        prims[k++] = prim;
         return pinfo;
       }
       
       PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const
       {
+        assert(r.begin() == 0);
+        assert(r.end()   == 1);
+        
         PrimInfoMB pinfo(empty);
-        for (size_t j=r.begin(); j<r.end(); j++)
-        {
-          if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
-          const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
-          pinfo.add_primref(prim);
-          prims[k++] = prim;
-        }
+        if (!valid(0, getTimeSegmentRange(t0t1, fnumTimeSegments))) return pinfo;
+        const PrimRefMB prim(linearBounds(0,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(0));
+        pinfo.add_primref(prim);
+        prims[k++] = prim;
         return pinfo;
       }
     };

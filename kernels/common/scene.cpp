@@ -76,8 +76,10 @@ namespace embree
   {
     /* calculate maximum number of time segments */
     unsigned max_time_steps = 0;
-    for (size_t i=0; i<size(); i++)
+    for (size_t i=0; i<size(); i++) {
+      if (!get(i)) continue;
       max_time_steps = max(max_time_steps,get(i)->numTimeSteps);
+    }
 
     /* initialize vectors*/
     std::vector<size_t> statistics[Geometry::GTY_END];
@@ -87,6 +89,7 @@ namespace embree
     /* gather statistics */
     for (size_t i=0; i<size(); i++) 
     {
+      if (!get(i)) continue;
       int ty = get(i)->getType(); 
       assert(ty<Geometry::GTY_END);
       int timesegments = get(i)->numTimeSegments(); 
@@ -535,6 +538,38 @@ namespace embree
 #endif
   }
 
+  void Scene::createInstanceAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    //if (device->object_accel == "default") 
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->hasISA(AVX) && !isCompactAccel())
+        accels.add(device->bvh8_factory->BVH8Instance(this,BVHFactory::BuildVariant::STATIC));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4Instance(this,BVHFactory::BuildVariant::STATIC));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+#endif
+  }
+
+  void Scene::createInstanceMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    //if (device->instance_accel_mb == "default")
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->hasISA(AVX) && !isCompactAccel())
+        accels.add(device->bvh8_factory->BVH8InstanceMB(this));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4InstanceMB(this));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
+#endif
+  }
+
   void Scene::createGridAccel()
   {
 #if defined(EMBREE_GEOMETRY_GRID)
@@ -644,10 +679,10 @@ namespace embree
       createLineMBAccel();
       createGridAccel();
       createGridMBAccel();
-      
-      // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
       createUserGeometryAccel();
       createUserGeometryMBAccel();
+      createInstanceAccel();
+      createInstanceMBAccel();
       flags_modified = false;
     }
     
