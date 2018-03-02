@@ -777,6 +777,30 @@ namespace embree
     initializeHalfEdgeStructures();
     Geometry::commit();
   }
+
+  unsigned int SubdivMesh::getOppositeHalfEdge(unsigned int edgeID)
+  {
+    if (edgeID >= numHalfEdges)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
+
+    return edgeID + topology[0].halfEdges[edgeID].opposite_half_edge_ofs;
+  }
+
+  unsigned int SubdivMesh::getNextHalfEdge(unsigned int edgeID)
+  {
+    if (edgeID >= numHalfEdges)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
+
+    return edgeID + topology[0].halfEdges[edgeID].next_half_edge_ofs;
+  }
+
+  unsigned int SubdivMesh::getPreviousHalfEdge(unsigned int edgeID)
+  {
+     if (edgeID >= numHalfEdges)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
+
+    return edgeID + topology[0].halfEdges[edgeID].prev_half_edge_ofs;
+  }
   
 #endif
 

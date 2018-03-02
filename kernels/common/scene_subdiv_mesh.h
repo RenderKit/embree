@@ -79,6 +79,9 @@ namespace embree
     bool verify();
     void commit();
     void setDisplacementFunction (RTCDisplacementFunctionN func);
+    unsigned int getOppositeHalfEdge(unsigned int edgeID);
+    unsigned int getNextHalfEdge(unsigned int edgeID);
+    unsigned int getPreviousHalfEdge(unsigned int edgeID);
 
   public:
 
