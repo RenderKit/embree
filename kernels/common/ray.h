@@ -513,11 +513,13 @@ namespace embree
   typedef RayK<4>  Ray4;
   typedef RayK<8>  Ray8;
   typedef RayK<16> Ray16;
+  struct RayN;
 
   typedef RayHitK<1>  RayHit;
   typedef RayHitK<4>  RayHit4;
   typedef RayHitK<8>  RayHit8;
   typedef RayHitK<16> RayHit16;
+  struct RayHitN;
 
   template<int K, bool intersect>
   struct RayTypeHelper;

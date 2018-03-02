@@ -64,7 +64,7 @@ namespace embree
     };
 
     template<int K>
-      struct Bezier1iIntersectorK
+    struct Bezier1iIntersectorK
     {
       typedef Bezier1i Primitive;
 

@@ -27,7 +27,7 @@ namespace embree
   namespace isa
   {
     template<typename NativeCurve3fa, int M>
-      struct RibbonHit
+    struct RibbonHit
     {
       __forceinline RibbonHit() {}
 
@@ -78,10 +78,10 @@ namespace embree
     }
 
     template<typename NativeCurve3fa, typename Epilog>
-      __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float& ray_tfar,
-                                          const LinearSpace3fa& ray_space, const float& depth_scale,
-                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
-                                          const Epilog& epilog)
+    __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float& ray_tfar,
+                                        const LinearSpace3fa& ray_space, const float& depth_scale,
+                                        const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                        const Epilog& epilog)
     {
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(ray_space,v0-ray_org); w0.w = v0.w;
@@ -173,7 +173,7 @@ namespace embree
     }
     
     template<typename NativeCurve3fa>
-      struct Ribbon1Intersector1
+    struct Ribbon1Intersector1
     {
       float depth_scale;
       LinearSpace3fa ray_space;

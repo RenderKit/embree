@@ -20,7 +20,7 @@ namespace embree
 { 
   /* 4-wide AVX2 64-bit long long type */
   template<>
-    struct vllong<4>
+  struct vllong<4>
   {
     typedef vboold4 Bool;
 
@@ -141,7 +141,12 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vllong4 asLong    (const __m256& a) { return _mm256_castps_si256(a); }
+#if defined(__AVX512VL__)
+  __forceinline vboold4 asBool(const vllong4& a) { return _mm256_movepi64_mask(a); }
+#else
+  __forceinline vboold4 asBool(const vllong4& a) { return _mm256_castsi256_pd(a); }
+#endif
+
   __forceinline vllong4 operator +(const vllong4& a) { return a; }
   __forceinline vllong4 operator -(const vllong4& a) { return _mm256_sub_epi64(_mm256_setzero_si256(), a); }
 

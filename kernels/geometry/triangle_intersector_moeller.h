@@ -32,7 +32,7 @@ namespace embree
   namespace isa
   {
     template<int M>
-      struct MoellerTrumboreHitM
+    struct MoellerTrumboreHitM
     {
       __forceinline MoellerTrumboreHitM() {}
 
@@ -66,7 +66,7 @@ namespace embree
     };
     
     template<int M>
-      struct MoellerTrumboreIntersector1
+    struct MoellerTrumboreIntersector1
     {
       __forceinline MoellerTrumboreIntersector1() {}
 
@@ -208,7 +208,7 @@ namespace embree
     };
     
     template<int M, int K>
-      struct MoellerTrumboreIntersectorK
+    struct MoellerTrumboreIntersectorK
     {
       __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
       

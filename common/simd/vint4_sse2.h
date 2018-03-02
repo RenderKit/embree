@@ -236,7 +236,12 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint4 asInt(const __m128& a) { return _mm_castps_si128(a); }
+#if defined(__AVX512VL__)
+  __forceinline vboolf4 asBool(const vint4& a) { return _mm_movepi32_mask(a); }
+#else
+  __forceinline vboolf4 asBool(const vint4& a) { return _mm_castsi128_ps(a); }
+#endif
+
   __forceinline vint4 operator +(const vint4& a) { return a; }
   __forceinline vint4 operator -(const vint4& a) { return _mm_sub_epi32(_mm_setzero_si128(), a); }
 #if defined(__SSSE3__)
