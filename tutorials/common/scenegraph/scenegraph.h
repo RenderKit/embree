@@ -41,6 +41,7 @@ namespace embree
     Ref<Node> convert_triangles_to_quads(Ref<Node> node, float prop);
     Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
+    Ref<Node> my_merge_quads_to_grids(Ref<SceneGraph::Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
@@ -472,6 +473,12 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_bspline_to_bezier(children[i]);
+      }
+
+      void merge_quads_to_grids()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = my_merge_quads_to_grids(children[i]);
       }
 
       void remove_mblur(bool mblur)

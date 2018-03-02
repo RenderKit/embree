@@ -1003,6 +1003,171 @@ namespace embree
     return node;
   }
 
+  bool extend_grid(RTCGeometry geom, std::vector<bool>& visited, std::deque<unsigned int>& left, std::deque<unsigned int>& top, std::deque<unsigned int>& right)
+  {
+    //        top
+    // /\ ----------->
+    // |             |
+    // | left        | right 
+    // |             |
+    // |             \/
+
+    
+    /* test of all neighboring faces of top exist and are not visited already */
+    for (size_t i=0; i<top.size(); i++)
+    {
+      const unsigned int edge = top[i];
+      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      if (opposite_edge == edge) return false;
+      const unsigned int opposite_face = opposite_edge/4;
+      if (visited[opposite_face]) return false;
+    }
+
+    /* extend border edges */
+    for (size_t i=0; i<top.size(); i++)
+    {
+      const unsigned int edge = top[i];
+      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      assert(opposite_edge != edge);
+      const unsigned int opposite_face = opposite_edge/4;
+      assert(!visited[opposite_face]);
+      visited[opposite_face] = true;
+      unsigned int next_edge = opposite_edge;
+      next_edge = rtcGetGeometryNextHalfEdge(geom,edge);
+      if (i == top.size()-1) right.push_back(next_edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,edge);
+      top[i] = next_edge;
+      next_edge = rtcGetGeometryNextHalfEdge(geom,edge);
+      if (i == 0) left.push_front(next_edge);
+    }
+
+    return true;
+  }
+
+  void gather_grid(RTCGeometry geom, avector<Vec3fa>& positions, size_t width, size_t height, unsigned int* indices, avector<Vec3fa>& vertices, unsigned int edgey)
+  {
+    /* gather all rows */
+    size_t y=0;
+    for (; y<height; y++)
+    {
+      /* here edgey points from top/left vertex downwards */
+      unsigned int edgex = edgey;
+
+      /* gather all columns */
+      size_t x=0;
+      for (; x<width; x++)
+      {
+        /* here edgex points from left vertex of row downwards */
+        positions[y*(width+1)+x] = vertices[indices[edgex]];
+
+        /* prev -> prev -> opposite moves to the next column (unless we reach the right end) */
+        edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
+        if (x+1 < width) {
+          edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
+          edgex = rtcGetGeometryOppositeHalfEdge(geom,edgex);
+        }
+      }
+      /* load rightmost vertex */
+      positions[y*(width+1)+x] = vertices[indices[edgex]];
+
+      /* next -> opposite -> next moves to next row (unless we reach the bottom) */
+      edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
+      if (y+1 < height) {
+        edgey = rtcGetGeometryOppositeHalfEdge(geom,edgey);
+        edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
+      }
+    }
+
+    /* special treatment for last row, edgy points from the bottom/left vertex to the right */
+    unsigned int edgex = edgey;
+    for (size_t x=0; x<width; x++)
+    {
+      positions[y*(width+1)+x] = vertices[indices[edgex]];
+
+      /* next -> opposite -> next moves to the next column (unless we reach the right end) */
+      edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
+      if (x+1 < width) {
+        edgex = rtcGetGeometryOppositeHalfEdge(geom,edgex);
+        edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
+      }
+    }
+    /* load rightmost vertex */
+    positions[height*(width+1)+width] = vertices[indices[edgex]];
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::my_merge_quads_to_grids(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = my_merge_quads_to_grids(xfmNode->child);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = my_merge_quads_to_grids(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> qmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,1);
+      
+      std::vector<bool> visited(qmesh->numPrimitives());
+      for (size_t i=0; i<visited.size(); i++) visited[i] = false;
+      std::vector<unsigned int> faces(qmesh->numPrimitives());
+      for (size_t i=0; i<faces.size(); i++) faces[i] = 4;
+
+      RTCDevice device = rtcNewDevice(nullptr);
+      RTCGeometry geom = rtcNewGeometry(device,RTC_GEOMETRY_TYPE_SUBDIVISION);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   faces.data(), 0, sizeof(unsigned int), qmesh->numPrimitives());
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   qmesh->quads.data(), 0, sizeof(unsigned int), 4*qmesh->numPrimitives());
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, qmesh->positions[0].data(), 0, sizeof(Vec3fa), qmesh->numVertices());
+      rtcCommitGeometry(geom);
+
+      /* iterate over mesh and collect all grids */
+      for (size_t i=0; i<qmesh->numPrimitives(); i++)
+      {
+        /* skip face if already added to some grid */
+        if (visited[i]) continue;
+        
+        /* initialize grid with start quad */
+        unsigned int edge = 4*i;
+        std::deque<unsigned int> left, right, top, bottom;
+        left.push_back(edge);   edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        bottom.push_back(edge); edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        right.push_back(edge);  edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        top.push_back(edge);    edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        assert(edge == 4*i);
+        
+        /* extend grid unless no longer possible */
+        size_t width = 0;
+        size_t height = 0;
+        while (true) {
+          const bool extended_top    = extend_grid(geom,visited,left,top,right); 
+          const bool extended_right  = extend_grid(geom,visited,top,right,bottom);
+          const bool extended_bottom = extend_grid(geom,visited,right,bottom,left);
+          const bool extended_left   = extend_grid(geom,visited,bottom,left,top);
+          width  += extended_left + extended_right;
+          height += extended_top  + extended_bottom;
+          if (!extended_top && !extended_right && !extended_bottom && !extended_left) break;
+        }
+        
+        /* gather all vertices of grid */
+        avector<Vec3fa> positions;
+        positions.resize((width+1)*(height+1));
+        gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], top.front());
+
+        /* add new grid to grid mesh */
+        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width,width,height));
+        for (size_t i=0; i<positions.size(); i++)
+          gmesh->positions[0].push_back(positions[i]);
+      }
+
+      rtcReleaseGeometry(geom);
+      rtcReleaseDevice(device);
+
+      return gmesh.dynamicCast<SceneGraph::Node>();
+    }
+    return node;
+  }
+
 
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_subdivs(Ref<SceneGraph::Node> node)
   {

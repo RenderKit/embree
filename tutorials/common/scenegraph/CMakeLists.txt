@@ -25,5 +25,5 @@ ADD_LIBRARY(scenegraph STATIC
     scenegraph.cpp
     geometry_creation.cpp)
 
-TARGET_LINK_LIBRARIES(scenegraph sys math lexers image)
+TARGET_LINK_LIBRARIES(scenegraph sys math lexers image embree)
 SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)
