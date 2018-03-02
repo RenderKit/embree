@@ -58,6 +58,7 @@ namespace embree
       case GROUP: delete (ISPCGroup*) geometries[i]; break;
       case QUAD_MESH: delete (ISPCQuadMesh*) geometries[i]; break;
       case CURVES: delete (ISPCHairSet*) geometries[i]; break;
+      case GRID_MESH: delete (ISPCGridMesh*) geometries[i]; break;
       default: assert(false); break;
       }
     }        
