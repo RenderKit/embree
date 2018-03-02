@@ -1153,19 +1153,10 @@ namespace embree
         const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
         const float minF = reduce_min(lower);
         const float maxF = reduce_max(upper);
-        float diff = maxF - minF; //todo: add extracted difference here
+        float diff = (1.0f+2.0f*float(ulp))*(maxF - minF);
         float scale_diff = diff / float(MAX_QUAN);
-
-        /* accomodate floating point accuracy issues in 'diff' */
-        size_t iterations = 0;
-        while (madd(scale_diff,float(MAX_QUAN),minF) < maxF)
-        {
-          diff = nextafter(diff, FLT_MAX);
-          scale_diff = diff / float(MAX_QUAN);
-          iterations++;
-        }
-        const float inv_diff   = float(MAX_QUAN) / diff;
-
+        assert(madd(scale_diff,float(MAX_QUAN),minF) >= maxF);
+        const float inv_diff = float(MAX_QUAN) / diff;
         vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vint<N> i_floor_lower( floor_lower );
