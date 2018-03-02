@@ -76,7 +76,7 @@ namespace embree
       This->validAccels[i]->intersectors.intersect16(valid,ray,context);
   }
 
-  void AccelN::intersectN (Accel::Intersectors* This_in, RayHitK<VSIZEX>** ray, const size_t N, IntersectContext* context)
+  void AccelN::intersectN (Accel::Intersectors* This_in, RTCRayHitN** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
@@ -139,7 +139,7 @@ namespace embree
     }
   }
 
-  void AccelN::occludedN (Accel::Intersectors* This_in, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context)
+  void AccelN::occludedN (Accel::Intersectors* This_in, RTCRayN** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)This_in->ptr;
     size_t M = N;

@@ -330,19 +330,19 @@ namespace embree
       }
     }
 
-#if defined(EMBREE_GEOMETRY_CURVES)    
+#if defined(EMBREE_GEOMETRY_CURVE)    
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,LineSegments>((BVH4*)bvh,scene,createMeshAccel);
     }
 #endif
 
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVH4BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,TriangleMesh>((BVH4*)bvh,scene,createMeshAccel);
     }
 #endif
 
-#if defined(EMBREE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVH4BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
     return new BVHNBuilderTwoLevel<4,QuadMesh>((BVH4*)bvh,scene,createMeshAccel);
     }
@@ -356,13 +356,13 @@ namespace embree
 
 
 #if defined(__AVX__)
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVH8BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<8,TriangleMesh>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 
-#if defined(EMBREE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<8,QuadMesh>((BVH8*)bvh,scene,createMeshAccel);
     }

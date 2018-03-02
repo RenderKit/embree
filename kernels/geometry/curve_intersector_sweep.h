@@ -55,7 +55,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-      __forceinline bool intersect_bezier_iterative_debug(const RayHit& ray, const float dt, const NativeCurve3fa& curve, size_t i, 
+    __forceinline bool intersect_bezier_iterative_debug(const RayHit& ray, const float dt, const NativeCurve3fa& curve, size_t i,
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -128,8 +128,8 @@ namespace embree
     }
 
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-      bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
-                                               const float u0, const float u1, const size_t depth, const Epilog& epilog)
+    bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
+                                             const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
       //int maxDepth = Device::debug_int1+1;
@@ -223,7 +223,7 @@ namespace embree
     }
 
     template<typename NativeCurve3fa>
-      struct SweepCurve1Intersector1
+    struct SweepCurve1Intersector1
     {
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
@@ -247,7 +247,7 @@ namespace embree
     };
 
     template<typename NativeCurve3fa, int K>
-      struct SweepCurve1IntersectorK
+    struct SweepCurve1IntersectorK
     {
       struct Ray1
       {

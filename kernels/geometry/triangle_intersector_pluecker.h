@@ -33,7 +33,7 @@ namespace embree
   namespace isa
   {
     template<int M, typename UVMapper>
-      struct PlueckerHitM
+    struct PlueckerHitM
     {
       __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& T, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
         : U(U), V(V), W(W), T(T), den(den), mapUV(mapUV), vNg(Ng) {}
@@ -70,70 +70,70 @@ namespace embree
     };
 
     template<int M>
-      struct PlueckerIntersector1
-      {
-        __forceinline PlueckerIntersector1() {}
+    struct PlueckerIntersector1
+    {
+      __forceinline PlueckerIntersector1() {}
 
-        __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
-        
-        template<typename UVMapper, typename Epilog>
-          __forceinline bool intersect(Ray& ray,
-                                       const Vec3vf<M>& tri_v0,
-                                       const Vec3vf<M>& tri_v1,
-                                       const Vec3vf<M>& tri_v2,
-                                       const UVMapper& mapUV,
-                                       const Epilog& epilog) const
-        {
-          /* calculate vertices relative to ray origin */
-          const Vec3vf<M> O = Vec3vf<M>(ray.org);
-          const Vec3vf<M> D = Vec3vf<M>(ray.dir);
-          const Vec3vf<M> v0 = tri_v0-O;
-          const Vec3vf<M> v1 = tri_v1-O;
-          const Vec3vf<M> v2 = tri_v2-O;
-          
-          /* calculate triangle edges */
-          const Vec3vf<M> e0 = v2-v0;
-          const Vec3vf<M> e1 = v0-v1;
-          const Vec3vf<M> e2 = v1-v2;
-          
-          /* perform edge tests */
-          const vfloat<M> U = dot(cross(e0,v2+v0),D);
-          const vfloat<M> V = dot(cross(e1,v0+v1),D);
-          const vfloat<M> W = dot(cross(e2,v1+v2),D);
+      __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
+
+      template<typename UVMapper, typename Epilog>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const UVMapper& mapUV,
+                                   const Epilog& epilog) const
+      {
+        /* calculate vertices relative to ray origin */
+        const Vec3vf<M> O = Vec3vf<M>(ray.org);
+        const Vec3vf<M> D = Vec3vf<M>(ray.dir);
+        const Vec3vf<M> v0 = tri_v0-O;
+        const Vec3vf<M> v1 = tri_v1-O;
+        const Vec3vf<M> v2 = tri_v2-O;
+
+        /* calculate triangle edges */
+        const Vec3vf<M> e0 = v2-v0;
+        const Vec3vf<M> e1 = v0-v1;
+        const Vec3vf<M> e2 = v1-v2;
+
+        /* perform edge tests */
+        const vfloat<M> U = dot(cross(e0,v2+v0),D);
+        const vfloat<M> V = dot(cross(e1,v0+v1),D);
+        const vfloat<M> W = dot(cross(e2,v1+v2),D);
 #if defined(EMBREE_BACKFACE_CULLING)
-          const vfloat<M> maxUVW = max(U,V,W);
-          vbool<M> valid = maxUVW <= 0.0f;
+        const vfloat<M> maxUVW = max(U,V,W);
+        vbool<M> valid = maxUVW <= 0.0f;
 #else
-          const vfloat<M> minUVW = min(U,V,W);
-          const vfloat<M> maxUVW = max(U,V,W);
-          vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+        const vfloat<M> minUVW = min(U,V,W);
+        const vfloat<M> maxUVW = max(U,V,W);
+        vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
 #endif
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate geometry normal and denominator */
-          const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
-          const vfloat<M> den = twice(dot(Ng,D));
-          const vfloat<M> absDen = abs(den);
-          const vfloat<M> sgnDen = signmsk(den);
-          
-          /* perform depth test */
-          const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
-          if (unlikely(none(valid))) return false;
-          
-          /* avoid division by 0 */
-          valid &= den != vfloat<M>(zero);
-          if (unlikely(none(valid))) return false;
-          
-          /* update hit information */
-          PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
-          return epilog(valid,hit);
-        }
-      };
+        if (unlikely(none(valid))) return false;
+
+        /* calculate geometry normal and denominator */
+        const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
+        const vfloat<M> den = twice(dot(Ng,D));
+        const vfloat<M> absDen = abs(den);
+        const vfloat<M> sgnDen = signmsk(den);
+
+        /* perform depth test */
+        const vfloat<M> T = twice(dot(v0,Ng));
+        valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
+        valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
+        if (unlikely(none(valid))) return false;
+
+        /* avoid division by 0 */
+        valid &= den != vfloat<M>(zero);
+        if (unlikely(none(valid))) return false;
+
+        /* update hit information */
+        PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
+        return epilog(valid,hit);
+      }
+    };
 
     template<int K, typename UVMapper>
-      struct PlueckerHitK
+    struct PlueckerHitK
     {
       __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& W, const vfloat<K>& T, const vfloat<K>& den, const Vec3vf<K>& Ng, const UVMapper& mapUV)
         : U(U), V(V), W(W), T(T), den(den), Ng(Ng), mapUV(mapUV) {}
@@ -162,123 +162,123 @@ namespace embree
     };
     
     template<int M, int K>
-      struct PlueckerIntersectorK
+    struct PlueckerIntersectorK
+    {
+      __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
+
+      /*! Intersects K rays with one of M triangles. */
+      template<typename UVMapper, typename Epilog>
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0,
+                                        RayK<K>& ray,
+                                        const Vec3vf<K>& tri_v0,
+                                        const Vec3vf<K>& tri_v1,
+                                        const Vec3vf<K>& tri_v2,
+                                        const UVMapper& mapUV,
+                                        const Epilog& epilog) const
       {
-        __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
-        
-        /*! Intersects K rays with one of M triangles. */
-        template<typename UVMapper, typename Epilog>
-          __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                            RayK<K>& ray,
-                                            const Vec3vf<K>& tri_v0,
-                                            const Vec3vf<K>& tri_v1,
-                                            const Vec3vf<K>& tri_v2,
-                                            const UVMapper& mapUV,
-                                            const Epilog& epilog) const
-        {
-          /* calculate vertices relative to ray origin */
-          vbool<K> valid = valid0;
-          const Vec3vf<K> O = ray.org;
-          const Vec3vf<K> D = ray.dir;
-          const Vec3vf<K> v0 = tri_v0-O;
-          const Vec3vf<K> v1 = tri_v1-O;
-          const Vec3vf<K> v2 = tri_v2-O;
-          
-          /* calculate triangle edges */
-          const Vec3vf<K> e0 = v2-v0;
-          const Vec3vf<K> e1 = v0-v1;
-          const Vec3vf<K> e2 = v1-v2;
-           
-          /* perform edge tests */
-          const vfloat<K> U = dot(Vec3vf<K>(cross(e0,v2+v0)),D);
-          const vfloat<K> V = dot(Vec3vf<K>(cross(e1,v0+v1)),D);
-          const vfloat<K> W = dot(Vec3vf<K>(cross(e2,v1+v2)),D);
-#if defined(EMBREE_BACKFACE_CULLING)
-          const vfloat<K> maxUVW = max(U,V,W);
-          valid &= maxUVW <= 0.0f;
-#else
-          const vfloat<K> minUVW = min(U,V,W);
-          const vfloat<K> maxUVW = max(U,V,W);
-          valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
-#endif
-          if (unlikely(none(valid))) return false;
-          
-           /* calculate geometry normal and denominator */
-          const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
-          const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
-          const vfloat<K> absDen = abs(den);
-          const vfloat<K> sgnDen = signmsk(den);
+        /* calculate vertices relative to ray origin */
+        vbool<K> valid = valid0;
+        const Vec3vf<K> O = ray.org;
+        const Vec3vf<K> D = ray.dir;
+        const Vec3vf<K> v0 = tri_v0-O;
+        const Vec3vf<K> v1 = tri_v1-O;
+        const Vec3vf<K> v2 = tri_v2-O;
 
-          /* perform depth test */
-          const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
-          valid &= absDen*ray.tnear() < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*ray.tfar;
-          if (unlikely(none(valid))) return false;
-          
-          /* avoid division by 0 */
-          valid &= den != vfloat<K>(zero);
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate hit information */
-          PlueckerHitK<K,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
-          return epilog(valid,hit);
-        }
-        
-        /*! Intersect k'th ray from ray packet of size K with M triangles. */
-        template<typename UVMapper, typename Epilog>
-          __forceinline bool intersect(RayK<K>& ray, size_t k,
-                                       const Vec3vf<M>& tri_v0,
-                                       const Vec3vf<M>& tri_v1,
-                                       const Vec3vf<M>& tri_v2,
-                                       const UVMapper& mapUV,
-                                       const Epilog& epilog) const
-        {
-          /* calculate vertices relative to ray origin */
-          const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
-          const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
-          const Vec3vf<M> v0 = tri_v0-O;
-          const Vec3vf<M> v1 = tri_v1-O;
-          const Vec3vf<M> v2 = tri_v2-O;
-          
-          /* calculate triangle edges */
-          const Vec3vf<M> e0 = v2-v0;
-          const Vec3vf<M> e1 = v0-v1;
-          const Vec3vf<M> e2 = v1-v2;
-          
-          /* perform edge tests */
-          const vfloat<M> U = dot(cross(e0,v2+v0),D);
-          const vfloat<M> V = dot(cross(e1,v0+v1),D);
-          const vfloat<M> W = dot(cross(e2,v1+v2),D);
-#if defined(EMBREE_BACKFACE_CULLING)
-          const vfloat<M> maxUVW = max(U,V,W);
-          vbool<M> valid = maxUVW <= 0.0f;
-#else
-          const vfloat<M> minUVW = min(U,V,W);
-          const vfloat<M> maxUVW = max(U,V,W);
-          vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
-#endif
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate geometry normal and denominator */
-          const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
-          const vfloat<M> den = twice(dot(Ng,D));
-          const vfloat<M> absDen = abs(den);
-          const vfloat<M> sgnDen = signmsk(den);
+        /* calculate triangle edges */
+        const Vec3vf<K> e0 = v2-v0;
+        const Vec3vf<K> e1 = v0-v1;
+        const Vec3vf<K> e2 = v1-v2;
 
-          /* perform depth test */
-          const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= absDen*vfloat<M>(ray.tnear()[k]) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
-          if (unlikely(none(valid))) return false;
-          
-          /* avoid division by 0 */
-          valid &= den != vfloat<M>(zero);
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate hit information */
-          PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
-          return epilog(valid,hit);
-        }
-      };
+        /* perform edge tests */
+        const vfloat<K> U = dot(Vec3vf<K>(cross(e0,v2+v0)),D);
+        const vfloat<K> V = dot(Vec3vf<K>(cross(e1,v0+v1)),D);
+        const vfloat<K> W = dot(Vec3vf<K>(cross(e2,v1+v2)),D);
+#if defined(EMBREE_BACKFACE_CULLING)
+        const vfloat<K> maxUVW = max(U,V,W);
+        valid &= maxUVW <= 0.0f;
+#else
+        const vfloat<K> minUVW = min(U,V,W);
+        const vfloat<K> maxUVW = max(U,V,W);
+        valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+#endif
+        if (unlikely(none(valid))) return false;
+
+         /* calculate geometry normal and denominator */
+        const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
+        const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
+        const vfloat<K> absDen = abs(den);
+        const vfloat<K> sgnDen = signmsk(den);
+
+        /* perform depth test */
+        const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
+        valid &= absDen*ray.tnear() < (T^sgnDen);
+        valid &= (T^sgnDen) <= absDen*ray.tfar;
+        if (unlikely(none(valid))) return false;
+
+        /* avoid division by 0 */
+        valid &= den != vfloat<K>(zero);
+        if (unlikely(none(valid))) return false;
+
+        /* calculate hit information */
+        PlueckerHitK<K,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
+        return epilog(valid,hit);
+      }
+
+      /*! Intersect k'th ray from ray packet of size K with M triangles. */
+      template<typename UVMapper, typename Epilog>
+      __forceinline bool intersect(RayK<K>& ray, size_t k,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const UVMapper& mapUV,
+                                   const Epilog& epilog) const
+      {
+        /* calculate vertices relative to ray origin */
+        const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
+        const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
+        const Vec3vf<M> v0 = tri_v0-O;
+        const Vec3vf<M> v1 = tri_v1-O;
+        const Vec3vf<M> v2 = tri_v2-O;
+
+        /* calculate triangle edges */
+        const Vec3vf<M> e0 = v2-v0;
+        const Vec3vf<M> e1 = v0-v1;
+        const Vec3vf<M> e2 = v1-v2;
+
+        /* perform edge tests */
+        const vfloat<M> U = dot(cross(e0,v2+v0),D);
+        const vfloat<M> V = dot(cross(e1,v0+v1),D);
+        const vfloat<M> W = dot(cross(e2,v1+v2),D);
+#if defined(EMBREE_BACKFACE_CULLING)
+        const vfloat<M> maxUVW = max(U,V,W);
+        vbool<M> valid = maxUVW <= 0.0f;
+#else
+        const vfloat<M> minUVW = min(U,V,W);
+        const vfloat<M> maxUVW = max(U,V,W);
+        vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+#endif
+        if (unlikely(none(valid))) return false;
+
+        /* calculate geometry normal and denominator */
+        const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
+        const vfloat<M> den = twice(dot(Ng,D));
+        const vfloat<M> absDen = abs(den);
+        const vfloat<M> sgnDen = signmsk(den);
+
+        /* perform depth test */
+        const vfloat<M> T = twice(dot(v0,Ng));
+        valid &= absDen*vfloat<M>(ray.tnear()[k]) < (T^sgnDen);
+        valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
+        if (unlikely(none(valid))) return false;
+
+        /* avoid division by 0 */
+        valid &= den != vfloat<M>(zero);
+        if (unlikely(none(valid))) return false;
+
+        /* calculate hit information */
+        PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
+        return epilog(valid,hit);
+      }
+    };
   }
 }

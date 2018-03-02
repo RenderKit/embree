@@ -117,7 +117,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLE)
     if (device->tri_accel == "default") 
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -200,7 +200,7 @@ namespace embree
 
   void Scene::createTriangleMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLE)
     if (device->tri_accel_mb == "default")
     {
       int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
@@ -238,7 +238,7 @@ namespace embree
 
   void Scene::createQuadAccel()
   {
-#if defined(EMBREE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUAD)
     if (device->quad_accel == "default") 
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -319,7 +319,7 @@ namespace embree
 
   void Scene::createQuadMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUAD)
     if (device->quad_accel_mb == "default") 
     {
       int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
@@ -356,7 +356,7 @@ namespace embree
 
   void Scene::createHairAccel()
   {
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompactAccel() + 1*(int)isRobustAccel();
@@ -393,7 +393,7 @@ namespace embree
 
   void Scene::createHairMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -417,7 +417,7 @@ namespace embree
 
   void Scene::createLineAccel()
   {
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
     if (device->line_accel == "default")
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -444,7 +444,7 @@ namespace embree
 
   void Scene::createLineMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
     if (device->line_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)

@@ -63,7 +63,7 @@ namespace embree
     }
 
     template<int K>
-      __forceinline AffineSpace3vf<K> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
+    __forceinline AffineSpace3vf<K> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
     { 
       vfloat<K> ftime;
       const vint<K> itime_k = getTimeSegment(t, vfloat<K>(fnumTimeSegments), ftime);
@@ -71,16 +71,18 @@ namespace embree
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
       const vfloat<K> t0 = vfloat<K>(1.0f)-ftime, t1 = ftime;
-      if (likely(all(valid,itime_k == vint<K>(itime)))) {
-        return rcp(t0*AffineSpace3vf<K>(local2world[itime+0])+t1*AffineSpace3vf<K>(local2world[itime+1]));
-      } 
-      else {
+      if (likely(all(valid, itime_k == vint<K>(itime)))) {
+        return rcp(t0*AffineSpace3vf<K>(local2world[itime+0]) + t1*AffineSpace3vf<K>(local2world[itime+1]));
+      } else {
         AffineSpace3vf<K> space0,space1;
-        foreach_unique(valid,itime_k,[&] (const vbool<K>& valid, int itime) {
-            space0 = select(valid,AffineSpace3vf<K>(local2world[itime+0]),space0);
-            space1 = select(valid,AffineSpace3vf<K>(local2world[itime+1]),space1);
-          });
-        return rcp(t0*space0+t1*space1);
+        vbool<K> valid1 = valid;
+        while (any(valid1)) {
+          vbool<K> valid2;
+          const int itime = next_unique(valid1, itime_k, valid2);
+          space0 = select(valid2, AffineSpace3vf<K>(local2world[itime+0]), space0);
+          space1 = select(valid2, AffineSpace3vf<K>(local2world[itime+1]), space1);
+        }
+        return rcp(t0*space0 + t1*space1);
       }
     }
     

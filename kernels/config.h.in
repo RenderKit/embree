@@ -20,27 +20,27 @@
 #cmakedefine EMBREE_FILTER_FUNCTION
 #cmakedefine EMBREE_RETURN_SUBDIV_NORMAL
 #cmakedefine EMBREE_IGNORE_INVALID_RAYS
-#cmakedefine EMBREE_GEOMETRY_TRIANGLES
-#cmakedefine EMBREE_GEOMETRY_QUADS
-#cmakedefine EMBREE_GEOMETRY_CURVES
+#cmakedefine EMBREE_GEOMETRY_TRIANGLE
+#cmakedefine EMBREE_GEOMETRY_QUAD
+#cmakedefine EMBREE_GEOMETRY_CURVE
 #cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_GEOMETRY_GRID
 #cmakedefine EMBREE_RAY_PACKETS
 
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLE)
   #define IF_ENABLED_TRIS(x) x
 #else
   #define IF_ENABLED_TRIS(x)
 #endif
 
-#if defined(EMBREE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUAD)
   #define IF_ENABLED_QUADS(x) x
 #else
   #define IF_ENABLED_QUADS(x)
 #endif
 
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
   #define IF_ENABLED_CURVES(x) x
 #else
   #define IF_ENABLED_CURVES(x)

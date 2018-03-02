@@ -20,7 +20,7 @@
 #include "../geometry/curveNi.h"
 #include "../geometry/curveNv.h"
 
-#if defined(EMBREE_GEOMETRY_CURVES)
+#if defined(EMBREE_GEOMETRY_CURVE)
 
 namespace embree
 {
