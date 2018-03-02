@@ -1296,7 +1296,7 @@ namespace embree
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryOppositeHalfEdge);
-    geometry->getOppositeHalfEdge(edgeID);
+    return geometry->getOppositeHalfEdge(edgeID);
     RTC_CATCH_END2(geometry);
     return -1;
   }
