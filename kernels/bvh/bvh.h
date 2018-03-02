@@ -1170,7 +1170,7 @@ namespace embree
         vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vint<N> i_floor_lower( floor_lower );
         vint<N> i_ceil_upper ( ceil_upper  );
-
+        
         i_ceil_upper = min(i_ceil_upper,(int)MAX_QUAN);
 
         /* lower/upper correction */
@@ -1178,6 +1178,9 @@ namespace embree
         vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
         i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
         i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
+
+        i_floor_lower = max(i_floor_lower,0);
+        i_ceil_upper  = min(i_ceil_upper,(int)MAX_QUAN);
 
         /* disable invalid lanes */
         i_floor_lower = select(m_valid,i_floor_lower,MAX_QUAN);
