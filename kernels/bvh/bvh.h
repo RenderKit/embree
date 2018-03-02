@@ -1158,7 +1158,7 @@ namespace embree
 
         /* accomodate floating point accuracy issues in 'diff' */
         size_t iterations = 0;
-        while(minF + scale_diff * float(MAX_QUAN) < maxF)
+        while (madd(scale_diff,float(MAX_QUAN),minF) < maxF)
         {
           diff = nextafter(diff, FLT_MAX);
           scale_diff = diff / float(MAX_QUAN);
