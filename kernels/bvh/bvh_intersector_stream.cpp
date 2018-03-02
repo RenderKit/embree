@@ -51,6 +51,7 @@ namespace embree
                                                                                                     IntersectContext* context)
     {
       // Only the coherent code path is implemented
+      assert(context->isCoherent());
       intersectCoherent(This, (RayHitK<VSIZEL>**)inputPackets, numOctantRays, context);
     }
 
