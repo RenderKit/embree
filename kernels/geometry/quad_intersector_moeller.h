@@ -181,7 +181,7 @@ namespace embree
       }
     };
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<bool filter>
@@ -244,7 +244,7 @@ namespace embree
       }
     };
 
-#elif defined (__AVX__)
+#elif defined(__AVX__)
 
     /*! Intersects 4 quads with 1 ray using AVX */
     template<bool filter>
@@ -486,7 +486,7 @@ namespace embree
     };
 
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<int K, bool filter>
@@ -532,7 +532,7 @@ namespace embree
       }
     };
 
-#elif defined (__AVX__)
+#elif defined(__AVX__)
 
     /*! Intersects 4 quads with 1 ray using AVX */
     template<int K, bool filter>
