@@ -1403,7 +1403,7 @@ namespace embree
   Accel* BVH4Factory::BVH4InstanceMB(Scene* scene)
   {
     BVH4* accel = new BVH4(InstancePrimitive::type,scene);
-    Accel::Intersectors intersectors = BVH4UserGeometryMBIntersectors(accel);
+    Accel::Intersectors intersectors = BVH4InstanceMBIntersectors(accel);
     Builder* builder = BVH4InstanceMBSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
