@@ -118,16 +118,10 @@ namespace embree
       _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
     }
 
-    static __forceinline void store(unsigned char* ptr, const vint8& i) {
-      __m256i x = i;
-      x = _mm256_packus_epi32(x, x);
-      x = _mm256_packus_epi16(x, x);
-#if defined(__X86_64__)
-      *(size_t*)ptr = _mm_cvtsi128_si64(_mm256_castsi256_si128(x));
-#else
-      for (size_t i = 0; i < 8; i++)
-        ptr[i] = ((unsigned char*)&x)[i];
-#endif
+    static __forceinline void store(unsigned char* ptr, const vint8& i)
+    {
+      for (size_t j=0; j<8; j++)
+        ptr[j] = i[j];
     }
 
     static __forceinline void store(unsigned short* ptr, const vint8& v) {
