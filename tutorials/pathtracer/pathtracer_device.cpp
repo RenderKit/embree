@@ -1181,7 +1181,8 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   }
   else if (geometry->type == GRID_MESH)
   {
-    /* do nothing */
+    ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;
+    materialID = mesh->geom.materialID;
   }
   else if (geometry->type == CURVES)
   {
