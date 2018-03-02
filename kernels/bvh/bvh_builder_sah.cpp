@@ -29,6 +29,7 @@
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/object.h"
+#include "../geometry/instance.h"
 #include "../geometry/subgrid.h"
 
 #include "../common/state.h"
@@ -862,17 +863,17 @@ namespace embree
     Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_max_leaf_size;
-      return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,mode);
+      return new BVHNBuilderSAH<4,UserGeometry,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,mode);
     }
 
-    Builder* BVH4VirtualMeshBuilderSAH    (void* bvh, AccelSet* mesh, size_t mode) {
-      return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,mesh,4,1.0f,1,inf,mode);
+    Builder* BVH4VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, size_t mode) {
+      return new BVHNBuilderSAH<4,UserGeometry,Object>((BVH4*)bvh,mesh,4,1.0f,1,inf,mode);
     }
 
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMBlurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMBlurSAH<4,UserGeometry,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
     }
 
 #if defined(__AVX__)
@@ -880,22 +881,31 @@ namespace embree
     Builder* BVH8VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_max_leaf_size;
-      return new BVHNBuilderSAH<8,AccelSet,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize,mode);
+      return new BVHNBuilderSAH<8,UserGeometry,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize,mode);
     }
 
-    Builder* BVH8VirtualMeshBuilderSAH    (void* bvh, AccelSet* mesh, size_t mode) {
-      return new BVHNBuilderSAH<8,AccelSet,Object>((BVH8*)bvh,mesh,8,1.0f,1,inf,mode);
+    Builder* BVH8VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, size_t mode) {
+      return new BVHNBuilderSAH<8,UserGeometry,Object>((BVH8*)bvh,mesh,8,1.0f,1,inf,mode);
     }
 
     Builder* BVH8VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMBlurSAH<8,AccelSet,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMBlurSAH<8,UserGeometry,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize);
     }
 
 #endif
 #endif
 
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
+    Builder* BVH4InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1); }
+
+#if defined(__AVX__)
+    Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,mode); }
+    Builder* BVH8InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1); }
+#endif
+#endif
 
 #if defined(EMBREE_GEOMETRY_GRID)
     Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,mesh,4,1.0f,1,4,mode); }

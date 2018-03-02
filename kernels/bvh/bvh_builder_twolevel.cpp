@@ -349,8 +349,8 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createAccelSetAccelTy createMeshAccel) {
-    return new BVHNBuilderTwoLevel<4,AccelSet>((BVH4*)bvh,scene,createMeshAccel);
+    Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createUserGeometryAccelTy createMeshAccel) {
+    return new BVHNBuilderTwoLevel<4,UserGeometry>((BVH4*)bvh,scene,createMeshAccel);
     }
 #endif
 
@@ -369,8 +369,8 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createAccelSetAccelTy createMeshAccel) {
-      return new BVHNBuilderTwoLevel<8,AccelSet>((BVH8*)bvh,scene,createMeshAccel);
+    Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createUserGeometryAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,UserGeometry>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 #endif

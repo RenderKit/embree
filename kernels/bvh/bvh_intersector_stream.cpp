@@ -26,6 +26,7 @@
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/instance_intersector.h"
 
 #include "../common/scene.h"
 #include <bitset>
@@ -403,6 +404,7 @@ namespace embree
     typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,ObjectIntersectorK<VSIZEX COMMA false > > ObjectIntersectorStream;
+    typedef ArrayIntersectorKStream<VSIZEX,InstanceIntersectorK<VSIZEX> > InstanceIntersectorStream;
 
     // =====================================================================================================
     // =====================================================================================================

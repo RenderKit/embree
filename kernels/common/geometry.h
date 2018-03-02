@@ -379,20 +379,24 @@ namespace embree
     __forceinline bool hasOcclusionFilter() const { return occlusionFilterN != nullptr; }
 
   public:
-    Device* device;            //!< device this geometry belongs to
-    Scene* scene;              //!< pointer to scene this mesh belongs to
-    unsigned geomID;           //!< internal geometry ID
-    GType gtype;                 //!< geometry type
-    unsigned int numPrimitives;      //!< number of primitives of this geometry
-    bool numPrimitivesChanged; //!< true if number of primitives changed
+    Device* device;             //!< device this geometry belongs to
+    Scene* scene;               //!< pointer to scene this mesh belongs to
+
+    void* userPtr;             //!< user pointer
+    unsigned int geomID;        //!< internal geometry ID
+    unsigned int numPrimitives; //!< number of primitives of this geometry
+    
     unsigned int numTimeSteps;     //!< number of time steps
     float fnumTimeSegments;    //!< number of time segments (precalculation)
-    RTCBuildQuality quality;    //!< build quality for geometry
-    bool enabled;              //!< true if geometry is enabled
-    State state;
-    void* userPtr;             //!< user pointer
-    unsigned mask;             //!< for masking out geometry
-    
+    unsigned int mask;             //!< for masking out geometry
+    struct {
+      GType gtype : 5;                 //!< geometry type
+      RTCBuildQuality quality : 3;    //!< build quality for geometry
+      State state : 2;
+      bool numPrimitivesChanged : 1; //!< true if number of primitives changed
+      bool enabled : 1;              //!< true if geometry is enabled
+    };
+        
   public:
     RTCFilterFunctionN intersectionFilterN;
     RTCFilterFunctionN occlusionFilterN;

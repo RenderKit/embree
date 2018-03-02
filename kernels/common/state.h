@@ -27,7 +27,7 @@ namespace embree
   {
   public:
     /*! state construction */
-    State (bool singledevice);
+    State ();
 
     /*! state destruction */
     ~State();

@@ -36,7 +36,7 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
-    Device* device = new Device(config, false);
+    Device* device = new Device(config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
@@ -783,14 +783,6 @@ namespace embree
     if (((size_t)ray->tfar  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "tnear not aligned to 4 bytes");   
     if (((size_t)ray->time  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "time not aligned to 4 bytes");   
     if (((size_t)ray->mask  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "mask not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.Ng_x  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "Ng_x not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.Ng_y  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "Ng_y not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.Ng_z  ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "Ng_z not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.u     ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "u not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.v     ) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "v not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.geomID) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "geomID not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.primID) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "primID not aligned to 4 bytes");   
-    // if (((size_t)ray->hit.instID) & 0x03 ) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "instID not aligned to 4 bytes");   
 #endif
     STAT3(shadow.travs,N,N,N);
     IntersectContext context(scene,user_context);

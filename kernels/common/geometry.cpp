@@ -41,10 +41,14 @@ namespace embree
     };
   
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
-    : device(device), scene(nullptr), geomID(0), gtype(gtype),
-      numPrimitives(numPrimitives), numPrimitivesChanged(false),
-      numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), quality(RTC_BUILD_QUALITY_MEDIUM),
-      enabled(true), state(MODIFIED), userPtr(nullptr), mask(-1),
+    : device(device), scene(nullptr), userPtr(nullptr),
+      geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)),
+      mask(-1),
+      gtype(gtype),
+      quality(RTC_BUILD_QUALITY_MEDIUM),
+      state(MODIFIED),
+      numPrimitivesChanged(false),
+      enabled(true),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr)
   {
     device->refInc();
