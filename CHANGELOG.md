@@ -3,33 +3,30 @@ Version History
 
 ### New Features in Embree 3.0.0
 -   Switched to a new version of the API which provides improved
-    flexibility but is not backwards compatible. Please see "Upgrading
-    from Embree 2 to Embree 3" section of documentation for upgrade
-    instructions. In particular, we provide a python script that performs
+    flexibility but is not backward compatible. Please see "Upgrading
+    from Embree 2 to Embree 3" section of the documentation for upgrade
+    instructions. In particular, we provide a Python script that performs
     most of the transition work.
 -   User geometries inside an instanced scene and a top-level scene no
-    longer need to handle instID field of ray differently. They both
-    just need to copy the context.instID into the ray.instID field.
--   Support for context filter functions that can get assigned to a ray
+    longer need to handle the instID field of the ray differently. They
+    both just need to copy the context.instID into the ray.instID field.
+-   Support for context filter functions that can be assigned to a ray
     query.
 -   User geometries can now invoke filter functions using the
     rtcFilterIntersection and rtcFilterOcclusion calls.
 -   Higher flexibility through specifying build quality per scene and
     geometry.
--   Geometry normal uses commonly used right hand rule from now on.
--   Added self intersection avoidance to ribbon curves and
-    lines. Applications do not have to implement self intersections workarounds
+-   Geometry normal uses commonly used right-hand rule from now on.
+-   Added self-intersection avoidance to ribbon curves and lines.
+    Applications do not have to implement self-intersection workarounds
     for these primitive types anymore.
 -   Added support for 4 billion primitives in a single scene.
--   Removed RTC_MAX_USER_VERTEX_BUFFERS and RTC_MAX_INDEX_BUFFERS
-    limitation.
+-   Removed the RTC_MAX_USER_VERTEX_BUFFERS and RTC_MAX_INDEX_BUFFERS
+    limitations.
 -   Reduced memory consumption by 192 bytes per instance.
 -   Individual Contributor License Agreement (ICLA) and Corporate
     Contributor License Agreement (CCLA) no longer required to
     contribute to the project.
-
-### New Features in Embree 2.17.2
--   Made BVH build of curve geometry deterministic.
 
 ### New Features in Embree 2.17.1
 -   Improved performance of occlusion ray packets by up to 50%.

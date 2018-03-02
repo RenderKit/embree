@@ -1,14 +1,14 @@
-% Embree: High Performance Ray Tracing Kernels 3.0.0-beta.0
+% Embree: High Performance Ray Tracing Kernels 3.0.0
 % Intel Corporation
 
 Embree Overview
 ===============
 
 Embree is a collection of high-performance ray tracing kernels,
-developed at Intel. The target user of Embree are graphics application
-engineers that want to improve the performance of their
+developed at Intel. The target users of Embree are graphics application
+engineers who want to improve the performance of their
 photo-realistic rendering application by leveraging Embree's
-performance optimized ray tracing kernels. The kernels are optimized
+performance-optimized ray tracing kernels. The kernels are optimized
 for the latest Intel® processors with support for SSE, AVX, AVX2, and
 AVX-512 instructions. Embree supports runtime code selection to choose
 the traversal and build algorithms that best matches the instruction
@@ -31,13 +31,13 @@ Monte Carlo ray tracing algorithms) and coherent workloads
 
 The single-ray traversal kernels of Embree provide high performance
 for incoherent workloads and are very easy to integrate into existing
-rendering applications. Using the stream kernels even higher
+rendering applications. Using the stream kernels, even higher
 performance for incoherent rays is possible, but integration might
 require significant code changes to the application to use the stream
 paradigm. In general for coherent workloads, the stream mode with
-coherent flag set gives best performance.
+coherent flag set gives the best performance.
 
-Embree also supports dynamic scenes by implementing high performance
+Embree also supports dynamic scenes by implementing high-performance
 two-level spatial index structure construction algorithms.
 
 In addition to the ray tracing kernels, Embree provides some
@@ -47,11 +47,11 @@ In addition to the ray tracing kernels, Embree provides some
 Supported Platforms
 -------------------
 
-Embree supports Windows (32-bit and 64-bit), Linux (64-bit) and Mac
-OS X (64-bit). The code compiles with the Intel Compiler, GCC, Clang
+Embree supports Windows (32-bit and 64-bit), Linux (64-bit), and macOS
+(64-bit). The code compiles with the Intel® Compiler, GCC, Clang,
 and the Microsoft Compiler.
 
-Using the Intel Compiler improves performance by approximately
+Using the Intel® Compiler improves performance by approximately
 10%. Performance also varies across different operating
 systems, with Linux typically performing best as it supports
 transparently transitioning to 2MB pages.
@@ -85,31 +85,31 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.0.0-beta.0-x64.msi](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x64.msi). This
+[embree-3.0.0-x64.msi](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x64.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.0.0-beta.0 x64`.
+Files\Intel\Embree v3.0.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
 
-To compile applications with Embree using CMake please have a look at
-the find_embree tutorial. To compile this tutorial, you need to set
+To compile applications with Embree using CMake, please have a look at
+the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.0.0-beta.0 x64`.
+Files\Intel\Embree v3.0.0 x64`.
 
-To uninstall Embree again open `Programs and Features` by clicking the
+To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.0.0-beta.0 x64` and uninstall it.
+3.0.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file
-[embree-3.0.0-beta.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x64.windows.zip). After
-unpacking this ZIP file you should set the path to the `lib` folder
+[embree-3.0.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x64.windows.zip). After
+unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
-Embree. To compile applications with Embree you also have to set the
+Embree. To compile applications with Embree, you also have to set the
 `Include Directories` path in Visual Studio to the `include` folder of
 the Embree installation.
 
@@ -119,19 +119,18 @@ version from this ZIP file.
 Linux RPMs
 ----------
 
-Uncompress the 'tar.gz' file
-[embree-3.0.0-beta.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x86_64.rpm.tar.gz)
-to
-obtain the individual RPM files:
+Uncompress the `tar.gz` file
+[embree-3.0.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.rpm.tar.gz)
+to obtain the individual RPM files:
 
-    tar xzf embree-3.0.0-beta.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.0.0.x86_64.rpm.tar.gz
 
-To install the Embree using the RPM packages on your Linux system type
+To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree-lib-3.0.0-beta.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-3.0.0-beta.0-1.noarch.rpm
-    sudo rpm --install embree-examples-3.0.0-beta.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-3.0.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-3.0.0-1.noarch.rpm
+    sudo rpm --install embree-examples-3.0.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -143,13 +142,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree-lib-3.0.0-beta.0-1.x86_64.rpm
-    sudo alien embree-devel-3.0.0-beta.0-1.noarch.rpm
-    sudo alien embree-examples-3.0.0-beta.0-1.x86_64.rpm
+    sudo alien embree-lib-3.0.0-1.x86_64.rpm
+    sudo alien embree-devel-3.0.0-1.noarch.rpm
+    sudo alien embree-examples-3.0.0-1.x86_64.rpm
 
-    sudo dpkg -i embree-devel_3.0.0-beta.0-2_all.deb
-    sudo dpkg -i embree-examples_3.0.0-beta.0-2_amd64.deb
-    sudo dpkg -i embree-lib_3.0.0-beta.0-2_amd64.deb
+    sudo dpkg -i embree-devel_3.0.0-2_all.deb
+    sudo dpkg -i embree-examples_3.0.0-2_amd64.deb
+    sudo dpkg -i embree-lib_3.0.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -162,50 +161,49 @@ to the TBB library.
 
 Note that the Embree RPMs are linked against the TBB version coming
 with CentOS. This older TBB version is missing some features required
-to get optimal build performance and does not support building of
-scenes lazily during rendering. To get a full featured Embree please
-install using the tar.gz files, which always ship with the latest TBB
+to get optimal build performance, and does not support building of
+scenes lazily during rendering. To get a full featured Embree, please
+install using the `tar.gz` files, which always ship with the latest TBB
 version.
 
-Under Linux Embree is installed by default in the `/usr/lib64` and
+Under Linux, Embree is installed by default in the `/usr/lib64` and
 `/usr/include` directories. This way applications will find Embree
 automatically. The Embree tutorials are installed into the
 `/usr/bin/embree3` folder. Specify the full path to
 the tutorials to start them.
 
-To uninstall Embree again just execute the following:
+To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree-lib-3.0.0-beta.0-1.x86_64
-    sudo rpm --erase embree-devel-3.0.0-beta.0-1.noarch
-    sudo rpm --erase embree-examples-3.0.0-beta.0-1.x86_64
+    sudo rpm --erase embree-lib-3.0.0-1.x86_64
+    sudo rpm --erase embree-devel-3.0.0-1.noarch
+    sudo rpm --erase embree-examples-3.0.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
-The Linux version of Embree is also delivered as a tar.gz file
-[embree-3.0.0-beta.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x86_64.linux.tar.gz). Unpack
-this file using `tar` and source the provided `embree-vars.sh` (if you
+The Linux version of Embree is also delivered as a `tar.gz` file:
+[embree-3.0.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.0.0-beta.0.x64.linux.tar.gz
-    source embree-3.0.0-beta.0.x64.linux/embree-vars.sh
+    tar xzf embree-3.0.0.x64.linux.tar.gz
+    source embree-3.0.0.x64.linux/embree-vars.sh
 
-If you want to ship Embree with your application best use the Embree
-version provided through the tar.gz file.
+If you want to ship Embree with your application, best use the Embree
+version provided in the `tar.gz` file.
 
-We recommend adding a relative RPATH to your application that points
-to the location Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
+We recommend adding a relative `RPATH` to your application that points
+to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
 
-Mac OS X PKG Installer
------------------------
+macOS PKG Installer
+-------------------
 
-To install the Embree library on your Mac OS X system use the
+To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.0.0-beta.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x86_64.dmg). This
+[embree-3.0.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
-into the `/Applications/Embree3` folder.
+into the `/Applications/Embree3` directory.
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using [MacPorts](http://www.macports.org/):
@@ -217,54 +215,52 @@ Alternatively you can download the latest TBB version from
 and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
-To uninstall Embree again execute the uninstaller script
+To uninstall Embree, execute the uninstaller script
 `/Applications/Embree3/uninstall.command`.
 
-Mac OS X tar.gz file
----------------------
+macOS tar.gz file
+-----------------
 
-The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-3.0.0-beta.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0-beta.0/embree-3.0.0-beta.0.x86_64.macosx.tar.gz). Unpack
-this file using `tar` and source the provided `embree-vars.sh` (if you
+The macOS version of Embree is also delivered as a `tar.gz` file:
+[embree-3.0.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.0.0-beta.0.x64.macosx.tar.gz
-    source embree-3.0.0-beta.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.0.0.x64.macosx.tar.gz
+    source embree-3.0.0.x64.macosx/embree-vars.sh
 
-If you want to ship Embree with your application please use the Embree
-library of the provided tar.gz file. The library name of that Embree
+If you want to ship Embree with your application, please use the Embree
+library of the provided `tar.gz` file. The library name of that Embree
 library is of the form `@rpath/libembree.3.dylib`
 (and similar also for the included TBB library). This ensures that you
-can add a relative RPATH to your application that points to the location
-Embree (and TBB) can be found, e.g. `@loader_path/../lib`.
+can add a relative `RPATH` to your application that points to the location
+where Embree (and TBB) can be found, e.g. `@loader_path/../lib`.
 
 Compiling Embree
 ================
 
 We recommend to use CMake to build Embree. Do not enable fast-math
-optimization, these might break Embree.
+optimizations; these might break Embree.
 
-Linux and Mac OS X
--------------------
+Linux and macOS
+---------------
 
 To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 17.0 (Update 1), Intel®
-Compiler 16.0 (Update 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
-(supports AVX512) and GCC
-5.4.0. If the GCC that comes with your Fedora/Red Hat/CentOS
-distribution is too old then you can run the provided script
-`scripts/install_linux_gcc.sh` to locally install a recent GCC into
-`$HOME/devtools-2`.
+Embree is tested with Intel® Compiler 17.0 (Update 1), Intel®
+Compiler 16.0 (Update 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
+(supports AVX512) and GCC 5.4.0. If the GCC that comes with your
+Fedora/Red Hat/CentOS distribution is too old then you can run the
+provided script `scripts/install_linux_gcc.sh` to locally install a
+recent GCC into `$HOME/devtools-2`.
 
-Embree supports to use the Intel® Threading Building Blocks (TBB) as
+Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
 to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
 in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
-straight forward parallelization of an entire renderer. If you do not
+straightforward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
 tested ISPC version 1.9.1) from
@@ -276,7 +272,7 @@ environment variable or you need to correctly set the
 You additionally have to install CMake 2.8.11 or higher and the developer
 version of GLUT.
 
-Under Mac OS X, all these dependencies can be installed
+Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
     sudo port install cmake tbb freeglut
@@ -313,7 +309,7 @@ Per default CMake will use the compilers specified with the `CC` and
 compiler, run `cmake` first and set the `CMAKE_CXX_COMPILER` and
 `CMAKE_C_COMPILER` variables to the desired compiler. For example, to
 use the Intel® Compiler instead of the default GCC on most Linux machines
-(`g++` and `gcc`) execute
+(`g++` and `gcc`), execute
 
     cmake -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc ..
 
@@ -323,7 +319,7 @@ after the first run of `cmake` or `ccmake`.
 
 Running `ccmake` will open a dialog where you can perform various
 configurations as described below in [CMake Configuration]. After having
-configured Embree, press c (for configure) and g (for generate) to
+configured Embree, press `c` (for configure) and `g` (for generate) to
 generate a Makefile and leave the configuration. The code can be
 compiled by executing make.
 
@@ -353,15 +349,15 @@ Windows
 -------
 
 Embree is tested under Windows using the Visual Studio 2017, Visual
-Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
-(Update 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update 1)
-(Win32 and x64), Intel® Compiler 16.0 (Update 1) (Win32 and x64), and
+Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
+(Update 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update 1)
+(Win32 and x64), Intel® Compiler 16.0 (Update 1) (Win32 and x64), and
 Clang 3.9 (Win32 and x64). Using the Visual Studio 2015 compiler,
 Visual Studio 2013 compiler, Intel® Compiler, and Clang you can
 compile Embree for AVX2. To compile Embree for AVX-512 you have to use
 the Intel® Compiler.
 
-Embree supports to use the Intel® Threading Building Blocks (TBB) as
+Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
 to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
@@ -371,14 +367,14 @@ Embree will either find the Intel® Threading Building Blocks (TBB)
 installation that comes with the Intel® Compiler, or you can install the
 binary distribution of TBB directly from
 [www.threadingbuildingblocks.org](https://www.threadingbuildingblocks.org/download)
-into a folder named tbb into your Embree root directory. You also have
-to make sure that the libraries tbb.dll and tbb_malloc.dll can be found when
-executing your Embree applications, e.g. by putting the path to these
-libraries into your `PATH` environment variable.
+into a folder named `tbb` into your Embree root directory. You also have
+to make sure that the libraries `tbb.dll` and `tbb_malloc.dll` can be
+found when executing your Embree applications, e.g. by putting the path
+to these libraries into your `PATH` environment variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
-straight forward parallelization of an entire renderer. When
-installing ISPC make sure to download an ISPC version from
+straightforward parallelization of an entire renderer. When
+installing ISPC, make sure to download an ISPC version from
 [ispc.github.io](https://ispc.github.io/downloads.html) that is
 compatible with your Visual Studio version. There are two ISPC
 versions, one for Visual Studio 2013 and earlier, and one for Visual
@@ -401,7 +397,7 @@ and click Configure. Now you can select the Generator, e.g. "Visual
 Studio 12 2013" for a 32-bit build or "Visual Studio 12 2013 Win64"
 for a 64-bit build.
 
-To use a different compile than the Microsoft Visual C++ compiler, you
+To use a different compiler than the Microsoft Visual C++ compiler, you
 additionally need to specify the proper compiler toolset through the
 option "Optional toolset to use (-T parameter)". E.g. to use Clang for
 compilation set the toolset to "LLVM-vs2013", to use the Intel®
@@ -410,8 +406,8 @@ Compiler 17.0".
 
 Do not change the toolset manually in a solution file (neither through
 the project properties dialog, nor through the "Use Intel Compiler"
-project context menu), as then some compiler specific command line
-options cannot get set by CMake.
+project context menu), because then some compiler specific command line
+options cannot be set by CMake.
 
 Most configuration parameters described in the [CMake Configuration]
 can be set under Windows as well. Finally, click "Generate" to create
@@ -433,12 +429,12 @@ the Visual Studio solution files.
 
 Use the generated Visual Studio solution file `embree2.sln` to compile
 the project. To build Embree with support for the AVX2 instruction set
-you need at least Visual Studio 2013 (Update 4).
+you need at least Visual Studio 2013 (Update 4).
 
 We recommend enabling syntax highlighting for the `.ispc` source and
 `.isph` header files. To do so open Visual Studio, go to Tools ⇒
-Options ⇒ Text Editor ⇒ File Extension and add the isph and ispc
-extension for the "Microsoft Visual C++" editor.
+Options ⇒ Text Editor ⇒ File Extension and add the `isph` and `ispc`
+extensions for the "Microsoft Visual C++" editor.
 
 ### Using the Command Line
 
@@ -451,7 +447,7 @@ Studio command prompt:
     cmake -G "Visual Studio 12 2013 Win64" ..
     cmake --build . --config Release
 
-To use to the Intel® Compiler set the proper toolset, e.g. for Intel
+To use the Intel® Compiler, set the proper toolset, e.g. for Intel
 Compiler 17.0:
 
     cmake -G "Visual Studio 12 2013 Win64" -T "Intel C++ Compiler 17.0" ..
@@ -494,7 +490,7 @@ parameters that can be configured in CMake:
                                  including rtcore.h in your
                                  application.
 
-  EMBREE_IGNORE_CMAKE_CXX_FLAGS  When enabled Embree ignores      ON
+  EMBREE_IGNORE_CMAKE_CXX_FLAGS  When enabled, Embree ignores     ON
                                  default CMAKE_CXX_FLAGS.
 
   EMBREE_TUTORIALS               Enables build of Embree          ON
@@ -547,20 +543,14 @@ parameters that can be configured in CMake:
   EMBREE_ISA_AVX512SKX           Enables AVX-512 for Skylake when  OFF
                                  EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_GEOMETRY_TRIANGLE      Enables support for triangle      ON
+  EMBREE_GEOMETRY_TRIANGLE       Enables support for triangle      ON
                                  geometries.
 
-  EMBREE_GEOMETRY_QUAD          Enables support for quad          ON
+  EMBREE_GEOMETRY_QUAD           Enables support for quad          ON
                                  geometries.
 
-  EMBREE_GEOMETRY_CURVE_LINEAR   Enables support for line          ON
+  EMBREE_GEOMETRY_CURVE          Enables support for curve         ON
                                  geometries.
-
-  EMBREE_GEOMETRY_CURVE_BEZIER   Enables support for Bezier        ON
-                                 curve geometries.
-
-  EMBREE_GEOMETRY_CURVE_BSPLINE  Enables support for B-Spline      ON
-                                 curve geometries.
 
   EMBREE_GEOMETRY_SUBDIVISION    Enables support for subdivision   ON
                                  geometries.
@@ -578,12 +568,11 @@ parameters that can be configured in CMake:
   : CMake build options for Embree.
 
 When using the statically compiled Embree library, you have to define
-ENABLE_STATIC_LIB before including `rtcore.h` in your
-application. Further multiple static libraries are generated for the
-different ISAs selected (e.g. embree3.a, embree3_sse42.a,
-embree3_avx.a, embree3_avx2.a, embree3_avx512knl.a,
-embree3_avx512skx.a). You have to link these libraries in exactly this
-order of increasing ISA.
+ENABLE_STATIC_LIB before including `rtcore.h` in your application.
+Further multiple static libraries are generated for the different ISAs
+selected (e.g. `embree3.a`, `embree3_sse42.a`, `embree3_avx.a`,
+`embree3_avx2.a`, `embree3_avx512knl.a`, `embree3_avx512skx.a`). You
+have to link these libraries in exactly this order of increasing ISA.
 
 Using Embree
 =============
@@ -595,13 +584,13 @@ CMake find Embree using the `FIND_PACKAGE` function inside your
      FIND_PACKAGE(embree 3.0 REQUIRED)
 
 If you installed Embree using the Linux RPM or macOS PKG installer,
-this will automatically find Embree. If you used the .zip or tar.gz
+this will automatically find Embree. If you used the `zip` or `tar.gz`
 files to extract Embree, you need to set the `embree_DIR` variable to
 the folder you extracted Embree to. If you used the Windows MSI
 installer, you need to set `embree_DIR` to point to the Embree install
 location (e.g. `C:\Program Files\Intel\Embree3`).
 
-The `FIND_PACKAGE` cmake function will set the `EMBREE_INCLUDE_DIRS`
+The `FIND_PACKAGE` CMake function will set the `EMBREE_INCLUDE_DIRS`
 variable to point to the directory containing the Embree headers. You
 should add this folder to the include directories of your build:
 
@@ -838,7 +827,7 @@ Device
 ------
 
 *   `rtcInit` and `rtcExit` got removed. Please use the device concept
-    using the `rtcNewDevice` and `rtcDeleteDevice` functions
+    using the `rtcNewDevice` and `rtcReleaseDevice` functions
     instead.
 
 *   Functions that conceptually should operate on a device but did not
@@ -995,64 +984,64 @@ Miscellaneous
     but a pointer to a structure containing all arguments. This
     results in more readable code, faster callback invocation (as some
     arguments do not change between invocations) and is extensible, as
-    new members to the structure can be added in a backwards
-    compatible way later (if required).
+    new members to the structure can be later added in a backward
+    compatible way (if required).
 
     The conversion script can convert the definition and declaration
     of the old callback functions in most cases. Before running the
-    script, make sure that you never type cast a callback function
+    script, make sure that you never type-cast a callback function
     when assigning it (as this has the danger of assigning a callback
-    function with wrong type if conversion did not detect some
+    function with a wrong type if the conversion did not detect some
     callbacks as such). If the script does not detect a callback
-    function, make sure argument types match exactly the types in the
-    header (e.g. write `const int` instead of `int const` or convert
-    the callback manually).
+    function, make sure the argument types match exactly the types in
+    the header (e.g. write `const int` instead of `int const` or
+    convert the callback manually).
 
 *   An intersection context is now required for each ray query
-    invocation. The context should get initialized using the
+    invocation. The context should be initialized using the
     `rtcInitIntersectContext` function.
 
-*   The `rtcIntersect`-type function get as input an `RTCRayHit` type,
-    which is similar to before, but has the ray and hit part split
+*   The `rtcIntersect`-type functions get as input an `RTCRayHit` type,
+    which is similar to before, but has the ray and hit parts split
     into two sub-structures.
 
-    The `rtcOccluded`-type function get as input an `RTCRay` type
+    The `rtcOccluded`-type functions get as input an `RTCRay` type,
     which does not contain hit data anymore. When an occlusion is
-    found the `tfar` element of the ray is set to `-inf`. 
+    found, the `tfar` element of the ray is set to `-inf`.
 
     Required code changes cannot be done by the upgrade script and
     need to be done manually.
 
 *   The ray layout for single rays and packets of rays had certain
-    incompatibilities (alignment of org and dir for single rays caused
-    gaps in the single ray layout that were not in the ray packet
-    layout). This issue never showed up as single rays and ray packets
-    were separate in the system initially. This layout issue is now
-    fixed and a single ray has the same layout as a ray packet of
-    size 1.
+    incompatibilities (alignment of `org` and `dir` for single rays
+    caused gaps in the single ray layout that were not in the ray
+    packet layout). This issue never showed up because single rays
+    and ray packets were separate in the system initially. This layout
+    issue is now fixed, and a single ray has the same layout as a ray
+    packet of size 1.
 
-*   Previously Embree supported placing additional data to the end of
+*   Previously Embree supported placing additional data at the end of
     the ray structure, and accessing that data inside user geometry
     callbacks and filter callback functions.
 
-    With Embree 3 this is no longer supported and the ray passed to a
+    With Embree 3 this is no longer supported, and the ray passed to a
     callback function may be copied to a different memory location. To
-    attach additional data to your ray simply extent the intersection
+    attach additional data to your ray, simply extend the intersection
     context with a pointer to that data.
 
     This change cannot be done by the script. Further, code will still
     work if you extend the ray as the implementation did not change yet.
 
-*   The ray structure now contains an additional `id` and `flag`
+*   The ray structure now contains an additional `id` and `flags`
     field. The `id` can be used to store the index of the ray with
-    respect to a ray packet or ray stream. The flags is reserved for
-    future use, and has to be set to 0.
+    respect to a ray packet or ray stream. The `flags` is reserved for
+    future use, and currently must be set to 0.
 
-*   All previous intersection filter callback variants got removed,
-    except for the `RTCFilterFuncN` which gets a varying size ray
-    packet as input. The semantics of this filter function type is
-    changed from copying the hit on acceptance, to clearing the ray's
-    valid argument in case of non-acceptance. This way chaining
+*   All previous intersection filter callback variants have been
+    removed, except for the `RTCFilterFuncN` which gets a varying size
+    ray packet as input. The semantics of this filter function type
+    have changed from copying the hit on acceptance to clearing the
+    ray's valid argument in case of non-acceptance. This way, chaining
     multiple filters is more efficient.
 
     We kept the guarantee that for `rtcIntersect1/4/8/16` and
@@ -1060,21 +1049,20 @@ Miscellaneous
     change from the initial size and ordering when entering a filter
     callback.
 
-*   We no longer export ISPC specific symbols. This has the advantage
+*   We no longer export ISPC-specific symbols. This has the advantage
     that certain linking issues went away, e.g. it is now possible to
-    link an ISPC application compiled for any combination of ISAs and
+    link an ISPC application compiled for any combination of ISAs, and
     link this to an Embree library compiled with a different set of
     ISAs. Previously the ISAs of the application had to be a subset of
-    the ISAs of Embree, and when one enabled exactly one ISA one had
-    to do this in Embree and the application.
+    the ISAs of Embree, and when the user enabled exactly one ISA, they
+    had to do this in Embree and the application.
 
 *   We no longer export the ISPC tasking system, which means that the
     application has the responsibility to implement the ISPC tasking
     system itself. ISPC comes with example code on how to do this. This
-    change is not performed by the script and need to be done
-    manually.
+    change is not performed by the script and must be done manually.
 
-*   Fixed many naming inconsistencies and changed names of further API
+*   Fixed many naming inconsistencies, and changed names of further API
     functions. All these renamings are properly done by the script and
     need no further attention.
 
@@ -1573,31 +1561,31 @@ has the proper mode set.
 Thread Creation and Affinity Settings
 --------------------------------------
 
-Tasking systems like TBB create worker threads on demand which will
+Tasking systems like TBB create worker threads on demand, which will
 add a runtime overhead for the very first `rtcCommitScene` call. In
-case you want to benchmark the scene build time, you should start
+case you want to benchmark the scene build time, you should start the
 threads at application startup. You can let Embree start TBB threads
-by passing `start_threads=1` to the init parameter of `rtcNewDevice`.
+by passing `start_threads=1` to the `cfg` parameter of `rtcNewDevice`.
 
 On machines with a high thread count (e.g. dual-socket Xeon or Xeon
 Phi machines), affinitizing TBB worker threads increases build and
 rendering performance. You can let Embree affinitize TBB worker
-threads by passing `set_affinity=1` to the init parameter of
-`rtcNewDevice`. By default threads are not affinitized by Embree with
+threads by passing `set_affinity=1` to the `cfg` parameter of
+`rtcNewDevice`. By default, threads are not affinitized by Embree with
 the exception of Xeon Phi Processors where they are affinitized by
 default.
 
-All Embree tutorials automatically start and affinitize TBB worker threads
-by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
+All Embree tutorials automatically start and affinitize TBB worker
+threads by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
 
 Fast Coherent Rays
 ------------------
 
-For getting the highest performance for very coherent rays,
-e.g. primary or hard shadow rays, it is recommended to use packets or
-stream of rays/packets with setting the
+For getting the highest performance for highly coherent rays, e.g.
+primary or hard shadow rays, it is recommended to use packets or
+streams of single rays/packets with setting the
 `RTC_INTERSECT_CONTEXT_FLAG_COHERENT` flag in the
-`RTCIntersectContext` passed to the rtcIntersect/rtcOccluded
+`RTCIntersectContext` passed to the `rtcIntersect`/`rtcOccluded`
 calls. The total number of rays in a coherent stream of ray packets
 should be around 64, e.g. 8 times 8-wide packets, or 4 times 16-wide
 packets. The rays inside each packet should be grouped as coherent as
@@ -1608,35 +1596,35 @@ Huge Page Support
 
 It is recommended to use huge pages under Linux to increase rendering
 performance. Embree supports 2MB huge pages under Windows, Linux, and
-macOS. Under Linux huge page support is enabled by default and under
+macOS. Under Linux huge page support is enabled by default, and under
 Windows and macOS disabled by default. Huge page support can be
 enabled in Embree by passing `hugepages=1` to `rtcNewDevice` or
 disabled by passing `hugepages=0` to `rtcNewDevice`.
 
 We recommend using 2MB huge pages with Embree under Linux as this
-improves ray tracing performance by about 5 - 10%. Under Windows using
-huge pages requires the application to run in elavated mode which is a
+improves ray tracing performance by about 5-10%. Under Windows using
+huge pages requires the application to run in elevated mode which is a
 security issue, thus likely not an option for most use cases. Under
 macOS huge pages are rarely available as memory tends to get quickly
 fragmented, thus we do not recommend using huge pages on macOS.
 
 ### Huge Pages under Linux
 
-Linux supports transparent huge pages and explicit huge
-pages. To enable transparent huge page support under Linux execute the
+Linux supports transparent huge pages and explicit huge pages. To
+enable transparent huge page support under Linux, execute the
 following as root:
 
     echo always > /sys/kernel/mm/transparent_hugepage/enabled
 
-When transparent huge pages are enabled, the kernel tries to merge 4k
+When transparent huge pages are enabled, the kernel tries to merge 4KB
 pages to 2MB pages when possible as a background job. Many Linux
 distributions have transparent huge pages enabled by default. See the
 following webpage for more information on
-[transparent huge pages under Linux](https://www.kernel.org/doc/Documentation/vm/transhuge.txt). In
-this mode each application, including your rendering application
-building on Embree, will automatically tend to use huge pages.
+[transparent huge pages under Linux](https://www.kernel.org/doc/Documentation/vm/transhuge.txt).
+In this mode each application, including your rendering application
+based on Embree, will automatically tend to use huge pages.
 
-Using transparent huge pages the transitioning from 4k to 2MB pages
+Using transparent huge pages, the transitioning from 4KB to 2MB pages
 might take some time. For that reason Embree also supports allocating
 2MB pages directly when a huge page pool is configured. Such a pool
 can be configured by writing some number of huge pages to allocate to
@@ -1658,16 +1646,16 @@ a user to "Local Policies" -> "User Rights Assignment" -> "Lock pages
 in memory". You have to log out and in again for this change to take
 effect.
 
-Further, your application has to be executed as an elevated process
-("Run as administrator") and the "SeLockMemoryPrivilege" must
-explicitly be enabled by your application. Example code on how to
+Further, your application must be executed as an elevated process
+("Run as administrator") and the "SeLockMemoryPrivilege" must be
+explicitly enabled by your application. Example code on how to
 enable this privilege can be found in the "common/sys/alloc.cpp" file
 of Embree. Alternatively, Embree will try to enable this privilege
-when passing `enable_selockmemoryprivilege=1` to
-`rtcNewDevice`. Further, huge pages should be enabled in Embree by
-passing `hugepages=1` to `rtcNewDevice`.
+when passing `enable_selockmemoryprivilege=1` to `rtcNewDevice`.
+Further, huge pages should be enabled in Embree by passing
+`hugepages=1` to `rtcNewDevice`.
 
-When the system was running for a while, physical memory gets
+When the system has been running for a while, physical memory gets
 fragmented, which can slow down the allocation of huge pages
 significantly under Windows.
 
@@ -1676,17 +1664,18 @@ significantly under Windows.
 To use huge pages under macOS you have to pass `hugepages=1` to
 `rtcNewDevice` to enable that feature in Embree.
 
-When the system was running for a while, physical memory gets quickly
-fragmented, and causes huge page allocations to fail. For this reason
-huge pages are not very useful under macOS in practice.
+When the system has been running for a while, physical memory gets
+quickly fragmented, and causes huge page allocations to fail. For this
+reason, huge pages are not very useful under macOS in practice.
 
-## Avoid store to load forwarding issues with single rays
+## Avoid store-to-load forwarding issues with single rays
 
 We recommend to use a single SSE store to set up the `org` and `tnear`
-components, and a single SSE store to set up the `dir` and `tfar`
+components, and a single SSE store to set up the `dir` and `time`
 components of a single ray (`RTCRay` type). Storing these values using
-scalar stores causes a store-to-load forwarding penalty as Embree is
-reading these components using SSE loads later on.
+scalar stores causes a store-to-load forwarding penalty because Embree
+is reading these components using SSE loads later on.
+
 
 Embree Tutorials
 ================
@@ -1707,8 +1696,8 @@ vector), and `--fov` (vertical field of view) command line parameters:
 
     ./triangle_geometry --vp 10 10 10 --vi 0 0 0
 
-You can select the initial windows size using the `--size` command line
-parameter, or start the tutorials in fullscreen using the `--fullscreen`
+You can select the initial window size using the `--size` command line
+parameter, or start the tutorials in full screen using the `--fullscreen`
 parameter:
 
     ./triangle_geometry --size 1024 1024
@@ -1803,11 +1792,11 @@ User Geometry
 ![][imgUserGeometry]
 
 This tutorial shows the use of user-defined geometry, to re-implement
-instancing and to add analytic spheres. A two-level scene is created,
-with a triangle mesh as ground plane, and several user geometries, that
-instance other scenes with a small number of spheres of different kind.
+instancing, and to add analytic spheres. A two-level scene is created,
+with a triangle mesh as ground plane, and several user geometries that
+instance other scenes with a small number of spheres of different kinds.
 The spheres are colored using the instance ID and geometry ID of the hit
-sphere, to demonstrate how the same geometry, instanced in different
+sphere, to demonstrate how the same geometry instanced in different
 ways can be distinguished.
 
 Viewer
@@ -1818,7 +1807,7 @@ Viewer
 This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is created,
 each mesh sharing the index and vertex buffer with the application.
-Demonstrated is also how to support additional per-vertex data, such as
+It also demonstrates how to support additional per-vertex data, such as
 shading normals.
 
 You need to specify an OBJ file at the command line for this tutorial to
@@ -1831,9 +1820,9 @@ Stream Viewer
 
 ![][imgViewerStream]
 
-This tutorial demonstrates a simple OBJ viewer that demonstrates the
-use of ray streams. You need to specify an OBJ file at the command
-line for this tutorial to work:
+This tutorial is a simple OBJ viewer that demonstrates the use of ray
+streams. You need to specify an OBJ file at the command line for this
+tutorial to work:
 
     ./viewer_stream -i model.obj
 
@@ -1843,9 +1832,9 @@ Instanced Geometry
 ![][imgInstancedGeometry]
 
 This tutorial demonstrates the in-build instancing feature of Embree, by
-instancing a number of other scenes build from triangulated spheres. The
+instancing a number of other scenes built from triangulated spheres. The
 spheres are again colored using the instance ID and geometry ID of the
-hit sphere, to demonstrate how the same geometry, instanced in different
+hit sphere, to demonstrate how the same geometry instanced in different
 ways can be distinguished.
 
 Intersection Filter
@@ -1855,18 +1844,18 @@ Intersection Filter
 
 This tutorial demonstrates the use of filter callback functions to
 efficiently implement transparent objects. The filter function used for
-primary rays, lets the ray pass through the geometry if it is entirely
-transparent. Otherwise the shading loop handles the transparency
+primary rays lets the ray pass through the geometry if it is entirely
+transparent. Otherwise, the shading loop handles the transparency
 properly, by potentially shooting secondary rays. The filter function
 used for shadow rays accumulates the transparency of all surfaces along
 the ray, and terminates traversal if an opaque occluder is hit.
 
-Pathtracer
-----------
+Path Tracer
+-----------
 
 ![][imgPathtracer]
 
-This tutorial is a simple path tracer, building on the viewer tutorial.
+This tutorial is a simple path tracer, based on the viewer tutorial.
 
 You need to specify an OBJ file and light source at the command line for
 this tutorial to work:
@@ -1906,7 +1895,7 @@ Subdivision Geometry
 
 ![][imgSubdivisionGeometry]
 
-This tutorial demonstrates the use of Catmull Clark subdivision
+This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces.
 
 Displacement Geometry
@@ -1914,7 +1903,7 @@ Displacement Geometry
 
 ![][imgDisplacementGeometry]
 
-This tutorial demonstrates the use of Catmull Clark subdivision
+This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
 
@@ -1923,9 +1912,9 @@ Motion Blur Geometry
 
 ![][imgMotionBlurGeometry]
 
-This tutorial demonstrates rendering of motion blur using the multi
-segment motion blur feature. Shown is motion blur of a triangle mesh,
-quad mesh, subdivision surface, line segments, hair geometry, bezier
+This tutorial demonstrates rendering of motion blur using the
+multi-segment motion blur feature. Shown is motion blur of a triangle mesh,
+quad mesh, subdivision surface, line segments, hair geometry, Bézier
 curves, instantiated triangle mesh where the instance moves,
 instantiated quad mesh where the instance and the quads move, and user
 geometry.
@@ -1947,8 +1936,8 @@ BVH Builder
 
 This tutorial demonstrates how to use the templated hierarchy builders
 of Embree to build a bounding volume hierarchy with a user-defined
-memory layout using a high quality SAH builder using spatial splits, a
-standard SAH builder, and very fast morton builder.
+memory layout using a high-quality SAH builder using spatial splits, a
+standard SAH builder, and a very fast Morton builder.
 
 BVH Access
 -----------
@@ -1961,9 +1950,9 @@ Find Embree
 -----------
 
 This tutorial demonstrates how to use the `FIND_PACKAGE` CMake feature
-to use an installed Embree. Under Linux and Mac OS X the tutorial finds
+to use an installed Embree. Under Linux and macOS the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
-CMake variable has to be set to the following folder of the Embree
+CMake variable must be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.
 
 [Embree API]: #embree-api
