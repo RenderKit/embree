@@ -127,7 +127,7 @@ namespace embree
 
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
-      if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
+      if (unlikely(types == BVH_AN1 && context->user && context->isCoherent()))
       {
         intersectCoherent(valid_i, This, ray, context);
         return;
@@ -156,7 +156,7 @@ namespace embree
       const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
        /* determine switch threshold based on flags */
-      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
+      const size_t switchThreshold = (context->user && context->isCoherent()) ? 2 : switchThresholdIncoherent;
 
       vint<K> octant = ray.octant();
       octant = select(valid, octant, vint<K>(0xffffffff));
@@ -602,7 +602,7 @@ namespace embree
       BVH* __restrict__ bvh = (BVH*)This->ptr;
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
-      if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
+      if (unlikely(types == BVH_AN1 && context->user && context->isCoherent()))
       {
         occludedCoherent(valid_i, This, ray, context);
         return;
@@ -637,7 +637,7 @@ namespace embree
       const vfloat<K> inf = vfloat<K>(pos_inf);
 
       /* determine switch threshold based on flags */
-      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
+      const size_t switchThreshold = (context->user && context->isCoherent()) ? 2 : switchThresholdIncoherent;
 
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];

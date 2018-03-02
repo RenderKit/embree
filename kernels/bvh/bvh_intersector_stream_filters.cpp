@@ -27,7 +27,7 @@ namespace embree
       RayStreamAOS rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
       {
         __aligned(64) RayTypeK<K, intersect> rays[MAX_INTERNAL_STREAM_SIZE / K];
         __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
@@ -170,7 +170,7 @@ namespace embree
       RayStreamAOP rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
       {
         __aligned(64) RayTypeK<K, intersect> rays[MAX_INTERNAL_STREAM_SIZE / K];
         __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
@@ -316,7 +316,7 @@ namespace embree
                  !rayDataAlignment &&
                  !offsetAlignment))
       {
-        if (unlikely(isCoherent(context->user->flags)))
+        if (unlikely(context->isCoherent()))
         {
           __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
 
@@ -466,7 +466,7 @@ namespace embree
       RayStreamSOP& rayN = *(RayStreamSOP*)_rayN;
 
       /* use fast path for coherent ray mode */
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
       {
         __aligned(64) RayTypeK<K, intersect> rays[MAX_INTERNAL_STREAM_SIZE / K];
         __aligned(64) RayTypeK<K, intersect>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / K];
@@ -606,56 +606,56 @@ namespace embree
 
 
     void RayStreamFilter::intersectAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterAOS<VSIZEL, true>(scene, _rayN, N, stride, context);
       else
         filterAOS<VSIZEX, true>(scene, _rayN, N, stride, context);
     }
 
     void RayStreamFilter::occludedAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterAOS<VSIZEL, false>(scene, _rayN, N, stride, context);
       else
         filterAOS<VSIZEX, false>(scene, _rayN, N, stride, context);
     }
 
     void RayStreamFilter::intersectAOP(Scene* scene, RTCRayHit** _rayN, size_t N, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterAOP<VSIZEL, true>(scene, (void**)_rayN, N, context);
       else
         filterAOP<VSIZEX, true>(scene, (void**)_rayN, N, context);
     }
 
     void RayStreamFilter::occludedAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterAOP<VSIZEL, false>(scene, (void**)_rayN, N, context);
       else
         filterAOP<VSIZEX, false>(scene, (void**)_rayN, N, context);
     }
 
     void RayStreamFilter::intersectSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterSOA<VSIZEL, true>(scene, rayData, N, numPackets, stride, context);
       else
         filterSOA<VSIZEX, true>(scene, rayData, N, numPackets, stride, context);
     }
 
     void RayStreamFilter::occludedSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterSOA<VSIZEL, false>(scene, rayData, N, numPackets, stride, context);
       else
         filterSOA<VSIZEX, false>(scene, rayData, N, numPackets, stride, context);
     }
 
     void RayStreamFilter::intersectSOP(Scene* scene, const RTCRayHitNp* _rayN, size_t N, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterSOP<VSIZEL, true>(scene, _rayN, N, context);
       else
         filterSOP<VSIZEX, true>(scene, _rayN, N, context);
     }
 
     void RayStreamFilter::occludedSOP(Scene* scene, const RTCRayNp* _rayN, size_t N, IntersectContext* context) {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         filterSOP<VSIZEL, false>(scene, _rayN, N, context);
       else
         filterSOP<VSIZEX, false>(scene, _rayN, N, context);

@@ -61,7 +61,7 @@ namespace embree
                                                                                                             size_t numOctantRays,
                                                                                                             IntersectContext* context)
     {
-      assert(isCoherent(context->user->flags));
+      assert(context->isCoherent());
 
       BVH* __restrict__ bvh = (BVH*) This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
@@ -168,7 +168,7 @@ namespace embree
                                                                                                    size_t numOctantRays,
                                                                                                    IntersectContext* context)
     {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         occludedCoherent(This, (RayK<VSIZEL>**)inputPackets, numOctantRays, context);
       else
         occludedIncoherent(This, (RayK<VSIZEX>**)inputPackets, numOctantRays, context);
@@ -181,7 +181,7 @@ namespace embree
                                                                                                         size_t numOctantRays,
                                                                                                         IntersectContext* context)
     {
-      assert(isCoherent(context->user->flags));
+      assert(context->isCoherent());
 
       BVH* __restrict__ bvh = (BVH*)This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  // stack of nodes
@@ -294,7 +294,7 @@ namespace embree
                                                                                                              size_t numOctantRays,
                                                                                                              IntersectContext* context)
     {
-      assert(!isCoherent(context->user->flags));
+      assert(!context->isCoherent());
       assert(types & BVH_FLAG_ALIGNED_NODE);
 
       __aligned(64) TravRayKStream<K,robust> packet[MAX_INTERNAL_STREAM_SIZE/K];
@@ -471,7 +471,7 @@ namespace embree
                                                                size_t numTotalRays,
                                                                IntersectContext* context)
     {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         intersectK(This, (RayHitK<VSIZEL>**)inputRays, numTotalRays, context);
       else
         intersectK(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
@@ -483,7 +483,7 @@ namespace embree
                                                               size_t numTotalRays,
                                                               IntersectContext* context)
     {
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(context->isCoherent()))
         occludedK(This, (RayK<VSIZEL>**)inputRays, numTotalRays, context);
       else
         occludedK(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
