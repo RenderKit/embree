@@ -18,6 +18,7 @@
 
 #include "default.h"
 #include "device.h"
+#include "builder.h"
 #include "scene_triangle_mesh.h"
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
@@ -26,7 +27,6 @@
 #include "scene_line_segments.h"
 #include "scene_subdiv_mesh.h"
 #include "scene_grid_mesh.h"
-
 #include "../subdiv/tessellation_cache.h"
 
 #include "acceln.h"
@@ -156,6 +156,8 @@ namespace embree
     void createSubdivMBAccel();
     void createUserGeometryAccel();
     void createUserGeometryMBAccel();
+    void createInstanceAccel();
+    void createInstanceMBAccel();
     void createGridAccel();
     void createGridMBAccel();
 
@@ -292,10 +294,10 @@ namespace embree
     struct GeometryCounts 
     {
       __forceinline GeometryCounts()
-        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numGrids(0) {}
+        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numInstances(0), numGrids(0) {}
 
       __forceinline size_t size() const {
-        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numGrids;
+        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstances + numGrids;
       }
 
       std::atomic<size_t> numTriangles;             //!< number of enabled triangles
@@ -304,14 +306,13 @@ namespace embree
       std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
       std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
       std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
-      std::atomic<size_t> numGrids;              //!< number of enabled grid geometries
+      std::atomic<size_t> numInstances;             //!< number of enabled instances
+      std::atomic<size_t> numGrids;                 //!< number of enabled grid geometries
 
     };
     
     GeometryCounts world;               //!< counts for non-motion blurred geometry
     GeometryCounts worldMB;             //!< counts for motion blurred geometry
-    GeometryCounts instanced;           //!< instance counts for non-motion blurred geometry
-    GeometryCounts instancedMB;         //!< instance counts for motion blurred geometry
 
     std::atomic<size_t> numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
@@ -344,9 +345,10 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,true>() const { return worldMB.numLineSegments; }
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,false>() const { return world.numSubdivPatches; }
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
-  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,false>() const { return world.numUserGeometries; }
-  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,true>() const { return worldMB.numUserGeometries; }
+  template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,false>() const { return world.numUserGeometries; }
+  template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,true>() const { return worldMB.numUserGeometries; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Instance,false>() const { return world.numInstances; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Instance,true>() const { return worldMB.numInstances; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,false>() const { return world.numGrids; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; }
-
 }

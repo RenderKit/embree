@@ -241,12 +241,12 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH4VirtualMeshBuilderSAH (void* bvh, AccelSet* mesh, size_t mode);
-    Builder* BVH4VirtualMeshRefitSAH (void* accel, AccelSet* mesh, size_t mode) { return new BVHNRefitT<4,AccelSet,Object>((BVH4*)accel,BVH4VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4VirtualMeshBuilderSAH (void* bvh, UserGeometry* mesh, size_t mode);
+    Builder* BVH4VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, size_t mode) { return new BVHNRefitT<4,UserGeometry,Object>((BVH4*)accel,BVH4VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 
 #if  defined(__AVX__)
-    Builder* BVH8VirtualMeshBuilderSAH (void* bvh, AccelSet* mesh, size_t mode);
-    Builder* BVH8VirtualMeshRefitSAH (void* accel, AccelSet* mesh, size_t mode) { return new BVHNRefitT<8,AccelSet,Object>((BVH8*)accel,BVH8VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH8VirtualMeshBuilderSAH (void* bvh, UserGeometry* mesh, size_t mode);
+    Builder* BVH8VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, size_t mode) { return new BVHNRefitT<8,UserGeometry,Object>((BVH8*)accel,BVH8VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #endif
 #endif
   }

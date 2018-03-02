@@ -49,8 +49,7 @@ namespace embree
   static std::map<Device*,size_t> g_cache_size_map;
   static std::map<Device*,size_t> g_num_threads_map;
 
-  Device::Device (const char* cfg, bool singledevice)
-    : State(singledevice)
+  Device::Device (const char* cfg)
   {
     /* check CPU */
     if (!hasISA(ISA)) 
@@ -97,8 +96,6 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory = make_unique(new InstanceFactory(enabled_cpu_features));
-
     bvh4_factory = make_unique(new BVH4Factory(enabled_builder_cpu_features, enabled_cpu_features));
 
 #if defined(EMBREE_TARGET_SIMD8)

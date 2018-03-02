@@ -48,10 +48,6 @@ namespace embree
   class AccelSet : public Geometry
   {
   public:
-
-    /*! type of this geometry */
-    static const Geometry::GTypeMask geom_type = Geometry::MTY_USER_GEOMETRY;
-
     typedef RTCIntersectFunctionN IntersectFuncN;  
     typedef RTCOccludedFunctionN OccludedFuncN;
     typedef void (*ErrorFunc) ();
@@ -73,7 +69,7 @@ namespace embree
     public:
       
       /*! construction */
-      AccelSet (Device* device, size_t items, size_t numTimeSteps);
+      AccelSet (Device* device, Geometry::GType gtype, size_t items, size_t numTimeSteps);
       
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
@@ -96,7 +92,7 @@ namespace embree
         BBox3fa box;
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.geometryUserPtr = intersectors.ptr;
+        args.geometryUserPtr = userPtr;
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
@@ -110,7 +106,7 @@ namespace embree
         BBox3fa box[2];
         assert(i < size());
         RTCBoundsFunctionArguments args;
-        args.geometryUserPtr = intersectors.ptr;
+        args.geometryUserPtr = userPtr;
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
@@ -154,21 +150,18 @@ namespace embree
         return numPrimitivesChanged;
       }
 
-      void enabling ();
-      void disabling();
-
   public:
 
       /*! Intersects a single ray with the scene. */
       __forceinline void intersect (RayHit& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
       {
         assert(primID < size());
-        assert(intersectors.intersectorN.intersect);
+        assert(intersectorN.intersect);
         
         int mask = -1;
         IntersectFunctionNArguments args;
         args.valid = &mask;
-        args.geometryUserPtr = intersectors.ptr;
+        args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
         args.N = 1;
@@ -177,19 +170,19 @@ namespace embree
         args.geometry = this;
         args.report = report;
         
-        intersectors.intersectorN.intersect(&args);
+        intersectorN.intersect(&args);
       }
 
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (Ray& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report)
       {
         assert(primID < size());
-        assert(intersectors.intersectorN.occluded);
+        assert(intersectorN.occluded);
         
         int mask = -1;
         OccludedFunctionNArguments args;
         args.valid = &mask;
-        args.geometryUserPtr = intersectors.ptr;
+        args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
         args.N = 1;
@@ -198,7 +191,7 @@ namespace embree
         args.geometry = this;
         args.report = report;
         
-        intersectors.intersectorN.occluded(&args);
+        intersectorN.occluded(&args);
       }
    
       /*! Intersects a packet of K rays with the scene. */
@@ -206,12 +199,12 @@ namespace embree
         __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, size_t primID, IntersectContext* context, ReportIntersectionFunc report) 
       {
         assert(primID < size());
-        assert(intersectors.intersectorN.intersect);
+        assert(intersectorN.intersect);
         
         vint<K> mask = valid.mask32();
         IntersectFunctionNArguments args;
         args.valid = (int*)&mask;
-        args.geometryUserPtr = intersectors.ptr;
+        args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
         args.N = K;
@@ -220,7 +213,7 @@ namespace embree
         args.geometry = this;
         args.report = report;
          
-        intersectors.intersectorN.intersect(&args);
+        intersectorN.intersect(&args);
       }
 
       /*! Tests if a packet of K rays is occluded by the scene. */
@@ -228,12 +221,12 @@ namespace embree
         __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, size_t primID, IntersectContext* context, ReportOcclusionFunc report)
       {
         assert(primID < size());
-        assert(intersectors.intersectorN.occluded);
+        assert(intersectorN.occluded);
         
         vint<K> mask = valid.mask32();
         OccludedFunctionNArguments args;
         args.valid = (int*)&mask;
-        args.geometryUserPtr = intersectors.ptr;
+        args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
         args.N = K;
@@ -241,20 +234,13 @@ namespace embree
         args.internal_context = context;
         args.geometry = this;
         args.report = report;
-             
-        intersectors.intersectorN.occluded(&args);
+        
+        intersectorN.occluded(&args);
       }
 
     public:
       RTCBoundsFunction boundsFunc;
-
-      struct Intersectors 
-      {
-        Intersectors() : ptr(nullptr) {}
-      public:
-        void* ptr;
-        IntersectorN intersectorN;
-      } intersectors;
+      IntersectorN intersectorN;
   };
   
 #define DEFINE_SET_INTERSECTORN(symbol,intersector)                     \

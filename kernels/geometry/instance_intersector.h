@@ -16,23 +16,79 @@
 
 #pragma once
 
-#include "../common/scene_instance.h"
+#include "instance.h"
 #include "../common/ray.h"
 
 namespace embree
 {
   namespace isa
   {
-    struct FastInstanceIntersectorN
+    struct InstanceIntersector1
     {
-      static void intersect1(const struct RTCIntersectFunctionNArguments* const args);
-      static void occluded1 (const struct RTCOccludedFunctionNArguments* const args);
+      typedef InstancePrimitive Primitive;
 
-      template<int N> static void intersectN(const struct RTCIntersectFunctionNArguments* const args);
-      template<int N> static void occludedN (const struct RTCOccludedFunctionNArguments* const args);
-   
-      static void intersect(const struct RTCIntersectFunctionNArguments* const args);
-      static void occluded (const struct RTCOccludedFunctionNArguments* const args);
+      struct Precalculations {
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
+      };
+      
+      static void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim);
+      static bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim);
+    };
+
+    struct InstanceIntersector1MB
+    {
+      typedef InstancePrimitive Primitive;
+
+      struct Precalculations {
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
+      };
+      
+      static void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim);
+      static bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim);
+    };
+
+    template<int K>
+      struct InstanceIntersectorK
+    {
+      typedef InstancePrimitive Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray) {}
+      };
+      
+      static void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim);
+      static vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim);
+
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+        intersect(vbool<K>(1<<int(k)),pre,ray,context,prim);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+        occluded(vbool<K>(1<<int(k)),pre,ray,context,prim);
+        return ray.tfar[k] < 0.0f; 
+      }
+    };
+
+    template<int K>
+      struct InstanceIntersectorKMB
+    {
+      typedef InstancePrimitive Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray) {}
+      };
+      
+      static void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim);
+      static vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim);
+
+      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+        intersect(vbool<K>(1<<int(k)),pre,ray,context,prim);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+        occluded(vbool<K>(1<<int(k)),pre,ray,context,prim);
+        return ray.tfar[k] < 0.0f; 
+      }
     };
   }
 }

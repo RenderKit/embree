@@ -26,6 +26,7 @@
 #include "../geometry/linei_intersector.h"
 #include "../geometry/subdivpatch1_intersector.h"
 #include "../geometry/object_intersector.h"
+#include "../geometry/instance_intersector.h"
 
 #include "../common/scene.h"
 #include <bitset>
@@ -457,6 +458,10 @@ namespace embree
 
     struct ObjectIntersectorStream {
       template<int K> using Type = ArrayIntersectorKStream<K,ObjectIntersectorK<K COMMA false>>;
+    };
+
+    struct InstanceIntersectorStream {
+      template<int K> using Type = ArrayIntersectorKStream<K,InstanceIntersectorK<K>>;
     };
 
     // =====================================================================================================
