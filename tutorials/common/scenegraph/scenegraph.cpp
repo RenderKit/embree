@@ -987,14 +987,12 @@ namespace embree
   {
     Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(gmesh->material);
 
-    avector<SceneGraph::GridMeshNode::Vertex> positions;
-    for (size_t i=0;i< gmesh->numPrimitives(); i++)
+    for (size_t i=0; i<gmesh->numPrimitives(); i++)
     {
       const unsigned int startVtx = gmesh->grids[i].startVtx;
       const unsigned int lineOffset = gmesh->grids[i].lineOffset;
       const unsigned int resX = gmesh->grids[i].resX;
       const unsigned int resY = gmesh->grids[i].resY;
-      assert(startVtx + resX * resY == positions.size());
 
       for (size_t y=0; y<resY-1; y++)
       {
@@ -1008,7 +1006,7 @@ namespace embree
         }
       }
     }
-    qmesh->positions.push_back(positions);
+    qmesh->positions.push_back(gmesh->positions[0]);
     return qmesh.dynamicCast<SceneGraph::Node>();
   }
 
