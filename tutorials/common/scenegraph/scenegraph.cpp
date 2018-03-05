@@ -1013,36 +1013,23 @@ namespace embree
     // \/            |
 
     
-    /* test of all neighboring faces of top exist and are not visited already */
+    /* test if all neighboring faces of top exist and are properly connected */
     unsigned int prev_opposite_edge = -1;
     for (size_t i=0; i<top.size(); i++)
     {
       const unsigned int edge = top[i];
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      if (opposite_edge == edge) return false;
       const unsigned int opposite_face = opposite_edge/4;
+      if (visited[opposite_face]) return false;
 
-      bool connected = true;
+      /* test if we share an edge with the last quad */
       if (i > 0) {
         const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,rtcGetGeometryPreviousHalfEdge(geom,prev_opposite_edge));
         const unsigned int border1 = rtcGetGeometryNextHalfEdge(geom,opposite_edge);
-        connected = border0 == border1;
+        if (border0 != border1) return false;
       }
-      
-      /* if no neighbor exists or face is visited already revert changes and fail */
-      if (opposite_edge == edge || visited[opposite_face] || !connected)
-      {
-        /* revert changes to visited array */
-        for (size_t j=0; j<i; j++) {
-          const unsigned int edge = top[j];
-          const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
-          const unsigned int opposite_face = opposite_edge/4;
-          //visited[opposite_face] = false;
-        }
-        return false;
-      }
-
       prev_opposite_edge = opposite_edge;
-      //visited[opposite_face] = true;
     }
 
     /* extend border edges */
