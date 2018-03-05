@@ -53,16 +53,11 @@ namespace embree
     struct Statistics
     {
       Statistics ()
-      : numTriangleMeshes(0), 
-        numTriangles(0), 
-        numQuadMeshes(0), 
-        numQuads(0), 
-        numSubdivMeshes(0), 
-        numPatches(0), 
-        numCurveSets(0), 
-        numCurves(0),
-        numGridMeshNodes(0),
-        numGrids(0),
+      : numTriangleMeshes(0), numTriangles(0), numTriangleBytes(0),
+        numQuadMeshes(0),     numQuads(0),     numQuadBytes(0),
+        numSubdivMeshes(0),   numPatches(0),   numSubdivBytes(0),
+        numCurveSets(0),      numCurves(0),    numCurveBytes(0),
+        numGridMeshNodes(0),  numGrids(0),     numGridBytes(0),
         numTransformNodes(0), 
         numTransformedObjects(0),
         numLights(0),
@@ -73,16 +68,27 @@ namespace embree
       
       size_t numTriangleMeshes;
       size_t numTriangles;
+      size_t numTriangleBytes;
+      
       size_t numQuadMeshes;
       size_t numQuads;
+      size_t numQuadBytes;
+      
       size_t numSubdivMeshes;
       size_t numPatches;
+      size_t numSubdivBytes;
+      
       size_t numCurveSets;
       size_t numCurves;
+      size_t numCurveBytes;
+      
       size_t numGridMeshNodes;
       size_t numGrids;
+      size_t numGridBytes;
+      
       size_t numTransformNodes;
       size_t numTransformedObjects;
+      
       size_t numLights;
       size_t numCameras;
       size_t numMaterials;
@@ -601,6 +607,10 @@ namespace embree
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Triangle) + numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
@@ -683,6 +693,10 @@ namespace embree
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Quad) + numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+      
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
@@ -785,10 +799,18 @@ namespace embree
         else return 0;
       }
 
+      size_t numEdges() const {
+        return position_indices.size();
+      }
+
       size_t numTimeSteps() const {
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(unsigned) + numEdges()*sizeof(unsigned) + numPositions()*numTimeSteps()*sizeof(Vertex);
+      }
+      
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
@@ -885,6 +907,10 @@ namespace embree
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Hair) + numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+
       void convert_bezier_to_bspline();
       void convert_bspline_to_bezier();
       void compact_vertices();
@@ -970,6 +996,10 @@ namespace embree
 
       size_t numTimeSteps() const {
         return positions.size();
+      }
+
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Grid) + numVertices()*numTimeSteps()*sizeof(Vertex);
       }
 
       void verify() const;

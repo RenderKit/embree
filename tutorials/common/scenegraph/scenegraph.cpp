@@ -69,6 +69,7 @@ namespace embree
     if (indegree == 1) {
       stat.numTriangleMeshes++;
       stat.numTriangles += numPrimitives();
+      stat.numTriangleBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -79,6 +80,7 @@ namespace embree
     if (indegree == 1) {
       stat.numQuadMeshes++;
       stat.numQuads += numPrimitives();
+      stat.numQuadBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -89,6 +91,7 @@ namespace embree
     if (indegree == 1) {
       stat.numSubdivMeshes++;
       stat.numPatches += numPrimitives();
+      stat.numSubdivBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -99,6 +102,7 @@ namespace embree
     if (indegree == 1) {
       stat.numCurveSets++;
       stat.numCurves += numPrimitives();
+      stat.numCurveBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -109,6 +113,7 @@ namespace embree
     if (indegree == 1) {
       stat.numGridMeshNodes++;
       stat.numGrids += numPrimitives();
+      stat.numGridBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -149,15 +154,15 @@ namespace embree
   {
     std::cout << "  # transform nodes : " << numTransformNodes << std::endl;
     std::cout << "    # objects       : " << numTransformedObjects << std::endl;
-    std::cout << "  # triangle meshes : " << numTriangleMeshes << std::endl;
+    std::cout << "  # triangle meshes : " << numTriangleMeshes << " ( " << 1E-6*numTriangleBytes << " MB )" << std::endl;
     std::cout << "    # triangles     : " << numTriangles << std::endl;
-    std::cout << "  # quad meshes     : " << numQuadMeshes << std::endl;
+    std::cout << "  # quad meshes     : " << numQuadMeshes << " ( " << 1E-6*numQuadBytes << " MB )" << std::endl;
     std::cout << "    # quads         : " << numQuads << std::endl;
-    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << std::endl;
+    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << " ( " << 1E-6*numSubdivBytes << " MB )" << std::endl;
     std::cout << "    # patches       : " << numPatches << std::endl;
-    std::cout << "  # curve sets      : " << numCurveSets << std::endl;
+    std::cout << "  # curve sets      : " << numCurveSets << " ( " << 1E-6*numCurveBytes << " MB )" << std::endl;
     std::cout << "    # curves        : " << numCurves << std::endl;
-    std::cout << "  # grid meshes     : " << numGridMeshNodes << std::endl;
+    std::cout << "  # grid meshes     : " << numGridMeshNodes << " ( " << 1E-6*numGridBytes << " MB )" << std::endl;
     std::cout << "    # grids         : " << numGrids << std::endl;
     std::cout << "  # lights          : " << numLights << std::endl;
     std::cout << "  # cameras         : " << numCameras << std::endl;
