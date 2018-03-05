@@ -1157,8 +1157,8 @@ namespace embree
         assert(edge == 4*i);
         
         /* extend grid unless no longer possible */
-        size_t width = 0;
-        size_t height = 0;
+        size_t width = 1;
+        size_t height = 1;
         while (true) {
           const bool extended_top    = extend_grid(geom,visited,left,top,right);
           const bool extended_right  = extend_grid(geom,visited,top,right,bottom);
@@ -1175,7 +1175,7 @@ namespace embree
         gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], top.front());
 
         /* add new grid to grid mesh */
-        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width,width,height));
+        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
         for (size_t i=0; i<positions.size(); i++)
           gmesh->positions[0].push_back(positions[i]);
       }
