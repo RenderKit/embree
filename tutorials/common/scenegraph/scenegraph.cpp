@@ -1014,26 +1014,35 @@ namespace embree
 
     
     /* test of all neighboring faces of top exist and are not visited already */
+    unsigned int prev_opposite_edge = -1;
     for (size_t i=0; i<top.size(); i++)
     {
       const unsigned int edge = top[i];
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
       const unsigned int opposite_face = opposite_edge/4;
 
+      bool connected = true;
+      if (i > 0) {
+        const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,rtcGetGeometryPreviousHalfEdge(geom,prev_opposite_edge));
+        const unsigned int border1 = rtcGetGeometryNextHalfEdge(geom,opposite_edge);
+        connected = border0 == border1;
+      }
+      
       /* if no neighbor exists or face is visited already revert changes and fail */
-      if (opposite_edge == edge || visited[opposite_face])
+      if (opposite_edge == edge || visited[opposite_face] || !connected)
       {
         /* revert changes to visited array */
         for (size_t j=0; j<i; j++) {
           const unsigned int edge = top[j];
           const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
           const unsigned int opposite_face = opposite_edge/4;
-          visited[opposite_face] = false;
+          //visited[opposite_face] = false;
         }
         return false;
       }
-      
-      visited[opposite_face] = true;
+
+      prev_opposite_edge = opposite_edge;
+      //visited[opposite_face] = true;
     }
 
     /* extend border edges */
@@ -1043,7 +1052,8 @@ namespace embree
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
       assert(opposite_edge != edge);
       const unsigned int opposite_face = opposite_edge/4;
-      assert(visited[opposite_face]);
+      assert(!visited[opposite_face]);
+      visited[opposite_face] = true;
       unsigned int next_edge = opposite_edge;
       next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       if (i == 0) right.push_back(next_edge);
@@ -1159,7 +1169,8 @@ namespace embree
         /* extend grid unless no longer possible */
         size_t width = 1;
         size_t height = 1;
-        while (true) {
+        while (true)
+        {
           const bool extended_top    = extend_grid(geom,visited,left,top,right);
           const bool extended_right  = extend_grid(geom,visited,top,right,bottom);
           const bool extended_bottom = extend_grid(geom,visited,right,bottom,left);
@@ -1178,6 +1189,8 @@ namespace embree
         gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
         for (size_t i=0; i<positions.size(); i++)
           gmesh->positions[0].push_back(positions[i]);
+
+        //break;
       }
 
       rtcReleaseGeometry(geom);
