@@ -14,14 +14,20 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+MACRO(_SET_IF_EMPTY VAR VALUE)
+  IF(NOT ${VAR})
+    SET(${VAR} "${VALUE}")
+  ENDIF()
+ENDMACRO()
+
 IF (WIN32)
 
-  SET(FLAGS_SSE2  "/QxSSE2")
-  SET(FLAGS_SSE42 "/QxSSE4.2")
-  SET(FLAGS_AVX   "/arch:AVX")
-  SET(FLAGS_AVX2  "/QxCORE-AVX2")
-  SET(FLAGS_AVX512KNL "/QxMIC-AVX512")
-  SET(FLAGS_AVX512SKX "/QxCORE-AVX512")
+  _SET_IF_EMPTY(FLAGS_SSE2  "/QxSSE2")
+  _SET_IF_EMPTY(FLAGS_SSE42 "/QxSSE4.2")
+  _SET_IF_EMPTY(FLAGS_AVX   "/arch:AVX")
+  _SET_IF_EMPTY(FLAGS_AVX2  "/QxCORE-AVX2")
+  _SET_IF_EMPTY(FLAGS_AVX512KNL "/QxMIC-AVX512")
+  _SET_IF_EMPTY(FLAGS_AVX512SKX "/QxCORE-AVX512")
 
   SET(COMMON_CXX_FLAGS "")
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
@@ -79,15 +85,15 @@ IF (WIN32)
 ELSE()
 
   IF (APPLE)
-    SET(FLAGS_SSE2 "-xssse3") # on MacOSX ICC does not support SSE2
+    _SET_IF_EMPTY(FLAGS_SSE2 "-xssse3") # on MacOSX ICC does not support SSE2
   ELSE()
-    SET(FLAGS_SSE2 "-xsse2")
+    _SET_IF_EMPTY(FLAGS_SSE2 "-xsse2")
   ENDIF()
-  SET(FLAGS_SSE42  "-xsse4.2")
-  SET(FLAGS_AVX    "-xAVX")
-  SET(FLAGS_AVX2   "-xCORE-AVX2")
-  SET(FLAGS_AVX512KNL "-xMIC-AVX512")
-  SET(FLAGS_AVX512SKX "-xCORE-AVX512")
+  _SET_IF_EMPTY(FLAGS_SSE42  "-xsse4.2")
+  _SET_IF_EMPTY(FLAGS_AVX    "-xAVX")
+  _SET_IF_EMPTY(FLAGS_AVX2   "-xCORE-AVX2")
+  _SET_IF_EMPTY(FLAGS_AVX512KNL "-xMIC-AVX512")
+  _SET_IF_EMPTY(FLAGS_AVX512SKX "-xCORE-AVX512")
 
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
   IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
