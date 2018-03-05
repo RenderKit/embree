@@ -30,6 +30,8 @@ namespace embree
     struct MaterialNode;
     struct Transformations;
     struct TriangleMeshNode;
+    struct QuadMeshNode;
+    struct GridMeshNode;
 
     Ref<Node> load(const FileName& fname, bool singleObject = false);
     void store(Ref<Node> root, const FileName& fname, bool embedTextures, bool referenceMaterials);
@@ -46,11 +48,10 @@ namespace embree
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
-    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh,  const unsigned resX, const unsigned resY );
-    Ref<Node> convert_triangles_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
-
-    Ref<Node> convert_triangles_to_grids_to_quads( Ref<TriangleMeshNode> tmesh, const unsigned resX, const unsigned resY );
-    Ref<Node> convert_triangles_to_grids_to_quads( Ref<Node> node, const unsigned resX, const unsigned resY );
+    Ref<Node> convert_quads_to_grids( Ref<QuadMeshNode> qmesh,  const unsigned resX, const unsigned resY );
+    Ref<Node> convert_quads_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
+    Ref<Node> convert_grids_to_quads( Ref<GridMeshNode> gmesh);
+    Ref<Node> convert_grids_to_quads( Ref<Node> node);
 
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
 
@@ -449,16 +450,16 @@ namespace embree
           children[i] = convert_triangles_to_quads(children[i],prop);
       }
 
-      void triangles_to_grids(unsigned int resX, unsigned int resY)
+      void quads_to_grids(unsigned int resX, unsigned int resY)
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_grids(children[i],resX, resY);        
+          children[i] = convert_quads_to_grids(children[i],resX, resY);
       }
 
-      void triangles_to_grids_to_quads(unsigned int resX, unsigned int resY)
+      void grids_to_quads()
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_grids_to_quads(children[i],resX, resY);        
+          children[i] = convert_grids_to_quads(children[i]);
       }
 
       void quads_to_subdivs()
