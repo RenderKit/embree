@@ -48,6 +48,10 @@ namespace embree
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
     Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh,  const unsigned resX, const unsigned resY );
     Ref<Node> convert_triangles_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
+
+    Ref<Node> convert_triangles_to_grids_to_quads( Ref<TriangleMeshNode> tmesh, const unsigned resX, const unsigned resY );
+    Ref<Node> convert_triangles_to_grids_to_quads( Ref<Node> node, const unsigned resX, const unsigned resY );
+
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
 
     struct Statistics
@@ -451,6 +455,12 @@ namespace embree
           children[i] = convert_triangles_to_grids(children[i],resX, resY);        
       }
 
+      void triangles_to_grids_to_quads(unsigned int resX, unsigned int resY)
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_triangles_to_grids_to_quads(children[i],resX, resY);        
+      }
+
       void quads_to_subdivs()
       {
         for (size_t i=0; i<children.size(); i++)
@@ -520,6 +530,7 @@ namespace embree
     struct MaterialNode : public Node
     {
       ALIGNED_STRUCT_(16);
+
       MaterialNode(const std::string& name = "")
         : Node(name) {}
 

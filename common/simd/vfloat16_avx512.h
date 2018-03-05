@@ -20,7 +20,7 @@ namespace embree
 {
   /* 16-wide AVX-512 float type */
   template<>
-    struct vfloat<16>
+  struct vfloat<16>
   {
     typedef vboolf16 Bool;
     typedef vint16   Int;
@@ -192,6 +192,7 @@ namespace embree
 
   __forceinline vfloat16 asFloat(const vint16&   a) { return _mm512_castsi512_ps(a); }
   __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a); }
+  __forceinline vuint16  asUInt (const vfloat16& a) { return _mm512_castps_si512(a); }
 
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }

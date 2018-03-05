@@ -185,7 +185,7 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   {
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY)))
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
@@ -197,7 +197,7 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   {
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY)))
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {

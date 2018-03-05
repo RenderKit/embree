@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     template<typename NativeCurve3fa, int M>
-      struct DistanceCurveHit
+    struct DistanceCurveHit
     {
       __forceinline DistanceCurveHit() {}
 
@@ -60,7 +60,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa>
-      struct DistanceCurve1Intersector1
+    struct DistanceCurve1Intersector1
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre,Ray& ray,
@@ -139,7 +139,7 @@ namespace embree
     };
 
     template<typename NativeCurve3fa, int K>
-      struct DistanceCurve1IntersectorK
+    struct DistanceCurve1IntersectorK
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,

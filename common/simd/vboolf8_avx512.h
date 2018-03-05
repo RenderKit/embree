@@ -43,6 +43,9 @@ namespace embree
     __forceinline vboolf(int t)  { v = (__mmask8)t; }
     __forceinline vboolf(unsigned int t) { v = (__mmask8)t; }
 
+    __forceinline vboolf(bool a, bool b, bool c, bool d, bool e, bool f, bool g, bool h)
+      : v((__mmask8)((int(h) << 7) | (int(g) << 6) | (int(f) << 5) | (int(e) << 4) | (int(d) << 3) | (int(c) << 2) | (int(b) << 1) | int(a))) {}
+
     /* return int8 mask */
     __forceinline __m128i mask8() const {
       return _mm_movm_epi8(v);
@@ -64,6 +67,14 @@ namespace embree
 
     __forceinline vboolf(FalseTy) : v(0x00) {}
     __forceinline vboolf(TrueTy)  : v(0xff) {}
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Array Access
+    ////////////////////////////////////////////////////////////////////////////////
+
+    __forceinline bool operator [](size_t index) const {
+      assert(index < 8); return (mm512_mask2int(v) >> index) & 1;
+    }
   };
 
   ////////////////////////////////////////////////////////////////////////////////

@@ -1150,50 +1150,38 @@ namespace embree
                                          float &start,
                                          float &scale)
       {
+        /* quantize bounds */
         const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
         const float minF = reduce_min(lower);
         const float maxF = reduce_max(upper);
-        float diff = maxF - minF; //todo: add extracted difference here
-        float scale_diff = diff / float(MAX_QUAN);
-
-        /* accomodate floating point accuracy issues in 'diff' */
-        size_t iterations = 0;
-        while(minF + scale_diff * float(MAX_QUAN) < maxF)
-        {
-          diff = nextafter(diff, FLT_MAX);
-          scale_diff = diff / float(MAX_QUAN);
-          iterations++;
-        }
-        const float inv_diff   = float(MAX_QUAN) / diff;
-
-        vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
-        vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
-        vint<N> i_floor_lower( floor_lower );
-        vint<N> i_ceil_upper ( ceil_upper  );
-
-        i_ceil_upper = min(i_ceil_upper,(int)MAX_QUAN);
+        float diff = (1.0f+2.0f*float(ulp))*(maxF - minF);
+        float decode_scale = diff / float(MAX_QUAN);
+        assert(madd(decode_scale,float(MAX_QUAN),minF) >= maxF);
+        const float encode_scale = float(MAX_QUAN) / diff;
+        vint<N> ilower = max(vint<N>(floor((lower - vfloat<N>(minF))*vfloat<N>(encode_scale))),MIN_QUAN);
+        vint<N> iupper = min(vint<N>(ceil ((upper - vfloat<N>(minF))*vfloat<N>(encode_scale))),MAX_QUAN);
 
         /* lower/upper correction */
-        vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
-        vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
-        i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
-        i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
+        vbool<N> m_lower_correction = (madd(vfloat<N>(ilower),decode_scale,minF)) > lower;
+        vbool<N> m_upper_correction = (madd(vfloat<N>(iupper),decode_scale,minF)) < upper;
+        ilower = max(select(m_lower_correction,ilower-1,ilower),MIN_QUAN);
+        iupper = min(select(m_upper_correction,iupper+1,iupper),MAX_QUAN);
 
         /* disable invalid lanes */
-        i_floor_lower = select(m_valid,i_floor_lower,MAX_QUAN);
-        i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
+        ilower = select(m_valid,ilower,MAX_QUAN);
+        iupper = select(m_valid,iupper,MIN_QUAN);
 
         /* store as uchar to memory */
-        vint<N>::store(lower_quant,i_floor_lower);
-        vint<N>::store(upper_quant,i_ceil_upper);
+        vint<N>::store(lower_quant,ilower);
+        vint<N>::store(upper_quant,iupper);
         start = minF;
-        scale = scale_diff;
+        scale = decode_scale;
 
 #if defined(DEBUG)
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
-        vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
-        vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
+        vfloat<N> final_extract_lower = madd(extract_lower,decode_scale,minF);
+        vfloat<N> final_extract_upper = madd(extract_upper,decode_scale,minF);
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
         assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
 #endif

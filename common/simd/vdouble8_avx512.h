@@ -20,7 +20,7 @@ namespace embree
 {
   /* 8-wide AVX-512 64-bit double type */
   template<>
-    struct vdouble<8>
+  struct vdouble<8>
   {
     typedef vboold8 Bool;
 
@@ -134,7 +134,9 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vdouble8 asDouble  (const __m512&   a) { return _mm512_castps_pd(a); }
+  __forceinline vdouble8 asDouble(const vllong8&  a) { return _mm512_castsi512_pd(a); }
+  __forceinline vllong8  asLLong (const vdouble8& a) { return _mm512_castpd_si512(a); }
+
   __forceinline vdouble8 operator +(const vdouble8& a) { return a; }
   __forceinline vdouble8 operator -(const vdouble8& a) { return _mm512_sub_pd(_mm512_setzero_pd(), a); }
 

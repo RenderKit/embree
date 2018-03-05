@@ -317,6 +317,7 @@ namespace embree
       grid_resY(2),
       convert_tris_to_grids(false),
       merge_quads_to_grids(false),
+      convert_tris_to_grids_to_quads(false),
       remove_mblur(false),
       remove_non_mblur(false),
       sceneFilename(""),
@@ -381,9 +382,13 @@ namespace embree
         convert_tris_to_grids = true;
       }, "--convert-triangles-to-grids: converts all triangles to grids");
 
+    registerOption("convert-triangles-to-grids-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_tris_to_grids_to_quads = true;
+      }, "--convert-triangles-to-grids-to-quads: converts all triangles to grids and then to quads when loading");
+
     registerOption("grid-res", [this] (Ref<ParseStream> cin, const FileName& path) {
-        grid_resX = cin->getInt();
-        grid_resY = cin->getInt();
+        grid_resX = min(max(cin->getInt(),2),0x7fff);
+        grid_resY = min(max(cin->getInt(),2),0x7fff);        
       }, "--grid-res: sets tessellation resolution for the grid primitive");
 
     registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -1024,6 +1029,7 @@ namespace embree
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
     if (convert_tris_to_grids    ) scene->triangles_to_grids(grid_resX,grid_resY);
     if (merge_quads_to_grids     ) scene->merge_quads_to_grids();
+    if (convert_tris_to_grids_to_quads) scene->triangles_to_grids_to_quads(grid_resX,grid_resY);
     Application::instance->log(1,"converting scene done");
 
     if (verbosity >= 1) {

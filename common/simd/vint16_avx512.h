@@ -20,7 +20,7 @@ namespace embree
 { 
   /* 16-wide AVX-512 integer type */
   template<>
-    struct vint<16>
+  struct vint<16>
   {
     typedef vboolf16 Bool;
     typedef vint16   Int;
@@ -187,7 +187,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf16 asBool(const vint16& a) { return _mm512_cmp_epi32_mask(a, _mm512_set1_epi32(-1), _MM_CMPINT_EQ); }
+  __forceinline vboolf16 asBool(const vint16& a) { return _mm512_movepi32_mask(a); }
 
   __forceinline vint16 operator +(const vint16& a) { return a; }
   __forceinline vint16 operator -(const vint16& a) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }

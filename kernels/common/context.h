@@ -32,6 +32,14 @@ namespace embree
     __forceinline bool hasContextFilter() const {
       return user->filter != nullptr;
     }
+
+    __forceinline bool isCoherent() const {
+      return embree::isCoherent(user->flags);
+    }
+
+    __forceinline bool isIncoherent() const {
+      return embree::isIncoherent(user->flags);
+    }
     
   public:
     Scene* scene;
