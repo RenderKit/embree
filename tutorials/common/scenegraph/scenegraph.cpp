@@ -1025,7 +1025,7 @@ namespace embree
       {
         /* revert changes to visited array */
         for (size_t j=0; j<i; j++) {
-          const unsigned int edge = top[i];
+          const unsigned int edge = top[j];
           const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
           const unsigned int opposite_face = opposite_edge/4;
           visited[opposite_face] = false;
