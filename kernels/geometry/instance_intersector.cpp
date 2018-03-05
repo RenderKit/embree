@@ -120,14 +120,15 @@ namespace embree
     }
     
     template<int K>
-    void InstanceIntersectorK<K>::intersect(const vbool<K>& valid, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    void InstanceIntersectorK<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
+      vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
-        valid &= (ray.mask & accel->mask) != 0;
-        if (none(valid)) return;
+      valid &= (ray.mask & instance->mask) != 0;
+      if (none(valid)) return;
 #endif
         
       RTCIntersectContext* user_context = context->user;
@@ -145,14 +146,15 @@ namespace embree
     }
 
     template<int K>
-    vbool<K> InstanceIntersectorK<K>::occluded(const vbool<K>& valid, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    vbool<K> InstanceIntersectorK<K>::occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
+      vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
-        valid &= (ray.mask & accel->mask) != 0;
-        if (none(valid)) return false;
+      valid &= (ray.mask & instance->mask) != 0;
+      if (none(valid)) return false;
 #endif
         
       RTCIntersectContext* user_context = context->user;
@@ -171,14 +173,15 @@ namespace embree
     }
 
     template<int K>
-    void InstanceIntersectorKMB<K>::intersect(const vbool<K>& valid, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    void InstanceIntersectorKMB<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
+      vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
-        valid &= (ray.mask & accel->mask) != 0;
-        if (none(valid)) return;
+      valid &= (ray.mask & instance->mask) != 0;
+      if (none(valid)) return;
 #endif
         
       RTCIntersectContext* user_context = context->user;
@@ -196,14 +199,15 @@ namespace embree
     }
 
     template<int K>
-    vbool<K> InstanceIntersectorKMB<K>::occluded(const vbool<K>& valid, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    vbool<K> InstanceIntersectorKMB<K>::occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
+      vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
-        valid &= (ray.mask & accel->mask) != 0;
-        if (none(valid)) return false;
+      valid &= (ray.mask & instance->mask) != 0;
+      if (none(valid)) return false;
 #endif
         
       RTCIntersectContext* user_context = context->user;
