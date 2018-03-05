@@ -1006,11 +1006,11 @@ namespace embree
   bool extend_grid(RTCGeometry geom, std::vector<bool>& visited, std::deque<unsigned int>& left, std::deque<unsigned int>& top, std::deque<unsigned int>& right)
   {
     //        top
-    // /\ ----------->
-    // |             |
+    // | <----------
+    // |            /\
     // | left        | right 
     // |             |
-    // |             \/
+    // \/            |
 
     
     /* test of all neighboring faces of top exist and are not visited already */
@@ -1018,9 +1018,22 @@ namespace embree
     {
       const unsigned int edge = top[i];
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
-      if (opposite_edge == edge) return false;
       const unsigned int opposite_face = opposite_edge/4;
-      if (visited[opposite_face]) return false;
+
+      /* if no neighbor exists or face is visited already revert changes and fail */
+      if (opposite_edge == edge || visited[opposite_face])
+      {
+        /* revert changes to visited array */
+        for (size_t j=0; j<i; j++) {
+          const unsigned int edge = top[i];
+          const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+          const unsigned int opposite_face = opposite_edge/4;
+          visited[opposite_face] = false;
+        }
+        return false;
+      }
+      
+      visited[opposite_face] = true;
     }
 
     /* extend border edges */
@@ -1030,14 +1043,13 @@ namespace embree
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
       assert(opposite_edge != edge);
       const unsigned int opposite_face = opposite_edge/4;
-      assert(!visited[opposite_face]);
-      visited[opposite_face] = true;
+      assert(visited[opposite_face]);
       unsigned int next_edge = opposite_edge;
-      next_edge = rtcGetGeometryNextHalfEdge(geom,edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       if (i == top.size()-1) right.push_back(next_edge);
-      next_edge = rtcGetGeometryNextHalfEdge(geom,edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       top[i] = next_edge;
-      next_edge = rtcGetGeometryNextHalfEdge(geom,edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       if (i == 0) left.push_front(next_edge);
     }
 
@@ -1046,6 +1058,13 @@ namespace embree
 
   void gather_grid(RTCGeometry geom, avector<Vec3fa>& positions, size_t width, size_t height, unsigned int* indices, avector<Vec3fa>& vertices, unsigned int edgey)
   {
+    //        
+    // | <----------    <----------
+    // |            /\ |           /\
+    // | edgey       | |           |
+    // |             | |           |
+    // \/            | \/          |
+    
     /* gather all rows */
     size_t y=0;
     for (; y<height; y++)
@@ -1109,7 +1128,8 @@ namespace embree
     {
       Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,1);
       
-      std::vector<bool> visited(qmesh->numPrimitives());
+      std::vector<bool> visited;
+      visited.resize(qmesh->numPrimitives());
       for (size_t i=0; i<visited.size(); i++) visited[i] = false;
       std::vector<unsigned int> faces(qmesh->numPrimitives());
       for (size_t i=0; i<faces.size(); i++) faces[i] = 4;
@@ -1126,7 +1146,7 @@ namespace embree
       {
         /* skip face if already added to some grid */
         if (visited[i]) continue;
-        
+
         /* initialize grid with start quad */
         unsigned int edge = 4*i;
         std::deque<unsigned int> left, right, top, bottom;
@@ -1140,7 +1160,7 @@ namespace embree
         size_t width = 0;
         size_t height = 0;
         while (true) {
-          const bool extended_top    = extend_grid(geom,visited,left,top,right); 
+          const bool extended_top    = extend_grid(geom,visited,left,top,right);
           const bool extended_right  = extend_grid(geom,visited,top,right,bottom);
           const bool extended_bottom = extend_grid(geom,visited,right,bottom,left);
           const bool extended_left   = extend_grid(geom,visited,bottom,left,top);
