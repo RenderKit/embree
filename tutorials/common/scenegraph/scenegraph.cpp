@@ -1046,11 +1046,11 @@ namespace embree
       assert(visited[opposite_face]);
       unsigned int next_edge = opposite_edge;
       next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
-      if (i == top.size()-1) right.push_back(next_edge);
+      if (i == 0) right.push_back(next_edge);
       next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       top[i] = next_edge;
       next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
-      if (i == 0) left.push_front(next_edge);
+      if (i == top.size()-1) left.push_front(next_edge);
     }
 
     return true;
@@ -1172,7 +1172,7 @@ namespace embree
         /* gather all vertices of grid */
         avector<Vec3fa> positions;
         positions.resize((width+1)*(height+1));
-        gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], top.front());
+        gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], left.front());
 
         /* add new grid to grid mesh */
         gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
