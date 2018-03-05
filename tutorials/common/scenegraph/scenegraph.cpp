@@ -1156,6 +1156,7 @@ namespace embree
       {
         /* skip face if already added to some grid */
         if (visited[i]) continue;
+        visited[i] = true;
 
         /* initialize grid with start quad */
         unsigned int edge = 4*i;
@@ -1189,8 +1190,6 @@ namespace embree
         gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
         for (size_t i=0; i<positions.size(); i++)
           gmesh->positions[0].push_back(positions[i]);
-
-        //break;
       }
 
       rtcReleaseGeometry(geom);
