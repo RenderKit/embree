@@ -354,9 +354,10 @@ namespace embree
         sgop.push_back(CONVERT_BEZIER_TO_LINES);
       }, "--convert-bezier-to-lines: converts all bezier curves to line segments when loading");
 
-    registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
-        sgop.push_back(CONVERT_HAIR_TO_CURVES);
-      }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
+    registerOption("convert-flat-to-round-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_FLAT_TO_ROUND_CURVES);
+      }, "--convert-flat-to-round-curves: converts all flat curves to round curves");
+    registerOptionAlias("convert-flat-to-round-curves","convert-hair-to-curves"); // for compatibility reasons
 
     registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
         sgop.push_back(CONVERT_BEZIER_TO_BSPLINE);
@@ -1036,14 +1037,14 @@ namespace embree
     for (auto& op : sgop)
     {
       switch (op) {
-      case CONVERT_TRIANGLES_TO_QUADS: scene->triangles_to_quads(convert_tris_to_quads_prop); break;
-      case CONVERT_BEZIER_TO_LINES   : scene->bezier_to_lines(); break;
-      case CONVERT_HAIR_TO_CURVES    : scene->hair_to_curves(); break;
-      case CONVERT_BEZIER_TO_BSPLINE : scene->bezier_to_bspline(); break;
-      case CONVERT_BSPLINE_TO_BEZIER : scene->bspline_to_bezier(); break;
-      case CONVERT_QUADS_TO_GRIDS    : scene->quads_to_grids(grid_resX,grid_resY); break;
-      case MERGE_QUADS_TO_GRIDS      : scene->merge_quads_to_grids(); break;
-      case CONVERT_GRIDS_TO_QUADS    : scene->grids_to_quads(); break;
+      case CONVERT_TRIANGLES_TO_QUADS   : scene->triangles_to_quads(convert_tris_to_quads_prop); break;
+      case CONVERT_BEZIER_TO_LINES      : scene->bezier_to_lines(); break;
+      case CONVERT_BEZIER_TO_BSPLINE    : scene->bezier_to_bspline(); break;
+      case CONVERT_BSPLINE_TO_BEZIER    : scene->bspline_to_bezier(); break;
+      case CONVERT_FLAT_TO_ROUND_CURVES : scene->flat_to_round_curves(); break;
+      case MERGE_QUADS_TO_GRIDS         : scene->merge_quads_to_grids(); break;
+      case CONVERT_QUADS_TO_GRIDS       : scene->quads_to_grids(grid_resX,grid_resY); break;
+      case CONVERT_GRIDS_TO_QUADS       : scene->grids_to_quads(); break;
       default : throw std::runtime_error("unsupported scene graph operation");
       }
     }
