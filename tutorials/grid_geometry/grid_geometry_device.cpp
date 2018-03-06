@@ -21,9 +21,8 @@ namespace embree {
 /* configuration */
 #define NUM_GRID_OBJECTS 4
 #define NUM_GRIDS_PER_OBJECT 4
-#define GRID_RESOLUTION_X 1000
-#define GRID_RESOLUTION_Y 1000
-
+#define GRID_RESOLUTION_X 20
+#define GRID_RESOLUTION_Y 20
 
 #define EDGE_LEVEL 256.0f
 #define ENABLE_SMOOTH_NORMALS 0
@@ -172,31 +171,24 @@ unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 
-  unsigned int addGridPlane (RTCScene scene_i, const size_t gridObjectID)
+unsigned int addGridPlane (RTCScene scene_i, unsigned int gridObjectID)
 {
-  PING;
   /* create a triangulated plane with 2 triangles and 4 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
   unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS_PER_OBJECT;
-  const float sizeX  = 20.0f;
-  const float sizeY  = 20.0f;
   float startX = 10.0f;
   float startY = 10.0f;
+  float sizeX  = 20.0f;
+  float sizeY  = 20.0f;
 
   startX += gridObjectID * sizeX;
-  
+
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
+  Vertex* vertices = (Vertex *) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
 
 
-  RTCGrid* grids = (RTCGrid*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(RTCGrid),NUM_GRIDS_PER_OBJECT);
+  RTCGrid* grids = (RTCGrid *) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(RTCGrid),NUM_GRIDS_PER_OBJECT);
 
-  PRINT(sizeof(Vec3f));
-  PRINT(sizeof(Vec3f) * numVertices);
-  PRINT(sizeof(RTCGrid) * NUM_GRIDS_PER_OBJECT);
-  PRINT(sizeof(Vec3f) * numVertices + sizeof(RTCGrid) * NUM_GRIDS_PER_OBJECT);
-
-  size_t triangles = 0;
   unsigned int index = 0;
   for (unsigned int g=0;g<NUM_GRIDS_PER_OBJECT;g++)
   {
@@ -204,7 +196,6 @@ unsigned int addGroundPlane (RTCScene scene_i)
     grids[g].lineOffset = GRID_RESOLUTION_X;
     grids[g].resX       = GRID_RESOLUTION_X;
     grids[g].resY       = GRID_RESOLUTION_Y;
-    triangles += (GRID_RESOLUTION_X-1)*(GRID_RESOLUTION_Y-1)*2; 
     for (unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
       for (unsigned int x=0;x<GRID_RESOLUTION_X;x++)
       {
@@ -217,8 +208,6 @@ unsigned int addGroundPlane (RTCScene scene_i)
     startY += sizeY;
   }
   assert(index == numVertices);
-
-  PRINT(triangles);
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
