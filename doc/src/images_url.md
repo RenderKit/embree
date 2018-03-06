@@ -1,0 +1,16 @@
+[imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
+[imgQuadUV]: https://embree.github.io/images/quad_uv.png
+[imgTriangleGeometry]: https://embree.github.io/images/triangle_geometry.jpg
+[imgDynamicScene]: https://embree.github.io/images/dynamic_scene.jpg
+[imgUserGeometry]: https://embree.github.io/images/user_geometry.jpg
+[imgViewer]: https://embree.github.io/images/viewer.jpg
+[imgViewerStream]: https://embree.github.io/images/viewer_stream.jpg
+[imgInstancedGeometry]: https://embree.github.io/images/instanced_geometry.jpg
+[imgIntersectionFilter]: https://embree.github.io/images/intersection_filter.jpg
+[imgPathtracer]: https://embree.github.io/images/pathtracer.jpg
+[imgHairGeometry]: https://embree.github.io/images/hair_geometry.jpg
+[imgCurveGeometry]: https://embree.github.io/images/curve_geometry.jpg
+[imgSubdivisionGeometry]: https://embree.github.io/images/subdivision_geometry.jpg
+[imgDisplacementGeometry]: https://embree.github.io/images/displacement_geometry.jpg
+[imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
+[imgInterpolation]: https://embree.github.io/images/interpolation.jpg
