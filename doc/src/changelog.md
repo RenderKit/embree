@@ -32,6 +32,7 @@ Version History
 -   Removed the RTC_MAX_USER_VERTEX_BUFFERS and RTC_MAX_INDEX_BUFFERS
     limitations.
 -   Reduced memory consumption by 192 bytes per instance.
+-   Fixed some performance issues on AVX-512 architectures.
 -   Individual Contributor License Agreement (ICLA) and Corporate
     Contributor License Agreement (CCLA) no longer required to
     contribute to the project.
