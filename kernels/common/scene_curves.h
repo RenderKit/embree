@@ -97,8 +97,17 @@ namespace embree
       return vertices[itime][i].w;
     }
 
+    /*! gathers the curve starting with i'th vertex */
+    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i) const
+    {
+      p0 = vertex(i+0);
+      p1 = vertex(i+1);
+      p2 = vertex(i+2);
+      p3 = vertex(i+3);
+    }
+
     /*! gathers the curve starting with i'th vertex of itime'th timestep */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i, size_t itime = 0) const
+    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i, size_t itime) const
     {
       p0 = vertex(i+0,itime);
       p1 = vertex(i+1,itime);
@@ -106,8 +115,17 @@ namespace embree
       p3 = vertex(i+3,itime);
     }
 
+    /*! gathers the curve starting with i'th normal */
+    __forceinline void gather_normals(Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i) const
+    {
+      n0 = normal(i+0);
+      n1 = normal(i+1);
+      n2 = normal(i+2);
+      n3 = normal(i+3);
+    }
+
     /*! gathers the curve starting with i'th normal of itime'th timestep */
-    __forceinline void gather_normals(Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, size_t itime = 0) const
+    __forceinline void gather_normals(Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, size_t itime) const
     {
       n0 = normal(i+0,itime);
       n1 = normal(i+1,itime);
