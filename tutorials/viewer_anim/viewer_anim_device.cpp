@@ -30,7 +30,6 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 
 /* scene data */
-RTCDevice g_device = nullptr;
 RTCScene g_scene   = nullptr;
 Vec3fa* ls_positions = nullptr;
 
@@ -385,13 +384,6 @@ void device_key_pressed_handler(int key)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
   /* create scene */
   g_scene = createScene(g_ispc_scene);
 
@@ -485,7 +477,6 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

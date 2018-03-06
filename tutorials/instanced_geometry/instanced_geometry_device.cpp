@@ -21,8 +21,6 @@ namespace embree {
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
-RTCDevice g_device = nullptr;
-
 void renderTileStandardStream(int taskIndex,
                               int threadIndex,
                               int* pixels,
@@ -129,13 +127,6 @@ Vec3fa colors[4][4];
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
@@ -497,7 +488,6 @@ extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
   rtcReleaseScene (g_scene1); g_scene1 = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

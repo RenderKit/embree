@@ -48,7 +48,6 @@ void occlusionFilter(const RTCFilterFunctionNArguments* args);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
@@ -450,13 +449,6 @@ extern "C" void device_init (char* cfg)
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
   hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -509,7 +501,6 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
   alignedFree(g_accu); g_accu = nullptr;
   g_accu_width = 0;
   g_accu_height = 0;

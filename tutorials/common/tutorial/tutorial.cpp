@@ -45,6 +45,8 @@ namespace embree
 {
   extern "C"
   {
+    RTCDevice g_device = nullptr;
+    
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
     ISPCScene* g_ispc_scene = nullptr;
@@ -66,7 +68,7 @@ namespace embree
   extern "C" int g_instancing_mode;
 
   /* error reporting function */
-  extern "C" void tutorial_error_handler(void* userPtr, const RTCError code, const char* str)
+  void error_handler(void* userPtr, const RTCError code, const char* str)
   {
     if (code == RTC_ERROR_NONE)
       return;
@@ -295,6 +297,7 @@ namespace embree
     g_ispc_scene = nullptr;
     ispc_scene = nullptr;
     device_cleanup();
+    if (g_device) rtcReleaseDevice(g_device);
     alignedFree(pixels);
     pixels = nullptr;
     width = 0;
@@ -964,6 +967,13 @@ namespace embree
     /* callback */
     postParseCommandLine();
 
+    /* create device */
+    g_device = rtcNewDevice(rtcore.c_str());
+    error_handler(nullptr,rtcGetDeviceError(g_device));
+
+    /* set error handler */
+    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
+  
     /* start tutorial */
     run(argc,argv);
     return 0;
@@ -990,6 +1000,13 @@ namespace embree
       std::cout << "Error: " << e.what() << std::endl;
     }
 
+    /* create device */
+    g_device = rtcNewDevice(rtcore.c_str());
+    error_handler(nullptr,rtcGetDeviceError(g_device));
+
+    /* set error handler */
+    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
+  
     log(1,"application start");
     
     /* load scene */

@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-RTCDevice g_device = NULL;
-
 const uniform int numPhi = 20;
 const uniform int numTheta = 2*numPhi;
 const uniform int numSpheres = 64;
@@ -262,13 +260,6 @@ RTCScene g_scene  = NULL;
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   
@@ -384,5 +375,4 @@ export void device_cleanup ()
     delete g_objects[i];
   }
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

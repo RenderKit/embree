@@ -46,7 +46,6 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
@@ -448,13 +447,6 @@ export void device_init (uniform int8* uniform cfg)
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
   hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -503,7 +495,6 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;
   g_accu_height = 0;

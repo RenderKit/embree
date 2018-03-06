@@ -24,7 +24,6 @@ extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
 
 /* scene data */
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 uniform bool g_subdiv_mode = false;
 
@@ -339,13 +338,6 @@ uniform Vec3fa old_p;
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
@@ -395,5 +387,4 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

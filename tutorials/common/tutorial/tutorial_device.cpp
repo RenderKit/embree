@@ -34,13 +34,6 @@ extern "C" float g_debug;
 /* stores pointer to currently used rendePixel function */
 renderTileFunc renderTile;
 
-extern "C" void tutorial_error_handler(void* userPtr, RTCError code, const char* str);
-
-/* error reporting function */
-void error_handler(void* userPtr, RTCError code, const char* str) {
-  tutorial_error_handler(userPtr,code,str);
-}
-
 /* renders a single pixel with eyelight shading */
 Vec3fa renderPixelEyeLight(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {

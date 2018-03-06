@@ -18,7 +18,6 @@
 
 namespace embree
 {
-  RTCDevice g_device = nullptr;
   RTCScene g_scene  = nullptr;
 
   /* This function is called by the builder to signal progress and to
@@ -104,10 +103,9 @@ namespace embree
 
   void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
-    RTCDevice device = rtcNewDevice(cfg);
-    rtcSetDeviceMemoryMonitorFunction(device,memoryMonitor,nullptr);
+    rtcSetDeviceMemoryMonitorFunction(g_device,memoryMonitor,nullptr);
 
-    RTCBVH bvh = rtcNewBVH(device);
+    RTCBVH bvh = rtcNewBVH(g_device);
 
     avector<RTCBuildPrimitive> prims;
     prims.reserve(prims_i.size()+extraSpace);
@@ -156,13 +154,6 @@ namespace embree
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    /* create new Embree device */
-    g_device = rtcNewDevice(cfg);
-    error_handler(nullptr,rtcGetDeviceError(g_device));
-
-    /* set error handler */
-    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
     /* set start render mode */
     renderTile = renderTileStandard;
 
@@ -234,6 +225,5 @@ namespace embree
 
   /* called by the C++ code for cleanup */
   extern "C" void device_cleanup () {
-    rtcReleaseDevice(g_device);
   }
 }
