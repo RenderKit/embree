@@ -108,11 +108,7 @@ namespace embree
       };
     
     /*! Performs standard object binning */
-#if defined(__AVX512F__)
-    template<typename PrimitiveSplitterFactory, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16>
-#else
-      template<typename PrimitiveSplitterFactory, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16>
-#endif
+    template<typename PrimitiveSplitterFactory, typename PrimRef, size_t OBJECT_BINS, size_t SPATIAL_BINS>
       struct HeuristicArraySpatialSAH
       {
         typedef BinSplit<OBJECT_BINS> ObjectSplit;

@@ -31,7 +31,7 @@ namespace embree
     class BVHNNodeTraverser1Hit;
 
     /*! Helper functions for fast sorting using AVX512 instructions. */
-#if defined(__AVX512F__)   
+#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
 
     /* KNL code path */
     __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
@@ -233,10 +233,9 @@ namespace embree
       /* increase stack pointer */
       stackPtr += hits-1;
     }
+#endif
 
-
-    /* SKX code path */
-#if defined(__AVX512VL__)
+#if defined(__AVX512F__) && defined(__AVX512VL__) // SKX
 
     template<int N>
     __forceinline static void isort_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
@@ -423,8 +422,6 @@ namespace embree
     }
 #endif
 
-#endif
-
     /* Specialization for BVH4. */
     template<int Nx, int types>
     class BVHNNodeTraverser1Hit<4, Nx, types>
@@ -442,7 +439,7 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-#if defined(__AVX512F__) && 1
+#if defined(__AVX512F__)
 
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
