@@ -1291,6 +1291,36 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
+  RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryOppositeHalfEdge);
+    return geometry->getOppositeHalfEdge(edgeID);
+    RTC_CATCH_END2(geometry);
+    return -1;
+  }
+  
+  RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryNextHalfEdge);
+    return geometry->getNextHalfEdge(edgeID);
+    RTC_CATCH_END2(geometry);
+    return -1;
+  }
+
+  RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryPreviousHalfEdge);
+    return geometry->getPreviousHalfEdge(edgeID);
+    RTC_CATCH_END2(geometry);
+    return -1;
+  }
+
   RTC_API void rtcSetGeometryOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

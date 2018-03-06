@@ -249,6 +249,23 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Set displacement function. */
+    virtual void setDisplacementFunction (RTCDisplacementFunctionN filter) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    virtual unsigned int getOppositeHalfEdge(unsigned int edgeID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    virtual unsigned int getNextHalfEdge(unsigned int edgeID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    virtual unsigned int getPreviousHalfEdge(unsigned int edgeID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! for triangle meshes and bezier curves only */
   public:
 
@@ -266,11 +283,6 @@ namespace embree
     /*! Gets specified buffer. */
     virtual void* getBuffer(RTCBufferType type, unsigned int slot) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
-    }
-
-    /*! Set displacement function. */
-    virtual void setDisplacementFunction (RTCDisplacementFunctionN filter) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
     /*! Set intersection filter function for ray packets of size N. */

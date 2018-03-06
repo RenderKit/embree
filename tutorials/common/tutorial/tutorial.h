@@ -184,15 +184,22 @@ namespace embree
   public:
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
-    bool convert_tris_to_quads;
+
+    enum SceneGraphOperations
+    {
+      CONVERT_TRIANGLES_TO_QUADS,
+      CONVERT_BEZIER_TO_LINES,
+      CONVERT_BEZIER_TO_BSPLINE,
+      CONVERT_BSPLINE_TO_BEZIER,
+      CONVERT_FLAT_TO_ROUND_CURVES,
+      MERGE_QUADS_TO_GRIDS,
+      CONVERT_QUADS_TO_GRIDS,
+      CONVERT_GRIDS_TO_QUADS,
+    };
+    std::vector<SceneGraphOperations> sgop;
+
     float convert_tris_to_quads_prop;
-    bool convert_bezier_to_lines;
-    bool convert_hair_to_curves;
-    bool convert_bezier_to_bspline;
-    bool convert_bspline_to_bezier;
     unsigned grid_resX, grid_resY;
-    bool convert_tris_to_grids;
-    bool convert_tris_to_grids_to_quads;
     bool remove_mblur;
     bool remove_non_mblur;
     FileName sceneFilename;

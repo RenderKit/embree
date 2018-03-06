@@ -307,16 +307,9 @@ namespace embree
 
     : TutorialApplication(tutorialName, features),
       scene(new SceneGraph::GroupNode),
-      convert_tris_to_quads(false),
       convert_tris_to_quads_prop(inf),
-      convert_bezier_to_lines(false),
-      convert_hair_to_curves(false),
-      convert_bezier_to_bspline(false),
-      convert_bspline_to_bezier(false),
       grid_resX(2),
       grid_resY(2),
-      convert_tris_to_grids(false),
-      convert_tris_to_grids_to_quads(false),
       remove_mblur(false),
       remove_non_mblur(false),
       sceneFilename(""),
@@ -348,38 +341,54 @@ namespace embree
       }, "-animlist <filename>: parses a sequence of .obj/.xml files listed in <filename> and adds them to the scene");
 
     registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_tris_to_quads = true;
+        sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
         convert_tris_to_quads_prop = inf;
       }, "--convert-triangles-to-quads: converts all triangles to quads when loading");
 
     registerOption("convert-triangles-to-triangles-and-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_tris_to_quads = true;
+        sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
         convert_tris_to_quads_prop = 0.5f;
       }, "--convert-triangles-to-triangles-and-quads: converts to mixed triangle/quad scene");
 
     registerOption("convert-bezier-to-lines", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_bezier_to_lines = true;
+        sgop.push_back(CONVERT_BEZIER_TO_LINES);
       }, "--convert-bezier-to-lines: converts all bezier curves to line segments when loading");
 
-    registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_hair_to_curves = true;
-      }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
+    registerOption("convert-flat-to-round-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_FLAT_TO_ROUND_CURVES);
+      }, "--convert-flat-to-round-curves: converts all flat curves to round curves");
+    registerOptionAlias("convert-flat-to-round-curves","convert-hair-to-curves"); // for compatibility reasons
 
     registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_bezier_to_bspline = true;
+        sgop.push_back(CONVERT_BEZIER_TO_BSPLINE);
       }, "--convert-bezier-to-bspline: converts all bezier curves to bsplines curves");
 
     registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_bspline_to_bezier = true;
+        sgop.push_back(CONVERT_BSPLINE_TO_BEZIER);
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
 
+    registerOption("merge-quads-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(MERGE_QUADS_TO_GRIDS);
+      }, "--merge-quads-to-grids: merges quads to grids");
+
+    registerOption("convert-quads-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_QUADS_TO_GRIDS);
+      }, "--convert-quads-to-grids: converts all quads to grids");
+
+    registerOption("convert-grids-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_GRIDS_TO_QUADS);
+      }, "--convert-grids-to-quads: converts all grids to quads");
+
     registerOption("convert-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_tris_to_grids = true;
-      }, "--convert-triangles-to-grids: converts all triangles to grids when loading");
+        sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
+        sgop.push_back(CONVERT_QUADS_TO_GRIDS);
+      }, "--convert-triangles-to-grids: converts all triangles to grids");
 
     registerOption("convert-triangles-to-grids-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_tris_to_grids_to_quads = true;
-      }, "--convert-triangles-to-grids-to-quads: converts all triangles to grids and then to quads when loading");
+        sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
+        sgop.push_back(CONVERT_QUADS_TO_GRIDS);
+        sgop.push_back(CONVERT_GRIDS_TO_QUADS);
+      }, "--convert-triangles-to-grids-to-quads: converts all triangles to grids and then to quads");
 
     registerOption("grid-res", [this] (Ref<ParseStream> cin, const FileName& path) {
         grid_resX = min(max(cin->getInt(),2),0x7fff);
@@ -1017,14 +1026,28 @@ namespace embree
     if (remove_non_mblur) scene->remove_mblur(false);
 
     /* perform conversions */
-    if (convert_tris_to_quads    ) scene->triangles_to_quads(convert_tris_to_quads_prop);
-    if (convert_bezier_to_lines  ) scene->bezier_to_lines();
-    if (convert_hair_to_curves   ) scene->hair_to_curves();
-    if (convert_bezier_to_bspline) scene->bezier_to_bspline();
-    if (convert_bspline_to_bezier) scene->bspline_to_bezier();
-    if (convert_tris_to_grids    ) scene->triangles_to_grids(grid_resX,grid_resY);
-    if (convert_tris_to_grids_to_quads) scene->triangles_to_grids_to_quads(grid_resX,grid_resY);
+    if (sgop.size() && verbosity >= 1) {
+      std::cout << std::endl;
+      std::cout << "scene statistics (pre-convert):" << std::endl;
+      SceneGraph::calculateStatistics(scene.dynamicCast<SceneGraph::Node>()).print();
+      std::cout << std::endl;
+    }
 
+    /* perform scene graph conversions */
+    for (auto& op : sgop)
+    {
+      switch (op) {
+      case CONVERT_TRIANGLES_TO_QUADS   : scene->triangles_to_quads(convert_tris_to_quads_prop); break;
+      case CONVERT_BEZIER_TO_LINES      : scene->bezier_to_lines(); break;
+      case CONVERT_BEZIER_TO_BSPLINE    : scene->bezier_to_bspline(); break;
+      case CONVERT_BSPLINE_TO_BEZIER    : scene->bspline_to_bezier(); break;
+      case CONVERT_FLAT_TO_ROUND_CURVES : scene->flat_to_round_curves(); break;
+      case MERGE_QUADS_TO_GRIDS         : scene->merge_quads_to_grids(); break;
+      case CONVERT_QUADS_TO_GRIDS       : scene->quads_to_grids(grid_resX,grid_resY); break;
+      case CONVERT_GRIDS_TO_QUADS       : scene->grids_to_quads(); break;
+      default : throw std::runtime_error("unsupported scene graph operation");
+      }
+    }
     Application::instance->log(1,"converting scene done");
 
     if (verbosity >= 1) {

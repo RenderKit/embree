@@ -30,6 +30,8 @@ namespace embree
     struct MaterialNode;
     struct Transformations;
     struct TriangleMeshNode;
+    struct QuadMeshNode;
+    struct GridMeshNode;
 
     Ref<Node> load(const FileName& fname, bool singleObject = false);
     void store(Ref<Node> root, const FileName& fname, bool embedTextures, bool referenceMaterials);
@@ -41,31 +43,26 @@ namespace embree
     Ref<Node> convert_triangles_to_quads(Ref<Node> node, float prop);
     Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
+    Ref<Node> my_merge_quads_to_grids(Ref<SceneGraph::Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
-    Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
-    Ref<Node> convert_triangles_to_grids( Ref<TriangleMeshNode> tmesh,  const unsigned resX, const unsigned resY );
-    Ref<Node> convert_triangles_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
-
-    Ref<Node> convert_triangles_to_grids_to_quads( Ref<TriangleMeshNode> tmesh, const unsigned resX, const unsigned resY );
-    Ref<Node> convert_triangles_to_grids_to_quads( Ref<Node> node, const unsigned resX, const unsigned resY );
+    Ref<Node> convert_flat_to_round_curves(Ref<Node> node);
+    Ref<Node> convert_quads_to_grids( Ref<QuadMeshNode> qmesh,  const unsigned resX, const unsigned resY );
+    Ref<Node> convert_quads_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
+    Ref<Node> convert_grids_to_quads( Ref<GridMeshNode> gmesh);
+    Ref<Node> convert_grids_to_quads( Ref<Node> node);
 
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
 
     struct Statistics
     {
       Statistics ()
-      : numTriangleMeshes(0), 
-        numTriangles(0), 
-        numQuadMeshes(0), 
-        numQuads(0), 
-        numSubdivMeshes(0), 
-        numPatches(0), 
-        numCurveSets(0), 
-        numCurves(0),
-        numGridMeshNodes(0),
-        numGrids(0),
+      : numTriangleMeshes(0), numTriangles(0), numTriangleBytes(0),
+        numQuadMeshes(0),     numQuads(0),     numQuadBytes(0),
+        numSubdivMeshes(0),   numPatches(0),   numSubdivBytes(0),
+        numCurveSets(0),      numCurves(0),    numCurveBytes(0),
+        numGridMeshNodes(0),  numGrids(0),     numGridBytes(0),
         numTransformNodes(0), 
         numTransformedObjects(0),
         numLights(0),
@@ -76,16 +73,27 @@ namespace embree
       
       size_t numTriangleMeshes;
       size_t numTriangles;
+      size_t numTriangleBytes;
+      
       size_t numQuadMeshes;
       size_t numQuads;
+      size_t numQuadBytes;
+      
       size_t numSubdivMeshes;
       size_t numPatches;
+      size_t numSubdivBytes;
+      
       size_t numCurveSets;
       size_t numCurves;
+      size_t numCurveBytes;
+      
       size_t numGridMeshNodes;
       size_t numGrids;
+      size_t numGridBytes;
+      
       size_t numTransformNodes;
       size_t numTransformedObjects;
+      
       size_t numLights;
       size_t numCameras;
       size_t numMaterials;
@@ -442,16 +450,16 @@ namespace embree
           children[i] = convert_triangles_to_quads(children[i],prop);
       }
 
-      void triangles_to_grids(unsigned int resX, unsigned int resY)
+      void quads_to_grids(unsigned int resX, unsigned int resY)
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_grids(children[i],resX, resY);        
+          children[i] = convert_quads_to_grids(children[i],resX, resY);
       }
 
-      void triangles_to_grids_to_quads(unsigned int resX, unsigned int resY)
+      void grids_to_quads()
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_grids_to_quads(children[i],resX, resY);        
+          children[i] = convert_grids_to_quads(children[i]);
       }
 
       void quads_to_subdivs()
@@ -466,10 +474,10 @@ namespace embree
           children[i] = convert_bezier_to_lines(children[i]);
       }
 
-      void hair_to_curves()
+      void flat_to_round_curves()
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_hair_to_curves(children[i]);
+          children[i] = convert_flat_to_round_curves(children[i]);
       }
 
       void bezier_to_bspline()
@@ -482,6 +490,12 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_bspline_to_bezier(children[i]);
+      }
+
+      void merge_quads_to_grids()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = my_merge_quads_to_grids(children[i]);
       }
 
       void remove_mblur(bool mblur)
@@ -605,6 +619,10 @@ namespace embree
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Triangle) + numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
@@ -687,6 +705,10 @@ namespace embree
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Quad) + numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+      
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
@@ -789,10 +811,18 @@ namespace embree
         else return 0;
       }
 
+      size_t numEdges() const {
+        return position_indices.size();
+      }
+
       size_t numTimeSteps() const {
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(unsigned) + numEdges()*sizeof(unsigned) + numPositions()*numTimeSteps()*sizeof(Vertex);
+      }
+      
       void verify() const;
 
       virtual void calculateStatistics(Statistics& stat);
@@ -889,6 +919,10 @@ namespace embree
         return positions.size();
       }
 
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Hair) + numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+
       void convert_bezier_to_bspline();
       void convert_bspline_to_bezier();
       void compact_vertices();
@@ -974,6 +1008,10 @@ namespace embree
 
       size_t numTimeSteps() const {
         return positions.size();
+      }
+
+      size_t numBytes() const {
+        return numPrimitives()*sizeof(Grid) + numVertices()*numTimeSteps()*sizeof(Vertex);
       }
 
       void verify() const;

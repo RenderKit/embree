@@ -237,6 +237,15 @@ RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, unsigne
 /* Sets the displacement callback function of a subdivision surface. */
 RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplacementFunctionN displacement);
 
+/* Returns opposite half edge. */
+RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+
+/* Returns next half edge. */
+RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+
+/* Returns previous half edge. */
+RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+
 
 /* Arguments for rtcInterpolate */
 struct RTCInterpolateArguments

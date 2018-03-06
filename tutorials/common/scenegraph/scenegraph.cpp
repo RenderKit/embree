@@ -69,6 +69,7 @@ namespace embree
     if (indegree == 1) {
       stat.numTriangleMeshes++;
       stat.numTriangles += numPrimitives();
+      stat.numTriangleBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -79,6 +80,7 @@ namespace embree
     if (indegree == 1) {
       stat.numQuadMeshes++;
       stat.numQuads += numPrimitives();
+      stat.numQuadBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -89,6 +91,7 @@ namespace embree
     if (indegree == 1) {
       stat.numSubdivMeshes++;
       stat.numPatches += numPrimitives();
+      stat.numSubdivBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -99,6 +102,7 @@ namespace embree
     if (indegree == 1) {
       stat.numCurveSets++;
       stat.numCurves += numPrimitives();
+      stat.numCurveBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -109,6 +113,7 @@ namespace embree
     if (indegree == 1) {
       stat.numGridMeshNodes++;
       stat.numGrids += numPrimitives();
+      stat.numGridBytes += numBytes();
       material->calculateStatistics(stat);
     }
   }
@@ -149,15 +154,15 @@ namespace embree
   {
     std::cout << "  # transform nodes : " << numTransformNodes << std::endl;
     std::cout << "    # objects       : " << numTransformedObjects << std::endl;
-    std::cout << "  # triangle meshes : " << numTriangleMeshes << std::endl;
+    std::cout << "  # triangle meshes : " << numTriangleMeshes << " ( " << 1E-6*numTriangleBytes << " MB )" << std::endl;
     std::cout << "    # triangles     : " << numTriangles << std::endl;
-    std::cout << "  # quad meshes     : " << numQuadMeshes << std::endl;
+    std::cout << "  # quad meshes     : " << numQuadMeshes << " ( " << 1E-6*numQuadBytes << " MB )" << std::endl;
     std::cout << "    # quads         : " << numQuads << std::endl;
-    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << std::endl;
+    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << " ( " << 1E-6*numSubdivBytes << " MB )" << std::endl;
     std::cout << "    # patches       : " << numPatches << std::endl;
-    std::cout << "  # curve sets      : " << numCurveSets << std::endl;
+    std::cout << "  # curve sets      : " << numCurveSets << " ( " << 1E-6*numCurveBytes << " MB )" << std::endl;
     std::cout << "    # curves        : " << numCurves << std::endl;
-    std::cout << "  # grid meshes     : " << numGridMeshNodes << std::endl;
+    std::cout << "  # grid meshes     : " << numGridMeshNodes << " ( " << 1E-6*numGridBytes << " MB )" << std::endl;
     std::cout << "    # grids         : " << numGrids << std::endl;
     std::cout << "  # lights          : " << numLights << std::endl;
     std::cout << "  # cameras         : " << numCameras << std::endl;
@@ -930,57 +935,31 @@ namespace embree
     return node;
   }
 
-
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids ( Ref<SceneGraph::TriangleMeshNode> tmesh , const unsigned resX, const unsigned resY )
+  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned resX, const unsigned resY )
   {
-    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(tmesh->material);
+    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material);
 
-    std::vector<SceneGraph::QuadMeshNode::Quad> quads;
-
-    for (size_t i=0; i<tmesh->triangles.size(); i++)
-    {
-      const int a0 = tmesh->triangles[i+0].v0;
-      const int a1 = tmesh->triangles[i+0].v1;
-      const int a2 = tmesh->triangles[i+0].v2;
-      if (i+1 == tmesh->triangles.size()) {
-        quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
-        continue;
-      }
-      
-      const int b0 = tmesh->triangles[i+1].v0;
-      const int b1 = tmesh->triangles[i+1].v1;
-      const int b2 = tmesh->triangles[i+1].v2;
-      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
-      const int a3 = q.second;
-      if (a3 == -1) {
-        quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
-        continue;
-      }
-      
-      if      (q.first == -1) quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0));
-      else if (q.first ==  0) quads.push_back(SceneGraph::QuadMeshNode::Quad(a3,a1,a2,a0));
-      else if (q.first ==  1) quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a3,a2));
-      else if (q.first ==  2) quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
-      i++;
-    }
+    std::vector<SceneGraph::QuadMeshNode::Quad>& quads = qmesh->quads;
 
     avector<SceneGraph::GridMeshNode::Vertex> pos;
     for (size_t i=0;i<quads.size();i++)
     {
       const unsigned int startVtx = pos.size();      
       const unsigned int lineOffset = resX;
-      for (size_t y=0;y<resY;y++)
-        for (size_t x=0;x<resX;x++)
+      for (size_t y=0; y<resY; y++)
+      {
+        for (size_t x=0; x<resX; x++)
         {
           const float u = (float)x / (resX-1);
           const float v = (float)y / (resY-1);
-          const SceneGraph::GridMeshNode::Vertex v00 = tmesh->positions[0][quads[i].v0];
-          const SceneGraph::GridMeshNode::Vertex v01 = tmesh->positions[0][quads[i].v1];
-          const SceneGraph::GridMeshNode::Vertex v10 = tmesh->positions[0][quads[i].v3];
-          const SceneGraph::GridMeshNode::Vertex v11 = tmesh->positions[0][quads[i].v2];
+          const SceneGraph::GridMeshNode::Vertex v00 = qmesh->positions[0][quads[i].v0];
+          const SceneGraph::GridMeshNode::Vertex v01 = qmesh->positions[0][quads[i].v1];
+          const SceneGraph::GridMeshNode::Vertex v10 = qmesh->positions[0][quads[i].v3];
+          const SceneGraph::GridMeshNode::Vertex v11 = qmesh->positions[0][quads[i].v2];
           const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v10 * u * (1.0f-v) + v01 * (1.0f-u) * v + v11 * u * v;
           pos.push_back( vtx );
         }
+      }
       assert(startVtx + resX * resY == pos.size());
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
@@ -988,107 +967,249 @@ namespace embree
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
-
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids_to_quads ( Ref<SceneGraph::TriangleMeshNode> tmesh , const unsigned resX, const unsigned resY )
+   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
   {
-    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
-
-    std::vector<SceneGraph::QuadMeshNode::Quad> quads;
-
-    for (size_t i=0; i<tmesh->triangles.size(); i++)
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_quads_to_grids(xfmNode->child, resX, resY);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
-      const int a0 = tmesh->triangles[i+0].v0;
-      const int a1 = tmesh->triangles[i+0].v1;
-      const int a2 = tmesh->triangles[i+0].v2;
-      if (i+1 == tmesh->triangles.size()) {
-        quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
-        continue;
-      }
-      
-      const int b0 = tmesh->triangles[i+1].v0;
-      const int b1 = tmesh->triangles[i+1].v1;
-      const int b2 = tmesh->triangles[i+1].v2;
-      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
-      const int a3 = q.second;
-      if (a3 == -1) {
-        quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
-        continue;
-      }
-      
-      if      (q.first == -1) quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0));
-      else if (q.first ==  0) quads.push_back(SceneGraph::QuadMeshNode::Quad(a3,a1,a2,a0));
-      else if (q.first ==  1) quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a3,a2));
-      else if (q.first ==  2) quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
-      i++;
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = convert_quads_to_grids(groupNode->children[i], resX, resY);
     }
+    else if (Ref<SceneGraph::QuadMeshNode> qmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+      return convert_quads_to_grids(qmesh, resX, resY);
+    }
+    return node;
+  }
 
-    avector<SceneGraph::GridMeshNode::Vertex> pos;
-    for (size_t i=0;i<quads.size();i++)
+  Ref<SceneGraph::Node> SceneGraph::convert_grids_to_quads ( Ref<SceneGraph::GridMeshNode> gmesh )
+  {
+    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(gmesh->material);
+
+    for (size_t i=0; i<gmesh->numPrimitives(); i++)
     {
-      const unsigned int startVtx = pos.size();      
-      //const unsigned int lineOffset = resX;
-      for (size_t y=0;y<resY;y++)
-        for (size_t x=0;x<resX;x++)
-        {
-          const float u = (float)x / (resX-1);
-          const float v = (float)y / (resY-1);
-          const SceneGraph::GridMeshNode::Vertex v00 = tmesh->positions[0][quads[i].v0];
-          const SceneGraph::GridMeshNode::Vertex v01 = tmesh->positions[0][quads[i].v1];
-          const SceneGraph::GridMeshNode::Vertex v10 = tmesh->positions[0][quads[i].v3];
-          const SceneGraph::GridMeshNode::Vertex v11 = tmesh->positions[0][quads[i].v2];
-          const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v10 * u * (1.0f-v) + v01 * (1.0f-u) * v + v11 * u * v;
-          pos.push_back( vtx );
-        }
-      assert(startVtx + resX * resY == pos.size());
+      const unsigned int startVtx = gmesh->grids[i].startVtx;
+      const unsigned int lineOffset = gmesh->grids[i].lineOffset;
+      const unsigned int resX = gmesh->grids[i].resX;
+      const unsigned int resY = gmesh->grids[i].resY;
 
-      for (size_t y=0;y<resY-1;y++)
-        for (size_t x=0;x<resX-1;x++)
+      for (size_t y=0; y<resY-1; y++)
+      {
+        for (size_t x=0; x<resX-1; x++)
         {
-          const int a0 = startVtx + y * resX + x;
+          const int a0 = startVtx + y * lineOffset + x;
           const int a1 = a0 + 1;
-          const int a3 = a0 + resX;
-          const int a2 = a0 + resX + 1;
+          const int a3 = a0 + lineOffset;
+          const int a2 = a0 + lineOffset + 1;
           qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a3));
         }
+      }
     }
-    qmesh->positions.push_back(pos);
+    qmesh->positions.push_back(gmesh->positions[0]);
     return qmesh.dynamicCast<SceneGraph::Node>();
   }
 
-
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
+  Ref<SceneGraph::Node> SceneGraph::convert_grids_to_quads(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = convert_triangles_to_grids(xfmNode->child, resX, resY);
+      xfmNode->child = convert_grids_to_quads(xfmNode->child);
     } 
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = convert_triangles_to_grids(groupNode->children[i], resX, resY);
+        groupNode->children[i] = convert_grids_to_quads(groupNode->children[i]);
     }
-    else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
-      return convert_triangles_to_grids(tmesh, resX, resY);
+    else if (Ref<SceneGraph::GridMeshNode> gmesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+      return convert_grids_to_quads(gmesh);
     }
     return node;
   }
+  
+  bool extend_grid(RTCGeometry geom, std::vector<bool>& visited, std::deque<unsigned int>& left, std::deque<unsigned int>& top, std::deque<unsigned int>& right)
+  {
+    //        top
+    // | <----------
+    // |            /\
+    // | left        | right 
+    // |             |
+    // \/            |
 
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_grids_to_quads(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
+    
+    /* test if all neighboring faces of top exist and are properly connected */
+    unsigned int prev_opposite_edge = -1;
+    for (size_t i=0; i<top.size(); i++)
+    {
+      const unsigned int edge = top[i];
+      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      if (opposite_edge == edge) return false;
+      const unsigned int opposite_face = opposite_edge/4;
+      if (visited[opposite_face]) return false;
+
+      /* test if we share an edge with the last quad */
+      if (i > 0) {
+        const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,rtcGetGeometryPreviousHalfEdge(geom,prev_opposite_edge));
+        const unsigned int border1 = rtcGetGeometryNextHalfEdge(geom,opposite_edge);
+        if (border0 != border1) return false;
+      }
+      prev_opposite_edge = opposite_edge;
+    }
+
+    /* extend border edges */
+    for (size_t i=0; i<top.size(); i++)
+    {
+      const unsigned int edge = top[i];
+      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      assert(opposite_edge != edge);
+      const unsigned int opposite_face = opposite_edge/4;
+      assert(!visited[opposite_face]);
+      visited[opposite_face] = true;
+      unsigned int next_edge = opposite_edge;
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
+      if (i == 0) right.push_back(next_edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
+      top[i] = next_edge;
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
+      if (i == top.size()-1) left.push_front(next_edge);
+    }
+
+    return true;
+  }
+
+  void gather_grid(RTCGeometry geom, avector<Vec3fa>& positions, size_t width, size_t height, unsigned int* indices, avector<Vec3fa>& vertices, unsigned int edgey)
+  {
+    //        
+    // | <----------    <----------
+    // |            /\ |           /\
+    // | edgey       | |           |
+    // |             | |           |
+    // \/            | \/          |
+    
+    /* gather all rows */
+    size_t y=0;
+    for (; y<height; y++)
+    {
+      /* here edgey points from top/left vertex downwards */
+      unsigned int edgex = edgey;
+
+      /* gather all columns */
+      size_t x=0;
+      for (; x<width; x++)
+      {
+        /* here edgex points from left vertex of row downwards */
+        positions[y*(width+1)+x] = vertices[indices[edgex]];
+
+        /* prev -> prev -> opposite moves to the next column (unless we reach the right end) */
+        edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
+        if (x+1 < width) {
+          edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
+          edgex = rtcGetGeometryOppositeHalfEdge(geom,edgex);
+        }
+      }
+      /* load rightmost vertex */
+      positions[y*(width+1)+x] = vertices[indices[edgex]];
+
+      /* next -> opposite -> next moves to next row (unless we reach the bottom) */
+      edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
+      if (y+1 < height) {
+        edgey = rtcGetGeometryOppositeHalfEdge(geom,edgey);
+        edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
+      }
+    }
+
+    /* special treatment for last row, edgy points from the bottom/left vertex to the right */
+    unsigned int edgex = edgey;
+    for (size_t x=0; x<width; x++)
+    {
+      positions[y*(width+1)+x] = vertices[indices[edgex]];
+
+      /* next -> opposite -> next moves to the next column (unless we reach the right end) */
+      edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
+      if (x+1 < width) {
+        edgex = rtcGetGeometryOppositeHalfEdge(geom,edgex);
+        edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
+      }
+    }
+    /* load rightmost vertex */
+    positions[height*(width+1)+width] = vertices[indices[edgex]];
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::my_merge_quads_to_grids(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = convert_triangles_to_grids_to_quads(xfmNode->child, resX, resY);
-    } 
+      xfmNode->child = my_merge_quads_to_grids(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = convert_triangles_to_grids_to_quads(groupNode->children[i], resX, resY);
+        groupNode->children[i] = my_merge_quads_to_grids(groupNode->children[i]);
     }
-    else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
-      return convert_triangles_to_grids_to_quads(tmesh, resX, resY);
+    else if (Ref<SceneGraph::QuadMeshNode> qmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,1);
+      
+      std::vector<bool> visited;
+      visited.resize(qmesh->numPrimitives());
+      for (size_t i=0; i<visited.size(); i++) visited[i] = false;
+      std::vector<unsigned int> faces(qmesh->numPrimitives());
+      for (size_t i=0; i<faces.size(); i++) faces[i] = 4;
+
+      RTCDevice device = rtcNewDevice(nullptr);
+      RTCGeometry geom = rtcNewGeometry(device,RTC_GEOMETRY_TYPE_SUBDIVISION);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   faces.data(), 0, sizeof(unsigned int), qmesh->numPrimitives());
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   qmesh->quads.data(), 0, sizeof(unsigned int), 4*qmesh->numPrimitives());
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, qmesh->positions[0].data(), 0, sizeof(Vec3fa), qmesh->numVertices());
+      rtcCommitGeometry(geom);
+
+      /* iterate over mesh and collect all grids */
+      for (size_t i=0; i<qmesh->numPrimitives(); i++)
+      {
+        /* skip face if already added to some grid */
+        if (visited[i]) continue;
+        visited[i] = true;
+
+        /* initialize grid with start quad */
+        unsigned int edge = 4*i;
+        std::deque<unsigned int> left, right, top, bottom;
+        left.push_back(edge);   edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        bottom.push_back(edge); edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        right.push_back(edge);  edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        top.push_back(edge);    edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        assert(edge == 4*i);
+        
+        /* extend grid unless no longer possible */
+        size_t width = 1;
+        size_t height = 1;
+        while (true)
+        {
+          const bool extended_top    = extend_grid(geom,visited,left,top,right);
+          const bool extended_right  = extend_grid(geom,visited,top,right,bottom);
+          const bool extended_bottom = extend_grid(geom,visited,right,bottom,left);
+          const bool extended_left   = extend_grid(geom,visited,bottom,left,top);
+          width  += extended_left + extended_right;
+          height += extended_top  + extended_bottom;
+          if (!extended_top && !extended_right && !extended_bottom && !extended_left) break;
+        }
+        
+        /* gather all vertices of grid */
+        avector<Vec3fa> positions;
+        positions.resize((width+1)*(height+1));
+        gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], left.front());
+
+        /* add new grid to grid mesh */
+        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
+        for (size_t i=0; i<positions.size(); i++)
+          gmesh->positions[0].push_back(positions[i]);
+      }
+
+      rtcReleaseGeometry(geom);
+      rtcReleaseDevice(device);
+
+      return gmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
-
-
+      
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_subdivs(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
@@ -1157,18 +1278,25 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::convert_hair_to_curves(Ref<SceneGraph::Node> node)
+  Ref<SceneGraph::Node> SceneGraph::convert_flat_to_round_curves(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = convert_hair_to_curves(xfmNode->child);
+      xfmNode->child = convert_flat_to_round_curves(xfmNode->child);
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = convert_hair_to_curves(groupNode->children[i]);
+        groupNode->children[i] = convert_flat_to_round_curves(groupNode->children[i]);
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
+      if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
+        ; // FIXME: not supported yet
+      else if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
+        hmesh->type = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;
+      else if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
+        hmesh->type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
+
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;

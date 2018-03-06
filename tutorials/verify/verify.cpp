@@ -1162,10 +1162,10 @@ namespace embree
       for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
       scene.addGeometry(quality,hairgeom2.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::Node> curvegeom = SceneGraph::convert_hair_to_curves(hairgeom.dynamicCast<SceneGraph::Node>());
+      Ref<SceneGraph::Node> curvegeom = SceneGraph::convert_flat_to_round_curves(hairgeom.dynamicCast<SceneGraph::Node>());
       scene.addGeometry(quality,curvegeom);
 
-      Ref<SceneGraph::Node> curvegeom2 = SceneGraph::convert_hair_to_curves(hairgeom2.dynamicCast<SceneGraph::Node>());
+      Ref<SceneGraph::Node> curvegeom2 = SceneGraph::convert_flat_to_round_curves(hairgeom2.dynamicCast<SceneGraph::Node>());
       scene.addGeometry(quality,curvegeom2);
 
       Ref<SceneGraph::Node> linegeom = SceneGraph::convert_bezier_to_lines(hairgeom.dynamicCast<SceneGraph::Node>());
