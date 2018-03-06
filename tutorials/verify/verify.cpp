@@ -29,6 +29,10 @@
  
 namespace embree
 {
+  extern "C" {
+    RTCDevice g_device = nullptr; // as scene graph needs global device
+  }
+  
   /* error reporting function */
   void errorHandler(void* userPtr, const RTCError code, const char* str = nullptr)
   {

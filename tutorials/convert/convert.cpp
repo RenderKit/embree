@@ -21,6 +21,10 @@
 
 namespace embree
 {
+  extern "C" {
+    RTCDevice g_device = nullptr;
+  }
+  
   /* name of the tutorial */
   bool embedTextures = true;
   bool referenceMaterials = false;
@@ -299,12 +303,15 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    g_device = rtcNewDevice(nullptr);
+      
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
 
+    rtcReleaseDevice(g_device); g_device = nullptr;
     return 0;
   }
 }

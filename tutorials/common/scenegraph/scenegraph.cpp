@@ -23,6 +23,8 @@
 
 namespace embree
 {
+  extern "C" RTCDevice g_device;
+  
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename, const bool singleObject)
   {
     if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename, false, singleObject);
@@ -1154,8 +1156,7 @@ namespace embree
       std::vector<unsigned int> faces(qmesh->numPrimitives());
       for (size_t i=0; i<faces.size(); i++) faces[i] = 4;
 
-      RTCDevice device = rtcNewDevice(nullptr);
-      RTCGeometry geom = rtcNewGeometry(device,RTC_GEOMETRY_TYPE_SUBDIVISION);
+      RTCGeometry geom = rtcNewGeometry(g_device,RTC_GEOMETRY_TYPE_SUBDIVISION);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   faces.data(), 0, sizeof(unsigned int), qmesh->numPrimitives());
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   qmesh->quads.data(), 0, sizeof(unsigned int), 4*qmesh->numPrimitives());
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, qmesh->positions[0].data(), 0, sizeof(Vec3fa), qmesh->numVertices());
@@ -1203,7 +1204,6 @@ namespace embree
       }
 
       rtcReleaseGeometry(geom);
-      rtcReleaseDevice(device);
 
       return gmesh.dynamicCast<SceneGraph::Node>();
     }
