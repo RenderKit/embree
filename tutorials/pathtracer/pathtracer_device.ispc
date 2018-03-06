@@ -859,7 +859,6 @@ inline Vec3f Material__sample(ISPCMaterial** uniform uniform materials, unsigned
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 extern uniform int g_spp;
 extern uniform bool g_accumulate;
@@ -1700,13 +1699,6 @@ export void device_init (uniform int8* uniform cfg)
   g_accu_vz = make_Vec3fa(0.0f);
   g_accu_p  = make_Vec3fa(0.0f);
 
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
@@ -1769,7 +1761,6 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;
   g_accu_height = 0;

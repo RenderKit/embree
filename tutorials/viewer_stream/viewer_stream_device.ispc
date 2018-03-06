@@ -31,7 +31,6 @@ extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform int g_instancing_mode;
 
 /* scene data */
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -400,13 +399,6 @@ task void renderTileTask(uniform int* uniform pixels,
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* set render tile function to use */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -436,5 +428,4 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

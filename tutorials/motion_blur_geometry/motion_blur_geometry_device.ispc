@@ -17,7 +17,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* scene data */
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 uniform Vec3f face_colors[12];
 
@@ -533,13 +532,6 @@ export void device_init (uniform int8* uniform cfg)
   g_accu_vz = make_Vec3fa(0.0f);
   g_accu_p  = make_Vec3fa(0.0f);
 
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
 
@@ -729,7 +721,6 @@ export void device_cleanup ()
   rtcReleaseScene(scene2); scene2 = NULL;
   rtcReleaseScene(scene3); scene3 = NULL;
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;
   g_accu_height = 0;

@@ -28,7 +28,6 @@
 extern uniform ISPCScene* uniform g_ispc_scene;
 
 /* scene data */
-uniform RTCDevice g_device = NULL;
 uniform RTCScene g_scene   = NULL;
 varying Vec3f* uniform ls_positions = NULL;
 
@@ -379,13 +378,6 @@ void device_key_pressed_handler(uniform int key)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* create scene */
   g_scene = createScene(g_ispc_scene);
 
@@ -475,5 +467,4 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

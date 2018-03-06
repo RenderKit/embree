@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Embree: High Performance Ray Tracing Kernels" />
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <title>Embree</title>
+    <link rel="icon" type="image/png" href="images/icon192.png" sizes="192x192">
+    <link rel="SHORTCUT ICON" HREF="images/icon32.ico">
+$if(highlighting-css)$
+    <style type="text/css">
+$highlighting-css$
+div.sourceCode { overflow-x: initial; }
+    </style>
+$endif$
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+      <div class="inner">
+        <a id="forkme_banner" href="https://github.com/embree">View on GitHub</a>
+        <h1 id="project_title">Embree</h1>
+        <h2 id="project_tagline">High Performance Ray Tracing Kernels</h2>
+      </div>
+
+      <div id="nav">
+      <div id="nbar">
+        <ul>
+          <li$if(select_index)$ id="selected"$endif$><a href="index.html">Overview</a></li>
+          <li$if(select_downloads)$ id="selected"$endif$><a href="downloads.html">Downloads</a></li>
+          <li$if(select_api)$ id="selected"$endif$><a href="api.html">API</a></li>
+          <li$if(select_tutorials)$ id="selected"$endif$><a href="tutorials.html">Tutorials</a></li>
+          <li><a href="gallery.html">Gallery</a></li>
+          <li$if(select_related)$ id="selected"$endif$><a href="related.html">Related Projects</a></li>
+        </ul>
+      </div>
+      </div>
+
+    </div>
+
+    <a id="news_banner" href="https://github.com/embree/embree/releases">
+      We recently released Embree v<EMBREE_VERSION>!
+    </a>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <div id="main_content" class="inner">
+$body$
+      </div>
+
+$if(select_legal)$
+$else$
+      <div id="footer">
+        © 2009–2017 Intel Corporation <a href="legal.html">Disclaimer and Legal Information</a>
+      </div>
+$endif$
+    </div>
+  </body>
+</html>

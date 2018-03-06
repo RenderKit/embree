@@ -1,0 +1,55 @@
+\IfFileExists{intelstyle/intel-spec.cls}
+{
+  \documentclass[oneside]{intelstyle/intel-spec}
+  \include{preamble}
+  \copyrightyears{2009--2017}
+  \trademarkacknowledgement{%
+  Intel, the Intel logo, Xeon, Intel Xeon Phi, and Intel Core are
+  trademarks of Intel Corporation in the U.S. and/or other countries.
+  }
+  \ftcdisclaimer
+  \ftcoptimizationnotice
+}
+{
+  \documentclass[oneside]{report}
+  \include{preamble}
+}
+
+\usepackage{longtable}
+
+\begin{document}
+
+\IfFileExists{intelstyle/intel-spec.cls} {
+  \title{Embree\vskip0.3\baselineskip\LARGE
+  \noindent High Performance Ray Tracing Kernels}
+  \version{\embreeversion}
+} {
+  \title{Embree\vskip0.3\baselineskip\LARGE
+  \noindent High Performance Ray Tracing Kernels \\
+  \embreeversion}
+}
+
+\maketitle
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+\input{tmp/overview}
+\input{tmp/platforms}
+\input{tmp/support}
+\input{tmp/changelog}
+\input{tmp/acknowledgement}
+\input{tmp/install}
+\input{tmp/compilation}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+\hypersetup{bookmarksdepth=2}
+\input{tmp/api}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
+\hypersetup{bookmarksdepth=1}
+\input{tmp/tutorials}
+
+\IfFileExists{intelstyle/intel-spec.cls} {
+  \makedisclaimers
+} {}
+
+\end{document}

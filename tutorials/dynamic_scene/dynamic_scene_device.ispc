@@ -27,7 +27,6 @@ const uniform int numPhi = 120;
 const uniform int numTheta = 2*numPhi;
 
 /* scene data */
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 uniform Vec3f position[numSpheres];
 uniform Vec3f colors[numSpheres+1];
@@ -118,13 +117,6 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST);
@@ -312,5 +304,4 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

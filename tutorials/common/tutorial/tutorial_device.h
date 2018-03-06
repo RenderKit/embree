@@ -48,6 +48,7 @@ enum Mode {
   MODE_STREAM = 1
 };
 
+extern "C" RTCDevice g_device;
 extern "C" Mode g_mode;
 extern "C" RTCIntersectContextFlags g_iflags_coherent;
 extern "C" RTCIntersectContextFlags g_iflags_incoherent;

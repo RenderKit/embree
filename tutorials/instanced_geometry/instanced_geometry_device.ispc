@@ -19,8 +19,6 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
-RTCDevice g_device = NULL;
-
 void renderTileStandardStream(uniform int taskIndex,
                               uniform int threadIndex,
                               uniform int* uniform pixels,
@@ -127,13 +125,6 @@ uniform Vec3f colors[4][4];
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
@@ -491,5 +482,4 @@ export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
   rtcReleaseScene (g_scene1); g_scene1 = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

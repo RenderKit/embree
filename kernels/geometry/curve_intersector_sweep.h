@@ -27,9 +27,7 @@ namespace embree
   namespace isa
   {
     static const size_t numJacobianIterations = 5;
-#if defined(__AVX512F__)
-    static const size_t numBezierSubdivisions = 2;
-#elif defined(__AVX__)
+#if defined(__AVX__)
     static const size_t numBezierSubdivisions = 2;
 #else
     static const size_t numBezierSubdivisions = 3;

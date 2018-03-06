@@ -19,14 +19,13 @@
 /* configuration */
 #define NUM_GRID_OBJECTS 4
 #define NUM_GRIDS_PER_OBJECT 4
-#define GRID_RESOLUTION_X 3
-#define GRID_RESOLUTION_Y 3
+#define GRID_RESOLUTION_X 20
+#define GRID_RESOLUTION_Y 20
 
 #define EDGE_LEVEL 256.0f
 #define ENABLE_SMOOTH_NORMALS 0
 
 /* scene data */
-RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 
 /* previous camera position */
@@ -218,13 +217,6 @@ uniform unsigned int addGridPlane (RTCScene scene_i, uniform unsigned int gridOb
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(NULL,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,NULL);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
@@ -356,5 +348,4 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseDevice(g_device); g_device = NULL;
 }

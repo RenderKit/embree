@@ -28,7 +28,6 @@ namespace embree {
   extern "C" ISPCScene* g_ispc_scene;
 
   /* scene data */
-  RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
 
   void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
@@ -317,18 +316,7 @@ namespace embree {
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    std::string init("start_threads=1,affinity=1");
-    if (cfg)
-    {
-      init += ",";
-      init += cfg;
-    }
-    /* create new Embree device */
-    g_device = rtcNewDevice(init.c_str());
-    error_handler(nullptr,rtcGetDeviceError(g_device));
-
     /* set error handler */
-    rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
     Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
@@ -344,10 +332,9 @@ namespace embree {
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
     Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
-    rtcReleaseDevice(g_device); g_device = nullptr;
   }
 
-/* called by the C++ code to render */
+  /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const unsigned int width,
                                  const unsigned int height,
@@ -356,7 +343,7 @@ namespace embree {
   {
   }
 
-/* renders a single screen tile */
+  /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
                           int threadIndex,
                           int* pixels,
@@ -369,7 +356,7 @@ namespace embree {
   {
   }
 
-/* called by the C++ code for cleanup */
+  /* called by the C++ code for cleanup */
   extern "C" void device_cleanup ()
   {
   }

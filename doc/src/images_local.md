@@ -1,0 +1,16 @@
+[imgTriangleUV]: images/triangle_uv.fig
+[imgQuadUV]: images/quad_uv.fig
+[imgTriangleGeometry]: images/triangle_geometry.jpg
+[imgDynamicScene]: images/dynamic_scene.jpg
+[imgUserGeometry]: images/user_geometry.jpg
+[imgViewer]: images/viewer.jpg
+[imgViewerStream]: images/viewer_stream.jpg
+[imgInstancedGeometry]: images/instanced_geometry.jpg
+[imgIntersectionFilter]: images/intersection_filter.jpg
+[imgPathtracer]: images/pathtracer.jpg
+[imgHairGeometry]: images/hair_geometry.jpg
+[imgCurveGeometry]: images/curve_geometry.jpg
+[imgSubdivisionGeometry]: images/subdivision_geometry.jpg
+[imgDisplacementGeometry]: images/displacement_geometry.jpg
+[imgMotionBlurGeometry]: images/motion_blur_geometry.jpg
+[imgInterpolation]: images/interpolation.jpg

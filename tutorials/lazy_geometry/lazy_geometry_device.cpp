@@ -18,8 +18,6 @@
 
 namespace embree {
 
-RTCDevice g_device = nullptr;
-
 const int numPhi = 20;
 const int numTheta = 2*numPhi;
 const int numSpheres = 64;
@@ -264,13 +262,6 @@ RTCScene g_scene  = nullptr;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   
@@ -390,7 +381,6 @@ extern "C" void device_cleanup ()
     delete g_objects[i];
   }
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

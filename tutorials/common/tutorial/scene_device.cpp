@@ -569,7 +569,6 @@ namespace embree
     }
 
     Application::instance->log(1,"creating Embree objects done");
-  
     return scene_out;
   }
 }

@@ -26,9 +26,7 @@ namespace embree {
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR  128.0f
 
-
 /* scene data */
-RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 Vec3fa* vertex_colors = nullptr;
 unsigned int triCubeID, quadCubeID;
@@ -329,13 +327,6 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
 
@@ -487,7 +478,6 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

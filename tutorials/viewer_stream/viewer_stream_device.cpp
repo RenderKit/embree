@@ -33,7 +33,6 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 
 /* scene data */
-RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -410,13 +409,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(nullptr,rtcGetDeviceError(g_device));
-
-  /* set error handler */
-  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
   /* set render tile function to use */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -450,7 +442,6 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree
