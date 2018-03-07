@@ -185,15 +185,15 @@ uniform unsigned int addGridPlane (RTCScene scene_i, uniform unsigned int gridOb
   uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
 
 
-  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_UINT3,sizeof(uniform RTCGrid),NUM_GRIDS_PER_OBJECT);
+  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),NUM_GRIDS_PER_OBJECT);
 
   uniform unsigned int index = 0;
   for (uniform unsigned int g=0;g<NUM_GRIDS_PER_OBJECT;g++)
   {
-    grids[g].startVtxID = index;
-    grids[g].lineOffset = GRID_RESOLUTION_X;
-    grids[g].resX       = GRID_RESOLUTION_X;
-    grids[g].resY       = GRID_RESOLUTION_Y;
+    grids[g].startVertexID = index;
+    grids[g].stride        = GRID_RESOLUTION_X;
+    grids[g].width         = GRID_RESOLUTION_X;
+    grids[g].height        = GRID_RESOLUTION_Y;
     for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
       for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x++)
       {

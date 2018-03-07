@@ -94,7 +94,7 @@ namespace embree
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      if (format != RTC_FORMAT_UINT3)
+      if (format != RTC_FORMAT_GRID)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
       grids.set(buffer, offset, stride, num, format);

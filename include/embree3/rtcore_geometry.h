@@ -356,9 +356,9 @@ RTC_API void rtcInterpolateN(const struct RTCInterpolateNArguments* args);
 /* RTCGrid primitive for grid mesh */
 struct RTCGrid
 {
-  unsigned int startVtxID;
-  unsigned int lineOffset;
-  unsigned short resX,resY; // max is a 32k x 32k grid
+  unsigned int startVertexID;
+  unsigned int stride;
+  unsigned short width,height; // max is a 32k x 32k grid
 };
 
 #if defined(__cplusplus)

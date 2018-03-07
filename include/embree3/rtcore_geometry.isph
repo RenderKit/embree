@@ -379,9 +379,9 @@ RTC_FORCEINLINE void rtcInterpolateV2(RTCGeometry geometry, varying unsigned int
 /* RTCGrid primitive for grid mesh */
 struct RTCGrid
 {
-  unsigned int startVtxID;
-  unsigned int lineOffset;
-  int16 resX,resY; // max is a 32k x 32k grid
+  unsigned int startVertexID;
+  unsigned int stride;
+  int16 width,height; // max is a 32k x 32k grid
 };
 
 #endif
