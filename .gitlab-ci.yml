@@ -74,10 +74,10 @@ continuous-centos7.4-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
   tags:   [docker]
   only:   [pushes]
 
-continuous-fedora26-x64-RelWithDebInfo-GCC-ISPC-AVX2-TBB:
-  image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX2 tasking:TBB intensity:3"
-  tags:   [docker]
+continuous-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
+  image: embreedocker/fedora:27
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:3"
+  tags:   [docker, skx]
   only:   [pushes]
 
 continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
@@ -300,6 +300,12 @@ nightly-centos6.0-x64-RelWithDebInfo-GCC4.8.2-ISPC1.9.2-AVX2-TBB:
   image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:3"
   tags:   [docker]
+  only:   [schedules]
+
+nightly-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
+  image: embreedocker/fedora:27
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:3"
+  tags:   [docker, skx]
   only:   [schedules]
 
 nightly-fedora26-x64-RelWithDebInfo-GCC-ISPC-AVX2-TBB:
