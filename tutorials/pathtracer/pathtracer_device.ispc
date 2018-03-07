@@ -1019,7 +1019,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline void evalBezier(const ISPCHairSet* uniform hair, const int primID, const float t, Vec3fa& p, Vec3fa& dp)
+inline void evalBezier(const ISPCHairSet* uniform hair, const unsigned int primID, const float t, Vec3fa& p, Vec3fa& dp)
 {
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->positions[0];

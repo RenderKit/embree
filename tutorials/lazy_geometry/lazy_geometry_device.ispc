@@ -176,7 +176,7 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
     lazyCreate(instance);
   
   /* trace ray inside object */
-  const int geomID = ray->geomID;
+  const unsigned int geomID = ray->geomID;
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
   rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
   if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;

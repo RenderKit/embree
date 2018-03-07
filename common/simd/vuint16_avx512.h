@@ -47,6 +47,14 @@ namespace embree
     __forceinline vuint(unsigned int i) {
       v = _mm512_set1_epi32(i);
     }
+
+    __forceinline vuint(const vuint4& i) {
+      v = _mm512_broadcast_i32x4(i);
+    }
+
+    __forceinline vuint(const vuint8& i) {
+      v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
+    }
     
     __forceinline vuint(unsigned int a, unsigned int b, unsigned int c, unsigned int d) {
       v = _mm512_set4_epi32(d,c,b,a);      
@@ -105,7 +113,7 @@ namespace embree
       _mm512_storeu_si512(ptr,v);
     }
 
-    static __forceinline void storeu(const vboolf16& mask, int* ptr, const vuint16& f) {
+    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vuint16& f) {
       _mm512_mask_storeu_epi32(ptr,mask,f);
     }
 
@@ -116,6 +124,11 @@ namespace embree
     /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16 mask, void* addr, const vuint16 reg) {
       _mm512_mask_compressstoreu_epi32(addr,mask,reg);
+    }
+
+    static __forceinline void storeu_compact_single(const vboolf16 mask, void* addr, vuint16 reg) {
+      //_mm512_mask_compressstoreu_epi32(addr,mask,reg);
+      *(float*)addr = mm512_cvtss_f32(_mm512_mask_compress_ps(_mm512_castsi512_ps(reg),mask,_mm512_castsi512_ps(reg)));
     }
 
     static __forceinline vuint16 compact64bit(const vboolf16& mask, vuint16& v) {

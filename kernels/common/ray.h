@@ -146,7 +146,7 @@ namespace embree
     /* Calculates if the hit is valid */
     __forceinline void verifyHit(const vbool<K>& valid0) const
     {
-      vbool<K> valid = valid0 & geomID != vint<K>(RTC_INVALID_GEOMETRY_ID);
+      vbool<K> valid = valid0 & geomID != vuint<K>(RTC_INVALID_GEOMETRY_ID);
       const vbool<K> vt = (abs(tfar) <= vfloat<K>(FLT_LARGE)) | (tfar == vfloat<K>(neg_inf));
       const vbool<K> vu = (abs(u) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vv = (abs(u) <= vfloat<K>(FLT_LARGE));
@@ -175,8 +175,8 @@ namespace embree
                               const vfloat<K>& new_gnormalx,
                               const vfloat<K>& new_gnormaly,
                               const vfloat<K>& new_gnormalz,
-                              const vint<K>& new_geomID,
-                              const vint<K>& new_primID)
+                              const vuint<K>& new_geomID,
+                              const vuint<K>& new_primID)
     {
       vfloat<K>::store(m_mask, (float*)&tfar, new_t);
       vfloat<K>::store(m_mask, (float*)&Ng.x, new_gnormalx);
@@ -184,8 +184,8 @@ namespace embree
       vfloat<K>::store(m_mask, (float*)&Ng.z, new_gnormalz);
       vfloat<K>::store(m_mask, (float*)&u, new_u);
       vfloat<K>::store(m_mask, (float*)&v, new_v);
-      vint<K>::store(m_mask, (int*)&primID, new_primID);
-      vint<K>::store(m_mask, (int*)&geomID, new_geomID);
+      vuint<K>::store(m_mask, (unsigned int*)&primID, new_primID);
+      vuint<K>::store(m_mask, (unsigned int*)&geomID, new_geomID);
     }
 
     template<int M>
@@ -198,7 +198,7 @@ namespace embree
                                const vfloat<M>& new_gnormaly,
                                const vfloat<M>& new_gnormalz,
                                int new_geomID,
-                               const vint<M> &new_primID)
+                               const vuint<M> &new_primID)
     {
       tfar[rayIndex] = new_t[i];
       Ng.x[rayIndex] = new_gnormalx[i];
@@ -214,9 +214,9 @@ namespace embree
     Vec3vf<K> Ng;   // geometry normal
     vfloat<K> u;    // barycentric u coordinate of hit
     vfloat<K> v;    // barycentric v coordinate of hit
-    vint<K> primID; // primitive ID
-    vint<K> geomID; // geometry ID
-    vint<K> instID; // instance ID
+    vuint<K> primID; // primitive ID
+    vuint<K> geomID; // geometry ID
+    vuint<K> instID; // instance ID
   };
 
 #if defined(__AVX512F__)
@@ -239,7 +239,7 @@ namespace embree
                                               const vfloat16& new_gnormaly,
                                               const vfloat16& new_gnormalz,
                                               int new_geomID,
-                                              const vint16& new_primID)
+                                              const vuint16& new_primID)
   {
     const vbool16 m_mask((unsigned int)1 << i);
     vfloat16::storeu_compact_single(m_mask, &tfar[rayIndex], new_t);
@@ -248,7 +248,7 @@ namespace embree
     vfloat16::storeu_compact_single(m_mask, &Ng.z[rayIndex], new_gnormalz);
     vfloat16::storeu_compact_single(m_mask, &u[rayIndex], new_u);
     vfloat16::storeu_compact_single(m_mask, &v[rayIndex], new_v);
-    vint16::storeu_compact_single(m_mask, &primID[rayIndex], new_primID);
+    vuint16::storeu_compact_single(m_mask, &primID[rayIndex], new_primID);
     geomID[rayIndex] = new_geomID;
   }
 #endif
@@ -353,8 +353,8 @@ namespace embree
                               const vfloat16& new_gnormalx,
                               const vfloat16& new_gnormaly,
                               const vfloat16& new_gnormalz,
-                              const int new_geomID,
-                              const int new_primID)
+                              const unsigned int new_geomID,
+                              const unsigned int new_primID)
     {
       vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
       vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
@@ -373,8 +373,8 @@ namespace embree
                               const vfloat16& new_gnormalx,
                               const vfloat16& new_gnormaly,
                               const vfloat16& new_gnormalz,
-                              const vint16& new_geomID,
-                              const vint16& new_primID)
+                              const vuint16& new_geomID,
+                              const vuint16& new_primID)
     {
       vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
       vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
@@ -382,8 +382,8 @@ namespace embree
       vfloat16::storeu_compact_single(m_mask, &Ng.z, new_gnormalz);
       vfloat16::storeu_compact_single(m_mask, &u, new_u);
       vfloat16::storeu_compact_single(m_mask, &v, new_v);
-      vint16::storeu_compact_single(m_mask, &primID, new_primID);
-      vint16::storeu_compact_single(m_mask, &geomID, new_geomID);
+      vuint16::storeu_compact_single(m_mask, &primID, new_primID);
+      vuint16::storeu_compact_single(m_mask, &geomID, new_geomID);
     }
 #endif
 
@@ -609,9 +609,9 @@ namespace embree
     __forceinline float* u(size_t offset = 0) { return (float*)&ptr[15*4*N+offset]; };    // barycentric u coordinate of hit
     __forceinline float* v(size_t offset = 0) { return (float*)&ptr[16*4*N+offset]; };    // barycentric v coordinate of hit
 
-    __forceinline int* primID(size_t offset = 0) { return (int*)&ptr[17*4*N+offset]; };   // primitive ID
-    __forceinline int* geomID(size_t offset = 0) { return (int*)&ptr[18*4*N+offset]; };   // geometry ID
-    __forceinline int* instID(size_t offset = 0) { return (int*)&ptr[19*4*N+offset]; };   // instance ID
+    __forceinline unsigned int* primID(size_t offset = 0) { return (unsigned int*)&ptr[17*4*N+offset]; };   // primitive ID
+    __forceinline unsigned int* geomID(size_t offset = 0) { return (unsigned int*)&ptr[18*4*N+offset]; };   // geometry ID
+    __forceinline unsigned int* instID(size_t offset = 0) { return (unsigned int*)&ptr[19*4*N+offset]; };   // instance ID
 
     __forceinline Ray getRayByOffset(size_t offset)
     {
@@ -727,9 +727,9 @@ namespace embree
         else
 #endif
         {
-          vint<K>::storeu(valid, primID(offset), ray.primID);
-          vint<K>::storeu(valid, geomID(offset), ray.geomID);
-          vint<K>::storeu(valid, instID(offset), ray.instID);
+          vuint<K>::storeu(valid, primID(offset), ray.primID);
+          vuint<K>::storeu(valid, geomID(offset), ray.geomID);
+          vuint<K>::storeu(valid, instID(offset), ray.instID);
         }
       }
     }
@@ -828,9 +828,9 @@ namespace embree
         vfloat<K>::template scatter<1>(valid, Ng_z(), offset, ray.Ng.z);
         vfloat<K>::template scatter<1>(valid, u(), offset, ray.u);
         vfloat<K>::template scatter<1>(valid, v(), offset, ray.v);
-        vint<K>::template scatter<1>(valid, primID(), offset, ray.primID);
-        vint<K>::template scatter<1>(valid, geomID(), offset, ray.geomID);
-        vint<K>::template scatter<1>(valid, instID(), offset, ray.instID);
+        vuint<K>::template scatter<1>(valid, primID(), offset, ray.primID);
+        vuint<K>::template scatter<1>(valid, geomID(), offset, ray.geomID);
+        vuint<K>::template scatter<1>(valid, instID(), offset, ray.instID);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
@@ -1002,9 +1002,9 @@ namespace embree
         if (likely(Ng_z)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ng_z + offset), ray.Ng.z);
         vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
         vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
-        vint<K>::storeu(valid, (int* __restrict__)((char*)primID + offset), ray.primID);
-        vint<K>::storeu(valid, (int* __restrict__)((char*)geomID + offset), ray.geomID);
-        if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
+        vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)primID + offset), ray.primID);
+        vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)geomID + offset), ray.geomID);
+        if (likely(instID)) vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID + offset), ray.instID);
       }
     }
 
@@ -1085,9 +1085,9 @@ namespace embree
           ray.tfar[k]  = *(float* __restrict__)((char*)tfar + ofs);
           ray.tnear()[k] = tnear ? *(float* __restrict__)((char*)tnear + ofs) : 0.0f;
           ray.time()[k]  = time ? *(float* __restrict__)((char*)time + ofs) : 0.0f;
-          ray.mask[k]    = mask ? *(unsigned int* __restrict__)((char*)mask + ofs) : -1;
-          ray.id[k]      = id ? *(unsigned int* __restrict__)((char*)id + ofs) : -1;
-          ray.flags[k]   = flags ? *(unsigned int* __restrict__)((char*)flags + ofs) : -1;
+          ray.mask[k]    = mask ? *(int* __restrict__)((char*)mask + ofs) : -1;
+          ray.id[k]      = id ? *(int* __restrict__)((char*)id + ofs) : -1;
+          ray.flags[k]   = flags ? *(int* __restrict__)((char*)flags + ofs) : -1;
         }
       }
 #endif
@@ -1111,9 +1111,9 @@ namespace embree
         if (likely(Ng_z)) vfloat<K>::template scatter<1>(valid, Ng_z, offset, ray.Ng.z);
         vfloat<K>::template scatter<1>(valid, u, offset, ray.u);
         vfloat<K>::template scatter<1>(valid, v, offset, ray.v);
-        vint<K>::template scatter<1>(valid, (int*)geomID, offset, ray.geomID);
-        vint<K>::template scatter<1>(valid, (int*)primID, offset, ray.primID);
-        if (likely(instID)) vint<K>::template scatter<1>(valid, (int*)instID, offset, ray.instID);
+        vuint<K>::template scatter<1>(valid, (unsigned int*)geomID, offset, ray.geomID);
+        vuint<K>::template scatter<1>(valid, (unsigned int*)primID, offset, ray.primID);
+        if (likely(instID)) vuint<K>::template scatter<1>(valid, (unsigned int*)instID, offset, ray.instID);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
@@ -1224,9 +1224,9 @@ namespace embree
         vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->Ng.z, offset, ray.Ng.z);
         vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->u, offset, ray.u);
         vfloat<K>::template scatter<1>(valid, &((RayHit*)ptr)->v, offset, ray.v);
-        vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->primID, offset, ray.primID);
-        vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->geomID, offset, ray.geomID);
-        vint<K>::template scatter<1>(valid, (int*)&((RayHit*)ptr)->instID, offset, ray.instID);
+        vuint<K>::template scatter<1>(valid, (unsigned int*)&((RayHit*)ptr)->primID, offset, ray.primID);
+        vuint<K>::template scatter<1>(valid, (unsigned int*)&((RayHit*)ptr)->geomID, offset, ray.geomID);
+        vuint<K>::template scatter<1>(valid, (unsigned int*)&((RayHit*)ptr)->instID, offset, ray.instID);
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)

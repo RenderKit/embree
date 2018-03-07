@@ -22,9 +22,9 @@ namespace embree {
 
 struct DifferentialGeometry
 {
-  int instID;
-  int geomID;
-  int primID;
+  unsigned int instID;
+  unsigned int geomID;
+  unsigned int primID;
   float u,v;
   Vec3fa P;
   Vec3fa Ng;
