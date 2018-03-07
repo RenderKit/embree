@@ -32,6 +32,9 @@ namespace embree
 {
   namespace isa
   {
+    MAYBE_UNUSED static const float travCost = 1.0f;
+    MAYBE_UNUSED static const size_t DEFAULT_SINGLE_THREAD_THRESHOLD = 1024;
+
     struct GeneralBVHBuilder
     {
       static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
