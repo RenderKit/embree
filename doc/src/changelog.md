@@ -8,6 +8,13 @@ Version History
     displaced surfaces.
 -   Fixed bug of ribbon curve intersector when derivative was zero.
 -   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
+-   Added API functions to access topology of subdiv mesh.
+-   Reduced memory consumption of instances.
+-   Improved performance of instances by 8%.
+-   Reduced memory consumption of curves by up to 2x.
+-   Added native support for multiple curve basis functions. Internal
+    basis conversions are no longer performed, which saves additional
+    memory when multiple bases are used.
 
 ### New Features in Embree 3.0.0
 -   Switched to a new version of the API which provides improved
