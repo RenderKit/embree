@@ -114,7 +114,7 @@ Vec3fa renderPixelOcclusion(float x, float y, const ISPCCamera& camera, RayStats
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+  if (ray.tfar >= 0.0f) 
     return Vec3fa(0.0f,0.0f,0.0f);
   else 
     return Vec3fa(1.0f,1.0f,1.0f);
