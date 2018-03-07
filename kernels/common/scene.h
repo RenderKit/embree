@@ -250,7 +250,7 @@ namespace embree
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
     vector<Ref<Geometry>> geometries; //!< list of all user geometries
-    vector<unsigned int*> vertices;
+    vector<float*> vertices;
     
   public:
     Device* device;

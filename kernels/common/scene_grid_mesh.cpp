@@ -171,7 +171,7 @@ namespace embree
 
   void GridMesh::postCommit() 
   {
-    scene->vertices[geomID] = (unsigned int*) vertices0.getPtr();
+    scene->vertices[geomID] = (float*) vertices0.getPtr();
 
     grids.setModified(false);
     for (auto& buf : vertices)

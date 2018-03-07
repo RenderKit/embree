@@ -79,7 +79,7 @@ namespace embree
 
     __forceinline Vec3f& getVertex(const vuint<M>& v, const size_t index, const Scene *const scene) const
     {
-      const unsigned int* vertices = scene->vertices[geomID(index)];
+      const float* vertices = scene->vertices[geomID(index)];
       return (Vec3f&) vertices[v[index]];
     }
 
@@ -87,8 +87,8 @@ namespace embree
     __forceinline Vec3<T> getVertex(const vuint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
-      const unsigned int* vertices0 = (const unsigned int*) mesh->vertexPtr(0,itime+0);
-      const unsigned int* vertices1 = (const unsigned int*) mesh->vertexPtr(0,itime+1);
+      const float* vertices0 = (const float*) mesh->vertexPtr(0,itime+0);
+      const float* vertices1 = (const float*) mesh->vertexPtr(0,itime+1);
       const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
       const Vec3fa v1 = Vec3fa::loadu(vertices1+v[index]);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
@@ -104,8 +104,8 @@ namespace embree
 
       for (size_t mask=movemask(valid), i=bsf(mask); mask; mask=btc(mask,i), i=bsf(mask))
       {
-        const unsigned int* vertices0 = (const unsigned int*) mesh->vertexPtr(0,itime[i]+0);
-        const unsigned int* vertices1 = (const unsigned int*) mesh->vertexPtr(0,itime[i]+1);
+        const float* vertices0 = (const float*) mesh->vertexPtr(0,itime[i]+0);
+        const float* vertices1 = (const float*) mesh->vertexPtr(0,itime[i]+1);
         const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
         const Vec3fa v1 = Vec3fa::loadu(vertices1+v[index]);
         p0.x[i] = v0.x; p0.y[i] = v0.y; p0.z[i] = v0.z;
@@ -184,7 +184,7 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const unsigned int* vertices = (const unsigned int*) scene->get<QuadMesh>(geomID(i))->vertexPtr(0,itime);
+        const float* vertices = (const float*) scene->get<QuadMesh>(geomID(i))->vertexPtr(0,itime);
         bounds.extend(Vec3fa::loadu(vertices+v0[i]));
         bounds.extend(Vec3fa::loadu(vertices+v1[i]));
         bounds.extend(Vec3fa::loadu(vertices+v2[i]));
@@ -313,10 +313,10 @@ namespace embree
   {
     prefetchL1(((char*)this)+0*64);
     prefetchL1(((char*)this)+1*64);
-    const unsigned int* vertices0 = scene->vertices[geomID(0)];
-    const unsigned int* vertices1 = scene->vertices[geomID(1)];
-    const unsigned int* vertices2 = scene->vertices[geomID(2)];
-    const unsigned int* vertices3 = scene->vertices[geomID(3)];
+    const float* vertices0 = scene->vertices[geomID(0)];
+    const float* vertices1 = scene->vertices[geomID(1)];
+    const float* vertices2 = scene->vertices[geomID(2)];
+    const float* vertices3 = scene->vertices[geomID(3)];
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -348,10 +348,10 @@ namespace embree
                                        const Scene *const scene) const // FIXME: why do we have this special path here and not for triangles?
   {
     const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
-    const unsigned int* vertices0 = scene->vertices[geomID(0)];
-    const unsigned int* vertices1 = scene->vertices[geomID(1)];
-    const unsigned int* vertices2 = scene->vertices[geomID(2)];
-    const unsigned int* vertices3 = scene->vertices[geomID(3)];
+    const float* vertices0 = scene->vertices[geomID(0)];
+    const float* vertices1 = scene->vertices[geomID(1)];
+    const float* vertices2 = scene->vertices[geomID(2)];
+    const float* vertices3 = scene->vertices[geomID(3)];
 
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
@@ -406,10 +406,10 @@ namespace embree
                                        const QuadMesh* mesh3,
                                        const vint4& itime) const
   {
-    const unsigned int* vertices0 = (const unsigned int*) mesh0->vertexPtr(0,itime[0]);
-    const unsigned int* vertices1 = (const unsigned int*) mesh1->vertexPtr(0,itime[1]);
-    const unsigned int* vertices2 = (const unsigned int*) mesh2->vertexPtr(0,itime[2]);
-    const unsigned int* vertices3 = (const unsigned int*) mesh3->vertexPtr(0,itime[3]);
+    const float* vertices0 = (const float*) mesh0->vertexPtr(0,itime[0]);
+    const float* vertices1 = (const float*) mesh1->vertexPtr(0,itime[1]);
+    const float* vertices2 = (const float*) mesh2->vertexPtr(0,itime[2]);
+    const float* vertices3 = (const float*) mesh3->vertexPtr(0,itime[3]);
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
