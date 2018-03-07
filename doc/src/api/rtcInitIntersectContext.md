@@ -63,7 +63,7 @@ collecting all hits or accumulating transparencies. The support for
 the context filter function must be enabled for a scene by using
 the `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION` scene flag.
 
-Is is guaranteed that the pointer to the intersection context passed
+It is guaranteed that the pointer to the intersection context passed
 to a ray query is directly passed to the registered callback
 functions. This way it is possible to attach arbitrary data to the end
 of the intersection context, such as a per-ray payload.
