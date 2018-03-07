@@ -124,7 +124,7 @@ namespace embree
     }
 
     template<int scale = 4>
-    static __forceinline vuint8 gather(const unsigned int* ptr, const vuint8& index) {
+    static __forceinline vuint8 gather(const unsigned int* ptr, const vint8& index) {
       return vuint8(
           *(unsigned int*)(((char*)ptr)+scale*index[0]),
           *(unsigned int*)(((char*)ptr)+scale*index[1]),
@@ -137,7 +137,7 @@ namespace embree
     }
 
     template<int scale = 4>
-    static __forceinline vuint8 gather(const vboolf8& mask, const unsigned int* ptr, const vuint8& index) {
+    static __forceinline vuint8 gather(const vboolf8& mask, const unsigned int* ptr, const vint8& index) {
       vuint8 r = zero;
       if (likely(mask[0])) r[0] = *(unsigned int*)(((char*)ptr)+scale*index[0]);
       if (likely(mask[1])) r[1] = *(unsigned int*)(((char*)ptr)+scale*index[1]);

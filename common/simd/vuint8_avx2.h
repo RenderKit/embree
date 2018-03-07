@@ -130,25 +130,25 @@ namespace embree
     }
 
     template<int scale = 4>
-    static __forceinline vuint8 gather(const unsigned int *const ptr, const vuint8& index) {
-      return _mm256_i32gather_epi32(ptr, index, scale);
+    static __forceinline vuint8 gather(const unsigned int *const ptr, const vint8& index) {
+      return _mm256_i32gather_epi32((const int*) ptr, index, scale);
     }
 
     template<int scale = 4>
-    static __forceinline vuint8 gather(const vboolf8& mask, const unsigned int *const ptr, const vuint8& index) {
+    static __forceinline vuint8 gather(const vboolf8& mask, const unsigned int *const ptr, const vint8& index) {
       vuint8 r = zero;
 #if defined(__AVX512VL__)
-      return _mm256_mmask_i32gather_epi32(r, mask, index, ptr, scale);
+      return _mm256_mmask_i32gather_epi32(r, mask, index, (const int*) ptr, scale);
 #else
-      return _mm256_mask_i32gather_epi32(r, ptr, index, mask, scale);
+      return _mm256_mask_i32gather_epi32(r, (const int*) ptr, index, mask, scale);
 #endif
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(void* ptr, const vuint8& ofs, const vuint8& v)
+    static __forceinline void scatter(void* ptr, const vint8& ofs, const vuint8& v)
     {
 #if defined(__AVX512VL__)
-      _mm256_i32scatter_epi32((unsigned int*)ptr, ofs, v, scale);
+      _mm256_i32scatter_epi32((int*)ptr, ofs, v, scale);
 #else
       *(unsigned int*)(((char*)ptr)+scale*ofs[0]) = v[0];
       *(unsigned int*)(((char*)ptr)+scale*ofs[1]) = v[1];
@@ -165,7 +165,7 @@ namespace embree
     static __forceinline void scatter(const vboolf8& mask, void* ptr, const vint8& ofs, const vuint8& v)
     {
 #if defined(__AVX512VL__)
-      _mm256_mask_i32scatter_epi32((unsigned int*)ptr, mask, ofs, v, scale);
+      _mm256_mask_i32scatter_epi32((int*)ptr, mask, ofs, v, scale);
 #else
       if (likely(mask[0])) *(unsigned int*)(((char*)ptr)+scale*ofs[0]) = v[0];
       if (likely(mask[1])) *(unsigned int*)(((char*)ptr)+scale*ofs[1]) = v[1];
