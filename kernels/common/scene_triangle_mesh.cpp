@@ -171,7 +171,7 @@ namespace embree
 
   void TriangleMesh::postCommit() 
   {
-    scene->vertices[geomID] = (int*) vertices0.getPtr();
+    scene->vertices[geomID] = (unsigned int*) vertices0.getPtr();
 
     triangles.setModified(false);
     for (auto& buf : vertices)

@@ -115,6 +115,7 @@ namespace embree
   typedef vdouble<8> vdouble8;
   typedef vreal<8>   vreal8;
   typedef vint<8>    vint8;
+  typedef vuint<8>    vuint8;
   typedef vllong<8>  vllong8;
   typedef vbool<8>   vbool8;
   typedef vboolf<8>  vboolf8;
@@ -136,6 +137,7 @@ namespace embree
   typedef vdouble<VSIZEX> vdoublex;
   typedef vreal<VSIZEX>   vrealx;
   typedef vint<VSIZEX>    vintx;
+  typedef vuint<VSIZEX>   vuintx;
   typedef vllong<VSIZEX>  vllongx;
   typedef vbool<VSIZEX>   vboolx;
   typedef vboolf<VSIZEX>  vboolfx;

@@ -214,7 +214,7 @@ inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3f
 
 typedef Vec3fa* uniform_Vec3fa_ptr;
 
-inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
+inline Vec3fa evalBezier(const unsigned int geomID, const unsigned int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
   const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];

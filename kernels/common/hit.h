@@ -29,7 +29,7 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const Vec3vf<K>& Ng)
+    __forceinline HitK(const vuint<K>& instID, const vuint<K>& geomID, const vuint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const Vec3vf<K>& Ng)
       : Ng(Ng), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Returns the size of the hit */
@@ -39,9 +39,9 @@ namespace embree
     Vec3vf<K> Ng;  // geometry normal
     vfloat<K> u;         // barycentric u coordinate of hit
     vfloat<K> v;         // barycentric v coordinate of hit
-    vint<K> primID;      // primitive ID
-    vint<K> geomID;      // geometry ID
-    vint<K> instID;      // instance ID
+    vuint<K> primID;      // primitive ID
+    vuint<K> geomID;      // geometry ID
+    vuint<K> instID;      // instance ID
   };
 
   /* Specialization for a single hit */
@@ -52,7 +52,7 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(int instID, int geomID, int primID, float u, float v, const Vec3fa& Ng)
+    __forceinline HitK(unsigned int instID, unsigned int geomID, unsigned int primID, float u, float v, const Vec3fa& Ng)
       : Ng(Ng.x,Ng.y,Ng.z), u(u), v(v), primID(primID), geomID(geomID), instID(instID) {}
 
     /* Returns the size of the hit */
@@ -62,9 +62,9 @@ namespace embree
     Vec3<float> Ng;  // geometry normal
     float u;         // barycentric u coordinate of hit
     float v;         // barycentric v coordinate of hit
-    int primID;      // primitive ID
-    int geomID;      // geometry ID
-    int instID;      // instance ID
+    unsigned int primID;      // primitive ID
+    unsigned int geomID;      // geometry ID
+    unsigned int instID;      // instance ID
   };
 
   /* Shortcuts */
@@ -105,8 +105,8 @@ namespace embree
     vfloat<K>::storeu(mask,&ray.Ng.z, hit.Ng.z);
     vfloat<K>::storeu(mask,&ray.u, hit.u);
     vfloat<K>::storeu(mask,&ray.v, hit.v);
-    vint<K>::storeu(mask,&ray.primID, hit.primID);
-    vint<K>::storeu(mask,&ray.geomID, hit.geomID);
-    vint<K>::storeu(mask,&ray.instID, hit.instID);
+    vuint<K>::storeu(mask,&ray.primID, hit.primID);
+    vuint<K>::storeu(mask,&ray.geomID, hit.geomID);
+    vuint<K>::storeu(mask,&ray.instID, hit.instID);
   }
 }

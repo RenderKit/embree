@@ -226,13 +226,13 @@ namespace embree
     {
       RayHit& ray;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
 
       __forceinline Intersect1EpilogM(RayHit& ray,
                                       IntersectContext* context,
-                                      const vint<M>& geomIDs,
-                                      const vint<M>& primIDs)
+                                      const vuint<M>& geomIDs,
+                                      const vuint<M>& primIDs)
         : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs) {}
 
       template<typename Hit>
@@ -310,13 +310,13 @@ namespace embree
       static const size_t Mx = 16;
       RayHit& ray;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
 
       __forceinline Intersect1EpilogM(RayHit& ray,
                                       IntersectContext* context,
-                                      const vint<M>& geomIDs,
-                                      const vint<M>& primIDs)
+                                      const vuint<M>& geomIDs,
+                                      const vuint<M>& primIDs)
         : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs) {}
 
       template<typename Hit>
@@ -385,13 +385,13 @@ namespace embree
     {
       Ray& ray;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
 
       __forceinline Occluded1EpilogM(Ray& ray,
                                      IntersectContext* context,
-                                     const vint<M>& geomIDs,
-                                     const vint<M>& primIDs)
+                                     const vuint<M>& geomIDs,
+                                     const vuint<M>& primIDs)
         : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs) {}
 
       template<typename Hit>
@@ -569,14 +569,14 @@ namespace embree
     {
       RayHitK<K>& ray;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
       const size_t i;
 
       __forceinline IntersectKEpilogM(RayHitK<K>& ray,
                                       IntersectContext* context,
-                                     const vint<M>& geomIDs,
-                                     const vint<M>& primIDs,
+                                     const vuint<M>& geomIDs,
+                                     const vuint<M>& primIDs,
                                      size_t i)
         : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i) {}
 
@@ -622,9 +622,9 @@ namespace embree
         vfloat<K>::store(valid,&ray.Ng.z,Ng.z);
         vfloat<K>::store(valid,&ray.u,u);
         vfloat<K>::store(valid,&ray.v,v);
-        vint<K>::store(valid,&ray.primID,primID);
-        vint<K>::store(valid,&ray.geomID,geomID);
-        vint<K>::store(valid,&ray.instID,context->instID);
+        vuint<K>::store(valid,&ray.primID,primID);
+        vuint<K>::store(valid,&ray.geomID,geomID);
+        vuint<K>::store(valid,&ray.instID,context->instID);
         return valid;
       }
     };
@@ -635,15 +635,15 @@ namespace embree
       vbool<K>& valid0;
       RayK<K>& ray;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
       const size_t i;
 
       __forceinline OccludedKEpilogM(vbool<K>& valid0,
                                      RayK<K>& ray,
                                      IntersectContext* context,
-                                     const vint<M>& geomIDs,
-                                     const vint<M>& primIDs,
+                                     const vuint<M>& geomIDs,
+                                     const vuint<M>& primIDs,
                                      size_t i)
         : valid0(valid0), ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i) {}
 
@@ -737,9 +737,9 @@ namespace embree
         vfloat<K>::store(valid,&ray.Ng.z,Ng.z);
         vfloat<K>::store(valid,&ray.u,u);
         vfloat<K>::store(valid,&ray.v,v);
-        vint<K>::store(valid,&ray.primID,primID);
-        vint<K>::store(valid,&ray.geomID,geomID);
-        vint<K>::store(valid,&ray.instID,context->instID);
+        vuint<K>::store(valid,&ray.primID,primID);
+        vuint<K>::store(valid,&ray.geomID,geomID);
+        vuint<K>::store(valid,&ray.instID,context->instID);
         return valid;
       }
     };
@@ -801,13 +801,13 @@ namespace embree
       RayHitK<K>& ray;
       size_t k;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
 
       __forceinline Intersect1KEpilogM(RayHitK<K>& ray, size_t k,
                                        IntersectContext* context,
-                                       const vint<M>& geomIDs,
-                                       const vint<M>& primIDs)
+                                       const vuint<M>& geomIDs,
+                                       const vuint<M>& primIDs)
         : ray(ray), k(k), context(context), geomIDs(geomIDs), primIDs(primIDs) {}
 
       template<typename Hit>
@@ -866,7 +866,7 @@ namespace embree
         assert(i<M);
         /* update hit information */
 #if defined(__AVX512F__)
-        ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<Mx>(hit.vNg.x),vfloat<Mx>(hit.vNg.y),vfloat<Mx>(hit.vNg.z),geomID,vint<Mx>(primIDs));
+        ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<Mx>(hit.vNg.x),vfloat<Mx>(hit.vNg.y),vfloat<Mx>(hit.vNg.z),geomID,vuint<Mx>(primIDs));
         ray.instID[k] = context->instID;
 #else
         const Vec2f uv = hit.uv(i);
@@ -890,13 +890,13 @@ namespace embree
       RayK<K>& ray;
       size_t k;
       IntersectContext* context;
-      const vint<M>& geomIDs;
-      const vint<M>& primIDs;
+      const vuint<M>& geomIDs;
+      const vuint<M>& primIDs;
 
       __forceinline Occluded1KEpilogM(RayK<K>& ray, size_t k,
                                       IntersectContext* context,
-                                      const vint<M>& geomIDs,
-                                      const vint<M>& primIDs)
+                                      const vuint<M>& geomIDs,
+                                      const vuint<M>& primIDs)
         : ray(ray), k(k), context(context), geomIDs(geomIDs), primIDs(primIDs) {}
 
       template<typename Hit>
@@ -1012,7 +1012,7 @@ namespace embree
         /* update hit information */
 #if defined(__AVX512F__)
         const Vec3fa Ng = hit.Ng(i);
-        ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<M>(Ng.x),vfloat<M>(Ng.y),vfloat<M>(Ng.z),geomID,vint<M>(primID));
+        ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<M>(Ng.x),vfloat<M>(Ng.y),vfloat<M>(Ng.z),geomID,vuint<M>(primID));
         ray.instID[k] = context->instID;
 #else
         const Vec2f uv = hit.uv(i);

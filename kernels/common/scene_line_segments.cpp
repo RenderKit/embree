@@ -188,7 +188,7 @@ namespace embree
 
   void LineSegments::postCommit() 
   {
-    scene->vertices[geomID] = (int*) vertices0.getPtr();
+    scene->vertices[geomID] = (unsigned int*) vertices0.getPtr();
 
     segments.setModified(false);
     for (auto& buf : vertices)

@@ -28,11 +28,13 @@
 
 #if defined(__AVX2__)
 #include "vint8_avx2.h"
+#include "vuint8_avx2.h"
 #if defined(__X86_64__)
 #include "vllong4_avx2.h"
 #endif
 #else
 #include "vint8_avx.h"
+#include "vuint8_avx.h"
 #endif
 #include "vfloat8_avx.h"
 #if defined(__X86_64__)

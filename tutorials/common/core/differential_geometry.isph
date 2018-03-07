@@ -20,9 +20,9 @@
 
 struct DifferentialGeometry
 {
-  int instID;
-  int geomID;
-  int primID;
+  unsigned int instID;
+  unsigned int geomID;
+  unsigned int primID;
   float u,v;
   Vec3f P;
   Vec3f Ng;

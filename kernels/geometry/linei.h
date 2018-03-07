@@ -48,15 +48,15 @@ namespace embree
     __forceinline LineMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline LineMi(const vint<M>& v0, const vint<M>& geomIDs, const vint<M>& primIDs)
+    __forceinline LineMi(const vuint<M>& v0, const vuint<M>& geomIDs, const vuint<M>& primIDs)
       : v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which line segments are valid */
-    __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
+    __forceinline vbool<M> valid() const { return primIDs != vuint<M>(-1); }
 
       /* Returns a mask that tells which line segments are valid */
     template<int Mx>
-    __forceinline vbool<Mx> valid() const { return vint<Mx>(primIDs) != vint<Mx>(-1); }
+    __forceinline vbool<Mx> valid() const { return vuint<Mx>(primIDs) != vuint<Mx>(-1); }
 
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
@@ -68,14 +68,14 @@ namespace embree
     template<class T>
     static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
 
-    __forceinline       vint<M> geomID()       { return unmask(geomIDs); }
-    __forceinline const vint<M> geomID() const { return unmask(geomIDs); }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return unmask(geomIDs[i]); }
+    __forceinline       vuint<M> geomID()       { return unmask(geomIDs); }
+    __forceinline const vuint<M> geomID() const { return unmask(geomIDs); }
+    __forceinline unsigned int geomID(const size_t i) const { assert(i<M); return unmask(geomIDs[i]); }
 
     /* Returns the primitive IDs */
-    __forceinline       vint<M>& primID()       { return primIDs; }
-    __forceinline const vint<M>& primID() const { return primIDs; }
-    __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+    __forceinline       vuint<M>& primID()       { return primIDs; }
+    __forceinline const vuint<M>& primID() const { return primIDs; }
+    __forceinline unsigned int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
     __forceinline void gather(Vec4vf<M>& p0,
@@ -141,8 +141,8 @@ namespace embree
     template<typename PrimRefT>
     __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
-      vint<M> geomID, primID;
-      vint<M> v0;
+      vuint<M> geomID, primID;
+      vuint<M> v0;
       const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
@@ -202,10 +202,10 @@ namespace embree
     }
     
   public:
-    vint<M> v0;      // index of start vertex
+    vuint<M> v0;      // index of start vertex
   private:
-    vint<M> geomIDs; // geometry ID
-    vint<M> primIDs; // primitive ID
+    vuint<M> geomIDs; // geometry ID
+    vuint<M> primIDs; // primitive ID
   };
 
   template<>

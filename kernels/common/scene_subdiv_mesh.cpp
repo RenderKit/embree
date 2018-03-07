@@ -932,11 +932,11 @@ namespace embree
         if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) continue;
         
-        const vint4 primID = vint4::loadu(&primIDs[i]);
+        const vuint4 primID = vuint4::loadu(&primIDs[i]);
         const vfloat4 uu = vfloat4::loadu(&u[i]);
         const vfloat4 vv = vfloat4::loadu(&v[i]);
         
-        foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
+        foreach_unique(valid1,primID,[&](const vbool4& valid1, const unsigned int primID)
                        {
                          for (unsigned int j=0; j<valueCount; j+=4) 
                          {
