@@ -16,7 +16,6 @@
 
 #include "bvh.h"
 #include "bvh_builder.h"
-#include "../builders/bvh_builder_msmblur.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
@@ -33,10 +32,6 @@
 #include "../geometry/subgrid.h"
 
 #include "../common/state.h"
-
-// FIXME: remove after removing BVHNBuilderMBlurRootTimeSplitsSAH
-#include "../../common/algorithms/parallel_for_for.h"
-#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
 namespace embree
 {
