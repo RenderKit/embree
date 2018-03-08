@@ -124,7 +124,7 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
 }
 
 /* adds a cube to the scene */
-uniform unsigned int addCube (RTCScene scene_i)
+void addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
@@ -139,9 +139,25 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetGeometryDisplacementFunction(geom,displacementFunction);
 
   rtcCommitGeometry(geom);
-  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+
+  for (uniform int i=0; i<NUM_FACES; i++) 
+  {
+    for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
+      for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x+=programCount)
+      {
+        varying Vec3f dP;
+        varying float u = (float)x / (GRID_RESOLUTION_X-1);
+        varying float v = (float)y / (GRID_RESOLUTION_Y-1);
+        rtcInterpolateV1(geom,0,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,NULL,NULL,3);
+        print("% % % \n",dP.x,dP.y,dP.z);
+      }
+
+  }
+
+  //uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+
+
   rtcReleaseGeometry(geom);
-  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -225,7 +241,7 @@ export void device_init (uniform int8* uniform cfg)
   //addGroundPlane(g_scene);
 
   /* add cube */
-  //addCube(g_scene);
+  addCube(g_scene);
 
   for (uniform unsigned int i=0;i<NUM_GRID_OBJECTS;i++)
     addGridPlane(g_scene,i);
