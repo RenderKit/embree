@@ -778,6 +778,14 @@ namespace embree
     Geometry::commit();
   }
 
+  unsigned int SubdivMesh::getFirstHalfEdge(unsigned int faceID)
+  {
+    if (faceID >= numFaces())
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid face");
+
+    return faceStartEdge[faceID];
+  }
+    
   unsigned int SubdivMesh::getOppositeHalfEdge(unsigned int edgeID)
   {
     if (edgeID >= numHalfEdges)
