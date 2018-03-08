@@ -61,6 +61,7 @@ namespace embree
         permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
         permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
 #endif
+
       }
 
       template<int K>

@@ -322,6 +322,13 @@ namespace embree
     return _mm_cvtsi128_si64(_mm256_castsi256_si128(v));
   }
 
+#if defined(__AVX512VL__)
+
+  __forceinline vllong4 permutex2var(const vllong4& index, const vllong4& a, const vllong4& b) {
+    return _mm256_permutex2var_epi64(a,index,b);
+  }
+
+#endif
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
