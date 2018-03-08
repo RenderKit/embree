@@ -55,7 +55,7 @@ namespace embree
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t _end, Scene* scene, const BBox1f time_range)
     {
       size_t end = min(begin+M,_end);
-      N = end-begin;
+      N = (unsigned char)(end-begin);
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
       ty = (unsigned char) scene->get(geomID0)->getType();
