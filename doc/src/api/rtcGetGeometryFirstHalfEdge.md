@@ -19,6 +19,9 @@ This function can only be used for subdivision geometries. As all
 topologies of a subdivision geometry share the same face buffer the
 function does not depend on the topology ID.
 
+``` {image=imgHalfEdges}
+```
+
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
