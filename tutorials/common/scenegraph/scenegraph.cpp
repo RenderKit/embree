@@ -937,7 +937,7 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned resX, const unsigned resY )
+  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned int resX, const unsigned int resY )
   {
     Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material);
 
@@ -946,7 +946,7 @@ namespace embree
     avector<SceneGraph::GridMeshNode::Vertex> pos;
     for (size_t i=0;i<quads.size();i++)
     {
-      const unsigned int startVtx = pos.size();      
+      const unsigned int startVtx = (unsigned int) pos.size();
       const unsigned int lineOffset = resX;
       for (size_t y=0; y<resY; y++)
       {
@@ -969,7 +969,7 @@ namespace embree
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
-   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
+  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids(Ref<SceneGraph::Node> node, const unsigned int resX, const unsigned int resY )
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_quads_to_grids(xfmNode->child, resX, resY);
