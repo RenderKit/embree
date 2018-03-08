@@ -243,14 +243,14 @@ RTC_API unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry geometry, unsigned 
 /* Returns the face the half edge belongs to. */
 RTC_API unsigned int rtcGetGeometryFace(RTCGeometry geometry, unsigned int edgeID);
 
-/* Returns opposite half edge. */
-RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
-
 /* Returns next half edge. */
-RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
+RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, unsigned int edgeID);
 
 /* Returns previous half edge. */
-RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
+RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+
+/* Returns opposite half edge. */
+RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
 
 
 /* Arguments for rtcInterpolate */

@@ -15,6 +15,10 @@
 The `rtcGetGeometryFace` function returns the ID of the face the
 specified half edge (`edgeID` argument) belongs to.
 
+This function can only be used for subdivision geometries. As all
+topologies of a subdivision geometry share the same face buffer the
+function does not depend on the topology ID.
+
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using

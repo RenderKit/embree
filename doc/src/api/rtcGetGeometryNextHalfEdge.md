@@ -10,15 +10,17 @@
 
     unsigned int rtcGetGeometryNextHalfEdge(
       RTCGeometry geometry,
-      unsigned int topologyID,
       unsigned int edgeID
     );
 
 #### DESCRIPTION
 
 The `rtcGetGeometryNextHalfEdge` function returns the ID of the
-next half edge of the specified half edge (`edgeID` argument)
-in the specified topology (`topologyID` argument).
+next half edge of the specified half edge (`edgeID` argument).
+
+This function can only be used for subdivision geometries. As all
+topologies of a subdivision geometry share the same face buffer the
+function does not depend on the topology ID.
 
 #### EXIT STATUS
 

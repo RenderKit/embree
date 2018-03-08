@@ -10,15 +10,17 @@
 
     unsigned int rtcGetGeometryPreviousHalfEdge(
       RTCGeometry geometry,
-      unsigned int topologyID,
       unsigned int edgeID
     );
 
 #### DESCRIPTION
 
 The `rtcGetGeometryPreviousHalfEdge` function returns the ID of the
-previous half edge of the specified half edge (`edgeID` argument)
-in the specified topology (`topologyID` argument).
+previous half edge of the specified half edge (`edgeID` argument).
+
+This function can only be used for subdivision geometries. As all
+topologies of a subdivision geometry share the same face buffer the
+function does not depend on the topology ID.
 
 #### EXIT STATUS
 

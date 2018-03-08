@@ -262,15 +262,15 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
+    virtual unsigned int getNextHalfEdge(unsigned int edgeID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    virtual unsigned int getPreviousHalfEdge(unsigned int edgeID) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     virtual unsigned int getOppositeHalfEdge(unsigned int topologyID, unsigned int edgeID) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    virtual unsigned int getNextHalfEdge(unsigned int topologyID, unsigned int edgeID) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    virtual unsigned int getPreviousHalfEdge(unsigned int topologyID, unsigned int edgeID) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

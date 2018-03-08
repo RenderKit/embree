@@ -804,6 +804,22 @@ namespace embree
     return halfEdgeFace[edgeID];
   }
     
+  unsigned int SubdivMesh::getNextHalfEdge(unsigned int edgeID)
+  {
+    if (edgeID >= numHalfEdges)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
+
+    return edgeID + topology[0].halfEdges[edgeID].next_half_edge_ofs;
+  }
+
+  unsigned int SubdivMesh::getPreviousHalfEdge(unsigned int edgeID)
+  {
+     if (edgeID >= numHalfEdges)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
+
+    return edgeID + topology[0].halfEdges[edgeID].prev_half_edge_ofs;
+  }
+
   unsigned int SubdivMesh::getOppositeHalfEdge(unsigned int topologyID, unsigned int edgeID)
   {
     if (topologyID >= topology.size())
@@ -813,28 +829,6 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
 
     return edgeID + topology[topologyID].halfEdges[edgeID].opposite_half_edge_ofs;
-  }
-
-  unsigned int SubdivMesh::getNextHalfEdge(unsigned int topologyID, unsigned int edgeID)
-  {
-    if (topologyID >= topology.size())
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid topology");
-    
-    if (edgeID >= numHalfEdges)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
-
-    return edgeID + topology[topologyID].halfEdges[edgeID].next_half_edge_ofs;
-  }
-
-  unsigned int SubdivMesh::getPreviousHalfEdge(unsigned int topologyID, unsigned int edgeID)
-  {
-    if (topologyID >= topology.size())
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid topology");
-    
-     if (edgeID >= numHalfEdges)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid half edge");
-
-    return edgeID + topology[topologyID].halfEdges[edgeID].prev_half_edge_ofs;
   }
   
 #endif

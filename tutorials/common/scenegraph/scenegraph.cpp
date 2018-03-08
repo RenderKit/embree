@@ -1050,8 +1050,8 @@ namespace embree
 
       /* test if we share an edge with the last quad */
       if (i > 0) {
-        const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,0,rtcGetGeometryPreviousHalfEdge(geom,0,prev_opposite_edge));
-        const unsigned int border1 = rtcGetGeometryNextHalfEdge(geom,0,opposite_edge);
+        const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,0,rtcGetGeometryPreviousHalfEdge(geom,prev_opposite_edge));
+        const unsigned int border1 = rtcGetGeometryNextHalfEdge(geom,opposite_edge);
         if (border0 != border1) return false;
       }
       prev_opposite_edge = opposite_edge;
@@ -1067,11 +1067,11 @@ namespace embree
       assert(!visited[opposite_face]);
       visited[opposite_face] = true;
       unsigned int next_edge = opposite_edge;
-      next_edge = rtcGetGeometryNextHalfEdge(geom,0,next_edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       if (i == 0) right.push_back(next_edge);
-      next_edge = rtcGetGeometryNextHalfEdge(geom,0,next_edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       top[i] = next_edge;
-      next_edge = rtcGetGeometryNextHalfEdge(geom,0,next_edge);
+      next_edge = rtcGetGeometryNextHalfEdge(geom,next_edge);
       if (i == top.size()-1) left.push_front(next_edge);
     }
 
@@ -1102,9 +1102,9 @@ namespace embree
         positions[y*(width+1)+x] = vertices[indices[edgex]];
 
         /* prev -> prev -> opposite moves to the next column (unless we reach the right end) */
-        edgex = rtcGetGeometryPreviousHalfEdge(geom,0,edgex);
+        edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
         if (x+1 < width) {
-          edgex = rtcGetGeometryPreviousHalfEdge(geom,0,edgex);
+          edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
           edgex = rtcGetGeometryOppositeHalfEdge(geom,0,edgex);
         }
       }
@@ -1112,10 +1112,10 @@ namespace embree
       positions[y*(width+1)+x] = vertices[indices[edgex]];
 
       /* next -> opposite -> next moves to next row (unless we reach the bottom) */
-      edgey = rtcGetGeometryNextHalfEdge(geom,0,edgey);
+      edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
       if (y+1 < height) {
         edgey = rtcGetGeometryOppositeHalfEdge(geom,0,edgey);
-        edgey = rtcGetGeometryNextHalfEdge(geom,0,edgey);
+        edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
       }
     }
 
@@ -1126,10 +1126,10 @@ namespace embree
       positions[y*(width+1)+x] = vertices[indices[edgex]];
 
       /* next -> opposite -> next moves to the next column (unless we reach the right end) */
-      edgex = rtcGetGeometryNextHalfEdge(geom,0,edgex);
+      edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
       if (x+1 < width) {
         edgex = rtcGetGeometryOppositeHalfEdge(geom,0,edgex);
-        edgex = rtcGetGeometryNextHalfEdge(geom,0,edgex);
+        edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
       }
     }
     /* load rightmost vertex */
@@ -1173,10 +1173,10 @@ namespace embree
         /* initialize grid with start quad */
         unsigned int edge = rtcGetGeometryFirstHalfEdge(geom,i);
         std::deque<unsigned int> left, right, top, bottom;
-        left.push_back(edge);   edge = rtcGetGeometryNextHalfEdge(geom,0,edge);
-        bottom.push_back(edge); edge = rtcGetGeometryNextHalfEdge(geom,0,edge);
-        right.push_back(edge);  edge = rtcGetGeometryNextHalfEdge(geom,0,edge);
-        top.push_back(edge);    edge = rtcGetGeometryNextHalfEdge(geom,0,edge);
+        left.push_back(edge);   edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        bottom.push_back(edge); edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        right.push_back(edge);  edge = rtcGetGeometryNextHalfEdge(geom,edge);
+        top.push_back(edge);    edge = rtcGetGeometryNextHalfEdge(geom,edge);
         assert(edge == rtcGetGeometryFirstHalfEdge(geom,i));
         
         /* extend grid unless no longer possible */

@@ -24,6 +24,10 @@ An opposite half edge does not exist if the specified half edge has
 either no neighboring face, or more than 2 neighboring faces. In these
 cases the function just returns the same edge `edgeID` again.
 
+This function can only be used for subdivision geometries. The
+function depends on the topology as the topologies of a subdivision
+geometry have different index buffers assigned.
+
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
