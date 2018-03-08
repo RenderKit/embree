@@ -1045,7 +1045,7 @@ namespace embree
       const unsigned int edge = top[i];
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,0,edge);
       if (opposite_edge == edge) return false;
-      const unsigned int opposite_face = opposite_edge/4;
+      const unsigned int opposite_face = rtcGetGeometryFace(geom,opposite_edge);
       if (visited[opposite_face]) return false;
 
       /* test if we share an edge with the last quad */
@@ -1063,7 +1063,7 @@ namespace embree
       const unsigned int edge = top[i];
       const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,0,edge);
       assert(opposite_edge != edge);
-      const unsigned int opposite_face = opposite_edge/4;
+      const unsigned int opposite_face = rtcGetGeometryFace(geom,opposite_edge);
       assert(!visited[opposite_face]);
       visited[opposite_face] = true;
       unsigned int next_edge = opposite_edge;

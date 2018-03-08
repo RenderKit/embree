@@ -1301,6 +1301,16 @@ namespace embree
     return -1;
   }
 
+  RTC_API unsigned int rtcGetGeometryFace(RTCGeometry hgeometry, unsigned int edgeID)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryFace);
+    return geometry->getFace(edgeID);
+    RTC_CATCH_END2(geometry);
+    return -1;
+  }
+
   RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int topologyID, unsigned int edgeID)
   {
     Geometry* geometry = (Geometry*) hgeometry;

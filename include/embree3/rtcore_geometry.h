@@ -240,6 +240,9 @@ RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplac
 /* Returns the first half edge of a face. */
 RTC_API unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry geometry, unsigned int faceID);
 
+/* Returns the face the half edge belongs to. */
+RTC_API unsigned int rtcGetGeometryFace(RTCGeometry geometry, unsigned int edgeID);
+
 /* Returns opposite half edge. */
 RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
 
