@@ -1,6 +1,6 @@
 images_jpg := $(addprefix images/, $(addsuffix .jpg, displacement_geometry instanced_geometry pathtracer dynamic_scene subdivision_geometry user_geometry hair_geometry intersection_filter triangle_geometry viewer viewer_stream interpolation motion_blur_geometry curve_geometry))
-images_png := $(addprefix images/, $(addsuffix .png, quad_uv triangle_uv))
-images_pdf := $(addprefix images/, $(addsuffix .pdf, quad_uv triangle_uv))
+images_png := $(addprefix images/, $(addsuffix .png, quad_uv triangle_uv half_edges))
+images_pdf := $(addprefix images/, $(addsuffix .pdf, quad_uv triangle_uv half_edges))
 
 webpages := $(addprefix www/, $(addsuffix .html, index api tutorials downloads renderer related legal))
 webimages := $(addprefix www/, $(images_jpg))
@@ -133,6 +133,10 @@ doc/CHANGELOG.md: tmp/changelog.md
 ### pdf
 ########################################################################
 
+convertbsp0 = sed -e 's@\\\[@[@g'
+convertbsp1 = sed -e 's@\\\]@]@g'
+convertbsp2 = sed -e 's@\\_]@_@g'
+
 tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
@@ -141,7 +145,8 @@ tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
 
 tmp/api.tex: tmp/api.md tmp/links_local.md tmp/images_local_pdf.md
 	pandoc tmp/api.md --filter src/IncludeFilter.py -t markdown -o tmp/api_inc.md
-	pandoc tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp --smart -t latex --columns=72 --chapters -o $@
+	cat tmp/api_inc.md | $(convertbsp0) | $(convertbsp1) | $(convertbsp2) > tmp/api_inc1.md
+	pandoc tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp --smart -t latex --columns=72 --chapters -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
