@@ -251,6 +251,16 @@ namespace embree
     }
 
     template<int N>
+    __forceinline void isort_update(vint<N> &dist, const vint<N> &d)
+    {
+      const vint<N> dist_shift = align_shift_right<N-1>(dist,dist);
+      const vboolf<N> m_geq = d >= dist;
+      const vboolf<N> m_geq_shift = m_geq << 1;
+      dist = select(m_geq,d,dist);
+      dist = select(m_geq_shift,dist_shift,dist);
+    }
+
+    template<int N>
     __forceinline void isort_quick_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
     {
       dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
@@ -258,9 +268,22 @@ namespace embree
     }
 
     template<int N>
+    __forceinline void isort_quick_update(vint<N> &dist, const vint<N> &d)
+    {
+      dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
+    }
+
+
+    template<int N>
     __forceinline size_t permuteExtract(const vint<N>& index, const vllong4& n0, const vllong4& n1)
     {
       return toScalar(permutex2var((__m256i)vint8(index),n0,n1));
+    }
+
+    template<int N>
+    __forceinline float permuteExtract(const vint<N>& index, const vfloat<N>& n)
+    {
+      return toScalar(permute(n,index));
     }
 
     template<int N, int Nx, int types, class NodeRef, class BaseNode>
@@ -270,137 +293,97 @@ namespace embree
                                                          StackItemT<NodeRef>*& stackPtr,
                                                          StackItemT<NodeRef>* stackEnd)
     {
-#if 1
+#if 0
       // new experimental code
       assert(mask != 0);
       const BaseNode* node = cur.baseNode(types);
-      vint<N> children( step );
-      children = vint<N>::compact((int)mask,children);
-      vfloat<N> distance = tNear;
-      distance = vfloat<N>::compact((int)mask,distance,tNear);
+      vint<N> distance_i = (asInt(tNear) & 0xfffffff8) | vint<N>(step);
+      distance_i = vint<N>::compact((int)mask,distance_i,distance_i);
 
       const vllong4 n0 = vllong4::load((vllong4*)&node->children[0]);
       const vllong4 n1 = vllong4::load((vllong4*)&node->children[4]);
 
-      cur = permuteExtract(children,n0,n1);
+      cur = permuteExtract(distance_i,n0,n1);
       cur.prefetch(types);
 
       mask &= mask-1;
       if (likely(mask == 0)) return;
 
       /* 2 hits: order A0 B0 */
-      const vint<N> c0(children);
-      const vfloat<N> d0(distance);
-      children = align_shift_right<1>(children,children);
-      distance = align_shift_right<1>(distance,distance);
-      const vint<N> c1(children);
-      const vfloat<N> d1(distance);
+      const vint<N> d0(distance_i);
+      distance_i = align_shift_right<1>(distance_i,distance_i);
+      const vint<N> d1(distance_i);
 
-      //cur = node->child((unsigned int)toScalar(children));
-      cur = permuteExtract(children,n0,n1);
-
+      cur = permuteExtract(distance_i,n0,n1);
       cur.prefetch(types);
 
       /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
       const vboolf<N> m_dist  = d0 < d1;
-      const vfloat<N> dist_A0 = select(m_dist, d0, d1);
-      const vfloat<N> dist_B0 = select(m_dist, d1, d0);
-      const vint<N> ptr_A0   = select(vboolf<N>(m_dist), c0, c1);
-      const vint<N> ptr_B0   = select(vboolf<N>(m_dist), c1, c0);
+      const vint<N> dist_A0 = select(m_dist, d0, d1);
+      const vint<N> dist_B0 = select(m_dist, d1, d0);
 
       mask &= mask-1;
       if (likely(mask == 0)) {
-        //cur = node->child((unsigned int)toScalar(ptr_A0));
-        cur = permuteExtract(ptr_A0,n0,n1);
-        //stackPtr[0].ptr            = node->child((unsigned int)toScalar(ptr_B0));
-        stackPtr[0].ptr            = permuteExtract(ptr_B0,n0,n1);
-        *(float*)&stackPtr[0].dist = toScalar(dist_B0);
+        cur                        = permuteExtract(dist_A0,n0,n1);
+        stackPtr[0].ptr            = permuteExtract(dist_B0,n0,n1);
+        *(float*)&stackPtr[0].dist = permuteExtract(dist_B0,tNear);
         stackPtr++;
         return;
       }
 
       /* 3 hits: order A1 B1 C1 */
 
-      children = align_shift_right<1>(children,children);
-      distance = align_shift_right<1>(distance,distance);
-
-      const vint<N> c2(children);
-      const vfloat<N> d2(distance);
-
-      cur = permuteExtract(children,n0,n1);
+      distance_i = align_shift_right<1>(distance_i,distance_i);
+      const vint<N> d2(distance_i);
+      cur = permuteExtract(distance_i,n0,n1);
       cur.prefetch(types);
 
-      const vboolf<N> m_dist1     = dist_A0 <= d2;
-      const vfloat<N> dist_tmp_B1 = select(m_dist1, d2, dist_A0);
-      const vint<N>  ptr_A1      = select(vboolf<N>(m_dist1), ptr_A0, c2);
-      const vint<N>  ptr_tmp_B1  = select(vboolf<N>(m_dist1), c2, ptr_A0);
-
-      const vboolf<N> m_dist2     = dist_B0 <= dist_tmp_B1;
-      const vfloat<N> dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
-      const vfloat<N> dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
-      const vint<N>  ptr_B1      = select(vboolf<N>(m_dist2), ptr_B0, ptr_tmp_B1);
-      const vint<N>  ptr_C1      = select(vboolf<N>(m_dist2), ptr_tmp_B1, ptr_B0);
+      const vboolf<N> m_dist1   = dist_A0 <= d2;
+      const vint<N> dist_tmp_B1 = select(m_dist1, d2, dist_A0);
+      const vboolf<N> m_dist2   = dist_B0 <= dist_tmp_B1;
+      const vint<N> dist_A1     = select(m_dist1, dist_A0, d2);
+      const vint<N> dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
+      const vint<N> dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
 
       mask &= mask-1;
       if (likely(mask == 0)) {
-        //cur = node->child((unsigned int)toScalar(ptr_A1));
-        cur = permuteExtract(ptr_A1,n0,n1);
-
-        //stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_C1));
-        stackPtr[0].ptr  = permuteExtract(ptr_C1,n0,n1);
-        *(float*)&stackPtr[0].dist = toScalar(dist_C1);
-        //stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_B1));
-        stackPtr[1].ptr  = permuteExtract(ptr_B1,n0,n1);
-
-        *(float*)&stackPtr[1].dist = toScalar(dist_B1);
+        cur                        = permuteExtract(dist_A1,n0,n1);
+        stackPtr[0].ptr            = permuteExtract(dist_C1,n0,n1);
+        *(float*)&stackPtr[0].dist = permuteExtract(dist_C1,tNear);
+        stackPtr[1].ptr            = permuteExtract(dist_B1,n0,n1);
+        *(float*)&stackPtr[1].dist = permuteExtract(dist_B1,tNear);
         stackPtr+=2;
         return;
       }
 
       /* 4 hits: order A2 B2 C2 D2 */
 
-      const vfloat<N> dist_A1  = select(m_dist1, dist_A0, d2);
-
-      children = align_shift_right<1>(children,children);
-      distance = align_shift_right<1>(distance,distance);
-
-      const vint<N> c3(children);
-      const vfloat<N> d3(distance);
-
-      cur = permuteExtract(children,n0,n1);
+      distance_i = align_shift_right<1>(distance_i,distance_i);
+      const vint<N> d3(distance_i);
+      cur = permuteExtract(distance_i,n0,n1);
       cur.prefetch(types);
 
-      const vboolf<N> m_dist3     = dist_A1 <= d3;
-      const vfloat<N> dist_tmp_B2 = select(m_dist3, d3, dist_A1);
-      const vint<N>  ptr_A2      = select(vboolf<N>(m_dist3), ptr_A1, c3);
-      const vint<N>  ptr_tmp_B2  = select(vboolf<N>(m_dist3), c3, ptr_A1);
+      const vboolf<N> m_dist3   = dist_A1 <= d3;
+      const vint<N> dist_A2     = select(m_dist3, dist_A1, d3);
+      const vint<N> dist_tmp_B2 = select(m_dist3, d3, dist_A1);
 
-      const vboolf<N> m_dist4     = dist_B1 <= dist_tmp_B2;
-      const vfloat<N> dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
-      const vfloat<N> dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
-      const vint<N>  ptr_B2      = select(vboolf<N>(m_dist4), ptr_B1, ptr_tmp_B2);
-      const vint<N>  ptr_tmp_C2  = select(vboolf<N>(m_dist4), ptr_tmp_B2, ptr_B1);
+      const vboolf<N> m_dist4   = dist_B1 <= dist_tmp_B2;
+      const vint<N> dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+      const vint<N> dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
 
-      const vboolf<N> m_dist5     = dist_C1 <= dist_tmp_C2;
-      const vfloat<N> dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
-      const vfloat<N> dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
-      const vint<N>  ptr_C2      = select(vboolf<N>(m_dist5), ptr_C1, ptr_tmp_C2);
-      const vint<N>  ptr_D2      = select(vboolf<N>(m_dist5), ptr_tmp_C2, ptr_C1);
+      const vboolf<N> m_dist5   = dist_C1 <= dist_tmp_C2;
+      const vint<N> dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
+      const vint<N> dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
 
       mask &= mask-1;
       if (likely(mask == 0)) {
-        //cur = node->child((unsigned int)toScalar(ptr_A2));
-        cur = permuteExtract(ptr_A2,n0,n1);
-
-        //stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_D2));
-        stackPtr[0].ptr  = permuteExtract(ptr_D2,n0,n1);
-        *(float*)&stackPtr[0].dist = toScalar(dist_D2);
-        //stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_C2));
-        stackPtr[1].ptr  = permuteExtract(ptr_C2,n0,n1);
-        *(float*)&stackPtr[1].dist = toScalar(dist_C2);
-        //stackPtr[2].ptr  = node->child((unsigned int)toScalar(ptr_B2));
-        stackPtr[2].ptr  = permuteExtract(ptr_B2,n0,n1);
-        *(float*)&stackPtr[2].dist = toScalar(dist_B2);
+        cur = permuteExtract(dist_A2,n0,n1);
+        stackPtr[0].ptr            = permuteExtract(dist_D2,n0,n1);
+        *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
+        stackPtr[1].ptr            = permuteExtract(dist_C2,n0,n1);
+        *(float*)&stackPtr[1].dist = permuteExtract(dist_C2,tNear);
+        stackPtr[2].ptr            = permuteExtract(dist_B2,n0,n1);
+        *(float*)&stackPtr[2].dist = permuteExtract(dist_B2,tNear);
         stackPtr+=3;
         return;
       }
@@ -408,41 +391,32 @@ namespace embree
       /* >=5 hits: reverse to descending order for writing to stack */
 
       const size_t hits = 4 + popcnt(mask);
-      const vfloat<N> dist_A2  = select(m_dist3, dist_A1, d3);
-      vfloat<N> dist(neg_inf);
-      vint<N> ptr(zero);
+      vint<N> dist(neg_inf);
 
-
-      isort_quick_update(dist,ptr,dist_A2,ptr_A2);
-      isort_quick_update(dist,ptr,dist_B2,ptr_B2);
-      isort_quick_update(dist,ptr,dist_C2,ptr_C2);
-      isort_quick_update(dist,ptr,dist_D2,ptr_D2);
+      isort_quick_update(dist,dist_A2);
+      isort_quick_update(dist,dist_B2);
+      isort_quick_update(dist,dist_C2);
+      isort_quick_update(dist,dist_D2);
 
       do {
 
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);
-
-        cur = permuteExtract(children,n0,n1);
+        distance_i = align_shift_right<1>(distance_i,distance_i);
+        cur = permuteExtract(distance_i,n0,n1);
         cur.prefetch(types);
-
-        const vfloat<N> new_dist(permute(distance,vint<N>(zero)));
-        const vint<N> new_ptr(permute(children,vint<N>(zero)));
-
+        const vint<N> new_dist(permute(distance_i,vint<N>(zero)));
         mask &= mask-1;
-        isort_update(dist,ptr,new_dist,new_ptr);
+        isort_update(dist,new_dist);
 
       } while(mask);
 
       for (size_t i=0;i<hits-1;i++)
       {
-        stackPtr->ptr  = permuteExtract(ptr,n0,n1);
-        *(float*)&stackPtr->dist = toScalar(dist);
+        stackPtr->ptr            = permuteExtract(dist,n0,n1);
+        *(float*)&stackPtr->dist = permuteExtract(dist,tNear);
         dist = align_shift_right<1>(dist,dist);
-        ptr  = align_shift_right<1>(ptr,ptr);
         stackPtr++;
       }
-      cur = permuteExtract(ptr,n0,n1);
+      cur = permuteExtract(dist,n0,n1);
 
 #else
       assert(mask != 0);
@@ -452,13 +426,7 @@ namespace embree
       vfloat<N> distance = tNear;
       distance = vfloat<N>::compact((int)mask,distance,tNear);
 
-      const vllong4 n0 = vllong4::load((vllong4*)&node->children[0]);
-      const vllong4 n1 = vllong4::load((vllong4*)&node->children[4]);
-
-      cur = toScalar(permutex2var((__m256i)vint8(children),n0,n1));
-
-
-      //cur = node->child((unsigned int)toScalar(children));
+      cur = node->child((unsigned int)toScalar(children));
 
       cur.prefetch(types);
 
