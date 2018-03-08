@@ -14,9 +14,12 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(verify verify.cpp api_c99.c ../common/tutorial/application.cpp)
+ADD_LIBRARY(c99_compile_test STATIC api_c99.c)
+
+ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
+SET_PROPERTY(TARGET verify APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
