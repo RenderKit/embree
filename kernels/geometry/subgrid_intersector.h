@@ -35,7 +35,7 @@ namespace embree
                                       const vbool<K>& flags,
                                       const GridMesh::Grid &g, 
                                       const SubGrid& subgrid,
-                                      const size_t i)
+                                      const unsigned int i)
         : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng), g(g), subgrid(subgrid), i(i) {}
 
         __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
@@ -48,12 +48,12 @@ namespace embree
           const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
           const vfloat<K> uu = select(flags,u1,u0);
           const vfloat<K> vv = select(flags,v1,v0);
-          const int sx = subgrid.x() + (i % 2);
-          const int sy = subgrid.y() + (i >> 1);
-          const float inv_resX = rcp((float)((int)g.resX-1));
-          const float inv_resY = rcp((float)((int)g.resY-1));          
-          const vfloat<K> u = (uu + (float)sx) * inv_resX;
-          const vfloat<K> v = (vv + (float)sy) * inv_resY;          
+          const unsigned int sx = subgrid.x() + (i % 2);
+          const unsigned int sy = subgrid.y() + (i >> 1);
+          const float inv_resX = rcp((float)(int)(g.resX-1));
+          const float inv_resY = rcp((float)(int)(g.resY-1));
+          const vfloat<K> u = (uu + (float)(int)sx) * inv_resX;
+          const vfloat<K> v = (vv + (float)(int)sy) * inv_resY;
           const Vec3vf<K> Ng(tri_Ng.x,tri_Ng.y,tri_Ng.z);
           return std::make_tuple(u,v,t,Ng);
         }
@@ -86,7 +86,7 @@ namespace embree
       const float inv_resX = rcp((float)((int)g.resX-1));
       const float inv_resY = rcp((float)((int)g.resY-1));          
       hit.U = (hit.U + (vfloat<M>)sxM * hit.absDen) * inv_resX;
-      hit.V = (hit.V + (vfloat<M>)syM * hit.absDen) * inv_resY;          
+      hit.V = (hit.V + (vfloat<M>)syM * hit.absDen) * inv_resY;
     }
     
     template<int M, bool filter>
@@ -245,7 +245,7 @@ namespace embree
                                           const vbool<K>& flags,
                                           const GridMesh::Grid &g, 
                                           const SubGrid &subgrid,
-                                          const size_t i,
+                                          const unsigned int i,
                                           const Epilog& epilog) const
         { 
           /* calculate denominator */
