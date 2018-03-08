@@ -27,3 +27,4 @@ ADD_LIBRARY(scenegraph STATIC
 
 TARGET_LINK_LIBRARIES(scenegraph sys math lexers image embree)
 SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET scenegraph APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")

@@ -18,18 +18,22 @@ INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 ADD_LIBRARY(tutorial STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
 TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 ADD_LIBRARY(noise STATIC noise.cpp)
 SET_PROPERTY(TARGET noise PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET noise APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 IF (EMBREE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_ispc STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.ispc scene_device.cpp tasksys.cpp)
   TARGET_LINK_LIBRARIES(tutorial_ispc sys math lexers scenegraph lights_ispc embree ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
   SET_PROPERTY(TARGET tutorial_ispc PROPERTY FOLDER tutorials/common)
+  SET_PROPERTY(TARGET tutorial_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
   ADD_ISPC_LIBRARY(noise_ispc STATIC noise.ispc)
   SET_TARGET_PROPERTIES(noise_ispc PROPERTIES LINKER_LANGUAGE CXX)
   SET_PROPERTY(TARGET noise_ispc PROPERTY FOLDER tutorials/common)
+  SET_PROPERTY(TARGET noise_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 ENDIF()
 
 IF (WIN32)

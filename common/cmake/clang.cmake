@@ -13,16 +13,18 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
+MACRO(_SET_IF_EMPTY VAR VALUE)
+  IF(NOT ${VAR})
+    SET(${VAR} "${VALUE}")
+  ENDIF()
+ENDMACRO()
 
-SET(FLAGS_SSE2  "-msse2")
-SET(FLAGS_SSE3  "-msse3")
-SET(FLAGS_SSSE3 "-mssse3")
-SET(FLAGS_SSE41 "-msse4.1")
-SET(FLAGS_SSE42 "-msse4.2")
-SET(FLAGS_AVX   "-mavx")
-SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-SET(FLAGS_AVX512KNL "-march=knl")
-SET(FLAGS_AVX512SKX "-march=skx")
+_SET_IF_EMPTY(FLAGS_SSE2  "-msse2")
+_SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
+_SET_IF_EMPTY(FLAGS_AVX   "-mavx")
+_SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
+_SET_IF_EMPTY(FLAGS_AVX512KNL "-march=knl")
+_SET_IF_EMPTY(FLAGS_AVX512SKX "-march=skx")
 
 IF (WIN32)
 
@@ -79,7 +81,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "")
   ENDIF()
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_SSE2}") 
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
   IF (NOT APPLE)
