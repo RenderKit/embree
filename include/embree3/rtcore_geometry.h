@@ -241,13 +241,13 @@ RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, RTCDisplac
 RTC_API unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry geometry, unsigned int faceID);
 
 /* Returns opposite half edge. */
-RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
 
 /* Returns next half edge. */
-RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
 
 /* Returns previous half edge. */
-RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, unsigned int edgeID);
+RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, unsigned int topologyID, unsigned int edgeID);
 
 
 /* Arguments for rtcInterpolate */

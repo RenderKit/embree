@@ -80,9 +80,9 @@ namespace embree
     void commit();
     void setDisplacementFunction (RTCDisplacementFunctionN func);
     unsigned int getFirstHalfEdge(unsigned int faceID);
-    unsigned int getOppositeHalfEdge(unsigned int edgeID);
-    unsigned int getNextHalfEdge(unsigned int edgeID);
-    unsigned int getPreviousHalfEdge(unsigned int edgeID);
+    unsigned int getOppositeHalfEdge(unsigned int topologyID, unsigned int edgeID);
+    unsigned int getNextHalfEdge(unsigned int topologyID, unsigned int edgeID);
+    unsigned int getPreviousHalfEdge(unsigned int topologyID, unsigned int edgeID);
 
   public:
 
