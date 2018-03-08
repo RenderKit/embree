@@ -1,3 +1,4 @@
+[imgHalfEdges]: https://embree.github.io/images/half_edges.png
 [imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
 [imgQuadUV]: https://embree.github.io/images/quad_uv.png
 [imgTriangleGeometry]: https://embree.github.io/images/triangle_geometry.jpg

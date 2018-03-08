@@ -1,3 +1,4 @@
+[imgHalfEdges]: images/half_edges.fig
 [imgTriangleUV]: images/triangle_uv.fig
 [imgQuadUV]: images/quad_uv.fig
 [imgTriangleGeometry]: images/triangle_geometry.jpg

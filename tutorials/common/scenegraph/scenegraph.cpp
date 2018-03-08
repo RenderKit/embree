@@ -1043,14 +1043,14 @@ namespace embree
     for (size_t i=0; i<top.size(); i++)
     {
       const unsigned int edge = top[i];
-      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,0,edge);
       if (opposite_edge == edge) return false;
-      const unsigned int opposite_face = opposite_edge/4;
+      const unsigned int opposite_face = rtcGetGeometryFace(geom,opposite_edge);
       if (visited[opposite_face]) return false;
 
       /* test if we share an edge with the last quad */
       if (i > 0) {
-        const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,rtcGetGeometryPreviousHalfEdge(geom,prev_opposite_edge));
+        const unsigned int border0 = rtcGetGeometryOppositeHalfEdge(geom,0,rtcGetGeometryPreviousHalfEdge(geom,prev_opposite_edge));
         const unsigned int border1 = rtcGetGeometryNextHalfEdge(geom,opposite_edge);
         if (border0 != border1) return false;
       }
@@ -1061,9 +1061,9 @@ namespace embree
     for (size_t i=0; i<top.size(); i++)
     {
       const unsigned int edge = top[i];
-      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+      const unsigned int opposite_edge = rtcGetGeometryOppositeHalfEdge(geom,0,edge);
       assert(opposite_edge != edge);
-      const unsigned int opposite_face = opposite_edge/4;
+      const unsigned int opposite_face = rtcGetGeometryFace(geom,opposite_edge);
       assert(!visited[opposite_face]);
       visited[opposite_face] = true;
       unsigned int next_edge = opposite_edge;
@@ -1105,7 +1105,7 @@ namespace embree
         edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
         if (x+1 < width) {
           edgex = rtcGetGeometryPreviousHalfEdge(geom,edgex);
-          edgex = rtcGetGeometryOppositeHalfEdge(geom,edgex);
+          edgex = rtcGetGeometryOppositeHalfEdge(geom,0,edgex);
         }
       }
       /* load rightmost vertex */
@@ -1114,7 +1114,7 @@ namespace embree
       /* next -> opposite -> next moves to next row (unless we reach the bottom) */
       edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
       if (y+1 < height) {
-        edgey = rtcGetGeometryOppositeHalfEdge(geom,edgey);
+        edgey = rtcGetGeometryOppositeHalfEdge(geom,0,edgey);
         edgey = rtcGetGeometryNextHalfEdge(geom,edgey);
       }
     }
@@ -1128,7 +1128,7 @@ namespace embree
       /* next -> opposite -> next moves to the next column (unless we reach the right end) */
       edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
       if (x+1 < width) {
-        edgex = rtcGetGeometryOppositeHalfEdge(geom,edgex);
+        edgex = rtcGetGeometryOppositeHalfEdge(geom,0,edgex);
         edgex = rtcGetGeometryNextHalfEdge(geom,edgex);
       }
     }
@@ -1156,6 +1156,7 @@ namespace embree
       std::vector<unsigned int> faces(qmesh->numPrimitives());
       for (size_t i=0; i<faces.size(); i++) faces[i] = 4;
 
+      /* create temporary subdiv mesh to get access to mesh topology */
       RTCGeometry geom = rtcNewGeometry(g_device,RTC_GEOMETRY_TYPE_SUBDIVISION);
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   faces.data(), 0, sizeof(unsigned int), qmesh->numPrimitives());
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   qmesh->quads.data(), 0, sizeof(unsigned int), 4*qmesh->numPrimitives());
@@ -1170,13 +1171,13 @@ namespace embree
         visited[i] = true;
 
         /* initialize grid with start quad */
-        unsigned int edge = 4*i;
+        unsigned int edge = rtcGetGeometryFirstHalfEdge(geom,i);
         std::deque<unsigned int> left, right, top, bottom;
         left.push_back(edge);   edge = rtcGetGeometryNextHalfEdge(geom,edge);
         bottom.push_back(edge); edge = rtcGetGeometryNextHalfEdge(geom,edge);
         right.push_back(edge);  edge = rtcGetGeometryNextHalfEdge(geom,edge);
         top.push_back(edge);    edge = rtcGetGeometryNextHalfEdge(geom,edge);
-        assert(edge == 4*i);
+        assert(edge == rtcGetGeometryFirstHalfEdge(geom,i));
         
         /* extend grid unless no longer possible */
         size_t width = 1;

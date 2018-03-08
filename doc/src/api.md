@@ -774,6 +774,30 @@ Embree API Reference
 ```
 \pagebreak
 
+## rtcGetGeometryFirstHalfEdge
+``` {include=src/api/rtcGetGeometryFirstHalfEdge.md}
+```
+\pagebreak
+
+## rtcGetGeometryFace
+``` {include=src/api/rtcGetGeometryFace.md}
+```
+\pagebreak
+
+## rtcGetGeometryNextHalfEdge
+``` {include=src/api/rtcGetGeometryNextHalfEdge.md}
+```
+\pagebreak
+
+## rtcGetGeometryPreviousHalfEdge
+``` {include=src/api/rtcGetGeometryPreviousHalfEdge.md}
+```
+\pagebreak
+
+## rtcGetGeometryOppositeHalfEdge
+``` {include=src/api/rtcGetGeometryOppositeHalfEdge.md}
+```
+\pagebreak
 
 ## rtcInterpolate
 ``` {include=src/api/rtcInterpolate.md}

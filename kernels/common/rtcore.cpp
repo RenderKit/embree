@@ -1291,16 +1291,26 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
+  RTC_API unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry hgeometry, unsigned int faceID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcGetGeometryOppositeHalfEdge);
-    return geometry->getOppositeHalfEdge(edgeID);
+    RTC_TRACE(rtcGetGeometryFirstHalfEdge);
+    return geometry->getFirstHalfEdge(faceID);
     RTC_CATCH_END2(geometry);
     return -1;
   }
-  
+
+  RTC_API unsigned int rtcGetGeometryFace(RTCGeometry hgeometry, unsigned int edgeID)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryFace);
+    return geometry->getFace(edgeID);
+    RTC_CATCH_END2(geometry);
+    return -1;
+  }
+
   RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1317,6 +1327,16 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryPreviousHalfEdge);
     return geometry->getPreviousHalfEdge(edgeID);
+    RTC_CATCH_END2(geometry);
+    return -1;
+  }
+
+  RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int topologyID, unsigned int edgeID)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryOppositeHalfEdge);
+    return geometry->getOppositeHalfEdge(topologyID,edgeID);
     RTC_CATCH_END2(geometry);
     return -1;
   }

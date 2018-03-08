@@ -79,9 +79,11 @@ namespace embree
     bool verify();
     void commit();
     void setDisplacementFunction (RTCDisplacementFunctionN func);
-    unsigned int getOppositeHalfEdge(unsigned int edgeID);
+    unsigned int getFirstHalfEdge(unsigned int faceID);
+    unsigned int getFace(unsigned int edgeID);
     unsigned int getNextHalfEdge(unsigned int edgeID);
     unsigned int getPreviousHalfEdge(unsigned int edgeID);
+    unsigned int getOppositeHalfEdge(unsigned int topologyID, unsigned int edgeID);
 
   public:
 
@@ -279,6 +281,9 @@ namespace embree
 
     /*! fast lookup table to find the first half edge for some face */
     mvector<uint32_t> faceStartEdge;
+
+    /*! fast lookup table to find the face for some half edge */
+    mvector<uint32_t> halfEdgeFace;
 
     /*! set with all holes */
     parallel_set<uint32_t> holeSet;

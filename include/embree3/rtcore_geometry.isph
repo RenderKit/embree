@@ -234,14 +234,20 @@ RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry geometry, uniform
 /* Sets the displacement callback function of a subdivision surface. */
 RTC_API void rtcSetGeometryDisplacementFunction(RTCGeometry geometry, uniform RTCDisplacementFunctionN displacement);
 
-/* Returns opposite half edge. */
-RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, uniform unsigned int edgeID);
+/* Returns the first half edge of a face. */
+RTC_API uniform unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry geometry, uniform unsigned int faceID);
+
+/* Returns the face the half edge belongs to. */
+RTC_API uniform unsigned int rtcGetGeometryFace(RTCGeometry geometry, uniform unsigned int edgeID);
 
 /* Returns next half edge. */
-RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, uniform unsigned int edgeID);
+RTC_API uniform unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry geometry, uniform unsigned int edgeID);
 
 /* Returns previous half edge. */
-RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, uniform unsigned int edgeID);
+RTC_API uniform unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry geometry, uniform unsigned int edgeID);
+
+/* Returns opposite half edge. */
+RTC_API uniform unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry geometry, uniform unsigned int topologyID, uniform unsigned int edgeID);
 
 
 /* Arguments for rtcInterpolate */
