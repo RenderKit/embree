@@ -559,48 +559,14 @@ namespace embree
       const vint4 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
       const vint4 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
 
-      mask &= mask-1;
-      if (likely(mask == 0)) {
-        cur = permuteExtract(dist_A2,n0);
-        stackPtr[0].ptr            = permuteExtract(dist_D2,n0);
-        *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
-        stackPtr[1].ptr            = permuteExtract(dist_C2,n0);
-        *(float*)&stackPtr[1].dist = permuteExtract(dist_C2,tNear);
-        stackPtr[2].ptr            = permuteExtract(dist_B2,n0);
-        *(float*)&stackPtr[2].dist = permuteExtract(dist_B2,tNear);
-        stackPtr+=3;
-        return;
-      }
-
-      /* >=5 hits: reverse to descending order for writing to stack */
-
-      const size_t hits = 4 + popcnt(mask);
-      vint4 dist(neg_inf);
-
-      isort_quick_update(dist,dist_A2);
-      isort_quick_update(dist,dist_B2);
-      isort_quick_update(dist,dist_C2);
-      isort_quick_update(dist,dist_D2);
-
-      do {
-
-        distance_i = align_shift_right<1>(distance_i,distance_i);
-        cur = permuteExtract(distance_i,n0);
-        cur.prefetch(types);
-        const vint4 new_dist(permute(distance_i,vint4(zero)));
-        mask &= mask-1;
-        isort_update(dist,new_dist);
-
-      } while(mask);
-
-      for (size_t i=0;i<hits-1;i++)
-      {
-        stackPtr->ptr            = permuteExtract(dist,n0);
-        *(float*)&stackPtr->dist = permuteExtract(dist,tNear);
-        dist = align_shift_right<1>(dist,dist);
-        stackPtr++;
-      }
-      cur = permuteExtract(dist,n0);
+      cur = permuteExtract(dist_A2,n0);
+      stackPtr[0].ptr            = permuteExtract(dist_D2,n0);
+      *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
+      stackPtr[1].ptr            = permuteExtract(dist_C2,n0);
+      *(float*)&stackPtr[1].dist = permuteExtract(dist_C2,tNear);
+      stackPtr[2].ptr            = permuteExtract(dist_B2,n0);
+      *(float*)&stackPtr[2].dist = permuteExtract(dist_B2,tNear);
+      stackPtr+=3;
     }
 #endif
 
@@ -618,6 +584,7 @@ namespace embree
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #elif defined(__AVX512VL__)
+        //traverseClosestHitAVX512VL<4,4,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
         traverseClosestHitAVX512VL4<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
         static_assert(false);
@@ -830,7 +797,7 @@ namespace embree
 
         mask &= mask-1;
         if (likely(mask == 0)) {
-          cur = permuteExtract(dist_A2,n0,n1);
+          cur                        = permuteExtract(dist_A2,n0,n1);
           stackPtr[0].ptr            = permuteExtract(dist_D2,n0,n1);
           *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
           stackPtr[1].ptr            = permuteExtract(dist_C2,n0,n1);
@@ -844,7 +811,7 @@ namespace embree
         /* >=5 hits: reverse to descending order for writing to stack */
 
         const size_t hits = 4 + popcnt(mask);
-        vint8 dist(neg_inf);
+        vint8 dist(-1);
 
         isort_quick_update(dist,dist_A2);
         isort_quick_update(dist,dist_B2);
@@ -886,6 +853,7 @@ namespace embree
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #elif defined(__AVX512VL__)
+        //traverseClosestHitAVX512VL<8,8,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
         traverseClosestHitAVX512VL8<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
         static_assert(false);
