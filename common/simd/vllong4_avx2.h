@@ -324,7 +324,12 @@ namespace embree
 
 #if defined(__AVX512VL__)
   __forceinline vllong4 permute(const vllong4& a, const __m256i& index) {
+    // workaround for GCC 7.x
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+    return _mm256_permutex2var_epi64(a,index,a);
+#else
     return _mm256_permutexvar_epi64(index,a);
+#endif
   }
 
   __forceinline vllong4 permutex2var(const vllong4& index, const vllong4& a, const vllong4& b) {
