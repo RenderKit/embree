@@ -8,12 +8,20 @@
 
     #include <embree3/rtcore.h>
 
-    unsigned int rtcGetGeometryFace(RTCGeometry geometry, unsigned int edgeID);
+    unsigned int rtcGetGeometryFace(
+      RTCGeometry geometry,
+      unsigned int edgeID
+    );
 
 #### DESCRIPTION
 
 The `rtcGetGeometryFace` function returns the ID of the face the
-specified half edge (`edgeID` argument) belongs to.
+specified half edge (`edgeID` argument) belongs to. For instance in
+the following example the face `f1` is returned for edges `e4`,
+`e5`, `e6`, and `e7`.
+
+``` {image=imgHalfEdges}
+```
 
 This function can only be used for subdivision geometries. As all
 topologies of a subdivision geometry share the same face buffer the

@@ -17,8 +17,12 @@
 #### DESCRIPTION
 
 The `rtcGetGeometryOppositeHalfEdge` function returns the ID of the
-opposite half edge of the specified half edge (`edgeID` argument)
-in the specified topology (`topologyID` argument).
+opposite half edge of the specified half edge (`edgeID` argument) in
+the specified topology (`topologyID` argument). For instance in the
+following example the opposite half edge of `e6` is `e16`.
+
+``` {image=imgHalfEdges}
+```
 
 An opposite half edge does not exist if the specified half edge has
 either no neighboring face, or more than 2 neighboring faces. In these

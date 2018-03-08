@@ -16,7 +16,12 @@
 #### DESCRIPTION
 
 The `rtcGetGeometryNextHalfEdge` function returns the ID of the
-next half edge of the specified half edge (`edgeID` argument).
+next half edge of the specified half edge (`edgeID` argument). For
+instance in the following example the next half edge of `e10` is
+`e11`.
+
+``` {image=imgHalfEdges}
+```
 
 This function can only be used for subdivision geometries. As all
 topologies of a subdivision geometry share the same face buffer the
