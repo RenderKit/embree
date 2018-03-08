@@ -323,6 +323,9 @@ namespace embree
   }
 
 #if defined(__AVX512VL__)
+  __forceinline vllong4 permute(const vllong4& a, const __m256i& index) {
+    return _mm256_permutexvar_epi64(index,a);
+  }
 
   __forceinline vllong4 permutex2var(const vllong4& index, const vllong4& a, const vllong4& b) {
     return _mm256_permutex2var_epi64(a,index,b);

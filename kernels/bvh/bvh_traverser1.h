@@ -274,10 +274,19 @@ namespace embree
     }
 
 
-    template<int N>
-    __forceinline size_t permuteExtract(const vint<N>& index, const vllong4& n0, const vllong4& n1)
+    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0, const vllong4& n1)
     {
-      return toScalar(permutex2var((__m256i)vint8(index),n0,n1));
+      return toScalar(permutex2var((__m256i)index,n0,n1));
+    }
+
+    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0)
+    {
+      return toScalar(permute(n0,(__m256i)index));
+    }
+
+    __forceinline size_t permuteExtract(const vint4& index, const vllong4& n0)
+    {
+      return permuteExtract(_mm256_castsi128_si256(index),n0);
     }
 
     template<int N>
@@ -286,6 +295,7 @@ namespace embree
       return toScalar(permute(n,index));
     }
 
+    // FIXME: old code will be removed soon
     template<int N, int Nx, int types, class NodeRef, class BaseNode>
     static __forceinline void traverseClosestHitAVX512VL(NodeRef& cur,
                                                          size_t mask,
@@ -293,132 +303,6 @@ namespace embree
                                                          StackItemT<NodeRef>*& stackPtr,
                                                          StackItemT<NodeRef>* stackEnd)
     {
-#if 0
-      // new experimental code
-      assert(mask != 0);
-      const BaseNode* node = cur.baseNode(types);
-      vint<N> distance_i = (asInt(tNear) & 0xfffffff8) | vint<N>(step);
-      distance_i = vint<N>::compact((int)mask,distance_i,distance_i);
-
-      const vllong4 n0 = vllong4::load((vllong4*)&node->children[0]);
-      const vllong4 n1 = vllong4::load((vllong4*)&node->children[4]);
-
-      cur = permuteExtract(distance_i,n0,n1);
-      cur.prefetch(types);
-
-      mask &= mask-1;
-      if (likely(mask == 0)) return;
-
-      /* 2 hits: order A0 B0 */
-      const vint<N> d0(distance_i);
-      distance_i = align_shift_right<1>(distance_i,distance_i);
-      const vint<N> d1(distance_i);
-
-      cur = permuteExtract(distance_i,n0,n1);
-      cur.prefetch(types);
-
-      /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
-      const vboolf<N> m_dist  = d0 < d1;
-      const vint<N> dist_A0 = select(m_dist, d0, d1);
-      const vint<N> dist_B0 = select(m_dist, d1, d0);
-
-      mask &= mask-1;
-      if (likely(mask == 0)) {
-        cur                        = permuteExtract(dist_A0,n0,n1);
-        stackPtr[0].ptr            = permuteExtract(dist_B0,n0,n1);
-        *(float*)&stackPtr[0].dist = permuteExtract(dist_B0,tNear);
-        stackPtr++;
-        return;
-      }
-
-      /* 3 hits: order A1 B1 C1 */
-
-      distance_i = align_shift_right<1>(distance_i,distance_i);
-      const vint<N> d2(distance_i);
-      cur = permuteExtract(distance_i,n0,n1);
-      cur.prefetch(types);
-
-      const vboolf<N> m_dist1   = dist_A0 <= d2;
-      const vint<N> dist_tmp_B1 = select(m_dist1, d2, dist_A0);
-      const vboolf<N> m_dist2   = dist_B0 <= dist_tmp_B1;
-      const vint<N> dist_A1     = select(m_dist1, dist_A0, d2);
-      const vint<N> dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
-      const vint<N> dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
-
-      mask &= mask-1;
-      if (likely(mask == 0)) {
-        cur                        = permuteExtract(dist_A1,n0,n1);
-        stackPtr[0].ptr            = permuteExtract(dist_C1,n0,n1);
-        *(float*)&stackPtr[0].dist = permuteExtract(dist_C1,tNear);
-        stackPtr[1].ptr            = permuteExtract(dist_B1,n0,n1);
-        *(float*)&stackPtr[1].dist = permuteExtract(dist_B1,tNear);
-        stackPtr+=2;
-        return;
-      }
-
-      /* 4 hits: order A2 B2 C2 D2 */
-
-      distance_i = align_shift_right<1>(distance_i,distance_i);
-      const vint<N> d3(distance_i);
-      cur = permuteExtract(distance_i,n0,n1);
-      cur.prefetch(types);
-
-      const vboolf<N> m_dist3   = dist_A1 <= d3;
-      const vint<N> dist_A2     = select(m_dist3, dist_A1, d3);
-      const vint<N> dist_tmp_B2 = select(m_dist3, d3, dist_A1);
-
-      const vboolf<N> m_dist4   = dist_B1 <= dist_tmp_B2;
-      const vint<N> dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
-      const vint<N> dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
-
-      const vboolf<N> m_dist5   = dist_C1 <= dist_tmp_C2;
-      const vint<N> dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
-      const vint<N> dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
-
-      mask &= mask-1;
-      if (likely(mask == 0)) {
-        cur = permuteExtract(dist_A2,n0,n1);
-        stackPtr[0].ptr            = permuteExtract(dist_D2,n0,n1);
-        *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
-        stackPtr[1].ptr            = permuteExtract(dist_C2,n0,n1);
-        *(float*)&stackPtr[1].dist = permuteExtract(dist_C2,tNear);
-        stackPtr[2].ptr            = permuteExtract(dist_B2,n0,n1);
-        *(float*)&stackPtr[2].dist = permuteExtract(dist_B2,tNear);
-        stackPtr+=3;
-        return;
-      }
-
-      /* >=5 hits: reverse to descending order for writing to stack */
-
-      const size_t hits = 4 + popcnt(mask);
-      vint<N> dist(neg_inf);
-
-      isort_quick_update(dist,dist_A2);
-      isort_quick_update(dist,dist_B2);
-      isort_quick_update(dist,dist_C2);
-      isort_quick_update(dist,dist_D2);
-
-      do {
-
-        distance_i = align_shift_right<1>(distance_i,distance_i);
-        cur = permuteExtract(distance_i,n0,n1);
-        cur.prefetch(types);
-        const vint<N> new_dist(permute(distance_i,vint<N>(zero)));
-        mask &= mask-1;
-        isort_update(dist,new_dist);
-
-      } while(mask);
-
-      for (size_t i=0;i<hits-1;i++)
-      {
-        stackPtr->ptr            = permuteExtract(dist,n0,n1);
-        *(float*)&stackPtr->dist = permuteExtract(dist,tNear);
-        dist = align_shift_right<1>(dist,dist);
-        stackPtr++;
-      }
-      cur = permuteExtract(dist,n0,n1);
-
-#else
       assert(mask != 0);
       const BaseNode* node = cur.baseNode(types);
       vint<N> children( step );
@@ -574,7 +458,6 @@ namespace embree
         stackPtr++;
       }
       cur = node->child((unsigned int)toScalar(ptr));
-#endif
     }
 
 
@@ -587,6 +470,139 @@ namespace embree
       typedef BVH4 BVH;
       typedef BVH4::NodeRef NodeRef;
       typedef BVH4::BaseNode BaseNode;
+
+
+#if defined(__AVX512VL__)
+    template<class NodeRef, class BaseNode>
+      static __forceinline void traverseClosestHitAVX512VL4(NodeRef& cur,
+                                                            size_t mask,
+                                                            const vfloat4& tNear,
+                                                            StackItemT<NodeRef>*& stackPtr,
+                                                            StackItemT<NodeRef>* stackEnd)
+    {
+      // new experimental code
+      assert(mask != 0);
+      const BaseNode* node = cur.baseNode(types);
+      vint4 distance_i = (asInt(tNear) & 0xfffffff8) | vint4(step);
+      distance_i = vint4::compact((int)mask,distance_i,distance_i);
+      const vllong4 n0 = vllong4::loadu((vllong4*)node->children);
+
+      cur = permuteExtract(distance_i,n0);
+      cur.prefetch(types);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) return;
+
+      /* 2 hits: order A0 B0 */
+      const vint4 d0(distance_i);
+      distance_i = align_shift_right<1>(distance_i,distance_i);
+      const vint4 d1(distance_i);
+
+      cur = permuteExtract(distance_i,n0);
+      cur.prefetch(types);
+
+      /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
+      const vboolf4 m_dist  = d0 < d1;
+      const vint4 dist_A0 = select(m_dist, d0, d1);
+      const vint4 dist_B0 = select(m_dist, d1, d0);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur                        = permuteExtract(dist_A0,n0);
+        stackPtr[0].ptr            = permuteExtract(dist_B0,n0);
+        *(float*)&stackPtr[0].dist = permuteExtract(dist_B0,tNear);
+        stackPtr++;
+        return;
+      }
+
+      /* 3 hits: order A1 B1 C1 */
+
+      distance_i = align_shift_right<1>(distance_i,distance_i);
+      const vint4 d2(distance_i);
+      cur = permuteExtract(distance_i,n0);
+      cur.prefetch(types);
+
+      const vboolf4 m_dist1   = dist_A0 <= d2;
+      const vint4 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
+      const vboolf4 m_dist2   = dist_B0 <= dist_tmp_B1;
+      const vint4 dist_A1     = select(m_dist1, dist_A0, d2);
+      const vint4 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
+      const vint4 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur                        = permuteExtract(dist_A1,n0);
+        stackPtr[0].ptr            = permuteExtract(dist_C1,n0);
+        *(float*)&stackPtr[0].dist = permuteExtract(dist_C1,tNear);
+        stackPtr[1].ptr            = permuteExtract(dist_B1,n0);
+        *(float*)&stackPtr[1].dist = permuteExtract(dist_B1,tNear);
+        stackPtr+=2;
+        return;
+      }
+
+      /* 4 hits: order A2 B2 C2 D2 */
+
+      distance_i = align_shift_right<1>(distance_i,distance_i);
+      const vint4 d3(distance_i);
+      cur = permuteExtract(distance_i,n0);
+      cur.prefetch(types);
+
+      const vboolf4 m_dist3   = dist_A1 <= d3;
+      const vint4 dist_A2     = select(m_dist3, dist_A1, d3);
+      const vint4 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
+
+      const vboolf4 m_dist4   = dist_B1 <= dist_tmp_B2;
+      const vint4 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+      const vint4 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
+
+      const vboolf4 m_dist5   = dist_C1 <= dist_tmp_C2;
+      const vint4 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
+      const vint4 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = permuteExtract(dist_A2,n0);
+        stackPtr[0].ptr            = permuteExtract(dist_D2,n0);
+        *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
+        stackPtr[1].ptr            = permuteExtract(dist_C2,n0);
+        *(float*)&stackPtr[1].dist = permuteExtract(dist_C2,tNear);
+        stackPtr[2].ptr            = permuteExtract(dist_B2,n0);
+        *(float*)&stackPtr[2].dist = permuteExtract(dist_B2,tNear);
+        stackPtr+=3;
+        return;
+      }
+
+      /* >=5 hits: reverse to descending order for writing to stack */
+
+      const size_t hits = 4 + popcnt(mask);
+      vint4 dist(neg_inf);
+
+      isort_quick_update(dist,dist_A2);
+      isort_quick_update(dist,dist_B2);
+      isort_quick_update(dist,dist_C2);
+      isort_quick_update(dist,dist_D2);
+
+      do {
+
+        distance_i = align_shift_right<1>(distance_i,distance_i);
+        cur = permuteExtract(distance_i,n0);
+        cur.prefetch(types);
+        const vint4 new_dist(permute(distance_i,vint4(zero)));
+        mask &= mask-1;
+        isort_update(dist,new_dist);
+
+      } while(mask);
+
+      for (size_t i=0;i<hits-1;i++)
+      {
+        stackPtr->ptr            = permuteExtract(dist,n0);
+        *(float*)&stackPtr->dist = permuteExtract(dist,tNear);
+        dist = align_shift_right<1>(dist,dist);
+        stackPtr++;
+      }
+      cur = permuteExtract(dist,n0);
+    }
+#endif
 
     public:
       /* Traverses a node with at least one hit child. Optimized for finding the closest hit (intersection). */
@@ -602,7 +618,7 @@ namespace embree
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #elif defined(__AVX512VL__)
-        traverseClosestHitAVX512VL<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+        traverseClosestHitAVX512VL4<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
         static_assert(false);
 #endif
@@ -725,6 +741,137 @@ namespace embree
       typedef BVH8 BVH;
       typedef BVH8::NodeRef NodeRef;
       typedef BVH8::BaseNode BaseNode;
+      
+#if defined(__AVX512VL__)
+      template<class NodeRef, class BaseNode>
+        static __forceinline void traverseClosestHitAVX512VL8(NodeRef& cur,
+                                                              size_t mask,
+                                                              const vfloat8& tNear,
+                                                              StackItemT<NodeRef>*& stackPtr,
+                                                              StackItemT<NodeRef>* stackEnd)
+      {
+        assert(mask != 0);
+        const BaseNode* node = cur.baseNode(types);
+        const vllong4 n0 = vllong4::loadu((vllong4*)&node->children[0]);
+        const vllong4 n1 = vllong4::loadu((vllong4*)&node->children[4]);
+        vint8 distance_i = (asInt(tNear) & 0xfffffff8) | vint8(step);
+        distance_i = vint8::compact((int)mask,distance_i,distance_i);
+        cur = permuteExtract(distance_i,n0,n1);
+        cur.prefetch(types);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) return;
+
+        /* 2 hits: order A0 B0 */
+        const vint8 d0(distance_i);
+        distance_i = align_shift_right<1>(distance_i,distance_i);
+        const vint8 d1(distance_i);
+
+        cur = permuteExtract(distance_i,n0,n1);
+        cur.prefetch(types);
+
+        /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
+        const vboolf8 m_dist  = d0 < d1;
+        const vint8 dist_A0 = select(m_dist, d0, d1);
+        const vint8 dist_B0 = select(m_dist, d1, d0);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) {
+          cur                        = permuteExtract(dist_A0,n0,n1);
+          stackPtr[0].ptr            = permuteExtract(dist_B0,n0,n1);
+          *(float*)&stackPtr[0].dist = permuteExtract(dist_B0,tNear);
+          stackPtr++;
+          return;
+        }
+
+        /* 3 hits: order A1 B1 C1 */
+
+        distance_i = align_shift_right<1>(distance_i,distance_i);
+        const vint8 d2(distance_i);
+        cur = permuteExtract(distance_i,n0,n1);
+        cur.prefetch(types);
+
+        const vboolf8 m_dist1   = dist_A0 <= d2;
+        const vint8 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
+        const vboolf8 m_dist2   = dist_B0 <= dist_tmp_B1;
+        const vint8 dist_A1     = select(m_dist1, dist_A0, d2);
+        const vint8 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
+        const vint8 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) {
+          cur                        = permuteExtract(dist_A1,n0,n1);
+          stackPtr[0].ptr            = permuteExtract(dist_C1,n0,n1);
+          *(float*)&stackPtr[0].dist = permuteExtract(dist_C1,tNear);
+          stackPtr[1].ptr            = permuteExtract(dist_B1,n0,n1);
+          *(float*)&stackPtr[1].dist = permuteExtract(dist_B1,tNear);
+          stackPtr+=2;
+          return;
+        }
+
+        /* 4 hits: order A2 B2 C2 D2 */
+
+        distance_i = align_shift_right<1>(distance_i,distance_i);
+        const vint8 d3(distance_i);
+        cur = permuteExtract(distance_i,n0,n1);
+        cur.prefetch(types);
+
+        const vboolf8 m_dist3   = dist_A1 <= d3;
+        const vint8 dist_A2     = select(m_dist3, dist_A1, d3);
+        const vint8 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
+
+        const vboolf8 m_dist4   = dist_B1 <= dist_tmp_B2;
+        const vint8 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+        const vint8 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
+
+        const vboolf8 m_dist5   = dist_C1 <= dist_tmp_C2;
+        const vint8 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
+        const vint8 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) {
+          cur = permuteExtract(dist_A2,n0,n1);
+          stackPtr[0].ptr            = permuteExtract(dist_D2,n0,n1);
+          *(float*)&stackPtr[0].dist = permuteExtract(dist_D2,tNear);
+          stackPtr[1].ptr            = permuteExtract(dist_C2,n0,n1);
+          *(float*)&stackPtr[1].dist = permuteExtract(dist_C2,tNear);
+          stackPtr[2].ptr            = permuteExtract(dist_B2,n0,n1);
+          *(float*)&stackPtr[2].dist = permuteExtract(dist_B2,tNear);
+          stackPtr+=3;
+          return;
+        }
+
+        /* >=5 hits: reverse to descending order for writing to stack */
+
+        const size_t hits = 4 + popcnt(mask);
+        vint8 dist(neg_inf);
+
+        isort_quick_update(dist,dist_A2);
+        isort_quick_update(dist,dist_B2);
+        isort_quick_update(dist,dist_C2);
+        isort_quick_update(dist,dist_D2);
+
+        do {
+
+          distance_i = align_shift_right<1>(distance_i,distance_i);
+          cur = permuteExtract(distance_i,n0,n1);
+          cur.prefetch(types);
+          const vint8 new_dist(permute(distance_i,vint8(zero)));
+          mask &= mask-1;
+          isort_update(dist,new_dist);
+
+        } while(mask);
+
+        for (size_t i=0;i<hits-1;i++)
+        {
+          stackPtr->ptr            = permuteExtract(dist,n0,n1);
+          *(float*)&stackPtr->dist = permuteExtract(dist,tNear);
+          dist = align_shift_right<1>(dist,dist);
+          stackPtr++;
+        }
+        cur = permuteExtract(dist,n0,n1);
+      }
+#endif
 
     public:
       static __forceinline void traverseClosestHit(NodeRef& cur,
@@ -739,7 +886,7 @@ namespace embree
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #elif defined(__AVX512VL__)
-        traverseClosestHitAVX512VL<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+        traverseClosestHitAVX512VL8<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
         static_assert(false);
 #endif
