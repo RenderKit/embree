@@ -646,10 +646,10 @@ namespace embree
       {
       public:
         Quad() {}
-        Quad (unsigned v0, unsigned v1, unsigned v2, unsigned v3) 
+        Quad (unsigned int v0, unsigned int v1, unsigned int v2, unsigned int v3) 
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
       public:
-        unsigned v0, v1, v2, v3;
+        unsigned int v0, v1, v2, v3;
       };
       
     public:
@@ -948,11 +948,17 @@ namespace embree
     {
       typedef Vec3fa Vertex;
 
+      static const unsigned int GRID_RES_MAX = 0x7FFF;
+
       struct Grid
       {
       public:
         Grid() {}
-        Grid (unsigned int startVtx, unsigned int lineOffset, unsigned int resX, unsigned int resY) : startVtx(startVtx), lineOffset(lineOffset), resX(resX), resY(resY) {
+        Grid (unsigned int startVtx, unsigned int lineOffset, unsigned int resX_in, unsigned int resY_in)
+         : startVtx(startVtx), lineOffset(lineOffset), resX(resX_in), resY(resY_in)
+        {
+          assert(resX_in <= GRID_RES_MAX);
+          assert(resY_in <= GRID_RES_MAX);
         }
       public:
         unsigned int startVtx;

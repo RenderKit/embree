@@ -55,7 +55,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {  
       size_t end = min(begin+M,_end);
-      N = end-begin;
+      N = (unsigned char)(end-begin);
       const unsigned int geomID0 = prims[begin].geomID();
       this->geomID(N) = geomID0;
       ty = (unsigned char) scene->get(geomID0)->getType();
@@ -88,25 +88,25 @@ namespace embree
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const BBox3fa bounds = scene->get(geomID)->vbounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID);
         
-        bounds_vx_x(N)[i] = (short) space3.vx.x;
-        bounds_vx_y(N)[i] = (short) space3.vx.y;
-        bounds_vx_z(N)[i] = (short) space3.vx.z;
+        bounds_vx_x(N)[i] = (char) space3.vx.x;
+        bounds_vx_y(N)[i] = (char) space3.vx.y;
+        bounds_vx_z(N)[i] = (char) space3.vx.z;
         bounds_vx_lower(N)[i] = (short) clamp(floor(bounds.lower.x),-32767.0f,32767.0f);
         bounds_vx_upper(N)[i] = (short) clamp(ceil (bounds.upper.x),-32767.0f,32767.0f);
         assert(-32767.0f <= floor(bounds.lower.x) && floor(bounds.lower.x) <= 32767.0f);
         assert(-32767.0f <= ceil (bounds.upper.x) && ceil (bounds.upper.x) <= 32767.0f);
 
-        bounds_vy_x(N)[i] = (short) space3.vy.x;
-        bounds_vy_y(N)[i] = (short) space3.vy.y;
-        bounds_vy_z(N)[i] = (short) space3.vy.z;
+        bounds_vy_x(N)[i] = (char) space3.vy.x;
+        bounds_vy_y(N)[i] = (char) space3.vy.y;
+        bounds_vy_z(N)[i] = (char) space3.vy.z;
         bounds_vy_lower(N)[i] = (short) clamp(floor(bounds.lower.y),-32767.0f,32767.0f);
         bounds_vy_upper(N)[i] = (short) clamp(ceil (bounds.upper.y),-32767.0f,32767.0f);
         assert(-32767.0f <= floor(bounds.lower.y) && floor(bounds.lower.y) <= 32767.0f);
         assert(-32767.0f <= ceil (bounds.upper.y) && ceil (bounds.upper.y) <= 32767.0f);
 
-        bounds_vz_x(N)[i] = (short) space3.vz.x;
-        bounds_vz_y(N)[i] = (short) space3.vz.y;
-        bounds_vz_z(N)[i] = (short) space3.vz.z;
+        bounds_vz_x(N)[i] = (char) space3.vz.x;
+        bounds_vz_y(N)[i] = (char) space3.vz.y;
+        bounds_vz_z(N)[i] = (char) space3.vz.z;
         bounds_vz_lower(N)[i] = (short) clamp(floor(bounds.lower.z),-32767.0f,32767.0f);
         bounds_vz_upper(N)[i] = (short) clamp(ceil (bounds.upper.z),-32767.0f,32767.0f);
         assert(-32767.0f <= floor(bounds.lower.z) && floor(bounds.lower.z) <= 32767.0f);

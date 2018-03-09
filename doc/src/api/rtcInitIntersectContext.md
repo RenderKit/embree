@@ -68,7 +68,7 @@ to a ray query is directly passed to the registered callback
 functions. This way it is possible to attach arbitrary data to the end
 of the intersection context, such as a per-ray payload.
 
-Please not that the ray pointer is not guaranteed to be passed to the
+Please note that the ray pointer is not guaranteed to be passed to the
 callback functions, thus reading additional data from the ray pointer
 passed to callbacks is not possible.
 

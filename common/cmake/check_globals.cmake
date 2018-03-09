@@ -23,8 +23,10 @@ string(REPLACE "\n" ";" output ${output})
 
 foreach (line ${output})
   if ("${line}" MATCHES "O .bss")
-    if (NOT "${line}" MATCHES "std::__ioinit" AND    # this is caused by iostream initialization and is likely also ok
-        NOT "${line}" MATCHES "\\(\\)::")            # this matches a static inside a function which is fine
+    if (NOT "${line}" MATCHES "std::__ioinit" AND          # this is caused by iostream initialization and is likely also ok
+        NOT "${line}" MATCHES "\\(\\)::" AND               # this matches a static inside a function which is fine
+        NOT "${line}" MATCHES "function_local_static_" AND # static variable inside a function (explicitely named)
+        NOT "${line}" MATCHES "__\\$U")                    # ICC generated locks for static variable inside a function
       message(WARNING "\nProblematic global variable in non-SSE code:\n" ${line})
     endif()
   endif()

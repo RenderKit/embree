@@ -428,14 +428,14 @@ namespace embree
                                                   for (size_t j=r.begin(); j<r.end(); j++)
                                                   {
                                                     const GridMesh::Grid &g = mesh->grid(j);
-                                                    for (size_t y=0;y<(size_t)g.resY-1;y+=2)
-                                                      for (size_t x=0;x<(size_t)g.resX-1;x+=2)
+                                                    for (unsigned int y=0; y<g.resY-1u; y+=2)
+                                                      for (unsigned int x=0; x<g.resX-1u; x+=2)
                                                       {
                                                         BBox3fa bounds = empty;
                                                         if (!mesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
-                                                        const PrimRef prim(bounds,mesh->geomID,p_index);
+                                                        const PrimRef prim(bounds,mesh->geomID,unsigned(p_index));
                                                         pinfo.add_center2(prim);
-                                                        sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), j);
+                                                        sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                         prims[p_index++] = prim;                
                                                       }
                                                   }
@@ -472,14 +472,14 @@ namespace embree
                                          for (size_t j=r.begin(); j<r.end(); j++)
                                          {
                                            const GridMesh::Grid &g = mesh->grid(j);
-                                           for (size_t y=0;y<(size_t)g.resY-1;y+=2)
-                                             for (size_t x=0;x<(size_t)g.resX-1;x+=2)
+                                           for (unsigned int y=0; y<g.resY-1u; y+=2)
+                                             for (unsigned int x=0; x<g.resX-1u; x+=2)
                                              {
                                                BBox3fa bounds = empty;
                                                if (!mesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
-                                               const PrimRef prim(bounds,mesh->geomID,p_index);
+                                               const PrimRef prim(bounds,mesh->geomID,unsigned(p_index));
                                                pinfo.add_center2(prim);
-                                               sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), j);
+                                               sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                prims[p_index++] = prim;                
                                              }
                                          }

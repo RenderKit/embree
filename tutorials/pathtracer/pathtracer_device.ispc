@@ -1583,7 +1583,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     float fy = y + RandomSampler_get1D(sampler);
     L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
-  L = L/g_spp;
+  L = L/(uniform float)g_spp;
   return L;
 }
 
