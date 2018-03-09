@@ -300,7 +300,7 @@ namespace embree
                                           const vbool<K>& flags,
                                           const GridMesh::Grid &g, 
                                           const SubGrid &subgrid,
-                                          const size_t i,
+                                          const unsigned int i,
                                           const Epilog& epilog) const
         {
           const Vec3vf<K> e1 = tri_v0-tri_v1;
@@ -319,7 +319,7 @@ namespace embree
                                       const Vec3vf<K>& v3,
                                       const GridMesh::Grid &g, 
                                       const SubGrid &subgrid,
-                                      const size_t i,
+                                      const unsigned int i,
                                       const Epilog& epilog) const
         {
           intersectK(valid0,ray,v0,v1,v3,vbool<K>(false),g,subgrid,i,epilog);
@@ -660,9 +660,9 @@ namespace embree
         {
           for (size_t j=0;j<num;j++)
           {
-            const size_t items = prim[j].size();
+            const unsigned int items = (unsigned int) prim[j].size();
             vfloat<K> dist;
-            for (size_t i=0;i<items;i++)
+            for (unsigned int i=0; i<items; i++)
             {
               if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
@@ -676,9 +676,9 @@ namespace embree
           vbool<K> valid0 = valid;
           for (size_t j=0;j<num;j++)
           {
-            const size_t items = prim[j].size();
+            const unsigned int items = (unsigned int) prim[j].size();
             vfloat<K> dist;
-            for (size_t i=0; i<items; i++) {
+            for (unsigned int i=0; i<items; i++) {
               if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
