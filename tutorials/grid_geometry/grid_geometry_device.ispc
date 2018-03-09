@@ -17,9 +17,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define NUM_GRID_OBJECTS 4
-#define NUM_GRIDS_PER_OBJECT 4
-
 #define EDGE_LEVEL 256
 #define ENABLE_SMOOTH_NORMALS 0
 #define GRID_RESOLUTION_X EDGE_LEVEL
@@ -27,9 +24,6 @@
 
 /* scene data */
 RTCScene g_scene = NULL;
-
-/* previous camera position */
-uniform Vec3f old_p;
 
 __aligned(16) uniform float cube_vertices[8][4] =
 {
@@ -42,8 +36,6 @@ __aligned(16) uniform float cube_vertices[8][4] =
   {  1.0f,  1.0f,  1.0f, 0.0f },
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
-
-#if 1
 
 #define NUM_INDICES 24
 #define NUM_FACES 6
@@ -61,27 +53,6 @@ uniform unsigned int cube_indices[24] = {
 uniform unsigned int cube_faces[6] = {
   4, 4, 4, 4, 4, 4
 };
-
-#else
-
-#define NUM_INDICES 36
-#define NUM_FACES 12
-#define FACE_SIZE 3
-
-uniform unsigned int cube_indices[36] = {
-  1, 4, 5,  0, 4, 1,
-  2, 5, 6,  1, 5, 2,
-  3, 6, 7,  2, 6, 3,
-  4, 3, 7,  0, 3, 4,
-  5, 7, 6,  4, 7, 5,
-  3, 1, 2,  0, 1, 3
-};
-
-uniform unsigned int cube_faces[12] = {
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-};
-
-#endif
 
 float displacement(const Vec3f& P)
 {
@@ -150,7 +121,6 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
 
   uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),NUM_FACES);
 
-#if 1
   uniform unsigned int startVertexIndex = 0;
   for (uniform unsigned int g=0; g<NUM_FACES; g++) 
   {
@@ -162,10 +132,12 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
       for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x+=programCount)
       {
-        varying Vec3f dP;
-        varying float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
-        varying float v = (float)y / (GRID_RESOLUTION_Y-1);
-        rtcInterpolateV1(geom,g,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,NULL,NULL,3);
+        Vec3f dP,dPdu,dPdv;
+        float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
+        float v = (float)y / (GRID_RESOLUTION_Y-1);
+        rtcInterpolateV1(geom,g,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+        Vec3f Ng = normalize(cross(dPdu,dPdv));
+        dP = dP + displacement(dP)*Ng;
         Vertex vertex;
         vertex.x = dP.x;
         vertex.y = dP.y;
@@ -175,8 +147,6 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       }
     startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
   }
-#endif
-  print("DONE");
 
   rtcCommitGeometry(geomGrid);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
@@ -210,52 +180,6 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   return geomID;
 }
 
-
-uniform unsigned int addGridPlane (RTCScene scene_i, uniform unsigned int gridObjectID)
-{
-  /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_GRIDS_PER_OBJECT;
-  uniform float startX = 10.0f;
-  uniform float startY = 10.0f;
-  uniform float sizeX  = 20.0f;
-  uniform float sizeY  = 20.0f;
-
-  startX += gridObjectID * sizeX;
-
-  /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
-
-
-  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),NUM_GRIDS_PER_OBJECT);
-
-  uniform unsigned int index = 0;
-  for (uniform unsigned int g=0;g<NUM_GRIDS_PER_OBJECT;g++)
-  {
-    grids[g].startVertexID = index;
-    grids[g].stride        = GRID_RESOLUTION_X;
-    grids[g].width         = GRID_RESOLUTION_X;
-    grids[g].height        = GRID_RESOLUTION_Y;
-    for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
-      for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x++)
-      {
-        vertices[index].x = startX + (float)x / (GRID_RESOLUTION_X-1) * sizeX;
-        vertices[index].y = -2;
-        vertices[index].z = startY + (float)y / (GRID_RESOLUTION_Y-1) * sizeY;
-        index++;
-      }
-    
-    startY += sizeY;
-  }
-  assert(index == numVertices);
-
-  rtcCommitGeometry(geom);
-  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
-  rtcReleaseGeometry(geom);
-  return geomID;
-}
-
-
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -263,10 +187,10 @@ export void device_init (uniform int8* uniform cfg)
   g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
-  addGridGeometry(g_scene);
-
   addGroundPlane(g_scene);
 
+  addGridGeometry(g_scene);
+ 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
 
