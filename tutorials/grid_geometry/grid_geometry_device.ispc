@@ -19,11 +19,11 @@
 /* configuration */
 #define NUM_GRID_OBJECTS 4
 #define NUM_GRIDS_PER_OBJECT 4
-#define GRID_RESOLUTION_X 20
-#define GRID_RESOLUTION_Y 20
 
-#define EDGE_LEVEL 256.0f
+#define EDGE_LEVEL 256
 #define ENABLE_SMOOTH_NORMALS 0
+#define GRID_RESOLUTION_X EDGE_LEVEL
+#define GRID_RESOLUTION_Y EDGE_LEVEL
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -124,7 +124,7 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
 }
 
 /* adds a cube to the scene */
-void addCube (RTCScene scene_i)
+uniform unsigned int addGridGeometry (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
@@ -134,30 +134,56 @@ void addCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
-  for (uniform uintptr_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  for (uniform uintptr_t i=0; i<NUM_INDICES; i++) level[i] = (float)EDGE_LEVEL;
 
   rtcSetGeometryDisplacementFunction(geom,displacementFunction);
-
   rtcCommitGeometry(geom);
 
-  for (uniform int i=0; i<NUM_FACES; i++) 
+
+  /* sample subdiv surface to generate grid vertices */
+
+  RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
+  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_FACES;
+  
+  /* set vertices */
+  uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
+
+  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),NUM_FACES);
+
+#if 1
+  uniform unsigned int startVertexIndex = 0;
+  for (uniform unsigned int g=0; g<NUM_FACES; g++) 
   {
+    grids[g].startVertexID = startVertexIndex;
+    grids[g].stride        = GRID_RESOLUTION_X;
+    grids[g].width         = GRID_RESOLUTION_X;
+    grids[g].height        = GRID_RESOLUTION_Y;
+
     for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
       for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x+=programCount)
       {
         varying Vec3f dP;
-        varying float u = (float)x / (GRID_RESOLUTION_X-1);
+        varying float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
         varying float v = (float)y / (GRID_RESOLUTION_Y-1);
-        rtcInterpolateV1(geom,0,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,NULL,NULL,3);
-        //print("% % % \n",dP.x,dP.y,dP.z);
+        rtcInterpolateV1(geom,g,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,NULL,NULL,3);
+        Vertex vertex;
+        vertex.x = dP.x;
+        vertex.y = dP.y;
+        vertex.z = dP.z;
+        if (x + programIndex < GRID_RESOLUTION_X)
+          vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
       }
-
+    startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
   }
+#endif
+  print("DONE");
 
-  //uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
-
+  rtcCommitGeometry(geomGrid);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
+  rtcReleaseGeometry(geomGrid);
 
   rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -237,14 +263,9 @@ export void device_init (uniform int8* uniform cfg)
   g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
-  /* add ground plane */
-  //addGroundPlane(g_scene);
+  addGridGeometry(g_scene);
 
-  /* add cube */
-  addCube(g_scene);
-
-  for (uniform unsigned int i=0;i<NUM_GRID_OBJECTS;i++)
-    addGridPlane(g_scene,i);
+  addGroundPlane(g_scene);
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
@@ -274,7 +295,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Vec3f diffuse = ray.geomID != 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-
     Vec3f Ng = normalize(ray.Ng);
 #if ENABLE_SMOOTH_NORMALS
     Vec3f P = ray.org + ray.tfar*ray.dir;

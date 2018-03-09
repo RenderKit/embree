@@ -21,11 +21,11 @@ namespace embree {
 /* configuration */
 #define NUM_GRID_OBJECTS 4
 #define NUM_GRIDS_PER_OBJECT 4
-#define GRID_RESOLUTION_X 20
-#define GRID_RESOLUTION_Y 20
 
-#define EDGE_LEVEL 256.0f
+#define EDGE_LEVEL 256
 #define ENABLE_SMOOTH_NORMALS 0
+#define GRID_RESOLUTION_X EDGE_LEVEL
+#define GRID_RESOLUTION_Y EDGE_LEVEL
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -126,7 +126,7 @@ void displacementFunction(const struct RTCDisplacementFunctionNArguments* args)
 }
 
 /* adds a cube to the scene */
-unsigned int addCube (RTCScene scene_i)
+unsigned int addGridGeometry (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
@@ -136,12 +136,54 @@ unsigned int addCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_faces,    0, sizeof(unsigned int), NUM_FACES);
 
   float* level = (float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(float), NUM_INDICES);
-  for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  for (size_t i=0; i<NUM_INDICES; i++) level[i] = (float)EDGE_LEVEL;
 
   rtcSetGeometryDisplacementFunction(geom,displacementFunction);
-
   rtcCommitGeometry(geom);
-  unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+
+
+  /* sample subdiv surface to generate grid vertices */
+
+  RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
+  unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_FACES;
+  
+  /* set vertices */
+  Vertex* vertices = (Vertex *) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
+
+  RTCGrid* grids = (RTCGrid *) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(RTCGrid),NUM_FACES);
+
+#if 1
+  unsigned int startVertexIndex = 0;
+  for (unsigned int g=0; g<NUM_FACES; g++) 
+  {
+    grids[g].startVertexID = startVertexIndex;
+    grids[g].stride        = GRID_RESOLUTION_X;
+    grids[g].width         = GRID_RESOLUTION_X;
+    grids[g].height        = GRID_RESOLUTION_Y;
+
+    for (unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
+      for (unsigned int x=0;x<GRID_RESOLUTION_X;x+=1)
+      {
+        Vec3fa dP;
+        float u = (float)(x+0) / (GRID_RESOLUTION_X-1);
+        float v = (float)y / (GRID_RESOLUTION_Y-1);
+        rtcInterpolate1(geom,g,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,nullptr,nullptr,3);
+        Vertex vertex;
+        vertex.x = dP.x;
+        vertex.y = dP.y;
+        vertex.z = dP.z;
+        if (x + 0 < GRID_RESOLUTION_X)
+          vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + 0] = vertex;
+      }
+    startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+  }
+#endif
+  printf("DONE");
+
+  rtcCommitGeometry(geomGrid);
+  unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
+  rtcReleaseGeometry(geomGrid);
+
   rtcReleaseGeometry(geom);
   return geomID;
 }
@@ -223,14 +265,9 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
-  /* add ground plane */
-  //addGroundPlane(g_scene);
+  addGridGeometry(g_scene);
 
-  /* add cube */
-  //addCube(g_scene);
-
-  for (unsigned int i=0;i<NUM_GRID_OBJECTS;i++)
-    addGridPlane(g_scene,i);
+  addGroundPlane(g_scene);
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
@@ -260,7 +297,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa diffuse = ray.geomID != 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-
     Vec3fa Ng = normalize(ray.Ng);
 #if ENABLE_SMOOTH_NORMALS
     Vec3fa P = ray.org + ray.tfar*ray.dir;
