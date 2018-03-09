@@ -48,8 +48,8 @@ namespace embree
           const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
           const vfloat<K> uu = select(flags,u1,u0);
           const vfloat<K> vv = select(flags,v1,v0);
-          const unsigned int sx = subgrid.x() + (i % 2);
-          const unsigned int sy = subgrid.y() + (i >> 1);
+          const unsigned int sx = subgrid.x() + (unsigned int)(i % 2);
+          const unsigned int sy = subgrid.y() + (unsigned int)(i >>1);
           const float inv_resX = rcp((float)(int)(g.resX-1));
           const float inv_resY = rcp((float)(int)(g.resY-1));
           const vfloat<K> u = (uu + (float)(int)sx) * inv_resX;
