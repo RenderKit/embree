@@ -244,7 +244,7 @@ void renderTileStandard(uniform int taskIndex,
   Ray rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
-  uniform int N = 0;
+  uniform unsigned int N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* ISPC workaround for mask == 0 */
