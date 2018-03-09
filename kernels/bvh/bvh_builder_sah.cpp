@@ -428,8 +428,8 @@ namespace embree
                                                   for (size_t j=r.begin(); j<r.end(); j++)
                                                   {
                                                     const GridMesh::Grid &g = mesh->grid(j);
-                                                    for (size_t y=0;y<(size_t)g.resY-1;y+=2)
-                                                      for (size_t x=0;x<(size_t)g.resX-1;x+=2)
+                                                    for (unsigned int y=0; y<g.resY-1; y+=2)
+                                                      for (unsigned int x=0; x<g.resX-1; x+=2)
                                                       {
                                                         BBox3fa bounds = empty;
                                                         if (!mesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
@@ -472,8 +472,8 @@ namespace embree
                                          for (size_t j=r.begin(); j<r.end(); j++)
                                          {
                                            const GridMesh::Grid &g = mesh->grid(j);
-                                           for (size_t y=0;y<(size_t)g.resY-1;y+=2)
-                                             for (size_t x=0;x<(size_t)g.resX-1;x+=2)
+                                           for (unsigned int y=0; y<g.resY-1; y+=2)
+                                             for (unsigned int x=0; x<g.resX-1; x+=2)
                                              {
                                                BBox3fa bounds = empty;
                                                if (!mesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
