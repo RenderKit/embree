@@ -294,7 +294,7 @@ namespace embree
   ISPCGroup::ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
     : geom(GROUP)
   {
-    numGeometries = in->size();
+    numGeometries = (unsigned int) in->size();
     geometries = new ISPCGeometry*[numGeometries];
     for (size_t i=0; i<numGeometries; i++)
       geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
