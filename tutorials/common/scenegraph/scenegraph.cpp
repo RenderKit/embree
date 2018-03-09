@@ -948,9 +948,9 @@ namespace embree
     {
       const unsigned int startVtx = (unsigned int) pos.size();
       const unsigned int lineOffset = resX;
-      for (size_t y=0; y<resY; y++)
+      for (unsigned int y=0; y<resY; y++)
       {
-        for (size_t x=0; x<resX; x++)
+        for (unsigned int x=0; x<resX; x++)
         {
           const float u = (float)x / (resX-1);
           const float v = (float)y / (resY-1);
@@ -996,14 +996,14 @@ namespace embree
       const unsigned int resX = gmesh->grids[i].resX;
       const unsigned int resY = gmesh->grids[i].resY;
 
-      for (size_t y=0; y<resY-1; y++)
+      for (unsigned int y=0; y<resY-1; y++)
       {
-        for (size_t x=0; x<resX-1; x++)
+        for (unsigned int x=0; x<resX-1; x++)
         {
-          const int a0 = startVtx + y * lineOffset + x;
-          const int a1 = a0 + 1;
-          const int a3 = a0 + lineOffset;
-          const int a2 = a0 + lineOffset + 1;
+          const unsigned int a0 = startVtx + y * lineOffset + x;
+          const unsigned int a1 = a0 + 1;
+          const unsigned int a3 = a0 + lineOffset;
+          const unsigned int a2 = a0 + lineOffset + 1;
           qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a3));
         }
       }
@@ -1032,7 +1032,7 @@ namespace embree
   {
     //        top
     // | <----------
-    // |            /\ 
+    // |            /\ .
     // | left        | right 
     // |             |
     // \/            |
@@ -1082,7 +1082,7 @@ namespace embree
   {
     //        
     // | <----------    <----------
-    // |            /\ |           /\ 
+    // |            /\ |           /\ .
     // | edgey       | |           |
     // |             | |           |
     // \/            | \/          |

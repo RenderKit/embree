@@ -646,10 +646,10 @@ namespace embree
       {
       public:
         Quad() {}
-        Quad (unsigned v0, unsigned v1, unsigned v2, unsigned v3) 
+        Quad (unsigned int v0, unsigned int v1, unsigned int v2, unsigned int v3) 
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
       public:
-        unsigned v0, v1, v2, v3;
+        unsigned int v0, v1, v2, v3;
       };
       
     public:

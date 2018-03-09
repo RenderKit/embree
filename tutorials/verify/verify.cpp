@@ -1205,13 +1205,13 @@ namespace embree
 
     double expected_size_helper(VerifyApplication* state, size_t NN)
     {
-      bool avx = (isa & AVX) == AVX;
-      bool avx2 = (isa & AVX2) == AVX2;
+      bool has_avx = (isa & AVX) == AVX;
+      bool has_avx2 = (isa & AVX2) == AVX2;
       
       if (sflags.qflags == RTC_BUILD_QUALITY_LOW)
       {
         switch (gtype) {
-        case TRIANGLE_MESH: return avx ? 131.0f*NN : 117.0f*NN; // triangle4
+        case TRIANGLE_MESH: return has_avx ? 131.0f*NN : 117.0f*NN; // triangle4
         default: return inf;
         }
       }
@@ -1220,58 +1220,58 @@ namespace embree
         switch (gtype)
         {
         case TRIANGLE_MESH: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx ?  70.0f*NN :  63.0f*NN; // triangle4
-          case RTC_SCENE_FLAG_ROBUST : return avx ?  70.0f*NN :  63.0f*NN; // triangle4v
-          case RTC_SCENE_FLAG_COMPACT: return avx ?  35.0f*NN :  35.0f*NN; // triangle4i
+          case RTC_SCENE_FLAG_NONE: return has_avx ?  70.0f*NN :  63.0f*NN; // triangle4
+          case RTC_SCENE_FLAG_ROBUST : return has_avx ?  70.0f*NN :  63.0f*NN; // triangle4v
+          case RTC_SCENE_FLAG_COMPACT: return has_avx ?  35.0f*NN :  35.0f*NN; // triangle4i
           default: return inf;
           }
           
           
         case TRIANGLE_MESH_MB: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
-          case RTC_SCENE_FLAG_ROBUST : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
-          case RTC_SCENE_FLAG_COMPACT: return avx2 ? 45.0f*NN : 45.0f*NN; // triangle4imb
+          case RTC_SCENE_FLAG_NONE: return has_avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
+          case RTC_SCENE_FLAG_ROBUST : return has_avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
+          case RTC_SCENE_FLAG_COMPACT: return has_avx2 ? 45.0f*NN : 45.0f*NN; // triangle4imb
           default: return inf;
           }
           
         case QUAD_MESH: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx ? 85.0f*NN : 79.0f*NN; // quad4v
-          case RTC_SCENE_FLAG_ROBUST : return avx ? 85.0f*NN : 79.0f*NN; // quad4v
-          case RTC_SCENE_FLAG_COMPACT: return avx ? 41.0f*NN : 41.0f*NN; // quad4i
+          case RTC_SCENE_FLAG_NONE: return has_avx ? 85.0f*NN : 79.0f*NN; // quad4v
+          case RTC_SCENE_FLAG_ROBUST : return has_avx ? 85.0f*NN : 79.0f*NN; // quad4v
+          case RTC_SCENE_FLAG_COMPACT: return has_avx ? 41.0f*NN : 41.0f*NN; // quad4i
           default: return inf;
           }
         case QUAD_MESH_MB: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
-          case RTC_SCENE_FLAG_ROBUST : return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
-          case RTC_SCENE_FLAG_COMPACT: return avx ? 53.0f*NN : 53.0f*NN; // quad4imb
+          case RTC_SCENE_FLAG_NONE: return has_avx ? 68.0f*NN : 53.0f*NN; // quad4imb
+          case RTC_SCENE_FLAG_ROBUST : return has_avx ? 68.0f*NN : 53.0f*NN; // quad4imb
+          case RTC_SCENE_FLAG_COMPACT: return has_avx ? 53.0f*NN : 53.0f*NN; // quad4imb
           default: return inf;
           }
           
         case HAIR_GEOMETRY: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
-          case RTC_SCENE_FLAG_ROBUST : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
-          case RTC_SCENE_FLAG_COMPACT: return avx2 ?  105.0f*NN : 105.0f*NN; // bezier1i
+          case RTC_SCENE_FLAG_NONE: return has_avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
+          case RTC_SCENE_FLAG_ROBUST : return has_avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
+          case RTC_SCENE_FLAG_COMPACT: return has_avx2 ?  105.0f*NN : 105.0f*NN; // bezier1i
           default: return inf;
           }
           
         case HAIR_GEOMETRY_MB: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds
-          case RTC_SCENE_FLAG_ROBUST : return avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds 
-          case RTC_SCENE_FLAG_COMPACT: return avx2 ?  190.0f*NN : 190.0f*NN; // bezier1i
+          case RTC_SCENE_FLAG_NONE: return has_avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds
+          case RTC_SCENE_FLAG_ROBUST : return has_avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds 
+          case RTC_SCENE_FLAG_COMPACT: return has_avx2 ?  190.0f*NN : 190.0f*NN; // bezier1i
           default: return inf;
           }
           
         case LINE_GEOMETRY: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx ? 32.0f*NN : 26.0f*NN; // line4i
-          case RTC_SCENE_FLAG_ROBUST : return avx ? 32.0f*NN : 26.0f*NN; // line4i
-          case RTC_SCENE_FLAG_COMPACT: return avx ? 26.0f*NN : 26.0f*NN; // line4i
+          case RTC_SCENE_FLAG_NONE: return has_avx ? 32.0f*NN : 26.0f*NN; // line4i
+          case RTC_SCENE_FLAG_ROBUST : return has_avx ? 32.0f*NN : 26.0f*NN; // line4i
+          case RTC_SCENE_FLAG_COMPACT: return has_avx ? 26.0f*NN : 26.0f*NN; // line4i
           default: return inf;
           }
           
         case LINE_GEOMETRY_MB: switch (sflags.sflags) {
-          case RTC_SCENE_FLAG_NONE: return avx ? 45.0f*NN : 36.0f*NN; // line4i
-          case RTC_SCENE_FLAG_ROBUST : return avx ? 45.0f*NN : 36.0f*NN; // line4i
-          case RTC_SCENE_FLAG_COMPACT: return avx ? 36.0f*NN : 36.0f*NN; // line4i
+          case RTC_SCENE_FLAG_NONE: return has_avx ? 45.0f*NN : 36.0f*NN; // line4i
+          case RTC_SCENE_FLAG_ROBUST : return has_avx ? 45.0f*NN : 36.0f*NN; // line4i
+          case RTC_SCENE_FLAG_COMPACT: return has_avx ? 36.0f*NN : 36.0f*NN; // line4i
           default: return inf;
           }
           
