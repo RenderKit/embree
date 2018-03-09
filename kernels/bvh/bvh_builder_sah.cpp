@@ -435,7 +435,7 @@ namespace embree
                                                         if (!mesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
                                                         const PrimRef prim(bounds,mesh->geomID,unsigned(p_index));
                                                         pinfo.add_center2(prim);
-                                                        sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), j);
+                                                        sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                         prims[p_index++] = prim;                
                                                       }
                                                   }
@@ -479,7 +479,7 @@ namespace embree
                                                if (!mesh->buildBounds(g,x,y,&bounds)) continue; // get bounds of subgrid
                                                const PrimRef prim(bounds,mesh->geomID,unsigned(p_index));
                                                pinfo.add_center2(prim);
-                                               sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), j);
+                                               sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                prims[p_index++] = prim;                
                                              }
                                          }
