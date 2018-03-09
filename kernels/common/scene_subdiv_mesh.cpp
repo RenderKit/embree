@@ -706,7 +706,7 @@ namespace embree
       halfEdgeFace.resize(numHalfEdges);
       for (size_t f=0, h=0; f<numFaces(); f++)
         for (size_t e=0; e<faceVertices[f]; e++)
-          halfEdgeFace[h++] = f;
+          halfEdgeFace[h++] = (unsigned int) f;
     }
     
     /* create set with all vertex creases */
