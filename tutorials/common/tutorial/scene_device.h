@@ -274,7 +274,7 @@ namespace embree
 #endif
     ISPCGeometry geom;
     ISPCGeometry** geometries;
-    size_t numGeometries;
+    unsigned int numGeometries;
   };
   
   struct ISPCScene

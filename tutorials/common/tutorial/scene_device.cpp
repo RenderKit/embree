@@ -450,7 +450,7 @@ namespace embree
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     if (mesh->normals) {
-      for (size_t t=0; t<mesh->numTimeSteps; t++) {
+      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
       }
     }
@@ -470,7 +470,7 @@ namespace embree
   
   void ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
   {
-    for (size_t i=0; i<group->numGeometries; i++)
+    for (unsigned int i=0; i<group->numGeometries; i++)
     {
       ISPCGeometry* geometry = group->geometries[i];
       if (geometry->type == SUBDIV_MESH)
