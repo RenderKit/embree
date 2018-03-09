@@ -1180,8 +1180,8 @@ namespace embree
         assert(edge == rtcGetGeometryFirstHalfEdge(geom,i));
         
         /* extend grid unless no longer possible */
-        size_t width = 1;
-        size_t height = 1;
+        unsigned int width = 1;
+        unsigned int height = 1;
         while (true)
         {
           const bool extended_top    = extend_grid(geom,visited,left,top,right);
@@ -1191,6 +1191,8 @@ namespace embree
           width  += extended_left + extended_right;
           height += extended_top  + extended_bottom;
           if (!extended_top && !extended_right && !extended_bottom && !extended_left) break;
+          if (width+2  > SceneGraph::GridMeshNode::GRID_RES_MAX) break;
+          if (height+2 > SceneGraph::GridMeshNode::GRID_RES_MAX) break;
         }
         
         /* gather all vertices of grid */

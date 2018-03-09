@@ -948,11 +948,17 @@ namespace embree
     {
       typedef Vec3fa Vertex;
 
+      static const unsigned int GRID_RES_MAX = 0x7FFF;
+
       struct Grid
       {
       public:
         Grid() {}
-        Grid (unsigned int startVtx, unsigned int lineOffset, unsigned int resX, unsigned int resY) : startVtx(startVtx), lineOffset(lineOffset), resX(resX), resY(resY) {
+        Grid (unsigned int startVtx, unsigned int lineOffset, unsigned int resX_in, unsigned int resY_in)
+         : startVtx(startVtx), lineOffset(lineOffset), resX(resX_in), resY(resY_in)
+        {
+          assert(resX_in <= GRID_RES_MAX);
+          assert(resY_in <= GRID_RES_MAX);
         }
       public:
         unsigned int startVtx;
