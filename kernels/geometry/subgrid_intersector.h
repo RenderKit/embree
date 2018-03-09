@@ -601,7 +601,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
 
         subgrid.gather(vtx,context->scene);
-        for (size_t i=0;i<4;i++)
+        for (unsigned int i=0; i<4; i++)
         {
           const Vec3vf<K> p0 = vtx[i*4+0];
           const Vec3vf<K> p1 = vtx[i*4+1];
@@ -621,7 +621,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
 
         subgrid.gather(vtx,context->scene);
-        for (size_t i=0;i<4;i++)
+        for (unsigned int i=0; i<4; i++)
         {
           const Vec3vf<K> p0 = vtx[i*4+0];
           const Vec3vf<K> p1 = vtx[i*4+1];
