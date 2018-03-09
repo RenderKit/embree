@@ -1164,7 +1164,7 @@ namespace embree
       rtcCommitGeometry(geom);
 
       /* iterate over mesh and collect all grids */
-      for (size_t i=0; i<qmesh->numPrimitives(); i++)
+      for (unsigned int i=0; i<qmesh->numPrimitives(); i++)
       {
         /* skip face if already added to some grid */
         if (visited[i]) continue;
@@ -1201,7 +1201,8 @@ namespace embree
         gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], left.front());
 
         /* add new grid to grid mesh */
-        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
+        unsigned int startVertex = (unsigned int) gmesh->positions[0].size();
+        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVertex,width+1,width+1,height+1));
         for (size_t i=0; i<positions.size(); i++)
           gmesh->positions[0].push_back(positions[i]);
       }
