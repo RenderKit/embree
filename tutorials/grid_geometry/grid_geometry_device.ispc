@@ -149,7 +149,7 @@ void addCube (RTCScene scene_i)
         varying float u = (float)x / (GRID_RESOLUTION_X-1);
         varying float v = (float)y / (GRID_RESOLUTION_Y-1);
         rtcInterpolateV1(geom,0,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,NULL,NULL,3);
-        print("% % % \n",dP.x,dP.y,dP.z);
+        //print("% % % \n",dP.x,dP.y,dP.z);
       }
 
   }
