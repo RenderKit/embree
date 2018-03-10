@@ -286,15 +286,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    struct SubGridBuildData {
-      unsigned short sx,sy;
-      unsigned int primID;
-
-      __forceinline SubGridBuildData() {};
-      __forceinline SubGridBuildData(const unsigned int sx, const unsigned int sy, const unsigned int primID) : sx(sx), sy(sy), primID(primID) {};
-
-    };
-
 
     template<int N, typename Primitive>
     struct CreateLeafGrid
