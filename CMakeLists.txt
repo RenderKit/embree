@@ -33,6 +33,12 @@ MACRO (SIGN_TARGET target)
   ENDIF()
 ENDMACRO()
 
+MACRO (SIGN_LIBRARY target)
+  IF (EMBREE_SIGN_FILE)
+    add_custom_command(TARGET ${target} POST_BUILD COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_LINKER_FILE:${target}>)
+  ENDIF()
+ENDMACRO()
+
 # find git version
 IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   FIND_PACKAGE(Git)
