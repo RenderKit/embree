@@ -61,12 +61,13 @@ namespace embree
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vint(ZeroTy)   : v(_mm256_setzero_si256()) {}
-    __forceinline vint(OneTy)    : v(_mm256_set_epi32(1,1,1,1,1,1,1,1)) {}
-    __forceinline vint(PosInfTy) : v(_mm256_set_epi32(pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf)) {}
-    __forceinline vint(NegInfTy) : v(_mm256_set_epi32(neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf)) {}
-    __forceinline vint(StepTy)   : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
-    __forceinline vint(UndefinedTy) : v(_mm256_undefined_si256()) {}
+    __forceinline vint(ZeroTy)        : v(_mm256_setzero_si256()) {}
+    __forceinline vint(OneTy)         : v(_mm256_set_epi32(1,1,1,1,1,1,1,1)) {}
+    __forceinline vint(PosInfTy)      : v(_mm256_set_epi32(pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf)) {}
+    __forceinline vint(NegInfTy)      : v(_mm256_set_epi32(neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf)) {}
+    __forceinline vint(StepTy)        : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
+    __forceinline vint(ReverseStepTy) : v(_mm256_set_epi32(0, 1, 2, 3, 4, 5, 6, 7)) {}
+    __forceinline vint(UndefinedTy)   : v(_mm256_undefined_si256()) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores

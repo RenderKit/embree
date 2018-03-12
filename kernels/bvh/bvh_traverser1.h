@@ -482,7 +482,7 @@ namespace embree
     {
       // new experimental code
       assert(mask != 0);
-      const BaseNode* node = cur.baseNode(types);
+      const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode(types);
       vint4 distance_i = (asInt(tNear) & 0xfffffff8) | vint4(step);
       distance_i = vint4::compact((int)mask,distance_i,distance_i);
       const vllong4 n0 = vllong4::loadu((vllong4*)node->children);
@@ -718,7 +718,7 @@ namespace embree
                                                               StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode(types);
         const vllong4 n0 = vllong4::loadu((vllong4*)&node->children[0]);
         const vllong4 n1 = vllong4::loadu((vllong4*)&node->children[4]);
         vint8 distance_i = (asInt(tNear) & 0xfffffff8) | vint8(step);
@@ -738,7 +738,7 @@ namespace embree
         cur.prefetch(types);
 
         /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
-        const vboolf8 m_dist  = d0 < d1;
+        const vboolf8 m_dist  = d0 <= d1;
         const vint8 dist_A0 = select(m_dist, d0, d1);
         const vint8 dist_B0 = select(m_dist, d1, d0);
 
