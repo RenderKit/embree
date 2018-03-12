@@ -66,7 +66,7 @@ if [ "$1" == "OFF" ]; then
 else
 
   # sign ZIP file
-  embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
-  /NAS/packages/apps/signfile/linux/SignFile -vv ${embree_zip}
+  #embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
+  #/NAS/packages/apps/signfile/linux/SignFile -vv ${embree_zip}
 
 fi
