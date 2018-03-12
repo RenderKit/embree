@@ -2,6 +2,7 @@
 
 set build_type=%1
 set outfile=%2
+set signfile=%3
 
 if "%build_type%" == "" (
   set build_type=Release
@@ -13,7 +14,9 @@ IF %ERRORLEVEL% NEQ 0 (
   exit /b 1
 )
 
-\\sdvis-nas\NAS\packages\apps\signfile\windows\SignFile.exe -vv %outfile%
+IF [%signfile%] NEQ [] (
+  %signfile% -vv %outfile%
+)
 
 IF %ERRORLEVEL% NEQ 0 (
   exit /b 1
