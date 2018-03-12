@@ -153,13 +153,13 @@ namespace embree
     ssize_t resident_memory = getResidentMemoryBytes();
 
     double log_time = log_delta ? time-last_time : time-start_time;
-    double log_virtual_memory = log_delta ? virtual_memory-last_virtual_memory : virtual_memory;
-    double log_resident_memory = log_delta ? resident_memory-last_resident_memory : resident_memory;
+    ssize_t log_virtual_memory = log_delta ? virtual_memory-last_virtual_memory : virtual_memory;
+    ssize_t log_resident_memory = log_delta ? resident_memory-last_resident_memory : resident_memory;
       
     std::cout << "[ "
               << std::setw(8) << std::setprecision(3) << std::fixed << log_time << "s, "
-              << std::setw(8) << std::setprecision(2) << std::fixed << log_virtual_memory/1E6 << " MB virtual, "
-              << std::setw(8) << std::setprecision(2) << std::fixed << log_resident_memory/1E6 << " MB resident ] "
+              << std::setw(8) << std::setprecision(2) << std::fixed << double(log_virtual_memory)/1E6 << " MB virtual, "
+              << std::setw(8) << std::setprecision(2) << std::fixed << double(log_resident_memory)/1E6 << " MB resident ] "
               << str << std::fixed 
               << std::endl << std::flush;
     

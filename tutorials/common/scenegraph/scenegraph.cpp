@@ -937,7 +937,7 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned resX, const unsigned resY )
+  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned int resX, const unsigned int resY )
   {
     Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material);
 
@@ -946,11 +946,11 @@ namespace embree
     avector<SceneGraph::GridMeshNode::Vertex> pos;
     for (size_t i=0;i<quads.size();i++)
     {
-      const unsigned int startVtx = pos.size();      
+      const unsigned int startVtx = (unsigned int) pos.size();
       const unsigned int lineOffset = resX;
-      for (size_t y=0; y<resY; y++)
+      for (unsigned int y=0; y<resY; y++)
       {
-        for (size_t x=0; x<resX; x++)
+        for (unsigned int x=0; x<resX; x++)
         {
           const float u = (float)x / (resX-1);
           const float v = (float)y / (resY-1);
@@ -969,7 +969,7 @@ namespace embree
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
-   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids(Ref<SceneGraph::Node> node, const unsigned resX, const unsigned resY )
+  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids(Ref<SceneGraph::Node> node, const unsigned int resX, const unsigned int resY )
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_quads_to_grids(xfmNode->child, resX, resY);
@@ -996,14 +996,14 @@ namespace embree
       const unsigned int resX = gmesh->grids[i].resX;
       const unsigned int resY = gmesh->grids[i].resY;
 
-      for (size_t y=0; y<resY-1; y++)
+      for (unsigned int y=0; y<resY-1; y++)
       {
-        for (size_t x=0; x<resX-1; x++)
+        for (unsigned int x=0; x<resX-1; x++)
         {
-          const int a0 = startVtx + y * lineOffset + x;
-          const int a1 = a0 + 1;
-          const int a3 = a0 + lineOffset;
-          const int a2 = a0 + lineOffset + 1;
+          const unsigned int a0 = startVtx + y * lineOffset + x;
+          const unsigned int a1 = a0 + 1;
+          const unsigned int a3 = a0 + lineOffset;
+          const unsigned int a2 = a0 + lineOffset + 1;
           qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a3));
         }
       }
@@ -1032,7 +1032,7 @@ namespace embree
   {
     //        top
     // | <----------
-    // |            /\
+    // |            /\ .
     // | left        | right 
     // |             |
     // \/            |
@@ -1082,7 +1082,7 @@ namespace embree
   {
     //        
     // | <----------    <----------
-    // |            /\ |           /\
+    // |            /\ |           /\ .
     // | edgey       | |           |
     // |             | |           |
     // \/            | \/          |
@@ -1164,7 +1164,7 @@ namespace embree
       rtcCommitGeometry(geom);
 
       /* iterate over mesh and collect all grids */
-      for (size_t i=0; i<qmesh->numPrimitives(); i++)
+      for (unsigned int i=0; i<qmesh->numPrimitives(); i++)
       {
         /* skip face if already added to some grid */
         if (visited[i]) continue;
@@ -1180,8 +1180,8 @@ namespace embree
         assert(edge == rtcGetGeometryFirstHalfEdge(geom,i));
         
         /* extend grid unless no longer possible */
-        size_t width = 1;
-        size_t height = 1;
+        unsigned int width = 1;
+        unsigned int height = 1;
         while (true)
         {
           const bool extended_top    = extend_grid(geom,visited,left,top,right);
@@ -1191,6 +1191,8 @@ namespace embree
           width  += extended_left + extended_right;
           height += extended_top  + extended_bottom;
           if (!extended_top && !extended_right && !extended_bottom && !extended_left) break;
+          if (width+2  > SceneGraph::GridMeshNode::GRID_RES_MAX) break;
+          if (height+2 > SceneGraph::GridMeshNode::GRID_RES_MAX) break;
         }
         
         /* gather all vertices of grid */
@@ -1199,7 +1201,8 @@ namespace embree
         gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], left.front());
 
         /* add new grid to grid mesh */
-        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(gmesh->positions[0].size(),width+1,width+1,height+1));
+        unsigned int startVertex = (unsigned int) gmesh->positions[0].size();
+        gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVertex,width+1,width+1,height+1));
         for (size_t i=0; i<positions.size(); i++)
           gmesh->positions[0].push_back(positions[i]);
       }
