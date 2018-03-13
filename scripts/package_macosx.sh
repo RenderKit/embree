@@ -19,6 +19,10 @@ if [ -z "${EMBREE_SIGN_FILE}" ]; then
     exit 0
 fi
 
+if [ -d "$PACKAGE.pkg" ]; then
+    rm -r $PACKAGE.pkg
+fi
+
 hdiutil attach $PACKAGE
 cp -r /Volumes/$PACKAGE_BASE/$PACKAGE_BASE.pkg $PACKAGE_BASE.pkg
 hdiutil detach /Volumes/$PACKAGE_BASE
