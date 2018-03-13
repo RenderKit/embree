@@ -310,7 +310,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_BINDIR=../../Applications/Embree2/bin")
       conf.append("-D EMBREE_TBB_ROOT=/opt/local")
     elif OS == "windows" and config["package"] == "ZIP":
-      conf.append("-D EMBREE_SIGN_FILE=\\sdvis-nas\NAS\packages\apps\signfile\windows\SignFile.exe")
+      conf.append("-D EMBREE_SIGN_FILE=\\\\sdvis-nas\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
@@ -319,7 +319,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
     elif OS == "windows" and config["package"] == "MSI":
-      conf.append("-D EMBREE_SIGN_FILE=\\sdvis-nas\NAS\packages\apps\signfile\windows\SignFile.exe")
+      conf.append("-D EMBREE_SIGN_FILE=\\\\sdvis-nas\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=OFF")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
