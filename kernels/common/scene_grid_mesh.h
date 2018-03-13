@@ -215,26 +215,16 @@ namespace embree
     /*! calculates the build bounds of the i'th primitive at the itime'th time segment, if it's valid */
     __forceinline bool buildBounds(const Grid& g, size_t sx, size_t sy, size_t itime, BBox3fa& bbox) const
     {
-      assert(itime+1 < numTimeSteps);
-
+      assert(itime < numTimeSteps);
       BBox3fa b0(empty);
       for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
         for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
         {
-          const Vec3fa v = grid_vertex(g,x,y,itime+0);
+          const Vec3fa v = grid_vertex(g,x,y,itime);
           if (unlikely(!isvalid(v))) return false;
           b0.extend(v);
         }
 
-      BBox3fa b1(empty);
-      for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
-        for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
-        {
-          const Vec3fa v = grid_vertex(g,x,y,itime+1);
-          if (unlikely(!isvalid(v))) return false;
-          b1.extend(v);
-        }
-      
       /* use bounds of first time step in builder */
       bbox = b0;
       return true;

@@ -333,10 +333,12 @@ namespace embree
             x[pos] = sgrid_bd.sx;
             y[pos] = sgrid_bd.sy;
             primID[pos] = sgrid_bd.primID;
-            mesh->buildBounds(mesh->grid(sgrid_bd.primID),sgrid_bd.sx,sgrid_bd.sy,bounds0[pos]);
-            mesh->buildBounds(mesh->grid(sgrid_bd.primID),sgrid_bd.sx,sgrid_bd.sy,bounds1[pos]);
-            PRINT(bounds0[pos]);
-            PRINT(bounds1[pos]);
+            const size_t x = sgrid_bd.sx & 0x7fff;
+            const size_t y = sgrid_bd.sy & 0x7fff;
+            bool valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,0,bounds0[pos]);
+            bool valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,1,bounds1[pos]);
+            assert(valid0);
+            assert(valid1);
             //bounds0[pos] = prims[start+i].bounds();
             //bounds1[pos] = prims[start+i].bounds();
             allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
