@@ -195,7 +195,7 @@ namespace embree
     }
 
     /*! calculates the build bounds of the i'th primitive, if it's valid */
-    __forceinline bool buildBounds(const Grid& g, size_t sx, size_t sy, BBox3fa* bbox = nullptr) const
+    __forceinline bool buildBounds(const Grid& g, size_t sx, size_t sy, BBox3fa& bbox) const
     {
       BBox3fa b(empty);
       for (size_t t=0; t<numTimeSteps; t++)
@@ -209,9 +209,7 @@ namespace embree
           }
       }
 
-      if (likely(bbox)) 
-        *bbox = b;
-
+      bbox = b;
       return true;
     }
 

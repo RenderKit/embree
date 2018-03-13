@@ -295,14 +295,62 @@ namespace embree
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      mvector<SubGridBuildData> sgrids;
+
 
       BVHNBuilderMBlurSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) {} //todo check max leaf size 
+        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), sgrids(scene->device,0) {} //todo check max leaf size 
 
 
       PrimInfo createPrimRefArrayMBlurGrid(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor, size_t itime)
       {
-        return PrimInfo(empty);
+        /* first run to get #primitives */
+        ParallelForForPrefixSumState<PrimInfo> pstate;
+        Scene::Iterator<GridMesh,false> iter(scene);
+
+        pstate.init(iter,size_t(1024));
+
+        /* iterate over all meshes in the scene */
+        PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
+                                                       {
+                                                PrimInfo pinfo(empty);
+                                                for (size_t j=r.begin(); j<r.end(); j++)
+                                                {
+                                                  BBox3fa bounds = empty;
+                                                  const PrimRef prim(bounds,mesh->geomID,unsigned(j));                                                             
+                                                  pinfo.add_center2(prim,mesh->getNumSubGrids(j));
+                                                }
+                                                return pinfo;
+                                              }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+        size_t numPrimitives = pinfo.size();
+        /* resize arrays */
+        sgrids.resize(numPrimitives); 
+        prims.resize(numPrimitives); 
+
+        /* second run to fill primrefs and SubGridBuildData arrays */
+        pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+                                              {
+                                                k = base.size();
+                                                size_t p_index = k;
+                                                PrimInfo pinfo(empty);
+                                                for (size_t j=r.begin(); j<r.end(); j++)
+                                                {
+                                                  const GridMesh::Grid &g = mesh->grid(j);
+                                                  for (unsigned int y=0; y<g.resY-1u; y+=2)
+                                                    for (unsigned int x=0; x<g.resX-1u; x+=2)
+                                                    {
+                                                      BBox3fa bounds = empty;
+                                                      if (!mesh->buildBounds(g,x,y,itime,bounds)) continue; // get bounds of subgrid
+                                                      const PrimRef prim(bounds,mesh->geomID,unsigned(p_index));
+                                                      pinfo.add_center2(prim);
+                                                      sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
+                                                      prims[p_index++] = prim;                
+                                                    }
+                                                }
+                                                return pinfo;
+                                              }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+        assert(pinfo.size() == numPrimitives);
+        return pinfo;
       }
 
       PrimInfoMB createPrimRefArrayMSMBlurGrid(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f))
