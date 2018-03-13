@@ -3,7 +3,10 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd $DIR/../..
 
 IFS=$'\n'
-FILES=($(pkgutil --files com.intel.embree-@EMBREE_VERSION@ | grep -e 'opt/local/include/\|opt/local/lib/\|opt/local/share/man/\|Applications/Embree@EMBREE_VERSION_MAJOR@' | tail -r))
+filter='opt/local/include/\|opt/local/lib/\|opt/local/share/man/\|Applications/Embree@EMBREE_VERSION_MAJOR@'
+FILES+=($(pkgutil --files com.intel.embree-@EMBREE_VERSION@.examples | grep -e $filter | tail -r))
+FILES+=($(pkgutil --files com.intel.embree-@EMBREE_VERSION@.lib      | grep -e $filter | tail -r))
+FILES+=($(pkgutil --files com.intel.embree-@EMBREE_VERSION@.devel    | grep -e $filter | tail -r))
 unset IFS
 
 # exit if no files found
@@ -36,4 +39,6 @@ for f in "${FILES[@]}"; do
     sudo /bin/rm -vd "$f"
 done
 
-sudo /usr/sbin/pkgutil --forget com.intel.embree-@EMBREE_VERSION@
+sudo /usr/sbin/pkgutil --forget com.intel.embree-@EMBREE_VERSION@.examples
+sudo /usr/sbin/pkgutil --forget com.intel.embree-@EMBREE_VERSION@.devel
+sudo /usr/sbin/pkgutil --forget com.intel.embree-@EMBREE_VERSION@.lib
