@@ -29,20 +29,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 MACRO (SIGN_TARGET target)
   IF (EMBREE_SIGN_FILE)
-    add_custom_command(TARGET ${target} POST_BUILD COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_FILE:${target}>)
-  ENDIF()
-ENDMACRO()
-
-MACRO (SIGN_LIBRARY target)
-  IF (EMBREE_SIGN_FILE)
-    IF (UNIX)
-      # FIXME: signfile does not recognize file type for libembree.so.X.Y.Z
-      add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND mv $<TARGET_FILE:${target}> $<TARGET_FILE:${target}>.so
-        COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_FILE:${target}>.so
-        COMMAND mv $<TARGET_FILE:${target}>.so $<TARGET_FILE:${target}>)
-    ELSE()
-      add_custom_command(TARGET ${target} POST_BUILD COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_FILE:${target}>)
+    IF (NOT UNIX)
+      ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_FILE:${target}>)
     ENDIF()
   ENDIF()
 ENDMACRO()
