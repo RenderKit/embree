@@ -463,8 +463,6 @@ namespace embree
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlurGrid(scene,prims,bvh->scene->progressInterface,0);
-        PRINT(pinfo);
-        exit(0);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);

@@ -100,9 +100,61 @@ namespace embree
           transpose(vtx00,vtx01,vtx11,vtx10,p0.x,p0.y,p0.z);
           transpose(vtx01,vtx02,vtx12,vtx11,p1.x,p1.y,p1.z);
           transpose(vtx11,vtx12,vtx22,vtx21,p2.x,p2.y,p2.z);
-          transpose(vtx10,vtx11,vtx21,vtx20,p3.x,p3.y,p3.z);          
-          
+          transpose(vtx10,vtx11,vtx21,vtx20,p3.x,p3.y,p3.z);                    
         }
+
+        __forceinline vfloat4 getVertexMB(const GridMesh* const mesh, const size_t offset, const size_t itime, const float ftime) const
+        {
+          const vfloat4 v0 = vfloat4::loadu(mesh->vertexPtr(0,itime+0));
+          const vfloat4 v1 = vfloat4::loadu(mesh->vertexPtr(0,itime+1));
+          return lerp(v0,v1,ftime);
+        }
+
+        /* Gather the quads */
+        __forceinline void gatherMB(Vec3vf4& p0,
+                                    Vec3vf4& p1,
+                                    Vec3vf4& p2,
+                                    Vec3vf4& p3,
+                                    const GridMesh* const mesh,
+                                    const GridMesh::Grid &g,
+                                    const size_t itime, 
+                                    const float ftime) const
+        {
+          /* first quad always valid */
+          const size_t vtxID00 = g.startVtxID + x() + y() * g.lineVtxOffset;
+          const size_t vtxID01 = vtxID00 + 1;
+          const vfloat4 vtx00  = getVertexMB(mesh,vtxID00,itime,ftime);
+          const vfloat4 vtx01  = getVertexMB(mesh,vtxID01,itime,ftime);
+          const size_t vtxID10 = vtxID00 + g.lineVtxOffset;
+          const size_t vtxID11 = vtxID01 + g.lineVtxOffset;
+          const vfloat4 vtx10  = getVertexMB(mesh,vtxID10,itime,ftime);
+          const vfloat4 vtx11  = getVertexMB(mesh,vtxID11,itime,ftime);
+
+          /* deltaX => vtx02, vtx12 */
+          const size_t deltaX  = invalid3x3X() ? 0 : 1;
+          const size_t vtxID02 = vtxID01 + deltaX;       
+          const vfloat4 vtx02  = getVertexMB(mesh,vtxID02,itime,ftime);
+          const size_t vtxID12 = vtxID11 + deltaX;       
+          const vfloat4 vtx12  = getVertexMB(mesh,vtxID12,itime,ftime);
+
+          /* deltaY => vtx20, vtx21 */
+          const size_t deltaY  = invalid3x3Y() ? 0 : g.lineVtxOffset;
+          const size_t vtxID20 = vtxID10 + deltaY;
+          const size_t vtxID21 = vtxID11 + deltaY;
+          const vfloat4 vtx20  = getVertexMB(mesh,vtxID20,itime,ftime);
+          const vfloat4 vtx21  = getVertexMB(mesh,vtxID21,itime,ftime);
+
+          /* deltaX/deltaY => vtx22 */
+          const size_t vtxID22 = vtxID11 + deltaX + deltaY;       
+          const vfloat4 vtx22  = getVertexMB(mesh,vtxID22,itime,ftime);
+
+          transpose(vtx00,vtx01,vtx11,vtx10,p0.x,p0.y,p0.z);
+          transpose(vtx01,vtx02,vtx12,vtx11,p1.x,p1.y,p1.z);
+          transpose(vtx11,vtx12,vtx22,vtx21,p2.x,p2.y,p2.z);
+          transpose(vtx10,vtx11,vtx21,vtx20,p3.x,p3.y,p3.z);                    
+        }
+
+
 
         /* Gather the quads */
         __forceinline void gather(Vec3vf4& p0,
@@ -114,6 +166,20 @@ namespace embree
           const GridMesh* const mesh = scene->get<GridMesh>(geomID());
           const GridMesh::Grid &g    = mesh->grid(primID());
           gather(p0,p1,p2,p3,mesh,g);
+        }
+
+        /* Gather the quads in the motion blur case */
+        __forceinline void gatherMB(Vec3vf4& p0,
+                                    Vec3vf4& p1,
+                                    Vec3vf4& p2,
+                                    Vec3vf4& p3,
+                                    const Scene *const scene,
+                                    const size_t itime, 
+                                    const float ftime) const
+        {
+          const GridMesh* const mesh = scene->get<GridMesh>(geomID());
+          const GridMesh::Grid &g    = mesh->grid(primID());
+          gatherMB(p0,p1,p2,p3,mesh,g,itime,ftime);
         }
 
         /* Gather the quads */
@@ -174,8 +240,6 @@ namespace embree
         __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps)
         {
           LBBox3fa allBounds = empty;
-          //const GridMesh* mesh = scene->get<GridMesh>(geomID);
-          //allBounds.extend(mesh->linearBounds(primID, itime, numTimeSteps));
           FATAL("not implemented yet");
           return allBounds;
         }
