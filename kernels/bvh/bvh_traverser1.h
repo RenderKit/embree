@@ -495,16 +495,12 @@ namespace embree
 
       /* 2 hits: order A0 B0 */
       const vint4 d0(distance_i);
-      distance_i = align_shift_right<1>(distance_i,distance_i);
-      const vint4 d1(distance_i);
-
-      cur = permuteExtract(distance_i,n0);
+      const vint4 d1(shuffle<1>(distance_i));
+      cur = permuteExtract(d1,n0);
       cur.prefetch(types);
 
-      /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
-      const vboolf4 m_dist  = d0 < d1;
-      const vint4 dist_A0 = select(m_dist, d0, d1);
-      const vint4 dist_B0 = select(m_dist, d1, d0);
+      const vint4 dist_A0 = min(d0, d1);
+      const vint4 dist_B0 = max(d0, d1);
 
       mask &= mask-1;
       if (likely(mask == 0)) {
@@ -517,17 +513,14 @@ namespace embree
 
       /* 3 hits: order A1 B1 C1 */
 
-      distance_i = align_shift_right<1>(distance_i,distance_i);
-      const vint4 d2(distance_i);
-      cur = permuteExtract(distance_i,n0);
+      const vint4 d2(shuffle<2>(distance_i));
+      cur = permuteExtract(d2,n0);
       cur.prefetch(types);
 
-      const vboolf4 m_dist1   = dist_A0 <= d2;
-      const vint4 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
-      const vboolf4 m_dist2   = dist_B0 <= dist_tmp_B1;
-      const vint4 dist_A1     = select(m_dist1, dist_A0, d2);
-      const vint4 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
-      const vint4 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+      const vint4 dist_A1     = min(dist_A0,d2);
+      const vint4 dist_tmp_B1 = max(dist_A0,d2);
+      const vint4 dist_B1     = min(dist_B0,dist_tmp_B1);
+      const vint4 dist_C1     = max(dist_B0,dist_tmp_B1);        
 
       mask &= mask-1;
       if (likely(mask == 0)) {
@@ -542,22 +535,16 @@ namespace embree
 
       /* 4 hits: order A2 B2 C2 D2 */
 
-      distance_i = align_shift_right<1>(distance_i,distance_i);
-      const vint4 d3(distance_i);
-      cur = permuteExtract(distance_i,n0);
+      const vint4 d3(shuffle<3>(distance_i));
+      cur = permuteExtract(d3,n0);
       cur.prefetch(types);
 
-      const vboolf4 m_dist3   = dist_A1 <= d3;
-      const vint4 dist_A2     = select(m_dist3, dist_A1, d3);
-      const vint4 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
-
-      const vboolf4 m_dist4   = dist_B1 <= dist_tmp_B2;
-      const vint4 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
-      const vint4 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
-
-      const vboolf4 m_dist5   = dist_C1 <= dist_tmp_C2;
-      const vint4 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
-      const vint4 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+      const vint4 dist_A2     = min(dist_A1,d3);
+      const vint4 dist_tmp_B2 = max(dist_A1,d3);
+      const vint4 dist_B2     = min(dist_B1,dist_tmp_B2);
+      const vint4 dist_tmp_C2 = max(dist_B1,dist_tmp_B2);
+      const vint4 dist_C2     = min(dist_C1,dist_tmp_C2);
+      const vint4 dist_D2     = max(dist_C1,dist_tmp_C2);
 
       cur = permuteExtract(dist_A2,n0);
       stackPtr[0].ptr            = permuteExtract(dist_D2,n0);
@@ -731,16 +718,12 @@ namespace embree
 
         /* 2 hits: order A0 B0 */
         const vint8 d0(distance_i);
-        distance_i = align_shift_right<1>(distance_i,distance_i);
-        const vint8 d1(distance_i);
-
-        cur = permuteExtract(distance_i,n0,n1);
+        const vint8 d1(shuffle<1>(distance_i));
+        cur = permuteExtract(d1,n0,n1);
         cur.prefetch(types);
 
-        /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
-        const vboolf8 m_dist  = d0 <= d1;
-        const vint8 dist_A0 = select(m_dist, d0, d1);
-        const vint8 dist_B0 = select(m_dist, d1, d0);
+        const vint8 dist_A0 = min(d0, d1);
+        const vint8 dist_B0 = max(d0, d1);
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -753,17 +736,14 @@ namespace embree
 
         /* 3 hits: order A1 B1 C1 */
 
-        distance_i = align_shift_right<1>(distance_i,distance_i);
-        const vint8 d2(distance_i);
-        cur = permuteExtract(distance_i,n0,n1);
+        const vint8 d2(shuffle<2>(distance_i));
+        cur = permuteExtract(d2,n0,n1);
         cur.prefetch(types);
 
-        const vboolf8 m_dist1   = dist_A0 <= d2;
-        const vint8 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
-        const vboolf8 m_dist2   = dist_B0 <= dist_tmp_B1;
-        const vint8 dist_A1     = select(m_dist1, dist_A0, d2);
-        const vint8 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
-        const vint8 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+        const vint8 dist_A1     = min(dist_A0,d2);
+        const vint8 dist_tmp_B1 = max(dist_A0,d2);
+        const vint8 dist_B1     = min(dist_B0,dist_tmp_B1);
+        const vint8 dist_C1     = max(dist_B0,dist_tmp_B1);        
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -778,22 +758,16 @@ namespace embree
 
         /* 4 hits: order A2 B2 C2 D2 */
 
-        distance_i = align_shift_right<1>(distance_i,distance_i);
-        const vint8 d3(distance_i);
-        cur = permuteExtract(distance_i,n0,n1);
+        const vint8 d3(shuffle<3>(distance_i));
+        cur = permuteExtract(d3,n0,n1);
         cur.prefetch(types);
 
-        const vboolf8 m_dist3   = dist_A1 <= d3;
-        const vint8 dist_A2     = select(m_dist3, dist_A1, d3);
-        const vint8 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
-
-        const vboolf8 m_dist4   = dist_B1 <= dist_tmp_B2;
-        const vint8 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
-        const vint8 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
-
-        const vboolf8 m_dist5   = dist_C1 <= dist_tmp_C2;
-        const vint8 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
-        const vint8 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+        const vint8 dist_A2     = min(dist_A1,d3);
+        const vint8 dist_tmp_B2 = max(dist_A1,d3);
+        const vint8 dist_B2     = min(dist_B1,dist_tmp_B2);
+        const vint8 dist_tmp_C2 = max(dist_B1,dist_tmp_B2);
+        const vint8 dist_C2     = min(dist_C1,dist_tmp_C2);
+        const vint8 dist_D2     = max(dist_C1,dist_tmp_C2);
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -810,6 +784,7 @@ namespace embree
 
         /* >=5 hits: reverse to descending order for writing to stack */
 
+        distance_i = align_shift_right<3>(distance_i,distance_i);
         const size_t hits = 4 + popcnt(mask);
         vint8 dist(-1);
 
