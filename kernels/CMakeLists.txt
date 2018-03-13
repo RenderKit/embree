@@ -334,5 +334,4 @@ IF (NOT EMBREE_STATIC_LIB)
   )
 ENDIF()
 
-SIGN_TARGET(embree)
-
+SIGN_LIBRARY(embree)
