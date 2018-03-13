@@ -101,7 +101,9 @@ namespace embree
     subdiv_accel_mb = "default";
 
     grid_accel = "default";
+    grid_builder = "default";
     grid_accel_mb = "default";
+    grid_builder_mb = "default";
 
     instancing_open_min = 0;
     instancing_block_size = 0;
@@ -493,6 +495,11 @@ namespace embree
 
     std::cout << "grids:" << std::endl;
     std::cout << "  accel         = " << grid_accel << std::endl;
+    std::cout << "  builder       = " << grid_builder << std::endl;
+
+    std::cout << "motion blur grids:" << std::endl;
+    std::cout << "  accel         = " << grid_accel_mb << std::endl;
+    std::cout << "  builder       = " << grid_builder_mb << std::endl;
 
     std::cout << "object_accel:" << std::endl;
     std::cout << "  min_leaf_size = " << object_accel_min_leaf_size << std::endl;

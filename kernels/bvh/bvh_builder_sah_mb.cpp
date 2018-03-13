@@ -151,7 +151,6 @@ namespace embree
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface,0);
-
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
@@ -224,34 +223,34 @@ namespace embree
     /************************************************************************************/
 
 
-    template<int N>
-    struct CreateMBlurLeafGrid
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::NodeRecordMB NodeRecordMB;
+    // template<int N>
+    // struct CreateMBlurLeafGrid
+    // {
+    //   typedef BVHN<N> BVH;
+    //   typedef typename BVH::NodeRef NodeRef;
+    //   typedef typename BVH::NodeRecordMB NodeRecordMB;
 
-      __forceinline CreateMBlurLeafGrid (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
+    //   __forceinline CreateMBlurLeafGrid (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
 
-      __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
-      {
-        // size_t items = Primitive::blocks(set.size());
-        // size_t start = set.begin();
-        // Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
-        // NodeRef node = bvh->encodeLeaf((char*)accel,items);
+    //   __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+    //   {
+    //     // size_t items = Primitive::blocks(set.size());
+    //     // size_t start = set.begin();
+    //     // Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
+    //     // NodeRef node = bvh->encodeLeaf((char*)accel,items);
 
-        // LBBox3fa allBounds = empty;
-        // for (size_t i=0; i<items; i++)
-        //   allBounds.extend(accel[i].fillMB(prims, start, set.end(), bvh->scene, time));
+    //     // LBBox3fa allBounds = empty;
+    //     // for (size_t i=0; i<items; i++)
+    //     //   allBounds.extend(accel[i].fillMB(prims, start, set.end(), bvh->scene, time));
 
-        // return NodeRecordMB(node,allBounds);
-        return NodeRecordMB();
-      }
+    //     // return NodeRecordMB(node,allBounds);
+    //     return NodeRecordMB();
+    //   }
 
-      BVH* bvh;
-      PrimRef* prims;
-      size_t time;
-    };
+    //   BVH* bvh;
+    //   PrimRef* prims;
+    //   size_t time;
+    // };
 
 
     template<int N>
@@ -278,6 +277,82 @@ namespace embree
 
       BVH* bvh;
     };
+
+    template<int N>
+    struct CreateLeafGridMB
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
+
+      __forceinline CreateLeafGridMB (Scene* scene, BVH* bvh, const SubGridBuildData * const sgrids, size_t time) : scene(scene), bvh(bvh), sgrids(sgrids), time(time) {}
+
+      __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+      {
+        const size_t items = set.size(); //Primitive::blocks(n);
+        const size_t start = set.begin();
+
+        /* collect all subsets with unique geomIDs */
+        assert(items <= N);
+        unsigned int geomIDs[N];
+        unsigned int num_geomIDs = 1;
+        geomIDs[0] = prims[start].geomID();
+
+        for (size_t i=1;i<items;i++)
+        {
+          bool found = false;
+          const unsigned int new_geomID = prims[start+i].geomID();
+          for (size_t j=0;j<num_geomIDs;j++)
+            if (new_geomID == geomIDs[j])
+            { found = true; break; }
+          if (!found) 
+            geomIDs[num_geomIDs++] = new_geomID;
+        }
+
+        /* allocate all leaf memory in one single block */
+        SubGridMBQBVHN<N>* accel = (SubGridMBQBVHN<N>*) alloc.malloc1(num_geomIDs*sizeof(SubGridMBQBVHN<N>),BVH::byteAlignment);
+        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,num_geomIDs);
+
+        LBBox3fa allBounds = empty;
+
+        for (size_t g=0;g<num_geomIDs;g++)
+        {
+          const GridMesh* __restrict__ const mesh = scene->get<GridMesh>(geomIDs[g]);
+
+          unsigned int x[N];
+          unsigned int y[N];
+          unsigned int primID[N];
+          BBox3fa bounds0[N];
+          BBox3fa bounds1[N];
+          unsigned int pos = 0;
+          for (size_t i=0;i<items;i++)
+          {
+            if (unlikely(prims[start+i].geomID() != geomIDs[g])) continue;
+
+            const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];                      
+            x[pos] = sgrid_bd.sx;
+            y[pos] = sgrid_bd.sy;
+            primID[pos] = sgrid_bd.primID;
+            mesh->buildBounds(mesh->grid(sgrid_bd.primID),sgrid_bd.sx,sgrid_bd.sy,bounds0[pos]);
+            mesh->buildBounds(mesh->grid(sgrid_bd.primID),sgrid_bd.sx,sgrid_bd.sy,bounds1[pos]);
+            PRINT(bounds0[pos]);
+            PRINT(bounds1[pos]);
+            //bounds0[pos] = prims[start+i].bounds();
+            //bounds1[pos] = prims[start+i].bounds();
+            allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
+            pos++;
+          }
+          new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],time,1.0f,pos);
+        }
+        return NodeRecordMB(node,allBounds);
+      }
+
+      Scene *scene;
+      BVH* bvh;
+      const SubGridBuildData * const sgrids;
+      size_t time;
+    };
+
 
 
     /* Motion blur BVH with 4D nodes and internal time splits */
@@ -306,7 +381,7 @@ namespace embree
       {
         /* first run to get #primitives */
         ParallelForForPrefixSumState<PrimInfo> pstate;
-        Scene::Iterator<GridMesh,false> iter(scene);
+        Scene::Iterator<GridMesh,true> iter(scene);
 
         pstate.init(iter,size_t(1024));
 
@@ -323,6 +398,7 @@ namespace embree
                                                 return pinfo;
                                               }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         size_t numPrimitives = pinfo.size();
+        PRINT(numPrimitives);
         /* resize arrays */
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
@@ -368,6 +444,8 @@ namespace embree
 
         const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
         const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+        PRINT(numTimeSteps);
+        PRINT(numTimeSegments);
 
         if (numTimeSegments == 1)
           buildSingleSegment(numPrimitives);
@@ -385,6 +463,8 @@ namespace embree
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlurGrid(scene,prims,bvh->scene->progressInterface,0);
+        PRINT(pinfo);
+        exit(0);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
@@ -407,7 +487,7 @@ namespace embree
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
           (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),
-           CreateMBlurLeafGrid<N>(bvh,prims.data(),0),bvh->scene->progressInterface,
+           CreateLeafGridMB<N>(scene,bvh,sgrids.data(),0),bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
@@ -421,7 +501,7 @@ namespace embree
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
-        //TODO: check leaf_bytes
+        //FIXME: check leaf_bytes
         //const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(SubGridQBVHN<N>));
         const size_t leaf_bytes = size_t(1.2*(float)numPrimitives/N * sizeof(SubGridQBVHN<N>));
 

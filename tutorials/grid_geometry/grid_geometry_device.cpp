@@ -19,7 +19,7 @@
 namespace embree {
 
 /* configuration */
-#define EDGE_LEVEL 256
+#define EDGE_LEVEL 2
 #define ENABLE_SMOOTH_NORMALS 0
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
@@ -116,10 +116,13 @@ unsigned int addGridGeometry (RTCScene scene_i)
   /* sample subdiv surface to generate grid vertices */
 
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
+  rtcSetGeometryTimeStepCount(geomGrid,2);
+
   unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_FACES;
   
   /* set vertices */
   Vertex* vertices = (Vertex *) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
+  Vertex* vertices1 = (Vertex *) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,1,RTC_FORMAT_FLOAT3,sizeof(Vertex),numVertices);
 
   RTCGrid* grids = (RTCGrid *) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(RTCGrid),NUM_FACES);
 
@@ -138,14 +141,19 @@ unsigned int addGridGeometry (RTCScene scene_i)
         float u = (float)(x+0) / (GRID_RESOLUTION_X-1);
         float v = (float)y / (GRID_RESOLUTION_Y-1);
         rtcInterpolate1(geom,g,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
-        Vec3fa Ng = normalize(cross(dPdu,dPdv));
-        dP = dP + displacement(dP)*Ng;
+        //Vec3fa Ng = normalize(cross(dPdu,dPdv));
+        //dP = dP + displacement(dP)*Ng;
         Vertex vertex;
         vertex.x = dP.x;
         vertex.y = dP.y;
         vertex.z = dP.z;
         if (x + 0 < GRID_RESOLUTION_X)
+        {
           vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + 0] = vertex;
+          Vertex vertex1 = vertex;
+          vertex1.x += 0.5f;
+          vertices1[startVertexIndex + y * GRID_RESOLUTION_X + x + 0] = vertex1;
+        }
       }
     startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
   }
@@ -189,7 +197,7 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
 
-  addGroundPlane(g_scene);
+  //addGroundPlane(g_scene);
 
   addGridGeometry(g_scene);
  

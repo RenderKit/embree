@@ -204,13 +204,20 @@ namespace embree
         unsigned int _primID;    // primitive ID of primitive inside mesh
       };
 
-    /* Stores M quads from an indexed face set */
+      struct SubGridID {
+        unsigned short x;
+        unsigned short y;
+        unsigned int primID;
+        
+        __forceinline SubGridID() {}
+        __forceinline SubGridID(const unsigned int x, const unsigned int y, const unsigned int primID) :
+        x(x), y(y), primID(primID) {}        
+      };
+
+      /* QuantizedBaseNode as large subgrid leaf */
       template<int N>
       struct SubGridQBVHN
       {
-        static const unsigned char MIN_QUAN = 0;
-        static const unsigned char MAX_QUAN = 255;
-
         /* Virtual interface to query information about the quad type */
         struct Type : public PrimitiveType
         {
@@ -270,16 +277,7 @@ namespace embree
         }
 
       public:
-        struct SubGridID {
-          unsigned short x;
-          unsigned short y;
-          unsigned int primID;
-
-          __forceinline SubGridID() {}
-          __forceinline SubGridID(const unsigned int x, const unsigned int y, const unsigned int primID) :
-          x(x), y(y), primID(primID) {}
-
-        } subgridIDs[N];
+        SubGridID subgridIDs[N];
 
         typename BVHN<N>::QuantizedBaseNode qnode;
 
@@ -307,5 +305,112 @@ namespace embree
 
       typedef SubGridQBVHN<4> SubGridQBVH4;
       typedef SubGridQBVHN<8> SubGridQBVH8;
+
+
+      /* QuantizedBaseNode as large subgrid leaf */
+      template<int N>
+      struct SubGridMBQBVHN
+      {
+        /* Virtual interface to query information about the quad type */
+        struct Type : public PrimitiveType
+        {
+          Type();
+          size_t size(const char* This) const;
+        };
+        static Type type;
+
+      public:
+
+        __forceinline size_t size() const
+        {
+          for (size_t i=0;i<N;i++)
+            if (primID(i) == -1) return i;
+          return N;
+        }
+
+      __forceinline void clear() {
+        for (size_t i=0;i<N;i++)
+          subgridIDs[i] = SubGridID(0,0,(unsigned int)-1);
+        qnode0.clear();
+        qnode1.clear();
+      }
+
+        /* Default constructor */
+        __forceinline SubGridMBQBVHN() {  }
+
+        /* Construction from vertices and IDs */
+        __forceinline SubGridMBQBVHN(const unsigned int x[N],
+                                     const unsigned int y[N],
+                                     const unsigned int primID[N],
+                                     const BBox3fa * const subGridBounds0,
+                                     const BBox3fa * const subGridBounds1,
+                                     const unsigned int geomID,
+                                     const float toffset,
+                                     const float tscale,
+                                     const unsigned int items)
+        {
+          clear();
+          _geomID = geomID;
+          time_offset = toffset;
+          time_scale  = tscale;
+
+          __aligned(64) typename BVHN<N>::AlignedNode node0,node1;
+          node0.clear();          
+          node1.clear();          
+          for (size_t i=0;i<items;i++)
+          {
+            subgridIDs[i] = SubGridID(x[i],y[i],primID[i]);
+            node0.setBounds(i,subGridBounds0[i]);
+            node1.setBounds(i,subGridBounds1[i]);
+          }
+          qnode0.init_dim(node0);
+          qnode1.init_dim(node1);
+        }
+
+        __forceinline unsigned int geomID() const { return _geomID; }
+        __forceinline unsigned int primID(const size_t i) const { assert(i < N); return subgridIDs[i].primID; }
+        __forceinline unsigned int x(const size_t i) const { assert(i < N); return subgridIDs[i].x; }
+        __forceinline unsigned int y(const size_t i) const { assert(i < N); return subgridIDs[i].y; }
+
+        __forceinline SubGrid subgrid(const size_t i) const {
+          assert(i < N);
+          assert(primID(i) != -1);
+          return SubGrid(x(i),y(i),geomID(),primID(i));
+        }
+
+      public:
+        SubGridID subgridIDs[N];
+
+        typename BVHN<N>::QuantizedBaseNode qnode0;
+        typename BVHN<N>::QuantizedBaseNode qnode1;
+
+        float time_offset;
+        float time_scale;
+        unsigned int _geomID;    // geometry ID of mesh
+
+
+        friend std::ostream& operator<<(std::ostream& cout, const SubGridMBQBVHN& sg) {
+          cout << "SubGridMBQBVHN " << std::endl;
+          for (size_t i=0;i<N;i++)
+            cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << std::endl;
+          cout << "geomID      " << sg._geomID << std::endl;
+          cout << "time_offset " << sg.time_offset << std::endl;
+          cout << "time_scale  " << sg.time_scale << std::endl;         
+          cout << "lowerX " << sg.qnode0.dequantizeLowerX() << std::endl;
+          cout << "upperX " << sg.qnode0.dequantizeUpperX() << std::endl;
+          cout << "lowerY " << sg.qnode0.dequantizeLowerY() << std::endl;
+          cout << "upperY " << sg.qnode0.dequantizeUpperY() << std::endl;
+          cout << "lowerZ " << sg.qnode0.dequantizeLowerZ() << std::endl;
+          cout << "upperZ " << sg.qnode0.dequantizeUpperZ() << std::endl;
+          cout << "lowerX " << sg.qnode1.dequantizeLowerX() << std::endl;
+          cout << "upperX " << sg.qnode1.dequantizeUpperX() << std::endl;
+          cout << "lowerY " << sg.qnode1.dequantizeLowerY() << std::endl;
+          cout << "upperY " << sg.qnode1.dequantizeUpperY() << std::endl;
+          cout << "lowerZ " << sg.qnode1.dequantizeLowerZ() << std::endl;
+          cout << "upperZ " << sg.qnode1.dequantizeUpperZ() << std::endl;
+          return cout;
+        }
+
+      };
 
 }

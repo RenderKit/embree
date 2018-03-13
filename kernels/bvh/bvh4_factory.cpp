@@ -1446,7 +1446,7 @@ namespace embree
     if (scene->device->object_builder == "default") {
       builder = BVH4GridSceneBuilderSAH(accel,scene,0);
     }
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<GridMesh>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->grid_builder+" for BVH4<GridMesh>");
     
     return new AccelInstance(accel,builder,intersectors);    
   }
@@ -1459,7 +1459,7 @@ namespace embree
     if (scene->device->object_builder == "default") {
       builder = BVH4GridMBSceneBuilderSAH(accel,scene,0);
     }
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4MB<GridMesh>");
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->grid_builder+" for BVH4MB<GridMesh>");
     return new AccelInstance(accel,builder,intersectors);        
   }
 

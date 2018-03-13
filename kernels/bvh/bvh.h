@@ -1236,8 +1236,7 @@ namespace embree
       Vec3f scale;
     };
 
-
-    struct __aligned(64) QuantizedNode : public BaseNode, QuantizedBaseNode
+    struct __aligned(8) QuantizedNode : public BaseNode, QuantizedBaseNode
     {
       using BaseNode::children;
       using QuantizedBaseNode::lower_x;

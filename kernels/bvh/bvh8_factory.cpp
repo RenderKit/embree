@@ -1216,7 +1216,7 @@ namespace embree
     BVH8* accel = new BVH8(SubGridQBVH8::type,scene);
     Accel::Intersectors intersectors = BVH8GridIntersectors(accel,ivariant);
     Builder* builder = nullptr;
-    if (scene->device->object_builder == "default") {
+    if (scene->device->grid_builder == "default") {
       builder = BVH8GridSceneBuilderSAH(accel,scene,0);
     }
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<GridMesh>");
@@ -1229,7 +1229,7 @@ namespace embree
     BVH8* accel = new BVH8(SubGridQBVH8::type,scene);
     Accel::Intersectors intersectors = BVH8GridMBIntersectors(accel,ivariant);
     Builder* builder = nullptr;
-    if (scene->device->object_builder == "default") {
+    if (scene->device->grid_builder_mb == "default") {
       builder = BVH8GridMBSceneBuilderSAH(accel,scene,0);
     }
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8MB<GridMesh>");

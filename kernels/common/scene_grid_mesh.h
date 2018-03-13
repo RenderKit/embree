@@ -189,7 +189,6 @@ namespace embree
     /*! calculates the build bounds of the i'th primitive, if it's valid */
     __forceinline bool buildBounds(const size_t i, BBox3fa* bbox = nullptr) const
     {
-      //const Grid& g = grid(i);     
       FATAL("not implemented");
       return false;
     }

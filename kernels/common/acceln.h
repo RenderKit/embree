@@ -54,7 +54,7 @@ namespace embree
     void clear ();
 
   public:
-    darray_t<Accel*,16> accels;
-    darray_t<Accel*,16> validAccels;
+    darray_t<Accel*,24> accels;
+    darray_t<Accel*,24> validAccels;
   };
 }
