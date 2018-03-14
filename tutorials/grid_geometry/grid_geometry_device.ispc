@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define EDGE_LEVEL 8
+#define EDGE_LEVEL 256
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -160,27 +160,27 @@ Vec3f getVertex(RTCGeometry subdiv, uniform RTCGrid *uniform grids, uniform int 
   unsigned int height = grids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
-    uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge+i);
+    uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
     edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
     uniform RTCGrid& ogrid = grids[edge];
     return getVertex(ogrid,y,1);
   }
   else if (x >= width) {
     assert(x == width && y >= 0 && y < height);
-    uniform int edge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge+i);
+    uniform int edge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge);
     uniform RTCGrid& ogrid = grids[edge];
     return getVertex(ogrid,y,ogrid.height-2);
   }
   else if (y < 0) {
     assert(y == -1 && x >= 0 && x < width);
-    uniform int edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge+i);
+    uniform int edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
     edge = rtcGetGeometryNextHalfEdge(subdiv,edge);
     uniform RTCGrid& ogrid = grids[edge];
     return getVertex(ogrid,1,x);
   }
   else if (y >= height) {
     assert(y == height && x >= 0 && x < width);
-    uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge+i);
+    uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
     uniform RTCGrid& ogrid = grids[edge];
     return getVertex(ogrid,ogrid.height-2,x);
   }
