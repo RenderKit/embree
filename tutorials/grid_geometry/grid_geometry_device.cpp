@@ -178,7 +178,6 @@ unsigned int addGridGeometry (RTCScene scene_i)
     startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
   }
 #endif
-  printf("DONE");
 
   rtcCommitGeometry(geomGrid);
   unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
