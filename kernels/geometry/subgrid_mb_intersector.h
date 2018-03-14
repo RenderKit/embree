@@ -40,7 +40,6 @@ namespace embree
 
         float ftime;
         const int itime = getTimeSegment(ray.time(), float(mesh->fnumTimeSegments), ftime);
-
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime,ftime);
         pre.intersect(ray,context,v0,v1,v2,v3,g,subgrid);
       }

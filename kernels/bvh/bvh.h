@@ -1290,6 +1290,44 @@ namespace embree
 
     };
 
+
+    /*! BVHN Quantized Node */
+    struct __aligned(8) QuantizedBaseNodeMB
+    {
+      QuantizedBaseNode node0;
+      QuantizedBaseNode node1;
+
+      /*! Clears the node. */
+      __forceinline void clear() {
+        node0.clear();
+        node1.clear();
+      }
+      
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const
+      {
+        assert(i < N);
+        BBox3fa bounds0 = node0.bounds(i);
+        BBox3fa bounds1 = node1.bounds(i);
+        bounds0.extend(bounds1);
+        return bounds0;
+      }
+
+      /*! Returns extent of bounds of specified child. */
+      __forceinline Vec3fa extent(size_t i) const {
+        return bounds(i).size();
+      }
+
+      __forceinline vfloat<N> dequantizeLowerX(const float t) const { return lerp(node0.dequantizeLowerX(),node1.dequantizeLowerX(),t); }
+      __forceinline vfloat<N> dequantizeUpperX(const float t) const { return lerp(node0.dequantizeUpperX(),node1.dequantizeUpperX(),t); }
+      __forceinline vfloat<N> dequantizeLowerY(const float t) const { return lerp(node0.dequantizeLowerY(),node1.dequantizeLowerY(),t); }
+      __forceinline vfloat<N> dequantizeUpperY(const float t) const { return lerp(node0.dequantizeUpperY(),node1.dequantizeUpperY(),t); }
+      __forceinline vfloat<N> dequantizeLowerZ(const float t) const { return lerp(node0.dequantizeLowerZ(),node1.dequantizeLowerZ(),t); }
+      __forceinline vfloat<N> dequantizeUpperZ(const float t) const { return lerp(node0.dequantizeUpperZ(),node1.dequantizeUpperZ(),t); }
+
+    };
+
+
     /*! swap the children of two nodes */
     __forceinline static void swap(AlignedNode* a, size_t i, AlignedNode* b, size_t j)
     {

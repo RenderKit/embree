@@ -105,8 +105,8 @@ namespace embree
 
         __forceinline vfloat4 getVertexMB(const GridMesh* const mesh, const size_t offset, const size_t itime, const float ftime) const
         {
-          const vfloat4 v0 = vfloat4::loadu(mesh->vertexPtr(0,itime+0));
-          const vfloat4 v1 = vfloat4::loadu(mesh->vertexPtr(0,itime+1));
+          const vfloat4 v0 = vfloat4::loadu(mesh->vertexPtr(offset,itime+0));
+          const vfloat4 v1 = vfloat4::loadu(mesh->vertexPtr(offset,itime+1));
           return lerp(v0,v1,ftime);
         }
 
@@ -395,8 +395,7 @@ namespace embree
       __forceinline void clear() {
         for (size_t i=0;i<N;i++)
           subgridIDs[i] = SubGridID(0,0,(unsigned int)-1);
-        qnode0.clear();
-        qnode1.clear();
+        qnode.clear();
       }
 
         /* Default constructor */
@@ -427,8 +426,8 @@ namespace embree
             node0.setBounds(i,subGridBounds0[i]);
             node1.setBounds(i,subGridBounds1[i]);
           }
-          qnode0.init_dim(node0);
-          qnode1.init_dim(node1);
+          qnode.node0.init_dim(node0);
+          qnode.node1.init_dim(node1);
         }
 
         __forceinline unsigned int geomID() const { return _geomID; }
@@ -445,8 +444,7 @@ namespace embree
       public:
         SubGridID subgridIDs[N];
 
-        typename BVHN<N>::QuantizedBaseNode qnode0;
-        typename BVHN<N>::QuantizedBaseNode qnode1;
+        typename BVHN<N>::QuantizedBaseNodeMB qnode;
 
         float time_offset;
         float time_scale;
@@ -460,18 +458,18 @@ namespace embree
           cout << "geomID      " << sg._geomID << std::endl;
           cout << "time_offset " << sg.time_offset << std::endl;
           cout << "time_scale  " << sg.time_scale << std::endl;         
-          cout << "lowerX " << sg.qnode0.dequantizeLowerX() << std::endl;
-          cout << "upperX " << sg.qnode0.dequantizeUpperX() << std::endl;
-          cout << "lowerY " << sg.qnode0.dequantizeLowerY() << std::endl;
-          cout << "upperY " << sg.qnode0.dequantizeUpperY() << std::endl;
-          cout << "lowerZ " << sg.qnode0.dequantizeLowerZ() << std::endl;
-          cout << "upperZ " << sg.qnode0.dequantizeUpperZ() << std::endl;
-          cout << "lowerX " << sg.qnode1.dequantizeLowerX() << std::endl;
-          cout << "upperX " << sg.qnode1.dequantizeUpperX() << std::endl;
-          cout << "lowerY " << sg.qnode1.dequantizeLowerY() << std::endl;
-          cout << "upperY " << sg.qnode1.dequantizeUpperY() << std::endl;
-          cout << "lowerZ " << sg.qnode1.dequantizeLowerZ() << std::endl;
-          cout << "upperZ " << sg.qnode1.dequantizeUpperZ() << std::endl;
+          cout << "lowerX " << sg.qnode.node0.dequantizeLowerX() << std::endl;
+          cout << "upperX " << sg.qnode.node0.dequantizeUpperX() << std::endl;
+          cout << "lowerY " << sg.qnode.node0.dequantizeLowerY() << std::endl;
+          cout << "upperY " << sg.qnode.node0.dequantizeUpperY() << std::endl;
+          cout << "lowerZ " << sg.qnode.node0.dequantizeLowerZ() << std::endl;
+          cout << "upperZ " << sg.qnode.node0.dequantizeUpperZ() << std::endl;
+          cout << "lowerX " << sg.qnode.node1.dequantizeLowerX() << std::endl;
+          cout << "upperX " << sg.qnode.node1.dequantizeUpperX() << std::endl;
+          cout << "lowerY " << sg.qnode.node1.dequantizeLowerY() << std::endl;
+          cout << "upperY " << sg.qnode.node1.dequantizeUpperY() << std::endl;
+          cout << "lowerZ " << sg.qnode.node1.dequantizeLowerZ() << std::endl;
+          cout << "upperZ " << sg.qnode.node1.dequantizeUpperZ() << std::endl;
           return cout;
         }
 
