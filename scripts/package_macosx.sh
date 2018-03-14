@@ -10,7 +10,9 @@ EMBREE_SIGN_FILE=$3
 # create package
 cmake --build . --config $CONFIG --target package
 
-# sign package
-if [ -n "${EMBREE_SIGN_FILE}" ]; then
-  ${EMBREE_SIGN_FILE} -c embree -vv $PACKAGE
+# sign PKG package
+if [ ${PACKAGE: -4} == ".pkg" ]; then
+  if [ -n "${EMBREE_SIGN_FILE}" ]; then
+    ${EMBREE_SIGN_FILE} -c embree -vv $PACKAGE
+  fi
 fi
