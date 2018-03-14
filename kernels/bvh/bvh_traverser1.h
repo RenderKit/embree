@@ -614,7 +614,7 @@ namespace embree
         if (likely(mask == 0)) {
           StackItemT<NodeRef>::sort3(s0,s1,s2);
           *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1;
-          cur = toScalar64(s2);
+          cur = toSizeT(s2);
           stackPtr+=2;
           return;
         }
@@ -624,7 +624,7 @@ namespace embree
         /* 4 hits */
         StackItemT<NodeRef>::sort4(s0,s1,s2,s3);
         *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1; *(vint4*)&stackPtr[2] = s2;
-        cur = toScalar64(s3);
+        cur = toSizeT(s3);
         stackPtr+=3;
 #else
         /*! Here starts the slow path for 3 or 4 hit children. We push
@@ -872,7 +872,7 @@ namespace embree
         if (likely(mask == 0)) {
           StackItemT<NodeRef>::sort3(s0,s1,s2);
           *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1;
-          cur = toScalar64(s2);
+          cur = toSizeT(s2);
           stackPtr+=2;
           return;
         }
@@ -883,7 +883,7 @@ namespace embree
         if (likely(mask == 0)) {
           StackItemT<NodeRef>::sort4(s0,s1,s2,s3);
           *(vint4*)&stackPtr[0] = s0; *(vint4*)&stackPtr[1] = s1; *(vint4*)&stackPtr[2] = s2;
-          cur = toScalar64(s3);
+          cur = toSizeT(s3);
           stackPtr+=3;
           return;
         }

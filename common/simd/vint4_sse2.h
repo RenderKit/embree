@@ -453,7 +453,7 @@ namespace embree
 
   __forceinline int toScalar(const vint4& v) { return _mm_cvtsi128_si32(v); }
 
-  __forceinline long long toScalar64(const vint4& v) { 
+  __forceinline size_t toSizeT(const vint4& v) { 
 #if defined(__WIN32__) && !defined(__X86_64__) // win32 workaround
     return toScalar(v);
 #else
