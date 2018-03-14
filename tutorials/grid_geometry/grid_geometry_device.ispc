@@ -18,7 +18,6 @@
 
 /* configuration */
 #define EDGE_LEVEL 256
-#define ENABLE_SMOOTH_NORMALS 0
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -32,6 +31,9 @@ RTCScene g_scene = NULL;
 #define NUM_VERTICES (5+10+5)
 
 __aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
+
+uniform RTCGrid* uniform grids = NULL; 
+uniform Vec3f* uniform normals = NULL;
 
 uniform unsigned int sphere_indices[NUM_INDICES] = {
   0, 1, 2, 3, 4,
@@ -184,7 +186,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
 
-  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
+  grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
+  normals = uniform new uniform Vec3f[numVertices];
 
   uniform unsigned int g=0;
   uniform unsigned int startVertexIndex = 0;
@@ -211,8 +214,10 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           vertex.x = dP.x;
           vertex.y = dP.y;
           vertex.z = dP.z;
-          if (x + programIndex < GRID_RESOLUTION_X)
+          if (x + programIndex < GRID_RESOLUTION_X) {
             vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
+            normals[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = Ng;
+          }
         }
       }
       startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
@@ -245,8 +250,10 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             vertex.x = dP.x;
             vertex.y = dP.y;
             vertex.z = dP.z;
-            if (x + programIndex < GRID_RESOLUTION_X)
+            if (x + programIndex < GRID_RESOLUTION_X) {
               vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
+              normals[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = Ng;
+            }
           }
         }
         startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
@@ -327,19 +334,26 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     Vec3f Ng = normalize(ray.Ng);
-#if ENABLE_SMOOTH_NORMALS
-    Vec3f P = ray.org + ray.tfar*ray.dir;
-    if (ray.geomID > 0) {
-      Vec3f dPdu,dPdv;
-      foreach_unique (geomID in ray.geomID) {
-        rtcInterpolate1(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
-      }
-      Ng = normalize(cross(dPdv,dPdu));
-      dPdu = dPdu + Ng*displacement_du(P,dPdu);
-      dPdv = dPdv + Ng*displacement_dv(P,dPdv);
-      Ng = normalize(cross(dPdv,dPdu));
+
+    if (ray.geomID == 1)
+    {
+      unsigned int startVertexID = grids[ray.primID].startVertexID;
+      int width = grids[ray.primID].width;
+      int height = grids[ray.primID].height;
+      unsigned int stride = grids[ray.primID].stride;
+      float U = ray.u*width;
+      float V = ray.v*height;
+      int x = min((int)floor(U),width -1);
+      int y = min((int)floor(V),height-1);
+      float u = U-x;
+      float v = V-y;
+      Vec3f N00 = normals[startVertexID+(y+0)*stride+(x+0)];
+      Vec3f N01 = normals[startVertexID+(y+0)*stride+(x+1)];
+      Vec3f N10 = normals[startVertexID+(y+1)*stride+(x+0)];
+      Vec3f N11 = normals[startVertexID+(y+1)*stride+(x+1)];
+      Ng = normalize(lerp(v,lerp(u,N00,N01),lerp(u,N10,N11)));
+      return Ng;
     }
-#endif
 
     /* initialize shadow ray */
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
