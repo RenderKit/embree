@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define EDGE_LEVEL 4
+#define EDGE_LEVEL 8
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -354,9 +354,9 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             normals[startVertexIndex + y * GRID_RESOLUTION_X + x] = normalize(Ng);
           }
         }
+        startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+        g++;
       }
-      startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
-      g++;
     }
   }
 
@@ -450,7 +450,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N10 = normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3f N11 = normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(lerp(v,lerp(u,N00,N01),lerp(u,N10,N11)));
-      //return Ng;
+      return Ng;
     }
 
     /* initialize shadow ray */
