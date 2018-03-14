@@ -21,17 +21,17 @@ namespace embree
 {
   /*! Three-index vertex, indexing start at 0, -1 means invalid vertex. */
   struct Vertex {
-    int v, vt, vn;
+    unsigned int v, vt, vn;
     Vertex() {};
-    Vertex(int v) : v(v), vt(v), vn(v) {};
-    Vertex(int v, int vt, int vn) : v(v), vt(vt), vn(vn) {};
+    Vertex(unsigned int v) : v(v), vt(v), vn(v) {};
+    Vertex(unsigned int v, unsigned int vt, unsigned int vn) : v(v), vt(vt), vn(vn) {};
   };
 
   struct Crease {
     float w;
-    int a, b;
+    unsigned int a, b;
     Crease() : w(0), a(-1), b(-1) {};
-    Crease(float w, int a, int b) : w(w), a(a), b(b) {};
+    Crease(float w, unsigned int a, unsigned int b) : w(w), a(a), b(b) {};
   };
 
   static inline bool operator < ( const Vertex& a, const Vertex& b ) {
@@ -147,13 +147,13 @@ namespace embree
 
   private:
     void loadMTL(const FileName& fileName);
-    int fix_v (int index);
-    int fix_vt(int index);
-    int fix_vn(int index);
+    unsigned int fix_v (int index);
+    unsigned int fix_vt(int index);
+    unsigned int fix_vn(int index);
     void flushFaceGroup();
     void flushTriGroup();
     void flushHairGroup();
-    Vertex getInt3(const char*& token);
+    Vertex getUInt3(const char*& token);
     uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
     std::shared_ptr<Texture> loadTexture(const FileName& fname);
   };
@@ -208,7 +208,7 @@ namespace embree
 
         std::vector<Vertex> face;
         while (token[0]) {
-	  Vertex vtx = getInt3(token);
+	  Vertex vtx = getUInt3(token);
           face.push_back(vtx);
           parseSepOpt(token);
         }
@@ -229,13 +229,13 @@ namespace embree
         }
         else continue;
 
-        int N = getInt(token);
+        unsigned int N = getInt(token);
         avector<Vec3fa> hair;
-        for (int i=0; i<3*N+1; i++) {
+        for (unsigned int i=0; i<3*N+1; i++) {
           hair.push_back(getVec3fa(token));
         }
         
-        for (int i=0; i<N+1; i++)
+        for (unsigned int i=0; i<N+1; i++)
         {
           float r = getFloat(token);
           MAYBE_UNUSED float t = (float)getInt(token);
@@ -252,9 +252,9 @@ namespace embree
 	parseSep(token += 2);
 	float w = getFloat(token);
 	parseSepOpt(token);
-	int a = fix_v(getInt(token));
+	unsigned int a = fix_v(getInt(token));
 	parseSepOpt(token);
-	int b = fix_v(getInt(token));
+	unsigned int b = fix_v(getInt(token));
 	parseSepOpt(token);
 	ec.push_back(Crease(w, a, b));
 	continue;
@@ -468,13 +468,13 @@ namespace embree
   }
 
   /*! handles relative indices and starts indexing from 0 */
-  int OBJLoader::fix_v (int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) v .size() + index)); }
-  int OBJLoader::fix_vt(int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) vt.size() + index)); }
-  int OBJLoader::fix_vn(int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) vn.size() + index)); }
+  unsigned int OBJLoader::fix_v (int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) v .size() + index)); }
+  unsigned int OBJLoader::fix_vt(int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) vt.size() + index)); }
+  unsigned int OBJLoader::fix_vn(int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) vn.size() + index)); }
 
   /*! Parse differently formated triplets like: n0, n0/n1/n2, n0//n2, n0/n1.          */
   /*! All indices are converted to C-style (from 0). Missing entries are assigned -1. */
-  Vertex OBJLoader::getInt3(const char*& token)
+  Vertex OBJLoader::getUInt3(const char*& token)
   {
     Vertex v(-1);
     v.v = fix_v(atoi(token));
@@ -522,7 +522,7 @@ namespace embree
       if (i.vt >= vt.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
       else mesh->texcoords[mesh->positions[0].size()-1] = vt[i.vt];
     }
-    return(vertexMap[i] = int(mesh->positions[0].size()) - 1);
+    return (vertexMap[i] = (unsigned int)(mesh->positions[0].size()) - 1);
   }
 
   void OBJLoader::flushFaceGroup()
