@@ -91,9 +91,10 @@ namespace embree
         const LinearSpace3fa space3(trunc(126.0f*space2.vx),trunc(126.0f*space2.vy),trunc(126.0f*space2.vz));
         const LBBox3fa bounds = scene->get(geomID)->vlinearBounds(loffset,lscale,max(length(space3.vx),length(space3.vy),length(space3.vz)),space3.transposed(),primID,time_range);
         
-        bounds_vx_x(N)[i] = (char) space3.vx.x;
-        bounds_vx_y(N)[i] = (char) space3.vx.y;
-        bounds_vx_z(N)[i] = (char) space3.vx.z;
+        // NOTE: this weird (char) (short) cast works around VS2015 Win32 compiler bug
+        bounds_vx_x(N)[i] = (char) (short) space3.vx.x;
+        bounds_vx_y(N)[i] = (char) (short) space3.vx.y;
+        bounds_vx_z(N)[i] = (char) (short) space3.vx.z;
         bounds_vx_lower0(N)[i] = (short) clamp(floor(bounds.bounds0.lower.x),-32767.0f,32767.0f);
         bounds_vx_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.x),-32767.0f,32767.0f);
         bounds_vx_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.x),-32767.0f,32767.0f);
@@ -103,9 +104,9 @@ namespace embree
         assert(-32767.0f <= floor(bounds.bounds1.lower.x) && floor(bounds.bounds1.lower.x) <= 32767.0f);
         assert(-32767.0f <= ceil (bounds.bounds1.upper.x) && ceil (bounds.bounds1.upper.x) <= 32767.0f);
         
-        bounds_vy_x(N)[i] = (char) space3.vy.x;
-        bounds_vy_y(N)[i] = (char) space3.vy.y;
-        bounds_vy_z(N)[i] = (char) space3.vy.z;
+        bounds_vy_x(N)[i] = (char) (short) space3.vy.x;
+        bounds_vy_y(N)[i] = (char) (short) space3.vy.y;
+        bounds_vy_z(N)[i] = (char) (short) space3.vy.z;
         bounds_vy_lower0(N)[i] = (short) clamp(floor(bounds.bounds0.lower.y),-32767.0f,32767.0f);
         bounds_vy_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.y),-32767.0f,32767.0f);
         bounds_vy_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.y),-32767.0f,32767.0f);
@@ -115,9 +116,9 @@ namespace embree
         assert(-32767.0f <= floor(bounds.bounds1.lower.y) && floor(bounds.bounds1.lower.y) <= 32767.0f);
         assert(-32767.0f <= ceil (bounds.bounds1.upper.y) && ceil (bounds.bounds1.upper.y) <= 32767.0f);
 
-        bounds_vz_x(N)[i] = (char) space3.vz.x;
-        bounds_vz_y(N)[i] = (char) space3.vz.y;
-        bounds_vz_z(N)[i] = (char) space3.vz.z;
+        bounds_vz_x(N)[i] = (char) (short) space3.vz.x;
+        bounds_vz_y(N)[i] = (char) (short) space3.vz.y;
+        bounds_vz_z(N)[i] = (char) (short) space3.vz.z;
         bounds_vz_lower0(N)[i] = (short) clamp(floor(bounds.bounds0.lower.z),-32767.0f,32767.0f);
         bounds_vz_upper0(N)[i] = (short) clamp(ceil (bounds.bounds0.upper.z),-32767.0f,32767.0f);
         bounds_vz_lower1(N)[i] = (short) clamp(floor(bounds.bounds1.lower.z),-32767.0f,32767.0f);
