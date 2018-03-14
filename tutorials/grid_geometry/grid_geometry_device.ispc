@@ -284,10 +284,11 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
         
         for (uniform unsigned int y=0; y<GRID_RESOLUTION_Y; y++)
         {
-          for (uniform unsigned int x=0; x<GRID_RESOLUTION_X; x+=programCount)
+          foreach (x=0 ... GRID_RESOLUTION_X)
           {
+            
             Vec3f dP,dPdu,dPdv;
-            float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
+            float u = (float)x / (GRID_RESOLUTION_X-1);
             float v = (float)y / (GRID_RESOLUTION_Y-1);
             if (sphere_faces[f] == 4) {
               Vec2f uv0, du, dv;
@@ -310,10 +311,9 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             vertex.x = dP.x;
             vertex.y = dP.y;
             vertex.z = dP.z;
-            if (x + programIndex < GRID_RESOLUTION_X) {
-              vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
-              normals[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = Ng;
-            }
+
+            vertices[startVertexIndex + y * GRID_RESOLUTION_X + x] = vertex;
+            normals[startVertexIndex + y * GRID_RESOLUTION_X + x] = Ng;
           }
         }
         startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
