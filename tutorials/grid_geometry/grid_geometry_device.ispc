@@ -25,6 +25,53 @@
 /* scene data */
 RTCScene g_scene = NULL;
 
+#if 1
+
+#define NUM_INDICES 80
+#define NUM_FACES 22
+#define NUM_VERTICES (5+10+5)
+#define FACE_SIZE 4
+
+__aligned(16) uniform Vec3fa cube_vertices[NUM_VERTICES];
+
+
+uniform unsigned int cube_indices[NUM_INDICES] = {
+  0, 1, 2, 3, 4,
+  0, 14, 5,
+  0, 5, 6, 1,
+  1, 6, 7,
+  1, 7, 8, 2,
+  2, 8, 9,
+  2, 9, 10, 3,
+  3, 10, 11,
+  3, 11, 12, 4,
+  4, 12, 13,
+  4, 13, 14, 0,
+
+  15, 19, 18, 17, 16,
+  15, 5, 14,
+  15, 16, 6, 5,
+  16, 7, 6,
+  16, 17, 8, 7,
+  17, 9, 8,
+  17, 18, 10, 9,
+  18, 11, 10,
+  18, 19, 12, 11,
+  19, 13, 12,
+  19, 15, 14, 13,
+};
+
+uniform unsigned int cube_faces[NUM_FACES] = {
+  5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
+  5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
+};
+
+#else
+
+#define NUM_INDICES 24
+#define NUM_FACES 6
+//#define FACE_SIZE 4
+
 __aligned(16) uniform float cube_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
@@ -36,10 +83,6 @@ __aligned(16) uniform float cube_vertices[8][4] =
   {  1.0f,  1.0f,  1.0f, 0.0f },
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
-
-#define NUM_INDICES 24
-#define NUM_FACES 6
-#define FACE_SIZE 4
 
 uniform unsigned int cube_indices[24] = {
   0, 4, 5, 1,
@@ -53,6 +96,8 @@ uniform unsigned int cube_indices[24] = {
 uniform unsigned int cube_faces[6] = {
   4, 4, 4, 4, 4, 4
 };
+
+#endif
 
 float displacement(const Vec3f& P)
 {
@@ -97,19 +142,38 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
 /* adds a cube to the scene */
 uniform unsigned int addGridGeometry (RTCScene scene_i)
 {
+  for (uniform int i=0; i<5; i++) {
+    const uniform float theta = 45.0f*pi/180.0f;
+    const uniform float phi = 72.0f*i*pi/180.0f;
+    cube_vertices[i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
+  }
+
+  for (uniform int i=0; i<10; i++) {
+    const uniform float theta = 90.0f*pi/180.0f;
+    const uniform float phi = (18.0f+36.0f*i)*pi/180.0f;
+    cube_vertices[5+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
+  }
+
+  for (uniform int i=0; i<5; i++) {
+    const uniform float theta = 135.0f*pi/180.0f;
+    const uniform float phi = 72.0f*i*pi/180.0f;
+    cube_vertices[5+10+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
+  }
+  
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, sizeof(uniform Vec3fa),       8);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, sizeof(uniform Vec3fa),       NUM_VERTICES);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   cube_indices,  0, sizeof(uniform unsigned int), NUM_INDICES);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
   for (uniform uintptr_t i=0; i<NUM_INDICES; i++) level[i] = (float)EDGE_LEVEL;
 
-  rtcSetGeometryDisplacementFunction(geom,displacementFunction);
+  //rtcSetGeometryDisplacementFunction(geom,displacementFunction);
   rtcCommitGeometry(geom);
-
+  
+#if 0
 
   /* sample subdiv surface to generate grid vertices */
 
@@ -153,6 +217,10 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   rtcReleaseGeometry(geomGrid);
 
   rtcReleaseGeometry(geom);
+#else
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
+#endif
   return geomID;
 }
 
