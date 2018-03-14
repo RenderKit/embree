@@ -285,7 +285,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecordMB NodeRecordMB;
 
-      __forceinline CreateLeafGridMB (Scene* scene, BVH* bvh, const SubGridBuildData * const sgrids, size_t time) : scene(scene), bvh(bvh), sgrids(sgrids), time(time) {}
+      __forceinline CreateLeafGridMB (Scene* scene, BVH* bvh, const SubGridBuildData * const sgrids, float time) 
+		  : scene(scene), bvh(bvh), sgrids(sgrids), time(time) {}
 
       __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
@@ -352,7 +353,7 @@ namespace embree
       Scene *scene;
       BVH* bvh;
       const SubGridBuildData * const sgrids;
-      size_t time;
+      float time;
     };
 
 
@@ -487,7 +488,7 @@ namespace embree
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
           (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),
-           CreateLeafGridMB<N>(scene,bvh,sgrids.data(),0),bvh->scene->progressInterface,
+           CreateLeafGridMB<N>(scene,bvh,sgrids.data(),0.0f),bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
