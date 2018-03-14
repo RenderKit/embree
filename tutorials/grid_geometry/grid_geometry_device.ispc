@@ -139,6 +139,54 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
   }
 }
 
+#if 0
+
+Vec3f getVertex(uniform RTCGrid *uniform grid, int x, int y)
+{
+  uniform int startVertexID = grid->startVertexID;
+  uniform int stride = grid->stride;
+  unsigned int width = grid->width;
+  unsigned int height = grid->height;
+  assert(x >= 0 && x < width);
+  assert(y >= 0 && y < height);
+  return vertices[startVertexID + y*stride + x];
+}
+
+Vec3f getVertex(uniform RTCGrid *uniform grid, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
+{
+  if (x < 0) {
+    assert(x == -1 && y >= 0 && y < height);
+    uniform int edge = rtcGetGeometryPrevHalfEdge(geom,firstHalfEdge+i);
+    edge = rtcGetGeometryOppositeHalfEdge(geom,edge);
+    RTCGrid& ogrid = edge_to_grid[edge]
+    return getVertex(ogrid,y,1);
+  }
+  else if (x >= width) {
+    assert(x == width && y >= 0 && y < height);
+    uniform int edge = rtcGetGeometryNextHalfEdge(geom,firstHalfEdge+i);
+    RTCGrid& ogrid = edge_to_grid[edge]
+    return getVertex(ogrid,y,ogrid.height-2);
+  }
+  else if (y < 0) {
+    assert(y == -1 && x >= 0 && x < width);
+    uniform int edge = rtcGetGeometryOppositeHalfEdge(geom,firstHalfEdge+i);
+    edge = rtcGetGeometryNextHalfEdge(geom,edge);
+    RTCGrid& ogrid = edge_to_grid[edge]
+    return getVertex(ogrid,y,1);
+  }
+  else if (y >= height) {
+    assert(y == height && x >= 0 && x < width);
+    uniform int edge = rtcGetGeometryPrevHalfEdge(geom,firstHalfEdge+i);
+    RTCGrid& ogrid = edge_to_grid[edge]
+    return getVertex(ogrid,y,ogrid.height-2);
+  }
+  else {
+    return getVertex(grid,x,y);
+  }
+}
+
+#endif
+
 /* adds a cube to the scene */
 uniform unsigned int addGridGeometry (RTCScene scene_i)
 {
@@ -176,8 +224,9 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   /* sample subdiv surface to generate grid vertices */
   uniform int numGrids = 0;
   for (uniform int f=0; f<NUM_FACES; f++) {
-    if (sphere_faces[f] == 4) numGrids++;
-    else numGrids += sphere_faces[f];
+    //if (sphere_faces[f] == 4) numGrids++;
+    //else
+    numGrids += sphere_faces[f];
   }
 
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
@@ -193,7 +242,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   uniform unsigned int startVertexIndex = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
-    if (sphere_faces[f] == 4)
+    /*if (sphere_faces[f] == 4)
     {
       grids[g].startVertexID = startVertexIndex;
       grids[g].stride        = GRID_RESOLUTION_X;
@@ -223,7 +272,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
       g++;
     }
-    else
+    else*/
     {
       for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
       {
@@ -239,11 +288,21 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             Vec3f dP,dPdu,dPdv;
             float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
             float v = (float)y / (GRID_RESOLUTION_Y-1);
-
-            const uniform int h = (i >> 2) & 3, l = i & 3;
-            const float U = 2.0f*l + 0.5f + u;
-            const float V = 2.0f*h + 0.5f + v;
-            rtcInterpolateV1(geom,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+            if (sphere_faces[f] == 4) {
+              Vec2f uv0, du, dv;
+              if      (i == 0) { uv0 = make_Vec2f(0.0f,0.0f); du = make_Vec2f(0.5f,0.0f); dv = make_Vec2f(0.0f,0.5f); }
+              else if (i == 1) { uv0 = make_Vec2f(1.0f,0.0f); du = make_Vec2f(0.0f,0.5f); dv = make_Vec2f(-0.5f,0.0f); }
+              else if (i == 2) { uv0 = make_Vec2f(1.0f,1.0f); du = make_Vec2f(-0.5f,0.0f); dv = make_Vec2f(0.0f,-0.5f); }
+              else if (i == 3) { uv0 = make_Vec2f(0.0f,1.0f); du = make_Vec2f(0.0f,-0.5f); dv = make_Vec2f(0.5f,0.0f); }
+              Vec2f uv = uv0 + u*du + v*dv;
+              rtcInterpolateV1(geom,f,uv.x,uv.y,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+            }
+            else {
+              const uniform int h = (i >> 2) & 3, l = i & 3;
+              const float U = 2.0f*l + 0.5f + u;
+              const float V = 2.0f*h + 0.5f + v;
+              rtcInterpolateV1(geom,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+            }
             Vec3f Ng = normalize(cross(dPdu,dPdv));
             dP = dP + displacement(dP)*Ng;
             Vertex vertex;
@@ -261,6 +320,42 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       }
     }
   }
+#if 0
+  /* calculate normals */
+  for (uniform unsigned int f=0; f<NUM_FACES; f++) 
+  {
+    if (sphere_faces[f] == 4)
+    {
+    }
+    else
+    {
+      assert((GRID_RESOLUTION_X%2) == 0);
+      assert((GRID_RESOLUTION_Y%2) == 0);
+
+      for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+      {
+        for (uniform int y=0; y<GRID_RESOLUTION_Y; y++)
+        {
+          for (uniform int x=0; x<GRID_RESOLUTION_X; x+=programCount)
+          {
+            Vec3fa p  = getVertex(grid,f,i,x,y);
+            Vec3fa pr = getVertex(grid,f,i,x+1,y);
+            Vec3fa pl = getVertex(grid,f,i,x-1,y);
+            Vec3fa pt = getVertex(grid,f,i,x,y+1);
+            Vec3fa pb = getVertex(grid,f,i,x,y-1);
+            Vec3f Ng = make_Vec3f(0.0f);
+            Ng += normalize(cross(p-pr,p-pt));
+            Ng += normalize(cross(p-pt,p-pl));
+            Ng += normalize(cross(p-pl,p-pb));
+            Ng += normalize(cross(p-pb,p-pr));
+            if (x + programIndex < GRID_RESOLUTION_X)
+              normals[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = normalize(Ng);
+          }
+        }
+      }
+    }
+  }
+#endif
 
   rtcCommitGeometry(geomGrid);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
@@ -335,7 +430,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     Vec3f Ng = normalize(ray.Ng);
 
-    if (ray.geomID == 1)
+    /*if (ray.geomID == 1)
     {
       unsigned int startVertexID = grids[ray.primID].startVertexID;
       int width = grids[ray.primID].width;
@@ -353,7 +448,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N11 = normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(lerp(v,lerp(u,N00,N01),lerp(u,N10,N11)));
       return Ng;
-    }
+      }*/
 
     /* initialize shadow ray */
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
