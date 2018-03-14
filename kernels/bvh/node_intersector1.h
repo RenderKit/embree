@@ -710,6 +710,51 @@ namespace embree
     
 #endif
 
+
+    template<int N, int Nx, bool robust>
+      __forceinline size_t intersectNode(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,robust>& ray, const float time, vfloat<Nx>& dist)
+    {
+      const vboolf<N> mvalid    = node->validMask();
+      const vfloat<N> lower_x   = node->dequantizeLowerX(time);
+      const vfloat<N> upper_x   = node->dequantizeUpperX(time);
+      const vfloat<N> lower_y   = node->dequantizeLowerY(time);
+      const vfloat<N> upper_y   = node->dequantizeUpperY(time);
+      const vfloat<N> lower_z   = node->dequantizeLowerZ(time);
+      const vfloat<N> upper_z   = node->dequantizeUpperZ(time);     
+#if defined(__AVX2__)
+      const vfloat<N> tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
+      const vfloat<N> tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
+      const vfloat<N> tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
+      const vfloat<N> tFarX  = msub(upper_x, ray.rdir.x, ray.org_rdir.x);
+      const vfloat<N> tFarY  = msub(upper_y, ray.rdir.y, ray.org_rdir.y);
+      const vfloat<N> tFarZ  = msub(upper_z, ray.rdir.z, ray.org_rdir.z);
+#else
+      const vfloat<N> tNearX = (lower_x - ray.org.x) * ray.rdir.x;
+      const vfloat<N> tNearY = (lower_y - ray.org.y) * ray.rdir.y;
+      const vfloat<N> tNearZ = (lower_z - ray.org.z) * ray.rdir.z;
+      const vfloat<N> tFarX  = (upper_x - ray.org.x) * ray.rdir.x;
+      const vfloat<N> tFarY  = (upper_y - ray.org.y) * ray.rdir.y;
+      const vfloat<N> tFarZ  = (upper_z - ray.org.z) * ray.rdir.z;
+#endif      
+
+      const vfloat<N> tminX = mini(tNearX,tFarX);
+      const vfloat<N> tmaxX = maxi(tNearX,tFarX);
+      const vfloat<N> tminY = mini(tNearY,tFarY);
+      const vfloat<N> tmaxY = maxi(tNearY,tFarY);
+      const vfloat<N> tminZ = mini(tNearZ,tFarZ);
+      const vfloat<N> tmaxZ = maxi(tNearZ,tFarZ);
+      const vfloat<N> tNear = maxi(tminX,tminY,tminZ,ray.tnear);
+      const vfloat<N> tFar  = mini(tmaxX,tmaxY,tmaxZ,ray.tfar);
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vbool<N> vmask =  le(mvalid,asInt(tNear),asInt(tFar));
+#else
+      const vbool<N> vmask = (asInt(tNear) <= asInt(tFar)) & mvalid;
+#endif
+      const size_t mask = movemask(vmask);
+      dist = tNear;
+      return mask;      
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////
     // Fast UnalignedNode intersection
     //////////////////////////////////////////////////////////////////////////////////////

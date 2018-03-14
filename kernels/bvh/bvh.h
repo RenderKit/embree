@@ -1194,6 +1194,8 @@ namespace embree
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
       }
 
+      __forceinline vbool<N> validMask() const { return vint<N>::loadu(lower_x) <= vint<N>::loadu(upper_x); }
+
       __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
 
       __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
@@ -1317,6 +1319,8 @@ namespace embree
       __forceinline Vec3fa extent(size_t i) const {
         return bounds(i).size();
       }
+
+      __forceinline vbool<N> validMask() const { return node0.validMask(); }
 
       __forceinline vfloat<N> dequantizeLowerX(const float t) const { return lerp(node0.dequantizeLowerX(),node1.dequantizeLowerX(),t); }
       __forceinline vfloat<N> dequantizeUpperX(const float t) const { return lerp(node0.dequantizeUpperX(),node1.dequantizeUpperX(),t); }
