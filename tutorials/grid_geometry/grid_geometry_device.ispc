@@ -30,12 +30,10 @@ RTCScene g_scene = NULL;
 #define NUM_INDICES 80
 #define NUM_FACES 22
 #define NUM_VERTICES (5+10+5)
-#define FACE_SIZE 4
 
-__aligned(16) uniform Vec3fa cube_vertices[NUM_VERTICES];
+__aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
 
-
-uniform unsigned int cube_indices[NUM_INDICES] = {
+uniform unsigned int sphere_indices[NUM_INDICES] = {
   0, 1, 2, 3, 4,
   0, 14, 5,
   0, 5, 6, 1,
@@ -61,7 +59,7 @@ uniform unsigned int cube_indices[NUM_INDICES] = {
   19, 15, 14, 13,
 };
 
-uniform unsigned int cube_faces[NUM_FACES] = {
+uniform unsigned int sphere_faces[NUM_FACES] = {
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
 };
@@ -72,7 +70,7 @@ uniform unsigned int cube_faces[NUM_FACES] = {
 #define NUM_FACES 6
 //#define FACE_SIZE 4
 
-__aligned(16) uniform float cube_vertices[8][4] =
+__aligned(16) uniform float sphere_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -84,7 +82,7 @@ __aligned(16) uniform float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-uniform unsigned int cube_indices[24] = {
+uniform unsigned int sphere_indices[24] = {
   0, 4, 5, 1,
   1, 5, 6, 2,
   2, 6, 7, 3,
@@ -93,7 +91,7 @@ uniform unsigned int cube_indices[24] = {
   0, 1, 2, 3,
 };
 
-uniform unsigned int cube_faces[6] = {
+uniform unsigned int sphere_faces[6] = {
   4, 4, 4, 4, 4, 4
 };
 
@@ -145,27 +143,27 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   for (uniform int i=0; i<5; i++) {
     const uniform float theta = 45.0f*pi/180.0f;
     const uniform float phi = 72.0f*i*pi/180.0f;
-    cube_vertices[i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
+    sphere_vertices[i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
 
   for (uniform int i=0; i<10; i++) {
     const uniform float theta = 90.0f*pi/180.0f;
     const uniform float phi = (18.0f+36.0f*i)*pi/180.0f;
-    cube_vertices[5+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
+    sphere_vertices[5+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
 
   for (uniform int i=0; i<5; i++) {
     const uniform float theta = 135.0f*pi/180.0f;
     const uniform float phi = 72.0f*i*pi/180.0f;
-    cube_vertices[5+10+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
+    sphere_vertices[5+10+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
   
   /* create a triangulated cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
 
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, sizeof(uniform Vec3fa),       NUM_VERTICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   cube_indices,  0, sizeof(uniform unsigned int), NUM_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   cube_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sphere_vertices, 0, sizeof(uniform Vec3fa),       NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   sphere_indices,  0, sizeof(uniform unsigned int), NUM_INDICES);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   sphere_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
   for (uniform uintptr_t i=0; i<NUM_INDICES; i++) level[i] = (float)EDGE_LEVEL;
@@ -173,54 +171,95 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   //rtcSetGeometryDisplacementFunction(geom,displacementFunction);
   rtcCommitGeometry(geom);
   
-#if 0
-
   /* sample subdiv surface to generate grid vertices */
+  uniform int numGrids = 0;
+  for (uniform int f=0; f<NUM_FACES; f++) {
+    if (sphere_faces[f] == 4) numGrids++;
+    else numGrids += sphere_faces[f];
+  }
 
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * NUM_FACES;
+  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * numGrids;
   
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
 
-  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),NUM_FACES);
+  uniform RTCGrid* uniform grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
 
+  uniform unsigned int g=0;
   uniform unsigned int startVertexIndex = 0;
-  for (uniform unsigned int g=0; g<NUM_FACES; g++) 
+  for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
-    grids[g].startVertexID = startVertexIndex;
-    grids[g].stride        = GRID_RESOLUTION_X;
-    grids[g].width         = GRID_RESOLUTION_X;
-    grids[g].height        = GRID_RESOLUTION_Y;
-
-    for (uniform unsigned int y=0;y<GRID_RESOLUTION_Y;y++)
-      for (uniform unsigned int x=0;x<GRID_RESOLUTION_X;x+=programCount)
+    if (sphere_faces[f] == 4)
+    {
+      grids[g].startVertexID = startVertexIndex;
+      grids[g].stride        = GRID_RESOLUTION_X;
+      grids[g].width         = GRID_RESOLUTION_X;
+      grids[g].height        = GRID_RESOLUTION_Y;
+      
+      for (uniform unsigned int y=0; y<GRID_RESOLUTION_Y; y++)
       {
-        Vec3f dP,dPdu,dPdv;
-        float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
-        float v = (float)y / (GRID_RESOLUTION_Y-1);
-        rtcInterpolateV1(geom,g,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
-        Vec3f Ng = normalize(cross(dPdu,dPdv));
-        dP = dP + displacement(dP)*Ng;
-        Vertex vertex;
-        vertex.x = dP.x;
-        vertex.y = dP.y;
-        vertex.z = dP.z;
-        if (x + programIndex < GRID_RESOLUTION_X)
-          vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
+        for (uniform unsigned int x=0; x<GRID_RESOLUTION_X; x+=programCount)
+        {
+          Vec3f dP,dPdu,dPdv;
+          float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
+          float v = (float)y / (GRID_RESOLUTION_Y-1);
+          rtcInterpolateV1(geom,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+          Vec3f Ng = normalize(cross(dPdu,dPdv));
+          dP = dP + displacement(dP)*Ng;
+          Vertex vertex;
+          vertex.x = dP.x;
+          vertex.y = dP.y;
+          vertex.z = dP.z;
+          if (x + programIndex < GRID_RESOLUTION_X)
+            vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
+        }
       }
-    startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+      startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+      g++;
+    }
+    else
+    {
+      for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+      {
+        grids[g].startVertexID = startVertexIndex;
+        grids[g].stride        = GRID_RESOLUTION_X;
+        grids[g].width         = GRID_RESOLUTION_X;
+        grids[g].height        = GRID_RESOLUTION_Y;
+        
+        for (uniform unsigned int y=0; y<GRID_RESOLUTION_Y; y++)
+        {
+          for (uniform unsigned int x=0; x<GRID_RESOLUTION_X; x+=programCount)
+          {
+            Vec3f dP,dPdu,dPdv;
+            float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
+            float v = (float)y / (GRID_RESOLUTION_Y-1);
+
+            const uniform int h = (i >> 2) & 3, l = i & 3;
+            const float U = 2.0f*l + 0.5f + u;
+            const float V = 2.0f*h + 0.5f + v;
+            rtcInterpolateV1(geom,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+            Vec3f Ng = normalize(cross(dPdu,dPdv));
+            dP = dP + displacement(dP)*Ng;
+            Vertex vertex;
+            vertex.x = dP.x;
+            vertex.y = dP.y;
+            vertex.z = dP.z;
+            if (x + programIndex < GRID_RESOLUTION_X)
+              vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
+          }
+        }
+        startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+        g++;
+      }
+    }
   }
 
   rtcCommitGeometry(geomGrid);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
   rtcReleaseGeometry(geomGrid);
+  rtcReleaseGeometry(geom);
 
-  rtcReleaseGeometry(geom);
-#else
-  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
-  rtcReleaseGeometry(geom);
-#endif
   return geomID;
 }
 
