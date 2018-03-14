@@ -341,10 +341,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       int width = grids[ray.primID].width;
       int height = grids[ray.primID].height;
       unsigned int stride = grids[ray.primID].stride;
-      float U = ray.u*width;
-      float V = ray.v*height;
-      int x = min((int)floor(U),width -1);
-      int y = min((int)floor(V),height-1);
+      float U = ray.u*(width-1);
+      float V = ray.v*(height-1);
+      int x = min((int)floor(U),width -2);
+      int y = min((int)floor(V),height-2);
       float u = U-x;
       float v = V-y;
       Vec3f N00 = normals[startVertexID+(y+0)*stride+(x+0)];
