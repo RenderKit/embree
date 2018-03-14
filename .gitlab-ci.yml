@@ -484,7 +484,7 @@ release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB-PACKAGE-PKG:
   only:   [web]
   artifacts:
     name: "$CI_JOB_NAME"
-    paths: [build/*.dmg]
+    paths: [build/*.pkg]
     when:  always
     expire_in: 2 mos
 
