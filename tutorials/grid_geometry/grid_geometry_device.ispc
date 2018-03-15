@@ -30,7 +30,7 @@ RTCScene g_scene = NULL;
 
 __aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
 
-uniform RTCGrid* uniform grids = NULL;
+uniform RTCGrid* uniform egrids = NULL;
 uniform Vec3fa* uniform vertices = NULL;
 uniform Vec3f* uniform normals = NULL;
 
@@ -128,39 +128,39 @@ Vec3f getVertex(uniform Grid& grid, int x, int y)
   return make_Vec3f(vertices[startVertexID + y*strideY + x*strideX]);
 }
 
-Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform grids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
+Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
 {
-  uniform int startVertexID = grids[firstHalfEdge].startVertexID;
-  unsigned int width = grids[firstHalfEdge].width;
-  unsigned int height = grids[firstHalfEdge].height;
+  uniform int startVertexID = hgrids[firstHalfEdge].startVertexID;
+  unsigned int width = hgrids[firstHalfEdge].width;
+  unsigned int height = hgrids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
     edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
-    uniform Grid& ogrid = grids[edge];
+    uniform Grid& ogrid = hgrids[edge];
     return getVertex(ogrid,y,1);
   }
   else if (x >= width) {
     assert(x == width && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge);
-    uniform Grid& ogrid = grids[edge];
+    uniform Grid& ogrid = hgrids[edge];
     return getVertex(ogrid,y,ogrid.height-2);
   }
   else if (y < 0) {
     assert(y == -1 && x >= 0 && x < width);
     uniform int edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
     edge = rtcGetGeometryNextHalfEdge(subdiv,edge);
-    uniform Grid& ogrid = grids[edge];
+    uniform Grid& ogrid = hgrids[edge];
     return getVertex(ogrid,1,x);
   }
   else if (y >= height) {
     assert(y == height && x >= 0 && x < width);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
-    uniform Grid& ogrid = grids[edge];
+    uniform Grid& ogrid = hgrids[edge];
     return getVertex(ogrid,ogrid.height-2,x);
   }
   else {
-    return getVertex(grids[firstHalfEdge],x,y);
+    return getVertex(hgrids[firstHalfEdge],x,y);
   }
 }
 
@@ -224,52 +224,53 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   /* create grid geometry */
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
   vertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),numVertices);
-  grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
-  uniform Grid* uniform mygrids = uniform new uniform Grid[NUM_INDICES];
+  egrids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
   normals = uniform new uniform Vec3f[numVertices];
 
-  uniform unsigned int g=0;
-  uniform unsigned int h=0;
+  uniform Grid* uniform hgrids = uniform new uniform Grid[NUM_INDICES];
+
+  uniform unsigned int g=0; // grid index for embree grids
+  uniform unsigned int h=0; // grid index for helper grids
   uniform unsigned int startVertexIndex = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
     if (sphere_faces[f] == 4)
     {
-      grids[g].startVertexID = startVertexIndex;
-      grids[g].stride        = QUAD_GRID_RESOLUTION_X;
-      grids[g].width         = QUAD_GRID_RESOLUTION_X;
-      grids[g].height        = QUAD_GRID_RESOLUTION_Y;
+      egrids[g].startVertexID = startVertexIndex;
+      egrids[g].stride        = QUAD_GRID_RESOLUTION_X;
+      egrids[g].width         = QUAD_GRID_RESOLUTION_X;
+      egrids[g].height        = QUAD_GRID_RESOLUTION_Y;
 
       assert(h < NUM_INDICES);
-      mygrids[h].startVertexID = startVertexIndex;
-      mygrids[h].strideX       = 1;
-      mygrids[h].strideY       = QUAD_GRID_RESOLUTION_X;
-      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
-      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      hgrids[h].startVertexID = startVertexIndex;
+      hgrids[h].strideX       = 1;
+      hgrids[h].strideY       = QUAD_GRID_RESOLUTION_X;
+      hgrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      hgrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
       h++;
 
       assert(h < NUM_INDICES);
-      mygrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X-1;
-      mygrids[h].strideX       = QUAD_GRID_RESOLUTION_X;
-      mygrids[h].strideY       = -1;
-      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
-      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      hgrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X-1;
+      hgrids[h].strideX       = QUAD_GRID_RESOLUTION_X;
+      hgrids[h].strideY       = -1;
+      hgrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      hgrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
       h++;
 
       assert(h < NUM_INDICES);
-      mygrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X*QUAD_GRID_RESOLUTION_Y-1;
-      mygrids[h].strideX       = -1;
-      mygrids[h].strideY       = -QUAD_GRID_RESOLUTION_X;
-      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
-      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      hgrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X*QUAD_GRID_RESOLUTION_Y-1;
+      hgrids[h].strideX       = -1;
+      hgrids[h].strideY       = -QUAD_GRID_RESOLUTION_X;
+      hgrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      hgrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
       h++;
 
       assert(h < NUM_INDICES);
-      mygrids[h].startVertexID = startVertexIndex+(QUAD_GRID_RESOLUTION_X-1)*QUAD_GRID_RESOLUTION_Y;
-      mygrids[h].strideX       = -QUAD_GRID_RESOLUTION_X;
-      mygrids[h].strideY       = 1;
-      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
-      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      hgrids[h].startVertexID = startVertexIndex+(QUAD_GRID_RESOLUTION_X-1)*QUAD_GRID_RESOLUTION_Y;
+      hgrids[h].strideX       = -QUAD_GRID_RESOLUTION_X;
+      hgrids[h].strideY       = 1;
+      hgrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      hgrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
       h++;
 
       /* calculate displaced vertices for quad-face */
@@ -298,16 +299,16 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       /* iterate over all sub-faces */
       for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
       {
-        grids[g].startVertexID = startVertexIndex;
-        grids[g].stride        = SUB_GRID_RESOLUTION_X;
-        grids[g].width         = SUB_GRID_RESOLUTION_X;
-        grids[g].height        = SUB_GRID_RESOLUTION_Y;
+        egrids[g].startVertexID = startVertexIndex;
+        egrids[g].stride        = SUB_GRID_RESOLUTION_X;
+        egrids[g].width         = SUB_GRID_RESOLUTION_X;
+        egrids[g].height        = SUB_GRID_RESOLUTION_Y;
 
-        mygrids[h].startVertexID = startVertexIndex;
-        mygrids[h].strideX       = 1;
-        mygrids[h].strideY       = SUB_GRID_RESOLUTION_X;
-        mygrids[h].width         = SUB_GRID_RESOLUTION_X;
-        mygrids[h].height        = SUB_GRID_RESOLUTION_Y;
+        hgrids[h].startVertexID = startVertexIndex;
+        hgrids[h].strideX       = 1;
+        hgrids[h].strideY       = SUB_GRID_RESOLUTION_X;
+        hgrids[h].width         = SUB_GRID_RESOLUTION_X;
+        hgrids[h].height        = SUB_GRID_RESOLUTION_Y;
         h++;
 
         /* calculate displaced vertices for sub-face */
@@ -341,7 +342,6 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
 
   /* calculate normals */
   h = 0;
-  startVertexIndex = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
@@ -350,17 +350,17 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
-          Vec3f p  = getVertex(geomSubdiv,mygrids,h,f,i,x,y);
-          Vec3f pr = getVertex(geomSubdiv,mygrids,h,f,i,x+1,y);
-          Vec3f pl = getVertex(geomSubdiv,mygrids,h,f,i,x-1,y);
-          Vec3f pt = getVertex(geomSubdiv,mygrids,h,f,i,x,y+1);
-          Vec3f pb = getVertex(geomSubdiv,mygrids,h,f,i,x,y-1);
+          Vec3f p  = getVertex(geomSubdiv,hgrids,h,f,i,x,y);
+          Vec3f pr = getVertex(geomSubdiv,hgrids,h,f,i,x+1,y);
+          Vec3f pl = getVertex(geomSubdiv,hgrids,h,f,i,x-1,y);
+          Vec3f pt = getVertex(geomSubdiv,hgrids,h,f,i,x,y+1);
+          Vec3f pb = getVertex(geomSubdiv,hgrids,h,f,i,x,y-1);
           Vec3f Ng = make_Vec3f(0.0f);
           Ng = Ng + normalize(cross(p-pr,p-pt));
           Ng = Ng + normalize(cross(p-pt,p-pl));
           Ng = Ng + normalize(cross(p-pl,p-pb));
           Ng = Ng + normalize(cross(p-pb,p-pr));
-          Grid grid = mygrids[h];
+          Grid grid = hgrids[h];
           normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
         }
       }
@@ -368,7 +368,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     }
   }
 
-  delete[] mygrids;
+  delete[] hgrids;
   
   rtcCommitGeometry(geomGrid);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
@@ -445,10 +445,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     if (ray.geomID == 1)
     {
-      unsigned int startVertexID = grids[ray.primID].startVertexID;
-      int width = grids[ray.primID].width;
-      int height = grids[ray.primID].height;
-      unsigned int stride = grids[ray.primID].stride;
+      unsigned int startVertexID = egrids[ray.primID].startVertexID;
+      int width = egrids[ray.primID].width;
+      int height = egrids[ray.primID].height;
+      unsigned int stride = egrids[ray.primID].stride;
       float U = ray.u*(width-1);
       float V = ray.v*(height-1);
       int x = min((int)floor(U),width -2);
