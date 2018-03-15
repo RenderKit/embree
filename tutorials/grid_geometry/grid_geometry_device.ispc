@@ -31,7 +31,7 @@ RTCScene g_scene = NULL;
 __aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
 
 uniform RTCGrid* uniform grids = NULL;
-uniform Vertex* uniform vertices = NULL;
+uniform Vec3fa* uniform vertices = NULL;
 uniform Vec3f* uniform normals = NULL;
 
 /* this geometry is a sphere with a pentagon at the top, 5 quads connected 
@@ -125,8 +125,7 @@ Vec3f getVertex(uniform Grid& grid, int x, int y)
   unsigned int height = grid.height;
   assert(x >= 0 && x < width);
   assert(y >= 0 && y < height);
-  Vertex vtx = vertices[startVertexID + y*strideY + x*strideX];
-  return make_Vec3f(vtx.x,vtx.y,vtx.z);
+  return make_Vec3f(vertices[startVertexID + y*strideY + x*strideX]);
 }
 
 Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform grids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
@@ -224,7 +223,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
 
   /* create grid geometry */
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
+  vertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),numVertices);
   grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
   uniform Grid* uniform mygrids = uniform new uniform Grid[NUM_INDICES];
   normals = uniform new uniform Vec3f[numVertices];
@@ -283,13 +282,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           rtcInterpolateV1(geomSubdiv,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
           Vec3f Ng = normalize(cross(dPdu,dPdv));
           dP = dP + displacement(dP)*Ng;
-          Vertex vertex;
-          vertex.x = dP.x;
-          vertex.y = dP.y;
-          vertex.z = dP.z;
-
-          vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = vertex;
-          normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = Ng;
+          vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3fa(dP);
+          normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
         }
       }
       startVertexIndex += QUAD_GRID_RESOLUTION_X * QUAD_GRID_RESOLUTION_Y;
@@ -335,13 +329,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             }
             Vec3f Ng = normalize(cross(dPdu,dPdv));
             dP = dP + displacement(dP)*Ng;
-            Vertex vertex;
-            vertex.x = dP.x;
-            vertex.y = dP.y;
-            vertex.z = dP.z;
-
-            vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = vertex;
-            normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = Ng;
+            vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3fa(dP);
+            normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
           }
         }
         startVertexIndex += SUB_GRID_RESOLUTION_X * SUB_GRID_RESOLUTION_Y;
