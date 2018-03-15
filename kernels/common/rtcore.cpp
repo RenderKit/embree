@@ -188,6 +188,7 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneProgressMonitorFunction);
     RTC_VERIFY_HANDLE(hscene);
+    Lock<MutexSys> lock(g_mutex);
     scene->setProgressMonitorFunction(progress,ptr);
     RTC_CATCH_END2(scene);
   }
