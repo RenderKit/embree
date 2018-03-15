@@ -34,6 +34,7 @@
 #include "../geometry/object_intersector.h"
 #include "../geometry/instance_intersector.h"
 #include "../geometry/subgrid_intersector.h"
+#include "../geometry/subgrid_mb_intersector.h"
 #include "../geometry/curve_intersector_virtual.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1

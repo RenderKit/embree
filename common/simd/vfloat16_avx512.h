@@ -44,7 +44,8 @@ namespace embree
     __forceinline vfloat(const __m512& t) { v = t; }
     __forceinline operator __m512() const { return v; }
     __forceinline operator __m256() const { return _mm512_castps512_ps256(v); }
-    
+    __forceinline operator __m128() const { return _mm512_castps512_ps128(v); }
+
     __forceinline vfloat(float f) {
       v = _mm512_set1_ps(f);
     }

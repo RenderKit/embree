@@ -1322,12 +1322,18 @@ namespace embree
 
       __forceinline vbool<N> validMask() const { return node0.validMask(); }
 
-      __forceinline vfloat<N> dequantizeLowerX(const float t) const { return lerp(node0.dequantizeLowerX(),node1.dequantizeLowerX(),t); }
-      __forceinline vfloat<N> dequantizeUpperX(const float t) const { return lerp(node0.dequantizeUpperX(),node1.dequantizeUpperX(),t); }
-      __forceinline vfloat<N> dequantizeLowerY(const float t) const { return lerp(node0.dequantizeLowerY(),node1.dequantizeLowerY(),t); }
-      __forceinline vfloat<N> dequantizeUpperY(const float t) const { return lerp(node0.dequantizeUpperY(),node1.dequantizeUpperY(),t); }
-      __forceinline vfloat<N> dequantizeLowerZ(const float t) const { return lerp(node0.dequantizeLowerZ(),node1.dequantizeLowerZ(),t); }
-      __forceinline vfloat<N> dequantizeUpperZ(const float t) const { return lerp(node0.dequantizeUpperZ(),node1.dequantizeUpperZ(),t); }
+      template<typename T>
+      __forceinline vfloat<N> dequantizeLowerX(const T t) const { return lerp(node0.dequantizeLowerX(),node1.dequantizeLowerX(),t); }
+      template<typename T>
+      __forceinline vfloat<N> dequantizeUpperX(const T t) const { return lerp(node0.dequantizeUpperX(),node1.dequantizeUpperX(),t); }
+      template<typename T>
+      __forceinline vfloat<N> dequantizeLowerY(const T t) const { return lerp(node0.dequantizeLowerY(),node1.dequantizeLowerY(),t); }
+      template<typename T>
+      __forceinline vfloat<N> dequantizeUpperY(const T t) const { return lerp(node0.dequantizeUpperY(),node1.dequantizeUpperY(),t); }
+      template<typename T>
+      __forceinline vfloat<N> dequantizeLowerZ(const T t) const { return lerp(node0.dequantizeLowerZ(),node1.dequantizeLowerZ(),t); }
+      template<typename T>
+      __forceinline vfloat<N> dequantizeUpperZ(const T t) const { return lerp(node0.dequantizeUpperZ(),node1.dequantizeUpperZ(),t); }
 
     };
 

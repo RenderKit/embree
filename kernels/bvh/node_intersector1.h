@@ -712,7 +712,7 @@ namespace embree
 
 
     template<int N, int Nx, bool robust>
-      __forceinline size_t intersectNode(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,robust>& ray, const float time, vfloat<Nx>& dist)
+      __forceinline size_t intersectNode(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,robust>& ray, const float time, vfloat<N>& dist)
     {
       const vboolf<N> mvalid    = node->validMask();
       const vfloat<N> lower_x   = node->dequantizeLowerX(time);
@@ -754,6 +754,41 @@ namespace embree
       dist = tNear;
       return mask;      
     }
+
+#if defined(__AVX512ER__)
+    // for KNL
+    template<>
+      __forceinline size_t intersectNode<4,16,false>(const typename BVHN<4>::QuantizedBaseNodeMB* node, const TravRay<4,16,false>& ray, const float time, vfloat<4>& dist)
+    {
+      const size_t  mvalid    = movemask(node->validMask());
+      const vfloat16 lower_x  = node->dequantizeLowerX(time);
+      const vfloat16 upper_x  = node->dequantizeUpperX(time);
+      const vfloat16 lower_y  = node->dequantizeLowerY(time);
+      const vfloat16 upper_y  = node->dequantizeUpperY(time);
+      const vfloat16 lower_z  = node->dequantizeLowerZ(time);
+      const vfloat16 upper_z  = node->dequantizeUpperZ(time);     
+
+      const vfloat16 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
+      const vfloat16 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
+      const vfloat16 tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
+      const vfloat16 tFarX  = msub(upper_x, ray.rdir.x, ray.org_rdir.x);
+      const vfloat16 tFarY  = msub(upper_y, ray.rdir.y, ray.org_rdir.y);
+      const vfloat16 tFarZ  = msub(upper_z, ray.rdir.z, ray.org_rdir.z);
+
+      const vfloat16 tminX = min(tNearX,tFarX);
+      const vfloat16 tmaxX = max(tNearX,tFarX);
+      const vfloat16 tminY = min(tNearY,tFarY);
+      const vfloat16 tmaxY = max(tNearY,tFarY);
+      const vfloat16 tminZ = min(tNearZ,tFarZ);
+      const vfloat16 tmaxZ = max(tNearZ,tFarZ);
+      const vfloat16 tNear = max(tminX,tminY,tminZ,ray.tnear);
+      const vfloat16 tFar  = min(tmaxX,tmaxY,tmaxZ,ray.tfar );
+      const vbool16 vmask =  tNear <= tFar;
+      const size_t mask = movemask(vmask) & mvalid;
+      dist = extractN<4,0>(tNear);
+      return mask;      
+    }
+#endif
 
     //////////////////////////////////////////////////////////////////////////////////////
     // Fast UnalignedNode intersection

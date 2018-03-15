@@ -59,7 +59,7 @@ namespace embree
     IF_ENABLED_INSTANCE(DEFINE_INTERSECTOR16(BVH4InstanceIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA InstanceIntersectorK<16>> >));
     IF_ENABLED_INSTANCE(DEFINE_INTERSECTOR16(BVH4InstanceMBIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<16 COMMA InstanceIntersectorKMB<16>> >));
 
-    IF_ENABLED_GRIDS(DEFINE_INTERSECTOR16(BVH4GridIntersector16HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA SubGridIntersectorKMoeller <4 COMMA 16 COMMA false> >));
+    IF_ENABLED_GRIDS(DEFINE_INTERSECTOR16(BVH4GridIntersector16HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA SubGridIntersectorKMoeller <4 COMMA 16 COMMA true> >));
 
   }
 }
