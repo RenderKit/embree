@@ -28,12 +28,6 @@ RTCScene g_scene = NULL;
 #define NUM_FACES 22
 #define NUM_VERTICES (5+10+5)
 
-__aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
-
-uniform RTCGrid* uniform egrids = NULL;
-uniform Vec3fa* uniform vertices = NULL;
-uniform Vec3f* uniform normals = NULL;
-
 /* this geometry is a sphere with a pentagon at the top, 5 quads connected 
 to the edges, and triangles between the quads. This is mirrored to make a 
 sphere topology. */
@@ -68,6 +62,24 @@ uniform unsigned int sphere_faces[NUM_FACES] = {
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
 };
+
+__aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
+
+struct Grid
+{
+  unsigned int startVertexID;
+  int strideX, strideY;
+  unsigned int width, height;
+};
+
+struct GridMesh
+{
+  uniform RTCGrid* uniform egrids;
+  uniform Vec3fa* uniform vertices;
+  uniform Vec3f* uniform normals;
+};
+
+GridMesh gmesh;
 
 float displacement(const Vec3f& P)
 {
@@ -109,12 +121,7 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
   }
 }
 
-struct Grid
-{
-  unsigned int startVertexID;
-  int strideX, strideY;
-  unsigned int width, height;
-};
+
 
 Vec3f getVertex(uniform Grid& grid, int x, int y)
 {
@@ -125,7 +132,7 @@ Vec3f getVertex(uniform Grid& grid, int x, int y)
   unsigned int height = grid.height;
   assert(x >= 0 && x < width);
   assert(y >= 0 && y < height);
-  return make_Vec3f(vertices[startVertexID + y*strideY + x*strideX]);
+  return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
 Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
@@ -163,18 +170,21 @@ Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int fi
 /* adds a cube to the scene */
 uniform unsigned int addGridGeometry (RTCScene scene_i)
 {
+  /* calculates top vertex ring */
   for (uniform int i=0; i<5; i++) {
     const uniform float theta = 45.0f*pi/180.0f;
     const uniform float phi = 72.0f*i*pi/180.0f;
     sphere_vertices[i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
 
+  /* calculates center vertex ring */
   for (uniform int i=0; i<10; i++) {
     const uniform float theta = 90.0f*pi/180.0f;
     const uniform float phi = (18.0f+36.0f*i)*pi/180.0f;
     sphere_vertices[5+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
 
+  /* calculates bottom vertex ring */
   for (uniform int i=0; i<5; i++) {
     const uniform float theta = 135.0f*pi/180.0f;
     const uniform float phi = 72.0f*i*pi/180.0f;
@@ -219,9 +229,9 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
 
   /* create grid geometry */
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  vertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),numVertices);
-  egrids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
-  normals = uniform new uniform Vec3f[numVertices];
+  gmesh.vertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),numVertices);
+  gmesh.egrids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
+  gmesh.normals = uniform new uniform Vec3f[numVertices];
 
   uniform Grid* uniform hgrids = uniform new uniform Grid[NUM_INDICES];
 
@@ -232,10 +242,10 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   {
     if (sphere_faces[f] == 4)
     {
-      egrids[g].startVertexID = startVertexIndex;
-      egrids[g].stride        = QUAD_GRID_RESOLUTION_X;
-      egrids[g].width         = QUAD_GRID_RESOLUTION_X;
-      egrids[g].height        = QUAD_GRID_RESOLUTION_Y;
+      gmesh.egrids[g].startVertexID = startVertexIndex;
+      gmesh.egrids[g].stride        = QUAD_GRID_RESOLUTION_X;
+      gmesh.egrids[g].width         = QUAD_GRID_RESOLUTION_X;
+      gmesh.egrids[g].height        = QUAD_GRID_RESOLUTION_Y;
 
       assert(h < NUM_INDICES);
       hgrids[h].startVertexID = startVertexIndex;
@@ -283,8 +293,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           P = P + displacement(P)*normalize(cross(dPdu,dPdv));
 
           /* write result to vertex buffer */
-          vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
-          normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
+          gmesh.vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
+          gmesh.normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
         }
       }
       startVertexIndex += QUAD_GRID_RESOLUTION_X * QUAD_GRID_RESOLUTION_Y;
@@ -295,10 +305,10 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       /* iterate over all sub-faces */
       for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
       {
-        egrids[g].startVertexID = startVertexIndex;
-        egrids[g].stride        = SUB_GRID_RESOLUTION_X;
-        egrids[g].width         = SUB_GRID_RESOLUTION_X;
-        egrids[g].height        = SUB_GRID_RESOLUTION_Y;
+        gmesh.egrids[g].startVertexID = startVertexIndex;
+        gmesh.egrids[g].stride        = SUB_GRID_RESOLUTION_X;
+        gmesh.egrids[g].width         = SUB_GRID_RESOLUTION_X;
+        gmesh.egrids[g].height        = SUB_GRID_RESOLUTION_Y;
 
         hgrids[h].startVertexID = startVertexIndex;
         hgrids[h].strideX       = 1;
@@ -326,8 +336,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             P = P + displacement(P)*normalize(cross(dPdu,dPdv));
 
             /* write result to vertex buffer */
-            vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
-            normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
+            gmesh.vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
+            gmesh.normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
           }
         }
         startVertexIndex += SUB_GRID_RESOLUTION_X * SUB_GRID_RESOLUTION_Y;
@@ -357,7 +367,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           Ng = Ng + normalize(cross(p-pl,p-pb));
           Ng = Ng + normalize(cross(p-pb,p-pr));
           Grid grid = hgrids[h];
-          normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
+          gmesh.normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
         }
       }
       h++;
@@ -441,20 +451,20 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     if (ray.geomID == 1)
     {
-      unsigned int startVertexID = egrids[ray.primID].startVertexID;
-      int width = egrids[ray.primID].width;
-      int height = egrids[ray.primID].height;
-      unsigned int stride = egrids[ray.primID].stride;
+      unsigned int startVertexID = gmesh.egrids[ray.primID].startVertexID;
+      int width = gmesh.egrids[ray.primID].width;
+      int height = gmesh.egrids[ray.primID].height;
+      unsigned int stride = gmesh.egrids[ray.primID].stride;
       float U = ray.u*(width-1);
       float V = ray.v*(height-1);
       int x = min((int)floor(U),width -2);
       int y = min((int)floor(V),height-2);
       float u = U-x;
       float v = V-y;
-      Vec3f N00 = normals[startVertexID+(y+0)*stride+(x+0)];
-      Vec3f N01 = normals[startVertexID+(y+0)*stride+(x+1)];
-      Vec3f N10 = normals[startVertexID+(y+1)*stride+(x+0)];
-      Vec3f N11 = normals[startVertexID+(y+1)*stride+(x+1)];
+      Vec3f N00 = gmesh.normals[startVertexID+(y+0)*stride+(x+0)];
+      Vec3f N01 = gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
+      Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
+      Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(lerp(v,lerp(u,N00,N01),lerp(u,N10,N11)));
       return Ng;
     }
