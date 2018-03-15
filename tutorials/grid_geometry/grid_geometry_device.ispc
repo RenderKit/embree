@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define EDGE_LEVEL 256
+#define EDGE_LEVEL 257
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -193,14 +193,14 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   sphere_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
   rtcCommitGeometry(geom);
 
-  assert((GRID_RESOLUTION_X%2) == 0);
-  assert((GRID_RESOLUTION_Y%2) == 0);
+  assert((GRID_RESOLUTION_X%2) == 1);
+  assert((GRID_RESOLUTION_Y%2) == 1);
 
-  uniform unsigned int SUB_GRID_RESOLUTION_X = GRID_RESOLUTION_X;
-  uniform unsigned int SUB_GRID_RESOLUTION_Y = GRID_RESOLUTION_Y;
+  uniform unsigned int SUB_GRID_RESOLUTION_X = GRID_RESOLUTION_X/2+1;
+  uniform unsigned int SUB_GRID_RESOLUTION_Y = GRID_RESOLUTION_Y/2+1;
   
-  uniform unsigned int QUAD_GRID_RESOLUTION_X = 2*GRID_RESOLUTION_X-1;
-  uniform unsigned int QUAD_GRID_RESOLUTION_Y = 2*GRID_RESOLUTION_Y-1;
+  uniform unsigned int QUAD_GRID_RESOLUTION_X = GRID_RESOLUTION_X;
+  uniform unsigned int QUAD_GRID_RESOLUTION_Y = GRID_RESOLUTION_Y;
     
   /* sample subdiv surface to generate grid vertices */
   uniform int numGrids = 0;
