@@ -136,28 +136,24 @@ Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int fi
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
-    edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
-    uniform Grid& ogrid = hgrids[edge];
-    return getVertex(ogrid,y,1);
+    uniform oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
+    return getVertex(hgrids[oedge],y,1);
   }
   else if (x >= width) {
     assert(x == width && y >= 0 && y < height);
-    uniform int edge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge);
-    uniform Grid& ogrid = hgrids[edge];
-    return getVertex(ogrid,y,ogrid.height-2);
+    uniform int nedge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge);
+    return getVertex(hgrids[nedge],y,hgrids[nedge].height-2);
   }
   else if (y < 0) {
     assert(y == -1 && x >= 0 && x < width);
-    uniform int edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
-    edge = rtcGetGeometryNextHalfEdge(subdiv,edge);
-    uniform Grid& ogrid = hgrids[edge];
-    return getVertex(ogrid,1,x);
+    uniform int oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
+    uniform int noedge = rtcGetGeometryNextHalfEdge(subdiv,oedge);
+    return getVertex(hgrids[noedge],1,x);
   }
   else if (y >= height) {
     assert(y == height && x >= 0 && x < width);
-    uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
-    uniform Grid& ogrid = hgrids[edge];
-    return getVertex(ogrid,ogrid.height-2,x);
+    uniform int pedge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
+    return getVertex(hgrids[pedge],hgrids[pedge].height-2,x);
   }
   else {
     return getVertex(hgrids[firstHalfEdge],x,y);
@@ -340,7 +336,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     }
   }
 
-  /* calculate normals */
+  /* calculate normals by averaging normals of neighboring faces */
   h = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
