@@ -271,7 +271,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
       mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
       h++;
-      
+
+      /* calculate displaced vertices for quad-face */
       for (uniform unsigned int y=0; y<QUAD_GRID_RESOLUTION_Y; y++)
       {
         foreach (x=0 ... QUAD_GRID_RESOLUTION_X)
@@ -280,8 +281,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           float u = (float)x / (QUAD_GRID_RESOLUTION_X-1);
           float v = (float)y / (QUAD_GRID_RESOLUTION_Y-1);
           rtcInterpolateV1(geomSubdiv,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&P.x,&dPdu.x,&dPdv.x,3);
-          Vec3f Ng = normalize(cross(dPdu,dPdv));
-          P = P + displacement(P)*Ng;
+          P = P + displacement(P)*normalize(cross(dPdu,dPdv));
           vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
           normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
         }
@@ -291,6 +291,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     }
     else
     {
+      /* iterate over all sub-faces */
       for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
       {
         grids[g].startVertexID = startVertexIndex;
@@ -304,7 +305,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
         mygrids[h].width         = SUB_GRID_RESOLUTION_X;
         mygrids[h].height        = SUB_GRID_RESOLUTION_Y;
         h++;
-        
+
+        /* calculate displaced vertices for sub-face */
         for (uniform unsigned int y=0; y<SUB_GRID_RESOLUTION_Y; y++)
         {
           foreach (x=0 ... SUB_GRID_RESOLUTION_X)
@@ -312,23 +314,11 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             Vec3f P,dPdu,dPdv;
             float u = (float)x / (SUB_GRID_RESOLUTION_X-1);
             float v = (float)y / (SUB_GRID_RESOLUTION_Y-1);
-            if (sphere_faces[f] == 4) {
-              Vec2f uv0, du, dv;
-              if      (i == 0) { uv0 = make_Vec2f(0.0f,0.0f); du = make_Vec2f(0.5f,0.0f); dv = make_Vec2f(0.0f,0.5f); }
-              else if (i == 1) { uv0 = make_Vec2f(1.0f,0.0f); du = make_Vec2f(0.0f,0.5f); dv = make_Vec2f(-0.5f,0.0f); }
-              else if (i == 2) { uv0 = make_Vec2f(1.0f,1.0f); du = make_Vec2f(-0.5f,0.0f); dv = make_Vec2f(0.0f,-0.5f); }
-              else if (i == 3) { uv0 = make_Vec2f(0.0f,1.0f); du = make_Vec2f(0.0f,-0.5f); dv = make_Vec2f(0.5f,0.0f); }
-              Vec2f uv = uv0 + u*du + v*dv;
-              rtcInterpolateV1(geomSubdiv,f,uv.x,uv.y,RTC_BUFFER_TYPE_VERTEX,0,&P.x,&dPdu.x,&dPdv.x,3);
-            }
-            else {
-              const uniform int h = (i >> 2) & 3, l = i & 3;
-              const float U = 2.0f*l + 0.5f + u;
-              const float V = 2.0f*h + 0.5f + v;
-              rtcInterpolateV1(geomSubdiv,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&P.x,&dPdu.x,&dPdv.x,3);
-            }
-            Vec3f Ng = normalize(cross(dPdu,dPdv));
-            P = P + displacement(P)*Ng;
+            const uniform int h = (i >> 2) & 3, l = i & 3;
+            const float U = 2.0f*l + 0.5f + u;
+            const float V = 2.0f*h + 0.5f + v;
+            rtcInterpolateV1(geomSubdiv,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&P.x,&dPdu.x,&dPdv.x,3);
+            P = P + displacement(P)*normalize(cross(dPdu,dPdv));
             vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
             normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
           }
