@@ -430,24 +430,27 @@ void createGridGeometry (uniform GridMesh& gmesh)
     /* First special corner at (0,0). A different number than 4 faces may be 
        connected to this vertex. We need to walk all neighboring faces to 
        calculate a consistent normal. */
-#if 1
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
       /* find start of ring */
+      uniform bool first = true;
       uniform int startEdge = h+i;
-      while (startEdge != h+i) {
+      while (first || startEdge != h+i)
+      {
+        first = false;
         uniform int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,startEdge);
         if (oedge == startEdge) break;
         startEdge = rtcGetGeometryNextHalfEdge(geomSubdiv,oedge);
       }
       
       /* walk ring beginning at start */
-      uniform bool first = true;
+      first = true;
       uniform int edge = startEdge;
       uniform Vec3f Ng = make_Vec3f(0.0f);
       uniform Vec3f p = getVertex(gmesh,hgrids[edge],0,0);
       while (first || edge != startEdge)
       {
+        first = false;
         uniform int nedge = rtcGetGeometryNextHalfEdge(geomSubdiv,edge);
         uniform int pedge = rtcGetGeometryPreviousHalfEdge(geomSubdiv,edge);
         uniform Vec3f p0 = getVertex(gmesh,hgrids[nedge],0,0);
@@ -457,15 +460,12 @@ void createGridGeometry (uniform GridMesh& gmesh)
         uniform int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,pedge);
         if (oedge == pedge) break;
         edge = oedge;
-        first = false;
       }
       
       Ng = normalize(Ng);
       gmesh.normals[hgrids[h+i].startVertexID] = Ng;
     }
-#endif
-    
-#if 1
+
     /* Last special corner at (width-1,height-1). This fixes the center corner 
        for non-quad faces. We need to walk all sub-faces to calculate a 
        consistent normal. */
@@ -486,7 +486,6 @@ void createGridGeometry (uniform GridMesh& gmesh)
       uniform Grid& grid = hgrids[h+i];
       gmesh.normals[grid.startVertexID + (grid.height-1)*grid.strideY + (grid.width-1)*grid.strideX] = Ng;
     }
-#endif
     
     h+=sphere_faces[f];
   }
@@ -619,7 +618,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(mylerp(v,mylerp(u,N00,N01),mylerp(u,N10,N11)));
-      //return Ng;
+      return Ng;
     }
 
     /* initialize shadow ray */

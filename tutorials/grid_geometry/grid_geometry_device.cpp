@@ -29,7 +29,7 @@ RTCScene g_scene = nullptr;
 #if 1
 
 #define NUM_INDICES 80
-#define NUM_FACES 21
+#define NUM_FACES 22
 #define NUM_VERTICES (5+10+5)
 
 /* this geometry is a sphere with a pentagon at the top, 5 quads connected 
@@ -64,7 +64,7 @@ unsigned int sphere_indices[NUM_INDICES] =
 
 unsigned int sphere_faces[NUM_FACES] = {
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
-  5, 3, 4, 3, 4, 3, 4, 3, 4, 3,// 4,
+  5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
 };
 
 __aligned(16) Vec3fa sphere_vertices[NUM_VERTICES];
@@ -127,7 +127,7 @@ float displacement(const Vec3fa& P)
     float n = abs(noise(freq*P));
     dN += 1.4f*n*n/freq;
   }
-  return 0.0f; //dN;
+  return dN;
 }
 
 float displacement_du(const Vec3fa& P, const Vec3fa& dPdu)
@@ -432,42 +432,42 @@ void createGridGeometry (GridMesh& gmesh)
     /* First special corner at (0,0). A different number than 4 faces may be 
        connected to this vertex. We need to walk all neighboring faces to 
        calculate a consistent normal. */
-#if 1
     for (unsigned int i=0; i<sphere_faces[f]; i++)
     {
       /* find start of ring */
+      bool first = true;
       int startEdge = h+i;
-      while (startEdge != h+i) {
+      while (first || startEdge != h+i)
+      {
+        first = false;
         int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,startEdge);
         if (oedge == startEdge) break;
         startEdge = rtcGetGeometryNextHalfEdge(geomSubdiv,oedge);
       }
       
       /* walk ring beginning at start */
-      bool first = true;
+      first = true;
       int edge = startEdge;
       Vec3fa Ng = Vec3fa(0.0f);
       Vec3fa p = getVertex(gmesh,hgrids[edge],0,0);
       while (first || edge != startEdge)
       {
+        first = false;
         int nedge = rtcGetGeometryNextHalfEdge(geomSubdiv,edge);
         int pedge = rtcGetGeometryPreviousHalfEdge(geomSubdiv,edge);
         Vec3fa p0 = getVertex(gmesh,hgrids[nedge],0,0);
         Vec3fa p1 = getVertex(gmesh,hgrids[pedge],0,0);
         Ng = Ng + cross(p-p0,p-p1);
-        
+
         int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,pedge);
-        if (oedge == pedge) break;      
+        if (oedge == pedge) break;
         edge = oedge;
-        first = false;
       }
       
       Ng = normalize(Ng);
       gmesh.normals[hgrids[h+i].startVertexID] = Ng;
     }
-#endif
-    
-#if 1
+
     /* Last special corner at (width-1,height-1). This fixes the center corner 
        for non-quad faces. We need to walk all sub-faces to calculate a 
        consistent normal. */
@@ -488,7 +488,6 @@ void createGridGeometry (GridMesh& gmesh)
       Grid& grid = hgrids[h+i];
       gmesh.normals[grid.startVertexID + (grid.height-1)*grid.strideY + (grid.width-1)*grid.strideX] = Ng;
     }
-#endif
     
     h+=sphere_faces[f];
   }
