@@ -19,7 +19,7 @@
 namespace embree {
 
 /* configuration */
-#define EDGE_LEVEL 3
+#define EDGE_LEVEL 257
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
