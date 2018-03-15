@@ -256,16 +256,20 @@ def runConfig(config):
     conf.append("-D EMBREE_RAY_PACKETS="+config["RAY_PACKETS"])
   if "STAT_COUNTERS" in config:
     conf.append("-D EMBREE_STAT_COUNTERS="+config["STAT_COUNTERS"])
-  if "TRIS" in config:
-    conf.append("-D EMBREE_GEOMETRY_TRIANGLE="+config["TRIS"])
-  if "QUADS" in config:
-    conf.append("-D EMBREE_GEOMETRY_QUAD="+config["QUADS"])
-  if "CURVES" in config:
-    conf.append("-D EMBREE_GEOMETRY_CURVE="+config["CURVES"])
+  if "TRI" in config:
+    conf.append("-D EMBREE_GEOMETRY_TRIANGLE="+config["TRI"])
+  if "QUAD" in config:
+    conf.append("-D EMBREE_GEOMETRY_QUAD="+config["QUAD"])
+  if "GRID" in config:
+    conf.append("-D EMBREE_GEOMETRY_GRID="+config["GRID"])
+  if "CURVE" in config:
+    conf.append("-D EMBREE_GEOMETRY_CURVE="+config["CURVE"])
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
+  if "INSTANCE" in config:
+    conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
