@@ -618,7 +618,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(mylerp(v,mylerp(u,N00,N01),mylerp(u,N10,N11)));
-      return Ng;
+      //return Ng;
     }
 
     /* initialize shadow ray */
