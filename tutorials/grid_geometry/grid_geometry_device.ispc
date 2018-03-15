@@ -349,11 +349,6 @@ void createGridGeometry (uniform GridMesh& gmesh)
     }
   }
   
-  /* create normal debug geometry */
-  gmesh.geomNormals = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
-  uniform Vec3fa *uniform nvertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),4*numVertices);
-  uniform int* uniform    curves    = (uniform int    *uniform) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT   ,sizeof(uniform int)   ,numVertices);
-
   /* calculate normals by averaging normals of neighboring faces */
   h = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
@@ -378,6 +373,47 @@ void createGridGeometry (uniform GridMesh& gmesh)
           Grid grid = hgrids[h+i];
           int index = grid.startVertexID + y*grid.strideY + x*grid.strideX;
           gmesh.normals[index] = Ng;
+        }
+      }
+    }
+
+    /* fix center vertex */
+    Vec3f Ng = make_Vec3f(0.0f);
+    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+    {
+      Vec3f p  = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-1);
+      Vec3f pl = getVertex(gmesh,hgrids[h],hgrids[h].width-2,hgrids[h].height-1);
+      Vec3f pr = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-2);
+      Ng = Ng + cross(p-pl,p-pr);
+    }
+    Ng = normalize(Ng);
+
+    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+    {
+      Grid grid = hgrids[h+i];
+      gmesh.normals[grid.startVertexID + (grid.height-1)*grid.strideY + (grid.width-1)*grid.strideX] = Ng;
+    }
+    
+    h+=sphere_faces[f];
+  }
+
+  /* create normal debug geometry */
+  gmesh.geomNormals = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
+  uniform Vec3fa *uniform nvertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),4*numVertices);
+  uniform int* uniform    curves    = (uniform int    *uniform) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT   ,sizeof(uniform int)   ,numVertices);
+
+  h = 0;
+  for (uniform unsigned int f=0; f<NUM_FACES; f++) 
+  {
+    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+    {
+      for (uniform int y=0; y<SUB_GRID_RESOLUTION_Y; y++)
+      {
+        foreach (x=0 ... SUB_GRID_RESOLUTION_X)
+        {
+          Grid grid = hgrids[h+i];
+          int index = grid.startVertexID + y*grid.strideY + x*grid.strideX;
+          Vec3f Ng = gmesh.normals[index];
 
           nvertices[4*index+0] = gmesh.vertices[index];
           nvertices[4*index+1] = gmesh.vertices[index];
@@ -391,13 +427,6 @@ void createGridGeometry (uniform GridMesh& gmesh)
         }
       }
     }
-
-    /* fix center vertex */
-    /*Vec3f p = getVertex(gmesh,
-    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
-    {
-    }*/
-
     h+=sphere_faces[f];
   }
 
