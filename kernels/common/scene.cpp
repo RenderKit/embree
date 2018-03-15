@@ -692,14 +692,14 @@ namespace embree
       createTriangleMBAccel();
       createQuadAccel();
       createQuadMBAccel();
+      createGridAccel();
+      createGridMBAccel();
       createSubdivAccel();
       createSubdivMBAccel();
       createHairAccel();
       createHairMBAccel();
       createLineAccel();
       createLineMBAccel();
-      createGridAccel();
-      createGridMBAccel();
       createUserGeometryAccel();
       createUserGeometryMBAccel();
       createInstanceAccel();
