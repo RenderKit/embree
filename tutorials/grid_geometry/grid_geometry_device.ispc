@@ -394,7 +394,7 @@ void createGridGeometry (uniform GridMesh& gmesh)
     /* First special corner at (0,0). A different number than 4 faces may be 
        connected to this vertex. We need to walk all neighboring faces to 
        calculate a consistent normal. */
-
+#if 1
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
       /* find start of ring */
@@ -425,7 +425,9 @@ void createGridGeometry (uniform GridMesh& gmesh)
       Ng = normalize(Ng);
       gmesh.normals[hgrids[h+i].startVertexID] = Ng;
     }
+#endif
     
+#if 1
     /* Last special corner at (width-1,height-1). This fixes the center corner 
        for non-quad faces. We need to walk all sub-faces to calculate a 
        consistent normal. */
@@ -433,18 +435,20 @@ void createGridGeometry (uniform GridMesh& gmesh)
     uniform Vec3f Ng = make_Vec3f(0.0f);
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
-      uniform Vec3f p  = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-1);
-      uniform Vec3f pl = getVertex(gmesh,hgrids[h],hgrids[h].width-2,hgrids[h].height-1);
-      uniform Vec3f pr = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-2);
+      uniform Grid& grid = hgrids[h+i];
+      uniform Vec3f p  = getVertex(gmesh,grid,grid.width-1,grid.height-1);
+      uniform Vec3f pl = getVertex(gmesh,grid,grid.width-2,grid.height-1);
+      uniform Vec3f pr = getVertex(gmesh,grid,grid.width-1,grid.height-2);
       Ng = Ng + cross(p-pl,p-pr);
     }
     Ng = normalize(Ng);
 
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
-      Grid grid = hgrids[h+i];
+      uniform Grid& grid = hgrids[h+i];
       gmesh.normals[grid.startVertexID + (grid.height-1)*grid.strideY + (grid.width-1)*grid.strideX] = Ng;
     }
+#endif
     
     h+=sphere_faces[f];
   }
