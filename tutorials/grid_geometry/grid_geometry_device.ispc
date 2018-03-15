@@ -364,18 +364,18 @@ void createGridGeometry (uniform GridMesh& gmesh)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
-          Vec3f p  = getVertex(gmesh,hgrids[h],x,y);
-          Vec3f pr = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x+1,y,p);
-          Vec3f pl = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x-1,y,p);
-          Vec3f pt = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y+1,p);
-          Vec3f pb = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y-1,p);
+          Vec3f p  = getVertex(gmesh,hgrids[h+i],x,y);
+          Vec3f pr = getVertex(gmesh,geomSubdiv,hgrids,h+i,f,i,x+1,y,p);
+          Vec3f pl = getVertex(gmesh,geomSubdiv,hgrids,h+i,f,i,x-1,y,p);
+          Vec3f pt = getVertex(gmesh,geomSubdiv,hgrids,h+i,f,i,x,y+1,p);
+          Vec3f pb = getVertex(gmesh,geomSubdiv,hgrids,h+i,f,i,x,y-1,p);
           Vec3f Ng = make_Vec3f(0.0f);
           Ng = Ng + cross(p-pr,p-pt);
           Ng = Ng + cross(p-pt,p-pl);
           Ng = Ng + cross(p-pl,p-pb);
           Ng = Ng + cross(p-pb,p-pr);
           Ng = normalize(Ng);
-          Grid grid = hgrids[h];
+          Grid grid = hgrids[h+i];
           int index = grid.startVertexID + y*grid.strideY + x*grid.strideX;
           gmesh.normals[index] = Ng;
 
@@ -390,8 +390,15 @@ void createGridGeometry (uniform GridMesh& gmesh)
           curves[index] = 4*index;
         }
       }
-      h++;
     }
+
+    /* fix center vertex */
+    /*Vec3f p = getVertex(gmesh,
+    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+    {
+    }*/
+
+    h+=sphere_faces[f];
   }
 
   /* we do not need this temporary data anymore */
