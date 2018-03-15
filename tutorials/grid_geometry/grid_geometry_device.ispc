@@ -24,6 +24,8 @@
 /* scene data */
 RTCScene g_scene = NULL;
 
+#if 0
+
 #define NUM_INDICES 80
 #define NUM_FACES 22
 #define NUM_VERTICES (5+10+5)
@@ -64,6 +66,39 @@ uniform unsigned int sphere_faces[NUM_FACES] = {
 };
 
 __aligned(16) uniform Vec3fa sphere_vertices[NUM_VERTICES];
+
+#else
+
+#define NUM_INDICES 24
+#define NUM_FACES 6
+#define NUM_VERTICES 8
+
+uniform unsigned int sphere_indices[NUM_INDICES] = {
+  0, 4, 5, 1,
+  1, 5, 6, 2,
+  2, 6, 7, 3,
+  0, 3, 7, 4,
+  4, 7, 6, 5,
+  0, 1, 2, 3,
+};
+
+uniform unsigned int sphere_faces[NUM_FACES] = {
+  4, 4, 4, 4, 4, 4
+};
+
+__aligned(16) uniform float sphere_vertices[NUM_VERTICES][4] =
+{
+  { -1.0f, -1.0f, -1.0f, 0.0f },
+  {  1.0f, -1.0f, -1.0f, 0.0f },
+  {  1.0f, -1.0f,  1.0f, 0.0f },
+  { -1.0f, -1.0f,  1.0f, 0.0f },
+  { -1.0f,  1.0f, -1.0f, 0.0f },
+  {  1.0f,  1.0f, -1.0f, 0.0f },
+  {  1.0f,  1.0f,  1.0f, 0.0f },
+  { -1.0f,  1.0f,  1.0f, 0.0f }
+};
+
+#endif
 
 struct Grid
 {
@@ -184,9 +219,10 @@ Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *unifo
   }
 }
 
-/* adds a cube to the scene */
+/* adds a displaced sphere to the scene */
 void createGridGeometry (uniform GridMesh& gmesh)
 {
+#if 0
   /* calculates top vertex ring */
   for (uniform int i=0; i<5; i++) {
     const uniform float theta = 45.0f*pi/180.0f;
@@ -207,6 +243,7 @@ void createGridGeometry (uniform GridMesh& gmesh)
     const uniform float phi = 72.0f*i*pi/180.0f;
     sphere_vertices[5+10+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
+#endif
   
   /* temporary subdivision geometry to evaluate base surface */
   RTCGeometry geomSubdiv = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
