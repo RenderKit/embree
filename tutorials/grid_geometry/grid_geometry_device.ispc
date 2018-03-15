@@ -233,42 +233,92 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
 
   //rtcSetGeometryDisplacementFunction(geom,displacementFunction);
   rtcCommitGeometry(geom);
+
+  assert((GRID_RESOLUTION_X%2) == 0);
+  assert((GRID_RESOLUTION_Y%2) == 0);
+
+  uniform unsigned int SUB_GRID_RESOLUTION_X = GRID_RESOLUTION_X;
+  uniform unsigned int SUB_GRID_RESOLUTION_Y = GRID_RESOLUTION_Y;
   
+  uniform unsigned int QUAD_GRID_RESOLUTION_X = 2*GRID_RESOLUTION_X-1;
+  uniform unsigned int QUAD_GRID_RESOLUTION_Y = 2*GRID_RESOLUTION_Y-1;
+    
   /* sample subdiv surface to generate grid vertices */
   uniform int numGrids = 0;
-  for (uniform int f=0; f<NUM_FACES; f++) {
-    //if (sphere_faces[f] == 4) numGrids++;
-    //else
-    numGrids += sphere_faces[f];
+  uniform int numVertices = 0;
+  for (uniform int f=0; f<NUM_FACES; f++)
+  {
+    if (sphere_faces[f] == 4)
+    {
+      numGrids++;
+      numVertices += QUAD_GRID_RESOLUTION_X*QUAD_GRID_RESOLUTION_Y;
+    }
+    else
+    {
+      numGrids += sphere_faces[f];
+      numVertices += sphere_faces[f]*SUB_GRID_RESOLUTION_X*SUB_GRID_RESOLUTION_Y;
+    }
   }
 
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  uniform unsigned int numVertices = GRID_RESOLUTION_X * GRID_RESOLUTION_Y * numGrids;
   
   /* set vertices */
   vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
   grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
-  uniform Grid* uniform mygrids = uniform new uniform Grid[numGrids];
+  uniform Grid* uniform mygrids = uniform new uniform Grid[NUM_INDICES];
   normals = uniform new uniform Vec3f[numVertices];
 
   uniform unsigned int g=0;
+  uniform unsigned int h=0;
   uniform unsigned int startVertexIndex = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
-    /*if (sphere_faces[f] == 4)
+    if (sphere_faces[f] == 4)
     {
       grids[g].startVertexID = startVertexIndex;
-      grids[g].stride        = GRID_RESOLUTION_X;
-      grids[g].width         = GRID_RESOLUTION_X;
-      grids[g].height        = GRID_RESOLUTION_Y;
+      grids[g].stride        = QUAD_GRID_RESOLUTION_X;
+      grids[g].width         = QUAD_GRID_RESOLUTION_X;
+      grids[g].height        = QUAD_GRID_RESOLUTION_Y;
+
+      assert(h < NUM_INDICES);
+      mygrids[h].startVertexID = startVertexIndex;
+      mygrids[h].strideX       = 1;
+      mygrids[h].strideY       = QUAD_GRID_RESOLUTION_X;
+      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      h++;
+
+      assert(h < NUM_INDICES);
+      mygrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X-1;
+      mygrids[h].strideX       = QUAD_GRID_RESOLUTION_X;
+      mygrids[h].strideY       = -1;
+      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      h++;
+
+      assert(h < NUM_INDICES);
+      mygrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X*QUAD_GRID_RESOLUTION_Y-1;
+      mygrids[h].strideX       = -1;
+      mygrids[h].strideY       = -QUAD_GRID_RESOLUTION_X;
+      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      h++;
+
+      assert(h < NUM_INDICES);
+      mygrids[h].startVertexID = startVertexIndex+(QUAD_GRID_RESOLUTION_X-1)*QUAD_GRID_RESOLUTION_Y;
+      mygrids[h].strideX       = -QUAD_GRID_RESOLUTION_X;
+      mygrids[h].strideY       = 1;
+      mygrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
+      mygrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
+      h++;
       
-      for (uniform unsigned int y=0; y<GRID_RESOLUTION_Y; y++)
+      for (uniform unsigned int y=0; y<QUAD_GRID_RESOLUTION_Y; y++)
       {
-        for (uniform unsigned int x=0; x<GRID_RESOLUTION_X; x+=programCount)
+        foreach (x=0 ... QUAD_GRID_RESOLUTION_X)
         {
           Vec3f dP,dPdu,dPdv;
-          float u = (float)(x+programIndex) / (GRID_RESOLUTION_X-1);
-          float v = (float)y / (GRID_RESOLUTION_Y-1);
+          float u = (float)x / (QUAD_GRID_RESOLUTION_X-1);
+          float v = (float)y / (QUAD_GRID_RESOLUTION_Y-1);
           rtcInterpolateV1(geom,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
           Vec3f Ng = normalize(cross(dPdu,dPdv));
           dP = dP + displacement(dP)*Ng;
@@ -276,38 +326,37 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           vertex.x = dP.x;
           vertex.y = dP.y;
           vertex.z = dP.z;
-          if (x + programIndex < GRID_RESOLUTION_X) {
-            vertices[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = vertex;
-            normals[startVertexIndex + y * GRID_RESOLUTION_X + x + programIndex] = Ng;
-          }
+
+          vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = vertex;
+          normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = Ng;
         }
       }
-      startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+      startVertexIndex += QUAD_GRID_RESOLUTION_X * QUAD_GRID_RESOLUTION_Y;
       g++;
     }
-    else*/
+    else
     {
       for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
       {
         grids[g].startVertexID = startVertexIndex;
-        grids[g].stride        = GRID_RESOLUTION_X;
-        grids[g].width         = GRID_RESOLUTION_X;
-        grids[g].height        = GRID_RESOLUTION_Y;
+        grids[g].stride        = SUB_GRID_RESOLUTION_X;
+        grids[g].width         = SUB_GRID_RESOLUTION_X;
+        grids[g].height        = SUB_GRID_RESOLUTION_Y;
 
-        mygrids[g].startVertexID = startVertexIndex;
-        mygrids[g].strideX       = 1;
-        mygrids[g].strideY       = GRID_RESOLUTION_X;
-        mygrids[g].width         = GRID_RESOLUTION_X;
-        mygrids[g].height        = GRID_RESOLUTION_Y;
+        mygrids[h].startVertexID = startVertexIndex;
+        mygrids[h].strideX       = 1;
+        mygrids[h].strideY       = SUB_GRID_RESOLUTION_X;
+        mygrids[h].width         = SUB_GRID_RESOLUTION_X;
+        mygrids[h].height        = SUB_GRID_RESOLUTION_Y;
+        h++;
         
-        for (uniform unsigned int y=0; y<GRID_RESOLUTION_Y; y++)
+        for (uniform unsigned int y=0; y<SUB_GRID_RESOLUTION_Y; y++)
         {
-          foreach (x=0 ... GRID_RESOLUTION_X)
+          foreach (x=0 ... SUB_GRID_RESOLUTION_X)
           {
-            
             Vec3f dP,dPdu,dPdv;
-            float u = (float)x / (GRID_RESOLUTION_X-1);
-            float v = (float)y / (GRID_RESOLUTION_Y-1);
+            float u = (float)x / (SUB_GRID_RESOLUTION_X-1);
+            float v = (float)y / (SUB_GRID_RESOLUTION_Y-1);
             if (sphere_faces[f] == 4) {
               Vec2f uv0, du, dv;
               if      (i == 0) { uv0 = make_Vec2f(0.0f,0.0f); du = make_Vec2f(0.5f,0.0f); dv = make_Vec2f(0.0f,0.5f); }
@@ -330,11 +379,11 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
             vertex.y = dP.y;
             vertex.z = dP.z;
 
-            vertices[startVertexIndex + y * GRID_RESOLUTION_X + x] = vertex;
-            normals[startVertexIndex + y * GRID_RESOLUTION_X + x] = Ng;
+            vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = vertex;
+            normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = Ng;
           }
         }
-        startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
+        startVertexIndex += SUB_GRID_RESOLUTION_X * SUB_GRID_RESOLUTION_Y;
         g++;
       }
     }
@@ -345,36 +394,27 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   startVertexIndex = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
-    /*if (sphere_faces[f] == 4)
+    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
-    }
-    else*/
-    {
-      assert((GRID_RESOLUTION_X%2) == 0);
-      assert((GRID_RESOLUTION_Y%2) == 0);
-
-      for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+      for (uniform int y=0; y<SUB_GRID_RESOLUTION_Y; y++)
       {
-        for (uniform int y=0; y<GRID_RESOLUTION_Y; y++)
+        foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
-          foreach (x=0 ... GRID_RESOLUTION_X)
-          {
-            Vec3f p  = getVertex(geom,mygrids,g,f,i,x,y);
-            Vec3f pr = getVertex(geom,mygrids,g,f,i,x+1,y);
-            Vec3f pl = getVertex(geom,mygrids,g,f,i,x-1,y);
-            Vec3f pt = getVertex(geom,mygrids,g,f,i,x,y+1);
-            Vec3f pb = getVertex(geom,mygrids,g,f,i,x,y-1);
-            Vec3f Ng = make_Vec3f(0.0f);
-            Ng = Ng + normalize(cross(p-pr,p-pt));
-            Ng = Ng + normalize(cross(p-pt,p-pl));
-            Ng = Ng + normalize(cross(p-pl,p-pb));
-            Ng = Ng + normalize(cross(p-pb,p-pr));
-            normals[startVertexIndex + y * GRID_RESOLUTION_X + x] = normalize(Ng);
-          }
+          Vec3f p  = getVertex(geom,mygrids,g,f,i,x,y);
+          Vec3f pr = getVertex(geom,mygrids,g,f,i,x+1,y);
+          Vec3f pl = getVertex(geom,mygrids,g,f,i,x-1,y);
+          Vec3f pt = getVertex(geom,mygrids,g,f,i,x,y+1);
+          Vec3f pb = getVertex(geom,mygrids,g,f,i,x,y-1);
+          Vec3f Ng = make_Vec3f(0.0f);
+          Ng = Ng + normalize(cross(p-pr,p-pt));
+          Ng = Ng + normalize(cross(p-pt,p-pl));
+          Ng = Ng + normalize(cross(p-pl,p-pb));
+          Ng = Ng + normalize(cross(p-pb,p-pr));
+          Grid grid = mygrids[g];
+          normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
         }
-        startVertexIndex += GRID_RESOLUTION_X * GRID_RESOLUTION_Y;
-        g++;
       }
+      g++;
     }
   }
 
