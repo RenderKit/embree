@@ -600,21 +600,9 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_GRID)
     if (device->grid_accel_mb == "default") 
     {
-#if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompactAccel())
-      {
-        accels.add(device->bvh8_factory->BVH8GridMB(this,BVHFactory::BuildVariant::STATIC));
-      }
-      else
-#endif
-      {
-        accels.add(device->bvh4_factory->BVH4GridMB(this,BVHFactory::BuildVariant::STATIC));
-      }
+      accels.add(device->bvh4_factory->BVH4GridMB(this,BVHFactory::BuildVariant::STATIC));
     }
     else if (device->grid_accel_mb == "bvh4mb.grid") accels.add(device->bvh4_factory->BVH4GridMB(this));
-#if defined (EMBREE_TARGET_SIMD8)
-    else if (device->grid_accel_mb == "bvh8mb.grid") accels.add(device->bvh8_factory->BVH8GridMB(this));
-#endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown grid mb accel "+device->grid_accel);
 #endif
 
