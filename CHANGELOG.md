@@ -1,12 +1,10 @@
 Version History
 ---------------
 
-### New Features in Embree 2.17.5
+### New Features in Embree 2.17.4
 -   Fixed AVX512 compile issue with GCC 7.
 -   Fixed issue with not thread safe local static variable
     initialization in VS2013.
-
-### New Features in Embree 2.17.4
 -   Fixed bug in the 4 and 8-wide packet intersection of instances with
     multi-segment motion blur on AVX-512 architectures.
 -   Fixed bug in rtcOccluded4/8/16 when only AVX-512 ISA was enabled.
