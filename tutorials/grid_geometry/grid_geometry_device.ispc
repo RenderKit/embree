@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define EDGE_LEVEL 257
+#define EDGE_LEVEL 5
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -186,23 +186,26 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     sphere_vertices[5+10+i] = make_Vec3fa(sin(theta)*sin(phi),cos(theta),sin(theta)*cos(phi));
   }
   
-  /* create a triangulated cube with 6 quads and 8 vertices */
-  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sphere_vertices, 0, sizeof(uniform Vec3fa),       NUM_VERTICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   sphere_indices,  0, sizeof(uniform unsigned int), NUM_INDICES);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   sphere_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
-  rtcCommitGeometry(geom);
+  /* temporary subdivision geometry to evaluate base surface */
+  RTCGeometry geomSubdiv = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+  rtcSetSharedGeometryBuffer(geomSubdiv, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sphere_vertices, 0, sizeof(uniform Vec3fa),       NUM_VERTICES);
+  rtcSetSharedGeometryBuffer(geomSubdiv, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT,   sphere_indices,  0, sizeof(uniform unsigned int), NUM_INDICES);
+  rtcSetSharedGeometryBuffer(geomSubdiv, RTC_BUFFER_TYPE_FACE,   0, RTC_FORMAT_UINT,   sphere_faces,    0, sizeof(uniform unsigned int), NUM_FACES);
+  rtcCommitGeometry(geomSubdiv);
 
+  /* grid resolution has to be uneven as non-quads are split into multiple quads */
   assert((GRID_RESOLUTION_X%2) == 1);
   assert((GRID_RESOLUTION_Y%2) == 1);
 
+  /* subgrid resolution for non-quads */
   uniform unsigned int SUB_GRID_RESOLUTION_X = GRID_RESOLUTION_X/2+1;
   uniform unsigned int SUB_GRID_RESOLUTION_Y = GRID_RESOLUTION_Y/2+1;
-  
+
+  /* grid resolution for quads */
   uniform unsigned int QUAD_GRID_RESOLUTION_X = GRID_RESOLUTION_X;
   uniform unsigned int QUAD_GRID_RESOLUTION_Y = GRID_RESOLUTION_Y;
     
-  /* sample subdiv surface to generate grid vertices */
+  /* each quad becomes one grid, other faces become multiple grids */
   uniform int numGrids = 0;
   uniform int numVertices = 0;
   for (uniform int f=0; f<NUM_FACES; f++)
@@ -219,9 +222,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     }
   }
 
+  /* create grid geometry */
   RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  
-  /* set vertices */
   vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
   grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
   uniform Grid* uniform mygrids = uniform new uniform Grid[NUM_INDICES];
@@ -278,7 +280,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
           Vec3f dP,dPdu,dPdv;
           float u = (float)x / (QUAD_GRID_RESOLUTION_X-1);
           float v = (float)y / (QUAD_GRID_RESOLUTION_Y-1);
-          rtcInterpolateV1(geom,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+          rtcInterpolateV1(geomSubdiv,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
           Vec3f Ng = normalize(cross(dPdu,dPdv));
           dP = dP + displacement(dP)*Ng;
           Vertex vertex;
@@ -323,13 +325,13 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
               else if (i == 2) { uv0 = make_Vec2f(1.0f,1.0f); du = make_Vec2f(-0.5f,0.0f); dv = make_Vec2f(0.0f,-0.5f); }
               else if (i == 3) { uv0 = make_Vec2f(0.0f,1.0f); du = make_Vec2f(0.0f,-0.5f); dv = make_Vec2f(0.5f,0.0f); }
               Vec2f uv = uv0 + u*du + v*dv;
-              rtcInterpolateV1(geom,f,uv.x,uv.y,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+              rtcInterpolateV1(geomSubdiv,f,uv.x,uv.y,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
             }
             else {
               const uniform int h = (i >> 2) & 3, l = i & 3;
               const float U = 2.0f*l + 0.5f + u;
               const float V = 2.0f*h + 0.5f + v;
-              rtcInterpolateV1(geom,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
+              rtcInterpolateV1(geomSubdiv,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&dP.x,&dPdu.x,&dPdv.x,3);
             }
             Vec3f Ng = normalize(cross(dPdu,dPdv));
             dP = dP + displacement(dP)*Ng;
@@ -359,11 +361,11 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
-          Vec3f p  = getVertex(geom,mygrids,g,f,i,x,y);
-          Vec3f pr = getVertex(geom,mygrids,g,f,i,x+1,y);
-          Vec3f pl = getVertex(geom,mygrids,g,f,i,x-1,y);
-          Vec3f pt = getVertex(geom,mygrids,g,f,i,x,y+1);
-          Vec3f pb = getVertex(geom,mygrids,g,f,i,x,y-1);
+          Vec3f p  = getVertex(geomSubdiv,mygrids,g,f,i,x,y);
+          Vec3f pr = getVertex(geomSubdiv,mygrids,g,f,i,x+1,y);
+          Vec3f pl = getVertex(geomSubdiv,mygrids,g,f,i,x-1,y);
+          Vec3f pt = getVertex(geomSubdiv,mygrids,g,f,i,x,y+1);
+          Vec3f pb = getVertex(geomSubdiv,mygrids,g,f,i,x,y-1);
           Vec3f Ng = make_Vec3f(0.0f);
           Ng = Ng + normalize(cross(p-pr,p-pt));
           Ng = Ng + normalize(cross(p-pt,p-pl));
@@ -382,7 +384,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   rtcCommitGeometry(geomGrid);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
   rtcReleaseGeometry(geomGrid);
-  rtcReleaseGeometry(geom);
+  rtcReleaseGeometry(geomSubdiv);
 
   return geomID;
 }
