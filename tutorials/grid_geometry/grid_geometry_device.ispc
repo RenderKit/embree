@@ -36,7 +36,11 @@ uniform RTCGrid* uniform grids = NULL;
 uniform Vertex* uniform vertices = NULL;
 uniform Vec3f* uniform normals = NULL;
 
-uniform unsigned int sphere_indices[NUM_INDICES] = {
+/* this geometry is a sphere with a pentagon at the top, 5 quads connected 
+to the edges, and triangles between the quads. This is mirrored to make a 
+sphere topology. */
+uniform unsigned int sphere_indices[NUM_INDICES] =
+{
   0, 1, 2, 3, 4,
   0, 14, 5,
   0, 5, 6, 1,
@@ -140,48 +144,55 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
   }
 }
 
-Vec3f getVertex(uniform RTCGrid& grid, int x, int y)
+struct Grid
+{
+  unsigned int startVertexID;
+  int strideX, strideY;
+  unsigned int width, height;
+};
+
+Vec3f getVertex(uniform Grid& grid, int x, int y)
 {
   uniform int startVertexID = grid.startVertexID;
-  uniform int stride = grid.stride;
+  uniform int strideX = grid.strideX;
+  uniform int strideY = grid.strideY;
   unsigned int width = grid.width;
   unsigned int height = grid.height;
   assert(x >= 0 && x < width);
   assert(y >= 0 && y < height);
-  Vertex vtx = vertices[startVertexID + y*stride + x];
+  Vertex vtx = vertices[startVertexID + y*strideY + x*strideX];
   return make_Vec3f(vtx.x,vtx.y,vtx.z);
 }
 
-Vec3f getVertex(RTCGeometry subdiv, uniform RTCGrid *uniform grids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
+Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform grids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
 {
   uniform int startVertexID = grids[firstHalfEdge].startVertexID;
-  uniform int stride = grids[firstHalfEdge].stride;
   unsigned int width = grids[firstHalfEdge].width;
   unsigned int height = grids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
     edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
-    uniform RTCGrid& ogrid = grids[edge];
+    uniform Grid& ogrid = grids[edge];
     return getVertex(ogrid,y,1);
   }
   else if (x >= width) {
     assert(x == width && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge);
-    uniform RTCGrid& ogrid = grids[edge];
+    uniform Grid& ogrid = grids[edge];
     return getVertex(ogrid,y,ogrid.height-2);
   }
   else if (y < 0) {
     assert(y == -1 && x >= 0 && x < width);
     uniform int edge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
     edge = rtcGetGeometryNextHalfEdge(subdiv,edge);
-    uniform RTCGrid& ogrid = grids[edge];
+    uniform Grid& ogrid = grids[edge];
     return getVertex(ogrid,1,x);
   }
   else if (y >= height) {
     assert(y == height && x >= 0 && x < width);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
-    uniform RTCGrid& ogrid = grids[edge];
+    uniform Grid& ogrid = grids[edge];
     return getVertex(ogrid,ogrid.height-2,x);
   }
   else {
@@ -237,6 +248,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   /* set vertices */
   vertices = (uniform Vertex *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numVertices);
   grids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
+  uniform Grid* uniform mygrids = uniform new uniform Grid[numGrids];
   normals = uniform new uniform Vec3f[numVertices];
 
   uniform unsigned int g=0;
@@ -281,6 +293,12 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
         grids[g].stride        = GRID_RESOLUTION_X;
         grids[g].width         = GRID_RESOLUTION_X;
         grids[g].height        = GRID_RESOLUTION_Y;
+
+        mygrids[g].startVertexID = startVertexIndex;
+        mygrids[g].strideX       = 1;
+        mygrids[g].strideY       = GRID_RESOLUTION_X;
+        mygrids[g].width         = GRID_RESOLUTION_X;
+        mygrids[g].height        = GRID_RESOLUTION_Y;
         
         for (uniform unsigned int y=0; y<GRID_RESOLUTION_Y; y++)
         {
@@ -341,11 +359,11 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
         {
           foreach (x=0 ... GRID_RESOLUTION_X)
           {
-            Vec3f p  = getVertex(geom,grids,g,f,i,x,y);
-            Vec3f pr = getVertex(geom,grids,g,f,i,x+1,y);
-            Vec3f pl = getVertex(geom,grids,g,f,i,x-1,y);
-            Vec3f pt = getVertex(geom,grids,g,f,i,x,y+1);
-            Vec3f pb = getVertex(geom,grids,g,f,i,x,y-1);
+            Vec3f p  = getVertex(geom,mygrids,g,f,i,x,y);
+            Vec3f pr = getVertex(geom,mygrids,g,f,i,x+1,y);
+            Vec3f pl = getVertex(geom,mygrids,g,f,i,x-1,y);
+            Vec3f pt = getVertex(geom,mygrids,g,f,i,x,y+1);
+            Vec3f pb = getVertex(geom,mygrids,g,f,i,x,y-1);
             Vec3f Ng = make_Vec3f(0.0f);
             Ng = Ng + normalize(cross(p-pr,p-pt));
             Ng = Ng + normalize(cross(p-pt,p-pl));
@@ -360,6 +378,8 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     }
   }
 
+  delete[] mygrids;
+  
   rtcCommitGeometry(geomGrid);
   uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
   rtcReleaseGeometry(geomGrid);
