@@ -24,7 +24,7 @@
 /* scene data */
 RTCScene g_scene = NULL;
 
-#if 0
+#if 1
 
 #define NUM_INDICES 80
 #define NUM_FACES 22
@@ -187,13 +187,12 @@ varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int
 
 Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f opt)
 {
-  uniform int startVertexID = hgrids[firstHalfEdge].startVertexID;
   unsigned int width  = hgrids[firstHalfEdge].width;
   unsigned int height = hgrids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
-    uniform oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
+    uniform int oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
     if (oedge == edge) return opt; // return alternative vertex when requested vertex does not exist
     return getVertex(gmesh,hgrids[oedge],y,1);
   }
@@ -222,7 +221,7 @@ Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *unifo
 /* adds a displaced sphere to the scene */
 void createGridGeometry (uniform GridMesh& gmesh)
 {
-#if 0
+#if 1
   /* calculates top vertex ring */
   for (uniform int i=0; i<5; i++) {
     const uniform float theta = 45.0f*pi/180.0f;
@@ -575,6 +574,10 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
+Vec3f mylerp(float f, Vec3f a, Vec3f b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
+  return (1.0f-f)*a + f*b;
+}
+
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
@@ -613,7 +616,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N01 = gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
       Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
-      Ng = normalize(lerp(v,lerp(u,N00,N01),lerp(u,N10,N11)));
+      Ng = normalize(mylerp(v,mylerp(u,N00,N01),mylerp(u,N10,N11)));
       //return Ng;
     }
 
