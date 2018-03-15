@@ -74,12 +74,13 @@ struct Grid
 
 struct GridMesh
 {
+  RTCGeometry geom;
   uniform RTCGrid* uniform egrids;
   uniform Vec3fa* uniform vertices;
   uniform Vec3f* uniform normals;
 };
 
-GridMesh gmesh;
+uniform GridMesh gmesh;
 
 float displacement(const Vec3f& P)
 {
@@ -168,7 +169,7 @@ Vec3f getVertex(RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int fi
 }
 
 /* adds a cube to the scene */
-uniform unsigned int addGridGeometry (RTCScene scene_i)
+void createGridGeometry (uniform GridMesh& gmesh)
 {
   /* calculates top vertex ring */
   for (uniform int i=0; i<5; i++) {
@@ -228,9 +229,9 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   }
 
   /* create grid geometry */
-  RTCGeometry geomGrid = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
-  gmesh.vertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),numVertices);
-  gmesh.egrids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(geomGrid,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
+  gmesh.geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_GRID);
+  gmesh.vertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(gmesh.geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vec3fa),numVertices);
+  gmesh.egrids = (uniform RTCGrid *uniform) rtcSetNewGeometryBuffer(gmesh.geom,RTC_BUFFER_TYPE_GRID,0,RTC_FORMAT_GRID,sizeof(uniform RTCGrid),numGrids);
   gmesh.normals = uniform new uniform Vec3f[numVertices];
 
   uniform Grid* uniform hgrids = uniform new uniform Grid[NUM_INDICES];
@@ -374,14 +375,11 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
     }
   }
 
+  /* we do not need this temporary data anymore */
+  rtcReleaseGeometry(geomSubdiv);
   delete[] hgrids;
   
-  rtcCommitGeometry(geomGrid);
-  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geomGrid);
-  rtcReleaseGeometry(geomGrid);
-  rtcReleaseGeometry(geomSubdiv);
-
-  return geomID;
+  rtcCommitGeometry(gmesh.geom);
 }
 
 /* adds a ground plane to the scene */
@@ -417,8 +415,9 @@ export void device_init (uniform int8* uniform cfg)
 
   addGroundPlane(g_scene);
 
-  addGridGeometry(g_scene);
- 
+  createGridGeometry(gmesh);
+  rtcAttachGeometry(g_scene,gmesh.geom);
+   
   /* commit changes to scene */
   rtcCommitScene (g_scene);
 
@@ -542,5 +541,6 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  rtcReleaseGeometry(gmesh.geom);
   rtcReleaseScene (g_scene); g_scene = NULL;
 }
