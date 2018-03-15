@@ -19,7 +19,7 @@
 namespace embree {
 
 /* configuration */
-#define EDGE_LEVEL 257
+#define EDGE_LEVEL 3
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -29,7 +29,7 @@ RTCScene g_scene = nullptr;
 #if 1
 
 #define NUM_INDICES 80
-#define NUM_FACES 22
+#define NUM_FACES 21
 #define NUM_VERTICES (5+10+5)
 
 /* this geometry is a sphere with a pentagon at the top, 5 quads connected 
@@ -64,7 +64,7 @@ unsigned int sphere_indices[NUM_INDICES] =
 
 unsigned int sphere_faces[NUM_FACES] = {
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
-  5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
+  5, 3, 4, 3, 4, 3, 4, 3, 4, 3,// 4,
 };
 
 __aligned(16) Vec3fa sphere_vertices[NUM_VERTICES];
@@ -127,7 +127,7 @@ float displacement(const Vec3fa& P)
     float n = abs(noise(freq*P));
     dN += 1.4f*n*n/freq;
   }
-  return dN;
+  return 0.0f; //dN;
 }
 
 float displacement_du(const Vec3fa& P, const Vec3fa& dPdu)
@@ -450,12 +450,14 @@ void createGridGeometry (GridMesh& gmesh)
       Vec3fa p = getVertex(gmesh,hgrids[edge],0,0);
       while (first || edge != startEdge)
       {
-        Vec3fa p0 = getVertex(gmesh,hgrids[rtcGetGeometryNextHalfEdge(geomSubdiv,edge)],0,0);
+        int nedge = rtcGetGeometryNextHalfEdge(geomSubdiv,edge);
         int pedge = rtcGetGeometryPreviousHalfEdge(geomSubdiv,edge);
-        int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,pedge);
-        if (oedge == pedge) break;
-        Vec3fa p1 = getVertex(gmesh,hgrids[rtcGetGeometryNextHalfEdge(geomSubdiv,oedge)],0,0);
+        Vec3fa p0 = getVertex(gmesh,hgrids[nedge],0,0);
+        Vec3fa p1 = getVertex(gmesh,hgrids[pedge],0,0);
         Ng = Ng + cross(p-p0,p-p1);
+        
+        int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,pedge);
+        if (oedge == pedge) break;      
         edge = oedge;
         first = false;
       }
@@ -619,7 +621,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       Vec3fa N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3fa N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(mylerp(v,mylerp(u,N00,N01),mylerp(u,N10,N11)));
-      //return Ng;
+      return Ng;
     }
 
     /* initialize shadow ray */

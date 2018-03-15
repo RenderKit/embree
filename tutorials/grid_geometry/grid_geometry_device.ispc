@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define EDGE_LEVEL 257
+#define EDGE_LEVEL 3
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -448,12 +448,14 @@ void createGridGeometry (uniform GridMesh& gmesh)
       uniform Vec3f p = getVertex(gmesh,hgrids[edge],0,0);
       while (first || edge != startEdge)
       {
-        uniform Vec3f p0 = getVertex(gmesh,hgrids[rtcGetGeometryNextHalfEdge(geomSubdiv,edge)],0,0);
+        uniform int nedge = rtcGetGeometryNextHalfEdge(geomSubdiv,edge);
         uniform int pedge = rtcGetGeometryPreviousHalfEdge(geomSubdiv,edge);
+        uniform Vec3f p0 = getVertex(gmesh,hgrids[nedge],0,0);
+        uniform Vec3f p1 = getVertex(gmesh,hgrids[pedge],0,0);
+        Ng = Ng + cross(p-p0,p-p1);
+
         uniform int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,pedge);
         if (oedge == pedge) break;
-        uniform Vec3f p1 = getVertex(gmesh,hgrids[rtcGetGeometryNextHalfEdge(geomSubdiv,oedge)],0,0);
-        Ng = Ng + cross(p-p0,p-p1);
         edge = oedge;
         first = false;
       }
