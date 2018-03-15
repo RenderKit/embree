@@ -75,6 +75,7 @@ struct Grid
 struct GridMesh
 {
   RTCGeometry geom;
+  RTCGeometry geomNormals;
   uniform RTCGrid* uniform egrids;
   uniform Vec3fa* uniform vertices;
   uniform Vec3f* uniform normals;
@@ -347,6 +348,11 @@ void createGridGeometry (uniform GridMesh& gmesh)
       }
     }
   }
+  
+  /* create normal debug geometry */
+  gmesh.geomNormals = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
+  uniform Vec3fa *uniform nvertices = (uniform Vec3fa *uniform) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),4*numVertices);
+  uniform int* uniform    curves    = (uniform int    *uniform) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT   ,sizeof(uniform int)   ,numVertices);
 
   /* calculate normals by averaging normals of neighboring faces */
   h = 0;
@@ -368,8 +374,20 @@ void createGridGeometry (uniform GridMesh& gmesh)
           Ng = Ng + cross(p-pt,p-pl);
           Ng = Ng + cross(p-pl,p-pb);
           Ng = Ng + cross(p-pb,p-pr);
+          Ng = normalize(Ng);
           Grid grid = hgrids[h];
-          gmesh.normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
+          int index = grid.startVertexID + y*grid.strideY + x*grid.strideX;
+          gmesh.normals[index] = Ng;
+
+          nvertices[4*index+0] = gmesh.vertices[index];
+          nvertices[4*index+1] = gmesh.vertices[index];
+          nvertices[4*index+2] = gmesh.vertices[index]+0.1f*make_Vec3fa(Ng);
+          nvertices[4*index+3] = gmesh.vertices[index]+0.1f*make_Vec3fa(Ng);
+          nvertices[4*index+0].w = 0.01f;
+          nvertices[4*index+1].w = 0.01f;
+          nvertices[4*index+2].w = 0.01f;
+          nvertices[4*index+3].w = 0.01f;
+          curves[index] = 4*index;
         }
       }
       h++;
@@ -418,6 +436,7 @@ export void device_init (uniform int8* uniform cfg)
 
   createGridGeometry(gmesh);
   rtcAttachGeometry(g_scene,gmesh.geom);
+  rtcAttachGeometry(g_scene,gmesh.geomNormals);
    
   /* commit changes to scene */
   rtcCommitScene (g_scene);
