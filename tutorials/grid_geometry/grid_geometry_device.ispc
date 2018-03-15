@@ -124,17 +124,31 @@ unmasked void displacementFunction(const struct RTCDisplacementFunctionNArgument
 }
 
 
-Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, int x, int y)
+uniform Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, uniform int x, uniform int y)
 {
   uniform int startVertexID = grid.startVertexID;
   uniform int strideX = grid.strideX;
   uniform int strideY = grid.strideY;
-  unsigned int width = grid.width;
-  unsigned int height = grid.height;
+  uniform unsigned int width = grid.width;
+  uniform unsigned int height = grid.height;
   assert(x >= 0 && x < width);
   assert(y >= 0 && y < height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
+
+#if defined (ISPC)
+varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int x, varying int y)
+{
+  uniform int startVertexID = grid.startVertexID;
+  uniform int strideX = grid.strideX;
+  uniform int strideY = grid.strideY;
+  uniform unsigned int width = grid.width;
+  uniform unsigned int height = grid.height;
+  assert(x >= 0 && x < width);
+  assert(y >= 0 && y < height);
+  return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
+}
+#endif
 
 Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f opt)
 {
@@ -377,13 +391,51 @@ void createGridGeometry (uniform GridMesh& gmesh)
       }
     }
 
-    /* fix center vertex */
-    Vec3f Ng = make_Vec3f(0.0f);
+    /* First special corner at (0,0). A different number than 4 faces may be 
+       connected to this vertex. We need to walk all neighboring faces to 
+       calculate a consistent normal. */
+
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
-      Vec3f p  = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-1);
-      Vec3f pl = getVertex(gmesh,hgrids[h],hgrids[h].width-2,hgrids[h].height-1);
-      Vec3f pr = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-2);
+      /* find start of ring */
+      uniform int startEdge = h+i;
+      while (startEdge != h+i) {
+        uniform int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,startEdge);
+        if (oedge == startEdge) break;
+        startEdge = rtcGetGeometryNextHalfEdge(geomSubdiv,oedge);
+      }
+      
+      /* walk ring beginning at start */
+      uniform bool first = true;
+      uniform int edge = startEdge;
+      uniform Vec3f Ng = make_Vec3f(0.0f);
+      uniform Vec3f p = getVertex(gmesh,hgrids[edge],0,0);
+      while (first || edge != startEdge)
+      {
+        uniform Vec3f p0 = getVertex(gmesh,hgrids[rtcGetGeometryNextHalfEdge(geomSubdiv,edge)],0,0);
+        uniform int pedge = rtcGetGeometryPreviousHalfEdge(geomSubdiv,edge);
+        uniform int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,pedge);
+        if (oedge == pedge) break;
+        uniform Vec3f p1 = getVertex(gmesh,hgrids[rtcGetGeometryNextHalfEdge(geomSubdiv,oedge)],0,0);
+        Ng = Ng + cross(p-p0,p-p1);
+        edge = oedge;
+        first = false;
+      }
+      
+      Ng = normalize(Ng);
+      gmesh.normals[hgrids[h+i].startVertexID] = Ng;
+    }
+    
+    /* Last special corner at (width-1,height-1). This fixes the center corner 
+       for non-quad faces. We need to walk all sub-faces to calculate a 
+       consistent normal. */
+    
+    uniform Vec3f Ng = make_Vec3f(0.0f);
+    for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
+    {
+      uniform Vec3f p  = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-1);
+      uniform Vec3f pl = getVertex(gmesh,hgrids[h],hgrids[h].width-2,hgrids[h].height-1);
+      uniform Vec3f pr = getVertex(gmesh,hgrids[h],hgrids[h].width-1,hgrids[h].height-2);
       Ng = Ng + cross(p-pl,p-pr);
     }
     Ng = normalize(Ng);
