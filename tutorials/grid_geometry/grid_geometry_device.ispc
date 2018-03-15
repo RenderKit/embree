@@ -277,11 +277,15 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       {
         foreach (x=0 ... QUAD_GRID_RESOLUTION_X)
         {
-          Vec3f P,dPdu,dPdv;
           float u = (float)x / (QUAD_GRID_RESOLUTION_X-1);
           float v = (float)y / (QUAD_GRID_RESOLUTION_Y-1);
+
+          /* evaluate subdiv surface and displace points */
+          Vec3f P,dPdu,dPdv;
           rtcInterpolateV1(geomSubdiv,f,u,v,RTC_BUFFER_TYPE_VERTEX,0,&P.x,&dPdu.x,&dPdv.x,3);
           P = P + displacement(P)*normalize(cross(dPdu,dPdv));
+
+          /* write result to vertex buffer */
           vertices[startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
           normals [startVertexIndex + y * QUAD_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
         }
@@ -311,14 +315,20 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
         {
           foreach (x=0 ... SUB_GRID_RESOLUTION_X)
           {
-            Vec3f P,dPdu,dPdv;
             float u = (float)x / (SUB_GRID_RESOLUTION_X-1);
             float v = (float)y / (SUB_GRID_RESOLUTION_Y-1);
+
+            /* encode UVs */
             const uniform int h = (i >> 2) & 3, l = i & 3;
             const float U = 2.0f*l + 0.5f + u;
             const float V = 2.0f*h + 0.5f + v;
+
+            /* evaluate subdiv surface and displace points */
+            Vec3f P,dPdu,dPdv;
             rtcInterpolateV1(geomSubdiv,f,U,V,RTC_BUFFER_TYPE_VERTEX,0,&P.x,&dPdu.x,&dPdv.x,3);
             P = P + displacement(P)*normalize(cross(dPdu,dPdv));
+
+            /* write result to vertex buffer */
             vertices[startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3fa(P);
             normals [startVertexIndex + y * SUB_GRID_RESOLUTION_X + x] = make_Vec3f(0.0f); // calculated later
           }
@@ -330,7 +340,7 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
   }
 
   /* calculate normals */
-  g = 0;
+  h = 0;
   startVertexIndex = 0;
   for (uniform unsigned int f=0; f<NUM_FACES; f++) 
   {
@@ -340,21 +350,21 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
-          Vec3f p  = getVertex(geomSubdiv,mygrids,g,f,i,x,y);
-          Vec3f pr = getVertex(geomSubdiv,mygrids,g,f,i,x+1,y);
-          Vec3f pl = getVertex(geomSubdiv,mygrids,g,f,i,x-1,y);
-          Vec3f pt = getVertex(geomSubdiv,mygrids,g,f,i,x,y+1);
-          Vec3f pb = getVertex(geomSubdiv,mygrids,g,f,i,x,y-1);
+          Vec3f p  = getVertex(geomSubdiv,mygrids,h,f,i,x,y);
+          Vec3f pr = getVertex(geomSubdiv,mygrids,h,f,i,x+1,y);
+          Vec3f pl = getVertex(geomSubdiv,mygrids,h,f,i,x-1,y);
+          Vec3f pt = getVertex(geomSubdiv,mygrids,h,f,i,x,y+1);
+          Vec3f pb = getVertex(geomSubdiv,mygrids,h,f,i,x,y-1);
           Vec3f Ng = make_Vec3f(0.0f);
           Ng = Ng + normalize(cross(p-pr,p-pt));
           Ng = Ng + normalize(cross(p-pt,p-pl));
           Ng = Ng + normalize(cross(p-pl,p-pb));
           Ng = Ng + normalize(cross(p-pb,p-pr));
-          Grid grid = mygrids[g];
+          Grid grid = mygrids[h];
           normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
         }
       }
-      g++;
+      h++;
     }
   }
 
