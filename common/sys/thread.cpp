@@ -175,13 +175,15 @@ namespace embree
 
 namespace embree
 {
+  static MutexSys mutex;
+  static std::vector<size_t> threadIDs;
+  
   /* changes thread ID mapping such that we first fill up all thread on one core */
   size_t mapThreadID(size_t threadID)
   {
-    static MutexSys mutex;
+    
     Lock<MutexSys> lock(mutex);
-    static std::vector<size_t> threadIDs;
-
+   
     if (threadIDs.size() == 0)
     {
       /* parse thread/CPU topology */

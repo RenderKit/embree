@@ -50,11 +50,11 @@ namespace embree
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
 
+  static std::map<std::string,Ref<Image> > image_cache;
+
   /*! loads an image from a file with auto-detection of format */
   Ref<Image> loadImage(const FileName& fileName, bool cache)
   {
-    static std::map<std::string,Ref<Image> > image_cache;
-
     if (!cache)
       return loadImageFromDisk(fileName);
 
