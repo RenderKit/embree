@@ -170,24 +170,24 @@ namespace embree
       char bounds_vx_z[N];
       short bounds_vx_lower0[N];
       short bounds_vx_upper0[N];
-      unsigned short bounds_vx_dlower[N];
-      unsigned short bounds_vx_dupper[N];
+      short bounds_vx_lower1[N];
+      short bounds_vx_upper1[N];
       
       char bounds_vy_x[N];
       char bounds_vy_y[N];
       char bounds_vy_z[N];
       short bounds_vy_lower0[N];
       short bounds_vy_upper0[N];
-      unsigned short bounds_vy_dlower[N];
-      unsigned short bounds_vy_dupper[N];
+      short bounds_vy_lower1[N];
+      short bounds_vy_upper1[N];
       
       char bounds_vz_x[N];
       char bounds_vz_y[N];
       char bounds_vz_z[N];
       short bounds_vz_lower0[N];
       short bounds_vz_upper0[N];
-      unsigned short bounds_vz_dlower[N];
-      unsigned short bounds_vz_dupper[N];
+      short bounds_vz_lower1[N];
+      short bounds_vz_upper1[N];
       
       Vec3f offset;
       float scale;
