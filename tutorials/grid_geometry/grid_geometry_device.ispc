@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define EDGE_LEVEL 5
+#define EDGE_LEVEL 127
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
@@ -473,12 +473,12 @@ void createGridGeometry (uniform GridMesh& gmesh)
 
           nvertices[4*index+0] = gmesh.vertices[index];
           nvertices[4*index+1] = gmesh.vertices[index];
-          nvertices[4*index+2] = gmesh.vertices[index]+0.1f*make_Vec3fa(Ng);
-          nvertices[4*index+3] = gmesh.vertices[index]+0.1f*make_Vec3fa(Ng);
-          nvertices[4*index+0].w = 0.01f;
-          nvertices[4*index+1].w = 0.01f;
-          nvertices[4*index+2].w = 0.01f;
-          nvertices[4*index+3].w = 0.01f;
+          nvertices[4*index+2] = gmesh.vertices[index]+0.01f*make_Vec3fa(Ng);
+          nvertices[4*index+3] = gmesh.vertices[index]+0.01f*make_Vec3fa(Ng);
+          nvertices[4*index+0].w = 0.0001f;
+          nvertices[4*index+1].w = 0.0001f;
+          nvertices[4*index+2].w = 0.0001f;
+          nvertices[4*index+3].w = 0.0001f;
           curves[index] = 4*index;
         }
       }
@@ -528,7 +528,7 @@ export void device_init (uniform int8* uniform cfg)
 
   createGridGeometry(gmesh);
   rtcAttachGeometry(g_scene,gmesh.geom);
-  rtcAttachGeometry(g_scene,gmesh.geomNormals);
+  //rtcAttachGeometry(g_scene,gmesh.geomNormals);
    
   /* commit changes to scene */
   rtcCommitScene (g_scene);
@@ -577,7 +577,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Ng = normalize(lerp(v,lerp(u,N00,N01),lerp(u,N10,N11)));
-      return Ng;
+      //return Ng;
     }
 
     /* initialize shadow ray */
