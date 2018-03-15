@@ -18,8 +18,8 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(grid_geometry)
 ADD_TUTORIAL_ISPC(grid_geometry)
 
-## IF (EMBREE_TESTING_INTENSITY GREATER 1)
-##  ADD_EMBREE_TEST(grid_geometry)
-## ENDIF()
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST(grid_geometry)
+ENDIF()
 
 
