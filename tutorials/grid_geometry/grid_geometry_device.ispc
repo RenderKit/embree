@@ -24,8 +24,6 @@
 /* scene data */
 RTCScene g_scene = NULL;
 
-#if 1
-
 #define NUM_INDICES 80
 #define NUM_FACES 22
 #define NUM_VERTICES (5+10+5)
@@ -70,39 +68,6 @@ uniform unsigned int sphere_faces[NUM_FACES] = {
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
   5, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4,
 };
-
-#else
-
-#define NUM_INDICES 24
-#define NUM_FACES 6
-//#define FACE_SIZE 4
-
-__aligned(16) uniform float sphere_vertices[8][4] =
-{
-  { -1.0f, -1.0f, -1.0f, 0.0f },
-  {  1.0f, -1.0f, -1.0f, 0.0f },
-  {  1.0f, -1.0f,  1.0f, 0.0f },
-  { -1.0f, -1.0f,  1.0f, 0.0f },
-  { -1.0f,  1.0f, -1.0f, 0.0f },
-  {  1.0f,  1.0f, -1.0f, 0.0f },
-  {  1.0f,  1.0f,  1.0f, 0.0f },
-  { -1.0f,  1.0f,  1.0f, 0.0f }
-};
-
-uniform unsigned int sphere_indices[24] = {
-  0, 4, 5, 1,
-  1, 5, 6, 2,
-  2, 6, 7, 3,
-  0, 3, 7, 4,
-  4, 7, 6, 5,
-  0, 1, 2, 3,
-};
-
-uniform unsigned int sphere_faces[6] = {
-  4, 4, 4, 4, 4, 4
-};
-
-#endif
 
 float displacement(const Vec3f& P)
 {
@@ -230,8 +195,6 @@ uniform unsigned int addGridGeometry (RTCScene scene_i)
 
   uniform float* uniform level = (uniform float* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, sizeof(uniform float), NUM_INDICES);
   for (uniform uintptr_t i=0; i<NUM_INDICES; i++) level[i] = (float)EDGE_LEVEL;
-
-  //rtcSetGeometryDisplacementFunction(geom,displacementFunction);
   rtcCommitGeometry(geom);
 
   assert((GRID_RESOLUTION_X%2) == 0);
