@@ -33,6 +33,9 @@ namespace embree
       __forceinline SubGridBuildData() {};
       __forceinline SubGridBuildData(const unsigned int sx, const unsigned int sy, const unsigned int primID) : sx(sx), sy(sy), primID(primID) {};
 
+      __forceinline size_t x() const { return (size_t)sx & 0x7fff; }
+      __forceinline size_t y() const { return (size_t)sy & 0x7fff; }
+
     };
 
     /************************************************************************************/

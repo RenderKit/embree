@@ -222,35 +222,29 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    struct GridRecalculatePrimRef
+    {
+      mvector<BBox3fa>& bounds;
+      const SubGridBuildData * const sgrids;
+      
+      __forceinline GridRecalculatePrimRef (mvector<BBox3fa>& bounds, const SubGridBuildData * const sgrids)
+        : bounds(bounds), sgrids(sgrids) {}
 
-    // template<int N>
-    // struct CreateMBlurLeafGrid
-    // {
-    //   typedef BVHN<N> BVH;
-    //   typedef typename BVH::NodeRef NodeRef;
-    //   typedef typename BVH::NodeRecordMB NodeRecordMB;
+      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
+      {
+        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
+      }
 
-    //   __forceinline CreateMBlurLeafGrid (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {
+        return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
+      }
 
-    //   __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
-    //   {
-    //     // size_t items = Primitive::blocks(set.size());
-    //     // size_t start = set.begin();
-    //     // Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
-    //     // NodeRef node = bvh->encodeLeaf((char*)accel,items);
-
-    //     // LBBox3fa allBounds = empty;
-    //     // for (size_t i=0; i<items; i++)
-    //     //   allBounds.extend(accel[i].fillMB(prims, start, set.end(), bvh->scene, time));
-
-    //     // return NodeRecordMB(node,allBounds);
-    //     return NodeRecordMB();
-    //   }
-
-    //   BVH* bvh;
-    //   PrimRef* prims;
-    //   size_t time;
-    // };
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
+        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, (float)prim.totalTimeSegments());
+      }
+    };
 
 
     template<int N>
@@ -334,14 +328,12 @@ namespace embree
             x[pos] = sgrid_bd.sx;
             y[pos] = sgrid_bd.sy;
             primID[pos] = sgrid_bd.primID;
-            const size_t x = sgrid_bd.sx & 0x7fff;
-            const size_t y = sgrid_bd.sy & 0x7fff;
+            const size_t x = sgrid_bd.x();
+            const size_t y = sgrid_bd.y();
             bool valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,0,bounds0[pos]);
             bool valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,1,bounds1[pos]);
             assert(valid0);
             assert(valid1);
-            //bounds0[pos] = prims[start+i].bounds();
-            //bounds1[pos] = prims[start+i].bounds();
             allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
             pos++;
           }
@@ -434,6 +426,7 @@ namespace embree
 
       PrimInfoMB createPrimRefArrayMSMBlurGrid(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f))
       {
+        FATAL("not yet implemented");
         return PrimInfoMB(empty);        
       }
 
@@ -487,8 +480,11 @@ namespace embree
 
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
-          (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),
-           CreateLeafGridMB<N>(scene,bvh,sgrids.data(),0.0f),bvh->scene->progressInterface,
+          (typename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNodeMB::Create2(),
+           typename BVH::AlignedNodeMB::Set2(),
+           CreateLeafGridMB<N>(scene,bvh,sgrids.data(),0.0f),
+           bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
@@ -497,8 +493,10 @@ namespace embree
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
+        mvector<BBox3fa> bounds(scene->device,numPrimitives);
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefArrayMSMBlurGrid(scene,prims,bvh->scene->progressInterface);
+        GridRecalculatePrimRef recalculatePrimRef(bounds,sgrids.data());
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -523,7 +521,7 @@ namespace embree
         /* build hierarchy */
         auto root =
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
-                                            RecalculatePrimRef<GridMesh>(scene),
+                                            recalculatePrimRef,
                                             typename BVH::CreateAlloc(bvh),
                                             typename BVH::AlignedNodeMB4D::Create(),
                                             typename BVH::AlignedNodeMB4D::Set(),

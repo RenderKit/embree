@@ -129,70 +129,6 @@ namespace embree
       return vertex(index,itime);
     }
 
-#if 1
-    /*! calculates the bounds of the i'th grid */
-    __forceinline BBox3fa bounds(size_t i) const 
-    {
-      PRINT("FULL BOUNDS");
-      const Grid& g = grid(i);
-      BBox3fa b(empty);
-      for (size_t y=0;y<(size_t)g.resY;y++)
-        for (size_t x=0;x<(size_t)g.resX;x++)
-          b.extend(grid_vertex(g,x,y));
-      return b;
-    }
-
-    /*! calculates the bounds of the i'th grid at the itime'th timestep */
-    __forceinline BBox3fa bounds(size_t i, size_t itime) const
-    {
-      const Grid& g = grid(i);
-      BBox3fa b(empty);
-      for (size_t y=0;y<(size_t)g.resY;y++)
-        for (size_t x=0;x<(size_t)g.resX;x++)
-          b.extend(grid_vertex(g,x,y,itime));
-      return b;
-    }
-#endif
-
-    /*! calculates the interpolated bounds of the i'th grid at the specified time */
-    __forceinline BBox3fa bounds(size_t i, float time) const
-    {
-      float ftime; size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
-      const BBox3fa b0 = bounds(i, itime+0);
-      const BBox3fa b1 = bounds(i, itime+1);
-      return lerp(b0, b1, ftime);
-    }
-
-    /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const {
-      return valid(i, make_range(itime, itime));
-    }
-
-    /*! check if the i'th primitive is valid between the specified time range */
-    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
-    {
-      const Grid& g = grid(i);
-      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
-      {
-        for (size_t y=0;y<(size_t)g.resY;y++)
-          for (size_t x=0;x<(size_t)g.resX;x++)
-            if (!isvalid(grid_vertex(g,x,y,itime))) return false;
-      }
-      return true;
-    }
-
-    /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
-      return LBBox3fa(bounds(i,itime+0),bounds(i,itime+1));
-    }
-
-    /*! calculates the build bounds of the i'th primitive, if it's valid */
-    __forceinline bool buildBounds(const size_t i, BBox3fa* bbox = nullptr) const
-    {
-      FATAL("not implemented");
-      return false;
-    }
-
     /*! calculates the build bounds of the i'th primitive, if it's valid */
     __forceinline bool buildBounds(const Grid& g, size_t sx, size_t sy, BBox3fa& bbox) const
     {
@@ -227,18 +163,6 @@ namespace embree
 
       /* use bounds of first time step in builder */
       bbox = b0;
-      return true;
-    }
-
-    /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
-      return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
-    }
-
-    /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
-      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
-      bbox = linearBounds(i, time_range);
       return true;
     }
 
