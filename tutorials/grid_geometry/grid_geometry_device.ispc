@@ -135,27 +135,29 @@ Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, int x, int y)
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
-Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y)
+Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f opt)
 {
   uniform int startVertexID = hgrids[firstHalfEdge].startVertexID;
-  unsigned int width = hgrids[firstHalfEdge].width;
+  unsigned int width  = hgrids[firstHalfEdge].width;
   unsigned int height = hgrids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
     uniform oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,edge);
+    if (oedge == edge) return opt; // return alternative vertex when requested vertex does not exist
     return getVertex(gmesh,hgrids[oedge],y,1);
+  }
+  else if (y < 0) {
+    assert(y == -1 && x >= 0 && x < width);
+    uniform int oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
+    if (oedge == firstHalfEdge) return opt; // return alternative vertex when requested vertex does not exist
+    uniform int noedge = rtcGetGeometryNextHalfEdge(subdiv,oedge);
+    return getVertex(gmesh,hgrids[noedge],1,x);
   }
   else if (x >= width) {
     assert(x == width && y >= 0 && y < height);
     uniform int nedge = rtcGetGeometryNextHalfEdge(subdiv,firstHalfEdge);
     return getVertex(gmesh,hgrids[nedge],y,hgrids[nedge].height-2);
-  }
-  else if (y < 0) {
-    assert(y == -1 && x >= 0 && x < width);
-    uniform int oedge = rtcGetGeometryOppositeHalfEdge(subdiv,0,firstHalfEdge);
-    uniform int noedge = rtcGetGeometryNextHalfEdge(subdiv,oedge);
-    return getVertex(gmesh,hgrids[noedge],1,x);
   }
   else if (y >= height) {
     assert(y == height && x >= 0 && x < width);
@@ -356,16 +358,16 @@ void createGridGeometry (uniform GridMesh& gmesh)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
-          Vec3f p  = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y);
-          Vec3f pr = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x+1,y);
-          Vec3f pl = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x-1,y);
-          Vec3f pt = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y+1);
-          Vec3f pb = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y-1);
+          Vec3f p  = getVertex(gmesh,hgrids[h],x,y);
+          Vec3f pr = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x+1,y,p);
+          Vec3f pl = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x-1,y,p);
+          Vec3f pt = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y+1,p);
+          Vec3f pb = getVertex(gmesh,geomSubdiv,hgrids,h,f,i,x,y-1,p);
           Vec3f Ng = make_Vec3f(0.0f);
-          Ng = Ng + normalize(cross(p-pr,p-pt));
-          Ng = Ng + normalize(cross(p-pt,p-pl));
-          Ng = Ng + normalize(cross(p-pl,p-pb));
-          Ng = Ng + normalize(cross(p-pb,p-pr));
+          Ng = Ng + cross(p-pr,p-pt);
+          Ng = Ng + cross(p-pt,p-pl);
+          Ng = Ng + cross(p-pl,p-pb);
+          Ng = Ng + cross(p-pb,p-pr);
           Grid grid = hgrids[h];
           gmesh.normals[grid.startVertexID + y*grid.strideY + x*grid.strideX] = normalize(Ng);
         }
