@@ -46,6 +46,7 @@ function check_symbols
 #EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
 EMBREE_VERSION=$2
 EMBREE_VERSION_MAJOR=$3
+EMBREE_SIGN_FILE=$4
 
 # create package
 make -j 16 preinstall
@@ -56,17 +57,17 @@ make -j 16 package
 
 if [ "$1" == "OFF" ]; then
 
+  # sign all RPM files
+  if [ $# -eq 4 ]; then
+    ${EMBREE_SIGN_FILE} -c embree_rpm -vv embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
+  fi
+    
   # create TGZ of RPMs
   embree_tgz=embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz
   tar czf ${embree_tgz} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
 
-  # send RPMs to CDash
-  echo "<DartMeasurement name=\"${embree_tgz}\" type=\"text/string\">${embree_tgz}</DartMeasurement>"
-      
-else
-
-  # send ZIP to CDash
-  embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
-  echo "<DartMeasurement name=\"${embree_zip}\" type=\"text/string\">${embree_zip}</DartMeasurement>"
-
 fi
+
+  # sign ZIP file
+  #embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
+  #/NAS/packages/apps/signfile/linux/SignFile -vv ${embree_zip}

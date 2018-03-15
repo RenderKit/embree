@@ -1,19 +1,19 @@
 Downloading Embree
 ------------------
 
-For Windows we provide an MSI installer and ZIP files for precompiled Embree binaries:
+For Windows we provide Embree as MSI installer and ZIP files:
 
 [embree-<EMBREE_VERSION>-x64.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.msi)  
 [embree-<EMBREE_VERSION>.x64.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.windows.zip)  
 
-For Linux we provide Embree precompiled as RPMs or as a `tar.gz` file:
+For Linux we provide Embree as RPMs or as a `tar.gz` file:
 
 [embree-<EMBREE_VERSION>.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.rpm.tar.gz)  
 [embree-<EMBREE_VERSION>.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.linux.tar.gz)  
 
-For macOS we provide Embree as an installer and as a `tar.gz` file:
+For macOS we provide Embree as PKG installer and as a `tar.gz` file:
 
-[embree-<EMBREE_VERSION>.x86_64.dmg](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.dmg)  
+[embree-<EMBREE_VERSION>.x86_64.pkg](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.pkg)  
 [embree-<EMBREE_VERSION>.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.macosx.tar.gz)
 
 For the first generation Intel® Xeon Phi™ coprocessor (codenamed Knights Corner) we provide Embree v2.9.0 precompiled for Linux as RPMs or as a `tar.gz` file:
