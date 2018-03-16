@@ -888,11 +888,8 @@ namespace embree
 
   void Scene::setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr) 
   {
-    static MutexSys mutex;
-    mutex.lock();
     progress_monitor_function = func;
     progress_monitor_ptr      = ptr;
-    mutex.unlock();
   }
 
   void Scene::progressMonitor(double dn)

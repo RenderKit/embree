@@ -43,11 +43,7 @@ namespace embree
   public:
     struct Intersectors
     {
-    Intersectors()
-    : intersect1(nullptr), occluded1(nullptr),
-        intersect4(nullptr), occluded4(nullptr),
-        intersect8(nullptr), occluded8(nullptr),
-        intersect16(nullptr), occluded16(nullptr) {}
+      Intersectors() {} // WARNING: Do not zero initialize this, as we otherwise get problems with thread unsafe local static variable initialization (e.g. on VS2013) in curve_intersector_virtual.cpp.
       
       template<int K> void intersect(void* pre, void* ray, IntersectContext* context, const void* primitive);
       template<int K> bool occluded (void* pre, void* ray, IntersectContext* context, const void* primitive);
