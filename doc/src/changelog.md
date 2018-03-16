@@ -15,6 +15,8 @@ Version History
 -   Added native support for multiple curve basis functions. Internal
     basis conversions are no longer performed, which saves additional
     memory when multiple bases are used.
+-   Fixed issue with non thread safe local static variable initialization
+    in VS2013.
 
 ### New Features in Embree 3.0.0
 -   Switched to a new version of the API which provides improved
