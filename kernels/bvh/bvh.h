@@ -1196,30 +1196,30 @@ namespace embree
 
       __forceinline vbool<N> validMask() const { return vint<N>::loadu(lower_x) <= vint<N>::loadu(upper_x); }
 
-      __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
+      __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::loadu(lower_x)),scale.x,vfloat<N>(start.x)); }
 
-      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
+      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x)),scale.x,vfloat<N>(start.x)); }
 
-      __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
+      __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::loadu(lower_y)),scale.y,vfloat<N>(start.y)); }
 
-      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
+      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::loadu(upper_y)),scale.y,vfloat<N>(start.y)); }
 
-      __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
+      __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::loadu(lower_z)),scale.z,vfloat<N>(start.z)); }
 
-      __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
+      __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::loadu(upper_z)),scale.z,vfloat<N>(start.z)); }
 
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
 #if defined(__AVX512F__)
       template <int M>
-      __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_x),p)),scale.x,vfloat<M>(start.x)); }
+      __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::loadu(lower_x),p)),scale.x,vfloat<M>(start.x)); }
 
       template <int M>
-      __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_y),p)),scale.y,vfloat<M>(start.y)); }
+      __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::loadu(lower_y),p)),scale.y,vfloat<M>(start.y)); }
 
       template <int M>
-      __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
+      __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::loadu(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
 #endif
 
       union {
