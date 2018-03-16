@@ -106,9 +106,7 @@ namespace embree
         {
           MoellerTrumboreHitM<M> hit;
           MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
-          const vuint<M> gIDs(subgrid.geomID()); // needs to be explicity here, otherwise clang produces wrong code
-          const vuint<M> pIDs(subgrid.primID());
-          Intersect1EpilogM<M,M,filter> epilog(ray,context,gIDs,pIDs);
+          Intersect1EpilogMU<M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
 
           /* intersect first triangle */
           if (intersector.intersect(ray,v0,v1,v3,hit)) 
@@ -133,7 +131,8 @@ namespace embree
         {
           MoellerTrumboreHitM<M> hit;
           MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
-          Occluded1EpilogM<M,M,filter> epilog(ray,context,vuint<M>(subgrid.geomID()),vuint<M>(subgrid.primID()));
+          Occluded1EpilogMU<M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
+          
           /* intersect first triangle */
           if (intersector.intersect(ray,v0,v1,v3,hit)) 
           {
@@ -211,14 +210,14 @@ namespace embree
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                    const GridMesh::Grid &g, const SubGrid& subgrid) const
       {
-          return intersect(ray,v0,v1,v2,v3,g,subgrid,Intersect1EpilogM<8,8,filter>(ray,context,vuint8(subgrid.geomID()),vuint8(subgrid.primID())));
+          return intersect(ray,v0,v1,v2,v3,g,subgrid,Intersect1EpilogMU<8,filter>(ray,context,subgrid.geomID(),subgrid.primID()));
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context,
                                   const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                   const GridMesh::Grid &g, const SubGrid& subgrid) const
       {
-          return intersect(ray,v0,v1,v2,v3,g,subgrid,Occluded1EpilogM<8,8,filter>(ray,context,vuint8(subgrid.geomID()),vuint8(subgrid.primID())));
+          return intersect(ray,v0,v1,v2,v3,g,subgrid,Occluded1EpilogMU<8,filter>(ray,context,subgrid.geomID(),subgrid.primID()));
       }
     };
 
@@ -392,10 +391,7 @@ namespace embree
       __forceinline void intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
-        const vuint<M> gIDs(subgrid.geomID()); // needs to be explicity here, otherwise clang produces wrong code
-        const vuint<M> pIDs(subgrid.primID());
-
-        Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,gIDs,pIDs);
+        Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
 
         MoellerTrumboreHitM<4> hit;
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
@@ -417,10 +413,7 @@ namespace embree
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
-        const vuint<M> gIDs(subgrid.geomID()); // needs to be explicity here, otherwise clang produces wrong code
-        const vuint<M> pIDs(subgrid.primID());
-
-        Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,gIDs,pIDs);
+        Occluded1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
 
         MoellerTrumboreHitM<4> hit;
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
@@ -496,13 +489,13 @@ namespace embree
       __forceinline bool intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,g,subgrid,Intersect1KEpilogM<8,8,K,filter>(ray,k,context,vuint8(subgrid.geomID()),vuint8(subgrid.primID())));
+        return intersect1(ray,k,v0,v1,v2,v3,g,subgrid,Intersect1KEpilogMU<8,K,filter>(ray,k,context,subgrid.geomID(),subgrid.primID()));
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,g,subgrid,Occluded1KEpilogM<8,8,K,filter>(ray,k,context,vuint8(subgrid.geomID()),vuint8(subgrid.primID())));
+        return intersect1(ray,k,v0,v1,v2,v3,g,subgrid,Occluded1KEpilogMU<8,K,filter>(ray,k,context,subgrid.geomID(),subgrid.primID()));
       }
     };
 
