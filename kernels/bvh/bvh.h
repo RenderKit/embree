@@ -1178,8 +1178,8 @@ namespace embree
         scale = decode_scale;
 
 #if defined(DEBUG)
-        vfloat<N> extract_lower( vint<N>::load(lower_quant) );
-        vfloat<N> extract_upper( vint<N>::load(upper_quant) );
+        vfloat<N> extract_lower( vint<N>::loadu(lower_quant) );
+        vfloat<N> extract_upper( vint<N>::loadu(upper_quant) );
         vfloat<N> final_extract_lower = madd(extract_lower,decode_scale,minF);
         vfloat<N> final_extract_upper = madd(extract_upper,decode_scale,minF);
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
