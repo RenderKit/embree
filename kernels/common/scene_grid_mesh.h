@@ -166,6 +166,26 @@ namespace embree
       return true;
     }
 
+    __forceinline BBox3fa bounds(const Grid& g, size_t sx, size_t sy, size_t itime) const
+    {
+      BBox3fa box(empty);
+      buildBounds(g,sx,sy,itime,box);
+      return box;
+    }
+
+    __forceinline LBBox3fa linearBounds(const Grid& g, size_t sx, size_t sy, size_t itime) const {
+      BBox3fa bounds0, bounds1;
+      buildBounds(g,sx,sy,itime+0,bounds0);
+      buildBounds(g,sx,sy,itime+1,bounds1);
+      return LBBox3fa(bounds0,bounds1);
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(const Grid& g, size_t sx, size_t sy, const BBox1f& time_range) const {
+
+      return LBBox3fa([&] (size_t itime) { return bounds(g,sx,sy,itime); }, time_range, fnumTimeSegments);
+    }
+
     /* returns true if topology changed */
     bool topologyChanged() const {
       return grids.isModified() || numPrimitivesChanged;
