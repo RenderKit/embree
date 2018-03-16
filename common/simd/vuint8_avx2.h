@@ -77,8 +77,8 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vuint8 load(const unsigned char* ptr)  { return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
-    static __forceinline vuint8 loadu(const unsigned char* ptr) { return _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)); }
+    static __forceinline vuint8 load(const unsigned char* ptr)  { return _mm256_cvtepu8_epi32(_mm_loadl_epi64((__m128i*)ptr)); }
+    static __forceinline vuint8 loadu(const unsigned char* ptr) { return _mm256_cvtepu8_epi32(_mm_loadl_epi64((__m128i*)ptr)); }
     static __forceinline vuint8 load(const unsigned short* ptr)  { return _mm256_cvtepu16_epi32(_mm_load_si128((__m128i*)ptr)); }
     static __forceinline vuint8 loadu(const unsigned short* ptr) { return _mm256_cvtepu16_epi32(_mm_loadu_si128((__m128i*)ptr)); }
 
