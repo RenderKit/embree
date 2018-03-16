@@ -540,7 +540,7 @@ namespace embree
 
   void Scene::createInstanceAccel()
   {
-#if defined(EMBREE_GEOMETRY_USER)
+#if defined(EMBREE_GEOMETRY_INSTANCE)
     //if (device->object_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -556,7 +556,7 @@ namespace embree
 
   void Scene::createInstanceMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_USER)
+#if defined(EMBREE_GEOMETRY_INSTANCE)
     //if (device->instance_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
