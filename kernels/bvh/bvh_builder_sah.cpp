@@ -372,7 +372,7 @@ namespace embree
 
       void build()
       {
-        /* we reset the allocator when the mesh size changed */
+		/* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
         }
@@ -406,6 +406,7 @@ namespace embree
                                                   return pinfo;
                                                 }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
           numPrimitives = pinfo.size();
+		  //PRINT(numPrimitives);
           /* resize arrays */
           sgrids.resize(numPrimitives); 
           prims.resize(numPrimitives); 

@@ -90,16 +90,16 @@ namespace embree
       vertexAttribs[slot].set(buffer, offset, stride, num, format);
       vertexAttribs[slot].checkPadding16();
     }
-    else if (type == RTC_BUFFER_TYPE_GRID)
-    {
-      if (slot != 0)
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      if (format != RTC_FORMAT_GRID)
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+	else if (type == RTC_BUFFER_TYPE_GRID)
+	{
+		if (slot != 0)
+			throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+		if (format != RTC_FORMAT_GRID)
+			throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
-      grids.set(buffer, offset, stride, num, format);
-      setNumPrimitives(num);
-    }
+		grids.set(buffer, offset, stride, num, format);
+		setNumPrimitives(num);
+	}
     else 
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }

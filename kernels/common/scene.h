@@ -54,7 +54,8 @@ namespace embree
         Geometry* geom = scene->geometries[i].ptr;
         if (geom == nullptr) return nullptr;
         if (!all && !geom->isEnabled()) return nullptr;
-        if (!(geom->getTypeMask() & Ty::geom_type)) return nullptr;
+		const size_t mask = geom->getTypeMask() & Ty::geom_type; // otherwise MSVC does generate wrong code when the mask >= 1 << 16
+        if (!(mask)) return nullptr;
         if ((geom->numTimeSteps != 1) != mblur) return nullptr;
         return (Ty*) geom;
       }

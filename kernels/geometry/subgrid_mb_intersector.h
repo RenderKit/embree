@@ -122,7 +122,7 @@ namespace embree
           size_t firstValidID = bsf(m_valid);
           const vbool<K> m_same_time = (itime[firstValidID] == itime) & valid_i;
           subgrid.gatherMB((vfloat4*)vtx,context->scene,itime[firstValidID],ftime[firstValidID]);
-          m_valid &= ~movemask(m_same_time);
+          m_valid &= ~(size_t)movemask(m_same_time);
           for (unsigned int i=0; i<4; i++)
           {
             const Vec3vf<K> p0 = vtx[i*4+0];
@@ -152,7 +152,7 @@ namespace embree
           size_t firstValidID = bsf(m_valid);
           const vbool<K> m_same_time = (itime[firstValidID] == itime) & valid_i;
           subgrid.gatherMB((vfloat4*)vtx,context->scene,itime[firstValidID],ftime[firstValidID]);
-          m_valid &= ~movemask(m_same_time);
+          m_valid &= ~(size_t)movemask(m_same_time);
           for (unsigned int i=0; i<4; i++)
           {
             const Vec3vf<K> p0 = vtx[i*4+0];
