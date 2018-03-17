@@ -410,7 +410,7 @@ namespace embree
     float fnumTimeSegments;    //!< number of time segments (precalculation)
     unsigned int mask;             //!< for masking out geometry
     struct {
-      GType gtype : 5;                 //!< geometry type
+      GType gtype : 6;                 //!< geometry type
       RTCBuildQuality quality : 3;    //!< build quality for geometry
       State state : 2;
       bool numPrimitivesChanged : 1; //!< true if number of primitives changed
