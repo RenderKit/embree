@@ -457,6 +457,7 @@ namespace embree
                                           const TravRayK<K,robust>& ray, vfloat<K>& dist)
 
     {
+      assert(movemask(node->validMask()) & ((size_t)1 << i));
       const vfloat<N> lower_x = node->dequantizeLowerX();
       const vfloat<N> upper_x = node->dequantizeUpperX();
       const vfloat<N> lower_y = node->dequantizeLowerY();
@@ -510,6 +511,8 @@ namespace embree
                                           const TravRayK<K,robust>& ray, vfloat<K>& dist)
 
     {
+      assert(movemask(node->validMask()) & ((size_t)1 << i));
+
         const vfloat<N> lower_x = node->dequantizeLowerX(ray.time());
         const vfloat<N> upper_x = node->dequantizeUpperX(ray.time());
         const vfloat<N> lower_y = node->dequantizeLowerY(ray.time());

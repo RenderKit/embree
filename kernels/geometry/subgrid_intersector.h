@@ -653,10 +653,11 @@ namespace embree
         {
           for (size_t j=0;j<num;j++)
           {
-            const unsigned int items = (unsigned int) prim[j].size();
+            size_t m_valid = movemask(prim[j].qnode.validMask());
             vfloat<K> dist;
-            for (unsigned int i=0; i<items; i++)
+            while(m_valid)
             {
+              const size_t i = bscf(m_valid);
               if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
             }
@@ -669,9 +670,11 @@ namespace embree
           vbool<K> valid0 = valid;
           for (size_t j=0;j<num;j++)
           {
-            const unsigned int items = (unsigned int) prim[j].size();
+            size_t m_valid = movemask(prim[j].qnode.validMask());
             vfloat<K> dist;
-            for (unsigned int i=0; i<items; i++) {
+            while(m_valid)
+            {
+              const size_t i = bscf(m_valid);
               if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
