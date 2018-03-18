@@ -551,6 +551,8 @@ namespace embree
           while(mask != 0)
           {
             const size_t ID = bscf(mask); 
+            assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+
             if (unlikely(dist[ID] > ray.tfar)) continue;
             intersect(pre,ray,context,prim[i].subgrid(ID));
           }
@@ -568,6 +570,8 @@ namespace embree
           while(mask != 0)
           {
             const size_t ID = bscf(mask); 
+            assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+
             if (occluded(pre,ray,context,prim[i].subgrid(ID)))
               return true;
           }
@@ -694,6 +698,8 @@ namespace embree
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
+              assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+
               if (unlikely(dist[ID] > ray.tfar[k])) continue;
               intersect(pre,ray,k,context,prim[i].subgrid(ID));
             }
@@ -711,6 +717,8 @@ namespace embree
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
+              assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+
               if (occluded(pre,ray,k,context,prim[i].subgrid(ID)))
                 return true;
             }

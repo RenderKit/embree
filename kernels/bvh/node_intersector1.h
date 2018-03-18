@@ -688,21 +688,21 @@ namespace embree
       return mask;
     }
 
+
     template<>
       __forceinline size_t intersectNode<8,16>(const typename BVH8::QuantizedBaseNode* node, const TravRay<8,16,false>& ray, vfloat16& dist)
     {
-      //const vllong8 invalid((size_t)BVH8::emptyNode);
-      //const vboold8 m_valid(invalid != vllong8::loadu(node->children));
-      const vfloat16 bminmaxX  = node->dequantizeLowerUpperX<16>(ray.permX);
-      const vfloat16 bminmaxY  = node->dequantizeLowerUpperY<16>(ray.permY);
-      const vfloat16 bminmaxZ  = node->dequantizeLowerUpperZ<16>(ray.permZ);
-      const vbool16 m_valid    = le(0xff,bminmaxX,align_shift_right<8>(bminmaxX,bminmaxX));
+      const vbool16 m_valid(node->validMask16());
+      const vfloat16 bminmaxX  = node->dequantizeLowerUpperX(ray.permX);
+      const vfloat16 bminmaxY  = node->dequantizeLowerUpperY(ray.permY);
+      const vfloat16 bminmaxZ  = node->dequantizeLowerUpperZ(ray.permZ);
+      //const vbool16 m_valid    = le(0xff,bminmaxX,align_shift_right<8>(bminmaxX,bminmaxX));
       const vfloat16 tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
       const vfloat16 tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
       const vfloat16 tNear     = max(tNearFarX, tNearFarY, tNearFarZ, ray.tnear);
       const vfloat16 tFar      = min(tNearFarX, tNearFarY, tNearFarZ, ray.tfar);
-      const vbool16 vmask      = le(vboolf16(m_valid),tNear,align_shift_right<8>(tFar, tFar));
+      const vbool16 vmask      = le(m_valid,tNear,align_shift_right<8>(tFar, tFar));
       const size_t mask        = movemask(vmask);
       dist = tNear;
       return mask;
