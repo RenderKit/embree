@@ -1197,7 +1197,7 @@ namespace embree
       __forceinline vbool<N> validMask() const { return vint<N>::loadu(lower_x) <= vint<N>::loadu(upper_x); }
 
 #if defined(__AVX512F__) // KNL
-      __forceinline vbool16 validMask16() const { return le(0xff,vuint<16>::loadu(lower_x),vuint<16>::loadu(upper_x)); }
+      __forceinline vbool16 validMask16() const { return le(0xff,vint<16>::loadu(lower_x),vint<16>::loadu(upper_x)); }
 #endif
       __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::loadu(lower_x)),scale.x,vfloat<N>(start.x)); }
 
@@ -1215,9 +1215,9 @@ namespace embree
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
 #if defined(__AVX512F__)
-      __forceinline vfloat16 dequantizeLowerUpperX(const vint16 &p) const { return madd(vfloat16(permute(vint16(vuint<16>::loadu(lower_x)),p)),scale.x,vfloat16(start.x)); }
-      __forceinline vfloat16 dequantizeLowerUpperY(const vint16 &p) const { return madd(vfloat16(permute(vint16(vuint<16>::loadu(lower_y)),p)),scale.y,vfloat16(start.y)); }
-      __forceinline vfloat16 dequantizeLowerUpperZ(const vint16 &p) const { return madd(vfloat16(permute(vint16(vuint<16>::loadu(lower_z)),p)),scale.z,vfloat16(start.z)); }      
+      __forceinline vfloat16 dequantizeLowerUpperX(const vint16 &p) const { return madd(vfloat16(permute(vint<16>::loadu(lower_x),p)),scale.x,vfloat16(start.x)); }
+      __forceinline vfloat16 dequantizeLowerUpperY(const vint16 &p) const { return madd(vfloat16(permute(vint<16>::loadu(lower_y),p)),scale.y,vfloat16(start.y)); }
+      __forceinline vfloat16 dequantizeLowerUpperZ(const vint16 &p) const { return madd(vfloat16(permute(vint<16>::loadu(lower_z),p)),scale.z,vfloat16(start.z)); }      
 #endif
 
       union {
@@ -1238,6 +1238,8 @@ namespace embree
       friend std::ostream& operator<<(std::ostream& o, const QuantizedBaseNode& n)
       {
         o << "QuantizedBaseNode { " << std::endl;
+        o << "  start   " << n.start << std::endl;
+        o << "  scale   " << n.scale << std::endl;
         o << "  lower_x " << vuint<N>::loadu(n.lower_x) << std::endl;
         o << "  upper_x " << vuint<N>::loadu(n.upper_x) << std::endl;
         o << "  lower_y " << vuint<N>::loadu(n.lower_y) << std::endl;
