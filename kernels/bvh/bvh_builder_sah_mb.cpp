@@ -224,26 +224,38 @@ namespace embree
 
     struct GridRecalculatePrimRef
     {
-      mvector<BBox3fa>& bounds;
+      Scene* scene;
       const SubGridBuildData * const sgrids;
-      
-      __forceinline GridRecalculatePrimRef (mvector<BBox3fa>& bounds, const SubGridBuildData * const sgrids)
-        : bounds(bounds), sgrids(sgrids) {}
 
-      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
-      {
-        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
-      }
+      __forceinline GridRecalculatePrimRef (Scene* scene, const SubGridBuildData * const sgrids)
+        : scene(scene), sgrids(sgrids) {}
 
-      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {
-        return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
-      }
+        __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const
+        {
+          const unsigned int geomID  = prim.geomID();
+          const GridMesh* mesh = scene->get<GridMesh>(geomID);
+          const unsigned int buildID = prim.primID();
+          const SubGridBuildData &subgrid = sgrids[buildID];                      
+          const unsigned int primID = subgrid.primID;
+          const size_t x = subgrid.x();
+          const size_t y = subgrid.y();
+          const LBBox3fa lbounds = mesh->linearBounds(mesh->grid(primID),x,y,time_range);
+          const unsigned num_time_segments = mesh->numTimeSegments();
+          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, buildID);
+        }
 
-      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, (float)prim.totalTimeSegments());
-      }
+        __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
+          const unsigned int geomID  = prim.geomID();
+          const GridMesh* mesh = scene->get<GridMesh>(geomID);
+          const unsigned int buildID = prim.primID();
+          const SubGridBuildData &subgrid = sgrids[buildID];                      
+          const unsigned int primID = subgrid.primID;
+          const size_t x = subgrid.x();
+          const size_t y = subgrid.y();
+          return mesh->linearBounds(mesh->grid(primID),x,y,time_range);
+        }
+
     };
 
 
@@ -254,22 +266,76 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
 
-      __forceinline CreateMSMBlurLeafGrid (BVH* bvh) : bvh(bvh) {}
+      __forceinline CreateMSMBlurLeafGrid (Scene* scene, BVH* bvh, const SubGridBuildData * const sgrids) : scene(scene), bvh(bvh), sgrids(sgrids) {}
 
       __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
-        // size_t items = Primitive::blocks(current.prims.object_range.size());
-        // size_t start = current.prims.object_range.begin();
-        // Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment);
-        // NodeRef node = bvh->encodeLeaf((char*)accel,items);
-        // LBBox3fa allBounds = empty;
-        // for (size_t i=0; i<items; i++)
-        //   allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
-        // return NodeRecordMB4D(node,allBounds,current.prims.time_range);
-        return NodeRecordMB4D();
+        const size_t items = current.prims.object_range.size(); 
+        const size_t start = current.prims.object_range.begin();
+
+        const PrimRefMB* prims = current.prims.prims->data();
+        /* collect all subsets with unique geomIDs */
+        assert(items <= N);
+        unsigned int geomIDs[N];
+        unsigned int num_geomIDs = 1;
+        geomIDs[0] = prims[start].geomID();
+
+        for (size_t i=1;i<items;i++)
+        {
+          bool found = false;
+          const unsigned int new_geomID = prims[start+i].geomID();
+          for (size_t j=0;j<num_geomIDs;j++)
+            if (new_geomID == geomIDs[j])
+            { found = true; break; }
+          if (!found) 
+            geomIDs[num_geomIDs++] = new_geomID;
+        }
+
+        /* allocate all leaf memory in one single block */
+        SubGridMBQBVHN<N>* accel = (SubGridMBQBVHN<N>*) alloc.malloc1(num_geomIDs*sizeof(SubGridMBQBVHN<N>),BVH::byteAlignment);
+        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,num_geomIDs);
+
+        LBBox3fa allBounds = empty;
+
+        for (size_t g=0;g<num_geomIDs;g++)
+        {
+          const GridMesh* __restrict__ const mesh = scene->get<GridMesh>(geomIDs[g]);
+          const unsigned numTimeSegments = mesh->numTimeSegments();
+          const range<int> itime_range = getTimeSegmentRange(current.prims.time_range, (float)numTimeSegments);
+          assert(itime_range.size() == 1);
+          const int ilower = itime_range.begin();
+
+          unsigned int x[N];
+          unsigned int y[N];
+          unsigned int primID[N];
+          BBox3fa bounds0[N];
+          BBox3fa bounds1[N];
+          unsigned int pos = 0;
+          for (size_t i=0;i<items;i++)
+          {
+            if (unlikely(prims[start+i].geomID() != geomIDs[g])) continue;
+
+            const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];                      
+            x[pos] = sgrid_bd.sx;
+            y[pos] = sgrid_bd.sy;
+            primID[pos] = sgrid_bd.primID;
+            const size_t x = sgrid_bd.x();
+            const size_t y = sgrid_bd.y();
+            bool valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+0,bounds0[pos]);
+            bool valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+1,bounds1[pos]);
+            assert(valid0);
+            assert(valid1);
+            allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
+            pos++;
+          }
+          new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],float(ilower),1.0f/float(numTimeSegments),pos);
+        }
+        return NodeRecordMB4D(node,allBounds,current.prims.time_range);       
       }
 
+      Scene *scene;
       BVH* bvh;
+      const SubGridBuildData * const sgrids;
     };
 
     template<int N>
@@ -279,12 +345,12 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecordMB NodeRecordMB;
 
-      __forceinline CreateLeafGridMB (Scene* scene, BVH* bvh, const SubGridBuildData * const sgrids, float time) 
-		  : scene(scene), bvh(bvh), sgrids(sgrids), time(time) {}
+      __forceinline CreateLeafGridMB (Scene* scene, BVH* bvh, const SubGridBuildData * const sgrids) 
+		  : scene(scene), bvh(bvh), sgrids(sgrids) {}
 
       __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
-        const size_t items = set.size(); //Primitive::blocks(n);
+        const size_t items = set.size(); 
         const size_t start = set.begin();
 
         /* collect all subsets with unique geomIDs */
@@ -337,7 +403,7 @@ namespace embree
             allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
             pos++;
           }
-          new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],time,1.0f,pos);
+          new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],0.0f,1.0f,pos);
         }
         return NodeRecordMB(node,allBounds);
       }
@@ -345,7 +411,6 @@ namespace embree
       Scene *scene;
       BVH* bvh;
       const SubGridBuildData * const sgrids;
-      float time;
     };
 
 
@@ -393,7 +458,6 @@ namespace embree
                                                 return pinfo;
                                               }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         size_t numPrimitives = pinfo.size();
-        PRINT(numPrimitives);
         /* resize arrays */
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
@@ -426,8 +490,53 @@ namespace embree
 
       PrimInfoMB createPrimRefArrayMSMBlurGrid(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f))
       {
-        FATAL("not yet implemented");
-        return PrimInfoMB(empty);        
+        /* first run to get #primitives */
+        ParallelForForPrefixSumState<PrimInfoMB> pstate;
+        Scene::Iterator<GridMesh,true> iter(scene);
+
+        pstate.init(iter,size_t(1024));
+        FATAL("THIS WONT WORK");
+        /* iterate over all meshes in the scene */
+        PrimInfoMB pinfoMB = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfoMB
+                                                       {
+                                                PrimInfoMB pinfoMB(empty);
+                                                for (size_t j=r.begin(); j<r.end(); j++)
+                                                {
+                                                  LBBox3fa bounds(empty);
+                                                  const PrimRefMB prim(bounds,0,0,mesh->geomID,unsigned(j));                                                             
+                                                  //pinfoMB.add_center2(prim,mesh->getNumSubGrids(j));
+                                                }
+                                                return pinfoMB;
+                                              }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
+        size_t numPrimitives = pinfoMB.size();
+        /* resize arrays */
+        sgrids.resize(numPrimitives); 
+        prims.resize(numPrimitives); 
+#if 0
+        /* second run to fill primrefs and SubGridBuildData arrays */
+        pinfoMB = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
+                                              {
+                                                k = base.size();
+                                                size_t p_index = k;
+                                                PrimInfoMB pinfoMB(empty);
+                                                for (size_t j=r.begin(); j<r.end(); j++)
+                                                {
+                                                  const GridMesh::Grid &g = mesh->grid(j);
+                                                  for (unsigned int y=0; y<g.resY-1u; y+=2)
+                                                    for (unsigned int x=0; x<g.resX-1u; x+=2)
+                                                    {
+                                                      if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
+                                                      const PrimRefMB prim(linearBounds(g,x,y,t0t1),this->numTimeSegments(),this->numTimeSegments(),mesh->geomID,unsigned(p_index));
+                                                      pinfoMB.add_primref(prim);
+                                                      sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
+                                                      prims[p_index++] = prim;                
+                                                    }
+                                                }
+                                                return pinfoMB;
+                                              }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge(a,b); });
+        assert(pinfoMB.size() == numPrimitives);
+#endif
+        return pinfoMB;
       }
 
       void build()
@@ -483,7 +592,7 @@ namespace embree
           (typename BVH::CreateAlloc(bvh),
            typename BVH::AlignedNodeMB::Create2(),
            typename BVH::AlignedNodeMB::Set2(),
-           CreateLeafGridMB<N>(scene,bvh,sgrids.data(),0.0f),
+           CreateLeafGridMB<N>(scene,bvh,sgrids.data()),
            bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
@@ -493,10 +602,9 @@ namespace embree
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
-        mvector<BBox3fa> bounds(scene->device,numPrimitives);
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefArrayMSMBlurGrid(scene,prims,bvh->scene->progressInterface);
-        GridRecalculatePrimRef recalculatePrimRef(bounds,sgrids.data());
+        GridRecalculatePrimRef recalculatePrimRef(scene,sgrids.data());
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -525,7 +633,7 @@ namespace embree
                                             typename BVH::CreateAlloc(bvh),
                                             typename BVH::AlignedNodeMB4D::Create(),
                                             typename BVH::AlignedNodeMB4D::Set(),
-                                            CreateMSMBlurLeafGrid<N>(bvh),
+                                            CreateMSMBlurLeafGrid<N>(scene,bvh,sgrids.data()),
                                             bvh->scene->progressInterface,
                                             settings);
 

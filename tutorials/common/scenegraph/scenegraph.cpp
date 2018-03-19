@@ -966,6 +966,31 @@ namespace embree
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
     gmesh->positions.push_back(pos);
+    const size_t numVertices = pos.size();
+    for (size_t t=1;t<qmesh->positions.size();t++)
+    {
+      pos.clear();
+      for (size_t i=0;i<quads.size();i++)
+      {
+        const SceneGraph::GridMeshNode::Vertex v00 = qmesh->positions[t][quads[i].v0];
+        const SceneGraph::GridMeshNode::Vertex v01 = qmesh->positions[t][quads[i].v1];
+        const SceneGraph::GridMeshNode::Vertex v10 = qmesh->positions[t][quads[i].v3];
+        const SceneGraph::GridMeshNode::Vertex v11 = qmesh->positions[t][quads[i].v2];
+        for (unsigned int y=0; y<resY; y++)
+        {
+          for (unsigned int x=0; x<resX; x++)
+          {
+            const float u = (float)x / (resX-1);
+            const float v = (float)y / (resY-1);
+            const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v01 * u * (1.0f-v) + v10 * (1.0f-u) * v + v11 * u * v;
+            pos.push_back( vtx );
+          }
+        }
+      }
+      assert(pos.size() == numVertices);
+      gmesh->positions.push_back(pos);
+    }
+
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
