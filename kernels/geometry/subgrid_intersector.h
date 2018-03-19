@@ -92,7 +92,6 @@ namespace embree
     template<int M, bool filter>
       struct SubGridQuadMIntersector1MoellerTrumbore;
 
-    /*! Intersects M quads with 1 ray */
     template<int M, bool filter>
       struct SubGridQuadMIntersector1MoellerTrumbore
       {
@@ -185,7 +184,7 @@ namespace embree
 #if !defined(EMBREE_BACKFACE_CULLING)
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
-          hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
+          hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 
 #else
           hit.U = select(flags,absDen-U,U);
           hit.V = select(flags,absDen-V,V);
@@ -233,7 +232,6 @@ namespace embree
       {
         __forceinline SubGridQuadMIntersectorKMoellerTrumboreBase(const vbool<K>& valid, const RayK<K>& ray) {}
             
-        /*! Intersects K rays with one of M triangles. */
         template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0,
                                           RayK<K>& ray,
@@ -289,7 +287,6 @@ namespace embree
           return epilog(valid,hit);
         }
       
-        /*! Intersects K rays with one of M quads. */
         template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                           RayK<K>& ray,
@@ -308,7 +305,6 @@ namespace embree
           return intersectK(valid0,ray,tri_v0,e1,e2,Ng,flags,g,subgrid,i,epilog);
         }
 
-        /*! Intersects K rays with one of M quads. */
         template<typename Epilog>
         __forceinline bool intersectK(const vbool<K>& valid0, 
                                       RayK<K>& ray,
@@ -327,7 +323,6 @@ namespace embree
           return none(valid0);
         }
 
-      /*! Intersect k'th ray from ray packet of size K with M triangles. */
         static  __forceinline bool intersect1(RayK<K>& ray,
                                               size_t k,
                                               const Vec3vf<M>& tri_v0,
@@ -464,7 +459,7 @@ namespace embree
 #if !defined(EMBREE_BACKFACE_CULLING)
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
-          hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
+          hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 
 #else
           hit.U = select(flags,absDen-U,U);
           hit.V = select(flags,absDen-V,V);
@@ -506,16 +501,12 @@ namespace embree
     // =======================================================================================
 
 
-
-    /*! Intersects M quads with 1 ray */
     template<int N, bool filter>
     struct SubGridIntersector1Moeller
     {
-      //typedef SubGrid Primitive;
       typedef SubGridQBVHN<N> Primitive;
       typedef SubGridQuadMIntersector1MoellerTrumbore<4,filter> Precalculations;
 
-      /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(normal.trav_prims,1,1,1);
@@ -526,7 +517,6 @@ namespace embree
         pre.intersect(ray,context,v0,v1,v2,v3,g,subgrid);
       }
 
-      /*! Test if the ray is occluded by one of M subgrids. */
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(shadow.trav_prims,1,1,1);
@@ -543,7 +533,6 @@ namespace embree
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          /* QBVH intersection test */
           size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
@@ -565,7 +554,6 @@ namespace embree
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          /* QBVH intersection test */
           size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
           while(mask != 0)
           {
@@ -582,15 +570,12 @@ namespace embree
 
     };
 
-
-    /*! Intersects M triangles with K rays. */
     template<int N, int K, bool filter>
     struct SubGridIntersectorKMoeller
     {
       typedef SubGridQBVHN<N> Primitive;
       typedef SubGridQuadMIntersectorKMoellerTrumbore<4,K,filter> Precalculations;
 
-      /*! Intersects K rays with M triangles. */
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         Vec3fa vtx[16];
@@ -609,7 +594,6 @@ namespace embree
         }
       }
 
-      /*! Test for K rays if they are occluded by any of the M triangles. */
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         vbool<K> valid0 = valid_i;
@@ -631,7 +615,6 @@ namespace embree
         return !valid0;
       }
 
-      /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(normal.trav_prims,1,1,1);
@@ -642,7 +625,6 @@ namespace embree
         pre.intersect1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }
 
-      /*! Test if the ray is occluded by one of the M triangles. */
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(shadow.trav_prims,1,1,1);
@@ -693,8 +675,7 @@ namespace embree
           for (size_t i=0;i<num;i++)
           {
             vfloat<Nx> dist;
-            /* QBVH intersection test */
-            size_t mask = intersectNode(&prim[i].qnode,tray,dist); //FIXME: maybe do node ordering here
+            size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
@@ -712,7 +693,6 @@ namespace embree
           for (size_t i=0;i<num;i++)
           {
             vfloat<Nx> dist;
-            /* QBVH intersection test */
             size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
