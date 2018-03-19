@@ -203,7 +203,7 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              //if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              if (none(valid & intersectNodeK<N,K,robust>(&prim[j].qnode,i,tray,ray.time(),dist))) continue;
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
             }
           }
@@ -220,7 +220,7 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              //if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,ray.time(),dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
             }

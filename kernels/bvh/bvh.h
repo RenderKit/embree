@@ -1349,6 +1349,22 @@ namespace embree
       template<typename T>
       __forceinline vfloat<N> dequantizeUpperZ(const T t) const { return lerp(node0.dequantizeUpperZ(),node1.dequantizeUpperZ(),t); }
 
+
+      template<int M>
+        __forceinline vfloat<M> dequantizeLowerX(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeLowerX()[i],node1.dequantizeLowerX()[i],t); }
+      template<int M>
+        __forceinline vfloat<M> dequantizeUpperX(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeUpperX()[i],node1.dequantizeUpperX()[i],t); }
+      template<int M>
+        __forceinline vfloat<M> dequantizeLowerY(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeLowerY()[i],node1.dequantizeLowerY()[i],t); }
+      template<int M>
+        __forceinline vfloat<M> dequantizeUpperY(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeUpperY()[i],node1.dequantizeUpperY()[i],t); }
+      template<int M>
+        __forceinline vfloat<M> dequantizeLowerZ(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeLowerZ()[i],node1.dequantizeLowerZ()[i],t); }
+      template<int M>
+        __forceinline vfloat<M> dequantizeUpperZ(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeUpperZ()[i],node1.dequantizeUpperZ()[i],t); }
+
+
+
     };
 
 

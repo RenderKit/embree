@@ -506,35 +506,35 @@ namespace embree
       }
     }
 
-    template<int N, int K, bool robust>
-    __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::QuantizedBaseNodeMB* node, size_t i,
-                                          const TravRayK<K,robust>& ray, vfloat<K>& dist)
+        template<int N, int K, bool robust>
+          __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::QuantizedBaseNodeMB* node, const size_t i,
+          const TravRayK<K,robust>& ray, const vfloat<K>& time, vfloat<K>& dist)
 
-    {
-      assert(movemask(node->validMask()) & ((size_t)1 << i));
+        {
+        assert(movemask(node->validMask()) & ((size_t)1 << i));
 
-        const vfloat<N> lower_x = node->dequantizeLowerX(ray.time());
-        const vfloat<N> upper_x = node->dequantizeUpperX(ray.time());
-        const vfloat<N> lower_y = node->dequantizeLowerY(ray.time());
-        const vfloat<N> upper_y = node->dequantizeUpperY(ray.time());
-        const vfloat<N> lower_z = node->dequantizeLowerZ(ray.time());
-        const vfloat<N> upper_z = node->dequantizeUpperZ(ray.time());
+        const vfloat<K> lower_x = node->dequantizeLowerX(i,time);
+        const vfloat<K> upper_x = node->dequantizeUpperX(i,time);
+        const vfloat<K> lower_y = node->dequantizeLowerY(i,time);
+        const vfloat<K> upper_y = node->dequantizeUpperY(i,time);
+        const vfloat<K> lower_z = node->dequantizeLowerZ(i,time);
+        const vfloat<K> upper_z = node->dequantizeUpperZ(i,time);
         
-  #if defined(__AVX2__)
-        const vfloat<K> lclipMinX = msub(lower_x[i], ray.rdir.x, ray.org_rdir.x);
-        const vfloat<K> lclipMinY = msub(lower_y[i], ray.rdir.y, ray.org_rdir.y);
-        const vfloat<K> lclipMinZ = msub(lower_z[i], ray.rdir.z, ray.org_rdir.z);
-        const vfloat<K> lclipMaxX = msub(upper_x[i], ray.rdir.x, ray.org_rdir.x);
-        const vfloat<K> lclipMaxY = msub(upper_y[i], ray.rdir.y, ray.org_rdir.y);
-        const vfloat<K> lclipMaxZ = msub(upper_z[i], ray.rdir.z, ray.org_rdir.z);
+#if defined(__AVX2__)
+        const vfloat<K> lclipMinX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
+        const vfloat<K> lclipMinY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
+        const vfloat<K> lclipMinZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
+        const vfloat<K> lclipMaxX = msub(upper_x, ray.rdir.x, ray.org_rdir.x);
+        const vfloat<K> lclipMaxY = msub(upper_y, ray.rdir.y, ray.org_rdir.y);
+        const vfloat<K> lclipMaxZ = msub(upper_z, ray.rdir.z, ray.org_rdir.z);
 #else
-        const vfloat<K> lclipMinX = (lower_x[i] - ray.org.x) * ray.rdir.x;
-        const vfloat<K> lclipMinY = (lower_y[i] - ray.org.y) * ray.rdir.y;
-        const vfloat<K> lclipMinZ = (lower_z[i] - ray.org.z) * ray.rdir.z;
-        const vfloat<K> lclipMaxX = (upper_x[i] - ray.org.x) * ray.rdir.x;
-        const vfloat<K> lclipMaxY = (upper_y[i] - ray.org.y) * ray.rdir.y;
-        const vfloat<K> lclipMaxZ = (upper_z[i] - ray.org.z) * ray.rdir.z;
-  #endif
+        const vfloat<K> lclipMinX = (lower_x - ray.org.x) * ray.rdir.x;
+        const vfloat<K> lclipMinY = (lower_y - ray.org.y) * ray.rdir.y;
+        const vfloat<K> lclipMinZ = (lower_z - ray.org.z) * ray.rdir.z;
+        const vfloat<K> lclipMaxX = (upper_x - ray.org.x) * ray.rdir.x;
+        const vfloat<K> lclipMaxY = (upper_y - ray.org.y) * ray.rdir.y;
+        const vfloat<K> lclipMaxZ = (upper_z - ray.org.z) * ray.rdir.z;
+#endif
 
         const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
         const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
@@ -545,7 +545,7 @@ namespace embree
 #endif
         dist = lnearP;
         return lhit;
-    }
+      }
 
 
     //////////////////////////////////////////////////////////////////////////////////////
