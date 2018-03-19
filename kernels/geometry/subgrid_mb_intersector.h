@@ -204,7 +204,6 @@ namespace embree
             {
               const size_t i = bscf(m_valid);
               //if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
-              FATAL("not yet implemented");
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
             }
           }
@@ -221,7 +220,6 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              FATAL("not yet implemented");
               //if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
