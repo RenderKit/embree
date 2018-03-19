@@ -109,29 +109,11 @@ namespace embree
       /*! Intersects K rays with M triangles. */
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const SubGrid& subgrid)
       {
-        Vec3fa vtx[16];
-        const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
-        const GridMesh::Grid &g = mesh->grid(subgrid.primID());
-
-        vfloat<K> ftime;
-        const vint<K> itime = getTimeSegment(ray.time(), vfloat<K>(mesh->fnumTimeSegments), ftime);
         size_t m_valid = movemask(valid_i);
-
         while(m_valid)
         {
-          size_t firstValidID = bsf(m_valid);
-          const vbool<K> m_same_time = (itime[firstValidID] == itime) & valid_i;
-          subgrid.gatherMB((vfloat4*)vtx,context->scene,itime[firstValidID],ftime[firstValidID]);
-          m_valid &= ~(size_t)movemask(m_same_time);
-          for (unsigned int i=0; i<4; i++)
-          {
-            const Vec3vf<K> p0 = vtx[i*4+0];
-            const Vec3vf<K> p1 = vtx[i*4+1];
-            const Vec3vf<K> p2 = vtx[i*4+2];
-            const Vec3vf<K> p3 = vtx[i*4+3];
-            STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            pre.intersectK(m_same_time,ray,p0,p1,p2,p3,g,subgrid,i,IntersectKEpilogM<4,K,filter>(ray,context,subgrid.geomID(),subgrid.primID(),i));
-          }
+          size_t ID = bscf(m_valid);
+          intersect(pre,ray,ID,context,subgrid);
         }
       }
 
@@ -139,30 +121,12 @@ namespace embree
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const SubGrid& subgrid)
       {
         vbool<K> valid0 = valid_i;
-        Vec3fa vtx[16];
-        const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
-        const GridMesh::Grid &g = mesh->grid(subgrid.primID());
-
-        vfloat<K> ftime;
-        const vint<K> itime = getTimeSegment(ray.time(), vfloat<K>(mesh->fnumTimeSegments), ftime);
         size_t m_valid = movemask(valid_i);
-
         while(m_valid)
         {
-          size_t firstValidID = bsf(m_valid);
-          const vbool<K> m_same_time = (itime[firstValidID] == itime) & valid_i;
-          subgrid.gatherMB((vfloat4*)vtx,context->scene,itime[firstValidID],ftime[firstValidID]);
-          m_valid &= ~(size_t)movemask(m_same_time);
-          for (unsigned int i=0; i<4; i++)
-          {
-            const Vec3vf<K> p0 = vtx[i*4+0];
-            const Vec3vf<K> p1 = vtx[i*4+1];
-            const Vec3vf<K> p2 = vtx[i*4+2];
-            const Vec3vf<K> p3 = vtx[i*4+3];
-            STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            if (pre.intersectK(m_same_time,ray,p0,p1,p2,p3,g,subgrid,i,OccludedKEpilogM<4,K,filter>(valid0,ray,context,subgrid.geomID(),subgrid.primID(),i)))
-              break;
-          }
+          size_t ID = bscf(m_valid);
+          if (occluded(pre,ray,ID,context,subgrid))
+            clear(valid0,ID);
         }
         return !valid0;
       }
