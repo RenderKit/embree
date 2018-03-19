@@ -64,7 +64,6 @@ namespace embree
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          /* QBVH intersection test */
           size_t mask = intersectNode(&prim[i].qnode,tray,ray.time(),dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
@@ -84,8 +83,6 @@ namespace embree
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          /* QBVH intersection test */
-          //size_t mask = ((size_t)1 << prim[i].size())-1;
           size_t mask = intersectNode(&prim[i].qnode,tray,ray.time(),dist); 
           while(mask != 0)
           {
@@ -198,8 +195,7 @@ namespace embree
           for (size_t i=0;i<num;i++)
           {
             vfloat<N> dist;
-            /* QBVH intersection test */
-            size_t mask = intersectNode(&prim[i].qnode,tray,ray.time()[k],dist); //FIXME: maybe do node ordering here
+            size_t mask = intersectNode(&prim[i].qnode,tray,ray.time()[k],dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
@@ -215,7 +211,6 @@ namespace embree
           for (size_t i=0;i<num;i++)
           {
             vfloat<N> dist;
-            /* QBVH intersection test */
             size_t mask = intersectNode(&prim[i].qnode,tray,ray.time()[k],dist); 
             while(mask != 0)
             {
