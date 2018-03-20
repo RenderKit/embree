@@ -153,8 +153,8 @@ namespace embree
     {
       assert(itime < numTimeSteps);
       BBox3fa b0(empty);
-      for (size_t y=sy;y<min(sy+2,(size_t)g.resY);y++)
-        for (size_t x=sx;x<min(sx+2,(size_t)g.resX);x++)
+      for (size_t y=sy;y<min(sy+3,(size_t)g.resY);y++)
+        for (size_t x=sx;x<min(sx+3,(size_t)g.resX);x++)
         {
           const Vec3fa v = grid_vertex(g,x,y,itime);
           if (unlikely(!isvalid(v))) return false;
@@ -165,6 +165,11 @@ namespace embree
       bbox = b0;
       return true;
     }
+
+    //__forceinline bool valid(size_t i, size_t itime) const {
+    //  return valid(i, make_range(itime, itime));
+    //}
+
 
     __forceinline BBox3fa bounds(const Grid& g, size_t sx, size_t sy, size_t itime) const
     {
