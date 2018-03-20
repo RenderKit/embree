@@ -166,8 +166,8 @@ uniform Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, uniform int
   uniform int strideY = grid.strideY;
   uniform unsigned int width = grid.width;
   uniform unsigned int height = grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x >= 0 && (uniform unsigned int)x < width);
+  assert(y >= 0 && (uniform unsigned int)y < height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
@@ -179,13 +179,13 @@ varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int
   uniform int strideY = grid.strideY;
   uniform unsigned int width = grid.width;
   uniform unsigned int height = grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x >= 0 && (unsigned int)x < width);
+  assert(y >= 0 && (unsigned int)y < height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 #endif
 
-Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f opt)
+Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, const Vec3f& opt)
 {
   unsigned int width  = hgrids[firstHalfEdge].width;
   unsigned int height = hgrids[firstHalfEdge].height;
@@ -575,7 +575,7 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-Vec3f mylerp(float f, Vec3f a, Vec3f b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
+Vec3f mylerp(float f, const Vec3f& a, const Vec3f& b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
   return (1.0f-f)*a + f*b;
 }
 
