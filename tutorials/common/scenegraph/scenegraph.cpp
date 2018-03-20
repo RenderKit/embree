@@ -939,38 +939,15 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned int resX, const unsigned int resY )
   {
-    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material);
-
+    const size_t timeSteps = qmesh->positions.size();
+    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,timeSteps);
     std::vector<SceneGraph::QuadMeshNode::Quad>& quads = qmesh->quads;
 
-    avector<SceneGraph::GridMeshNode::Vertex> pos;
     for (size_t i=0;i<quads.size();i++)
     {
-      const unsigned int startVtx = (unsigned int) pos.size();
+      const unsigned int startVtx = (unsigned int) gmesh->positions[0].size();
       const unsigned int lineOffset = resX;
-      const SceneGraph::GridMeshNode::Vertex v00 = qmesh->positions[0][quads[i].v0];
-      const SceneGraph::GridMeshNode::Vertex v01 = qmesh->positions[0][quads[i].v1];
-      const SceneGraph::GridMeshNode::Vertex v10 = qmesh->positions[0][quads[i].v3];
-      const SceneGraph::GridMeshNode::Vertex v11 = qmesh->positions[0][quads[i].v2];
-      for (unsigned int y=0; y<resY; y++)
-      {
-        for (unsigned int x=0; x<resX; x++)
-        {
-          const float u = (float)x / (resX-1);
-          const float v = (float)y / (resY-1);
-          const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v01 * u * (1.0f-v) + v10 * (1.0f-u) * v + v11 * u * v;
-          pos.push_back( vtx );
-        }
-      }
-      assert(startVtx + resX * resY == pos.size());
-      gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
-    }
-    gmesh->positions.push_back(pos);
-    const size_t numVertices = pos.size();
-    for (size_t t=1;t<qmesh->positions.size();t++)
-    {
-      pos.clear();
-      for (size_t i=0;i<quads.size();i++)
+      for (size_t t=0;t<timeSteps;t++)
       {
         const SceneGraph::GridMeshNode::Vertex v00 = qmesh->positions[t][quads[i].v0];
         const SceneGraph::GridMeshNode::Vertex v01 = qmesh->positions[t][quads[i].v1];
@@ -983,14 +960,13 @@ namespace embree
             const float u = (float)x / (resX-1);
             const float v = (float)y / (resY-1);
             const SceneGraph::GridMeshNode::Vertex vtx = v00 * (1.0f-u) * (1.0f-v) + v01 * u * (1.0f-v) + v10 * (1.0f-u) * v + v11 * u * v;
-            pos.push_back( vtx );
+            gmesh->positions[t].push_back( vtx );
           }
         }
       }
-      assert(pos.size() == numVertices);
-      gmesh->positions.push_back(pos);
+      assert(startVtx + resX * resY == gmesh->positions[0].size());
+      gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
     }
-
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
