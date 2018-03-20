@@ -164,10 +164,10 @@ uniform Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, uniform int
   uniform int startVertexID = grid.startVertexID;
   uniform int strideX = grid.strideX;
   uniform int strideY = grid.strideY;
-  uniform unsigned int width = grid.width;
-  uniform unsigned int height = grid.height;
-  assert(x < width);
-  assert(y < height);
+  uniform int width   = (int)grid.width;
+  uniform int height  = (int)grid.height;
+  assert(x >= 0 && x < width);
+  assert(y >= 0 && y < height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
@@ -177,8 +177,8 @@ varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int
   uniform int startVertexID = grid.startVertexID;
   uniform int strideX = grid.strideX;
   uniform int strideY = grid.strideY;
-  uniform unsigned int width = grid.width;
-  uniform unsigned int height = grid.height;
+  uniform int width   = (int)grid.width;
+  uniform int height  = (int)grid.height;
   assert(x >= 0 && x < (int)width);
   assert(y >= 0 && y < (int)height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
@@ -319,14 +319,14 @@ void createGridGeometry (uniform GridMesh& gmesh)
       assert(h < NUM_INDICES);
       hgrids[h].startVertexID = startVertexIndex+QUAD_GRID_RESOLUTION_X*QUAD_GRID_RESOLUTION_Y-1;
       hgrids[h].strideX       = -1;
-      hgrids[h].strideY       = -QUAD_GRID_RESOLUTION_X;
+      hgrids[h].strideY       = -(int)QUAD_GRID_RESOLUTION_X;
       hgrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
       hgrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
       h++;
 
       assert(h < NUM_INDICES);
       hgrids[h].startVertexID = startVertexIndex+(QUAD_GRID_RESOLUTION_X-1)*QUAD_GRID_RESOLUTION_Y;
-      hgrids[h].strideX       = -QUAD_GRID_RESOLUTION_X;
+      hgrids[h].strideX       = -(int)QUAD_GRID_RESOLUTION_X;
       hgrids[h].strideY       = 1;
       hgrids[h].width         = QUAD_GRID_RESOLUTION_X/2+1;
       hgrids[h].height        = QUAD_GRID_RESOLUTION_Y/2+1;
@@ -405,7 +405,7 @@ void createGridGeometry (uniform GridMesh& gmesh)
   {
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
-      for (uniform int y=0; y<SUB_GRID_RESOLUTION_Y; y++)
+      for (uniform int y=0; y<(int)SUB_GRID_RESOLUTION_Y; y++)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
@@ -500,7 +500,7 @@ void createGridGeometry (uniform GridMesh& gmesh)
   {
     for (uniform unsigned int i=0; i<sphere_faces[f]; i++)
     {
-      for (uniform int y=0; y<SUB_GRID_RESOLUTION_Y; y++)
+      for (uniform int y=0; y<(int)SUB_GRID_RESOLUTION_Y; y++)
       {
         foreach (x=0 ... SUB_GRID_RESOLUTION_X)
         {
