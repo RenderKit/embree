@@ -166,6 +166,11 @@ namespace embree
       return true;
     }
 
+    //__forceinline bool valid(size_t i, size_t itime) const {
+    //  return valid(i, make_range(itime, itime));
+    //}
+
+
     __forceinline BBox3fa bounds(const Grid& g, size_t sx, size_t sy, size_t itime) const
     {
       BBox3fa box(empty);

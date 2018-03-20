@@ -498,21 +498,20 @@ namespace embree
         /* iterate over all meshes in the scene */
         PrimInfoMB pinfoMB = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfoMB
                                                        {
-                                                PrimInfoMB pinfoMB(empty);
-                                                for (size_t j=r.begin(); j<r.end(); j++)
-                                                {
-                                                  LBBox3fa bounds(empty);
-                                                  const PrimRefMB prim(bounds,0,0,mesh->geomID,unsigned(j));                                                             
-                                                  //pinfoMB.add_center2(prim,mesh->getNumSubGrids(j));
-                                                }
-                                                return pinfoMB;
-                                              }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
+                                                         PrimInfoMB pinfoMB(empty);
+                                                         for (size_t j=r.begin(); j<r.end(); j++)
+                                                         {
+                                                           //if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue; // FIXME: do we need this?
+                                                           LBBox3fa bounds(empty);
+                                                           PrimInfoMB gridMB(0,mesh->getNumSubGrids(j));
+                                                           pinfoMB.merge(gridMB);
+                                                         }
+                                                         return pinfoMB;
+                                                       }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
         size_t numPrimitives = pinfoMB.size();
-        exit(0);
         /* resize arrays */
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
-#if 0
         /* second run to fill primrefs and SubGridBuildData arrays */
         pinfoMB = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
                                               {
@@ -525,17 +524,17 @@ namespace embree
                                                   for (unsigned int y=0; y<g.resY-1u; y+=2)
                                                     for (unsigned int x=0; x<g.resX-1u; x+=2)
                                                     {
-                                                      if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
-                                                      const PrimRefMB prim(linearBounds(g,x,y,t0t1),this->numTimeSegments(),this->numTimeSegments(),mesh->geomID,unsigned(p_index));
+                                                      //if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue; // FIXME: do we need this?
+                                                      const PrimRefMB prim(mesh->linearBounds(g,x,y,t0t1),mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(p_index));
                                                       pinfoMB.add_primref(prim);
                                                       sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                       prims[p_index++] = prim;                
                                                     }
                                                 }
                                                 return pinfoMB;
-                                              }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge(a,b); });
+                                              }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
         assert(pinfoMB.size() == numPrimitives);
-#endif
+        pinfoMB.time_range = t0t1;
         return pinfoMB;
       }
 
@@ -549,8 +548,6 @@ namespace embree
 
         const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
         const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
-        PRINT(numTimeSteps);
-        PRINT(numTimeSegments);
 
         if (numTimeSegments == 1)
           buildSingleSegment(numPrimitives);
@@ -636,7 +633,6 @@ namespace embree
                                             CreateMSMBlurLeafGrid<N>(scene,bvh,sgrids.data()),
                                             bvh->scene->progressInterface,
                                             settings);
-
         bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
       }
 
