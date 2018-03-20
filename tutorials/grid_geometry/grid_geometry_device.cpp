@@ -168,8 +168,8 @@ Vec3fa getVertex(GridMesh& gmesh, Grid& grid, int x, int y)
   int strideY = grid.strideY;
   unsigned int width = grid.width;
   unsigned int height = grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x < width);
+  assert(y < height);
   return Vec3fa(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
@@ -181,16 +181,16 @@ Vec3fa getVertex(GridMesh& gmesh, Grid& grid, int x, int y)
   int strideY = grid.strideY;
   unsigned int width = grid.width;
   unsigned int height = grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x >= 0 && x < (int)width);
+  assert(y >= 0 && y < (int)height);
   return Vec3fa(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 #endif
 
 Vec3fa getVertex(GridMesh& gmesh, RTCGeometry subdiv, Grid *hgrids, int firstHalfEdge, int f, int i, int x, int y, Vec3fa& opt)
 {
-  unsigned int width  = hgrids[firstHalfEdge].width;
-  unsigned int height = hgrids[firstHalfEdge].height;
+  int width  = (int)hgrids[firstHalfEdge].width;
+  int height = (int)hgrids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
