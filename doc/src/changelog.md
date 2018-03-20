@@ -2,16 +2,17 @@ Version History
 ---------------
 
 ### New Features in Embree 3.1.0
--   Added normal oriented curve primitive for rendering of grass-like
+-   Added new normal oriented curve primitive for ray tracing of grass-like
     structures.
--   Added grid primitive for memory conservative rendering of
-    displaced surfaces.
+-   Added new grid primitive for ray tracing tessellated and displaced surfaces
+    in very memory efficient manner.
 -   Fixed bug of ribbon curve intersector when derivative was zero.
 -   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
 -   Added API functions to access topology of subdiv mesh.
 -   Reduced memory consumption of instances.
 -   Improved performance of instances by 8%.
 -   Reduced memory consumption of curves by up to 2x.
+-   Up to 5% higher performance on AVX-512 architectures.
 -   Added native support for multiple curve basis functions. Internal
     basis conversions are no longer performed, which saves additional
     memory when multiple bases are used.

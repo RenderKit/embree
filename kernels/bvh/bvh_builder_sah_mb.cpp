@@ -495,7 +495,6 @@ namespace embree
         Scene::Iterator<GridMesh,true> iter(scene);
 
         pstate.init(iter,size_t(1024));
-        FATAL("THIS WONT WORK");
         /* iterate over all meshes in the scene */
         PrimInfoMB pinfoMB = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfoMB
                                                        {
@@ -509,6 +508,7 @@ namespace embree
                                                 return pinfoMB;
                                               }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
         size_t numPrimitives = pinfoMB.size();
+        exit(0);
         /* resize arrays */
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
