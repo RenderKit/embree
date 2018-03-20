@@ -166,8 +166,8 @@ uniform Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, uniform int
   uniform int strideY = grid.strideY;
   uniform unsigned int width = grid.width;
   uniform unsigned int height = grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x < width);
+  assert(y < height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
@@ -179,16 +179,16 @@ varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int
   uniform int strideY = grid.strideY;
   uniform unsigned int width = grid.width;
   uniform unsigned int height = grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x >= 0 && x < (int)width);
+  assert(y >= 0 && y < (int)height);
   return make_Vec3f(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 #endif
 
 Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f& opt)
 {
-  unsigned int width  = hgrids[firstHalfEdge].width;
-  unsigned int height = hgrids[firstHalfEdge].height;
+  int width  = (int)hgrids[firstHalfEdge].width;
+  int height = (int)hgrids[firstHalfEdge].height;
   if (x < 0) {
     assert(x == -1 && y >= 0 && y < height);
     uniform int edge = rtcGetGeometryPreviousHalfEdge(subdiv,firstHalfEdge);
