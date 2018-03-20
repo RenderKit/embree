@@ -291,7 +291,7 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
   for (unsigned int i=ray2->firstHit; i<ray2->lastHit; i++) {
     unsigned slot= i%HIT_LIST_LENGTH;
     if (ray2->hit_geomIDs[slot] == hit->geomID && ray2->hit_primIDs[slot] == hit->primID) {
-      return;
+      valid[programIndex] = 0; return; // ignore duplicate intersections
     }
   }
   /* store hit in hit list */
@@ -350,7 +350,6 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform args)
 
     /* The occlusion filter function may be called multiple times with
      * the same hit. We remember the last N hits, and skip duplicates. */
-    bool already_hit = false;
     unsigned int ray2_firstHit = gather(ray2->firstHit,sizeof(Ray2),pid,rid);
     unsigned int ray2_lastHit =  gather(ray2->lastHit ,sizeof(Ray2),pid,rid);
     for (unsigned int i=ray2_firstHit; i<ray2_lastHit; i++)
@@ -359,14 +358,10 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform args)
       unsigned int last_geomID = gather(ray2->hit_geomIDs[0],slot,sizeof(Ray2),pid,rid);
       unsigned int last_primID = gather(ray2->hit_primIDs[0],slot,sizeof(Ray2),pid,rid);
       if (last_geomID == hit_geomID && last_primID == hit_primID) {
-        already_hit = true;
-        break;
+        valid[vi] = 0; break; // ignore duplicate intersections
       }
     }
-    if (already_hit) {
-      //valid[vi] = 0;
-      continue;
-    }
+    if (!valid[vi]) continue;
 
     /* store hit in hit list */
     unsigned int slot = ray2_lastHit%HIT_LIST_LENGTH;

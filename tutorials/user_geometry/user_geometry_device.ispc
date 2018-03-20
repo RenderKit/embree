@@ -364,7 +364,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
       imask = mask ? -1 : 0;
     }
     
-    const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
+    const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
@@ -458,7 +458,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform ar
       imask = mask ? -1 : 0;
     }
     
-    const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
+    const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
@@ -1193,7 +1193,7 @@ void renderTileStandardStream(uniform int taskIndex,
     /* calculate shading normal in world space */
     Ray& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID && primary.instID != 4) {
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID) {
       Ns = xfmVector(g_instance[primary.instID]->normal2world,make_Vec3f(Ns));
     }
     Ns = face_forward(primary.dir,normalize(Ns));
