@@ -185,7 +185,7 @@ varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int
 }
 #endif
 
-Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f& opt)
+Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, const Vec3f& opt)
 {
   int width  = (int)hgrids[firstHalfEdge].width;
   int height = (int)hgrids[firstHalfEdge].height;
@@ -575,7 +575,7 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-Vec3f mylerp(float f, Vec3f& a, Vec3f& b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
+Vec3f mylerp(float f, const Vec3f& a, const Vec3f& b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
   return (1.0f-f)*a + f*b;
 }
 

@@ -187,7 +187,7 @@ Vec3fa getVertex(GridMesh& gmesh, Grid& grid, int x, int y)
 }
 #endif
 
-Vec3fa getVertex(GridMesh& gmesh, RTCGeometry subdiv, Grid *hgrids, int firstHalfEdge, int f, int i, int x, int y, Vec3fa& opt)
+Vec3fa getVertex(GridMesh& gmesh, RTCGeometry subdiv, Grid *hgrids, int firstHalfEdge, int f, int i, int x, int y, const Vec3fa& opt)
 {
   int width  = (int)hgrids[firstHalfEdge].width;
   int height = (int)hgrids[firstHalfEdge].height;
@@ -577,7 +577,7 @@ extern "C" void device_init (char* cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-Vec3fa mylerp(float f, Vec3fa& a, Vec3fa& b) { // FIXME: use lerpr, need to make ISPC lerpr and C++ lerpr compatible first
+Vec3fa mylerp(float f, const Vec3fa& a, const Vec3fa& b) { // FIXME: use lerpr, need to make ISPC lerpr and C++ lerpr compatible first
   return (1.0f-f)*a + f*b;
 }
 

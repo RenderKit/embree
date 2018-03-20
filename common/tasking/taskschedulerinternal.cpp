@@ -114,8 +114,13 @@ namespace embree
   bool TaskScheduler::TaskQueue::steal(Thread& thread)
   {
     size_t l = left;
-    if (l < right)
+    size_t r = right;
+    if (l < r)
+    {
       l = left++;
+       if (l >= r)
+         return false;
+    }
     else
       return false;
 
