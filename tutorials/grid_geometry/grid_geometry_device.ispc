@@ -185,7 +185,7 @@ varying Vec3f getVertex(uniform GridMesh& gmesh, uniform Grid& grid, varying int
 }
 #endif
 
-Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f opt)
+Vec3f getVertex(uniform GridMesh& gmesh, RTCGeometry subdiv, uniform Grid *uniform hgrids, uniform int firstHalfEdge, uniform int f, uniform int i, int x, int y, Vec3f& opt)
 {
   unsigned int width  = hgrids[firstHalfEdge].width;
   unsigned int height = hgrids[firstHalfEdge].height;
@@ -575,7 +575,7 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-Vec3f mylerp(float f, Vec3f a, Vec3f b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
+Vec3f mylerp(float f, Vec3f& a, Vec3f& b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
   return (1.0f-f)*a + f*b;
 }
 
@@ -617,7 +617,9 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       Vec3f N01 = gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
       Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
       Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
-      Ng = normalize(mylerp(v,mylerp(u,N00,N01),mylerp(u,N10,N11)));
+      Vec3f N0 = mylerp(u,N00,N01);
+      Vec3f N1 = mylerp(u,N10,N11);
+      Ng = normalize(mylerp(v,N0,N1));
       //return Ng;
     }
 
