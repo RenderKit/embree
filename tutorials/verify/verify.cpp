@@ -4224,7 +4224,7 @@ namespace embree
         groups.top()->add(new BuildTest(to_string(sflags),isa,sflags,RTC_BUILD_QUALITY_MEDIUM));
       groups.pop();
       
-      push(new TestGroup("overlapping_primitives",true,true));
+      push(new TestGroup("overlapping_primitives",true,false));
       for (auto sflags : sceneFlags)
         groups.top()->add(new OverlappingGeometryTest(to_string(sflags),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,clamp(int(intensity*10000),1000,100000)));
       groups.pop();
