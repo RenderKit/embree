@@ -39,7 +39,7 @@ def compareImages(image0,image1,dimage):
   except ValueError:
     print("Error: "+line)
     raise ValueError
-  return error < 0.0005
+  return error < 0.00052
 
 def printUsage():
   sys.stderr.write('Usage: ' + sys.argv[0] + ' --name testname --modeldir path --model path/model.ecs --execute executable args\n')
