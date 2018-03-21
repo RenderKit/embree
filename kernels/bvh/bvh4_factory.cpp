@@ -1423,7 +1423,7 @@ namespace embree
     intersectors.intersector4  = BVH4GridIntersector4HybridMoeller();
     intersectors.intersector8  = BVH4GridIntersector8HybridMoeller();
     intersectors.intersector16 = BVH4GridIntersector16HybridMoeller();
-    intersectors.intersectorN  = nullptr;
+    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
@@ -1437,7 +1437,7 @@ namespace embree
     intersectors.intersector4  = BVH4GridMBIntersector4HybridMoeller();
     intersectors.intersector8  = BVH4GridMBIntersector8HybridMoeller();
     intersectors.intersector16 = BVH4GridMBIntersector16HybridMoeller();
-    intersectors.intersectorN  = nullptr;
+    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }

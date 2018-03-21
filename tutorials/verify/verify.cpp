@@ -300,6 +300,13 @@ namespace embree
       return addGeometry2(quality,node);
     }
 
+    std::pair<unsigned,Ref<SceneGraph::Node>> addGridSphere (RandomSampler& sampler, RTCBuildQuality quality, const Vec3fa& pos, const float r, size_t N, size_t maxGrids = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
+    {
+      Ref<SceneGraph::Node> node = SceneGraph::createGridSphere(pos,r,N);
+      if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
+      return addGeometry2(quality,node);
+    }
+
     std::pair<unsigned,Ref<SceneGraph::Node>> addSubdivSphere (RandomSampler& sampler, RTCBuildQuality quality, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
       Ref<SceneGraph::Node> node = SceneGraph::createSubdivSphere(pos,r,numPhi,level);
@@ -764,6 +771,8 @@ namespace embree
       case TRIANGLE_MESH_MB: node = SceneGraph::createTriangleSphere(zero,1.0f,5)->set_motion_vector(Vec3fa(1.0f)); break;
       case QUAD_MESH       : node = SceneGraph::createQuadSphere(zero,1.0f,50); break;
       case QUAD_MESH_MB    : node = SceneGraph::createQuadSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+      case GRID_MESH       : node = SceneGraph::createGridSphere(zero,1.0f,50); break;
+      case GRID_MESH_MB    : node = SceneGraph::createGridSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
         //case SUBDIV_MESH:
         //case SUBDIV_MESH_MB:
       default: return VerifyApplication::SKIPPED;
@@ -802,6 +811,8 @@ namespace embree
       case TRIANGLE_MESH_MB: node = SceneGraph::createTriangleSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
       case QUAD_MESH       : node = SceneGraph::createQuadSphere(zero,1.0f,50); break;
       case QUAD_MESH_MB    : node = SceneGraph::createQuadSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+      case GRID_MESH       : node = SceneGraph::createGridSphere(zero,1.0f,50); break;
+      case GRID_MESH_MB    : node = SceneGraph::createGridSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
         //case SUBDIV_MESH:
         //case SUBDIV_MESH_MB:
       default: return VerifyApplication::SKIPPED;
@@ -834,14 +845,16 @@ namespace embree
       rtcSetGeometryUserData(geom0,(void*)1);
       RTCGeometry geom1 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
       rtcSetGeometryUserData(geom1,(void*)2);
-      RTCGeometry geom2 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+      RTCGeometry geom2 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
       rtcSetGeometryUserData(geom2,(void*)3);
-      RTCGeometry geom3 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+      RTCGeometry geom3 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
       rtcSetGeometryUserData(geom3,(void*)4);
-      RTCGeometry geom4 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+      RTCGeometry geom4 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       rtcSetGeometryUserData(geom4,(void*)5);
-      RTCGeometry geom5 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+      RTCGeometry geom5 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
       rtcSetGeometryUserData(geom5,(void*)6);
+      RTCGeometry geom6 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+      rtcSetGeometryUserData(geom6,(void*)7);
       AssertNoError(device);
       
       if ((size_t)rtcGetGeometryUserData(geom0 ) !=  1) return VerifyApplication::FAILED;
@@ -850,7 +863,16 @@ namespace embree
       if ((size_t)rtcGetGeometryUserData(geom3 ) !=  4) return VerifyApplication::FAILED;
       if ((size_t)rtcGetGeometryUserData(geom4 ) !=  5) return VerifyApplication::FAILED;
       if ((size_t)rtcGetGeometryUserData(geom5 ) !=  6) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetGeometryUserData(geom6 ) !=  7) return VerifyApplication::FAILED;
       AssertNoError(device);
+
+      rtcReleaseGeometry(geom0);
+      rtcReleaseGeometry(geom1);
+      rtcReleaseGeometry(geom2);
+      rtcReleaseGeometry(geom3);
+      rtcReleaseGeometry(geom4);
+      rtcReleaseGeometry(geom5);
+      rtcReleaseGeometry(geom6);
 
       return VerifyApplication::PASSED;
     }
@@ -883,7 +905,7 @@ namespace embree
       case HAIR_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE); break;
       case CURVE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE); break;
       case CURVE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE); break;
-      default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
+      default               : return VerifyApplication::PASSED;
       }
       AssertNoError(device);
 
@@ -983,9 +1005,10 @@ namespace embree
     SceneFlags sflags;
   };
 
-  void rtcCommitAndAttachAndReleaseGeometry(RTCScene scene, RTCGeometry geometry, RTCBuildQuality quality)
+  void rtcCommitAndAttachAndReleaseGeometry(RTCScene scene, RTCGeometry geometry, RTCBuildQuality quality, unsigned int timeSteps)
   {
     rtcSetGeometryBuildQuality(geometry,quality);
+    rtcSetGeometryTimeStepCount(geometry,timeSteps);
     rtcCommitGeometry(geometry);
     rtcAttachGeometry(scene,geometry);
     rtcReleaseGeometry(geometry);
@@ -1007,16 +1030,18 @@ namespace embree
       RTCSceneRef scene = rtcNewScene(device);
       rtcSetSceneFlags(scene,sflags.sflags);
       rtcSetSceneBuildQuality(scene,sflags.qflags);     
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewTriangleMesh (device,quality,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewQuadMesh (device,quality,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewSubdivisionMesh (device,quality,2));
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewCurveGeometry (device,FLAT_CURVE,RTC_GEOMETRY_TYPE_BSPLINE_CURVE,2),quality);
-      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device,RTC_GEOMETRY_TYPE_USER),quality);
-      //rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewUserGeometry (device,2),quality);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE),quality,1);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE),quality,2);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD),quality,1);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD),quality,2);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID),quality,1);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID),quality,2);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION),quality,1);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION),quality,2);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE),quality,1);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE),quality,2);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER),quality,1);
+      rtcCommitAndAttachAndReleaseGeometry(scene,rtcNewGeometry (device, RTC_GEOMETRY_TYPE_USER),quality,2);
       rtcCommitScene (scene);
       AssertNoError(device);
       return VerifyApplication::PASSED;
@@ -1099,6 +1124,8 @@ namespace embree
       scene.addGeometry(quality,SceneGraph::createTriangleSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(quality,SceneGraph::createQuadSphere(center,radius,50));
       scene.addGeometry(quality,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(quality,SceneGraph::createGridSphere(center,radius,50));
+      scene.addGeometry(quality,SceneGraph::createGridSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(quality,SceneGraph::createSubdivSphere(center,radius,8,20));
       scene.addGeometry(quality,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(quality,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,SceneGraph::FLAT_CURVE));
@@ -1147,6 +1174,14 @@ namespace embree
       for (size_t i=0; i<N; i++) quadmesh2->quads.push_back(quadmesh2->quads.back());
       scene.addGeometry(quality,quadmesh2.dynamicCast<SceneGraph::Node>());
 
+      Ref<SceneGraph::GridMeshNode> gridmesh = SceneGraph::createGridPlane(p,dx,dy,1,1).dynamicCast<SceneGraph::GridMeshNode>();
+      for (size_t i=0; i<N; i++) gridmesh->grids.push_back(gridmesh->grids.back());
+      scene.addGeometry(quality,gridmesh.dynamicCast<SceneGraph::Node>());
+
+      Ref<SceneGraph::GridMeshNode> gridmesh2 = SceneGraph::createGridPlane(p,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::GridMeshNode>();
+      for (size_t i=0; i<N; i++) gridmesh2->grids.push_back(gridmesh2->grids.back());
+      scene.addGeometry(quality,gridmesh2.dynamicCast<SceneGraph::Node>());
+      
       Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr,1);
       for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh->verticesPerFace.push_back(4);
@@ -1431,16 +1466,18 @@ namespace embree
           int index = random_int()%128;
           Vec3fa pos = 100.0f*random_Vec3fa();
           if (geom[index] == -1) {
-            switch (random_int()%9) {
+            switch (random_int()%11) {
             case 0: geom[index] = scene.addSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,10).first; break;
             case 1: geom[index] = scene.addSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,10,-1,random_motion_vector(1.0f)).first; break;
             case 2: geom[index] = scene.addQuadSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,10).first; break;
             case 3: geom[index] = scene.addQuadSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,10,-1,random_motion_vector(1.0f)).first; break;
-            case 4: geom[index] = scene.addHair  (sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,10).first; break;
-            case 5: geom[index] = scene.addHair  (sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,10,random_motion_vector(1.0f)).first; break;
-            case 6: geom[index] = scene.addSubdivSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,4,4).first; break;
-            case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,4,4,-1,random_motion_vector(1.0f)).first; break;
-            case 8: 
+            case 4: geom[index] = scene.addGridSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,10).first; break;
+            case 5: geom[index] = scene.addGridSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,10,-1,random_motion_vector(1.0f)).first; break;
+            case 6: geom[index] = scene.addHair(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,10).first; break;
+            case 7: geom[index] = scene.addHair(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,10,random_motion_vector(1.0f)).first; break;
+            case 8: geom[index] = scene.addSubdivSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,4,4).first; break;
+            case 9: geom[index] = scene.addSubdivSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,4,4,-1,random_motion_vector(1.0f)).first; break;
+            case 10: 
               spheres[index] = Sphere(pos,2.0f);
               geom[index] = scene.addUserGeometryEmpty(sampler,RTC_BUILD_QUALITY_MEDIUM,&spheres[index]).first; break;
             }
@@ -1694,6 +1731,8 @@ namespace embree
           case 1: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,true )); break;
           case 2: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,false)); break;
           case 3: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,true )); break;
+          //case 2: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageGridMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
+          //case 3: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageGridMesh(random_int(),numPrimitives,true )); break;
           case 4: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,false)); break;
           case 5: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,true )); break;
           case 6: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false)); break;
@@ -2392,6 +2431,8 @@ namespace embree
       case TRIANGLE_MESH_MB: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(zero)); break;
       case QUAD_MESH:        scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane(p0,dx,dy,1,1)); break;
       case QUAD_MESH_MB:     scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(zero)); break;
+      case GRID_MESH:        scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridPlane(p0,dx,dy,1,1)); break;
+      case GRID_MESH_MB:     scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridPlane(p0,dx,dy,1,1)->set_motion_vector(zero)); break;
       case SUBDIV_MESH:      scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)); break;
       case SUBDIV_MESH_MB:   scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(zero)); break;
       default:               throw std::runtime_error("unsupported geometry type: "+to_string(gtype)); 
@@ -2440,51 +2481,6 @@ namespace embree
     IntersectionFilterTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), subdiv(subdiv) {}
     
-    // static void intersectionFilter1(void* userGeomPtr, RTCRayHit& ray) 
-    // {
-    //   if ((size_t)userGeomPtr != 123) 
-    //     return;
-      
-    //   if (ray.primID & 2)
-    //     hit.geomID = RTC_INVALID_GEOMETRY_ID;
-    // }
-    
-    // static void intersectionFilter4(const void* valid_i, void* userGeomPtr, RTCRayHit4& ray) 
-    // {
-    //   if ((size_t)userGeomPtr != 123) 
-    //     return;
-      
-    //   int* valid = (int*)valid_i;
-    //   for (size_t i=0; i<4; i++)
-    //     if (valid[i] == -1)
-    //       if (ray.primID[i] & 2) 
-    //         hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-    // }
-    
-    // static void intersectionFilter8(const void* valid_i, void* userGeomPtr, RTCRayHit8& ray) 
-    // {
-    //   if ((size_t)userGeomPtr != 123) 
-    //     return;
-      
-    //   int* valid = (int*)valid_i;
-    //   for (size_t i=0; i<8; i++)
-    //     if (valid[i] == -1)
-    //       if (ray.primID[i] & 2) 
-    //         hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-    // }
-    
-    // static void intersectionFilter16(const void* valid_i, void* userGeomPtr, RTCRayHit16& ray) 
-    // {
-    //   if ((size_t)userGeomPtr != 123) 
-    //     return;
-      
-    //   int* valid = (int*)valid_i;
-    //   for (size_t i=0; i<16; i++)
-    //     if (valid[i] == -1)
-    //       if (ray.primID[i] & 2) 
-    //         hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-    // }
-    
     static void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
     {
       if ((size_t)args->geometryUserPtr != 123) 
@@ -2495,25 +2491,8 @@ namespace embree
 	if (args->valid[i] != -1) continue;
 
         /* reject hit */
-        //PRINT( RTCHitN_primID(hit,N,i) & 2 );
         if (RTCHitN_primID(args->hit,args->N,i) & 2) {
           args->valid[i] = 0;
-        }
-
-        /* accept hit */
-        else {
-          /*
-          RTCRayHitN_instID(ray,N,i) = RTCHitN_instID(hit,N,i);
-          RTCRayHitN_geomID(ray,N,i) = RTCHitN_geomID(hit,N,i);
-          RTCRayHitN_primID(ray,N,i) = RTCHitN_primID(hit,N,i);
-          RTCRayHitN_u(ray,N,i) = RTCHitN_u(hit,N,i);
-          RTCRayHitN_v(ray,N,i) = RTCHitN_v(hit,N,i);
-          RTCRayHitN_tfar(ray,N,i) = RTCHitN_t(hit,N,i);
-          
-          RTCRayHitN_Ng_x(ray,N,i) = RTCHitN_Ng_x(hit,N,i);
-          RTCRayHitN_Ng_y(ray,N,i) = RTCHitN_Ng_y(hit,N,i);
-          RTCRayHitN_Ng_z(ray,N,i) = RTCHitN_Ng_z(hit,N,i);
-          */
         }
       }
     }
@@ -2533,27 +2512,8 @@ namespace embree
       else        geomID0 = scene.addPlane       (sampler,quality, 4, p0, dx, dy).first;
       RTCGeometry geom0 = rtcGetGeometry(scene,geomID0);
       rtcSetGeometryUserData(geom0,(void*)123);
-      
-      // if (imode == MODE_INTERSECT1 ) {
-      //   rtcSetGeometryIntersectFilterFunction(geom0,intersectionFilter1);
-      //   rtcSetGeometryOccludedFilterFunction   (geom0,intersectionFilter1);
-      // }
-      // else if (imode == MODE_INTERSECT4 ) {
-      //   rtcSetIntersectionFilterFunction4(geom0,intersectionFilter4);
-      //   rtcSetOcclusionFilterFunction4   (geom0,intersectionFilter4);
-      // }
-      // else if (imode == MODE_INTERSECT8 ) {
-      //   rtcSetIntersectionFilterFunction8(geom0,intersectionFilter8);
-      //   rtcSetOcclusionFilterFunction8   (geom0,intersectionFilter8);
-      // }
-      // else if (imode == MODE_INTERSECT16) {
-      //   rtcSetIntersectionFilterFunction16(geom0,intersectionFilter16);
-      //   rtcSetOcclusionFilterFunction16   (geom0,intersectionFilter16);
-      // }
-      // else {
-        rtcSetGeometryIntersectFilterFunction (geom0,intersectionFilterN);
-        rtcSetGeometryOccludedFilterFunction (geom0,intersectionFilterN);
-        //}
+      rtcSetGeometryIntersectFilterFunction (geom0,intersectionFilterN);
+      rtcSetGeometryOccludedFilterFunction (geom0,intersectionFilterN);
       rtcCommitScene (scene);
       AssertNoError(device);
       
@@ -2680,14 +2640,19 @@ namespace embree
       size_t size = state->intensity < 1.0f ? 50 : 500;
       if      (model == "sphere.triangles") scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTriangleSphere(pos,2.0f,size));
       else if (model == "sphere.quads"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadSphere    (pos,2.0f,size));
+      else if (model == "sphere.grids"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridSphere    (pos,2.0f,size));
       else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivSphere  (pos,2.0f,4,64));
       else if (model == "plane.triangles" ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
       else if (model == "plane.quads"     ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
+      else if (model == "plane.grids"     ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
       else if (model == "plane.subdiv"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivPlane   (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size,2));
       else if (model == "sphere.triangles_mb") scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTriangleSphere(pos,2.0f,size)->set_motion_vector(motion_vector));
       else if (model == "sphere.quads_mb"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadSphere    (pos,2.0f,size)->set_motion_vector(motion_vector));
+      else if (model == "sphere.grids_mb"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridSphere    (pos,2.0f,size)->set_motion_vector(motion_vector));
       else if (model == "plane.triangles_mb" ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size)->set_motion_vector(motion_vector));
       else if (model == "plane.quads_mb"     ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size)->set_motion_vector(motion_vector));
+      else if (model == "plane.grids_mb"     ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size)->set_motion_vector(motion_vector));
+      else throw std::runtime_error("unsupported mode "+model); 
       bool plane = model.compare(0,5,"plane") == 0;
       rtcCommitScene (scene);
       AssertNoError(device);
@@ -2821,6 +2786,7 @@ namespace embree
       VerifyScene scene(device,sflags);
       if      (model == "sphere.triangles") scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTriangleSphere(zero,2.0f,50));
       else if (model == "sphere.quads"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadSphere    (zero,2.0f,50));
+      else if (model == "sphere.grids"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridSphere    (zero,2.0f,50));
       else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createSubdivSphere  (zero,2.0f,4,4));
       // FIXME: test more geometry types
       rtcCommitScene (scene);
@@ -3125,7 +3091,7 @@ namespace embree
       for (unsigned int j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
-	int type = RandomSampler_getInt(task->sampler)%9;
+	int type = RandomSampler_getInt(task->sampler)%11;
         switch (RandomSampler_getInt(task->sampler)%16) {
         case 0: pos = Vec3fa(nan); break;
         case 1: pos = Vec3fa(inf); break;
@@ -3141,12 +3107,14 @@ namespace embree
 	case 1: task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
         case 2: task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
 	case 3: task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-	case 4: task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles); break;
-        case 5: task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
-	case 6: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles); break;
-	case 7: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
+        case 4: task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
+	case 5: task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	case 6: task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles); break;
+        case 7: task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	case 8: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles); break;
+	case 9: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
 
-        case 8: {
+        case 10: {
 	  std::unique_ptr<Sphere> sphere(new Sphere(pos,2.0f));  
 	  task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,sphere.get());
           spheres.push_back(std::move(sphere));
@@ -3246,7 +3214,7 @@ namespace embree
         int index = RandomSampler_getInt(task->sampler)%numSlots;
         if (geom[index].first == -1) 
         {
-          int type = RandomSampler_getInt(task->sampler)%21;
+          int type = RandomSampler_getInt(task->sampler)%24;
           Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
           switch (RandomSampler_getInt(task->sampler)%16) {
           case 0: pos = Vec3fa(nan); break;
@@ -3276,6 +3244,10 @@ namespace embree
           case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
           case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
           case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_LOW; break;
+
+          case 21: geom[index] = task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 22: geom[index] = task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 23: geom[index] = task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,numTriangles); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
           case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
           case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
@@ -3331,6 +3303,9 @@ namespace embree
           case 15:
           case 16:
           case 17:
+          case 21:
+          case 22:
+          case 23:
           {
             int op = RandomSampler_getInt(task->sampler)%4;
             switch (op) {
@@ -3370,6 +3345,7 @@ namespace embree
               case 8:
               case 11:
               case 14:
+              case 23:
                 RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
                 task->scene->resizeRandomly(geom[index],task->sampler);
                 rtcCommitGeometry(hgeom);
@@ -4106,8 +4082,8 @@ namespace embree
     usecolors = false;
 #endif
 
-    GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
-    GeometryType gtypes_all[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB, 
+    GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, GRID_MESH, GRID_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
+    GeometryType gtypes_all[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, GRID_MESH, GRID_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB, 
                                   HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
@@ -4424,6 +4400,26 @@ namespace embree
         groups.pop();
       }
 
+       push(new TestGroup("watertight_grids",true,true)); {
+        std::string watertightModels [] = {"sphere.grids", "plane.grids"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              groups.top()->add(new WatertightTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model,watertight_pos));
+        groups.pop();
+      }
+
+      push(new TestGroup("watertight_grids_mb",true,true)); {
+        std::string watertightModels [] = {"sphere.grids_mb", "plane.grids_mb"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              groups.top()->add(new WatertightTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model,watertight_pos));
+        groups.pop();
+      }
+      
       push(new TestGroup("watertight_subdiv",true,true)); {
         std::string watertightModels [] = { "sphere.subdiv", "plane.subdiv"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
@@ -4444,7 +4440,7 @@ namespace embree
         }*/
       
       push(new TestGroup("ray_alignment_test",true,true)); {
-        std::string watertightModels [] = {"sphere.triangles", "sphere.quads", "sphere.subdiv" };
+        std::string watertightModels [] = {"sphere.triangles", "sphere.quads", "sphere.grids", "sphere.subdiv" };
         for (auto sflags : sceneFlagsRobust) 
           for (auto imode : intersectModes) 
             for (std::string model : watertightModels) 

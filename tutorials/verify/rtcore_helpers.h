@@ -864,6 +864,8 @@ namespace embree
     TRIANGLE_MESH_MB,
     QUAD_MESH,
     QUAD_MESH_MB,
+    GRID_MESH,
+    GRID_MESH_MB,
     SUBDIV_MESH,
     SUBDIV_MESH_MB,
     HAIR_GEOMETRY,
@@ -881,6 +883,8 @@ namespace embree
     case TRIANGLE_MESH_MB : return "triangles_mb";
     case QUAD_MESH        : return "quads";
     case QUAD_MESH_MB     : return "quads_mb";
+    case GRID_MESH        : return "grids";
+    case GRID_MESH_MB     : return "grids_mb";
     case SUBDIV_MESH      : return "subdivs";
     case SUBDIV_MESH_MB   : return "subdivs_mb";
     case HAIR_GEOMETRY    : return "hair";

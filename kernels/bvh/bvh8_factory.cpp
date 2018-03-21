@@ -1192,7 +1192,7 @@ namespace embree
     intersectors.intersector4  = BVH8GridIntersector4HybridMoeller();
     intersectors.intersector8  = BVH8GridIntersector8HybridMoeller();
     intersectors.intersector16 = BVH8GridIntersector16HybridMoeller();
-    intersectors.intersectorN  = nullptr;
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
