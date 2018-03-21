@@ -519,6 +519,13 @@ namespace embree
         scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial));
       }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of quadrilaterals.");
 
+    registerOption("grid-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t N = cin->getInt();
+        scene->add(SceneGraph::createGridSphere(p,r,N,new OBJMaterial));
+      }, "--grid-sphere p.x p.y p.z r N: adds a grid sphere at position p with radius r using a cube topology and N*N quads at each face.");
+
     registerOption("quad-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const Vec3fa dp = cin->getVec3fa();

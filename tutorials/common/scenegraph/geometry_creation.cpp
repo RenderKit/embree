@@ -248,6 +248,37 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createGridSphere (const Vec3fa& center, const float radius, size_t N, Ref<MaterialNode> material)
+  {
+    size_t grid_size = (N+1)*(N+1);
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,1);
+    mesh->positions[0].resize(grid_size*6);
+
+    for (size_t i=0; i<6; i++)
+    {
+      mesh->grids.push_back(SceneGraph::GridMeshNode::Grid(i*grid_size,N+1,N+1,N+1));
+      Vec3fa p0, dx, dy;
+      switch (i) {
+      case 0: p0 = Vec3fa(-0.5f,-0.5f,-0.5f); dx = Vec3fa(+1,0, 0); dy = Vec3fa(0,1,0); break;
+      case 1: p0 = Vec3fa(+0.5f,-0.5f,-0.5f); dx = Vec3fa( 0,0,+1); dy = Vec3fa(0,1,0); break;
+      case 2: p0 = Vec3fa(+0.5f,-0.5f,+0.5f); dx = Vec3fa(-1,0, 0); dy = Vec3fa(0,1,0); break;
+      case 3: p0 = Vec3fa(-0.5f,-0.5f,+0.5f); dx = Vec3fa( 0,0,-1); dy = Vec3fa(0,1,0); break;
+      case 4: p0 = Vec3fa(-0.5f,-0.5f,-0.5f); dx = Vec3fa( 0,0,+1); dy = Vec3fa(1,0,0); break;
+      case 5: p0 = Vec3fa(-0.5f,+0.5f,-0.5f); dx = Vec3fa( 1,0, 0); dy = Vec3fa(0,0,1); break;
+      default: assert(false);
+      }
+      
+      for (size_t y=0; y<=N; y++) {
+        for (size_t x=0; x<=N; x++) {
+          size_t j = i*grid_size + y*(N+1) + x;
+          Vec3fa p = p0+float(x)/float(N)*dx+float(y)/float(N)*dy;
+          mesh->positions[0][j] = center + radius*normalize(p);
+        }
+      }
+    }
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createSubdivSphere (const Vec3fa& center, const float radius, size_t N, float tessellationRate, Ref<MaterialNode> material)
   {
     unsigned numPhi = unsigned(N);
