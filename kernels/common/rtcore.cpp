@@ -1432,8 +1432,7 @@ namespace embree
     RTC_VERIFY_GEOMID(geomID);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
-    unsigned int gID = scene->bind(geomID,geometry);
-    assert(gID == geomID);
+    scene->bind(geomID,geometry);
     RTC_CATCH_END2(scene);
   }
   

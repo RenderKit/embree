@@ -321,8 +321,8 @@ namespace embree
             primID[pos] = sgrid_bd.primID;
             const size_t x = sgrid_bd.x();
             const size_t y = sgrid_bd.y();
-            bool valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+0,bounds0[pos]);
-            bool valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+1,bounds1[pos]);
+            bool MAYBE_UNUSED valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+0,bounds0[pos]);
+            bool MAYBE_UNUSED valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+1,bounds1[pos]);
             assert(valid0);
             assert(valid1);
             allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
@@ -396,8 +396,8 @@ namespace embree
             primID[pos] = sgrid_bd.primID;
             const size_t x = sgrid_bd.x();
             const size_t y = sgrid_bd.y();
-            bool valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,0,bounds0[pos]);
-            bool valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,1,bounds1[pos]);
+            bool MAYBE_UNUSED valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,0,bounds0[pos]);
+            bool MAYBE_UNUSED valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,1,bounds1[pos]);
             assert(valid0);
             assert(valid1);
             allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
