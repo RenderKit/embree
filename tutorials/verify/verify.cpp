@@ -4275,13 +4275,16 @@ namespace embree
       sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_ROBUST ,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
       sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,RTC_BUILD_QUALITY_LOW)   , RTC_BUILD_QUALITY_LOW));
 
-      push(new TestGroup("memory_consumption",false,false));
-
-      for (auto gtype : gtypes_memory)
-        for (auto sflags : sflags_quality_memory)
-          groups.top()->add(new MemoryConsumptionTest(to_string(gtype)+"."+to_string(sflags.first,sflags.second),isa,gtype,sflags.first,sflags.second));
-
-      groups.pop();
+      if (intensity > 1.0f)
+      {
+        push(new TestGroup("memory_consumption",false,false));
+        
+        for (auto gtype : gtypes_memory)
+          for (auto sflags : sflags_quality_memory)
+            groups.top()->add(new MemoryConsumptionTest(to_string(gtype)+"."+to_string(sflags.first,sflags.second),isa,gtype,sflags.first,sflags.second));
+        
+        groups.pop();
+      }
 
       /**************************************************************************/
       /*                     Interpolation Tests                                */

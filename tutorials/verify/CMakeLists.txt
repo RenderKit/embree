@@ -25,8 +25,12 @@ SIGN_TARGET(verify)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
 
+  IF (EMBREE_TESTING_INTENSITY GREATER 1)
+    ADD_TEST(NAME verify COMMAND verify --no-colors --intensity 2)
+  ELSE()
+    ADD_TEST(NAME verify COMMAND verify --no-colors)
+  ENDIF()
   
-  ADD_TEST(NAME verify COMMAND verify --no-colors)
   SET_TESTS_PROPERTIES(verify PROPERTIES TIMEOUT 7000)
 
   IF (EMBREE_TESTING_MEMCHECK)
