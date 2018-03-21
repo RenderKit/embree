@@ -4478,7 +4478,7 @@ namespace embree
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
-
+      
       /**************************************************************************/
       /*                           Benchmarks                                   */
       /**************************************************************************/
