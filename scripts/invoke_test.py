@@ -39,7 +39,7 @@ def compareImages(image0,image1,dimage):
   except ValueError:
     print("Error: "+line)
     raise ValueError
-  return error < 0.00052
+  return error
 
 def printUsage():
   sys.stderr.write('Usage: ' + sys.argv[0] + ' --name testname --modeldir path --model path/model.ecs --execute executable args\n')
@@ -116,7 +116,8 @@ print(executable)
 ret = os.system(executable)
 
 if ret == 0 and model != "":
-  if not compareImages(outImageFileTga,refImageFileTga,diffImageFileTga):
+  diff = compareImages(outImageFileTga,refImageFileTga,diffImageFileTga):
+  if diff > 0.00055:
     
 #    if os.path.isfile(outImageFileTga):
 #      os.system("convert -quality 98 " + outImageFileTga    + " " + outImageFileJpg)
@@ -130,7 +131,7 @@ if ret == 0 and model != "":
 #      os.system("convert -quality 98 " + diffImageFileTga + " " + diffImageFileJpg)
 #      sys.stdout.write("<DartMeasurementFile name=\"Difference\" type=\"image/jpeg\">" + diffImageFileJpg + "</DartMeasurementFile>\n");
       
-    sys.stdout.write(" [failed] [images differ]\n")
+    sys.stdout.write(" [failed] [images differ by %f]\n" % diff)
     sys.exit(2)
 
 if ret == 0:
