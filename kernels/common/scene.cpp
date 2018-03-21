@@ -572,23 +572,24 @@ namespace embree
 
   void Scene::createGridAccel()
   {
+    BVHFactory::IntersectVariant ivariant = isRobustAccel() ? BVHFactory::IntersectVariant::ROBUST : BVHFactory::IntersectVariant::FAST;
 #if defined(EMBREE_GEOMETRY_GRID)
     if (device->grid_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->hasISA(AVX) && !isCompactAccel())
       {
-        accels.add(device->bvh8_factory->BVH8Grid(this,BVHFactory::BuildVariant::STATIC));
+        accels.add(device->bvh8_factory->BVH8Grid(this,BVHFactory::BuildVariant::STATIC,ivariant));
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4Grid(this,BVHFactory::BuildVariant::STATIC));
+        accels.add(device->bvh4_factory->BVH4Grid(this,BVHFactory::BuildVariant::STATIC,ivariant));
       }
     }
-    else if (device->grid_accel == "bvh4.grid") accels.add(device->bvh4_factory->BVH4Grid(this));
+    else if (device->grid_accel == "bvh4.grid") accels.add(device->bvh4_factory->BVH4Grid(this,BVHFactory::BuildVariant::STATIC,ivariant));
 #if defined (EMBREE_TARGET_SIMD8)
-    else if (device->grid_accel == "bvh8.grid") accels.add(device->bvh8_factory->BVH8Grid(this));
+    else if (device->grid_accel == "bvh8.grid") accels.add(device->bvh8_factory->BVH8Grid(this,BVHFactory::BuildVariant::STATIC,ivariant));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown grid accel "+device->grid_accel);
 #endif

@@ -246,8 +246,8 @@ namespace embree
       const vint<M> syM(sy + stepY);
       const float inv_resX = rcp((float)((int)g.resX-1));
       const float inv_resY = rcp((float)((int)g.resY-1));          
-      hit.vu = (hit.vu + (vfloat<M>)sxM) * inv_resX;
-      hit.vu = (hit.vu + (vfloat<M>)syM) * inv_resY;
+      hit.vu = (hit.vu + vfloat<M>(sxM)) * inv_resX;
+      hit.vv = (hit.vv + vfloat<M>(syM)) * inv_resY;
     }
 
     template<int M>
