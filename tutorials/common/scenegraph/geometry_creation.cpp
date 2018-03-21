@@ -78,6 +78,24 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createGridPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  {
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,1);
+    mesh->positions[0].resize((width+1)*(height+1));
+    mesh->grids.push_back(SceneGraph::GridMeshNode::Grid(0,width+1,width+1,height+1));
+
+    for (size_t y=0; y<=height; y++) {
+      for (size_t x=0; x<=width; x++) {
+        Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
+        size_t i = y*(width+1)+x;
+        mesh->positions[0][i].x = p.x;
+        mesh->positions[0][i].y = p.y;
+        mesh->positions[0][i].z = p.z;
+      }
+    }
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material)
   {
     Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,1);

@@ -466,6 +466,15 @@ namespace embree
         scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new OBJMaterial));
       }, "--quad-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of quadrilaterals originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
 
+    registerOption("grid-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        scene->add(SceneGraph::createGridPlane(p0,dx,dy,width,height,new OBJMaterial));
+      }, "--grid-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane using a grid mesh build. The plane is originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
+
     registerOption("subdiv-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p0 = cin->getVec3fa();
         const Vec3fa dx = cin->getVec3fa();

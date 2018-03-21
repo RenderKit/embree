@@ -954,15 +954,15 @@ namespace embree
       {
       public:
         Grid() {}
-        Grid (unsigned int startVtx, unsigned int lineOffset, unsigned int resX_in, unsigned int resY_in)
-         : startVtx(startVtx), lineOffset(lineOffset), resX(resX_in), resY(resY_in)
+        Grid (unsigned int startVtx, unsigned int lineStride, unsigned int resX_in, unsigned int resY_in)
+         : startVtx(startVtx), lineStride(lineStride), resX(resX_in), resY(resY_in)
         {
           assert(resX_in <= GRID_RES_MAX);
           assert(resY_in <= GRID_RES_MAX);
         }
       public:
         unsigned int startVtx;
-        unsigned int lineOffset;
+        unsigned int lineStride;
         unsigned short resX,resY;
       };
       

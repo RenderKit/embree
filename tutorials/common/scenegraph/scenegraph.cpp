@@ -386,7 +386,7 @@ namespace embree
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     for (auto grid : grids) {
-      if (size_t(grid.startVtx) >= N || size_t(grid.lineOffset) >= N || size_t(grid.resX) >= 0x7fff || size_t(grid.resY) >= 0x7fff)
+      if (size_t(grid.startVtx) >= N || size_t(grid.lineStride) >= N || size_t(grid.resX) >= 0x7fff || size_t(grid.resY) >= 0x7fff)
         THROW_RUNTIME_ERROR("invalid grid");
     }
   }
@@ -946,7 +946,7 @@ namespace embree
     for (size_t i=0;i<quads.size();i++)
     {
       const unsigned int startVtx = (unsigned int) gmesh->positions[0].size();
-      const unsigned int lineOffset = resX;
+      const unsigned int lineStride = resX;
       for (size_t t=0;t<timeSteps;t++)
       {
         const SceneGraph::GridMeshNode::Vertex v00 = qmesh->positions[t][quads[i].v0];
@@ -965,7 +965,7 @@ namespace embree
         }
       }
       assert(startVtx + resX * resY == gmesh->positions[0].size());
-      gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineOffset,resX,resY));
+      gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineStride,resX,resY));
     }
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
@@ -993,7 +993,7 @@ namespace embree
     for (size_t i=0; i<gmesh->numPrimitives(); i++)
     {
       const unsigned int startVtx = gmesh->grids[i].startVtx;
-      const unsigned int lineOffset = gmesh->grids[i].lineOffset;
+      const unsigned int lineStride = gmesh->grids[i].lineStride;
       const unsigned int resX = gmesh->grids[i].resX;
       const unsigned int resY = gmesh->grids[i].resY;
 
@@ -1001,10 +1001,10 @@ namespace embree
       {
         for (unsigned int x=0; x<resX-1; x++)
         {
-          const unsigned int a0 = startVtx + y * lineOffset + x;
+          const unsigned int a0 = startVtx + y * lineStride + x;
           const unsigned int a1 = a0 + 1;
-          const unsigned int a3 = a0 + lineOffset;
-          const unsigned int a2 = a0 + lineOffset + 1;
+          const unsigned int a3 = a0 + lineStride;
+          const unsigned int a2 = a0 + lineStride + 1;
           qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a3));
         }
       }
