@@ -1021,44 +1021,85 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline Vec3fa derivBezier(const ISPCHairSet* hair, const unsigned int primID, const float t)
+inline Vec3fa derivBezier(const ISPCHairSet* mesh, const unsigned int primID, const float t, const float time)
 {
+  Vec3fa p00, p01, p02, p03;
+  const int i = mesh->hairs[primID].vertex;
+  
+  if (mesh->numTimeSteps == 1)
+  {
+    p00 = mesh->positions[0][i+0];
+    p01 = mesh->positions[0][i+1];
+    p02 = mesh->positions[0][i+2];
+    p03 = mesh->positions[0][i+3];
+  }
+  else
+  {
+    float f = mesh->numTimeSteps*time;
+    int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+    float t1 = f-itime;
+    float t0 = 1.0f-t1;
+    const Vec3fa a0 = mesh->positions[itime+0][i+0];
+    const Vec3fa a1 = mesh->positions[itime+0][i+1];
+    const Vec3fa a2 = mesh->positions[itime+0][i+2];
+    const Vec3fa a3 = mesh->positions[itime+0][i+3];
+    const Vec3fa b0 = mesh->positions[itime+1][i+0];
+    const Vec3fa b1 = mesh->positions[itime+1][i+1];
+    const Vec3fa b2 = mesh->positions[itime+1][i+2];
+    const Vec3fa b3 = mesh->positions[itime+1][i+3];
+    p00 = t0*a0 + t1*b0;
+    p01 = t0*a1 + t1*b1;
+    p02 = t0*a2 + t1*b2;
+    p03 = t0*a3 + t1*b3;
+  }
+
   const float t0 = 1.0f - t, t1 = t;
-  const Vec3fa* vertices = hair->positions[0];
-  const ISPCHair* hairs = hair->hairs;
-
-  const int i = hairs[primID].vertex;
-  const Vec3fa p00 = vertices[i+0];
-  const Vec3fa p01 = vertices[i+1];
-  const Vec3fa p02 = vertices[i+2];
-  const Vec3fa p03 = vertices[i+3];
-
   const Vec3fa p10 = p00 * t0 + p01 * t1;
   const Vec3fa p11 = p01 * t0 + p02 * t1;
   const Vec3fa p12 = p02 * t0 + p03 * t1;
   const Vec3fa p20 = p10 * t0 + p11 * t1;
   const Vec3fa p21 = p11 * t0 + p12 * t1;
   const Vec3fa p30 = p20 * t0 + p21 * t1;
-
   return Vec3fa(3.0f*(p21-p20));
 }
 
-inline Vec3fa derivBSpline(const ISPCHairSet* hair, const unsigned int primID, const float t)
+inline Vec3fa derivBSpline(const ISPCHairSet* mesh, const unsigned int primID, const float t, const float time)
 {
-  const float t0 = 1.0f - t, t1 = t;
-  const Vec3fa* vertices = hair->positions[0];
-  const ISPCHair* hairs = hair->hairs;
+  Vec3fa p00, p01, p02, p03;
+  const int i = mesh->hairs[primID].vertex;
+  
+  if (mesh->numTimeSteps == 1)
+  {
+    p00 = mesh->positions[0][i+0];
+    p01 = mesh->positions[0][i+1];
+    p02 = mesh->positions[0][i+2];
+    p03 = mesh->positions[0][i+3];
+  }
+  else
+  {
+    float f = mesh->numTimeSteps*time;
+    int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+    float t1 = f-itime;
+    float t0 = 1.0f-t1;
+    const Vec3fa a0 = mesh->positions[itime+0][i+0];
+    const Vec3fa a1 = mesh->positions[itime+0][i+1];
+    const Vec3fa a2 = mesh->positions[itime+0][i+2];
+    const Vec3fa a3 = mesh->positions[itime+0][i+3];
+    const Vec3fa b0 = mesh->positions[itime+1][i+0];
+    const Vec3fa b1 = mesh->positions[itime+1][i+1];
+    const Vec3fa b2 = mesh->positions[itime+1][i+2];
+    const Vec3fa b3 = mesh->positions[itime+1][i+3];
+    p00 = t0*a0 + t1*b0;
+    p01 = t0*a1 + t1*b1;
+    p02 = t0*a2 + t1*b2;
+    p03 = t0*a3 + t1*b3;
+  }
 
+  const float t0 = 1.0f - t, t1 = t;
   const float n0 = -0.5f*t1*t1;
   const float n1 = -0.5f*t0*t0 - 2.0f*(t0*t1);
   const float n2 =  0.5f*t1*t1 + 2.0f*(t1*t0);
   const float n3 =  0.5f*t0*t0;
-  
-  const int i = hairs[primID].vertex;
-  const Vec3fa p00 = vertices[i+0];
-  const Vec3fa p01 = vertices[i+1];
-  const Vec3fa p02 = vertices[i+2];
-  const Vec3fa p03 = vertices[i+3];
   return Vec3fa(n0*p00 + n1*p01 + n2*p02 + n3*p03);
 }
 
@@ -1214,7 +1255,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     }
     else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE)
     {
-      Vec3fa dp = derivBezier(mesh,dg.primID,ray.u);
+      Vec3fa dp = derivBezier(mesh,dg.primID,ray.u,ray.time());
       if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
       dg.Tx = normalize(Vec3fa(dp));
       dg.Ty = normalize(cross(Vec3fa(dp),dg.Ng));
@@ -1223,7 +1264,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     }
     else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
     {
-      Vec3fa dp = derivBezier(mesh,dg.primID,ray.u);
+      Vec3fa dp = derivBezier(mesh,dg.primID,ray.u,ray.time());
       if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
       dg.Tx = normalize(dp);
       dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
@@ -1231,7 +1272,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     }
     else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
     {
-      Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u);
+      Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u,ray.time());
       if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
       dg.Tx = normalize(Vec3fa(dp));
       dg.Ty = normalize(cross(Vec3fa(dp),dg.Ng));
@@ -1240,7 +1281,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     }
     else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
     {
-      Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u);
+      Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u,ray.time());
       if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
       dg.Tx = normalize(dp);
       dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
