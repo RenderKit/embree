@@ -116,7 +116,7 @@ print(executable)
 ret = os.system(executable)
 
 if ret == 0 and model != "":
-  diff = compareImages(outImageFileTga,refImageFileTga,diffImageFileTga):
+  diff = compareImages(outImageFileTga,refImageFileTga,diffImageFileTga)
   if diff > 0.00055:
     
 #    if os.path.isfile(outImageFileTga):
