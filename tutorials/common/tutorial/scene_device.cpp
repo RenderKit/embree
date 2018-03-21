@@ -25,6 +25,20 @@ namespace embree
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
   }
 
+  void deleteGeometry(ISPCGeometry* geom)
+  {
+    switch (geom->type) {
+    case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geom; break;
+    case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geom; break;
+    case INSTANCE: delete (ISPCInstance*) geom; break;
+    case GROUP: delete (ISPCGroup*) geom; break;
+    case QUAD_MESH: delete (ISPCQuadMesh*) geom; break;
+    case CURVES: delete (ISPCHairSet*) geom; break;
+    case GRID_MESH: delete (ISPCGridMesh*) geom; break;
+    default: assert(false); break;
+    }
+  }
+  
   ISPCScene::ISPCScene(TutorialScene* in)
   {
     geometries = new ISPCGeometry*[in->geometries.size()];
@@ -45,23 +59,13 @@ namespace embree
       if (light) lights[numLights++] = light;
     }
   }
-  
+
   ISPCScene::~ISPCScene()
   {
     /* delete all geometries */
     for (size_t i=0; i<numGeometries; i++) 
-    {
-      switch (geometries[i]->type) {
-      case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geometries[i]; break;
-      case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geometries[i]; break;
-      case INSTANCE: delete (ISPCInstance*) geometries[i]; break;
-      case GROUP: delete (ISPCGroup*) geometries[i]; break;
-      case QUAD_MESH: delete (ISPCQuadMesh*) geometries[i]; break;
-      case CURVES: delete (ISPCHairSet*) geometries[i]; break;
-      case GRID_MESH: delete (ISPCGridMesh*) geometries[i]; break;
-      default: assert(false); break;
-      }
-    }        
+      deleteGeometry(geometries[i]);
+
     delete[] geometries;
     delete[] materials;
     for (size_t i=0; i<numLights; i++)
@@ -303,7 +307,7 @@ namespace embree
   ISPCGroup::~ISPCGroup()
   {
     for (size_t i=0; i<numGeometries; i++)
-      delete geometries[i];
+      deleteGeometry(geometries[i]);
     delete[] geometries;
 
     rtcReleaseScene(geom.scene);

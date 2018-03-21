@@ -836,6 +836,14 @@ namespace embree
       if ((size_t)rtcGetGeometryUserData(geom5 ) !=  6) return VerifyApplication::FAILED;
       AssertNoError(device);
 
+      rtcReleaseGeometry(geom0);
+      rtcReleaseGeometry(geom1);
+      rtcReleaseGeometry(geom2);
+      rtcReleaseGeometry(geom3);
+      rtcReleaseGeometry(geom4);
+      rtcReleaseGeometry(geom5);
+      AssertNoError(device);
+      
       return VerifyApplication::PASSED;
     }
   };
@@ -852,8 +860,6 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
-      RTCSceneRef scene = rtcNewScene(device);
-      AssertNoError(device);
 
       RTCGeometry geom = nullptr;
       switch (gtype) {
@@ -933,6 +939,9 @@ namespace embree
       AssertNoError(device);
       
       rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),0,4*sizeof(float),16);
+      AssertNoError(device);
+
+      rtcReleaseGeometry(geom);
       AssertNoError(device);
       
       return VerifyApplication::PASSED;
@@ -4469,7 +4478,7 @@ namespace embree
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
-
+      
       /**************************************************************************/
       /*                           Benchmarks                                   */
       /**************************************************************************/

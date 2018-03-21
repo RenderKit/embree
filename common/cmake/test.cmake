@@ -142,9 +142,11 @@ MACRO (ADD_EMBREE_TEST2 name exe args)
 ENDMACRO()
 
 IF (EMBREE_TESTING_MEMCHECK)
-  find_program( EMBREE_MEMORYCHECK_COMMAND valgrind )
+  find_program( EMBREE_MEMORYCHECK_COMMAND valgrindd )
   set( EMBREE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --error-exitcode=1" )
-
+  IF (NOT EMBREE_MEMORYCHECK_COMMAND)
+    MESSAGE(FATAL_ERROR "valgrind not found")
+  ENDIF()
   FUNCTION(ADD_MEMCHECK_TEST name binary)
     set(memcheck_command "${EMBREE_MEMORYCHECK_COMMAND} ${EMBREE_MEMORYCHECK_COMMAND_OPTIONS}")
     separate_arguments(memcheck_command)
