@@ -1021,7 +1021,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline void evalBezier(const ISPCHairSet* hair, const unsigned int primID, const float t, Vec3fa& p, Vec3fa& dp)
+inline Vec3fa derivBezier(const ISPCHairSet* hair, const unsigned int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->positions[0];
@@ -1040,8 +1040,26 @@ inline void evalBezier(const ISPCHairSet* hair, const unsigned int primID, const
   const Vec3fa p21 = p11 * t0 + p12 * t1;
   const Vec3fa p30 = p20 * t0 + p21 * t1;
 
-  p = p30;
-  dp = 3.0f*(p21-p20);
+  return Vec3fa(3.0f*(p21-p20));
+}
+
+inline Vec3fa derivBSpline(const ISPCHairSet* hair, const unsigned int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  const Vec3fa* vertices = hair->positions[0];
+  const ISPCHair* hairs = hair->hairs;
+
+  const float n0 = -0.5f*t1*t1;
+  const float n1 = -0.5f*t0*t0 - 2.0f*(t0*t1);
+  const float n2 =  0.5f*t1*t1 + 2.0f*(t1*t0);
+  const float n3 =  0.5f*t0*t0;
+  
+  const int i = hairs[primID].vertex;
+  const Vec3fa p00 = vertices[i+0];
+  const Vec3fa p01 = vertices[i+1];
+  const Vec3fa p02 = vertices[i+2];
+  const Vec3fa p03 = vertices[i+3];
+  return Vec3fa(n0*p00 + n1*p01 + n2*p02 + n3*p03);
 }
 
 void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
@@ -1186,52 +1204,47 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
   else if (geometry->type == CURVES)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->geom.materialID;
     
     if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
     {
-      materialID = mesh->geom.materialID;
-      const Vec3fa dx = normalize(dg.Ng);
-      const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
-      const Vec3fa dz = normalize(cross(dy,dx));
-      dg.Tx = dx;
-      dg.Ty = dy;
-      dg.Ng = dg.Ns = dz;
+      dg.Tx = normalize(dg.Ng);
+      dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
+      dg.Ng = normalize(cross(dg.Ty,dg.Tx));
     }
-    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
-             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
-             mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
-             mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
+    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE)
     {
-      ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-      materialID = mesh->geom.materialID;
-      Vec3fa p,dp; evalBezier(mesh,dg.primID,ray.u,p,dp); // FIXME: this is wrong for bspline basis
-      if (length(dp) < 1E-6f) { // some hair are just points
-        dg.Tx = Vec3fa(1,0,0);
-        dg.Ty = Vec3fa(0,1,0);
-        dg.Ng = dg.Ns = Vec3fa(0,0,1);
-      }
-      else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE ||
-               mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
-      {
-        if (reduce_max(abs(dg.Ng)) < 1E-6f) dg.Ng = Vec3fa(1,1,1);
-        const Vec3fa dx = normalize(dg.Ng);
-        const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
-        const Vec3fa dz = normalize(cross(dy,dx));
-        dg.Tx = dx;
-        dg.Ty = dy;
-        dg.Ng = dg.Ns = dz;
-      }
-      else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE ||
-               mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
-      {
-        const Vec3fa dx = normalize(Vec3fa(dp));
-        const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));
-        const Vec3fa dz = normalize(dg.Ng);
-        dg.Tx = dx;
-        dg.Ty = dy;
-        dg.Ng = dg.Ns = dz;
-        dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
-      }
+      Vec3fa dp = derivBezier(mesh,dg.primID,ray.u);
+      if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
+      dg.Tx = normalize(Vec3fa(dp));
+      dg.Ty = normalize(cross(Vec3fa(dp),dg.Ng));
+      dg.Ng = dg.Ns = normalize(dg.Ng);
+      dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+    }
+    else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
+    {
+      Vec3fa dp = derivBezier(mesh,dg.primID,ray.u);
+      if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
+      dg.Tx = normalize(dp);
+      dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
+      dg.Ng = dg.Ns = normalize(cross(dg.Ty,dg.Tx));
+    }
+    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
+    {
+      Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u);
+      if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
+      dg.Tx = normalize(Vec3fa(dp));
+      dg.Ty = normalize(cross(Vec3fa(dp),dg.Ng));
+      dg.Ng = dg.Ns = normalize(dg.Ng);
+      dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+    }
+    else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
+    {
+      Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u);
+      if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
+      dg.Tx = normalize(dp);
+      dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
+      dg.Ng = dg.Ns = normalize(cross(dg.Ty,dg.Tx));
     }
   }
   else if (geometry->type == GROUP) {
