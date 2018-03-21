@@ -27,11 +27,21 @@ single precision `x`, `y`, `z` floating point coordinates
 from the size of that buffer. The vertex buffer can be at most 16 GB
 large.
 
-Each grid in the grid mesh is of the type `RTCGrid` and describes a 2D
-grid structure of vertices (stored in the vertex buffer) with a
-certain resolution, e.g. setting both `width` and `height` in the
-RTCGrid structure to 3 sets up a 3x3 vertex grid. The `startVertexID`
-specifies the ID of the first top-left vertex in the vertex grid with
+Each grid in the grid mesh is of the type `RTCGrid`
+
+struct RTCGrid
+{
+  unsigned int startVertexID;
+  unsigned int stride;
+  unsigned short width,height; 
+};
+
+which describes a 2D grid structure of vertices (with respect to the
+vertex buffer of the grid mesh). The `width` and `height` members of
+the structure specifying the resolution of the grid, e.g. setting both
+`width` and `height` to 3 sets up a 3x3 vertex grid. The maximum
+allowed `width` and `height` is 32767. The `startVertexID` specifies
+the ID of the first top-left vertex in the vertex grid with
 coordinates (0,0), while the `stride` parameter specifies the number
 of vertices in a single row.
 
