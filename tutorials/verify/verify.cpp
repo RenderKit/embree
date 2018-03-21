@@ -836,6 +836,14 @@ namespace embree
       if ((size_t)rtcGetGeometryUserData(geom5 ) !=  6) return VerifyApplication::FAILED;
       AssertNoError(device);
 
+      rtcReleaseGeometry(geom0);
+      rtcReleaseGeometry(geom1);
+      rtcReleaseGeometry(geom2);
+      rtcReleaseGeometry(geom3);
+      rtcReleaseGeometry(geom4);
+      rtcReleaseGeometry(geom5);
+      AssertNoError(device);
+      
       return VerifyApplication::PASSED;
     }
   };
