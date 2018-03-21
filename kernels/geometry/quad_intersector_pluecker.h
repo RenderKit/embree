@@ -32,6 +32,8 @@ namespace embree
     template<int M>
     struct QuadHitPlueckerM
     {
+      __forceinline QuadHitPlueckerM() {}
+
       __forceinline QuadHitPlueckerM(const vbool<M>& valid,
                                      const vfloat<M>& U,
                                      const vfloat<M>& V,

@@ -67,5 +67,8 @@ namespace embree
     IF_ENABLED_GRIDS(DEFINE_INTERSECTOR1(BVH4GridIntersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA SubGridIntersector1Moeller<4 COMMA true> >));
     IF_ENABLED_GRIDS(DEFINE_INTERSECTOR1(BVH4GridMBIntersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA SubGridMBIntersector1Moeller<4 COMMA true> >));
 
+    IF_ENABLED_GRIDS(DEFINE_INTERSECTOR1(BVH4GridIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA SubGridIntersector1Pluecker<4 COMMA true> >));
+    //IF_ENABLED_GRIDS(DEFINE_INTERSECTOR1(BVH4GridMBIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA SubGridMBIntersector1Pluecker<4 COMMA true> >));
+
   }
 }

@@ -76,6 +76,7 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridMBIntersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridIntersector1Pluecker);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iMBIntersector4);
@@ -175,7 +176,6 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8InstanceMBIntersector16Chunk);
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8GridIntersector16HybridMoeller);
-
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH8IntersectorStreamPacketFallback);
 
@@ -353,6 +353,7 @@ namespace embree
 
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8GridIntersector1Moeller));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8GridMBIntersector1Moeller))
+    IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH8GridIntersector1Pluecker));
 
 #if defined (EMBREE_RAY_PACKETS)
 
@@ -1187,13 +1188,26 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH8GridIntersector1Moeller();
+    if (ivariant == IntersectVariant::FAST)
+    {
+      intersectors.intersector1  = BVH8GridIntersector1Moeller();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH8GridIntersector4HybridMoeller();
-    intersectors.intersector8  = BVH8GridIntersector8HybridMoeller();
-    intersectors.intersector16 = BVH8GridIntersector16HybridMoeller();
-    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
+      intersectors.intersector4  = BVH8GridIntersector4HybridMoeller();
+      intersectors.intersector8  = BVH8GridIntersector8HybridMoeller();
+      intersectors.intersector16 = BVH8GridIntersector16HybridMoeller();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
+    }
+    else /* if (ivariant == IntersectVariant::ROBUST) */
+    {
+      intersectors.intersector1  = BVH8GridIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
+      intersectors.intersector4  = nullptr;
+      intersectors.intersector8  = nullptr;
+      intersectors.intersector16 = nullptr;
+      intersectors.intersectorN  = nullptr;
+#endif            
+    }
     return intersectors;
   }
 
