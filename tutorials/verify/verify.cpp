@@ -860,8 +860,6 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
-      RTCSceneRef scene = rtcNewScene(device);
-      AssertNoError(device);
 
       RTCGeometry geom = nullptr;
       switch (gtype) {
@@ -941,6 +939,9 @@ namespace embree
       AssertNoError(device);
       
       rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,vertexFormat,vertexBuffer.data(),0,4*sizeof(float),16);
+      AssertNoError(device);
+
+      rtcReleaseGeometry(geom);
       AssertNoError(device);
       
       return VerifyApplication::PASSED;
