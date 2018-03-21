@@ -399,14 +399,16 @@ namespace embree
                                                   PrimInfo pinfo(empty);
                                                   for (size_t j=r.begin(); j<r.end(); j++)
                                                   {
+                                                    if (!mesh->valid(j)) continue;
                                                     BBox3fa bounds = empty;
-                                                    const PrimRef prim(bounds,mesh->geomID,unsigned(j));                                                             
+                                                    const PrimRef prim(bounds,mesh->geomID,unsigned(j));                                                          if (!mesh->valid(j)) continue;
+
                                                     pinfo.add_center2(prim,mesh->getNumSubGrids(j));
                                                   }
                                                   return pinfo;
                                                 }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
           numPrimitives = pinfo.size();
-		  //PRINT(numPrimitives);
+
           /* resize arrays */
           sgrids.resize(numPrimitives); 
           prims.resize(numPrimitives); 
@@ -419,6 +421,7 @@ namespace embree
                                                   PrimInfo pinfo(empty);
                                                   for (size_t j=r.begin(); j<r.end(); j++)
                                                   {
+                                                    if (!mesh->valid(j)) continue;
                                                     const GridMesh::Grid &g = mesh->grid(j);
                                                     for (unsigned int y=0; y<g.resY-1u; y+=2)
                                                       for (unsigned int x=0; x<g.resX-1u; x+=2)
@@ -444,6 +447,7 @@ namespace embree
                                          PrimInfo pinfo(empty);
                                          for (size_t j=r.begin(); j<r.end(); j++)
                                          {
+                                           if (!mesh->valid(j)) continue;
                                            BBox3fa bounds = empty;
                                            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
                                            pinfo.add_center2(prim,mesh->getNumSubGrids(j));
@@ -463,6 +467,7 @@ namespace embree
                                          PrimInfo pinfo(empty);
                                          for (size_t j=r.begin(); j<r.end(); j++)
                                          {
+                                           if (!mesh->valid(j)) continue;
                                            const GridMesh::Grid &g = mesh->grid(j);
                                            for (unsigned int y=0; y<g.resY-1u; y+=2)
                                              for (unsigned int x=0; x<g.resX-1u; x+=2)

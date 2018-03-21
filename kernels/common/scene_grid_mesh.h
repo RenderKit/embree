@@ -166,9 +166,24 @@ namespace embree
       return true;
     }
 
-    //__forceinline bool valid(size_t i, size_t itime) const {
-    //  return valid(i, make_range(itime, itime));
-    //}
+    __forceinline bool valid(size_t gridID, size_t itime=0) const {
+      return valid(gridID, make_range(itime, itime));
+    }
+
+    /*! check if the i'th primitive is valid between the specified time range */
+    __forceinline bool valid(size_t gridID, const range<size_t>& itime_range) const
+    {
+      if (unlikely(gridID >= grids.size())) return false;
+      const Grid &g = grid(gridID);
+      if (unlikely(g.startVtxID + 0                                     >= vertices0.size())) return false;
+      if (unlikely(g.startVtxID + (g.resY-1)*g.lineVtxOffset + g.resX-1 >= vertices0.size())) return false;
+
+      for (size_t y=0;y<g.resY;y++)
+        for (size_t x=0;x<g.resX;x++)
+          for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+            if (!isvalid(grid_vertex(g,x,y,itime))) return false;
+      return true;
+    }
 
 
     __forceinline BBox3fa bounds(const Grid& g, size_t sx, size_t sy, size_t itime) const

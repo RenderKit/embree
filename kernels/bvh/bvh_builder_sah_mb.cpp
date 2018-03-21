@@ -151,6 +151,8 @@ namespace embree
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface,0);
+        /* early out if no valid primitives */
+        if (pinfo.size() == 0) { bvh->clear(); return; }
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
@@ -181,6 +183,8 @@ namespace embree
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
+        /* early out if no valid primitives */
+        if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -451,13 +455,15 @@ namespace embree
                                                 PrimInfo pinfo(empty);
                                                 for (size_t j=r.begin(); j<r.end(); j++)
                                                 {
-                                                  BBox3fa bounds = empty;
-                                                  const PrimRef prim(bounds,mesh->geomID,unsigned(j));                                                             
+                                                  if (!mesh->valid(j,range<size_t>(0,1))) continue;
+                                                  BBox3fa bounds = empty;                                                  const PrimRef prim(bounds,mesh->geomID,unsigned(j));                                                             
                                                   pinfo.add_center2(prim,mesh->getNumSubGrids(j));
                                                 }
                                                 return pinfo;
                                               }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         size_t numPrimitives = pinfo.size();
+        if (numPrimitives == 0) return pinfo;
+
         /* resize arrays */
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
@@ -471,6 +477,8 @@ namespace embree
                                                 for (size_t j=r.begin(); j<r.end(); j++)
                                                 {
                                                   const GridMesh::Grid &g = mesh->grid(j);
+                                                  if (!mesh->valid(j,range<size_t>(0,1))) continue;
+
                                                   for (unsigned int y=0; y<g.resY-1u; y+=2)
                                                     for (unsigned int x=0; x<g.resX-1u; x+=2)
                                                     {
@@ -501,7 +509,7 @@ namespace embree
                                                          PrimInfoMB pinfoMB(empty);
                                                          for (size_t j=r.begin(); j<r.end(); j++)
                                                          {
-                                                           //if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue; // FIXME: do we need this?
+                                                           if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue;
                                                            LBBox3fa bounds(empty);
                                                            PrimInfoMB gridMB(0,mesh->getNumSubGrids(j));
                                                            pinfoMB.merge(gridMB);
@@ -509,6 +517,8 @@ namespace embree
                                                          return pinfoMB;
                                                        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
         size_t numPrimitives = pinfoMB.size();
+        if (numPrimitives == 0) return pinfoMB;
+
         /* resize arrays */
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
@@ -520,11 +530,12 @@ namespace embree
                                                 PrimInfoMB pinfoMB(empty);
                                                 for (size_t j=r.begin(); j<r.end(); j++)
                                                 {
+                                                  if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue;
                                                   const GridMesh::Grid &g = mesh->grid(j);
+
                                                   for (unsigned int y=0; y<g.resY-1u; y+=2)
                                                     for (unsigned int x=0; x<g.resX-1u; x+=2)
                                                     {
-                                                      //if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue; // FIXME: do we need this?
                                                       const PrimRefMB prim(mesh->linearBounds(g,x,y,t0t1),mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(p_index));
                                                       pinfoMB.add_primref(prim);
                                                       sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
@@ -548,7 +559,6 @@ namespace embree
 
         const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
         const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
-
         if (numTimeSegments == 1)
           buildSingleSegment(numPrimitives);
         else
@@ -565,10 +575,11 @@ namespace embree
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlurGrid(scene,prims,bvh->scene->progressInterface,0);
+        /* early out if no valid primitives */
+        if (pinfo.size() == 0) { bvh->clear(); return; }
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
-        //const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(SubGridQBVHN<N>));
         //TODO: check leaf_bytes
         const size_t leaf_bytes = size_t(1.2*(float)numPrimitives/N * sizeof(SubGridQBVHN<N>));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
@@ -601,6 +612,12 @@ namespace embree
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefArrayMSMBlurGrid(scene,prims,bvh->scene->progressInterface);
+
+        /* early out if no valid primitives */
+        if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
+
+
+
         GridRecalculatePrimRef recalculatePrimRef(scene,sgrids.data());
 
         /* estimate acceleration structure size */
