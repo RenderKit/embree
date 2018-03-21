@@ -171,6 +171,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8InstanceMBIntersector4Chunk);
     
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8GridIntersector4HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8GridIntersector4HybridPluecker);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Line4iIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Line4iMBIntersector8);
@@ -204,6 +205,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8InstanceMBIntersector8Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8GridIntersector8HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8GridIntersector8HybridPluecker);
    
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Line4iIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Line4iMBIntersector16);
@@ -237,6 +239,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8InstanceMBIntersector16Chunk);
    
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8GridIntersector16HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8GridIntersector16HybridPluecker);
 
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Line4iIntersectorStream);
 
