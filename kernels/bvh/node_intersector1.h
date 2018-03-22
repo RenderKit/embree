@@ -1194,7 +1194,7 @@ namespace embree
         return intersectNode<N,Nx>(node,ray,dist); 
       }
 
-      static __forceinline size_t intersect(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,false>& ray, const float time, vfloat<N>& dist)
+      static __forceinline size_t intersect(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,true>& ray, const float time, vfloat<N>& dist)
       {
         return intersectNode<N,Nx>(node,ray,time,dist);
       }
