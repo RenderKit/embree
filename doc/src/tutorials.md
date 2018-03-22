@@ -228,6 +228,15 @@ This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
 
+Grid Geometry
+---------------------
+
+![][imgGridGeometry]
+
+This tutorial demonstrates the use of the memory efficient grid
+primitive to handle highly tessellated and displaced geometry.
+
+
 Motion Blur Geometry
 --------------------
 
