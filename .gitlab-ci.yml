@@ -58,8 +58,8 @@ continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX512SKX-TBB2017:
   
 continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:3" # addrsanitizer:ON
-  tags:   [docker, skx]
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:3 addrsanitizer:ON"
+  tags:   [docker]
   only:   [pushes]
 
 continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
@@ -82,7 +82,7 @@ continuous-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
 
 continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
   image: embree-kw-centos7
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB klocwork:ON intensity:1"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB klocwork:ON intensity:0"
   tags:   [kw-scan-docker]
   only:   [pushes]
 
@@ -180,9 +180,15 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-SSE2-TBB:
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX-TBB2017-VALGRIND:
-  image: embreedocker/fedora:25
+  image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX tasking:TBB2017 intensity:4 memcheck:ON"
   tags:   [docker] # avx
+  only:   [schedules]
+
+nightly-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
+  image: embreedocker/fedora:26
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:4 addrsanitizer:ON"
+  tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-STATIC:

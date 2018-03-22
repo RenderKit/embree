@@ -21,8 +21,10 @@
 
 namespace embree
 {
+  static MutexSys g_mutex;
   size_t TaskScheduler::g_numThreads = 0;
   __thread TaskScheduler* TaskScheduler::g_instance = nullptr;
+  std::vector<Ref<TaskScheduler>> g_instance_vector;
   __thread TaskScheduler::Thread* TaskScheduler::thread_local_thread = nullptr;
   TaskScheduler::ThreadPool* TaskScheduler::threadPool = nullptr;
 
@@ -137,8 +139,6 @@ namespace embree
     if (left >= right) return 0;
     return tasks[left].N;
   }
-
-  static MutexSys g_mutex;
 
   void threadPoolFunction(std::pair<TaskScheduler::ThreadPool*,size_t>* pair)
   {
@@ -272,8 +272,9 @@ namespace embree
   dll_export TaskScheduler* TaskScheduler::instance()
   {
     if (g_instance == NULL) {
+      Lock<MutexSys> lock(g_mutex);
       g_instance = new TaskScheduler;
-      g_instance->refInc();
+      g_instance_vector.push_back(g_instance);
     }
     return g_instance;
   }

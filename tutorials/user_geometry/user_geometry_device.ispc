@@ -1167,7 +1167,7 @@ void renderTileStandardStream(uniform int taskIndex,
       shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
       shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
-    init_Ray(shadow,primary.org + primary.tfar*primary.dir, neg(lightDir), shadow.tnear, shadow.tfar, 0.0f, N*programCount + programIndex);
+    init_Ray(shadow,primary.org + 0.999f*primary.tfar*primary.dir, neg(lightDir), shadow.tnear, shadow.tfar, 0.0f, N*programCount + programIndex);
 
     RayStats_addShadowRay(stats);
   }

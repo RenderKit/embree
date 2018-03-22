@@ -226,7 +226,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
-  context->instID[0] = (unsigned int)-1;
+  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
   
 #if defined(__cplusplus)
