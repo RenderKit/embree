@@ -127,7 +127,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const GridMesh* mesh    = context->scene->get<GridMesh>(subgrid.geomID());
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
-
+ 
         vfloat<K> ftime;
         const vint<K> itime = getTimeSegment(ray.time(), vfloat<K>(mesh->fnumTimeSegments), ftime);
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime[k],ftime[k]);
@@ -150,7 +150,6 @@ namespace embree
           static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
           BVHNQuantizedBaseNodeIntersectorK<N,K,robust> isecK;
-
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
@@ -189,7 +188,6 @@ namespace embree
           static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
-
           for (size_t i=0;i<num;i++)
           {
             vfloat<N> dist;

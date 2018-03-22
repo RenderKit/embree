@@ -377,7 +377,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
                   
           /* calculate hit information */
-          SubGridQuadHitPlueckerK<K> hit(U,V,W,T,absDen,tri_Ng,flags,g,subgrid,i);
+          SubGridQuadHitPlueckerK<K> hit(U,V,W,T,den,tri_Ng,flags,g,subgrid,i);
           return epilog(valid,hit);
         }
       
@@ -468,7 +468,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
         
           /* calculate hit information */
-          new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,W,T,absDen,tri_Ng,flags);
+          new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,W,T,den,tri_Ng,flags);
           return true;
         }
 
