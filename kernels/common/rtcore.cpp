@@ -1179,11 +1179,16 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetNewGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
-    
+
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
     
-    Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride);
+    /* vertex buffers need to get overallocated slightly as elements are accessed using SSE loads */
+    size_t bytes = itemCount*byteStride;
+    if (type == RTC_BUFFER_TYPE_VERTEX || type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+      bytes += (byteStride+15)%16 - byteStride;
+      
+    Ref<Buffer> buffer = new Buffer(geometry->device, bytes);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
     return buffer->data();
     RTC_CATCH_END2(geometry);
