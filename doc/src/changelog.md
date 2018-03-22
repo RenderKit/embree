@@ -18,6 +18,8 @@ Version History
     memory when multiple bases are used.
 -   Fixed issue with non thread safe local static variable initialization
     in VS2013.
+-   Bugfix in rtcSetNewGeometry. Vertex buffers did not get properly
+    overallocated.
 
 ### New Features in Embree 3.0.0
 -   Switched to a new version of the API which provides improved
