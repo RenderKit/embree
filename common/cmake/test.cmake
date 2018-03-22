@@ -22,7 +22,12 @@ ELSE()
     SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 ENDIF()
 
-SET(EMBREE_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE PATH "Path to the folder containing the Embree models for regression testing.")
+FIND_PATH(EMBREE_TESTING_MODEL_DIR
+  NAMES test-models-intensity2.txt
+  PATHS "${PROJECT_SOURCE_DIR}/models"
+  DOC "Path to the folder containing the Embree models for regression testing."
+  NO_DEFAULT_PATHS)
+
 SET(EMBREE_TESTING_INTENSITY 1 CACHE INT "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing.")
 SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
 SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
