@@ -59,10 +59,12 @@ namespace embree
       template<int Nx, bool robust>
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
+        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+          size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
 #endif
@@ -80,10 +82,12 @@ namespace embree
       template<int Nx, bool robust>        
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
+        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+          size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
           while(mask != 0)
           {
             const size_t ID = bscf(mask); 
@@ -128,10 +132,12 @@ namespace embree
       template<int Nx, bool robust>
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
+        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+          size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
 #endif
@@ -149,10 +155,12 @@ namespace embree
       template<int Nx, bool robust>        
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {
+        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+          size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
           while(mask != 0)
           {
             const size_t ID = bscf(mask); 
@@ -234,6 +242,7 @@ namespace embree
         template<bool robust>
           static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersectorK<N,K,robust> isecK;
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
@@ -241,7 +250,7 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              if (none(valid & isecK.intersectK(&prim[j].qnode,i,tray,dist))) continue;
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
             }
           }
@@ -250,6 +259,7 @@ namespace embree
         template<bool robust>        
         static __forceinline vbool<K> occluded(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersectorK<N,K,robust> isecK;
           vbool<K> valid0 = valid;
           for (size_t j=0;j<num;j++)
           {
@@ -258,7 +268,7 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              if (none(valid0 & isecK.intersectK(&prim[j].qnode,i,tray,dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
             }
@@ -269,10 +279,12 @@ namespace embree
         template<int Nx, bool robust>        
           static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
           for (size_t i=0;i<num;i++)
           {
             vfloat<Nx> dist;
-            size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+            size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
@@ -287,10 +299,12 @@ namespace embree
         template<int Nx, bool robust>
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
           for (size_t i=0;i<num;i++)
           {
             vfloat<Nx> dist;
-            size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+            size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
@@ -372,6 +386,7 @@ namespace embree
         template<bool robust>
           static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersectorK<N,K,robust> isecK;
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
@@ -379,7 +394,7 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              if (none(valid & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              if (none(valid & isecK.intersectK(&prim[j].qnode,i,tray,dist))) continue;
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
             }
           }
@@ -388,6 +403,7 @@ namespace embree
         template<bool robust>        
         static __forceinline vbool<K> occluded(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersectorK<N,K,robust> isecK;
           vbool<K> valid0 = valid;
           for (size_t j=0;j<num;j++)
           {
@@ -396,7 +412,7 @@ namespace embree
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              if (none(valid0 & intersectNodeK<N>(&prim[j].qnode,i,tray,dist))) continue;
+              if (none(valid0 & isecK.intersectK(&prim[j].qnode,i,tray,dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
             }
@@ -407,10 +423,12 @@ namespace embree
         template<int Nx, bool robust>        
           static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
           for (size_t i=0;i<num;i++)
           {
             vfloat<Nx> dist;
-            size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+            size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
@@ -425,10 +443,12 @@ namespace embree
         template<int Nx, bool robust>
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
+          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+
           for (size_t i=0;i<num;i++)
           {
             vfloat<Nx> dist;
-            size_t mask = intersectNode(&prim[i].qnode,tray,dist); 
+            size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 

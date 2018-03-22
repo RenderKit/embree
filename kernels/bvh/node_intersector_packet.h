@@ -449,12 +449,12 @@ namespace embree
 
 
     //////////////////////////////////////////////////////////////////////////////////////
-    // Fast AlignedNode intersection
+    // QuantizedBaseNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
-    template<int N, int K, bool robust>
+    template<int N, int K>
     __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::QuantizedBaseNode* node, size_t i,
-                                          const TravRayK<K,robust>& ray, vfloat<K>& dist)
+                                          const TravRayK<K,false>& ray, vfloat<K>& dist)
 
     {
       assert(movemask(node->validMask()) & ((size_t)1 << i));
@@ -505,6 +505,37 @@ namespace embree
         return lhit;
       }
     }
+
+    template<int N, int K>
+    __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::QuantizedBaseNode* node, size_t i,
+          const TravRayK<K,true>& ray, vfloat<K>& dist)
+
+    {
+      assert(movemask(node->validMask()) & ((size_t)1 << i));
+      const vfloat<N> lower_x = node->dequantizeLowerX();
+      const vfloat<N> upper_x = node->dequantizeUpperX();
+      const vfloat<N> lower_y = node->dequantizeLowerY();
+      const vfloat<N> upper_y = node->dequantizeUpperY();
+      const vfloat<N> lower_z = node->dequantizeLowerZ();
+      const vfloat<N> upper_z = node->dequantizeUpperZ();
+
+      const vfloat<K> lclipMinX = (lower_x[i] - ray.org.x) * ray.rdir.x;
+      const vfloat<K> lclipMinY = (lower_y[i] - ray.org.y) * ray.rdir.y;
+      const vfloat<K> lclipMinZ = (lower_z[i] - ray.org.z) * ray.rdir.z;
+      const vfloat<K> lclipMaxX = (upper_x[i] - ray.org.x) * ray.rdir.x;
+      const vfloat<K> lclipMaxY = (upper_y[i] - ray.org.y) * ray.rdir.y;
+      const vfloat<K> lclipMaxZ = (upper_z[i] - ray.org.z) * ray.rdir.z;
+
+      const float round_up   = 1.0f+3.0f*float(ulp);
+
+      /* use mixed float/int min/max */
+      const vfloat<K> lnearP = max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= round_up*min(lfarP, ray.tfar);
+      dist = lnearP;
+      return lhit;
+      }
+
 
         template<int N, int K, bool robust>
           __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::QuantizedBaseNodeMB* node, const size_t i,
@@ -665,5 +696,32 @@ namespace embree
         return true;
       }
     };
+
+
+    /*! Intersects N nodes with K rays */
+    template<int N, int K, bool robust>
+    struct BVHNQuantizedBaseNodeIntersectorK;
+
+    template<int N, int K>
+    struct BVHNQuantizedBaseNodeIntersectorK<N, K, false>
+    {
+      static __forceinline vbool<K> intersectK(const typename BVHN<N>::QuantizedBaseNode* node, size_t i,
+                                              const TravRayK<K,false>& ray, vfloat<K>& dist)
+      {
+        return intersectNodeK<N,K>(node,i,ray,dist);
+      }
+    };
+
+    template<int N, int K>
+    struct BVHNQuantizedBaseNodeIntersectorK<N, K, true>
+    {
+      static __forceinline vbool<K> intersectK(const typename BVHN<N>::QuantizedBaseNode* node, size_t i,
+                                               const TravRayK<K,true>& ray, vfloat<K>& dist)
+      {
+        return intersectNodeK<N,K>(node,i,ray,dist);
+      }
+    };
+
+
   }
 }
