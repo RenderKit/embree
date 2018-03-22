@@ -206,11 +206,9 @@ namespace embree
   
   void GridMesh::interpolate(const RTCInterpolateArguments* const args)
   {
-    FATAL("not yet implemented");
-#if 0
     unsigned int primID = args->primID;
-    float u = args->u;
-    float v = args->v;
+    float U = args->u;
+    float V = args->v;
     RTCBufferType bufferType = args->bufferType;
     unsigned int bufferSlot = args->bufferSlot;
     float* P = args->P;
@@ -233,31 +231,45 @@ namespace embree
       src    = vertices[bufferSlot].getPtr();
       stride = vertices[bufferSlot].getStride();
     }
+
+    const Grid& grid = grids[primID];
+    const int iu = min((int)floor(U*grid.resX),grid.resX-1);
+    const int iv = min((int)floor(V*grid.resY),grid.resY-1);
+    const float u = U-float(iu);
+    const float v = V-float(iv);
     
     for (unsigned int i=0; i<valueCount; i+=4)
     {
-      size_t ofs = i*sizeof(float);
-      const float w = 1.0f-u-v;
-      const Grid& tri = grid(primID);
+      const size_t ofs = i*sizeof(float);
+      const unsigned int idx0 = grid.startVtxID + (iv+0)*grid.lineVtxOffset + iu;
+      const unsigned int idx1 = grid.startVtxID + (iv+1)*grid.lineVtxOffset + iu;
+      
       const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(valueCount));
-      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(idx0+0)*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(idx0+1)*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(idx1+1)*stride+ofs]);
+      const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(idx1+0)*stride+ofs]);
+      const vbool4 left = u+v <= 1.0f;
+      const vfloat4 Q0 = select(left,p0,p2);
+      const vfloat4 Q1 = select(left,p1,p3);
+      const vfloat4 Q2 = select(left,p3,p1);
+      const vfloat4 U  = select(left,u,vfloat4(1.0f)-u);
+      const vfloat4 V  = select(left,v,vfloat4(1.0f)-v);
+      const vfloat4 W  = 1.0f-U-V;
       
       if (P) {
-        vfloat4::storeu(valid,P+i,madd(w,p0,madd(u,p1,v*p2)));
+        vfloat4::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
       }
-      if (dPdu) {
-        assert(dPdu); vfloat4::storeu(valid,dPdu+i,p1-p0);
-        assert(dPdv); vfloat4::storeu(valid,dPdv+i,p2-p0);
+      if (dPdu) { 
+        assert(dPdu); vfloat4::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
+        assert(dPdv); vfloat4::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
       }
-      if (ddPdudu) {
+      if (ddPdudu) { 
         assert(ddPdudu); vfloat4::storeu(valid,ddPdudu+i,vfloat4(zero));
         assert(ddPdvdv); vfloat4::storeu(valid,ddPdvdv+i,vfloat4(zero));
         assert(ddPdudv); vfloat4::storeu(valid,ddPdudv+i,vfloat4(zero));
       }
     }
-#endif
   }
   
 #endif
