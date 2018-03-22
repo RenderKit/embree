@@ -531,7 +531,7 @@ namespace embree
       /* use mixed float/int min/max */
       const vfloat<K> lnearP = max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
       const vfloat<K> lfarP  = min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
-      const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= round_up*min(lfarP, ray.tfar);
+      const vbool<K> lhit    = max(lnearP, ray.tnear) <= round_up*min(lfarP, ray.tfar);
       dist = lnearP;
       return lhit;
       }
