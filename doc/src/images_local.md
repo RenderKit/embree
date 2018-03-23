@@ -13,5 +13,6 @@
 [imgCurveGeometry]: images/curve_geometry.jpg
 [imgSubdivisionGeometry]: images/subdivision_geometry.jpg
 [imgDisplacementGeometry]: images/displacement_geometry.jpg
+[imgGridGeometry]: images/grid_geometry.jpg
 [imgMotionBlurGeometry]: images/motion_blur_geometry.jpg
 [imgInterpolation]: images/interpolation.jpg

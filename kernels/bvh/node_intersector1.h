@@ -1176,12 +1176,12 @@ namespace embree
     {
       static __forceinline size_t intersect(const typename BVHN<N>::QuantizedBaseNode* node, const TravRay<N,Nx,false>& ray, vfloat<Nx>& dist)
       {
-        return intersectNode<N,Nx>(node,ray,dist);
+        return intersectNode(node,ray,dist);
       }
 
       static __forceinline size_t intersect(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,false>& ray, const float time, vfloat<N>& dist)
       {
-        return intersectNode<N,Nx>(node,ray,time,dist);
+        return intersectNode(node,ray,time,dist);
       }
 
     };
@@ -1191,12 +1191,12 @@ namespace embree
     {
       static __forceinline size_t intersect(const typename BVHN<N>::QuantizedBaseNode* node, const TravRay<N,Nx,true>& ray, vfloat<Nx>& dist)
       {
-        return intersectNode<N,Nx>(node,ray,dist); 
+        return intersectNode(node,ray,dist); 
       }
 
       static __forceinline size_t intersect(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravRay<N,Nx,true>& ray, const float time, vfloat<N>& dist)
       {
-        return intersectNode<N,Nx>(node,ray,time,dist);
+        return intersectNode(node,ray,time,dist);
       }
 
     };
