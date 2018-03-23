@@ -61,12 +61,7 @@ namespace embree
         {
           vfloat<Nx> dist;
           const float time = prim[i].adjustTime(ray.time());
-#if 0
-          PRINT(ray.time());
-          PRINT(prim[i].time_offset);
-          PRINT(prim[i].time_scale);
-          PRINT(time);
-#endif
+
           assert(time <= 1.0f);
           size_t mask = isec1.intersect(&prim[i].qnode,tray,time,dist); 
 #if defined(__AVX__)
@@ -90,7 +85,7 @@ namespace embree
           const float time = prim[i].adjustTime(ray.time());
           assert(time <= 1.0f);
           vfloat<Nx> dist;
-          size_t mask = isec1.intersect(&prim[i].qnode,tray,ray.time(),dist); 
+          size_t mask = isec1.intersect(&prim[i].qnode,tray,time,dist); 
           while(mask != 0)
           {
             const size_t ID = bscf(mask); 

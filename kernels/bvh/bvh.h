@@ -1351,17 +1351,17 @@ namespace embree
 
 
       template<int M>
-        __forceinline vfloat<M> dequantizeLowerX(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeLowerX()[i],node1.dequantizeLowerX()[i],t); }
+        __forceinline vfloat<M> dequantizeLowerX(const size_t i, const vfloat<M> &t) const { return lerp(vfloat<M>(node0.dequantizeLowerX()[i]),vfloat<M>(node1.dequantizeLowerX()[i]),t); }
       template<int M>
-        __forceinline vfloat<M> dequantizeUpperX(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeUpperX()[i],node1.dequantizeUpperX()[i],t); }
+        __forceinline vfloat<M> dequantizeUpperX(const size_t i, const vfloat<M> &t) const { return lerp(vfloat<M>(node0.dequantizeUpperX()[i]),vfloat<M>(node1.dequantizeUpperX()[i]),t); }
       template<int M>
-        __forceinline vfloat<M> dequantizeLowerY(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeLowerY()[i],node1.dequantizeLowerY()[i],t); }
+        __forceinline vfloat<M> dequantizeLowerY(const size_t i, const vfloat<M> &t) const { return lerp(vfloat<M>(node0.dequantizeLowerY()[i]),vfloat<M>(node1.dequantizeLowerY()[i]),t); }
       template<int M>
-        __forceinline vfloat<M> dequantizeUpperY(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeUpperY()[i],node1.dequantizeUpperY()[i],t); }
+        __forceinline vfloat<M> dequantizeUpperY(const size_t i, const vfloat<M> &t) const { return lerp(vfloat<M>(node0.dequantizeUpperY()[i]),vfloat<M>(node1.dequantizeUpperY()[i]),t); }
       template<int M>
-        __forceinline vfloat<M> dequantizeLowerZ(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeLowerZ()[i],node1.dequantizeLowerZ()[i],t); }
+        __forceinline vfloat<M> dequantizeLowerZ(const size_t i, const vfloat<M> &t) const { return lerp(vfloat<M>(node0.dequantizeLowerZ()[i]),vfloat<M>(node1.dequantizeLowerZ()[i]),t); }
       template<int M>
-        __forceinline vfloat<M> dequantizeUpperZ(const size_t i, const vfloat<M> &t) const { return lerp(node0.dequantizeUpperZ()[i],node1.dequantizeUpperZ()[i],t); }
+        __forceinline vfloat<M> dequantizeUpperZ(const size_t i, const vfloat<M> &t) const { return lerp(vfloat<M>(node0.dequantizeUpperZ()[i]),vfloat<M>(node1.dequantizeUpperZ()[i]),t); }
 
 
 

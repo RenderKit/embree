@@ -301,13 +301,9 @@ namespace embree
 
         LBBox3fa allBounds = empty;
 
-
         for (size_t g=0;g<num_geomIDs;g++)
         {
           const GridMesh* __restrict__ const mesh = scene->get<GridMesh>(geomIDs[g]);
-          //const unsigned int numTimeSegments = mesh->numTimeSegments();
-          //const range<int> itime_range = getTimeSegmentRange(current.prims.time_range, (float)numTimeSegments);
-
           unsigned int x[N];
           unsigned int y[N];
           unsigned int primID[N];

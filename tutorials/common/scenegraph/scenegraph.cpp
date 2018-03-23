@@ -1009,7 +1009,9 @@ namespace embree
         }
       }
     }
-    qmesh->positions.push_back(gmesh->positions[0]);
+    const size_t timeSteps = gmesh->positions.size();
+    for (size_t t=0;t<timeSteps;t++)
+      qmesh->positions.push_back(gmesh->positions[t]);
     return qmesh.dynamicCast<SceneGraph::Node>();
   }
 
