@@ -60,7 +60,15 @@ namespace embree
         for (size_t i=0;i<num;i++)
         {
           vfloat<Nx> dist;
-          size_t mask = isec1.intersect(&prim[i].qnode,tray,ray.time(),dist); 
+          const float time = prim[i].adjustTime(ray.time());
+#if 0
+          PRINT(ray.time());
+          PRINT(prim[i].time_offset);
+          PRINT(prim[i].time_scale);
+          PRINT(time);
+#endif
+          assert(time <= 1.0f);
+          size_t mask = isec1.intersect(&prim[i].qnode,tray,time,dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
 #endif
@@ -79,6 +87,8 @@ namespace embree
         BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
         for (size_t i=0;i<num;i++)
         {
+          const float time = prim[i].adjustTime(ray.time());
+          assert(time <= 1.0f);
           vfloat<Nx> dist;
           size_t mask = isec1.intersect(&prim[i].qnode,tray,ray.time(),dist); 
           while(mask != 0)
@@ -153,11 +163,13 @@ namespace embree
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
+            const vfloat<K> time = prim[j].adjustTime(ray.time());
+
             vfloat<K> dist;
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              if (none(valid & isecK.intersectK(&prim[j].qnode,i,tray,ray.time(),dist))) continue;
+              if (none(valid & isecK.intersectK(&prim[j].qnode,i,tray,time,dist))) continue;
               intersect(valid,pre,ray,context,prim[j].subgrid(i));
             }
           }
@@ -172,11 +184,12 @@ namespace embree
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
+            const vfloat<K> time = prim[j].adjustTime(ray.time());
             vfloat<K> dist;
             while(m_valid)
             {
               const size_t i = bscf(m_valid);
-              if (none(valid0 & isecK.intersectK(&prim[j].qnode,i,tray,ray.time(),dist))) continue;
+              if (none(valid0 & isecK.intersectK(&prim[j].qnode,i,tray,time,dist))) continue;
               valid0 &= !occluded(valid0,pre,ray,context,prim[j].subgrid(i));
               if (none(valid0)) break;
             }
@@ -191,7 +204,10 @@ namespace embree
           for (size_t i=0;i<num;i++)
           {
             vfloat<N> dist;
-            size_t mask = isec1.intersect(&prim[i].qnode,tray,ray.time()[k],dist); 
+            const float time = prim[i].adjustTime(ray.time()[k]);
+            assert(time <= 1.0f);
+
+            size_t mask = isec1.intersect(&prim[i].qnode,tray,time,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 
@@ -205,11 +221,14 @@ namespace embree
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
           BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
-
+          
           for (size_t i=0;i<num;i++)
           {
             vfloat<N> dist;
-            size_t mask = isec1.intersect(&prim[i].qnode,tray,ray.time()[k],dist); 
+            const float time = prim[i].adjustTime(ray.time()[k]);
+            assert(time <= 1.0f);
+
+            size_t mask = isec1.intersect(&prim[i].qnode,tray,time,dist); 
             while(mask != 0)
             {
               const size_t ID = bscf(mask); 

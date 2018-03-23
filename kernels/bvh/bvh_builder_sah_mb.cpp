@@ -301,13 +301,12 @@ namespace embree
 
         LBBox3fa allBounds = empty;
 
+
         for (size_t g=0;g<num_geomIDs;g++)
         {
           const GridMesh* __restrict__ const mesh = scene->get<GridMesh>(geomIDs[g]);
-          const unsigned numTimeSegments = mesh->numTimeSegments();
-          const range<int> itime_range = getTimeSegmentRange(current.prims.time_range, (float)numTimeSegments);
-          assert(itime_range.size() == 1);
-          const int ilower = itime_range.begin();
+          //const unsigned int numTimeSegments = mesh->numTimeSegments();
+          //const range<int> itime_range = getTimeSegmentRange(current.prims.time_range, (float)numTimeSegments);
 
           unsigned int x[N];
           unsigned int y[N];
@@ -325,14 +324,13 @@ namespace embree
             primID[pos] = sgrid_bd.primID;
             const size_t x = sgrid_bd.x();
             const size_t y = sgrid_bd.y();
-            bool MAYBE_UNUSED valid0 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+0,bounds0[pos]);
-            bool MAYBE_UNUSED valid1 = mesh->buildBounds(mesh->grid(sgrid_bd.primID),x,y,ilower+1,bounds1[pos]);
-            assert(valid0);
-            assert(valid1);
-            allBounds.extend(LBBox3fa(bounds0[pos],bounds1[pos]));
+            LBBox3fa newBounds = mesh->linearBounds(mesh->grid(sgrid_bd.primID),x,y,current.prims.time_range);
+            allBounds.extend(newBounds);
+            bounds0[pos] = newBounds.bounds0;
+            bounds1[pos] = newBounds.bounds1;
             pos++;
           }
-          new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],float(ilower),1.0f/float(numTimeSegments),pos);
+          new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],current.prims.time_range.lower,1.0f/current.prims.time_range.size(),pos);
         }
         return NodeRecordMB4D(node,allBounds,current.prims.time_range);       
       }
@@ -637,7 +635,7 @@ namespace embree
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
-        settings.singleLeafTimeSegment = true; //Primitive::singleTimeSegment;
+        settings.singleLeafTimeSegment = false; 
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
         
         /* build hierarchy */
