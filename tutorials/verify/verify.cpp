@@ -2063,6 +2063,80 @@ namespace embree
       return (VerifyApplication::TestReturnValue) passed;
     }
   };
+
+  __aligned(16) RTCGrid interpolation_grids[1];
+  
+  struct InterpolateGridTest : public VerifyApplication::Test
+  {
+    size_t N;
+    
+    InterpolateGridTest (std::string name, int isa, size_t N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
+    
+    bool checkGridInterpolation(RTCGeometry geom, int primID, float u, float v, RTCBufferType bufferType, unsigned int bufferSlot, size_t N)
+    {
+      assert(N<256);
+      bool passed = true;
+      float P[256], dPdu[256], dPdv[256];
+      rtcInterpolate1(geom,primID,u,v,bufferType,bufferSlot,P,dPdu,dPdv,(unsigned int)N);
+      
+      for (size_t i=0; i<N; i++)
+      {
+        float p = (2.0f*u+3.0f*v)+float(i);
+        passed &= fabs(p-P[i]) < 1E-4f;
+      }
+      return passed;
+    }
+    
+    bool checkGridInterpolation(RTCGeometry geom, RTCBufferType bufferType, unsigned int bufferSlot, size_t N)
+    {
+      bool passed = true;
+      for (size_t i=0; i<100; i++) {
+        const float u = random_float();
+        const float v = random_float();
+        passed &= checkGridInterpolation(geom,0,u,v,bufferType,bufferSlot,N);
+      }
+      return passed;
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      size_t M = 16*N+16; // padds the arrays with some valid data
+      
+      RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_GRID);
+      AssertNoError(device);
+
+      interpolation_grids[0].startVertexID = 0;
+      interpolation_grids[0].stride = 4;
+      interpolation_grids[0].width = 4;
+      interpolation_grids[0].height = 4;
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, interpolation_grids, 0, sizeof(RTCGrid), 1);
+      AssertNoError(device);
+      
+      std::vector<float> vertices0(M);
+      for (size_t y=0; y<4; y++)
+        for (size_t x=0; x<4; x++)
+          for (size_t i=0; i<N; i++)
+            vertices0[(y*4+x)*N+i] = (2.0f*float(x)/3.0f + 3.0f*y/3.0f)+float(i);
+      
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices0.data(), 0, N*sizeof(float), 4*4);
+      AssertNoError(device);
+      
+      rtcCommitGeometry(geom);
+      AssertNoError(device);
+      
+      bool passed = true;
+      passed &= checkGridInterpolation(geom,RTC_BUFFER_TYPE_VERTEX,0,N);
+      rtcReleaseGeometry(geom);
+      AssertNoError(device);
+
+      return (VerifyApplication::TestReturnValue) passed;
+    }
+  };
   
   const size_t num_interpolation_hair_vertices = 13;
   const size_t num_interpolation_hairs = 4;
@@ -4282,6 +4356,11 @@ namespace embree
       push(new TestGroup("triangles",true,true));
       for (auto s : interpolateTests) 
         groups.top()->add(new InterpolateTrianglesTest(std::to_string((long long)(s)),isa,s));
+      groups.pop();
+
+      push(new TestGroup("grid",true,true));
+      for (auto s : interpolateTests) 
+        groups.top()->add(new InterpolateGridTest(std::to_string((long long)(s)),isa,s));
       groups.pop();
 
       push(new TestGroup("subdiv",true,true));
