@@ -637,7 +637,7 @@ namespace embree
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
-        settings.singleLeafTimeSegment = false; //Primitive::singleTimeSegment;
+        settings.singleLeafTimeSegment = true; //Primitive::singleTimeSegment;
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
         
         /* build hierarchy */
