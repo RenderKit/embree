@@ -1729,19 +1729,19 @@ namespace embree
         for (size_t j=0; j<20; j++) 
         {
           size_t numPrimitives = random_int()%256;
-          switch (random_int()%8) {
+          switch (random_int()%10) {
           case 0: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,false)); break;
           case 1: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,true )); break;
           case 2: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,false)); break;
           case 3: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,true )); break;
-          //case 2: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageGridMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
-          //case 3: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageGridMesh(random_int(),numPrimitives,true )); break;
-          case 4: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,false)); break;
-          case 5: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,true )); break;
-          case 6: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false)); break;
-          case 7: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,true )); break;
-            //case 8: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
-            //case 9: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
+          case 4: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageGridMesh(random_int(),numPrimitives,false)); break;
+          case 5: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageGridMesh(random_int(),numPrimitives,true )); break;
+          case 6: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,false)); break;
+          case 7: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,true )); break;
+          case 8: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false)); break;
+          case 9: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,true )); break;
+            //case 10: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
+            //case 11: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
           }
           AssertNoError(device);
         }

@@ -1156,6 +1156,7 @@ namespace embree
         const float maxF = reduce_max(upper);
         float diff = (1.0f+2.0f*float(ulp))*(maxF - minF);
         float decode_scale = diff / float(MAX_QUAN);
+        if (decode_scale == 0.0f) decode_scale = 2.0f*FLT_MIN; // result may have been flushed to zero
         assert(madd(decode_scale,float(MAX_QUAN),minF) >= maxF);
         const float encode_scale = float(MAX_QUAN) / diff;
         vint<N> ilower = max(vint<N>(floor((lower - vfloat<N>(minF))*vfloat<N>(encode_scale))),MIN_QUAN);
