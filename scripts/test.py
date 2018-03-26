@@ -273,7 +273,7 @@ def runConfig(config):
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
-    conf.append("-D EMBREE_TUTORIALS_IMAGE_MAGICK=OFF")
+    conf.append("-D EMBREE_TUTORIALS_OPENIMAGEIO=OFF")
     conf.append("-D EMBREE_TUTORIALS_LIBJPEG=OFF")
     conf.append("-D EMBREE_TUTORIALS_LIBPNG=OFF")
     if OS == "linux" and config["package"] == "ZIP":
