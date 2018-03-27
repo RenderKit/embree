@@ -14,9 +14,9 @@ upgrading from the Embree 2 to the current Embree 3 API see Section
 [Upgrading from Embree 2 to Embree 3].
 
 The API supports scenes consisting of different geometry types such as
-triangle meshes, quad meshes (triangle pairs), flat curves, round
-curves, oriented curves, subdivision meshes, instances, and
-user-defined geometries. See Section [Scene Object] for more
+triangle meshes, quad meshes (triangle pairs), grid meshes, flat
+curves, round curves, oriented curves, subdivision meshes, instances,
+and user-defined geometries. See Section [Scene Object] for more
 information.
 
 Finding the closest hit of a ray segment with the scene
@@ -591,6 +591,11 @@ Embree API Reference
 ```
 \pagebreak
 
+## RTC_GEOMETRY_TYPE_GRID
+``` {include=src/api/RTC_GEOMETRY_TYPE_GRID.md}
+```
+\pagebreak
+
 ## RTC_GEOMETRY_TYPE_SUBDIVISION
 ``` {include=src/api/RTC_GEOMETRY_TYPE_SUBDIVISION.md}
 ```
@@ -598,11 +603,6 @@ Embree API Reference
 
 ## RTC_GEOMETRY_TYPE_CURVE
 ``` {include=src/api/RTC_GEOMETRY_TYPE_CURVE.md}
-```
-\pagebreak
-
-## RTC_GEOMETRY_TYPE_GRID
-``` {include=src/api/RTC_GEOMETRY_TYPE_GRID.md}
 ```
 \pagebreak
 
