@@ -370,6 +370,11 @@ namespace embree
         sgop.push_back(CONVERT_BSPLINE_TO_BEZIER);
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
 
+    registerOption("merge-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
+        sgop.push_back(MERGE_QUADS_TO_GRIDS);
+      }, "--merge-triangles-to-grids: merges quads to grids");
+    
     registerOption("merge-quads-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
         sgop.push_back(MERGE_QUADS_TO_GRIDS);
       }, "--merge-quads-to-grids: merges quads to grids");
