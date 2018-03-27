@@ -115,6 +115,9 @@ print(executable)
   
 ret = os.system(executable)
 
+if ret == 0 and modeldir == "none":
+   sys.stdout.write("WARNING: not comparing to reference image\n");
+
 if ret == 0 and modeldir != "none":
   diff = compareImages(outImageFileTga,refImageFileTga,diffImageFileTga)
   if diff > 0.00055:
