@@ -1151,7 +1151,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> qmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,1);
+      Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,qmesh->numTimeSteps());
       
       std::vector<bool> visited;
       visited.resize(qmesh->numPrimitives());
@@ -1198,16 +1198,19 @@ namespace embree
           if (height+2 > SceneGraph::GridMeshNode::GRID_RES_MAX) break;
         }
         
-        /* gather all vertices of grid */
-        avector<Vec3fa> positions;
-        positions.resize((width+1)*(height+1));
-        gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[0], left.front());
-
         /* add new grid to grid mesh */
         unsigned int startVertex = (unsigned int) gmesh->positions[0].size();
         gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVertex,width+1,width+1,height+1));
-        for (size_t i=0; i<positions.size(); i++)
-          gmesh->positions[0].push_back(positions[i]);
+
+        /* gather all vertices of grid */
+        for (size_t t=0; t<qmesh->numTimeSteps(); t++)
+        {
+          avector<Vec3fa> positions;
+          positions.resize((width+1)*(height+1));
+          gather_grid(geom,positions,width,height,(unsigned int*)qmesh->quads.data(), qmesh->positions[t], left.front());
+          for (size_t i=0; i<positions.size(); i++)
+            gmesh->positions[t].push_back(positions[i]);
+        }
       }
 
       rtcReleaseGeometry(geom);
