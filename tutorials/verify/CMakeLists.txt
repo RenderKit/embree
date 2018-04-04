@@ -37,6 +37,7 @@ IF (EMBREE_TESTING_INTENSITY GREATER 0)
     ADD_MEMCHECK_TEST(verify_memcheck verify 
        --no-colors --intensity 0.1 
        --skip .*memory_consumption.*
+       --skip .*regression_.*_build_join  # causes some issues with TBB
        --skip .*SSE4.*              # to run faster
        --skip .*AVX.*               # valgrind does not support AVX
        --skip .*AVX2.*              # valgrind does not support AVX2
