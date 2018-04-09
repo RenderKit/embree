@@ -1300,12 +1300,38 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
-        ; // FIXME: not supported yet
-      else if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
+      //if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE) // FIXME: not supported yet
+      //  hmesh->type = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;
+      //else
+      if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
         hmesh->type = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;
       else if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
         hmesh->type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
+
+      return hmesh.dynamicCast<SceneGraph::Node>();
+    }
+    return node;
+  }
+
+   Ref<SceneGraph::Node> SceneGraph::convert_round_to_flat_curves(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_round_to_flat_curves(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = convert_round_to_flat_curves(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      //if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) // FIXME: not supported yet
+      //  hmesh->type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
+      //else
+      if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE)
+        hmesh->type = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
+      else if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
+        hmesh->type = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;
 
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
