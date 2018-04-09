@@ -36,7 +36,10 @@
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
-#define MAX_PATH_LENGTH  8
+
+extern uniform int g_spp;
+extern uniform int g_max_path_length;
+extern uniform bool g_accumulate;
 
 uniform bool g_subdiv_mode = false;
 uniform unsigned int keyframeID = 0;
@@ -860,8 +863,6 @@ inline Vec3f Material__sample(ISPCMaterial** uniform uniform materials, unsigned
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
-extern uniform int g_spp;
-extern uniform bool g_accumulate;
 
 /* occlusion filter function */
 unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
@@ -1532,7 +1533,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
   DifferentialGeometry dg;
  
   /* iterative path tracer loop */
-  for (uniform int i=0; i<MAX_PATH_LENGTH; i++)
+  for (uniform int i=0; i<g_max_path_length; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
