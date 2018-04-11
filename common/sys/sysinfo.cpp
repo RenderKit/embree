@@ -234,32 +234,36 @@ namespace embree
       ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* checks if ymm state are enabled in XCR0 */
       zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* checks if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
     }
+    if (xmm_enabled) cpu_features |= CPU_FEATURE_XMM_ENABLED;
+    if (ymm_enabled) cpu_features |= CPU_FEATURE_YMM_ENABLED;
+    if (zmm_enabled) cpu_features |= CPU_FEATURE_ZMM_ENABLED;
     
-    if (xmm_enabled && cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE   ) cpu_features |= CPU_FEATURE_SSE;
-    if (xmm_enabled && cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE2  ) cpu_features |= CPU_FEATURE_SSE2;
-    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE3  ) cpu_features |= CPU_FEATURE_SSE3;
-    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSSE3 ) cpu_features |= CPU_FEATURE_SSSE3;
-    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_1) cpu_features |= CPU_FEATURE_SSE41;
-    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
-    if (               cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
-    if (ymm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX;
-    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_F16C  ) cpu_features |= CPU_FEATURE_F16C;
-    if (               cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
-    if (ymm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX2  ) cpu_features |= CPU_FEATURE_AVX2;
-    if (ymm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_FMA3  ) cpu_features |= CPU_FEATURE_FMA3;
+    if (cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE   ) cpu_features |= CPU_FEATURE_SSE;
+    if (cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE2  ) cpu_features |= CPU_FEATURE_SSE2;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE3  ) cpu_features |= CPU_FEATURE_SSE3;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSSE3 ) cpu_features |= CPU_FEATURE_SSSE3;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_1) cpu_features |= CPU_FEATURE_SSE41;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
+    
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_F16C  ) cpu_features |= CPU_FEATURE_F16C;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX2  ) cpu_features |= CPU_FEATURE_AVX2;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_FMA3  ) cpu_features |= CPU_FEATURE_FMA3;
     if (cpuid_leaf_e1[ECX] & CPU_FEATURE_BIT_LZCNT) cpu_features |= CPU_FEATURE_LZCNT;
     if (cpuid_leaf_7 [EBX] & CPU_FEATURE_BIT_BMI1 ) cpu_features |= CPU_FEATURE_BMI1;
     if (cpuid_leaf_7 [EBX] & CPU_FEATURE_BIT_BMI2 ) cpu_features |= CPU_FEATURE_BMI2;
 
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512F   ) cpu_features |= CPU_FEATURE_AVX512F;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512DQ  ) cpu_features |= CPU_FEATURE_AVX512DQ;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512PF  ) cpu_features |= CPU_FEATURE_AVX512PF;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512ER  ) cpu_features |= CPU_FEATURE_AVX512ER; 
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512CD  ) cpu_features |= CPU_FEATURE_AVX512CD;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512BW  ) cpu_features |= CPU_FEATURE_AVX512BW;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
-    if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512F   ) cpu_features |= CPU_FEATURE_AVX512F;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512DQ  ) cpu_features |= CPU_FEATURE_AVX512DQ;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512PF  ) cpu_features |= CPU_FEATURE_AVX512PF;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512ER  ) cpu_features |= CPU_FEATURE_AVX512ER; 
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512CD  ) cpu_features |= CPU_FEATURE_AVX512CD;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512BW  ) cpu_features |= CPU_FEATURE_AVX512BW;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
+    if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
+    if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
     return cpu_features;
   }
@@ -267,6 +271,9 @@ namespace embree
   std::string stringOfCPUFeatures(int features)
   {
     std::string str;
+    if (features & CPU_FEATURE_XMM_ENABLED) str += "XMM ";
+    if (features & CPU_FEATURE_YMM_ENABLED) str += "YMM ";
+    if (features & CPU_FEATURE_ZMM_ENABLED) str += "ZMM ";
     if (features & CPU_FEATURE_SSE   ) str += "SSE ";
     if (features & CPU_FEATURE_SSE2  ) str += "SSE2 ";
     if (features & CPU_FEATURE_SSE3  ) str += "SSE3 ";

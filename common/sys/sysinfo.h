@@ -132,7 +132,11 @@ namespace embree
   static const int CPU_FEATURE_AVX512VL = 1 << 22;
   static const int CPU_FEATURE_AVX512IFMA = 1 << 23;
   static const int CPU_FEATURE_AVX512VBMI = 1 << 24;
+  static const int CPU_FEATURE_XMM_ENABLED = 1 << 25;
+  static const int CPU_FEATURE_YMM_ENABLED = 1 << 26;
+  static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
  
+  
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -143,17 +147,17 @@ namespace embree
   std::string supportedTargetList (int isa);
 
   /*! ISAs */
-  static const int SSE    = CPU_FEATURE_SSE; 
+  static const int SSE    = CPU_FEATURE_SSE | CPU_FEATURE_XMM_ENABLED; 
   static const int SSE2   = SSE | CPU_FEATURE_SSE2;
   static const int SSE3   = SSE2 | CPU_FEATURE_SSE3;
   static const int SSSE3  = SSE3 | CPU_FEATURE_SSSE3;
   static const int SSE41  = SSSE3 | CPU_FEATURE_SSE41;
   static const int SSE42  = SSE41 | CPU_FEATURE_SSE42 | CPU_FEATURE_POPCNT;
-  static const int AVX    = SSE42 | CPU_FEATURE_AVX;
+  static const int AVX    = SSE42 | CPU_FEATURE_AVX | CPU_FEATURE_YMM_ENABLED;
   static const int AVXI   = AVX | CPU_FEATURE_F16C | CPU_FEATURE_RDRAND;
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
-  static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
-  static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL;
+  static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD | CPU_FEATURE_ZMM_ENABLED;
+  static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);
