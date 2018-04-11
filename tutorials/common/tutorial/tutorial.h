@@ -22,6 +22,9 @@
 #include "scene.h"
 #include "scene_device.h"
 
+/* include GLFW for window management */
+#include <GLFW/glfw3.h>
+
 namespace embree
 {
   /* functions provided by each tutorial */
@@ -102,7 +105,7 @@ namespace embree
 
     /* GLUT callback functions */
   public:
-    virtual void keyboardFunc(unsigned char key, int x, int y);
+    virtual void keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mode);
     virtual void keyboardUpFunc(unsigned char key, int x, int y);
     virtual void specialFunc(int key, int, int);
     virtual void clickFunc(int button, int state, int x, int y);
@@ -136,7 +139,7 @@ namespace embree
 
     unsigned window_width;
     unsigned window_height;
-    int windowID;
+    GLFWwindow* window;
 
     double time0;
     int debug_int0;

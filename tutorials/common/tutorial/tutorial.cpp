@@ -21,19 +21,13 @@
 /* include GLUT for display */
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
-#  include <GLUT/glut.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
-#  define FREEGLUT_LIB_PRAGMAS 0
 #  include <GL/gl.h>
-#  include <GL/glut.h>
 #else
 #  include <GL/gl.h>
-#  include <GL/glut.h>
 #endif
 
-/* include tutorial_device.h after GLUT, as otherwise we may get
- * warnings of redefined GLUT_KEY_F1, etc. */
 #include "tutorial_device.h"
 #include "../scenegraph/scenegraph.h"
 #include "../scenegraph/geometry_creation.h"
@@ -114,7 +108,7 @@ namespace embree
 
       window_width(512),
       window_height(512),
-      windowID(0),
+      window(nullptr),
 
       time0(getSeconds()),
       debug_int0(0),
@@ -682,7 +676,7 @@ namespace embree
     g_ispc_scene = ispc_scene.get();
   }
 
-  void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
+  void TutorialApplication::keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mode)
   {
     /* call tutorial keyboard handler */
     device_key_pressed(key);
@@ -695,7 +689,7 @@ namespace embree
     case 'd' : moveDelta.x = +1.0f; break;
 
     case 'f' :
-      if (fullscreen) {
+      /*if (fullscreen) {
         fullscreen = false;
         glutReshapeWindow(window_width,window_height);
       } else {
@@ -703,7 +697,7 @@ namespace embree
         window_width = width;
         window_height = height;
         glutFullScreen();
-      }
+        }*/
       break;
     case 'c' : std::cout << camera.str() << std::endl; break;
     case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
@@ -715,11 +709,8 @@ namespace embree
       break;
     }
 
-    case '\033': case 'q': case 'Q':
-      glutDestroyWindow(windowID);
-#if defined(__MACOSX__) // FIXME: why only on MacOSX
-      exit(1);
-#endif
+    case '\033': case 'q': case 'Q': case GLFW_KEY_ESCAPE:
+      glfwSetWindowShouldClose(windows,GLFW_TRUE);
       break;
     }
   }
@@ -738,7 +729,7 @@ namespace embree
   void TutorialApplication::specialFunc(int key, int x, int y)
   {
     device_key_pressed(key);
-
+#if 0
     if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
     {
       switch (key) {
@@ -759,10 +750,12 @@ namespace embree
       case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
       }
     }
+#endif
   }
 
   void TutorialApplication::clickFunc(int button, int state, int x, int y)
   {
+#if 0
     if (state == GLUT_UP)
     {
       mouseMode = 0;
@@ -791,10 +784,12 @@ namespace embree
         else if (button == GLUT_LEFT_BUTTON) mouseMode = 4;
       }
     }
+#endif
   }
 
   void TutorialApplication::motionFunc(int x, int y)
   {
+#if 0
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
     clickX = x; clickY = y;
 
@@ -804,6 +799,7 @@ namespace embree
     case 3: camera.dolly(-dClickY); break;
     case 4: camera.rotate(-0.005f*dClickX,0.005f*dClickY); break;
     }
+#endif
   }
 
   void TutorialApplication::displayFunc()
@@ -826,12 +822,13 @@ namespace embree
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
 
+#if 0
     if (fullscreen || !print_frame_rate)
     {
       glMatrixMode( GL_PROJECTION );
       glPushMatrix();
       glLoadIdentity();
-      gluOrtho2D( 0, width, 0, height );
+      //gluOrtho2D( 0, width, 0, height );
       glMatrixMode( GL_MODELVIEW );
       glPushMatrix();
       glLoadIdentity();
@@ -846,16 +843,16 @@ namespace embree
       stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
       glRasterPos2i(6, height - 24);
-      for (size_t i=0; i<str.size(); i++)
-        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+      //for (size_t i=0; i<str.size(); i++)
+      //  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
 
 #if defined(RAY_STATS)
       stream.str("");
       stream << avg_mrayps.get() << " Mray/s";
       str = stream.str();
       glRasterPos2i(6, height - 52);
-      for (size_t i=0; i<str.size(); i++)
-        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+      //for (size_t i=0; i<str.size(); i++)
+      //glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
 #endif
 
       glRasterPos2i( 0, 0 );
@@ -864,8 +861,9 @@ namespace embree
       glPopMatrix();
       glMatrixMode( GL_MODELVIEW );
     }
+#endif
 
-    glutSwapBuffers();
+    glfwSwapBuffers(window);
 
     double dt1 = getSeconds()-t0;
     avg_frame_time.add(dt1);
@@ -897,11 +895,14 @@ namespace embree
   }
 
   void TutorialApplication::idleFunc() {
-    glutPostRedisplay();
+    //glutPostRedisplay();
   }
 
-  void keyboardFunc(unsigned char key, int x, int y) {
-    TutorialApplication::instance->keyboardFunc(key,x,y);
+  void errorFunc(int error, const char* description) {
+    throw std::runtime_error(std::string("Error: ")+description);
+  }
+  void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mode) {
+    TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mode);
   }
   void keyboardUpFunc(unsigned char key, int x, int y) {
     TutorialApplication::instance->keyboardUpFunc(key,x,y);
@@ -965,8 +966,27 @@ namespace embree
     if (interactive)
     {
       resize(width,height);
+      glfwSetErrorCallback(errorFunc);
+      glfwInit();
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
+      window = glfwCreateWindow(width,height,tutorialName.c_str(),nullptr,nullptr);
+      if (!window) {
+        glfwTerminate();
+        throw std::runtime_error("GLFW window creation failed");
+      }
+      glfwSetKeyCallback(window,embree::keyboardFunc);
+      glfwMakeContextCurrent(window);
+      glfwSwapInterval(1);
 
-      glutInit(&argc, argv);
+      reshapeFunc(width,height);
+      while (!glfwWindowShouldClose(window))
+      {
+        displayFunc();
+        glfwPollEvents();
+      }
+      
+      /*glutInit(&argc, argv);
       glutInitWindowSize((GLsizei)width, (GLsizei)height);
       glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
       glutInitWindowPosition(0, 0);
@@ -980,7 +1000,7 @@ namespace embree
       glutMouseFunc(embree::clickFunc);
       glutMotionFunc(embree::motionFunc);
       glutReshapeFunc(embree::reshapeFunc);
-      glutMainLoop();
+      glutMainLoop();*/
     }
   }
 
@@ -1175,5 +1195,5 @@ namespace embree
 
   extern "C" void progressEnd() {
     std::cout << "]" << std::endl;
-  }
+}
 }
