@@ -18,7 +18,7 @@
 #include "scene.h"
 #include "statistics.h"
 
-/* include GLUT for display */
+/* include GL */
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
 #elif defined(__WIN32__)
@@ -952,16 +952,16 @@ namespace embree
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT  : break;
-    case SHADER_EYELIGHT : device_key_pressed(GLUT_KEY_F2); break;
-    case SHADER_OCCLUSION: device_key_pressed(GLUT_KEY_F3); break;
-    case SHADER_UV       : device_key_pressed(GLUT_KEY_F4); break;
-    case SHADER_TEXCOORDS: device_key_pressed(GLUT_KEY_F8); break;
-    case SHADER_TEXCOORDS_GRID: device_key_pressed(GLUT_KEY_F8); device_key_pressed(GLUT_KEY_F8); break;
-    case SHADER_NG       : device_key_pressed(GLUT_KEY_F5); break;
-    case SHADER_CYCLES   : device_key_pressed(GLUT_KEY_F9); break;
-    case SHADER_GEOMID   : device_key_pressed(GLUT_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
+    case SHADER_EYELIGHT : device_key_pressed(GLFW_KEY_F2); break;
+    case SHADER_OCCLUSION: device_key_pressed(GLFW_KEY_F3); break;
+    case SHADER_UV       : device_key_pressed(GLFW_KEY_F4); break;
+    case SHADER_TEXCOORDS: device_key_pressed(GLFW_KEY_F8); break;
+    case SHADER_TEXCOORDS_GRID: device_key_pressed(GLFW_KEY_F8); device_key_pressed(GLFW_KEY_F8); break;
+    case SHADER_NG       : device_key_pressed(GLFW_KEY_F5); break;
+    case SHADER_CYCLES   : device_key_pressed(GLFW_KEY_F9); break;
+    case SHADER_GEOMID   : device_key_pressed(GLFW_KEY_F6); break;
+    case SHADER_GEOMID_PRIMID: device_key_pressed(GLFW_KEY_F7); break;
+    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLFW_KEY_F11); break;
     };
 
     /* benchmark mode */

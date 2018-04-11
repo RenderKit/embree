@@ -109,7 +109,7 @@ namespace embree
     /* create a standard window of specified size */
     GLFWwindow* createStandardWindow(int width, int height);
  
-    /* GLUT callback functions */
+    /* GLFW callback functions */
   public:
     virtual void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods);
     virtual void clickFunc(GLFWwindow* window, int button, int action, int mods);
