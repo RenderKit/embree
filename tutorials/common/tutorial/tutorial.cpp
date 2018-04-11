@@ -676,84 +676,78 @@ namespace embree
     g_ispc_scene = ispc_scene.get();
   }
 
-  void TutorialApplication::keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mode)
+  void TutorialApplication::keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mods)
   {
-    /* call tutorial keyboard handler */
-    device_key_pressed(key);
-
-    switch (key)
+    if (action == GLFW_PRESS)
     {
-    case 'w' : moveDelta.z = +1.0f; break;
-    case 's' : moveDelta.z = -1.0f; break;
-    case 'a' : moveDelta.x = -1.0f; break;
-    case 'd' : moveDelta.x = +1.0f; break;
+      /* call tutorial keyboard handler */
+      device_key_pressed(key);
 
-    case 'f' :
-      /*if (fullscreen) {
-        fullscreen = false;
-        glutReshapeWindow(window_width,window_height);
-      } else {
-        fullscreen = true;
-        window_width = width;
-        window_height = height;
-        glutFullScreen();
-        }*/
-      break;
-    case 'c' : std::cout << camera.str() << std::endl; break;
-    case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
-    case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+      if (mods & GLFW_MOD_CONTROL)
+      {
+        switch (key) {
+        case GLFW_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+        case GLFW_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+        case GLFW_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+        case GLFW_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+        }
+      }
+      else
+      {
+        switch (key) {
+        case GLFW_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
+        case GLFW_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
+        case GLFW_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
+        case GLFW_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
+        case GLFW_KEY_PAGE_UP   : speed *= 1.2f; break;
+        case GLFW_KEY_PAGE_DOWN : speed /= 1.2f; break;
 
-    case ' ' : {
-      Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
-      storeImage(image, "screenshot.tga");
-      break;
-    }
-
-    case '\033': case 'q': case 'Q': case GLFW_KEY_ESCAPE:
-      glfwSetWindowShouldClose(windows,GLFW_TRUE);
-      break;
-    }
-  }
-
-  void TutorialApplication::keyboardUpFunc(unsigned char key, int x, int y)
-  {
-    switch (key)
-    {
-    case 'w' : moveDelta.z = 0.0f; break;
-    case 's' : moveDelta.z = 0.0f; break;
-    case 'a' : moveDelta.x = 0.0f; break;
-    case 'd' : moveDelta.x = 0.0f; break;
-    }
-  }
-
-  void TutorialApplication::specialFunc(int key, int x, int y)
-  {
-    device_key_pressed(key);
-#if 0
-    if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
-    {
-      switch (key) {
-      case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-      case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-      case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-      case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+        case GLFW_KEY_W : moveDelta.z = +1.0f; break;
+        case GLFW_KEY_S : moveDelta.z = -1.0f; break;
+        case GLFW_KEY_A : moveDelta.x = -1.0f; break;
+        case GLFW_KEY_D : moveDelta.x = +1.0f; break;
+          
+        case GLFW_KEY_F :
+          /*if (fullscreen) {
+            fullscreen = false;
+            glutReshapeWindow(window_width,window_height);
+            } else {
+            fullscreen = true;
+            window_width = width;
+            window_height = height;
+            glutFullScreen();
+            }*/
+          break;
+        case GLFW_KEY_C : std::cout << camera.str() << std::endl; break;
+          //case GLFW_KEY_ADD : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
+        case GLFW_KEY_MINUS : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+          
+        case GLFW_KEY_SPACE: {
+          Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
+          storeImage(image, "screenshot.tga");
+          break;
+        }
+          
+        case GLFW_KEY_ESCAPE:
+        case GLFW_KEY_Q: 
+          glfwSetWindowShouldClose(windows,GLFW_TRUE);
+          break;
+        }
       }
     }
-    else
+    else if (action == GLFW_RELEASE)
     {
-      switch (key) {
-      case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
-      case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
-      case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
-      case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
-      case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
-      case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
+      switch (key)
+      {
+      case GLFW_KEY_W : moveDelta.z = 0.0f; break;
+      case GLFW_KEY_S : moveDelta.z = 0.0f; break;
+      case GLFW_KEY_A : moveDelta.x = 0.0f; break;
+      case GLFW_KEY_D : moveDelta.x = 0.0f; break;
       }
     }
-#endif
   }
-
-  void TutorialApplication::clickFunc(int button, int state, int x, int y)
+    
+  void TutorialApplication::clickFunc(GLFWwindow* window, int button, int action, int mods)
   {
 #if 0
     if (state == GLUT_UP)
@@ -787,7 +781,7 @@ namespace embree
 #endif
   }
 
-  void TutorialApplication::motionFunc(int x, int y)
+  void TutorialApplication::motionFunc(GLFWwindow* window, double x, double y)
   {
 #if 0
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
@@ -901,20 +895,14 @@ namespace embree
   void errorFunc(int error, const char* description) {
     throw std::runtime_error(std::string("Error: ")+description);
   }
-  void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mode) {
-    TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mode);
+  void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mods);
   }
-  void keyboardUpFunc(unsigned char key, int x, int y) {
-    TutorialApplication::instance->keyboardUpFunc(key,x,y);
+  void clickFunc(GLFWwindow* window, int button, int action, int mods) {
+    TutorialApplication::instance->clickFunc(window,button,action,mods);
   }
-  void specialFunc(int key, int x, int y) {
-    TutorialApplication::instance->specialFunc(key,x,y);
-  }
-  void clickFunc(int button, int state, int x, int y) {
-    TutorialApplication::instance->clickFunc(button,state,x,y);
-  }
-  void motionFunc(int x, int y) {
-    TutorialApplication::instance->motionFunc(x,y);
+  void motionFunc(GLFWwindow* window, double x, double y) {
+    TutorialApplication::instance->motionFunc(window,x,y);
   }
   void displayFunc() {
     TutorialApplication::instance->displayFunc();
@@ -976,6 +964,8 @@ namespace embree
         throw std::runtime_error("GLFW window creation failed");
       }
       glfwSetKeyCallback(window,embree::keyboardFunc);
+      glfwSetCursorPosCallback(window,embree::motionFunc);
+      glfwSetMouseButtonCallback(window,embree::clickFunc);
       glfwMakeContextCurrent(window);
       glfwSwapInterval(1);
 

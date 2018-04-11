@@ -105,11 +105,9 @@ namespace embree
 
     /* GLUT callback functions */
   public:
-    virtual void keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mode);
-    virtual void keyboardUpFunc(unsigned char key, int x, int y);
-    virtual void specialFunc(int key, int, int);
-    virtual void clickFunc(int button, int state, int x, int y);
-    virtual void motionFunc(int x, int y);
+    virtual void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods);
+    virtual void clickFunc(GLFWwindow* window, int button, int action, int mods);
+    virtual void motionFunc(GLFWwindow* window, double x, double y);
     virtual void displayFunc();
     virtual void reshapeFunc(int width, int height);
     virtual void idleFunc();
