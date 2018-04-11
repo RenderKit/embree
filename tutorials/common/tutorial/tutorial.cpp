@@ -694,9 +694,6 @@ namespace embree
   void reshapeFunc(GLFWwindow* window, int width, int height) {
     TutorialApplication::instance->reshapeFunc(window,width,height);
   }
-  void idleFunc() {
-    TutorialApplication::instance->idleFunc();
-  }
 
   GLFWwindow* TutorialApplication::createFullScreenWindow()
   {
@@ -711,6 +708,7 @@ namespace embree
     glfwSetCursorPosCallback(window,embree::motionFunc);
     glfwSetMouseButtonCallback(window,embree::clickFunc);
     glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    resize(mode->width,mode->height);
     return window;
   }
 
@@ -721,10 +719,11 @@ namespace embree
     glfwSetCursorPosCallback(window,embree::motionFunc);
     glfwSetMouseButtonCallback(window,embree::clickFunc);
     glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    resize(width,height);
     return window;
   }
 
-  void TutorialApplication::keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mods)
+  void TutorialApplication::keyboardFunc(GLFWwindow* window_in, int key, int scancode, int action, int mods)
   {
     if (action == GLFW_PRESS)
     {
@@ -783,7 +782,7 @@ namespace embree
           
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_Q: 
-          glfwSetWindowShouldClose(windows,GLFW_TRUE);
+          glfwSetWindowShouldClose(window,GLFW_TRUE);
           break;
         }
       }
@@ -939,10 +938,6 @@ namespace embree
     this->width = width; this->height = height;
   }
 
-  void TutorialApplication::idleFunc() {
-    //glutPostRedisplay();
-  }
-
   void TutorialApplication::run(int argc, char** argv)
   {
     /* set debug values */
@@ -981,7 +976,6 @@ namespace embree
     /* interactive mode */
     if (interactive)
     {
-      resize(width,height);
       window_width = width;
       window_height = height;
       glfwSetErrorCallback(errorFunc);
@@ -1000,18 +994,6 @@ namespace embree
         displayFunc();
         glfwPollEvents();
       }
-      
-      /*
-      if (fullscreen) glutFullScreen();
-      glutDisplayFunc(embree::displayFunc);
-      glutIdleFunc(embree::idleFunc);
-      glutKeyboardFunc(embree::keyboardFunc);
-      glutKeyboardUpFunc(embree::keyboardUpFunc);
-      glutSpecialFunc(embree::specialFunc);
-      glutMouseFunc(embree::clickFunc);
-      glutMotionFunc(embree::motionFunc);
-      glutReshapeFunc(embree::reshapeFunc);
-      glutMainLoop();*/
     }
   }
 

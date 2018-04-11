@@ -116,7 +116,6 @@ namespace embree
     virtual void motionFunc(GLFWwindow* window, double x, double y);
     virtual void displayFunc();
     virtual void reshapeFunc(GLFWwindow* window, int width, int height);
-    virtual void idleFunc();
 
   public:
     std::string tutorialName;
