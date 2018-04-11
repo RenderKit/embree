@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 SET(EMBREE_VERSION_MAJOR 3)
-SET(EMBREE_VERSION_MINOR 1)
+SET(EMBREE_VERSION_MINOR 2)
 SET(EMBREE_VERSION_PATCH 0)
 SET(EMBREE_VERSION_NOTE "-alpha.0")
 
