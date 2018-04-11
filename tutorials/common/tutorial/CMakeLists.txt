@@ -14,7 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIRS})
 ADD_LIBRARY(tutorial STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
 TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
