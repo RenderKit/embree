@@ -103,13 +103,19 @@ namespace embree
     /* set scene to use */
     void set_scene (TutorialScene* in);
 
+    /* create a fullscreen window */
+    GLFWwindow* createFullScreenWindow();
+
+    /* create a standard window of specified size */
+    GLFWwindow* createStandardWindow(int width, int height);
+ 
     /* GLUT callback functions */
   public:
     virtual void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods);
     virtual void clickFunc(GLFWwindow* window, int button, int action, int mods);
     virtual void motionFunc(GLFWwindow* window, double x, double y);
     virtual void displayFunc();
-    virtual void reshapeFunc(int width, int height);
+    virtual void reshapeFunc(GLFWwindow* window, int width, int height);
     virtual void idleFunc();
 
   public:
@@ -144,7 +150,7 @@ namespace embree
     int debug_int1;
 
     int mouseMode;
-    int clickX, clickY;
+    double clickX, clickY;
 
     float speed;
     Vec3f moveDelta;

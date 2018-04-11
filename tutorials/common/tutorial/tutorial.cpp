@@ -115,7 +115,7 @@ namespace embree
       debug_int1(0),
 
       mouseMode(0),
-      clickX(0), clickY(0),
+      clickX(0.0), clickY(0.0),
       speed(1.0f),
       moveDelta(zero),
       command_line_camera(false),
@@ -676,6 +676,54 @@ namespace embree
     g_ispc_scene = ispc_scene.get();
   }
 
+   void errorFunc(int error, const char* description) {
+    throw std::runtime_error(std::string("Error: ")+description);
+  }
+  void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mods);
+  }
+  void clickFunc(GLFWwindow* window, int button, int action, int mods) {
+    TutorialApplication::instance->clickFunc(window,button,action,mods);
+  }
+  void motionFunc(GLFWwindow* window, double x, double y) {
+    TutorialApplication::instance->motionFunc(window,x,y);
+  }
+  void displayFunc() {
+    TutorialApplication::instance->displayFunc();
+  }
+  void reshapeFunc(GLFWwindow* window, int width, int height) {
+    TutorialApplication::instance->reshapeFunc(window,width,height);
+  }
+  void idleFunc() {
+    TutorialApplication::instance->idleFunc();
+  }
+
+  GLFWwindow* TutorialApplication::createFullScreenWindow()
+  {
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    glfwWindowHint(GLFW_RED_BITS,mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS,mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS,mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE,mode->refreshRate);
+    GLFWwindow* window = glfwCreateWindow(mode->width,mode->height,tutorialName.c_str(),monitor,nullptr);
+    glfwSetKeyCallback(window,embree::keyboardFunc);
+    glfwSetCursorPosCallback(window,embree::motionFunc);
+    glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    return window;
+  }
+
+  GLFWwindow* TutorialApplication::createStandardWindow(int width, int height)
+  {
+    GLFWwindow* window = glfwCreateWindow(width,height,tutorialName.c_str(),nullptr,nullptr);
+    glfwSetKeyCallback(window,embree::keyboardFunc);
+    glfwSetCursorPosCallback(window,embree::motionFunc);
+    glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    return window;
+  }
+
   void TutorialApplication::keyboardFunc(GLFWwindow* windows, int key, int scancode, int action, int mods)
   {
     if (action == GLFW_PRESS)
@@ -708,16 +756,21 @@ namespace embree
         case GLFW_KEY_D : moveDelta.x = +1.0f; break;
           
         case GLFW_KEY_F :
-          /*if (fullscreen) {
-            fullscreen = false;
-            glutReshapeWindow(window_width,window_height);
-            } else {
-            fullscreen = true;
+          glfwDestroyWindow(window);
+          if (fullscreen) {
+            width = window_width;
+            height = window_height;
+            window = createStandardWindow(width,height);
+          }
+          else {
             window_width = width;
             window_height = height;
-            glutFullScreen();
-            }*/
+            window = createFullScreenWindow();
+          }
+          glfwMakeContextCurrent(window);
+          fullscreen = !fullscreen;
           break;
+          
         case GLFW_KEY_C : std::cout << camera.str() << std::endl; break;
           //case GLFW_KEY_ADD : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
         case GLFW_KEY_MINUS : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
@@ -749,14 +802,16 @@ namespace embree
     
   void TutorialApplication::clickFunc(GLFWwindow* window, int button, int action, int mods)
   {
-#if 0
-    if (state == GLUT_UP)
+    double x,y;
+    glfwGetCursorPos(window,&x,&y);
+    
+    if (action == GLFW_RELEASE)
     {
       mouseMode = 0;
     }
-    else
+    else if (action == GLFW_PRESS)
     {
-      if (button == GLUT_RIGHT_BUTTON)
+      if (button == GLFW_MOUSE_BUTTON_RIGHT)
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
@@ -772,18 +827,15 @@ namespace embree
       else
       {
         clickX = x; clickY = y;
-        int modifiers = glutGetModifiers();
-        if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
-        else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
-        else if (button == GLUT_LEFT_BUTTON) mouseMode = 4;
+        if      (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) mouseMode = 1;
+        else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL ) mouseMode = 3;
+        else if (button == GLFW_MOUSE_BUTTON_LEFT) mouseMode = 4;
       }
     }
-#endif
   }
 
   void TutorialApplication::motionFunc(GLFWwindow* window, double x, double y)
   {
-#if 0
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
     clickX = x; clickY = y;
 
@@ -793,7 +845,6 @@ namespace embree
     case 3: camera.dolly(-dClickY); break;
     case 4: camera.rotate(-0.005f*dClickX,0.005f*dClickY); break;
     }
-#endif
   }
 
   void TutorialApplication::displayFunc()
@@ -881,7 +932,7 @@ namespace embree
     } 
   }
 
-  void TutorialApplication::reshapeFunc(int width, int height)
+  void TutorialApplication::reshapeFunc(GLFWwindow* window, int width, int height)
   {
     resize(width,height);
     glViewport(0, 0, width, height);
@@ -890,28 +941,6 @@ namespace embree
 
   void TutorialApplication::idleFunc() {
     //glutPostRedisplay();
-  }
-
-  void errorFunc(int error, const char* description) {
-    throw std::runtime_error(std::string("Error: ")+description);
-  }
-  void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mods);
-  }
-  void clickFunc(GLFWwindow* window, int button, int action, int mods) {
-    TutorialApplication::instance->clickFunc(window,button,action,mods);
-  }
-  void motionFunc(GLFWwindow* window, double x, double y) {
-    TutorialApplication::instance->motionFunc(window,x,y);
-  }
-  void displayFunc() {
-    TutorialApplication::instance->displayFunc();
-  }
-  void reshapeFunc(int width, int height) {
-    TutorialApplication::instance->reshapeFunc(width,height);
-  }
-  void idleFunc() {
-    TutorialApplication::instance->idleFunc();
   }
 
   void TutorialApplication::run(int argc, char** argv)
@@ -941,8 +970,7 @@ namespace embree
     };
 
     /* benchmark mode */
-    if (numBenchmarkFrames)
-    {
+    if (numBenchmarkFrames) {
       renderBenchmark();
     }
 
@@ -954,33 +982,26 @@ namespace embree
     if (interactive)
     {
       resize(width,height);
+      window_width = width;
+      window_height = height;
       glfwSetErrorCallback(errorFunc);
       glfwInit();
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
-      window = glfwCreateWindow(width,height,tutorialName.c_str(),nullptr,nullptr);
-      if (!window) {
-        glfwTerminate();
-        throw std::runtime_error("GLFW window creation failed");
-      }
-      glfwSetKeyCallback(window,embree::keyboardFunc);
-      glfwSetCursorPosCallback(window,embree::motionFunc);
-      glfwSetMouseButtonCallback(window,embree::clickFunc);
+     
+      if (fullscreen) window = createFullScreenWindow();
+      else            window = createStandardWindow(width,height);
+     
       glfwMakeContextCurrent(window);
       glfwSwapInterval(1);
 
-      reshapeFunc(width,height);
       while (!glfwWindowShouldClose(window))
       {
         displayFunc();
         glfwPollEvents();
       }
       
-      /*glutInit(&argc, argv);
-      glutInitWindowSize((GLsizei)width, (GLsizei)height);
-      glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-      glutInitWindowPosition(0, 0);
-      windowID = glutCreateWindow(tutorialName.c_str());
+      /*
       if (fullscreen) glutFullScreen();
       glutDisplayFunc(embree::displayFunc);
       glutIdleFunc(embree::idleFunc);
