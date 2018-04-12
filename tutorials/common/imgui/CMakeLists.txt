@@ -14,9 +14,12 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(image)
-ADD_SUBDIRECTORY(tutorial)
-ADD_SUBDIRECTORY(scenegraph)
-ADD_SUBDIRECTORY(lights)
-ADD_SUBDIRECTORY(texture)
-ADD_SUBDIRECTORY(imgui)
+ADD_LIBRARY(imgui STATIC
+  imgui.cpp
+  imgui_demo.cpp
+  imgui_draw.cpp
+)
+
+TARGET_LINK_LIBRARIES(imgui ${OPENGL_LIBRARIES})
+SET_PROPERTY(TARGET imgui PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET imgui APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")

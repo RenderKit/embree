@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 ADD_LIBRARY(tutorial STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
+TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree imgui ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
@@ -39,7 +39,7 @@ IF (WIN32)
   GET_FILENAME_COMPONENT(GLFW_DIR ${GLFW_LIBRARY} PATH)
   ADD_CUSTOM_COMMAND(TARGET tutorial POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GLFW_DIR}/glfw3.dll $<TARGET_FILE_DIR:tutorial>
-    COMMENT "Copy FreeGlut DLL" VERBATIM
+    COMMENT "Copying GLFW DLL" VERBATIM
   )
   INSTALL(PROGRAMS ${GLFW_DIR}/glfw3.dll DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 ENDIF (WIN32)
