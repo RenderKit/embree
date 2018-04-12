@@ -714,6 +714,8 @@ namespace embree
     glfwSetKeyCallback(window,embree::keyboardFunc);
     glfwSetCursorPosCallback(window,embree::motionFunc);
     glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
     glfwSetWindowSizeCallback(window,embree::reshapeFunc);
     resize(mode->width,mode->height);
     return window;
@@ -725,6 +727,8 @@ namespace embree
     glfwSetKeyCallback(window,embree::keyboardFunc);
     glfwSetCursorPosCallback(window,embree::motionFunc);
     glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
     glfwSetWindowSizeCallback(window,embree::reshapeFunc);
     resize(width,height);
     return window;
@@ -732,6 +736,8 @@ namespace embree
 
   void TutorialApplication::keyboardFunc(GLFWwindow* window_in, int key, int scancode, int action, int mods)
   {
+    ImGui_ImplGlfw_KeyCallback(window_in,key,scancode,action,mods);
+      
     if (action == GLFW_PRESS)
     {
       /* call tutorial keyboard handler */
@@ -808,6 +814,8 @@ namespace embree
     
   void TutorialApplication::clickFunc(GLFWwindow* window, int button, int action, int mods)
   {
+    ImGui_ImplGlfw_MouseButtonCallback(window,button,action,mods);
+
     double x,y;
     glfwGetCursorPos(window,&x,&y);
     
@@ -1044,7 +1052,7 @@ namespace embree
       ImGui::CreateContext();
       ImGuiIO& io = ImGui::GetIO(); (void)io;
       //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-      ImGui_ImplGlfwGL2_Init(window, true);
+      ImGui_ImplGlfwGL2_Init(window, false);
       
       // Setup style
       ImGui::StyleColorsDark();
