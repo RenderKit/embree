@@ -32,9 +32,9 @@ namespace embree
   class ParseLocation
   {
   public:
-    ParseLocation () : lineNumber(-1), colNumber(-1), charNumber(-1) {}
-    ParseLocation (std::shared_ptr<std::string> fileName, ssize_t lineNumber, ssize_t colNumber, ssize_t charNumber)
-      : fileName(fileName), lineNumber(lineNumber), colNumber(colNumber), charNumber(charNumber) {}
+    ParseLocation () : lineNumber(-1), colNumber(-1) {}
+    ParseLocation (std::shared_ptr<std::string> fileName, ssize_t lineNumber, ssize_t colNumber, ssize_t /*charNumber*/)
+      : fileName(fileName), lineNumber(lineNumber), colNumber(colNumber) {}
 
     std::string str() const
     {
@@ -49,7 +49,6 @@ namespace embree
     std::shared_ptr<std::string> fileName;         /// name of the file (or stream) the token is from
     ssize_t lineNumber;           /// the line number the token is from
     ssize_t colNumber;            /// the character number in the current line
-    ssize_t charNumber;           /// the character in the file
   };
 
   /*! a stream class templated over the stream elements */

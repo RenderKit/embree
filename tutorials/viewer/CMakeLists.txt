@@ -23,6 +23,8 @@ IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(viewer_incoherent viewer viewer --incoherent)
   ADD_EMBREE_MODELS_TEST(viewer_quad_coherent viewer viewer -convert-triangles-to-quads)
   ADD_EMBREE_MODELS_TEST(viewer_quad_incoherent viewer viewer -convert-triangles-to-quads --incoherent)
+  ADD_EMBREE_MODELS_TEST(viewer_grid_coherent viewer viewer -convert-triangles-to-grids)
+  ADD_EMBREE_MODELS_TEST(viewer_grid_incoherent viewer viewer -convert-triangles-to-grids --incoherent)
   ADD_EMBREE_SUBDIV_MODELS_TEST(viewer viewer viewer)
 ENDIF()
 

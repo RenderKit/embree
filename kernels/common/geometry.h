@@ -29,7 +29,7 @@ namespace embree
   __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
   {
     const float timeScaled = time * numTimeSegments;
-    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
+    const float itimef = clamp(floorf(timeScaled), 0.0f, numTimeSegments-1.0f);
     ftime = timeScaled - itimef;
     return int(itimef);
   }

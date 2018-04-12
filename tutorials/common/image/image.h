@@ -158,8 +158,8 @@ namespace embree
   /*! Loads image from JPEG file. */
   Ref<Image> loadJPEG(const FileName& fileName);
 
-  /*! Loads image using ImageMagick. */
-  Ref<Image> loadMagick(const FileName& fileName);
+  /*! Loads image using OpenImageIO. */
+  Ref<Image> loadOIIO(const FileName& fileName);
   
   /*! Loads image from PFM file. */
   Ref<Image> loadPFM(const FileName& fileName);
@@ -179,8 +179,8 @@ namespace embree
   /*! Store image to JPEG file. */
   void storeJPEG(const Ref<Image>& img, const FileName& fileName);
 
-  /*! Store image to file using ImageMagick. */
-  void storeMagick(const Ref<Image>& img, const FileName& fileName);
+  /*! Store image to file using OpenImageIO. */
+  void storeOIIO(const Ref<Image>& img, const FileName& fileName);
   
   /*! Store image to PFM file. */
   void storePFM(const Ref<Image>& img, const FileName& fileName);

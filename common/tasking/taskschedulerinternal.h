@@ -35,8 +35,8 @@ namespace embree
     ALIGNED_STRUCT_(64);
     friend class Device;
 
-    static const size_t TASK_STACK_SIZE = 2*1024;           //!< task structure stack
-    static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
+    static const size_t TASK_STACK_SIZE = 4*1024;           //!< task structure stack
+    static const size_t CLOSURE_STACK_SIZE = 512*1024;    //!< stack for task closures
 
     struct Thread;
 

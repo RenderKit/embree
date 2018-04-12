@@ -35,14 +35,14 @@ namespace embree
     if (ext == "jpg" ) return loadJPEG(fileName);
 #endif
 
-#ifdef USE_IMAGEMAGICK
-    if (ext == "bmp" ) return loadMagick(fileName);
-    if (ext == "gif" ) return loadMagick(fileName);
-    if (ext == "tga" ) return loadMagick(fileName);
-    if (ext == "tif" ) return loadMagick(fileName);
-    if (ext == "tiff") return loadMagick(fileName);
-    if (ext == "png" ) return loadMagick(fileName);
-    if (ext == "jpg" ) return loadMagick(fileName);
+#ifdef USE_OPENIMAGEIO
+    if (ext == "bmp" ) return loadOIIO(fileName);
+    if (ext == "gif" ) return loadOIIO(fileName);
+    if (ext == "tga" ) return loadOIIO(fileName);
+    if (ext == "tif" ) return loadOIIO(fileName);
+    if (ext == "tiff") return loadOIIO(fileName);
+    if (ext == "png" ) return loadOIIO(fileName);
+    if (ext == "jpg" ) return loadOIIO(fileName);
 #endif
     
     if (ext == "pfm" ) return loadPFM(fileName);
@@ -73,14 +73,14 @@ namespace embree
     if (ext == "jpg" ) { storeJPEG(img, fileName);  return; }
 #endif
 
-#ifdef USE_IMAGEMAGICK
-    if (ext == "bmp" ) { storeMagick(img, fileName);  return; }
-    if (ext == "gif" ) { storeMagick(img, fileName);  return; }
-    if (ext == "tga" ) { storeMagick(img, fileName);  return; }
-    if (ext == "tif" ) { storeMagick(img, fileName);  return; }
-    if (ext == "tiff") { storeMagick(img, fileName);  return; }
-    if (ext == "png" ) { storeMagick(img, fileName);  return; }
-    if (ext == "jpg" ) { storeMagick(img, fileName);  return; }
+#ifdef USE_OPENIMAGEIO
+    if (ext == "bmp" ) { storeOIIO(img, fileName);  return; }
+    if (ext == "gif" ) { storeOIIO(img, fileName);  return; }
+    if (ext == "tga" ) { storeOIIO(img, fileName);  return; }
+    if (ext == "tif" ) { storeOIIO(img, fileName);  return; }
+    if (ext == "tiff") { storeOIIO(img, fileName);  return; }
+    if (ext == "png" ) { storeOIIO(img, fileName);  return; }
+    if (ext == "jpg" ) { storeOIIO(img, fileName);  return; }
 #endif
 
     if (ext == "pfm" ) { storePFM(img, fileName);  return; }

@@ -20,6 +20,7 @@ namespace embree
 {
   extern "C" {
     int g_spp = 1;
+    int g_max_path_length = 8;
     bool g_accumulate = 1;
   }
   
@@ -30,7 +31,11 @@ namespace embree
     {
       registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
           g_spp = cin->getInt();
-        }, "--spp: sets number of samples per pixel");
+        }, "--spp <int>: sets number of samples per pixel");
+
+      registerOption("max-path-length", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_max_path_length = cin->getInt();
+        }, "--max-path-length <int>: sets maximal path length (1=primary+shadow)");
 
       registerOption("accumulate", [] (Ref<ParseStream> cin, const FileName& path) {
           g_accumulate = cin->getInt();

@@ -100,13 +100,15 @@ namespace embree
         const vfloat<M> U = dot(cross(e0,v2+v0),D);
         const vfloat<M> V = dot(cross(e1,v0+v1),D);
         const vfloat<M> W = dot(cross(e2,v1+v2),D);
+        const vfloat<M> UVW = U+V+W;
+        const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
         const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = maxUVW <= 0.0f;
+        vbool<M> valid = maxUVW <= eps;
 #else
         const vfloat<M> minUVW = min(U,V,W);
         const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+        vbool<M> valid = (minUVW >= -eps) | (maxUVW <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 
@@ -193,13 +195,15 @@ namespace embree
         const vfloat<K> U = dot(Vec3vf<K>(cross(e0,v2+v0)),D);
         const vfloat<K> V = dot(Vec3vf<K>(cross(e1,v0+v1)),D);
         const vfloat<K> W = dot(Vec3vf<K>(cross(e2,v1+v2)),D);
+        const vfloat<K> UVW = U+V+W;
+        const vfloat<K> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
         const vfloat<K> maxUVW = max(U,V,W);
-        valid &= maxUVW <= 0.0f;
+        valid &= maxUVW <= eps;
 #else
         const vfloat<K> minUVW = min(U,V,W);
         const vfloat<K> maxUVW = max(U,V,W);
-        valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+        valid &= (minUVW >= -eps) | (maxUVW <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 
@@ -249,13 +253,15 @@ namespace embree
         const vfloat<M> U = dot(cross(e0,v2+v0),D);
         const vfloat<M> V = dot(cross(e1,v0+v1),D);
         const vfloat<M> W = dot(cross(e2,v1+v2),D);
+        const vfloat<M> UVW = U+V+W;
+        const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
         const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = maxUVW <= 0.0f;
+        vbool<M> valid = maxUVW <= eps;
 #else
         const vfloat<M> minUVW = min(U,V,W);
         const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+        vbool<M> valid = (minUVW >= -eps) | (maxUVW <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 

@@ -362,6 +362,10 @@ namespace embree
       }, "--convert-flat-to-round-curves: converts all flat curves to round curves");
     registerOptionAlias("convert-flat-to-round-curves","convert-hair-to-curves"); // for compatibility reasons
 
+    registerOption("convert-round-to-flat-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_ROUND_TO_FLAT_CURVES);
+      }, "--convert-round-to-flat-curves: converts all round curves to flat curves");
+    
     registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
         sgop.push_back(CONVERT_BEZIER_TO_BSPLINE);
       }, "--convert-bezier-to-bspline: converts all bezier curves to bsplines curves");
@@ -370,6 +374,11 @@ namespace embree
         sgop.push_back(CONVERT_BSPLINE_TO_BEZIER);
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
 
+    registerOption("merge-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
+        sgop.push_back(MERGE_QUADS_TO_GRIDS);
+      }, "--merge-triangles-to-grids: merges quads to grids");
+    
     registerOption("merge-quads-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
         sgop.push_back(MERGE_QUADS_TO_GRIDS);
       }, "--merge-quads-to-grids: merges quads to grids");
@@ -1075,6 +1084,7 @@ namespace embree
       case CONVERT_BEZIER_TO_BSPLINE    : scene->bezier_to_bspline(); break;
       case CONVERT_BSPLINE_TO_BEZIER    : scene->bspline_to_bezier(); break;
       case CONVERT_FLAT_TO_ROUND_CURVES : scene->flat_to_round_curves(); break;
+      case CONVERT_ROUND_TO_FLAT_CURVES : scene->round_to_flat_curves(); break;
       case MERGE_QUADS_TO_GRIDS         : scene->merge_quads_to_grids(); break;
       case CONVERT_QUADS_TO_GRIDS       : scene->quads_to_grids(grid_resX,grid_resY); break;
       case CONVERT_GRIDS_TO_QUADS       : scene->grids_to_quads(); break;

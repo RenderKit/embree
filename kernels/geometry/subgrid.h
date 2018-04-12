@@ -482,6 +482,11 @@ namespace embree
           return SubGrid(x(i),y(i),geomID(),primID(i));
         }
 
+        __forceinline float adjustTime(const float t) const { return time_scale * (t-time_offset); }
+
+        template<int K>
+        __forceinline vfloat<K> adjustTime(const vfloat<K> &t) const { return time_scale * (t-time_offset); }
+
       public:
         SubGridID subgridIDs[N];
 

@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.0
+-   Improved watertightness of robust mode.
+
 ### New Features in Embree 3.1.0
 -   Added new normal oriented curve primitive for ray tracing of grass-like
     structures.
@@ -8,7 +11,7 @@ Version History
     in very memory efficient manner.
 -   Fixed bug of ribbon curve intersector when derivative was zero.
 -   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
--   Added API functions to access topology of subdiv mesh.
+-   Added API functions to access topology of subdivision mesh.
 -   Reduced memory consumption of instances.
 -   Improved performance of instances by 8%.
 -   Reduced memory consumption of curves by up to 2x.
@@ -20,6 +23,7 @@ Version History
     in VS2013.
 -   Bugfix in rtcSetNewGeometry. Vertex buffers did not get properly
     overallocated.
+-   Replaced ImageMagick with OpenImageIO in the tutorials.
 
 ### New Features in Embree 3.0.0
 -   Switched to a new version of the API which provides improved

@@ -38,8 +38,11 @@ namespace embree {
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
-#define MAX_PATH_LENGTH  8
 
+extern "C" int g_spp;
+extern "C" int g_max_path_length;
+extern "C" bool g_accumulate;
+  
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
@@ -862,8 +865,6 @@ inline Vec3fa Material__sample(ISPCMaterial** materials, unsigned int materialID
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = nullptr;
-extern "C" int g_spp;
-extern "C" bool g_accumulate;
 
 /* occlusion filter function */
 void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
@@ -1534,7 +1535,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
   DifferentialGeometry dg;
  
   /* iterative path tracer loop */
-  for (int i=0; i<MAX_PATH_LENGTH; i++)
+  for (int i=0; i<g_max_path_length; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
