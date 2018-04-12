@@ -895,13 +895,12 @@ namespace embree
     window_flags |= ImGuiWindowFlags_NoResize;
     //window_flags |= ImGuiWindowFlags_NoCollapse;
     //window_flags |= ImGuiWindowFlags_NoNav;
-    bool* p_open = NULL; // Don't pass our bool* to Begin
 
     ImGui::GetStyle().WindowBorderSize = 0.0f;
     ImGui::SetNextWindowPos(ImVec2(width-200,0));
     ImGui::SetNextWindowSize(ImVec2(200,height));
     ImGui::SetNextWindowBgAlpha(0.0f);
-    ImGui::Begin("Embree", p_open, window_flags);
+    ImGui::Begin("Embree", nullptr, window_flags);
     ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
 #if defined(RAY_STATS)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
