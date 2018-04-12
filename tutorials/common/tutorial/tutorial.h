@@ -171,6 +171,10 @@ namespace embree
 
     std::unique_ptr<ISPCScene> ispc_scene;
 
+    bool show_demo_window;
+    bool show_another_window;
+    Vec4f clear_color;
+  
   private:
     /* ray statistics */
     void initRayStats();
