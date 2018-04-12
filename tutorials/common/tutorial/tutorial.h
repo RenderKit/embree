@@ -25,6 +25,10 @@
 /* include GLFW for window management */
 #include <GLFW/glfw3.h>
 
+/* include ImGUI */
+#include "../imgui/imgui.h"
+#include "../imgui/imgui_impl_glfw_gl2.h"
+
 namespace embree
 {
   /* functions provided by each tutorial */
@@ -116,6 +120,7 @@ namespace embree
     virtual void motionFunc(GLFWwindow* window, double x, double y);
     virtual void displayFunc();
     virtual void reshapeFunc(GLFWwindow* window, int width, int height);
+    virtual void drawGUI() {}; 
 
   public:
     std::string tutorialName;
@@ -171,10 +176,6 @@ namespace embree
 
     std::unique_ptr<ISPCScene> ispc_scene;
 
-    bool show_demo_window;
-    bool show_another_window;
-    Vec4f clear_color;
-  
   private:
     /* ray statistics */
     void initRayStats();

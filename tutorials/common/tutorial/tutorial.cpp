@@ -35,9 +35,6 @@
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
 
-#include "../imgui/imgui.h"
-#include "../imgui/imgui_impl_glfw_gl2.h"
-
 namespace embree
 {
   extern "C"
@@ -134,11 +131,7 @@ namespace embree
       debug3(0),
 
       iflags_coherent(RTC_INTERSECT_CONTEXT_FLAG_COHERENT),
-      iflags_incoherent(RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT),
-
-      show_demo_window(true),
-      show_another_window(false),
-      clear_color(0.45f, 0.55f, 0.60f, 1.00f)
+      iflags_incoherent(RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -899,8 +892,9 @@ namespace embree
     ImGui::GetStyle().WindowBorderSize = 0.0f;
     ImGui::SetNextWindowPos(ImVec2(width-200,0));
     ImGui::SetNextWindowSize(ImVec2(200,height));
-    ImGui::SetNextWindowBgAlpha(0.0f);
+    ImGui::SetNextWindowBgAlpha(0.3f);
     ImGui::Begin("Embree", nullptr, window_flags);
+    drawGUI();
     ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
 #if defined(RAY_STATS)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
