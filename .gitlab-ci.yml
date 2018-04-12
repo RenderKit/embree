@@ -62,8 +62,8 @@ continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   tags:   [docker]
   only:   [pushes]
 
-continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
-  image: embreedocker/ubuntu:17.04
+continuous-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
+  image: embreedocker/ubuntu:17.10
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:3"
   tags:   [docker]
   only:   [pushes]
@@ -272,8 +272,8 @@ nightly-linux-skx-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX512SKX-TBB2017:
 
 # Testing on different Linux distributions
 
-nightly-ubuntu17.04-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
-  image: embreedocker/ubuntu:17.04
+nightly-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
+  image: embreedocker/ubuntu:17.10
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:3"
   tags:   [docker]
   only:   [schedules]
