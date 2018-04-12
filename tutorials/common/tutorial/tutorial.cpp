@@ -683,7 +683,7 @@ namespace embree
     g_ispc_scene = ispc_scene.get();
   }
 
-   void errorFunc(int error, const char* description) {
+  void errorFunc(int error, const char* description) {
     throw std::runtime_error(std::string("Error: ")+description);
   }
   void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -887,89 +887,30 @@ namespace embree
     
     ImGui_ImplGlfwGL2_NewFrame();
     
-    // 1. Show a simple window.
-    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets automatically appears in a window called "Debug".
-    {
-      static float f = 0.0f;
-      static int counter = 0;
-      ImGui::Text("Hello, world!");                           // Display some text (you can use a format string too)
-      ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
-      ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-      
-      ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our windows open/close state
-      ImGui::Checkbox("Another Window", &show_another_window);
-      
-      if (ImGui::Button("Button"))                            // Buttons return true when clicked (NB: most widgets return true when edited/activated)
-        counter++;
-      ImGui::SameLine();
-      ImGui::Text("counter = %d", counter);
-      
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    }
+    ImGuiWindowFlags window_flags = 0;
+    window_flags |= ImGuiWindowFlags_NoTitleBar;
+    window_flags |= ImGuiWindowFlags_NoScrollbar;
+    //window_flags |= ImGuiWindowFlags_MenuBar;
+    window_flags |= ImGuiWindowFlags_NoMove;
+    window_flags |= ImGuiWindowFlags_NoResize;
+    //window_flags |= ImGuiWindowFlags_NoCollapse;
+    //window_flags |= ImGuiWindowFlags_NoNav;
+    bool* p_open = NULL; // Don't pass our bool* to Begin
     
-    // 2. Show another simple window. In most cases you will use an explicit Begin/End pair to name your windows.
-    if (show_another_window)
-    {
-      ImGui::Begin("Another Window", &show_another_window);
-      ImGui::Text("Hello from another window!");
-      if (ImGui::Button("Close Me"))
-        show_another_window = false;
-      ImGui::End();
-    }
-    
-    // 3. Show the ImGui demo window. Most of the sample code is in ImGui::ShowDemoWindow(). Read its code to learn more about Dear ImGui!
-    if (show_demo_window)
-    {
-      ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
-      ImGui::ShowDemoWindow(&show_demo_window);
-    }
-    
-    // render imgui
-    //glUseProgram(0); // You may want this if using this code in an OpenGL 3+ context where shaders may be bound, but prefer using the GL3+ code.
+    ImGui::SetNextWindowPos(ImVec2(width-200,0));
+    ImGui::SetNextWindowSize(ImVec2(200,height));
+    ImGui::Begin("Embree", p_open, window_flags);
+    ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
+#if defined(RAY_STATS)
+    ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
+#endif
+    ImGui::End();
+     
+    //ImGui::ShowDemoWindow();
+        
     ImGui::Render();
     ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
     
-#if 0
-    if (fullscreen || !print_frame_rate)
-    {
-      glMatrixMode( GL_PROJECTION );
-      glPushMatrix();
-      glLoadIdentity();
-      //gluOrtho2D( 0, width, 0, height );
-      glMatrixMode( GL_MODELVIEW );
-      glPushMatrix();
-      glLoadIdentity();
-
-      /* print frame rate */
-      glColor3f(1.0f, 0.25f, 0.0f);
-
-      std::ostringstream stream;
-      stream.setf(std::ios::fixed, std::ios::floatfield);
-      stream.precision(2);
-
-      stream << 1.0f/avg_render_time.get() << " fps";
-      std::string str = stream.str();
-      glRasterPos2i(6, height - 24);
-      //for (size_t i=0; i<str.size(); i++)
-      //  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-
-#if defined(RAY_STATS)
-      stream.str("");
-      stream << avg_mrayps.get() << " Mray/s";
-      str = stream.str();
-      glRasterPos2i(6, height - 52);
-      //for (size_t i=0; i<str.size(); i++)
-      //glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-#endif
-
-      glRasterPos2i( 0, 0 );
-      glPopMatrix();
-      glMatrixMode( GL_PROJECTION );
-      glPopMatrix();
-      glMatrixMode( GL_MODELVIEW );
-    }
-#endif
-
     glfwSwapBuffers(window);
 
     double dt1 = getSeconds()-t0;
