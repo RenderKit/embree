@@ -737,6 +737,7 @@ namespace embree
   void TutorialApplication::keyboardFunc(GLFWwindow* window_in, int key, int scancode, int action, int mods)
   {
     ImGui_ImplGlfw_KeyCallback(window_in,key,scancode,action,mods);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
       
     if (action == GLFW_PRESS)
     {
@@ -815,7 +816,8 @@ namespace embree
   void TutorialApplication::clickFunc(GLFWwindow* window, int button, int action, int mods)
   {
     ImGui_ImplGlfw_MouseButtonCallback(window,button,action,mods);
-
+    if (ImGui::GetIO().WantCaptureMouse) return;
+  
     double x,y;
     glfwGetCursorPos(window,&x,&y);
     
@@ -850,6 +852,8 @@ namespace embree
 
   void TutorialApplication::motionFunc(GLFWwindow* window, double x, double y)
   {
+    if (ImGui::GetIO().WantCaptureMouse) return;
+  
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
     clickX = x; clickY = y;
 
