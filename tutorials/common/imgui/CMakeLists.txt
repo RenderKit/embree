@@ -16,6 +16,7 @@
 
 ADD_LIBRARY(imgui STATIC
   imgui.cpp
+  imgui_impl_glfw_gl2.cpp
   imgui_demo.cpp
   imgui_draw.cpp
 )
