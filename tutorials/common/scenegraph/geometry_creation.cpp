@@ -473,6 +473,42 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createGarbageGridMesh (int hash, size_t numGrids, bool mblur, Ref<MaterialNode> material)
+  {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,mblur?2:1);
+
+    mesh->grids.resize(numGrids);
+    for (size_t i=0; i<numGrids; i++) {
+      const unsigned v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(4*i+0);
+      mesh->grids[i] = GridMeshNode::Grid(v0,2,2,2);
+    }
+
+    mesh->positions[0].resize(4*numGrids);
+    for (size_t i=0; i<4*numGrids; i++) {
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float w = cast_i2f(RandomSampler_getUInt(sampler));
+      mesh->positions[0][i] = Vec3fa(x,y,z,w);
+    }
+
+    if (mblur) 
+    {
+      mesh->positions[1].resize(4*numGrids);
+      for (size_t i=0; i<4*numGrids; i++) {
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
+        mesh->positions[1][i] = Vec3fa(x,y,z,w);
+      }
+    }
+
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createGarbageLineSegments (int hash, size_t numLineSegments, bool mblur, Ref<MaterialNode> material)
   {
     RandomSampler sampler;

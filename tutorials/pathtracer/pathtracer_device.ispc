@@ -1057,7 +1057,7 @@ inline Vec3f derivBezier(const ISPCHairSet* uniform mesh, const unsigned int pri
   const Vec3fa p12 = p02 * t0 + p03 * t1;
   const Vec3fa p20 = p10 * t0 + p11 * t1;
   const Vec3fa p21 = p11 * t0 + p12 * t1;
-  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  //const Vec3fa p30 = p20 * t0 + p21 * t1;
   return make_Vec3f(3.0f*(p21-p20));
 }
 

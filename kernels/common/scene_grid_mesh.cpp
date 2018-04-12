@@ -233,10 +233,12 @@ namespace embree
     }
 
     const Grid& grid = grids[primID];
-    const int iu = min((int)floor(U*grid.resX),grid.resX-1);
-    const int iv = min((int)floor(V*grid.resY),grid.resY-1);
-    const float u = U-float(iu);
-    const float v = V-float(iv);
+    const int grid_width  = grid.resX-1;
+    const int grid_height = grid.resY-1;
+    const int iu = min((int)floor(U*grid_width ),grid_width);
+    const int iv = min((int)floor(V*grid_height),grid_height);
+    const float u = U*grid_width-float(iu);
+    const float v = V*grid_height-float(iv);
     
     for (unsigned int i=0; i<valueCount; i+=4)
     {
