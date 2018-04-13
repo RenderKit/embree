@@ -1684,8 +1684,8 @@ void ImGui::ShowDemoWindow(bool* p_open)
                     selected = i;
                 bool hovered = ImGui::IsItemHovered();
                 ImGui::NextColumn();
-                ImGui::Text(names[i]); ImGui::NextColumn();
-                ImGui::Text(paths[i]); ImGui::NextColumn();
+                ImGui::Text("%s",names[i]); ImGui::NextColumn();
+                ImGui::Text("%s",paths[i]); ImGui::NextColumn();
                 ImGui::Text("%d", hovered); ImGui::NextColumn();
             }
             ImGui::Columns(1);
