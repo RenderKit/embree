@@ -46,7 +46,6 @@ ELSE (WIN32)
     MESSAGE(FATAL_ERROR "GLFW not found! Please either install GLFW or disable EMBREE_TUTORIALS.")
   ENDIF()
 
-
 ENDIF (WIN32)
 
 FIND_PACKAGE(OpenGL)
