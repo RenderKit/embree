@@ -366,7 +366,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
       imask = mask ? -1 : 0;
     }
     
-    const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
+    const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
@@ -460,7 +460,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform ar
       imask = mask ? -1 : 0;
     }
     
-    const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
+    const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
