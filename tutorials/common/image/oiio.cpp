@@ -39,7 +39,8 @@ namespace embree
     std::vector<unsigned char> pixels(width*height*channels);
     in->read_image(TypeDesc::UINT8, pixels.data());
     in->close();
-    ImageInput::destroy(in);
+    delete in;
+    //ImageInput::destroy(in);
 
     Image* out = new Image4uc(width, height, fileName);
     const float rcpMaxColor = 1.f/255.f;
@@ -79,12 +80,14 @@ namespace embree
     ImageSpec spec(int(img->width), int(img->height), 3, TypeDesc::UINT8);
     if (!out->open(fileName.c_str(), spec))
     {
-      ImageOutput::destroy(out);
+      delete out;
+      //ImageOutput::destroy(out);
       THROW_RUNTIME_ERROR("error opening file " + fileName.str());
     }
     out->write_image(TypeDesc::UINT8, pixels.data());
     out->close();
-    ImageOutput::destroy(out);
+    //ImageOutput::destroy(out);
+    delete out;
   }
 }
 
