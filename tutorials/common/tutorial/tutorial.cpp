@@ -18,22 +18,16 @@
 #include "scene.h"
 #include "statistics.h"
 
-/* include GLUT for display */
+/* include GL */
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
-#  include <GLUT/glut.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
-#  define FREEGLUT_LIB_PRAGMAS 0
 #  include <GL/gl.h>
-#  include <GL/glut.h>
 #else
 #  include <GL/gl.h>
-#  include <GL/glut.h>
 #endif
 
-/* include tutorial_device.h after GLUT, as otherwise we may get
- * warnings of redefined GLUT_KEY_F1, etc. */
 #include "tutorial_device.h"
 #include "../scenegraph/scenegraph.h"
 #include "../scenegraph/geometry_creation.h"
@@ -114,14 +108,14 @@ namespace embree
 
       window_width(512),
       window_height(512),
-      windowID(0),
+      window(nullptr),
 
       time0(getSeconds()),
       debug_int0(0),
       debug_int1(0),
 
       mouseMode(0),
-      clickX(0), clickY(0),
+      clickX(0.0), clickY(0.0),
       speed(1.0f),
       moveDelta(zero),
       command_line_camera(false),
@@ -682,94 +676,151 @@ namespace embree
     g_ispc_scene = ispc_scene.get();
   }
 
-  void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
-  {
-    /* call tutorial keyboard handler */
-    device_key_pressed(key);
-
-    switch (key)
-    {
-    case 'w' : moveDelta.z = +1.0f; break;
-    case 's' : moveDelta.z = -1.0f; break;
-    case 'a' : moveDelta.x = -1.0f; break;
-    case 'd' : moveDelta.x = +1.0f; break;
-
-    case 'f' :
-      if (fullscreen) {
-        fullscreen = false;
-        glutReshapeWindow(window_width,window_height);
-      } else {
-        fullscreen = true;
-        window_width = width;
-        window_height = height;
-        glutFullScreen();
-      }
-      break;
-    case 'c' : std::cout << camera.str() << std::endl; break;
-    case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
-    case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
-
-    case ' ' : {
-      Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
-      storeImage(image, "screenshot.tga");
-      break;
-    }
-
-    case '\033': case 'q': case 'Q':
-      glutDestroyWindow(windowID);
-#if defined(__MACOSX__) // FIXME: why only on MacOSX
-      exit(1);
-#endif
-      break;
-    }
+  void errorFunc(int error, const char* description) {
+    throw std::runtime_error(std::string("Error: ")+description);
+  }
+  void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mods);
+  }
+  void clickFunc(GLFWwindow* window, int button, int action, int mods) {
+    TutorialApplication::instance->clickFunc(window,button,action,mods);
+  }
+  void motionFunc(GLFWwindow* window, double x, double y) {
+    TutorialApplication::instance->motionFunc(window,x,y);
+  }
+  void displayFunc() {
+    TutorialApplication::instance->displayFunc();
+  }
+  void reshapeFunc(GLFWwindow* window, int width, int height) {
+    TutorialApplication::instance->reshapeFunc(window,width,height);
   }
 
-  void TutorialApplication::keyboardUpFunc(unsigned char key, int x, int y)
+  GLFWwindow* TutorialApplication::createFullScreenWindow()
   {
-    switch (key)
-    {
-    case 'w' : moveDelta.z = 0.0f; break;
-    case 's' : moveDelta.z = 0.0f; break;
-    case 'a' : moveDelta.x = 0.0f; break;
-    case 'd' : moveDelta.x = 0.0f; break;
-    }
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    glfwWindowHint(GLFW_RED_BITS,mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS,mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS,mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE,mode->refreshRate);
+    GLFWwindow* window = glfwCreateWindow(mode->width,mode->height,tutorialName.c_str(),monitor,nullptr);
+    glfwSetKeyCallback(window,embree::keyboardFunc);
+    glfwSetCursorPosCallback(window,embree::motionFunc);
+    glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    resize(mode->width,mode->height);
+    return window;
   }
 
-  void TutorialApplication::specialFunc(int key, int x, int y)
+  GLFWwindow* TutorialApplication::createStandardWindow(int width, int height)
   {
-    device_key_pressed(key);
+    GLFWwindow* window = glfwCreateWindow(width,height,tutorialName.c_str(),nullptr,nullptr);
+    glfwSetKeyCallback(window,embree::keyboardFunc);
+    glfwSetCursorPosCallback(window,embree::motionFunc);
+    glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    resize(width,height);
+    return window;
+  }
 
-    if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
+  void TutorialApplication::keyboardFunc(GLFWwindow* window_in, int key, int scancode, int action, int mods)
+  {
+    ImGui_ImplGlfw_KeyCallback(window_in,key,scancode,action,mods);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+      
+    if (action == GLFW_PRESS)
     {
-      switch (key) {
-      case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-      case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-      case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-      case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+      /* call tutorial keyboard handler */
+      device_key_pressed(key);
+
+      if (mods & GLFW_MOD_CONTROL)
+      {
+        switch (key) {
+        case GLFW_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+        case GLFW_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+        case GLFW_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+        case GLFW_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+        }
+      }
+      else
+      {
+        switch (key) {
+        case GLFW_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
+        case GLFW_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
+        case GLFW_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
+        case GLFW_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
+        case GLFW_KEY_PAGE_UP   : speed *= 1.2f; break;
+        case GLFW_KEY_PAGE_DOWN : speed /= 1.2f; break;
+
+        case GLFW_KEY_W : moveDelta.z = +1.0f; break;
+        case GLFW_KEY_S : moveDelta.z = -1.0f; break;
+        case GLFW_KEY_A : moveDelta.x = -1.0f; break;
+        case GLFW_KEY_D : moveDelta.x = +1.0f; break;
+          
+        case GLFW_KEY_F :
+          glfwDestroyWindow(window);
+          if (fullscreen) {
+            width = window_width;
+            height = window_height;
+            window = createStandardWindow(width,height);
+          }
+          else {
+            window_width = width;
+            window_height = height;
+            window = createFullScreenWindow();
+          }
+          glfwMakeContextCurrent(window);
+          fullscreen = !fullscreen;
+          break;
+          
+        case GLFW_KEY_C : std::cout << camera.str() << std::endl; break;
+          //case GLFW_KEY_ADD : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
+        case GLFW_KEY_MINUS : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+          
+        case GLFW_KEY_SPACE: {
+          Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
+          storeImage(image, "screenshot.tga");
+          break;
+        }
+          
+        case GLFW_KEY_ESCAPE:
+        case GLFW_KEY_Q: 
+          glfwSetWindowShouldClose(window,GLFW_TRUE);
+          break;
+        }
       }
     }
-    else
+    else if (action == GLFW_RELEASE)
     {
-      switch (key) {
-      case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
-      case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
-      case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
-      case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
-      case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
-      case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
+      switch (key)
+      {
+      case GLFW_KEY_W : moveDelta.z = 0.0f; break;
+      case GLFW_KEY_S : moveDelta.z = 0.0f; break;
+      case GLFW_KEY_A : moveDelta.x = 0.0f; break;
+      case GLFW_KEY_D : moveDelta.x = 0.0f; break;
       }
     }
   }
-
-  void TutorialApplication::clickFunc(int button, int state, int x, int y)
+    
+  void TutorialApplication::clickFunc(GLFWwindow* window, int button, int action, int mods)
   {
-    if (state == GLUT_UP)
+    ImGui_ImplGlfw_MouseButtonCallback(window,button,action,mods);
+    if (ImGui::GetIO().WantCaptureMouse) return;
+  
+    double x,y;
+    glfwGetCursorPos(window,&x,&y);
+    
+    if (action == GLFW_RELEASE)
     {
       mouseMode = 0;
     }
-    else
+    else if (action == GLFW_PRESS)
     {
-      if (button == GLUT_RIGHT_BUTTON)
+      if (button == GLFW_MOUSE_BUTTON_RIGHT)
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
@@ -785,16 +836,17 @@ namespace embree
       else
       {
         clickX = x; clickY = y;
-        int modifiers = glutGetModifiers();
-        if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
-        else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
-        else if (button == GLUT_LEFT_BUTTON) mouseMode = 4;
+        if      (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) mouseMode = 1;
+        else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL ) mouseMode = 3;
+        else if (button == GLFW_MOUSE_BUTTON_LEFT) mouseMode = 4;
       }
     }
   }
 
-  void TutorialApplication::motionFunc(int x, int y)
+  void TutorialApplication::motionFunc(GLFWwindow* window, double x, double y)
   {
+    if (ImGui::GetIO().WantCaptureMouse) return;
+  
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
     clickX = x; clickY = y;
 
@@ -825,47 +877,36 @@ namespace embree
 
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+    
+    ImGui_ImplGlfwGL2_NewFrame();
+    
+    ImGuiWindowFlags window_flags = 0;
+    window_flags |= ImGuiWindowFlags_NoTitleBar;
+    window_flags |= ImGuiWindowFlags_NoScrollbar;
+    //window_flags |= ImGuiWindowFlags_MenuBar;
+    window_flags |= ImGuiWindowFlags_NoMove;
+    window_flags |= ImGuiWindowFlags_NoResize;
+    //window_flags |= ImGuiWindowFlags_NoCollapse;
+    //window_flags |= ImGuiWindowFlags_NoNav;
 
-    if (fullscreen || !print_frame_rate)
-    {
-      glMatrixMode( GL_PROJECTION );
-      glPushMatrix();
-      glLoadIdentity();
-      gluOrtho2D( 0, width, 0, height );
-      glMatrixMode( GL_MODELVIEW );
-      glPushMatrix();
-      glLoadIdentity();
-
-      /* print frame rate */
-      glColor3f(1.0f, 0.25f, 0.0f);
-
-      std::ostringstream stream;
-      stream.setf(std::ios::fixed, std::ios::floatfield);
-      stream.precision(2);
-
-      stream << 1.0f/avg_render_time.get() << " fps";
-      std::string str = stream.str();
-      glRasterPos2i(6, height - 24);
-      for (size_t i=0; i<str.size(); i++)
-        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-
+    ImGui::GetStyle().WindowBorderSize = 0.0f;
+    ImGui::SetNextWindowPos(ImVec2(width-200,0));
+    ImGui::SetNextWindowSize(ImVec2(200,height));
+    ImGui::SetNextWindowBgAlpha(0.3f);
+    ImGui::Begin("Embree", nullptr, window_flags);
+    drawGUI();
+    ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
 #if defined(RAY_STATS)
-      stream.str("");
-      stream << avg_mrayps.get() << " Mray/s";
-      str = stream.str();
-      glRasterPos2i(6, height - 52);
-      for (size_t i=0; i<str.size(); i++)
-        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+    ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
 #endif
-
-      glRasterPos2i( 0, 0 );
-      glPopMatrix();
-      glMatrixMode( GL_PROJECTION );
-      glPopMatrix();
-      glMatrixMode( GL_MODELVIEW );
-    }
-
-    glutSwapBuffers();
+    ImGui::End();
+     
+    //ImGui::ShowDemoWindow();
+        
+    ImGui::Render();
+    ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
+    
+    glfwSwapBuffers(window);
 
     double dt1 = getSeconds()-t0;
     avg_frame_time.add(dt1);
@@ -889,40 +930,11 @@ namespace embree
     } 
   }
 
-  void TutorialApplication::reshapeFunc(int width, int height)
+  void TutorialApplication::reshapeFunc(GLFWwindow* window, int width, int height)
   {
     resize(width,height);
     glViewport(0, 0, width, height);
     this->width = width; this->height = height;
-  }
-
-  void TutorialApplication::idleFunc() {
-    glutPostRedisplay();
-  }
-
-  void keyboardFunc(unsigned char key, int x, int y) {
-    TutorialApplication::instance->keyboardFunc(key,x,y);
-  }
-  void keyboardUpFunc(unsigned char key, int x, int y) {
-    TutorialApplication::instance->keyboardUpFunc(key,x,y);
-  }
-  void specialFunc(int key, int x, int y) {
-    TutorialApplication::instance->specialFunc(key,x,y);
-  }
-  void clickFunc(int button, int state, int x, int y) {
-    TutorialApplication::instance->clickFunc(button,state,x,y);
-  }
-  void motionFunc(int x, int y) {
-    TutorialApplication::instance->motionFunc(x,y);
-  }
-  void displayFunc() {
-    TutorialApplication::instance->displayFunc();
-  }
-  void reshapeFunc(int width, int height) {
-    TutorialApplication::instance->reshapeFunc(width,height);
-  }
-  void idleFunc() {
-    TutorialApplication::instance->idleFunc();
   }
 
   void TutorialApplication::run(int argc, char** argv)
@@ -939,21 +951,20 @@ namespace embree
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT  : break;
-    case SHADER_EYELIGHT : device_key_pressed(GLUT_KEY_F2); break;
-    case SHADER_OCCLUSION: device_key_pressed(GLUT_KEY_F3); break;
-    case SHADER_UV       : device_key_pressed(GLUT_KEY_F4); break;
-    case SHADER_TEXCOORDS: device_key_pressed(GLUT_KEY_F8); break;
-    case SHADER_TEXCOORDS_GRID: device_key_pressed(GLUT_KEY_F8); device_key_pressed(GLUT_KEY_F8); break;
-    case SHADER_NG       : device_key_pressed(GLUT_KEY_F5); break;
-    case SHADER_CYCLES   : device_key_pressed(GLUT_KEY_F9); break;
-    case SHADER_GEOMID   : device_key_pressed(GLUT_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
+    case SHADER_EYELIGHT : device_key_pressed(GLFW_KEY_F2); break;
+    case SHADER_OCCLUSION: device_key_pressed(GLFW_KEY_F3); break;
+    case SHADER_UV       : device_key_pressed(GLFW_KEY_F4); break;
+    case SHADER_TEXCOORDS: device_key_pressed(GLFW_KEY_F8); break;
+    case SHADER_TEXCOORDS_GRID: device_key_pressed(GLFW_KEY_F8); device_key_pressed(GLFW_KEY_F8); break;
+    case SHADER_NG       : device_key_pressed(GLFW_KEY_F5); break;
+    case SHADER_CYCLES   : device_key_pressed(GLFW_KEY_F9); break;
+    case SHADER_GEOMID   : device_key_pressed(GLFW_KEY_F6); break;
+    case SHADER_GEOMID_PRIMID: device_key_pressed(GLFW_KEY_F7); break;
+    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLFW_KEY_F11); break;
     };
 
     /* benchmark mode */
-    if (numBenchmarkFrames)
-    {
+    if (numBenchmarkFrames) {
       renderBenchmark();
     }
 
@@ -964,23 +975,60 @@ namespace embree
     /* interactive mode */
     if (interactive)
     {
-      resize(width,height);
+      window_width = width;
+      window_height = height;
+      glfwSetErrorCallback(errorFunc);
+      glfwInit();
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
+     
+      if (fullscreen) window = createFullScreenWindow();
+      else            window = createStandardWindow(width,height);
+     
+      glfwMakeContextCurrent(window);
+      glfwSwapInterval(1);
 
-      glutInit(&argc, argv);
-      glutInitWindowSize((GLsizei)width, (GLsizei)height);
-      glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-      glutInitWindowPosition(0, 0);
-      windowID = glutCreateWindow(tutorialName.c_str());
-      if (fullscreen) glutFullScreen();
-      glutDisplayFunc(embree::displayFunc);
-      glutIdleFunc(embree::idleFunc);
-      glutKeyboardFunc(embree::keyboardFunc);
-      glutKeyboardUpFunc(embree::keyboardUpFunc);
-      glutSpecialFunc(embree::specialFunc);
-      glutMouseFunc(embree::clickFunc);
-      glutMotionFunc(embree::motionFunc);
-      glutReshapeFunc(embree::reshapeFunc);
-      glutMainLoop();
+      // Setup ImGui binding
+      ImGui::CreateContext();
+      ImGuiIO& io = ImGui::GetIO(); (void)io;
+      //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+      ImGui_ImplGlfwGL2_Init(window, false);
+      
+      // Setup style
+      ImGui::StyleColorsDark();
+      //ImGui::StyleColorsClassic();
+      
+      // Load Fonts
+      // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
+      // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
+      // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+      // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+      // - Read 'misc/fonts/README.txt' for more instructions and details.
+      // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+      //io.Fonts->AddFontDefault();
+      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+      //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+      //IM_ASSERT(font != NULL);
+      
+      while (!glfwWindowShouldClose(window))
+      {
+        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+        glfwPollEvents();
+
+        displayFunc();
+      }
+
+      ImGui_ImplGlfwGL2_Shutdown();
+      ImGui::DestroyContext();
+      
+      glfwDestroyWindow(window);
+      glfwTerminate();
     }
   }
 
@@ -1175,5 +1223,5 @@ namespace embree
 
   extern "C" void progressEnd() {
     std::cout << "]" << std::endl;
-  }
+}
 }

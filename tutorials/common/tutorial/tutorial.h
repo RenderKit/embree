@@ -22,6 +22,13 @@
 #include "scene.h"
 #include "scene_device.h"
 
+/* include GLFW for window management */
+#include <GLFW/glfw3.h>
+
+/* include ImGUI */
+#include "../imgui/imgui.h"
+#include "../imgui/imgui_impl_glfw_gl2.h"
+
 namespace embree
 {
   /* functions provided by each tutorial */
@@ -100,16 +107,20 @@ namespace embree
     /* set scene to use */
     void set_scene (TutorialScene* in);
 
-    /* GLUT callback functions */
+    /* create a fullscreen window */
+    GLFWwindow* createFullScreenWindow();
+
+    /* create a standard window of specified size */
+    GLFWwindow* createStandardWindow(int width, int height);
+ 
+    /* GLFW callback functions */
   public:
-    virtual void keyboardFunc(unsigned char key, int x, int y);
-    virtual void keyboardUpFunc(unsigned char key, int x, int y);
-    virtual void specialFunc(int key, int, int);
-    virtual void clickFunc(int button, int state, int x, int y);
-    virtual void motionFunc(int x, int y);
+    virtual void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods);
+    virtual void clickFunc(GLFWwindow* window, int button, int action, int mods);
+    virtual void motionFunc(GLFWwindow* window, double x, double y);
     virtual void displayFunc();
-    virtual void reshapeFunc(int width, int height);
-    virtual void idleFunc();
+    virtual void reshapeFunc(GLFWwindow* window, int width, int height);
+    virtual void drawGUI() {}; 
 
   public:
     std::string tutorialName;
@@ -136,14 +147,14 @@ namespace embree
 
     unsigned window_width;
     unsigned window_height;
-    int windowID;
+    GLFWwindow* window;
 
     double time0;
     int debug_int0;
     int debug_int1;
 
     int mouseMode;
-    int clickX, clickY;
+    double clickX, clickY;
 
     float speed;
     Vec3f moveDelta;

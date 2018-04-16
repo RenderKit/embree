@@ -37,7 +37,7 @@ version of GLUT.
 Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
-    sudo port install cmake tbb freeglut
+    sudo port install cmake tbb-devel glfw-devel
 
 Depending on your Linux distribution you can install these dependencies
 using `yum` or `apt-get`.  Some of these packages might already be
@@ -45,18 +45,15 @@ installed or might have slightly different names.
 
 Type the following to install the dependencies using `yum`:
 
-    sudo yum install cmake.x86_64
-    sudo yum install tbb.x86_64 tbb-devel.x86_64
-    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
-    sudo yum install libXmu.x86_64 libXi.x86_64
-    sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+    sudo yum install cmake
+    sudo yum install tbb-devel
+    sudo yum install glfw-devel
 
 Type the following to install the dependencies using `apt-get`:
 
     sudo apt-get install cmake-curses-gui
     sudo apt-get install libtbb-dev
-    sudo apt-get install freeglut3-dev
-    sudo apt-get install libxmu-dev libxi-dev
+    sudo apt-get install libglfw3-dev
 
 Finally you can compile Embree using CMake. Create a build directory
 inside the Embree root directory and execute `ccmake ..` inside this

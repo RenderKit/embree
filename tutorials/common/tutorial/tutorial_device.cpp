@@ -753,54 +753,54 @@ extern "C" bool device_pick(const float x,
 /* called when a key is pressed */
 extern "C" void device_key_pressed_default(int key)
 {
-  if (key == GLUT_KEY_F1) {
+  if (key == GLFW_KEY_F1) {
     renderTile = renderTileStandard;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F2) {
+  else if (key == GLFW_KEY_F2) {
     renderTile = renderTileEyeLight;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F3) {
+  else if (key == GLFW_KEY_F3) {
     renderTile = renderTileOcclusion;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F4) {
+  else if (key == GLFW_KEY_F4) {
     renderTile = renderTileUV;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F5) {
+  else if (key == GLFW_KEY_F5) {
     renderTile = renderTileNg;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F6) {
+  else if (key == GLFW_KEY_F6) {
     renderTile = renderTileGeomID;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F7) {
+  else if (key == GLFW_KEY_F7) {
     renderTile = renderTileGeomIDPrimID;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F8) {
+  else if (key == GLFW_KEY_F8) {
     if (renderTile == renderTileTexCoords) render_texcoords_mode++;
     renderTile = renderTileTexCoords;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F9) {
+  else if (key == GLFW_KEY_F9) {
     if (renderTile == renderTileCycles) scale *= 2.0f;
     renderTile = renderTileCycles;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F10) {
+  else if (key == GLFW_KEY_F10) {
     if (renderTile == renderTileCycles) scale *= 0.5f;
     renderTile = renderTileCycles;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F11) {
+  else if (key == GLFW_KEY_F11) {
     renderTile = renderTileAmbientOcclusion;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F12) {
+  else if (key == GLFW_KEY_F12) {
     if (renderTile == renderTileDifferentials) {
       differentialMode = (differentialMode+1)%17;
     } else {
