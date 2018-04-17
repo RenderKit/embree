@@ -1,6 +1,27 @@
 Version History
 ---------------
 
+### New Features in Embree 3.1.0
+-   Added new normal oriented curve primitive for ray tracing of grass-like
+    structures.
+-   Added new grid primitive for ray tracing tessellated and displaced surfaces
+    in very memory efficient manner.
+-   Fixed bug of ribbon curve intersector when derivative was zero.
+-   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
+-   Added API functions to access topology of subdivision mesh.
+-   Reduced memory consumption of instances.
+-   Improved performance of instances by 8%.
+-   Reduced memory consumption of curves by up to 2x.
+-   Up to 5% higher performance on AVX-512 architectures.
+-   Added native support for multiple curve basis functions. Internal
+    basis conversions are no longer performed, which saves additional
+    memory when multiple bases are used.
+-   Fixed issue with non thread safe local static variable initialization
+    in VS2013.
+-   Bugfix in rtcSetNewGeometry. Vertex buffers did not get properly
+    overallocated.
+-   Replaced ImageMagick with OpenImageIO in the tutorials.
+
 ### New Features in Embree 3.0.0
 -   Switched to a new version of the API which provides improved
     flexibility but is not backward compatible. Please see "Upgrading
@@ -24,6 +45,7 @@ Version History
 -   Removed the RTC_MAX_USER_VERTEX_BUFFERS and RTC_MAX_INDEX_BUFFERS
     limitations.
 -   Reduced memory consumption by 192 bytes per instance.
+-   Fixed some performance issues on AVX-512 architectures.
 -   Individual Contributor License Agreement (ICLA) and Corporate
     Contributor License Agreement (CCLA) no longer required to
     contribute to the project.
