@@ -3,6 +3,7 @@ Version History
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
+-   Using GLFW and imgui in tutorials.
 
 ### New Features in Embree 3.1.0
 -   Added new normal oriented curve primitive for ray tracing of grass-like
