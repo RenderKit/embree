@@ -65,39 +65,6 @@ namespace embree
        return Curve4v::bytes(sizeActive(This));
   }
 
-  /********************** Curve8v **************************/
-
-  template<>
-  Curve8v::Type::Type ()
-    : PrimitiveType("curve8v") {}
-
-  template<>
-  size_t Curve8v::Type::sizeActive(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line8i*)This)->size();
-    else
-      return ((Curve8v*)This)->N;
-  }
-
-  template<>
-  size_t Curve8v::Type::sizeTotal(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return 8;
-    else
-      return ((Curve8v*)This)->N;
-  }
-
-  template<>
-  size_t Curve8v::Type::getBytes(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line8i::bytes(sizeActive(This));
-     else
-       return Curve8v::bytes(sizeActive(This));
-  }
-
   /********************** Curve4i **************************/
 
   template<>
@@ -129,39 +96,6 @@ namespace embree
        return Line4i::bytes(sizeActive(This));
      else
        return Curve4i::bytes(sizeActive(This));
-  }
-
-  /********************** Curve8i **************************/
-
-  template<>
-  Curve8i::Type::Type ()
-    : PrimitiveType("curve8i") {}
-
-  template<>
-  size_t Curve8i::Type::sizeActive(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line8i*)This)->size();
-    else
-      return ((Curve8i*)This)->N;
-  }
-
-  template<>
-  size_t Curve8i::Type::sizeTotal(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return 8;
-    else
-      return ((Curve8i*)This)->N;
-  }
-
-  template<>
-  size_t Curve8i::Type::getBytes(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line8i::bytes(sizeActive(This));
-     else
-       return Curve8i::bytes(sizeActive(This));
   }
 
   /********************** Curve4iMB **************************/
@@ -197,39 +131,6 @@ namespace embree
        return Curve4iMB::bytes(sizeActive(This));
   }
 
-  /********************** Curve8iMB **************************/
-
-  template<>
-  Curve8iMB::Type::Type ()
-    : PrimitiveType("curve8imb") {}
-
-  template<>
-  size_t Curve8iMB::Type::sizeActive(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line8i*)This)->size();
-    else
-      return ((Curve8iMB*)This)->N;
-  }
-
-  template<>
-  size_t Curve8iMB::Type::sizeTotal(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return 8;
-    else
-      return ((Curve8iMB*)This)->N;
-  }
-
-  template<>
-  size_t Curve8iMB::Type::getBytes(const char* This) const
-  {
-    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line8i::bytes(sizeActive(This));
-     else
-       return Curve8iMB::bytes(sizeActive(This));
-  }
-  
   /********************** Line4i **************************/
 
   template<>
@@ -472,26 +373,5 @@ namespace embree
   template<>
   size_t SubGridQBVH4::Type::getBytes(const char* This) const {
     return sizeof(SubGridQBVH4);
-  }
-
-  /********************** SubGridQBVH8 **************************/
-
-  template<>
-  SubGridQBVH8::Type::Type ()
-    : PrimitiveType("SubGridQBVH8") {}
-
-  template<>
-  size_t SubGridQBVH8::Type::sizeActive(const char* This) const {
-    return 1;
-  }
-
-  template<>
-  size_t SubGridQBVH8::Type::sizeTotal(const char* This) const {
-    return 1;
-  }
-
-  template<>
-  size_t SubGridQBVH8::Type::getBytes(const char* This) const {
-    return sizeof(SubGridQBVH8);
   }
 }

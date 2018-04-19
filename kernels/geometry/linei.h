@@ -304,6 +304,8 @@ namespace embree
     p1 = lerp(a1,b1,ftime);
   }
 
+#if defined(__AVX__)
+
   template<>
     __forceinline void LineMi<8>::gather(Vec4vf8& p0,
                                          Vec4vf8& p1,
@@ -378,6 +380,8 @@ namespace embree
     p1 = lerp(a1,b1,ftime);
   }
 
+#endif
+  
   template<int M>
   typename LineMi<M>::Type LineMi<M>::type;
 
