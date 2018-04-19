@@ -148,7 +148,6 @@ namespace embree
     __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
       Geometry::GType gty = scene->get(prims[begin].geomID())->getType();
-      
       vuint<M> geomID, primID;
       vuint<M> v0;
       const PrimRefT* prim = &prims[begin];
@@ -182,7 +181,7 @@ namespace embree
       size_t start = set.begin();
       size_t items = LineMi::blocks(set.size());
       size_t numbytes = LineMi::bytes(set.size());
-      LineMi* accel = (LineMi*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      LineMi* accel = (LineMi*) alloc.malloc1(numbytes,M*sizeof(float));
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,start,set.end(),bvh->scene);
       }
@@ -208,7 +207,7 @@ namespace embree
       size_t end   = prims.object_range.end();
       size_t items = LineMi::blocks(prims.object_range.size());
       size_t numbytes = LineMi::bytes(prims.object_range.size());
-      LineMi* accel = (LineMi*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      LineMi* accel = (LineMi*) alloc.malloc1(numbytes,M*sizeof(float));
       const typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       
       LBBox3fa bounds = empty;
