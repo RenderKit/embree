@@ -74,7 +74,7 @@ namespace embree
         auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
 
           if (prims.size() == 0)
-            typename BVH::NodeRecordMB4D(BVH::emptyNode,empty,empty);
+            return typename BVH::NodeRecordMB4D(BVH::emptyNode,empty,empty);
           
           const unsigned int geomID0 = (*prims.prims)[prims.object_range.begin()].geomID();
           if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
