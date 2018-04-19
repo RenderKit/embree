@@ -39,17 +39,17 @@ namespace embree
     static VirtualCurveIntersector::Intersectors LinearRibbonNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiIntersector1<4,4,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiIntersector1<4,4,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiIntersectorK<4,4,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiIntersectorK<4,4,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiIntersectorK<4,4,8,true>::intersect;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiIntersectorK<4,4,8,true>::occluded;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiIntersectorK<N,N,8,true>::occluded;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&FlatLinearCurveMiIntersectorK<4,4,16,true>::intersect;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &FlatLinearCurveMiIntersectorK<4,4,16,true>::occluded;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&FlatLinearCurveMiIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &FlatLinearCurveMiIntersectorK<N,N,16,true>::occluded;
 #endif
       return intersectors;
     }
@@ -58,17 +58,17 @@ namespace embree
     static VirtualCurveIntersector::Intersectors LinearRibbonNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiMBIntersector1<4,4,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiMBIntersector1<4,4,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiMBIntersectorK<4,4,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiMBIntersectorK<4,4,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiMBIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiMBIntersectorK<4,4,8,true>::intersect;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiMBIntersectorK<4,4,8,true>::occluded;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiMBIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiMBIntersectorK<N,N,8,true>::occluded;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&FlatLinearCurveMiMBIntersectorK<4,4,16,true>::intersect;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &FlatLinearCurveMiMBIntersectorK<4,4,16,true>::occluded;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&FlatLinearCurveMiMBIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &FlatLinearCurveMiMBIntersectorK<N,N,16,true>::occluded;
 #endif
       return intersectors;
     }

@@ -75,7 +75,7 @@ namespace embree
   size_t Curve8v::Type::sizeActive(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line4i*)This)->size();
+      return ((Line8i*)This)->size();
     else
       return ((Curve8v*)This)->N;
   }
@@ -84,7 +84,7 @@ namespace embree
   size_t Curve8v::Type::sizeTotal(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return 4;
+      return 8;
     else
       return ((Curve8v*)This)->N;
   }
@@ -93,7 +93,7 @@ namespace embree
   size_t Curve8v::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+       return Line8i::bytes(sizeActive(This));
      else
        return Curve8v::bytes(sizeActive(This));
   }
@@ -141,7 +141,7 @@ namespace embree
   size_t Curve8i::Type::sizeActive(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line4i*)This)->size();
+      return ((Line8i*)This)->size();
     else
       return ((Curve8i*)This)->N;
   }
@@ -150,7 +150,7 @@ namespace embree
   size_t Curve8i::Type::sizeTotal(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return 4;
+      return 8;
     else
       return ((Curve8i*)This)->N;
   }
@@ -159,7 +159,7 @@ namespace embree
   size_t Curve8i::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+       return Line8i::bytes(sizeActive(This));
      else
        return Curve8i::bytes(sizeActive(This));
   }
@@ -207,7 +207,7 @@ namespace embree
   size_t Curve8iMB::Type::sizeActive(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line4i*)This)->size();
+      return ((Line8i*)This)->size();
     else
       return ((Curve8iMB*)This)->N;
   }
@@ -216,7 +216,7 @@ namespace embree
   size_t Curve8iMB::Type::sizeTotal(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return 4;
+      return 8;
     else
       return ((Curve8iMB*)This)->N;
   }
@@ -225,11 +225,11 @@ namespace embree
   size_t Curve8iMB::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+       return Line8i::bytes(sizeActive(This));
      else
        return Curve8iMB::bytes(sizeActive(This));
   }
-
+  
   /********************** Line4i **************************/
 
   template<>

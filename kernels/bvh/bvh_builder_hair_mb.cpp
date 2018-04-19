@@ -114,7 +114,7 @@ namespace embree
     Builder* BVH4OBBCurve4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve4iMB,Line4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB,Line4i>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB,Line8i>((BVH4*)bvh,scene); }
 #endif
 
   }

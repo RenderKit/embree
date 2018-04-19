@@ -29,7 +29,7 @@ namespace embree
       Type();
       size_t sizeActive(const char* This) const;
       size_t sizeTotal(const char* This) const;
-      size_t getBytes(const char* This) const;
+      size_t getBytes(const char* This) const;      
     };
     static Type type;
 
@@ -54,7 +54,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline LineMi(const vuint<M>& v0, const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
-      : gtype((unsigned char)gtype), v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
+      : gtype((unsigned char)gtype), m(popcnt(vuint<M>(primIDs) != vuint<M>(-1))), v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vuint<M>(-1); }
@@ -93,6 +93,18 @@ namespace embree
                               const LineSegments* geom1,
                               const LineSegments* geom2,
                               const LineSegments* geom3,
+                              const vint<M>& itime) const;
+
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
+                              const LineSegments* geom0,
+                              const LineSegments* geom1,
+                              const LineSegments* geom2,
+                              const LineSegments* geom3,
+                              const LineSegments* geom4,
+                              const LineSegments* geom5,
+                              const LineSegments* geom6,
+                              const LineSegments* geom7,
                               const vint<M>& itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
@@ -239,6 +251,7 @@ namespace embree
     
   public:
     unsigned char gtype;
+    unsigned char m;
     vuint<M> v0;      // index of start vertex
   private:
     vuint<M> geomIDs; // geometry ID
@@ -314,8 +327,109 @@ namespace embree
     p1 = lerp(a1,b1,ftime);
   }
 
+  template<>
+    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                         Vec4vf8& p1,
+                                         const Scene* scene) const
+  {
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
+    const LineSegments* geom4 = scene->get<LineSegments>(geomID(4));
+    const LineSegments* geom5 = scene->get<LineSegments>(geomID(5));
+    const LineSegments* geom6 = scene->get<LineSegments>(geomID(6));
+    const LineSegments* geom7 = scene->get<LineSegments>(geomID(7));
+    
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2]));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3]));
+    const vfloat4 a4 = vfloat4::loadu(geom4->vertexPtr(v0[4]));
+    const vfloat4 a5 = vfloat4::loadu(geom5->vertexPtr(v0[5]));
+    const vfloat4 a6 = vfloat4::loadu(geom6->vertexPtr(v0[6]));
+    const vfloat4 a7 = vfloat4::loadu(geom7->vertexPtr(v0[7]));
+
+    transpose(a0,a1,a2,a3,a4,a5,a6,a7,p0.x,p0.y,p0.z,p0.w);
+
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1));
+    const vfloat4 b4 = vfloat4::loadu(geom4->vertexPtr(v0[4]+1));
+    const vfloat4 b5 = vfloat4::loadu(geom5->vertexPtr(v0[5]+1));
+    const vfloat4 b6 = vfloat4::loadu(geom6->vertexPtr(v0[6]+1));
+    const vfloat4 b7 = vfloat4::loadu(geom7->vertexPtr(v0[7]+1));
+
+    transpose(b0,b1,b2,b3,b4,b5,b6,b7,p1.x,p1.y,p1.z,p1.w);
+  }
+
+  template<>
+  __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                       Vec4vf8& p1,
+                                       const LineSegments* geom0,
+                                       const LineSegments* geom1,
+                                       const LineSegments* geom2,
+                                       const LineSegments* geom3,
+                                       const LineSegments* geom4,
+                                       const LineSegments* geom5,
+                                       const LineSegments* geom6,
+                                       const LineSegments* geom7,
+                                       const vint8& itime) const
+  {
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0],itime[0]));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1],itime[1]));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2],itime[2]));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3],itime[3]));
+    const vfloat4 a4 = vfloat4::loadu(geom4->vertexPtr(v0[4],itime[4]));
+    const vfloat4 a5 = vfloat4::loadu(geom5->vertexPtr(v0[5],itime[5]));
+    const vfloat4 a6 = vfloat4::loadu(geom6->vertexPtr(v0[6],itime[6]));
+    const vfloat4 a7 = vfloat4::loadu(geom7->vertexPtr(v0[7],itime[7]));
+
+    transpose(a0,a1,a2,a3,a4,a5,a6,a7,p0.x,p0.y,p0.z,p0.w);
+
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1,itime[0]));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1,itime[1]));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1,itime[2]));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1,itime[3]));
+    const vfloat4 b4 = vfloat4::loadu(geom4->vertexPtr(v0[4]+1,itime[4]));
+    const vfloat4 b5 = vfloat4::loadu(geom5->vertexPtr(v0[5]+1,itime[5]));
+    const vfloat4 b6 = vfloat4::loadu(geom6->vertexPtr(v0[6]+1,itime[6]));
+    const vfloat4 b7 = vfloat4::loadu(geom7->vertexPtr(v0[7]+1,itime[7]));
+
+    transpose(b0,b1,b2,b3,b4,b5,b6,b7,p1.x,p1.y,p1.z,p1.w);
+  }
+
+  template<>
+    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                         Vec4vf8& p1,
+                                         const Scene* scene,
+                                         float time) const
+  {
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
+    const LineSegments* geom4 = scene->get<LineSegments>(geomID(4));
+    const LineSegments* geom5 = scene->get<LineSegments>(geomID(5));
+    const LineSegments* geom6 = scene->get<LineSegments>(geomID(6));
+    const LineSegments* geom7 = scene->get<LineSegments>(geomID(7));
+    const vfloat8 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments,
+                                  geom4->fnumTimeSegments, geom5->fnumTimeSegments, geom6->fnumTimeSegments, geom7->fnumTimeSegments);
+    vfloat8 ftime;
+    const vint8 itime = getTimeSegment(vfloat8(time), numTimeSegments, ftime);
+
+    Vec4vf8 a0,a1;
+    gather(a0,a1,geom0,geom1,geom2,geom3,geom4,geom5,geom6,geom7,itime);
+    Vec4vf8 b0,b1;
+    gather(b0,b1,geom0,geom1,geom2,geom3,geom4,geom5,geom6,geom7,itime+1);
+    p0 = lerp(a0,b0,ftime);
+    p1 = lerp(a1,b1,ftime);
+  }
+
   template<int M>
   typename LineMi<M>::Type LineMi<M>::type;
 
   typedef LineMi<4> Line4i;
+  typedef LineMi<8> Line8i;
 }
