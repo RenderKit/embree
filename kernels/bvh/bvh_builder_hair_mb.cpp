@@ -17,6 +17,7 @@
 #include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
+#include "../geometry/linei.h"
 #include "../geometry/curveNi_mb.h"
 
 #if defined(EMBREE_GEOMETRY_CURVE)
@@ -26,7 +27,7 @@ namespace embree
   namespace isa
   {
     /* FIXME: add fast path for single-segment motion blur */
-    template<int N, typename Primitive>
+    template<int N, typename CurvePrimitive, typename LinePrimitive>
     struct BVHNHairMBlurBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -58,20 +59,28 @@ namespace embree
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
-        const size_t leaf_bytes = Primitive::bytes(pinfo.num_time_segments);
+        const size_t leaf_bytes = CurvePrimitive::bytes(pinfo.num_time_segments);
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
     
         /* settings for BVH build */
         BVHBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = bsf(Primitive::max_size());
-        settings.minLeafSize = Primitive::max_size();
-        settings.maxLeafSize = Primitive::max_size();
+        settings.logBlockSize = bsf(CurvePrimitive::max_size());
+        settings.minLeafSize = CurvePrimitive::max_size();
+        settings.maxLeafSize = CurvePrimitive::max_size();
 
         /* creates a leaf node */
         auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
-          return Primitive::createLeafMB(bvh,prims,alloc);
+
+          if (prims.size() == 0)
+            typename BVH::NodeRecordMB4D(BVH::emptyNode,empty,empty);
+          
+          const unsigned int geomID0 = (*prims.prims)[prims.object_range.begin()].geomID();
+          if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
+            return LinePrimitive::createLeafMB(bvh,prims,alloc);
+          else
+            return CurvePrimitive::createLeafMB(bvh,prims,alloc);
         };
 
         /* build the hierarchy */
@@ -102,10 +111,10 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4OBBCurve4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve4iMB>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBCurve4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve4iMB,Line4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB,Line4i>((BVH4*)bvh,scene); }
 #endif
 
   }

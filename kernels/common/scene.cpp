@@ -687,8 +687,8 @@ namespace embree
       createSubdivMBAccel();
       createHairAccel();
       createHairMBAccel();
-      createLineAccel();
-      createLineMBAccel();
+      //createLineAccel();
+      //createLineMBAccel();
       createUserGeometryAccel();
       createUserGeometryMBAccel();
       createInstanceAccel();

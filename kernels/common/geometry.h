@@ -81,6 +81,11 @@ namespace embree
       GTY_GRID_MESH = 16,
       GTY_END = 17,
 
+      GTY_BASIS_LINEAR = 4,
+      GTY_BASIS_BEZIER = 8,
+      GTY_BASIS_BSPLINE = 12,
+      GTY_BASIS_MASK = 12,
+      
       GTY_SUBTYPE_FLAT_CURVE = 0,
       GTY_SUBTYPE_ROUND_CURVE = 1,
       GTY_SUBTYPE_ORIENTED_CURVE = 2,
@@ -109,7 +114,9 @@ namespace embree
       MTY_ORIENTED_BSPLINE_CURVE = 1 << GTY_ORIENTED_BSPLINE_CURVE,
       
       MTY_LINES = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE,
-      MTY_CURVES = MTY_FLAT_BEZIER_CURVE | MTY_ROUND_BEZIER_CURVE | MTY_ORIENTED_BEZIER_CURVE | MTY_FLAT_BSPLINE_CURVE | MTY_ROUND_BSPLINE_CURVE | MTY_ORIENTED_BSPLINE_CURVE,
+      MTY_CURVES = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE |
+                   MTY_FLAT_BEZIER_CURVE | MTY_ROUND_BEZIER_CURVE | MTY_ORIENTED_BEZIER_CURVE |
+                   MTY_FLAT_BSPLINE_CURVE | MTY_ROUND_BSPLINE_CURVE | MTY_ORIENTED_BSPLINE_CURVE,
       
       MTY_INSTANCE = 1 << GTY_INSTANCE,
       MTY_GRID_MESH = 1 << GTY_GRID_MESH,
@@ -150,6 +157,9 @@ namespace embree
 
     /*! returns curve type */
     __forceinline GType getCurveType() const { return (GType)(gtype & GTY_SUBTYPE_MASK); }
+
+    /*! returns curve basis */
+    __forceinline GType getCurveBasis() const { return (GType)(gtype & GTY_BASIS_MASK); }
 
     /*! returns geometry type mask */
     __forceinline GTypeMask getTypeMask() const { return (GTypeMask)(1 << gtype); }

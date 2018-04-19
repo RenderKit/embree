@@ -42,14 +42,17 @@ namespace embree
     /* Returns required number of primitive blocks for N line segments */
     static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
 
+    /* Returns required number of bytes for N line segments */
+    static __forceinline size_t bytes(size_t N) { return blocks(N)*sizeof(LineMi); }
+
   public:
 
     /* Default constructor */
     __forceinline LineMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline LineMi(const vuint<M>& v0, const vuint<M>& geomIDs, const vuint<M>& primIDs)
-      : v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
+    __forceinline LineMi(const vuint<M>& v0, const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
+      : gtype((unsigned char)gtype), v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vuint<M>(-1); }
@@ -141,6 +144,8 @@ namespace embree
     template<typename PrimRefT>
     __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
+      Geometry::GType gty = scene->get(prims[begin].geomID())->getType();
+      
       vuint<M> geomID, primID;
       vuint<M> v0;
       const PrimRefT* prim = &prims[begin];
@@ -163,12 +168,24 @@ namespace embree
             v0[i] = v0[i-1];
           }
         }
-        if (begin<end) prim = &prims[begin];
+        if (begin<end) prim = &prims[begin]; // FIXME: remove this line
       }
-
-      new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
+      new (this) LineMi(v0,geomID,primID,gty); // FIXME: use non temporal store
     }
 
+     template<typename BVH, typename Allocator>
+      __forceinline static typename BVH::NodeRef createLeaf (BVH* bvh, const PrimRef* prims, const range<size_t>& set, const Allocator& alloc)
+    {
+      size_t start = set.begin();
+      size_t items = LineMi::blocks(set.size());
+      size_t numbytes = LineMi::bytes(set.size());
+      LineMi* accel = (LineMi*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,start,set.end(),bvh->scene);
+      }
+      return bvh->encodeLeaf((char*)accel,items);
+    };
+    
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
     {
       fill(prims,begin,end,scene);
@@ -180,6 +197,23 @@ namespace embree
       fill(prims,begin,end,scene);
       return linearBounds(scene,time_range);
     }
+
+      template<typename BVH, typename SetMB, typename Allocator>
+    __forceinline static typename BVH::NodeRecordMB4D createLeafMB(BVH* bvh, const SetMB& prims, const Allocator& alloc)
+    {
+      size_t start = prims.object_range.begin();
+      size_t end   = prims.object_range.end();
+      size_t items = LineMi::blocks(prims.object_range.size());
+      size_t numbytes = LineMi::bytes(prims.object_range.size());
+      LineMi* accel = (LineMi*) alloc.malloc1(numbytes,BVH::byteAlignment);
+      const typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      
+      LBBox3fa bounds = empty;
+      for (size_t i=0; i<items; i++)
+        bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
+      
+      return typename BVH::NodeRecordMB4D(node,bounds,prims.time_range);
+    };
 
     /* Updates the primitive */
     __forceinline BBox3fa update(LineSegments* geom)
@@ -202,6 +236,7 @@ namespace embree
     }
     
   public:
+    unsigned char gtype;
     vuint<M> v0;      // index of start vertex
   private:
     vuint<M> geomIDs; // geometry ID

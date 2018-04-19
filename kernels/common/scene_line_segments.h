@@ -97,28 +97,51 @@ namespace embree
       return vertices[itime][i].w;
     }
 
+     /*! calculates bounding box of i'th line segment */
+    __forceinline BBox3fa bounds(const Vec3fa& v0, const Vec3fa& v1) const
+    {
+      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
+      return enlarge(b,Vec3fa(max(v0.w,v1.w)));
+    }
+
     /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(size_t i) const
     {
       const unsigned int index = segment(i);
-      const float r0 = radius(index+0);
-      const float r1 = radius(index+1);
       const Vec3fa v0 = vertex(index+0);
       const Vec3fa v1 = vertex(index+1);
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
-      return enlarge(b,Vec3fa(max(r0,r1)));
+      return bounds(v0,v1);
     }
 
     /*! calculates bounding box of i'th line segment for the itime'th time step */
     __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
       const unsigned int index = segment(i);
-      const float r0 = radius(index+0,itime);
-      const float r1 = radius(index+1,itime);
       const Vec3fa v0 = vertex(index+0,itime);
       const Vec3fa v1 = vertex(index+1,itime);
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
-      return enlarge(b,Vec3fa(max(r0,r1)));
+      return bounds(v0,v1);
+    }
+
+    /*! calculates bounding box of i'th line segment */
+    __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i) const
+    {
+      const unsigned int index = segment(i);
+      const Vec3fa v0 = vertex(index+0);
+      const Vec3fa v1 = vertex(index+1);
+      const Vec3fa w0(xfmVector(space,v0),v0.w);
+      const Vec3fa w1(xfmVector(space,v1),v1.w);
+      return bounds(w0,w1);
+    }
+
+    /*! calculates bounding box of i'th line segment for the itime'th time step */
+    __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime) const
+    {
+      const unsigned int index = segment(i);
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3fa w0(xfmVector(space,v0),v0.w);
+      const Vec3fa w1(xfmVector(space,v1),v1.w);
+      return bounds(w0,w1);
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -168,6 +191,11 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      return LBBox3fa([&] (size_t itime) { return bounds(space, primID, itime); }, time_range, fnumTimeSegments);
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
     {
       if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
@@ -194,6 +222,22 @@ namespace embree
     {
       LineSegmentsISA (Device* device)
         : LineSegments(device) {}
+
+      Vec3fa computeDirection(unsigned int primID) const
+      {
+        const unsigned vtxID = segment(primID);
+        const Vec3fa v0 = vertex(vtxID+0);
+        const Vec3fa v1 = vertex(vtxID+1);
+        return v1-v0;
+      }
+
+      Vec3fa computeDirection(unsigned int primID, size_t time) const
+      {
+        const unsigned vtxID = segment(primID);
+        const Vec3fa v0 = vertex(vtxID+0,time);
+        const Vec3fa v1 = vertex(vtxID+1,time);
+        return v1-v0;
+      }
 
       PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
@@ -234,6 +278,22 @@ namespace embree
           prims[k++] = prim;
         }
         return pinfo;
+      }
+
+      BBox3fa vbounds(size_t i) const {
+        return bounds(i);
+      }
+      
+      BBox3fa vbounds(const LinearSpace3fa& space, size_t i) const {
+        return bounds(space,i);
+      }
+
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
+        return linearBounds(primID,time_range);
+      }
+      
+      LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+        return linearBounds(space,primID,time_range);
       }
     };
   }
