@@ -36,181 +36,322 @@ namespace embree
 
   template<>
   Curve4v::Type::Type ()
-    : PrimitiveType("curve4v",sizeof(Curve4v),4) {}
+    : PrimitiveType("curve4v",sizeof(Curve4v)) {}
 
   template<>
-  size_t Curve4v::Type::size(const char* This) const {
-    return *This;
+  size_t Curve4v::Type::sizeActive(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return ((Line4i*)This)->size();
+    else
+      return ((Curve4v*)This)->N;
   }
 
   template<>
-  size_t Curve4v::Type::getBytes(const char* This) const {
-    return Curve4v::bytes(size(This));
+  size_t Curve4v::Type::sizeTotal(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return 4;
+    else
+      return ((Curve4v*)This)->N;
+  }
+
+  template<>
+  size_t Curve4v::Type::getBytes(const char* This) const
+  {
+     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+       return Line4i::bytes(sizeActive(This));
+     else
+       return Curve4v::bytes(sizeActive(This));
   }
 
   /********************** Curve8v **************************/
 
   template<>
   Curve8v::Type::Type ()
-    : PrimitiveType("curve8v",sizeof(Curve8v),8) {}
+    : PrimitiveType("curve8v",sizeof(Curve8v)) {}
 
   template<>
-  size_t Curve8v::Type::size(const char* This) const {
-    return *This;
+  size_t Curve8v::Type::sizeActive(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return ((Line4i*)This)->size();
+    else
+      return ((Curve8v*)This)->N;
   }
 
   template<>
-  size_t Curve8v::Type::getBytes(const char* This) const {
-    return Curve8v::bytes(size(This));
+  size_t Curve8v::Type::sizeTotal(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return 4;
+    else
+      return ((Curve8v*)This)->N;
+  }
+
+  template<>
+  size_t Curve8v::Type::getBytes(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+       return Line4i::bytes(sizeActive(This));
+     else
+       return Curve8v::bytes(sizeActive(This));
   }
 
   /********************** Curve4i **************************/
 
   template<>
   Curve4i::Type::Type ()
-    : PrimitiveType("curve4i",sizeof(Curve4v),4) {}
+    : PrimitiveType("curve4i",sizeof(Curve4v)) {}
 
   template<>
-  size_t Curve4i::Type::size(const char* This) const {
-    return *This;
+  size_t Curve4i::Type::sizeActive(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return ((Line4i*)This)->size();
+    else
+      return ((Curve4i*)This)->N;
   }
 
   template<>
-  size_t Curve4i::Type::getBytes(const char* This) const {
-    return Curve4i::bytes(size(This));
+  size_t Curve4i::Type::sizeTotal(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return 4;
+    else
+      return ((Curve4i*)This)->N;
+  }
+
+  template<>
+  size_t Curve4i::Type::getBytes(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+       return Line4i::bytes(sizeActive(This));
+     else
+       return Curve4i::bytes(sizeActive(This));
   }
 
   /********************** Curve8i **************************/
 
   template<>
   Curve8i::Type::Type ()
-    : PrimitiveType("curve8i",sizeof(Curve8v),8) {}
+    : PrimitiveType("curve8i",sizeof(Curve8v)) {}
 
   template<>
-  size_t Curve8i::Type::size(const char* This) const {
-    return *This;
+  size_t Curve8i::Type::sizeActive(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return ((Line4i*)This)->size();
+    else
+      return ((Curve8i*)This)->N;
   }
 
   template<>
-  size_t Curve8i::Type::getBytes(const char* This) const {
-    return Curve8i::bytes(size(This));
+  size_t Curve8i::Type::sizeTotal(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return 4;
+    else
+      return ((Curve8i*)This)->N;
+  }
+
+  template<>
+  size_t Curve8i::Type::getBytes(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+       return Line4i::bytes(sizeActive(This));
+     else
+       return Curve8i::bytes(sizeActive(This));
   }
 
   /********************** Curve4iMB **************************/
 
   template<>
   Curve4iMB::Type::Type ()
-    : PrimitiveType("curve4imb",sizeof(Curve4iMB),4) {}
+    : PrimitiveType("curve4imb",sizeof(Curve4iMB)) {}
 
   template<>
-  size_t Curve4iMB::Type::size(const char* This) const {
-    return *This;
+  size_t Curve4iMB::Type::sizeActive(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return ((Line4i*)This)->size();
+    else
+      return ((Curve4iMB*)This)->N;
   }
 
   template<>
-  size_t Curve4iMB::Type::getBytes(const char* This) const {
-    return Curve4iMB::bytes(size(This));
+  size_t Curve4iMB::Type::sizeTotal(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return 4;
+    else
+      return ((Curve4iMB*)This)->N;
+  }
+
+  template<>
+  size_t Curve4iMB::Type::getBytes(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+       return Line4i::bytes(sizeActive(This));
+     else
+       return Curve4iMB::bytes(sizeActive(This));
   }
 
   /********************** Curve8iMB **************************/
 
   template<>
   Curve8iMB::Type::Type ()
-    : PrimitiveType("curve8imb",sizeof(Curve8iMB),8) {}
+    : PrimitiveType("curve8imb",sizeof(Curve8iMB)) {}
 
   template<>
-  size_t Curve8iMB::Type::size(const char* This) const {
-    return *This;
+  size_t Curve8iMB::Type::sizeActive(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return ((Line4i*)This)->size();
+    else
+      return ((Curve8iMB*)This)->N;
   }
 
   template<>
-  size_t Curve8iMB::Type::getBytes(const char* This) const {
-    return Curve8iMB::bytes(size(This));
+  size_t Curve8iMB::Type::sizeTotal(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+      return 4;
+    else
+      return ((Curve8iMB*)This)->N;
+  }
+
+  template<>
+  size_t Curve8iMB::Type::getBytes(const char* This) const
+  {
+    if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
+       return Line4i::bytes(sizeActive(This));
+     else
+       return Curve8iMB::bytes(sizeActive(This));
   }
 
   /********************** Line4i **************************/
 
   template<>
   Line4i::Type::Type ()
-    : PrimitiveType("line4i",sizeof(Line4i),4) {}
+    : PrimitiveType("line4i",sizeof(Line4i)) {}
 
   template<>
-  size_t Line4i::Type::size(const char* This) const {
+  size_t Line4i::Type::sizeActive(const char* This) const {
     return ((Line4i*)This)->size();
+  }
+
+  template<>
+  size_t Line4i::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** Triangle4 **************************/
 
   template<>
   Triangle4::Type::Type ()
-    : PrimitiveType("triangle4",sizeof(Triangle4),4) {}
+    : PrimitiveType("triangle4",sizeof(Triangle4)) {}
 
   template<>
-  size_t Triangle4::Type::size(const char* This) const {
+  size_t Triangle4::Type::sizeActive(const char* This) const {
     return ((Triangle4*)This)->size();
+  }
+
+  template<>
+  size_t Triangle4::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** Triangle4v **************************/
 
   template<>
   Triangle4v::Type::Type ()
-  : PrimitiveType("triangle4v",sizeof(Triangle4v),4) {}
+  : PrimitiveType("triangle4v",sizeof(Triangle4v)) {}
 
   template<>
-  size_t Triangle4v::Type::size(const char* This) const {
+  size_t Triangle4v::Type::sizeActive(const char* This) const {
     return ((Triangle4v*)This)->size();
+  }
+
+  template<>
+  size_t Triangle4v::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** Triangle4i **************************/
 
   template<>
   Triangle4i::Type::Type ()
-    : PrimitiveType("triangle4i",sizeof(Triangle4i),4) {}
+    : PrimitiveType("triangle4i",sizeof(Triangle4i)) {}
 
   template<>
-  size_t Triangle4i::Type::size(const char* This) const {
+  size_t Triangle4i::Type::sizeActive(const char* This) const {
     return ((Triangle4i*)This)->size();
+  }
+
+  template<>
+  size_t Triangle4i::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** Triangle4vMB **************************/
 
   template<>
   Triangle4vMB::Type::Type ()
-  : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4) {}
+  : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB)) {}
 
   template<>
-  size_t Triangle4vMB::Type::size(const char* This) const {
+  size_t Triangle4vMB::Type::sizeActive(const char* This) const {
     return ((Triangle4vMB*)This)->size();
+  }
+
+  template<>
+  size_t Triangle4vMB::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** Quad4v **************************/
 
   template<>
   Quad4v::Type::Type ()
-    : PrimitiveType("quad4v",sizeof(Quad4v),4) {}
+    : PrimitiveType("quad4v",sizeof(Quad4v)) {}
 
   template<>
-  size_t Quad4v::Type::size(const char* This) const {
+  size_t Quad4v::Type::sizeActive(const char* This) const {
     return ((Quad4v*)This)->size();
+  }
+
+  template<>
+  size_t Quad4v::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** Quad4i **************************/
 
   template<>
   Quad4i::Type::Type ()
-    : PrimitiveType("quad4i",sizeof(Quad4i),4) {}
+    : PrimitiveType("quad4i",sizeof(Quad4i)) {}
 
   template<>
-  size_t Quad4i::Type::size(const char* This) const {
+  size_t Quad4i::Type::sizeActive(const char* This) const {
     return ((Quad4i*)This)->size();
+  }
+
+  template<>
+  size_t Quad4i::Type::sizeTotal(const char* This) const {
+    return 4;
   }
 
   /********************** SubdivPatch1 **************************/
 
   SubdivPatch1::Type::Type ()
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1) {}
+    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1)) {}
 
-  size_t SubdivPatch1::Type::size(const char* This) const {
+  size_t SubdivPatch1::Type::sizeActive(const char* This) const {
+    return 1;
+  }
+
+  size_t SubdivPatch1::Type::sizeTotal(const char* This) const {
     return 1;
   }
 
@@ -219,9 +360,13 @@ namespace embree
   /********************** Virtual Object **************************/
 
   Object::Type::Type ()
-    : PrimitiveType("object",sizeof(Object),1) {}
+    : PrimitiveType("object",sizeof(Object)) {}
 
-  size_t Object::Type::size(const char* This) const {
+  size_t Object::Type::sizeActive(const char* This) const {
+    return 1;
+  }
+
+  size_t Object::Type::sizeTotal(const char* This) const {
     return 1;
   }
 
@@ -230,9 +375,13 @@ namespace embree
   /********************** Instance **************************/
 
   InstancePrimitive::Type::Type ()
-    : PrimitiveType("instance",sizeof(InstancePrimitive),1) {}
+    : PrimitiveType("instance",sizeof(InstancePrimitive)) {}
 
-  size_t InstancePrimitive::Type::size(const char* This) const {
+  size_t InstancePrimitive::Type::sizeActive(const char* This) const {
+    return 1;
+  }
+
+  size_t InstancePrimitive::Type::sizeTotal(const char* This) const {
     return 1;
   }
 
@@ -241,9 +390,13 @@ namespace embree
   /********************** SubGrid **************************/
 
   SubGrid::Type::Type ()
-    : PrimitiveType("subgrid",sizeof(SubGrid),1) {}
+    : PrimitiveType("subgrid",sizeof(SubGrid)) {}
 
-  size_t SubGrid::Type::size(const char* This) const {
+  size_t SubGrid::Type::sizeActive(const char* This) const {
+    return 1;
+  }
+
+  size_t SubGrid::Type::sizeTotal(const char* This) const {
     return 1;
   }
 
@@ -253,10 +406,15 @@ namespace embree
 
   template<>
   SubGridQBVH4::Type::Type ()
-    : PrimitiveType("SubGridQBVH4",sizeof(SubGridQBVH4),1) {}
+    : PrimitiveType("SubGridQBVH4",sizeof(SubGridQBVH4)) {}
 
   template<>
-  size_t SubGridQBVH4::Type::size(const char* This) const {
+  size_t SubGridQBVH4::Type::sizeActive(const char* This) const {
+    return 1;
+  }
+
+  template<>
+  size_t SubGridQBVH4::Type::sizeTotal(const char* This) const {
     return 1;
   }
 
@@ -264,11 +422,15 @@ namespace embree
 
   template<>
   SubGridQBVH8::Type::Type ()
-    : PrimitiveType("SubGridQBVH8",sizeof(SubGridQBVH8),1) {}
+    : PrimitiveType("SubGridQBVH8",sizeof(SubGridQBVH8)) {}
 
   template<>
-  size_t SubGridQBVH8::Type::size(const char* This) const {
+  size_t SubGridQBVH8::Type::sizeActive(const char* This) const {
     return 1;
   }
 
+  template<>
+  size_t SubGridQBVH8::Type::sizeTotal(const char* This) const {
+    return 1;
+  }
 }

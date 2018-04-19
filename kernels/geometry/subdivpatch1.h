@@ -27,7 +27,8 @@ namespace embree
     struct Type : public PrimitiveType 
     {
       Type ();
-      size_t size(const char* This) const;
+      size_t sizeActive(const char* This) const;
+      size_t sizeTotal(const char* This) const;
     };
     
     static Type type;
