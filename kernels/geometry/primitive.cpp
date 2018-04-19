@@ -36,7 +36,7 @@ namespace embree
 
   template<>
   Curve4v::Type::Type ()
-    : PrimitiveType("curve4v",sizeof(Curve4v)) {}
+    : PrimitiveType("curve4v") {}
 
   template<>
   size_t Curve4v::Type::sizeActive(const char* This) const
@@ -69,7 +69,7 @@ namespace embree
 
   template<>
   Curve8v::Type::Type ()
-    : PrimitiveType("curve8v",sizeof(Curve8v)) {}
+    : PrimitiveType("curve8v") {}
 
   template<>
   size_t Curve8v::Type::sizeActive(const char* This) const
@@ -102,7 +102,7 @@ namespace embree
 
   template<>
   Curve4i::Type::Type ()
-    : PrimitiveType("curve4i",sizeof(Curve4v)) {}
+    : PrimitiveType("curve4i") {}
 
   template<>
   size_t Curve4i::Type::sizeActive(const char* This) const
@@ -135,7 +135,7 @@ namespace embree
 
   template<>
   Curve8i::Type::Type ()
-    : PrimitiveType("curve8i",sizeof(Curve8v)) {}
+    : PrimitiveType("curve8i") {}
 
   template<>
   size_t Curve8i::Type::sizeActive(const char* This) const
@@ -168,7 +168,7 @@ namespace embree
 
   template<>
   Curve4iMB::Type::Type ()
-    : PrimitiveType("curve4imb",sizeof(Curve4iMB)) {}
+    : PrimitiveType("curve4imb") {}
 
   template<>
   size_t Curve4iMB::Type::sizeActive(const char* This) const
@@ -201,7 +201,7 @@ namespace embree
 
   template<>
   Curve8iMB::Type::Type ()
-    : PrimitiveType("curve8imb",sizeof(Curve8iMB)) {}
+    : PrimitiveType("curve8imb") {}
 
   template<>
   size_t Curve8iMB::Type::sizeActive(const char* This) const
@@ -234,7 +234,7 @@ namespace embree
 
   template<>
   Line4i::Type::Type ()
-    : PrimitiveType("line4i",sizeof(Line4i)) {}
+    : PrimitiveType("line4i") {}
 
   template<>
   size_t Line4i::Type::sizeActive(const char* This) const {
@@ -246,11 +246,16 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Line4i::Type::getBytes(const char* This) const {
+    return sizeof(Line4i);
+  }
+
   /********************** Triangle4 **************************/
 
   template<>
   Triangle4::Type::Type ()
-    : PrimitiveType("triangle4",sizeof(Triangle4)) {}
+    : PrimitiveType("triangle4") {}
 
   template<>
   size_t Triangle4::Type::sizeActive(const char* This) const {
@@ -262,11 +267,16 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Triangle4::Type::getBytes(const char* This) const {
+    return sizeof(Triangle4);
+  }
+
   /********************** Triangle4v **************************/
 
   template<>
   Triangle4v::Type::Type ()
-  : PrimitiveType("triangle4v",sizeof(Triangle4v)) {}
+  : PrimitiveType("triangle4v") {}
 
   template<>
   size_t Triangle4v::Type::sizeActive(const char* This) const {
@@ -278,11 +288,16 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Triangle4v::Type::getBytes(const char* This) const {
+    return sizeof(Triangle4v);
+  }
+
   /********************** Triangle4i **************************/
 
   template<>
   Triangle4i::Type::Type ()
-    : PrimitiveType("triangle4i",sizeof(Triangle4i)) {}
+    : PrimitiveType("triangle4i") {}
 
   template<>
   size_t Triangle4i::Type::sizeActive(const char* This) const {
@@ -294,11 +309,16 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Triangle4i::Type::getBytes(const char* This) const {
+    return sizeof(Triangle4i);
+  }
+
   /********************** Triangle4vMB **************************/
 
   template<>
   Triangle4vMB::Type::Type ()
-  : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB)) {}
+  : PrimitiveType("triangle4vmb") {}
 
   template<>
   size_t Triangle4vMB::Type::sizeActive(const char* This) const {
@@ -310,11 +330,16 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Triangle4vMB::Type::getBytes(const char* This) const {
+    return sizeof(Triangle4vMB);
+  }
+
   /********************** Quad4v **************************/
 
   template<>
   Quad4v::Type::Type ()
-    : PrimitiveType("quad4v",sizeof(Quad4v)) {}
+    : PrimitiveType("quad4v") {}
 
   template<>
   size_t Quad4v::Type::sizeActive(const char* This) const {
@@ -326,11 +351,16 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Quad4v::Type::getBytes(const char* This) const {
+    return sizeof(Quad4v);
+  }
+
   /********************** Quad4i **************************/
 
   template<>
   Quad4i::Type::Type ()
-    : PrimitiveType("quad4i",sizeof(Quad4i)) {}
+    : PrimitiveType("quad4i") {}
 
   template<>
   size_t Quad4i::Type::sizeActive(const char* This) const {
@@ -342,10 +372,15 @@ namespace embree
     return 4;
   }
 
+  template<>
+  size_t Quad4i::Type::getBytes(const char* This) const {
+    return sizeof(Quad4i);
+  }
+
   /********************** SubdivPatch1 **************************/
 
   SubdivPatch1::Type::Type ()
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1)) {}
+    : PrimitiveType("subdivpatch1") {}
 
   size_t SubdivPatch1::Type::sizeActive(const char* This) const {
     return 1;
@@ -355,12 +390,16 @@ namespace embree
     return 1;
   }
 
+  size_t SubdivPatch1::Type::getBytes(const char* This) const {
+    return sizeof(SubdivPatch1);
+  }
+
   SubdivPatch1::Type SubdivPatch1::type;
 
   /********************** Virtual Object **************************/
 
   Object::Type::Type ()
-    : PrimitiveType("object",sizeof(Object)) {}
+    : PrimitiveType("object") {}
 
   size_t Object::Type::sizeActive(const char* This) const {
     return 1;
@@ -370,12 +409,16 @@ namespace embree
     return 1;
   }
 
+  size_t Object::Type::getBytes(const char* This) const {
+    return sizeof(Object);
+  }
+
   Object::Type Object::type;
 
   /********************** Instance **************************/
 
   InstancePrimitive::Type::Type ()
-    : PrimitiveType("instance",sizeof(InstancePrimitive)) {}
+    : PrimitiveType("instance") {}
 
   size_t InstancePrimitive::Type::sizeActive(const char* This) const {
     return 1;
@@ -385,12 +428,16 @@ namespace embree
     return 1;
   }
 
+  size_t InstancePrimitive::Type::getBytes(const char* This) const {
+    return sizeof(InstancePrimitive);
+  }
+
   InstancePrimitive::Type InstancePrimitive::type;
 
   /********************** SubGrid **************************/
 
   SubGrid::Type::Type ()
-    : PrimitiveType("subgrid",sizeof(SubGrid)) {}
+    : PrimitiveType("subgrid") {}
 
   size_t SubGrid::Type::sizeActive(const char* This) const {
     return 1;
@@ -400,13 +447,17 @@ namespace embree
     return 1;
   }
 
+  size_t SubGrid::Type::getBytes(const char* This) const {
+    return sizeof(SubGrid);
+  }
+
   SubGrid::Type SubGrid::type;
   
   /********************** SubGridQBVH4 **************************/
 
   template<>
   SubGridQBVH4::Type::Type ()
-    : PrimitiveType("SubGridQBVH4",sizeof(SubGridQBVH4)) {}
+    : PrimitiveType("SubGridQBVH4") {}
 
   template<>
   size_t SubGridQBVH4::Type::sizeActive(const char* This) const {
@@ -418,11 +469,16 @@ namespace embree
     return 1;
   }
 
+  template<>
+  size_t SubGridQBVH4::Type::getBytes(const char* This) const {
+    return sizeof(SubGridQBVH4);
+  }
+
   /********************** SubGridQBVH8 **************************/
 
   template<>
   SubGridQBVH8::Type::Type ()
-    : PrimitiveType("SubGridQBVH8",sizeof(SubGridQBVH8)) {}
+    : PrimitiveType("SubGridQBVH8") {}
 
   template<>
   size_t SubGridQBVH8::Type::sizeActive(const char* This) const {
@@ -432,5 +488,10 @@ namespace embree
   template<>
   size_t SubGridQBVH8::Type::sizeTotal(const char* This) const {
     return 1;
+  }
+
+  template<>
+  size_t SubGridQBVH8::Type::getBytes(const char* This) const {
+    return sizeof(SubGridQBVH8);
   }
 }

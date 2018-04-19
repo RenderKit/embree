@@ -146,10 +146,13 @@ namespace embree
       size_t num; const char* tri = node.leaf(num);
       if (num)
       {
-        for (size_t i=0; i<num; i++) {
-          s.statLeaf.numPrimsActive += bvh->primTy->sizeActive(tri+i*bvh->primTy->bytes);
-          s.statLeaf.numPrimsTotal += bvh->primTy->sizeTotal(tri+i*bvh->primTy->bytes);
-          s.statLeaf.numBytes += bvh->primTy->getBytes(tri+i*bvh->primTy->bytes);
+        for (size_t i=0; i<num; i++)
+        {
+          const size_t bytes = bvh->primTy->getBytes(tri);
+          s.statLeaf.numPrimsActive += bvh->primTy->sizeActive(tri);
+          s.statLeaf.numPrimsTotal += bvh->primTy->sizeTotal(tri);
+          s.statLeaf.numBytes += bytes;
+          tri+=bytes;
         }
         s.statLeaf.numLeaves++;
         s.statLeaf.numPrimBlocks += num;

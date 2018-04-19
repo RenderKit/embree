@@ -29,6 +29,7 @@ namespace embree
       Type ();
       size_t sizeActive(const char* This) const;
       size_t sizeTotal(const char* This) const;
+      size_t getBytes(const char* This) const;
     };
     
     static Type type;
