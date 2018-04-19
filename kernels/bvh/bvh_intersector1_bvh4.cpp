@@ -28,9 +28,6 @@ namespace embree
     /// BVH4Intersector1 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Line4iIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<SIMD_MODE(4) COMMA true> > >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4Line4iMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > >));
-
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBVirtualCurveIntersector1,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersector1 >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH4OBBVirtualCurveIntersector1MB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersector1 >));
 

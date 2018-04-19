@@ -418,53 +418,6 @@ namespace embree
 #endif
   }
 
-  void Scene::createLineAccel()
-  {
-#if defined(EMBREE_GEOMETRY_CURVE)
-    if (device->line_accel == "default")
-    {
-      if (quality_flags != RTC_BUILD_QUALITY_LOW)
-      {
-#if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX) && !isCompactAccel())
-          accels.add(device->bvh8_factory->BVH8Line4i(this));
-        else
-#endif
-          accels.add(device->bvh4_factory->BVH4Line4i(this,BVHFactory::BuildVariant::STATIC));
-      }
-      else
-      {
-        accels.add(device->bvh4_factory->BVH4Line4i(this,BVHFactory::BuildVariant::DYNAMIC));
-      }
-    }
-    else if (device->line_accel == "bvh4.line4i") accels.add(device->bvh4_factory->BVH4Line4i(this));
-#if defined (EMBREE_TARGET_SIMD8)
-    else if (device->line_accel == "bvh8.line4i") accels.add(device->bvh8_factory->BVH8Line4i(this));
-#endif
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown line segment acceleration structure "+device->line_accel);
-#endif
-  }
-
-  void Scene::createLineMBAccel()
-  {
-#if defined(EMBREE_GEOMETRY_CURVE)
-    if (device->line_accel_mb == "default")
-    {
-#if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompactAccel())
-        accels.add(device->bvh8_factory->BVH8Line4iMB(this));
-      else
-#endif
-        accels.add(device->bvh4_factory->BVH4Line4iMB(this));
-    }
-    else if (device->line_accel_mb == "bvh4.line4imb") accels.add(device->bvh4_factory->BVH4Line4iMB(this));
-#if defined (EMBREE_TARGET_SIMD8)
-    else if (device->line_accel_mb == "bvh8.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
-#endif
-    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
-#endif
-  }
-
   void Scene::createSubdivAccel()
   {
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
@@ -687,8 +640,6 @@ namespace embree
       createSubdivMBAccel();
       createHairAccel();
       createHairMBAccel();
-      //createLineAccel();
-      //createLineMBAccel();
       createUserGeometryAccel();
       createUserGeometryMBAccel();
       createInstanceAccel();

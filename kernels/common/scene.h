@@ -151,8 +151,6 @@ namespace embree
     void createQuadMBAccel();
     void createHairAccel();
     void createHairMBAccel();
-    void createLineAccel();
-    void createLineMBAccel();
     void createSubdivAccel();
     void createSubdivMBAccel();
     void createUserGeometryAccel();
