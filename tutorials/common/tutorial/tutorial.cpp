@@ -789,7 +789,7 @@ namespace embree
           
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_Q: 
-          glfwSetWindowShouldClose(window,GLFW_TRUE);
+          glfwSetWindowShouldClose(window,1);
           break;
         }
       }
