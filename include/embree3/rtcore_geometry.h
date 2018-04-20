@@ -47,6 +47,10 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE  = 33, // flat (ribbon-like) B-spline curves
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE  = 34, // flat normal oriented B-spline curves
 
+  RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE = 40, // round (tube-like) Hermite curves
+  RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE  = 41, // flat (ribbon-like) Hermite curves
+  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE  = 42, // flat normal oriented Hermite curves
+
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };
