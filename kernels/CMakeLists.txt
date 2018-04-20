@@ -56,7 +56,7 @@ SET(EMBREE_LIBRARY_FILES
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
 
-  geometry/primitive.cpp
+  geometry/primitive4.cpp
   geometry/instance_intersector.cpp
   geometry/curve_intersector_virtual.cpp
   builders/primrefgen.cpp
@@ -105,6 +105,10 @@ MACRO(embree_files TARGET ISA)
     geometry/instance_intersector.cpp
     geometry/curve_intersector_virtual.cpp
     bvh/bvh_intersector1_bvh4.cpp)
+
+  IF (${ISA} EQUAL ${ISA_LOWEST_AVX})
+    LIST(APPEND ${TARGET} geometry/primitive8.cpp)
+  ENDIF() 
 
   IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA} EQUAL ${AVX512SKX} OR ${ISA_LOWEST} EQUAL ${ISA})
     

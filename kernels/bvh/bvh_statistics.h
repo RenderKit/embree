@@ -94,12 +94,14 @@ namespace embree
 
         LeafStat ( double leafSAH = 0.0f, 
                    size_t numLeaves = 0,
-                   size_t numPrims = 0,
+                   size_t numPrimsActive = 0,
+                   size_t numPrimsTotal = 0,
                    size_t numPrimBlocks = 0,
                    size_t numBytes = 0)
         : leafSAH(leafSAH),
           numLeaves(numLeaves),
-          numPrims(numPrims),
+          numPrimsActive(numPrimsActive),
+          numPrimsTotal(numPrimsTotal),
           numPrimBlocks(numPrimBlocks),
           numBytes(numBytes)
         {
@@ -119,15 +121,16 @@ namespace embree
           return numLeaves;
         }
 
-        double fillRateNom (BVH* bvh) const { return double(numPrims);  }
-        double fillRateDen (BVH* bvh) const { return double(bvh->primTy->blockSize*numPrimBlocks);  }
+        double fillRateNom (BVH* bvh) const { return double(numPrimsActive);  }
+        double fillRateDen (BVH* bvh) const { return double(numPrimsTotal);  }
         double fillRate    (BVH* bvh) const { return fillRateNom(bvh)/fillRateDen(bvh); }
 
         __forceinline friend LeafStat operator+ ( const LeafStat& a, const LeafStat& b)
         {
           LeafStat stat(a.leafSAH + b.leafSAH,
                         a.numLeaves+b.numLeaves,
-                        a.numPrims+b.numPrims,
+                        a.numPrimsActive+b.numPrimsActive,
+                        a.numPrimsTotal+b.numPrimsTotal,
                         a.numPrimBlocks+b.numPrimBlocks,
                         a.numBytes+b.numBytes);
           for (size_t i=0; i<NHIST; i++) {
@@ -162,7 +165,8 @@ namespace embree
       public:
         double leafSAH;                    //!< SAH of the leaves only
         size_t numLeaves;                  //!< Number of leaf nodes.
-        size_t numPrims;                   //!< Number of primitives.
+        size_t numPrimsActive;             //!< Number of active primitives (
+        size_t numPrimsTotal;              //!< Number of active and inactive primitives
         size_t numPrimBlocks;              //!< Number of primitive blocks.
         size_t numBytes;                   //!< Number of bytes of leaves.
         size_t numPrimBlocksHistogram[8];

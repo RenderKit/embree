@@ -17,6 +17,7 @@
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/primrefgen.h"
 
+#include "../geometry/linei.h"
 #include "../geometry/curveNi.h"
 #include "../geometry/curveNv.h"
 
@@ -26,7 +27,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int N, typename Primitive>
+    template<int N, typename CurvePrimitive, typename LinePrimitive>
     struct BVHNHairBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -62,22 +63,30 @@ namespace embree
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
-        const size_t leaf_bytes = Primitive::bytes(pinfo.size());
+        const size_t leaf_bytes = CurvePrimitive::bytes(pinfo.size());
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         
         /* builder settings */
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = bsf(Primitive::max_size());
-        settings.minLeafSize = Primitive::max_size();
-        settings.maxLeafSize = Primitive::max_size();
+        settings.logBlockSize = bsf(CurvePrimitive::max_size());
+        settings.minLeafSize = CurvePrimitive::max_size();
+        settings.maxLeafSize = CurvePrimitive::max_size();
         settings.finished_range_threshold = numPrimitives/1000;
         if (settings.finished_range_threshold < 1000)
           settings.finished_range_threshold = inf;
 
         /* creates a leaf node */
         auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
-          return Primitive::createLeaf(bvh,prims,set,alloc);
+          
+          if (set.size() == 0)
+            return BVH::emptyNode;
+
+          const unsigned int geomID0 = prims[set.begin()].geomID();
+          if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
+            return LinePrimitive::createLeaf(bvh,prims,set,alloc);
+          else
+            return CurvePrimitive::createLeaf(bvh,prims,set,alloc);
         };
         
         auto reportFinishedRange = [&] (const range<size_t>& range) -> void
@@ -119,12 +128,12 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4Curve4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4v>((BVH4*)bvh,scene); }
-    Builder* BVH4Curve4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4i>((BVH4*)bvh,scene); }
+    Builder* BVH4Curve4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4v,Line4i>((BVH4*)bvh,scene); }
+    Builder* BVH4Curve4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4i,Line4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH8Curve8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Curve8v>((BVH8*)bvh,scene); }
-    Builder* BVH4Curve8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve8i>((BVH4*)bvh,scene); }
+    Builder* BVH8Curve8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Curve8v,Line8i>((BVH8*)bvh,scene); }
+    Builder* BVH4Curve8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve8i,Line8i>((BVH4*)bvh,scene); }
 #endif
 
   }

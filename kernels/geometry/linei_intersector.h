@@ -25,130 +25,94 @@ namespace embree
   namespace isa
   {
     template<int M, int Mx, bool filter>
-    struct LineMiIntersector1
+    struct FlatLinearCurveMiIntersector1
     {
       typedef LineMi<M> Primitive;
-      typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        return LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
     };
 
     template<int M, int Mx, bool filter>
-    struct LineMiMBIntersector1
+    struct FlatLinearCurveMiMBIntersector1
     {
       typedef LineMi<M> Primitive;
-      typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
-        LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
-        return LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
     };
 
     template<int M, int Mx, int K, bool filter>
-    struct LineMiIntersectorK
+    struct FlatLinearCurveMiIntersectorK
     {
       typedef LineMi<M> Primitive;
-      typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
+      static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
-      {
-        size_t mask = movemask(valid_i);
-        while (mask) intersect(pre,ray,bscf(mask),context,prim);
-      }
-      
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
+      static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        return LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
-      }
-
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
-      {
-        vbool<K> valid_o = false;
-        size_t mask = movemask(valid_i);
-        while (mask) {
-          size_t k = bscf(mask);
-          if (occluded(pre,ray,k,context,prim))
-            set(valid_o, k);
-        }
-        return valid_o;
+        return FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
     };
 
     template<int M, int Mx, int K, bool filter>
-    struct LineMiMBIntersectorK
+    struct FlatLinearCurveMiMBIntersectorK
     {
       typedef LineMi<M> Primitive;
-      typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
+      static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time()[k]);
         const vbool<Mx> valid = line.template valid<Mx>();
-        LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive& prim)
-      {
-        size_t mask = movemask(valid_i);
-        while (mask) intersect(pre,ray,bscf(mask),context,prim);
-      }
-
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
+      static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time()[k]);
         const vbool<Mx> valid = line.template valid<Mx>();
-        return LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
-      }
-      
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
-      {
-        vbool<K> valid_o = false;
-        size_t mask = movemask(valid_i);
-        while (mask) {
-          size_t k = bscf(mask);
-          if (occluded(pre,ray,k,context,prim))
-            set(valid_o, k);
-        }
-        return valid_o;
+        return FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
     };
   }

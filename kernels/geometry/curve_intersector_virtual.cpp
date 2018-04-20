@@ -20,6 +20,8 @@
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/bspline_curve.h"
 
+#include "linei_intersector.h"
+
 #include "curveNi_intersector.h"
 #include "curveNv_intersector.h"
 #include "curveNi_mb_intersector.h"
@@ -33,6 +35,44 @@ namespace embree
 {
   namespace isa
   {
+    template<int N>
+    static VirtualCurveIntersector::Intersectors LinearRibbonNiIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&FlatLinearCurveMiIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &FlatLinearCurveMiIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors LinearRibbonNiMBIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiMBIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiMBIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiMBIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&FlatLinearCurveMiMBIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &FlatLinearCurveMiMBIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+    
     template<typename Curve3fa, int N>
     static VirtualCurveIntersector::Intersectors RibbonNiIntersectors()
     {
@@ -188,6 +228,7 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4i()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_BEZIER_CURVE] = OrientedCurveNiIntersectors<BezierCurve3fa,4>();
@@ -200,6 +241,7 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4v()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_BEZIER_CURVE] = OrientedCurveNiIntersectors<BezierCurve3fa,4>();
@@ -212,6 +254,7 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4iMB()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiMBIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_BEZIER_CURVE] = OrientedCurveNiMBIntersectors<BezierCurve3fa,4>();
@@ -226,6 +269,7 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8i()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_BEZIER_CURVE] = OrientedCurveNiIntersectors<BezierCurve3fa,8>();
@@ -238,6 +282,7 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8v()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_BEZIER_CURVE] = OrientedCurveNiIntersectors<BezierCurve3fa,8>();
@@ -250,6 +295,7 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8iMB()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiMBIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_BEZIER_CURVE] = OrientedCurveNiMBIntersectors<BezierCurve3fa,8>();
