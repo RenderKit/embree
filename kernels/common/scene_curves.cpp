@@ -142,6 +142,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return vertices[slot].getPtr();
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return normals[slot].getPtr();
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -251,6 +257,8 @@ namespace embree
     vertices0 = vertices[0];
     if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
+
+    Geometry::preCommit();
   }
 
   void CurveGeometry::postCommit() 
