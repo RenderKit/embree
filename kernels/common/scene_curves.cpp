@@ -52,7 +52,7 @@ namespace embree
   void CurveGeometry::setNumTimeSteps (unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
-    if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
@@ -82,7 +82,7 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_NORMAL)
     {
-      if ((getType() & GTY_SUBTYPE_MASK) != GTY_SUBTYPE_ORIENTED_CURVE)
+      if (getCurveType() != GTY_SUBTYPE_ORIENTED_CURVE)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
         
       if (format != RTC_FORMAT_FLOAT3)
@@ -255,7 +255,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
 
     vertices0 = vertices[0];
-    if ((getType() & GTY_SUBTYPE_MASK) == GTY_SUBTYPE_ORIENTED_CURVE)
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
 
     Geometry::preCommit();

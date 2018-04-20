@@ -26,12 +26,12 @@ namespace embree
   struct LineSegments : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::GTypeMask geom_type = Geometry::MTY_LINES;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_CURVE2;
 
   public:
 
     /*! line segments construction */
-    LineSegments (Device* device);
+    LineSegments (Device* device, Geometry::GType gtype);
 
   public:
     void enabling();
@@ -77,6 +77,16 @@ namespace embree
       return vertices0.getPtr(i);
     }
 
+    /*! returns i'th normal of the first time step */
+    __forceinline Vec3fa normal(size_t i) const {
+      return normals0[i];
+    }
+
+    /*! returns i'th tangent of the first time step */
+    __forceinline Vec3fa tangent(size_t i) const {
+      return tangents0[i];
+    }
+
     /*! returns i'th radius of the first time step */
     __forceinline float radius(size_t i) const {
       return vertices0[i].w;
@@ -90,6 +100,16 @@ namespace embree
     /*! returns i'th vertex of itime'th timestep */
     __forceinline const char* vertexPtr(size_t i, size_t itime) const {
       return vertices[itime].getPtr(i);
+    }
+
+    /*! returns i'th normal of itime'th timestep */
+    __forceinline Vec3fa normal(size_t i, size_t itime) const {
+      return normals[itime][i];
+    }
+
+    /*! returns i'th tangent of itime'th timestep */
+    __forceinline Vec3fa tangent(size_t i, size_t itime) const {
+      return tangents[itime][i];
     }
 
     /*! returns i'th radius of itime'th timestep */
@@ -211,8 +231,12 @@ namespace embree
   public:
     BufferView<unsigned int> segments;      //!< array of line segment indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
+    BufferView<Vec3fa> normals0;            //!< fast access to first normal buffer
+    BufferView<Vec3fa> tangents0;           //!< fast access to first tangent buffer
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
+    vector<BufferView<Vec3fa>> tangents;    //!< tangent array for each timestep
     vector<BufferView<char>> vertexAttribs; //!< user buffers
   };
 
@@ -220,8 +244,8 @@ namespace embree
   {
     struct LineSegmentsISA : public LineSegments
     {
-      LineSegmentsISA (Device* device)
-        : LineSegments(device) {}
+      LineSegmentsISA (Device* device, Geometry::GType gtype)
+        : LineSegments(device,gtype) {}
 
       Vec3fa computeDirection(unsigned int primID) const
       {
@@ -298,5 +322,5 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device*);
+  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device* COMMA Geometry::GType);
 }

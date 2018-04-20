@@ -26,7 +26,7 @@ namespace embree
   struct CurveGeometry : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::GTypeMask geom_type = Geometry::MTY_CURVES;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_CURVE4;
 
   public:
     
@@ -76,7 +76,7 @@ namespace embree
     __forceinline Vec3fa normal(size_t i) const {
       return normals0[i];
     }
-    
+
     /*! returns i'th radius of the first time step */
     __forceinline float radius(size_t i) const {
       return vertices0[i].w;
@@ -91,7 +91,7 @@ namespace embree
     __forceinline Vec3fa normal(size_t i, size_t itime) const {
       return normals[itime][i];
     }
-    
+
     /*! returns i'th radius of itime'th timestep */
     __forceinline float radius(size_t i, size_t itime) const {
       return vertices[itime][i].w;
@@ -182,7 +182,7 @@ namespace embree
       n2 = madd(Vec3fa(t0),a2,t1*b2);
       n3 = madd(Vec3fa(t0),a3,t1*b3);
     }
-    
+
   public:
     BufferView<unsigned int> curves;        //!< array of curve indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer

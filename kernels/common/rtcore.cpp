@@ -957,6 +957,7 @@ namespace embree
     }
     
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
+      
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:
     case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE:
@@ -977,16 +978,21 @@ namespace embree
       
       Geometry* geom;
       switch (type) {
-      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE  : geom = createLineSegments (device); break;
-      case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : geom = createCurves(device,Geometry::GTY_ROUND_BEZIER_CURVE); break;
-      case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE  : geom = createCurves(device,Geometry::GTY_FLAT_BEZIER_CURVE); break;
-      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_BEZIER_CURVE); break;
-      case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE: geom = createCurves(device,Geometry::GTY_ROUND_BSPLINE_CURVE); break;
-      case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE : geom = createCurves(device,Geometry::GTY_FLAT_BSPLINE_CURVE); break;
+      //case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE            : geom = createLineSegments (device,Geometry::GTY_ROUND_LINEAR_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE             : geom = createLineSegments (device,Geometry::GTY_FLAT_LINEAR_CURVE); break;
+      //case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE  : geom = createLineSegments (device,Geometry::GTY_ORIENTED_LINEAR_CURVE); break;
+        
+      case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE            : geom = createCurves(device,Geometry::GTY_ROUND_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE             : geom = createCurves(device,Geometry::GTY_FLAT_BEZIER_CURVE); break;
+      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE  : geom = createCurves(device,Geometry::GTY_ORIENTED_BEZIER_CURVE); break;
+        
+      case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE           : geom = createCurves(device,Geometry::GTY_ROUND_BSPLINE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE            : geom = createCurves(device,Geometry::GTY_FLAT_BSPLINE_CURVE); break;
       case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_BSPLINE_CURVE); break;
-      case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE: geom = createCurves(device,Geometry::GTY_ROUND_HERMITE_CURVE); break;
-      case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE : geom = createCurves(device,Geometry::GTY_FLAT_HERMITE_CURVE); break;
-      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_HERMITE_CURVE); break;
+        
+      case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE           : geom = createLineSegments(device,Geometry::GTY_ROUND_HERMITE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE            : geom = createLineSegments(device,Geometry::GTY_FLAT_HERMITE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE : geom = createLineSegments(device,Geometry::GTY_ORIENTED_HERMITE_CURVE); break;
       default:                                    geom = nullptr; break;
       }
       return (RTCGeometry) geom->refInc();
