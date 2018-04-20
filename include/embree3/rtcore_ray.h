@@ -21,7 +21,7 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-  
+
 /* Ray structure for a single ray */
 struct RTC_ALIGN(16) RTCRay
 {
@@ -47,7 +47,7 @@ struct RTCHit
   float Ng_x;          // x coordinate of geometry normal
   float Ng_y;          // y coordinate of geometry normal
   float Ng_z;          // z coordinate of geometry normal
-   
+
   float u;             // barycentric u coordinate of hit
   float v;             // barycentric v coordinate of hit
 
@@ -70,7 +70,7 @@ struct RTC_ALIGN(16) RTCRay4
   float org_y[4];
   float org_z[4];
   float tnear[4];
-  
+
   float dir_x[4];
   float dir_y[4];
   float dir_z[4];
@@ -88,10 +88,10 @@ struct RTC_ALIGN(16) RTCHit4
   float Ng_x[4];
   float Ng_y[4];
   float Ng_z[4];
-  
+
   float u[4];
   float v[4];
-  
+
   unsigned int primID[4];
   unsigned int geomID[4];
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][4];
@@ -111,7 +111,7 @@ struct RTC_ALIGN(32) RTCRay8
   float org_y[8];
   float org_z[8];
   float tnear[8];
-  
+
   float dir_x[8];
   float dir_y[8];
   float dir_z[8];
@@ -129,10 +129,10 @@ struct RTC_ALIGN(32) RTCHit8
   float Ng_x[8];
   float Ng_y[8];
   float Ng_z[8];
-  
+
   float u[8];
   float v[8];
-  
+
   unsigned int primID[8];
   unsigned int geomID[8];
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][8];
@@ -152,7 +152,7 @@ struct RTC_ALIGN(64) RTCRay16
   float org_y[16];
   float org_z[16];
   float tnear[16];
-  
+
   float dir_x[16];
   float dir_y[16];
   float dir_z[16];
@@ -170,10 +170,10 @@ struct RTC_ALIGN(64) RTCHit16
   float Ng_x[16];
   float Ng_y[16];
   float Ng_z[16];
-  
+
   float u[16];
   float v[16];
-  
+
   unsigned int primID[16];
   unsigned int geomID[16];
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
@@ -226,7 +226,7 @@ struct RTCRayHitNp
   struct RTCRayNp ray;
   struct RTCHitNp hit;
 };
-  
+
 struct RTCRayN;
 struct RTCHitN;
 struct RTCRayHitN;
@@ -254,16 +254,16 @@ RTC_FORCEINLINE unsigned int& RTCRayN_id   (RTCRayN* ray, unsigned int N, unsign
 RTC_FORCEINLINE unsigned int& RTCRayN_flags(RTCRayN* ray, unsigned int N, unsigned int i) { return ((unsigned*)ray)[11*N+i]; }
 
 /* Helper functions to access hit packets of runtime size N */
-RTC_FORCEINLINE float& RTCHitN_Ng_x(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[0*N+i]; }
-RTC_FORCEINLINE float& RTCHitN_Ng_y(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[1*N+i]; }
-RTC_FORCEINLINE float& RTCHitN_Ng_z(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[2*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_Ng_x(RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[0*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_Ng_y(RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[1*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_Ng_z(RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[2*N+i]; }
 
-RTC_FORCEINLINE float& RTCHitN_u(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[3*N+i]; }
-RTC_FORCEINLINE float& RTCHitN_v(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[4*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_u(RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[3*N+i]; }
+RTC_FORCEINLINE float& RTCHitN_v(RTCHitN* hit, unsigned int N, unsigned int i) { return ((float*)hit)[4*N+i]; }
 
-RTC_FORCEINLINE unsigned int& RTCHitN_primID(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((unsigned*)hit)[5*N+i]; }
-RTC_FORCEINLINE unsigned int& RTCHitN_geomID(const RTCHitN* hit, unsigned int N, unsigned int i) { return ((unsigned*)hit)[6*N+i]; }
-RTC_FORCEINLINE unsigned int& RTCHitN_instID(const RTCHitN* hit, unsigned int N, unsigned int i, unsigned int l) { return ((unsigned*)hit)[7*N+i+N*l]; }
+RTC_FORCEINLINE unsigned int& RTCHitN_primID(RTCHitN* hit, unsigned int N, unsigned int i) { return ((unsigned*)hit)[5*N+i]; }
+RTC_FORCEINLINE unsigned int& RTCHitN_geomID(RTCHitN* hit, unsigned int N, unsigned int i) { return ((unsigned*)hit)[6*N+i]; }
+RTC_FORCEINLINE unsigned int& RTCHitN_instID(RTCHitN* hit, unsigned int N, unsigned int i, unsigned int l) { return ((unsigned*)hit)[7*N+i+N*l]; }
 
 /* Helper functions to extract RTCRayN and RTCHitN from RTCRayHitN */
 RTC_FORCEINLINE RTCRayN* RTCRayHitN_RayN(RTCRayHitN* rayhit, unsigned int N) { return (RTCRayN*)&((float*)rayhit)[0*N]; }
@@ -277,7 +277,7 @@ struct RTCRayNt
   float org_y[N];
   float org_z[N];
   float tnear[N];
-  
+
   float dir_x[N];
   float dir_y[N];
   float dir_z[N];
