@@ -91,7 +91,7 @@ namespace embree
     }
 
   private:
-    unsigned _geomID;  //!< geometry ID
-    unsigned _primID;  //!< primitive ID
+    unsigned int _geomID;  //!< geometry ID
+    unsigned int _primID;  //!< primitive ID
   };
 }
