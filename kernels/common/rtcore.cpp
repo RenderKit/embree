@@ -929,7 +929,7 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewGeometry);
     RTC_VERIFY_HANDLE(hdevice);
-    
+
     switch (type)
     {
     case RTC_GEOMETRY_TYPE_TRIANGLE:
