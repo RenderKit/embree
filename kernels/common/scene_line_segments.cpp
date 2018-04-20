@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   LineSegments::LineSegments (Device* device, Geometry::GType gtype)
-    : Geometry(device,gtype,0,1)
+    : Geometry(device,gtype,0,1), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
@@ -229,6 +229,11 @@ namespace embree
     }
 
     Geometry::update();
+  }
+
+  void LineSegments::setTessellationRate(float N)
+  {
+    tessellationRate = clamp((int)N,1,16);
   }
 
   void LineSegments::preCommit() 

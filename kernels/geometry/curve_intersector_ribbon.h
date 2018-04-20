@@ -181,9 +181,9 @@ namespace embree
     template<typename NativeCurve3fa>
     struct RibbonCurve1Intersector1
     {
-      template<typename Epilog>
+      template<typename GeometryT, typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                   const CurveGeometry* geom, const unsigned int primID,
+                                   const GeometryT* geom, const unsigned int primID,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
@@ -198,9 +198,9 @@ namespace embree
     template<typename NativeCurve3fa, int K>
     struct RibbonCurve1IntersectorK
     {
-      template<typename Epilog>
+      template<typename GeometryT, typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
-                                   const CurveGeometry* geom, const unsigned int primID,
+                                   const GeometryT* geom, const unsigned int primID,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {

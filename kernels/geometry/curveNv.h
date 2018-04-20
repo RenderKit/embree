@@ -85,6 +85,9 @@ namespace embree
       if (bvh->scene->get(geomID)->getCurveType() == Geometry::GTY_SUBTYPE_ORIENTED_CURVE) {
         return CurveNi<M>::createLeaf(bvh,prims,set,alloc);
       }
+      if (bvh->scene->get(geomID)->getCurveBasis() == Geometry::GTY_BASIS_HERMITE) {
+        return CurveNi<M>::createLeaf(bvh,prims,set,alloc);
+      }
       
       size_t start = set.begin();
       size_t items = CurveNv::blocks(set.size());

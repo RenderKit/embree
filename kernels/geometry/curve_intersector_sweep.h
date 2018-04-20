@@ -225,7 +225,7 @@ namespace embree
     {
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                const CurveGeometry* geom, const unsigned int primID,
+                                const Geometry* geom, const unsigned int primID,
                                 const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                 const Epilog& epilog)
       {
@@ -266,7 +266,7 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
-                                   const CurveGeometry* geom, const unsigned int primID,
+                                   const Geometry* geom, const unsigned int primID,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
       {
