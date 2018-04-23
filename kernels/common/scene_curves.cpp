@@ -348,27 +348,27 @@ namespace embree
       }
     };
     
-    template<Geometry::GType ctype, typename Curve3fa, typename Curve4f>
-    struct CurveGeometryISA : public CurveGeometryInterface<Curve3fa>
+    template<Geometry::GType ctype, typename CurveInterface, typename Curve3fa, typename Curve4f>
+    struct CurveGeometryISA : public CurveInterface
     {
-      using CurveGeometryInterface<Curve3fa>::getCurve;
-      using CurveGeometryInterface<Curve3fa>::getOrientedCurve;
-      using CurveGeometryInterface<Curve3fa>::numTimeSteps;
-      using CurveGeometryInterface<Curve3fa>::fnumTimeSegments;
-      using CurveGeometryInterface<Curve3fa>::numTimeSegments;
-      using CurveGeometryInterface<Curve3fa>::tessellationRate;
+      using CurveInterface::getCurve;
+      using CurveInterface::getOrientedCurve;
+      using CurveInterface::numTimeSteps;
+      using CurveInterface::fnumTimeSegments;
+      using CurveInterface::numTimeSegments;
+      using CurveInterface::tessellationRate;
 
-      using CurveGeometryInterface<Curve3fa>::numVertices;
-      using CurveGeometryInterface<Curve3fa>::vertexAttribs;
-      using CurveGeometryInterface<Curve3fa>::vertices;
-      using CurveGeometryInterface<Curve3fa>::curves;
-      using CurveGeometryInterface<Curve3fa>::curve;
-      using CurveGeometryInterface<Curve3fa>::radius;
-      using CurveGeometryInterface<Curve3fa>::vertex;
-      using CurveGeometryInterface<Curve3fa>::normal;
+      using CurveInterface::numVertices;
+      using CurveInterface::vertexAttribs;
+      using CurveInterface::vertices;
+      using CurveInterface::curves;
+      using CurveInterface::curve;
+      using CurveInterface::radius;
+      using CurveInterface::vertex;
+      using CurveInterface::normal;
       
       CurveGeometryISA (Device* device, Geometry::GType gtype)
-        : CurveGeometryInterface<Curve3fa>(device,gtype) {}
+        : CurveInterface(device,gtype) {}
 
       LinearSpace3fa computeAlignedSpace(const size_t primID) const
       {
@@ -622,12 +622,12 @@ namespace embree
     CurveGeometry* createCurves(Device* device, Geometry::GType gtype)
     {
       switch (gtype) {
-      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }
     }
