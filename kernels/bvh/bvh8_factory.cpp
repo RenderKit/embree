@@ -591,13 +591,12 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-
 #define ENABLE_WOOP_TEST 0
 #if ENABLE_WOOP_TEST == 0
-    assert(ivariant == IntersectVariant::ROBUST);
-    intersectors.intersector1    = BVH8Triangle4vIntersector1Woop();
-#else
+    //assert(ivariant == IntersectVariant::ROBUST);
     intersectors.intersector1    = BVH8Triangle4vIntersector1Pluecker();
+#else
+    intersectors.intersector1    = BVH8Triangle4vIntersector1Woop();
 #endif
 
 #if defined (EMBREE_RAY_PACKETS)
@@ -933,6 +932,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: builder = BVH8Triangle4vSceneBuilderFastSpatialSAH(accel,scene,0); break;
       }
     }
+    else if (scene->device->tri_builder == "sah_fast_spatial")  builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4v>");
     return new AccelInstance(accel,builder,intersectors);
   }

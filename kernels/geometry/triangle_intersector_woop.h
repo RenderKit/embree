@@ -104,17 +104,17 @@ namespace embree
         const Vec3vf<M> C = Vec3vf<M>(tri_v2[pre.kx],tri_v2[pre.ky],tri_v2[pre.kz]) - org;
 
         // todo: FMA
-        const vfloat<M> Ax = A.x - A.z * pre.S.x;
-        const vfloat<M> Ay = A.y - A.z * pre.S.y;
-        const vfloat<M> Bx = B.x - B.z * pre.S.x;
-        const vfloat<M> By = B.y - B.z * pre.S.y;
-        const vfloat<M> Cx = C.x - C.z * pre.S.x;
-        const vfloat<M> Cy = C.y - C.z * pre.S.y;
+        const vfloat<M> Ax = nmadd(A.z,pre.S.x,A.x);
+        const vfloat<M> Ay = nmadd(A.z,pre.S.y,A.y);
+        const vfloat<M> Bx = nmadd(B.z,pre.S.x,B.x);
+        const vfloat<M> By = nmadd(B.z,pre.S.y,B.y);
+        const vfloat<M> Cx = nmadd(C.z,pre.S.x,C.x);
+        const vfloat<M> Cy = nmadd(C.z,pre.S.y,C.y);
 
         /* scaled barycentric */
-        const vfloat<M> U = Cx*By - Cy*Bx;
-        const vfloat<M> V = Ax*Cy - Ay*Cx;
-        const vfloat<M> W = Bx*Ay - By*Ax;
+        const vfloat<M> U = msub(Cx,By,Cy*Bx);
+        const vfloat<M> V = msub(Ax,Cy,Ay*Cx);
+        const vfloat<M> W = msub(Bx,Ay,By*Ax);
         
         /* perform backface culling */        
 #if defined(EMBREE_BACKFACE_CULLING)
