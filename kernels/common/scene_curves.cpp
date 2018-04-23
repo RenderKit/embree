@@ -102,7 +102,7 @@ namespace embree
       if (getCurveBasis() == GTY_BASIS_HERMITE)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
         
-      if (format != RTC_FORMAT_FLOAT3)
+      if (format != RTC_FORMAT_FLOAT4)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid tangent buffer format");
 
       if (slot >= tangents.size())

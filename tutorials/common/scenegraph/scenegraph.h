@@ -46,6 +46,7 @@ namespace embree
     Ref<Node> my_merge_quads_to_grids(Ref<SceneGraph::Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
+    Ref<Node> convert_bezier_to_hermite(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
     Ref<Node> convert_flat_to_round_curves(Ref<Node> node);
     Ref<Node> convert_round_to_flat_curves(Ref<Node> node);
@@ -493,6 +494,12 @@ namespace embree
           children[i] = convert_bezier_to_bspline(children[i]);
       }
 
+      void bezier_to_hermite()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_bezier_to_hermite(children[i]);
+      }
+
       void bspline_to_bezier()
       {
         for (size_t i=0; i<children.size(); i++)
@@ -932,6 +939,7 @@ namespace embree
 
       void convert_bezier_to_bspline();
       void convert_bspline_to_bezier();
+      void convert_bezier_to_hermite();
       void compact_vertices();
 
       void verify() const;
@@ -944,6 +952,7 @@ namespace embree
       RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<avector<Vertex>> normals;   //!< hair control normals (nx,ny,nz) for multiple timesteps
+      std::vector<avector<Vertex>> tangents;  //!< hair control tangents (tx,ty,tz,tr) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
       std::vector<unsigned char> flags;       //!< left, right end cap flags
 

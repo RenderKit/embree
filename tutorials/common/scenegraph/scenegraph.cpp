@@ -484,6 +484,26 @@ namespace embree
     return positions_o;
   }
 
+  std::pair<avector<Vec3fa>,avector<Vec3fa>> bezier_to_hermite_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o; positions_o.resize(2*indices.size());
+    avector<Vec3fa> tangents_o;  tangents_o.resize(2*indices.size());
+    
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i].vertex;
+      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
+      positions_o[2*i+0] = Vec3fa(v0);
+      positions_o[2*i+1] = Vec3fa(v3);
+      tangents_o[2*i+0] = (1.0f/3.0f)*Vec3fa(v1-v0);
+      tangents_o[2*i+1] = (1.0f/3.0f)*Vec3fa(v3-v2);
+    }
+    return std::make_pair(positions_o,tangents_o);
+  }
+
   void SceneGraph::HairSetNode::convert_bezier_to_bspline()
   {
     if (type != RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE &&
@@ -501,6 +521,28 @@ namespace embree
       type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
     else
       type = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;
+  }
+
+  void SceneGraph::HairSetNode::convert_bezier_to_hermite()
+  {
+    if (type != RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE &&
+        type != RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
+      return;
+
+    tangents.resize(numTimeSteps());
+    for (size_t i=0; i<positions.size(); i++) {
+      auto pt = bezier_to_hermite_helper(hairs,positions[i]);
+      positions[i] = pt.first;
+      tangents[i] = pt.second;
+    }
+    for (size_t i=0; i<hairs.size(); i++) {
+      hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(2*i),0);
+    }
+
+    if (type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE)
+      type = RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE;
+    else
+      type = RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE;
   }
 
   void SceneGraph::HairSetNode::convert_bspline_to_bezier()
@@ -1367,6 +1409,23 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
       hmesh->convert_bspline_to_bezier();
+    }
+    return node;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_bezier_to_hermite(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      convert_bezier_to_hermite(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        convert_bezier_to_hermite(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      hmesh->convert_bezier_to_hermite();
+      //hmesh->compact_vertices();
     }
     return node;
   }
