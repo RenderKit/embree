@@ -35,7 +35,7 @@ namespace embree
   /********************** Curve8v **************************/
 
   template<>
-  const char* Curve8v::Type::Type::name () const {
+  const char* Curve8v::Type::name () const {
     return "curve8v";
   }
 
@@ -69,7 +69,7 @@ namespace embree
   /********************** Curve8i **************************/
 
   template<>
-  const char* Curve8i::Type::Type::name () const {
+  const char* Curve8i::Type::name () const {
     return "curve8i";
   }
 
@@ -103,7 +103,7 @@ namespace embree
   /********************** Curve8iMB **************************/
 
   template<>
-  const char* Curve8iMB::Type::Type::name () const {
+  const char* Curve8iMB::Type::name () const {
     return "curve8imb";
   }
 
@@ -137,7 +137,7 @@ namespace embree
   /********************** SubGridQBVH8 **************************/
 
   template<>
-  const char* SubGridQBVH8::Type::Type::name () const {
+  const char* SubGridQBVH8::Type::name () const {
     return "SubGridQBVH8";
   }
 

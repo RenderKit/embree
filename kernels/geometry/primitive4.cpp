@@ -35,7 +35,7 @@ namespace embree
   /********************** Curve4v **************************/
 
   template<>
-  const char* Curve4v::Type::Type::name () const {
+  const char* Curve4v::Type::name () const {
     return "curve4v";
   }
 
@@ -69,7 +69,7 @@ namespace embree
   /********************** Curve4i **************************/
 
   template<>
-  const char* Curve4i::Type::Type::name () const {
+  const char* Curve4i::Type::name () const {
     return "curve4i";
   }
 
@@ -103,7 +103,7 @@ namespace embree
   /********************** Curve4iMB **************************/
 
   template<>
-  const char* Curve4iMB::Type::Type::name () const {
+  const char* Curve4iMB::Type::name () const {
     return "curve4imb";
   }
 
@@ -137,7 +137,7 @@ namespace embree
   /********************** Line4i **************************/
 
   template<>
-  const char* Line4i::Type::Type::name () const {
+  const char* Line4i::Type::name () const {
     return "line4i";
   }
 
@@ -159,7 +159,7 @@ namespace embree
   /********************** Triangle4 **************************/
 
   template<>
-  const char* Triangle4::Type::Type::name () const {
+  const char* Triangle4::Type::name () const {
     return "triangle4";
   }
 
@@ -181,7 +181,7 @@ namespace embree
   /********************** Triangle4v **************************/
 
   template<>
-  const char* Triangle4v::Type::Type::name () const {
+  const char* Triangle4v::Type::name () const {
     return "triangle4v";
   }
 
@@ -203,7 +203,7 @@ namespace embree
   /********************** Triangle4i **************************/
 
   template<>
-  const char* Triangle4i::Type::Type::name () const {
+  const char* Triangle4i::Type::name () const {
     return "triangle4i";
   }
 
@@ -225,7 +225,7 @@ namespace embree
   /********************** Triangle4vMB **************************/
 
   template<>
-  const char* Triangle4vMB::Type::Type::name () const {
+  const char* Triangle4vMB::Type::name () const {
     return  "triangle4vmb";
   }
 
@@ -247,7 +247,7 @@ namespace embree
   /********************** Quad4v **************************/
 
   template<>
-  const char* Quad4v::Type::Type::name () const {
+  const char* Quad4v::Type::name () const {
     return "quad4v";
   }
 
@@ -269,7 +269,7 @@ namespace embree
   /********************** Quad4i **************************/
 
   template<>
-  const char* Quad4i::Type::Type::name () const {
+  const char* Quad4i::Type::name () const {
     return "quad4i";
   }
 
@@ -290,7 +290,7 @@ namespace embree
 
   /********************** SubdivPatch1 **************************/
 
-  const char* SubdivPatch1::Type::Type::name () const {
+  const char* SubdivPatch1::Type::name () const {
     return "subdivpatch1";
   }
 
@@ -310,7 +310,7 @@ namespace embree
 
   /********************** Virtual Object **************************/
 
-  const char* Object::Type::Type::name () const {
+  const char* Object::Type::name () const {
     return "object";
   }
 
@@ -330,7 +330,7 @@ namespace embree
 
   /********************** Instance **************************/
 
-  const char* InstancePrimitive::Type::Type::name () const {
+  const char* InstancePrimitive::Type::name () const {
     return "instance";
   }
 
@@ -350,7 +350,7 @@ namespace embree
 
   /********************** SubGrid **************************/
 
-  const char* SubGrid::Type::Type::name () const {
+  const char* SubGrid::Type::name () const {
     return "subgrid";
   }
 
@@ -371,7 +371,7 @@ namespace embree
   /********************** SubGridQBVH4 **************************/
 
   template<>
-  const char* SubGridQBVH4::Type::Type::name () const {
+  const char* SubGridQBVH4::Type::name () const {
     return "SubGridQBVH4";
   }
 
