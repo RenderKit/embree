@@ -113,9 +113,8 @@ namespace embree
 
         /* scaled barycentric */
         const vfloat<M> U = Cx*By - Cy*Bx;
-        const vfloat<M> V = Ax*Cy = Ay*Cx;
-        const vfloat<M> W = Bx*Ay = By*Ax;
-
+        const vfloat<M> V = Ax*Cy - Ay*Cx;
+        const vfloat<M> W = Bx*Ay - By*Ax;
         
         /* perform backface culling */        
 #if defined(EMBREE_BACKFACE_CULLING)

@@ -589,10 +589,17 @@ namespace embree
 
   Accel::Intersectors BVH8Factory::BVH8Triangle4vIntersectors(BVH8* bvh, IntersectVariant ivariant)
   {
-    assert(ivariant == IntersectVariant::ROBUST);
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
+
+#define ENABLE_WOOP_TEST 0
+#if ENABLE_WOOP_TEST == 0
+    assert(ivariant == IntersectVariant::ROBUST);
+    intersectors.intersector1    = BVH8Triangle4vIntersector1Woop();
+#else
     intersectors.intersector1    = BVH8Triangle4vIntersector1Pluecker();
+#endif
+
 #if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4    = BVH8Triangle4vIntersector4HybridPluecker();
     intersectors.intersector8    = BVH8Triangle4vIntersector8HybridPluecker();
