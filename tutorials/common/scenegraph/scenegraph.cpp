@@ -498,8 +498,8 @@ namespace embree
       vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
       positions_o[2*i+0] = Vec3fa(v0);
       positions_o[2*i+1] = Vec3fa(v3);
-      tangents_o[2*i+0] = (1.0f/3.0f)*Vec3fa(v1-v0);
-      tangents_o[2*i+1] = (1.0f/3.0f)*Vec3fa(v3-v2);
+      tangents_o[2*i+0] = Vec3fa(3.0f*(v1-v0));
+      tangents_o[2*i+1] = Vec3fa(3.0f*(v3-v2));
     }
     return std::make_pair(positions_o,tangents_o);
   }

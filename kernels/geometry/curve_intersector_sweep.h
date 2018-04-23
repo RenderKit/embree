@@ -232,15 +232,11 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
 
         /* move ray closer to make intersection stable */
-        const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
+        const NativeCurve3fa curve0(v0,v1,v2,v3);
+        const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
         const Vec3fa ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
-        const Vec3fa p0 = v0-ref;
-        const Vec3fa p1 = v1-ref;
-        const Vec3fa p2 = v2-ref;
-        const Vec3fa p3 = v3-ref;
-
-        const NativeCurve3fa curve(p0,p1,p2,p3);
-        return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
+        const NativeCurve3fa curve1 = curve0-ref;
+        return intersect_bezier_recursive_jacobian(ray,dt,curve1,0.0f,1.0f,1,epilog);
       }
     };
 
@@ -274,15 +270,11 @@ namespace embree
         Ray1 ray(vray,k);
 
         /* move ray closer to make intersection stable */
-        const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
+        const NativeCurve3fa curve0(v0,v1,v2,v3);
+        const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
         const Vec3fa ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
-        const Vec3fa p0 = v0-ref;
-        const Vec3fa p1 = v1-ref;
-        const Vec3fa p2 = v2-ref;
-        const Vec3fa p3 = v3-ref;
-
-        const NativeCurve3fa curve(p0,p1,p2,p3);
-        return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
+        const NativeCurve3fa curve1 = curve0-ref;
+        return intersect_bezier_recursive_jacobian(ray,dt,curve1,0.0f,1.0f,1,epilog);
       }
     };
   }

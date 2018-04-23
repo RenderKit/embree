@@ -110,7 +110,7 @@ namespace embree
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
           Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,geom->curve(primID));
-
+         
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
           if (mask) {

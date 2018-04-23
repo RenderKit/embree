@@ -25,9 +25,12 @@ namespace embree
     struct HermiteCurveT : BezierCurveT<Vertex>
     {
       __forceinline HermiteCurveT() {}
+
+      __forceinline HermiteCurveT(const BezierCurveT<Vertex>& curve)
+        : BezierCurveT<Vertex>(curve) {}
       
       __forceinline HermiteCurveT(const Vertex& v0, const Vertex& t0, const Vertex& v1, const Vertex& t1)
-        : BezierCurveT<Vertex>(v0,madd(1.0f/3.0f,t0,v0),nmadd(1.0f/3.0f,v1,t1),v1) {}
+        : BezierCurveT<Vertex>(v0,madd(1.0f/3.0f,t0,v0),nmadd(1.0f/3.0f,t1,v1),v1) {}
     };
   
   typedef HermiteCurveT<Vec3fa> HermiteCurve3fa;

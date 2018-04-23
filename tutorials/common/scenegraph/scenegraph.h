@@ -300,25 +300,26 @@ namespace embree
     }
 
     template<typename Vertex>
-       std::vector<avector<Vertex>> transformMSMBlurVectorBuffer(const std::vector<avector<Vertex>>& normals_in, const Transformations& spaces)
+       std::vector<avector<Vertex>> transformMSMBlurVectorBuffer(const std::vector<avector<Vertex>>& vectors_in, const Transformations& spaces)
     {
-      if (normals_in.size() == 0)
-        return normals_in;
+      if (vectors_in.size() == 0)
+        return vectors_in;
       
-      std::vector<avector<Vertex>> normals_out;
-      const size_t num_time_steps = normals_in.size();
-      const size_t num_vertices = normals_in[0].size();
+      std::vector<avector<Vertex>> vectors_out;
+      const size_t num_time_steps = vectors_in.size();
+      const size_t num_vertices = vectors_in[0].size();
 
       /* if we have only one set of vertices, use transformation to generate more vertex sets */
       if (num_time_steps == 1)
       {
         for (size_t i=0; i<spaces.size(); i++) 
         {
-          avector<Vertex> norms(num_vertices);
+          avector<Vertex> vecs(num_vertices);
           for (size_t j=0; j<num_vertices; j++) {
-            norms[j] = xfmVector(spaces[i],normals_in[0][j]);
+            vecs[j] = xfmVector(spaces[i],vectors_in[0][j]);
+            vecs[j].w = vectors_in[0][j].w;
           }
-          normals_out.push_back(std::move(norms));
+          vectors_out.push_back(std::move(vecs));
         }
       } 
       /* otherwise transform all vertex sets with interpolated transformation */
@@ -328,14 +329,15 @@ namespace embree
         {
           float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
           const AffineSpace3fa space = spaces.interpolate(time);
-          avector<Vertex> norms(num_vertices);
+          avector<Vertex> vecs(num_vertices);
           for (size_t i=0; i<num_vertices; i++) {
-            norms[i] = xfmVector (space,normals_in[t][i]);
+            vecs[i] = xfmVector (space,vectors_in[t][i]);
+            vecs[i].w = vectors_in[t][i].w;
           }
-          normals_out.push_back(std::move(norms));
+          vectors_out.push_back(std::move(vecs));
         }
       }
-      return normals_out;
+      return vectors_out;
     }
 
     template<typename Vertex>
