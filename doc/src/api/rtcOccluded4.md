@@ -55,15 +55,16 @@ For `rtcOccluded4` the ray packet must be aligned to 16 bytes, for
 `rtcOccluded8` the alignment must be 32 bytes, and for `rtcOccluded16`
 the alignment must be 64 bytes.
 
-Further, `rtcOccluded4` is only available when Embree was compiled
-with `EMBREE_RAY_PACKETS` turned on in CMake (which is the
-default). Further, the `rtcOccluded8` function is works only if
-Embree was compiled with `AVX` or `AVX2` and the CPU it is running on
-supports the enabled ISA. Similar, the `rtcOccluded16` function works
-only if Embree was compiled with `AVX512SKX` or `AVX512KNL` and the CPU
-it is running on supports the enabled ISA. For this reason, use these
-functions only after checking whether they are available by using an
-`rtcGetDeviceParameter` query.
+The `rtcOccluded4`, `rtcOccluded8` and `rtcOccluded16` functions
+may change the ray packet size and ray order when calling back into
+intersect filter functions or user geometry callbacks. Under some
+conditions the application can assume packets to stay intakt, which
+can determined by querying the
+`RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED`,
+`RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED`,
+`RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED` properties through the
+`rtcGetDeviceProperty` function. See [rtcGetDeviceProperty] for more
+information.
 
 #### EXIT STATUS
 
