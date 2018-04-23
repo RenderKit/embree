@@ -165,6 +165,18 @@ namespace embree
       const vfloat<K> org_ray_tnear = max(ray.tnear(), 0.0f);
       const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
+      if (single)
+      {
+        tray.tnear = select(valid, org_ray_tnear, vfloat<K>(pos_inf));
+        tray.tfar  = select(valid, org_ray_tfar , vfloat<K>(neg_inf));
+        
+        for (; valid_bits!=0; ) {
+          const size_t i = bscf(valid_bits);
+          intersect1(This, bvh, bvh->root, i, pre, ray, tray, context);
+        }
+        return;
+      }
+
        /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && context->isCoherent()) ? 2 : switchThresholdIncoherent;
 

@@ -19,6 +19,7 @@
 #include "triangle.h"
 #include "triangle_intersector_pluecker.h"
 #include "triangle_intersector_moeller.h"
+#include "triangle_intersector_woop.h"
 
 namespace embree
 {
@@ -45,6 +46,30 @@ namespace embree
         return pre.intersect(ray,tri.v0,tri.v1,tri.v2,/*UVIdentity<Mx>(),*/Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
     };
+
+
+    template<int M, int Mx, bool filter>
+    struct TriangleMvIntersector1Woop
+    {
+      typedef TriangleMv<M> Primitive;
+      typedef WoopIntersector1<Mx> intersec;
+      typedef WoopPrecalculations1 Precalculations;
+
+      /*! Intersect a ray with M triangles and updates the hit. */
+      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        intersec::intersect(ray,pre,tri.v0,tri.v1,tri.v2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
+      }
+
+      /*! Test if the ray is occluded by one of the M triangles. */
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        return intersec::intersect(ray,pre,tri.v0,tri.v1,tri.v2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
+      }
+    };
+
 
     /*! Intersects M triangles with K rays */
     template<int M, int Mx, int K, bool filter>
