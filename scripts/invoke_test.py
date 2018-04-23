@@ -120,7 +120,7 @@ if ret == 0 and modeldir == "none":
 
 if ret == 0 and modeldir != "none":
   diff = compareImages(outImageFileTga,refImageFileTga,diffImageFileTga)
-  if diff > 0.00055:
+  if diff > 0.00056:
     
 #    if os.path.isfile(outImageFileTga):
 #      os.system("convert -quality 98 " + outImageFileTga    + " " + outImageFileJpg)
