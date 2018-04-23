@@ -276,12 +276,12 @@ namespace embree
 
   namespace isa
   {
-    template<Geometry::GType ctype, typename Curve3fa, typename Curve4f>
-      struct CurveGeometryISA : public CurveGeometry
+    template<typename Curve3fa>
+    struct CurveGeometryInterface : public CurveGeometry
     {
-      CurveGeometryISA (Device* device, Geometry::GType gtype)
+      CurveGeometryInterface (Device* device, Geometry::GType gtype)
         : CurveGeometry(device,gtype) {}
-
+      
       __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
@@ -316,7 +316,7 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-       __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
@@ -346,18 +346,36 @@ namespace embree
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
         return getOrientedCurve(i,itime).xfm(space,ofs,scale);
       }
+    };
+    
+    template<Geometry::GType ctype, typename Curve3fa, typename Curve4f>
+    struct CurveGeometryISA : public CurveGeometryInterface<Curve3fa>
+    {
+      using CurveGeometryInterface<Curve3fa>::getCurve;
+      using CurveGeometryInterface<Curve3fa>::getOrientedCurve;
+      using CurveGeometryInterface<Curve3fa>::numTimeSteps;
+      using CurveGeometryInterface<Curve3fa>::fnumTimeSegments;
+      using CurveGeometryInterface<Curve3fa>::numTimeSegments;
+      using CurveGeometryInterface<Curve3fa>::tessellationRate;
+
+      using CurveGeometryInterface<Curve3fa>::numVertices;
+      using CurveGeometryInterface<Curve3fa>::vertexAttribs;
+      using CurveGeometryInterface<Curve3fa>::vertices;
+      using CurveGeometryInterface<Curve3fa>::curves;
+      using CurveGeometryInterface<Curve3fa>::curve;
+      using CurveGeometryInterface<Curve3fa>::radius;
+      using CurveGeometryInterface<Curve3fa>::vertex;
+      using CurveGeometryInterface<Curve3fa>::normal;
+      
+      CurveGeometryISA (Device* device, Geometry::GType gtype)
+        : CurveGeometryInterface<Curve3fa>(device,gtype) {}
 
       LinearSpace3fa computeAlignedSpace(const size_t primID) const
       {
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
         
-        const unsigned vtxID = this->curve(primID);
-        const Vec3fa v0 = this->vertex(vtxID+0);
-        const Vec3fa v1 = this->vertex(vtxID+1);
-        const Vec3fa v2 = this->vertex(vtxID+2);
-        const Vec3fa v3 = this->vertex(vtxID+3);
-        const Curve3fa curve(v0,v1,v2,v3);
+        const Curve3fa curve = getCurve(primID);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
         const Vec3fa d0 = curve.eval_du(0.0f);
@@ -387,12 +405,7 @@ namespace embree
         if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
-        const unsigned int vertexID = this->curve(primID);
-        const Vec3fa a0 = this->vertex(vertexID+0,t);
-        const Vec3fa a1 = this->vertex(vertexID+1,t);
-        const Vec3fa a2 = this->vertex(vertexID+2,t);
-        const Vec3fa a3 = this->vertex(vertexID+3,t);
-        const Curve3fa curve(a0,a1,a2,a3);
+        const Curve3fa curve = getCurve(primID,t);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
         const Vec3fa d0 = curve.eval_du(0.0f);
@@ -414,12 +427,7 @@ namespace embree
       
       Vec3fa computeDirection(unsigned int primID) const
       {
-        const unsigned vtxID = curve(primID);
-        const Vec3fa v0 = vertex(vtxID+0);
-        const Vec3fa v1 = vertex(vtxID+1);
-        const Vec3fa v2 = vertex(vtxID+2);
-        const Vec3fa v3 = vertex(vtxID+3);
-        const Curve3fa c(v0,v1,v2,v3);
+        const Curve3fa c = getCurve(primID);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
         const Vec3fa axis1 = p3 - p0;
@@ -428,12 +436,7 @@ namespace embree
 
       Vec3fa computeDirection(unsigned int primID, size_t time) const
       {
-        const unsigned vtxID = curve(primID);
-        const Vec3fa v0 = vertex(vtxID+0,time);
-        const Vec3fa v1 = vertex(vtxID+1,time);
-        const Vec3fa v2 = vertex(vtxID+2,time);
-        const Vec3fa v3 = vertex(vtxID+3,time);
-        const Curve3fa c(v0,v1,v2,v3);
+        const Curve3fa c = getCurve(primID,time);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
         const Vec3fa axis1 = p3 - p0;
@@ -485,9 +488,9 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).accurateFlatBounds(tessellationRate);
-        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateRoundBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).accurateFlatBounds(tessellationRate);
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateRoundBounds();
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateBounds();
         default: return empty;
         }
       }
@@ -496,9 +499,9 @@ namespace embree
       __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).accurateFlatBounds(tessellationRate);
-        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateRoundBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).accurateFlatBounds(tessellationRate);
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateRoundBounds();
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateBounds();
         default: return empty;
         }
       }
@@ -507,9 +510,9 @@ namespace embree
       __forceinline BBox3fa bounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate);
-        case GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds();
-        case GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate);
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds();
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateBounds();
         default: return empty;
         }
       }
@@ -551,7 +554,7 @@ namespace embree
           if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
             return false;
 
-          if (ctype == GTY_SUBTYPE_ORIENTED_CURVE)
+          if (ctype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE)
           {
             const Vec3fa n0 = normal(index+0,itime);
             const Vec3fa n1 = normal(index+1,itime);
@@ -571,7 +574,7 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           if (!valid(j, make_range<size_t>(0, numTimeSegments()))) continue;
-          const PrimRef prim(bounds(j),geomID,unsigned(j));
+          const PrimRef prim(bounds(j),this->geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
