@@ -99,7 +99,7 @@ namespace embree
     }
     else if (type == RTC_BUFFER_TYPE_TANGENT)
     {
-      if (getCurveBasis() == GTY_BASIS_HERMITE)
+      if (getCurveBasis() != GTY_BASIS_HERMITE)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
         
       if (format != RTC_FORMAT_FLOAT4)
