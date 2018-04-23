@@ -989,6 +989,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+#if defined(EMBREE_TARGET_SIMD8)
   Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve8i::type,scene);
@@ -1001,6 +1002,7 @@ namespace embree
 
     return new AccelInstance(accel,builder,intersectors);
   }
+#endif
 
   Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene)
   {
@@ -1028,6 +1030,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+#if defined(EMBREE_TARGET_SIMD8)
   Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Curve8iMB::type,scene);
@@ -1040,6 +1043,7 @@ namespace embree
 
     return new AccelInstance(accel,builder,intersectors);
   }
+#endif
   
   Accel* BVH4Factory::BVH4Triangle4(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
