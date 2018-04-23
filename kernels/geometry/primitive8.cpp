@@ -35,8 +35,9 @@ namespace embree
   /********************** Curve8v **************************/
 
   template<>
-  Curve8v::Type::Type ()
-    : PrimitiveType("curve8v") {}
+  const char* Curve8v::Type::Type::name () const {
+    return "curve8v";
+  }
 
   template<>
   size_t Curve8v::Type::sizeActive(const char* This) const
@@ -68,8 +69,9 @@ namespace embree
   /********************** Curve8i **************************/
 
   template<>
-  Curve8i::Type::Type ()
-    : PrimitiveType("curve8i") {}
+  const char* Curve8i::Type::Type::name () const {
+    return "curve8i";
+  }
 
   template<>
   size_t Curve8i::Type::sizeActive(const char* This) const
@@ -101,8 +103,9 @@ namespace embree
   /********************** Curve8iMB **************************/
 
   template<>
-  Curve8iMB::Type::Type ()
-    : PrimitiveType("curve8imb") {}
+  const char* Curve8iMB::Type::Type::name () const {
+    return "curve8imb";
+  }
 
   template<>
   size_t Curve8iMB::Type::sizeActive(const char* This) const
@@ -134,8 +137,9 @@ namespace embree
   /********************** SubGridQBVH8 **************************/
 
   template<>
-  SubGridQBVH8::Type::Type ()
-    : PrimitiveType("SubGridQBVH8") {}
+  const char* SubGridQBVH8::Type::Type::name () const {
+    return "SubGridQBVH8";
+  }
 
   template<>
   size_t SubGridQBVH8::Type::sizeActive(const char* This) const {

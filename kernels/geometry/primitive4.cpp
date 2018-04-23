@@ -35,8 +35,9 @@ namespace embree
   /********************** Curve4v **************************/
 
   template<>
-  Curve4v::Type::Type ()
-    : PrimitiveType("curve4v") {}
+  const char* Curve4v::Type::Type::name () const {
+    return "curve4v";
+  }
 
   template<>
   size_t Curve4v::Type::sizeActive(const char* This) const
@@ -68,8 +69,9 @@ namespace embree
   /********************** Curve4i **************************/
 
   template<>
-  Curve4i::Type::Type ()
-    : PrimitiveType("curve4i") {}
+  const char* Curve4i::Type::Type::name () const {
+    return "curve4i";
+  }
 
   template<>
   size_t Curve4i::Type::sizeActive(const char* This) const
@@ -101,8 +103,9 @@ namespace embree
   /********************** Curve4iMB **************************/
 
   template<>
-  Curve4iMB::Type::Type ()
-    : PrimitiveType("curve4imb") {}
+  const char* Curve4iMB::Type::Type::name () const {
+    return "curve4imb";
+  }
 
   template<>
   size_t Curve4iMB::Type::sizeActive(const char* This) const
@@ -134,8 +137,9 @@ namespace embree
   /********************** Line4i **************************/
 
   template<>
-  Line4i::Type::Type ()
-    : PrimitiveType("line4i") {}
+  const char* Line4i::Type::Type::name () const {
+    return "line4i";
+  }
 
   template<>
   size_t Line4i::Type::sizeActive(const char* This) const {
@@ -155,8 +159,9 @@ namespace embree
   /********************** Triangle4 **************************/
 
   template<>
-  Triangle4::Type::Type ()
-    : PrimitiveType("triangle4") {}
+  const char* Triangle4::Type::Type::name () const {
+    return "triangle4";
+  }
 
   template<>
   size_t Triangle4::Type::sizeActive(const char* This) const {
@@ -176,8 +181,9 @@ namespace embree
   /********************** Triangle4v **************************/
 
   template<>
-  Triangle4v::Type::Type ()
-  : PrimitiveType("triangle4v") {}
+  const char* Triangle4v::Type::Type::name () const {
+    return "triangle4v";
+  }
 
   template<>
   size_t Triangle4v::Type::sizeActive(const char* This) const {
@@ -197,8 +203,9 @@ namespace embree
   /********************** Triangle4i **************************/
 
   template<>
-  Triangle4i::Type::Type ()
-    : PrimitiveType("triangle4i") {}
+  const char* Triangle4i::Type::Type::name () const {
+    return "triangle4i";
+  }
 
   template<>
   size_t Triangle4i::Type::sizeActive(const char* This) const {
@@ -218,8 +225,9 @@ namespace embree
   /********************** Triangle4vMB **************************/
 
   template<>
-  Triangle4vMB::Type::Type ()
-  : PrimitiveType("triangle4vmb") {}
+  const char* Triangle4vMB::Type::Type::name () const {
+    return  "triangle4vmb";
+  }
 
   template<>
   size_t Triangle4vMB::Type::sizeActive(const char* This) const {
@@ -239,8 +247,9 @@ namespace embree
   /********************** Quad4v **************************/
 
   template<>
-  Quad4v::Type::Type ()
-    : PrimitiveType("quad4v") {}
+  const char* Quad4v::Type::Type::name () const {
+    return "quad4v";
+  }
 
   template<>
   size_t Quad4v::Type::sizeActive(const char* This) const {
@@ -260,8 +269,9 @@ namespace embree
   /********************** Quad4i **************************/
 
   template<>
-  Quad4i::Type::Type ()
-    : PrimitiveType("quad4i") {}
+  const char* Quad4i::Type::Type::name () const {
+    return "quad4i";
+  }
 
   template<>
   size_t Quad4i::Type::sizeActive(const char* This) const {
@@ -280,8 +290,9 @@ namespace embree
 
   /********************** SubdivPatch1 **************************/
 
-  SubdivPatch1::Type::Type ()
-    : PrimitiveType("subdivpatch1") {}
+  const char* SubdivPatch1::Type::Type::name () const {
+    return "subdivpatch1";
+  }
 
   size_t SubdivPatch1::Type::sizeActive(const char* This) const {
     return 1;
@@ -299,8 +310,9 @@ namespace embree
 
   /********************** Virtual Object **************************/
 
-  Object::Type::Type ()
-    : PrimitiveType("object") {}
+  const char* Object::Type::Type::name () const {
+    return "object";
+  }
 
   size_t Object::Type::sizeActive(const char* This) const {
     return 1;
@@ -318,8 +330,9 @@ namespace embree
 
   /********************** Instance **************************/
 
-  InstancePrimitive::Type::Type ()
-    : PrimitiveType("instance") {}
+  const char* InstancePrimitive::Type::Type::name () const {
+    return "instance";
+  }
 
   size_t InstancePrimitive::Type::sizeActive(const char* This) const {
     return 1;
@@ -337,8 +350,9 @@ namespace embree
 
   /********************** SubGrid **************************/
 
-  SubGrid::Type::Type ()
-    : PrimitiveType("subgrid") {}
+  const char* SubGrid::Type::Type::name () const {
+    return "subgrid";
+  }
 
   size_t SubGrid::Type::sizeActive(const char* This) const {
     return 1;
@@ -357,8 +371,9 @@ namespace embree
   /********************** SubGridQBVH4 **************************/
 
   template<>
-  SubGridQBVH4::Type::Type ()
-    : PrimitiveType("SubGridQBVH4") {}
+  const char* SubGridQBVH4::Type::Type::name () const {
+    return "SubGridQBVH4";
+  }
 
   template<>
   size_t SubGridQBVH4::Type::sizeActive(const char* This) const {
