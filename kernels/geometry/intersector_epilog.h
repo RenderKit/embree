@@ -100,6 +100,8 @@ namespace embree
         /* ray mask test */
         Scene* scene = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
+
+
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -398,7 +400,6 @@ namespace embree
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
         Scene* scene = context->scene;
-
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
         if (unlikely(filter))

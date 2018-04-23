@@ -30,14 +30,19 @@ namespace embree
     {
       __forceinline WoopHitM() {}
 
-      __forceinline WoopHitM(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const Vec3vf<M>& Ng)
-        : U(U), V(V), T(T), valid(valid), vNg(Ng) {}
+      __forceinline WoopHitM(const vbool<M>& valid, 
+                             const vfloat<M>& U, 
+                             const vfloat<M>& V, 
+                             const vfloat<M>& T, 
+                             const vfloat<M>& inv_det,                              
+                             const Vec3vf<M>& Ng)
+        : U(U), V(V), T(T), inv_det(inv_det), valid(valid), vNg(Ng) {}
       
       __forceinline void finalize() 
       {
         vt = T;
-        vu = U;
-        vv = V;
+        vu = U*inv_det;
+        vv = V*inv_det;
       }
 
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
@@ -48,6 +53,7 @@ namespace embree
       const vfloat<M> U;
       const vfloat<M> V;
       const vfloat<M> T;
+      const vfloat<M> inv_det;
       
     public:
       const vbool<M> valid;
@@ -103,7 +109,7 @@ namespace embree
         const Vec3vf<M> B = Vec3vf<M>(tri_v1[pre.kx],tri_v1[pre.ky],tri_v1[pre.kz]) - org;
         const Vec3vf<M> C = Vec3vf<M>(tri_v2[pre.kx],tri_v2[pre.ky],tri_v2[pre.kz]) - org;
 
-        // todo: FMA
+        /* shear and scale vertices */
         const vfloat<M> Ax = nmadd(A.z,pre.S.x,A.x);
         const vfloat<M> Ay = nmadd(A.z,pre.S.y,A.y);
         const vfloat<M> Bx = nmadd(B.z,pre.S.x,B.x);
@@ -133,15 +139,18 @@ namespace embree
         const vfloat<M> Az = pre.S.z * A.z;
         const vfloat<M> Bz = pre.S.z * B.z;
         const vfloat<M> Cz = pre.S.z * C.z;
-        const vfloat<M> T  = U*Az + V*Bz + W*Cz; 
+        const vfloat<M> T  = madd(U,Az,madd(V,Bz,W*Cz)); 
         const vfloat<M> t  = T * inv_det;
         /* perform depth test */
         valid &= (vfloat<M>(ray.tnear()) < t) & (t <= vfloat<M>(ray.tfar));
         if (likely(none(valid))) return false;
         
         const Vec3vf<M> tri_Ng = cross(tri_v2-tri_v0,tri_v0-tri_v1);
+        valid &= (asInt(tri_Ng.x) | asInt(tri_Ng.y) | asInt(tri_Ng.z)) != 0;
+        if (likely(none(valid))) return false;
+
         /* update hit information */
-        new (&hit) WoopHitM<M>(valid,U*inv_det,V*inv_det,t,tri_Ng);
+        new (&hit) WoopHitM<M>(valid,U,V,t,inv_det,tri_Ng);
         return true;
       }
       
