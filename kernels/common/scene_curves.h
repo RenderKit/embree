@@ -77,6 +77,11 @@ namespace embree
       return normals0[i];
     }
 
+    /*! returns i'th tangent of the first time step */
+    __forceinline Vec3fa tangent(size_t i) const {
+      return tangents0[i];
+    }
+
     /*! returns i'th radius of the first time step */
     __forceinline float radius(size_t i) const {
       return vertices0[i].w;
@@ -90,6 +95,11 @@ namespace embree
     /*! returns i'th normal of itime'th timestep */
     __forceinline Vec3fa normal(size_t i, size_t itime) const {
       return normals[itime][i];
+    }
+
+    /*! returns i'th tangent of itime'th timestep */
+    __forceinline Vec3fa tangent(size_t i, size_t itime) const {
+      return tangents[itime][i];
     }
 
     /*! returns i'th radius of itime'th timestep */
@@ -183,12 +193,88 @@ namespace embree
       n3 = madd(Vec3fa(t0),a3,t1*b3);
     }
 
+    /*! gathers the hermite curve starting with i'th vertex */
+    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i) const
+    {
+      p0 = vertex (i+0);
+      p1 = vertex (i+1);
+      t0 = tangent(i+0);
+      t1 = tangent(i+1);
+    }
+
+    /*! gathers the hermite curve starting with i'th vertex of itime'th timestep */
+    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i, size_t itime) const
+    {
+      p0 = vertex (i+0,itime);
+      p1 = vertex (i+1,itime);
+      t0 = tangent(i+0,itime);
+      t1 = tangent(i+1,itime);
+    }
+
+    /*! loads curve vertices for specified time */
+    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i, float time) const
+    {
+      float ftime;
+      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const float f0 = 1.0f - ftime, f1 = ftime;
+      Vec3fa ap0,at0,ap1,at1;
+      gather_hermite(ap0,at0,ap1,at1,i,itime);
+      Vec3fa bp0,bt0,bp1,bt1;
+      gather_hermite(bp0,bt0,bp1,bt1,i,itime+1);
+      p0 = madd(Vec3fa(f0),ap0,f1*bp0);
+      t0 = madd(Vec3fa(f0),at0,f1*bt0);
+      p1 = madd(Vec3fa(f0),ap1,f1*bp1);
+      t1 = madd(Vec3fa(f0),at1,f1*bt1);
+    }
+
+    /*! gathers the hermite curve starting with i'th vertex */
+    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, size_t i) const
+    {
+      p0 = vertex (i+0);
+      p1 = vertex (i+1);
+      t0 = tangent(i+0);
+      t1 = tangent(i+1);
+      n0 = normal(i+0);
+      n1 = normal(i+1);
+    }
+
+    /*! gathers the hermite curve starting with i'th vertex of itime'th timestep */
+    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, size_t i, size_t itime) const
+    {
+      p0 = vertex (i+0,itime);
+      p1 = vertex (i+1,itime);
+      t0 = tangent(i+0,itime);
+      t1 = tangent(i+1,itime);
+      n0 = normal(i+0,itime);
+      n1 = normal(i+1,itime);
+    }
+
+    /*! loads curve vertices for specified time */
+    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, size_t i, float time) const
+    {
+      float ftime;
+      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const float f0 = 1.0f - ftime, f1 = ftime;
+      Vec3fa ap0,at0,an0,ap1,at1,an1;
+      gather_hermite(ap0,at0,an0,ap1,at1,an1,i,itime);
+      Vec3fa bp0,bt0,bn0,bp1,bt1,bn1;
+      gather_hermite(bp0,bt0,bn0,bp1,bt1,bn1,i,itime+1);
+      p0 = madd(Vec3fa(f0),ap0,f1*bp0);
+      t0 = madd(Vec3fa(f0),at0,f1*bt0);
+      n0 = madd(Vec3fa(f0),an0,f1*bn0);
+      p1 = madd(Vec3fa(f0),ap1,f1*bp1);
+      t1 = madd(Vec3fa(f0),at1,f1*bt1);
+      n1 = madd(Vec3fa(f0),an1,f1*bn1);
+    }
+
   public:
     BufferView<unsigned int> curves;        //!< array of curve indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
     BufferView<Vec3fa> normals0;            //!< fast access to first normal buffer
+    BufferView<Vec3fa> tangents0;           //!< fast access to first tangent buffer
     vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
     vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
+    vector<BufferView<Vec3fa>> tangents;    //!< tangent array for each timestep
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
     int tessellationRate;                   //!< tessellation rate for bezier curve

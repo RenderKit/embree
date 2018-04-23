@@ -990,9 +990,9 @@ namespace embree
       case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE            : geom = createCurves(device,Geometry::GTY_FLAT_BSPLINE_CURVE); break;
       case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_BSPLINE_CURVE); break;
         
-      case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE           : geom = createLineSegments(device,Geometry::GTY_ROUND_HERMITE_CURVE); break;
-      case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE            : geom = createLineSegments(device,Geometry::GTY_FLAT_HERMITE_CURVE); break;
-      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE : geom = createLineSegments(device,Geometry::GTY_ORIENTED_HERMITE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE           : geom = createCurves(device,Geometry::GTY_ROUND_HERMITE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE            : geom = createCurves(device,Geometry::GTY_FLAT_HERMITE_CURVE); break;
+      case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE : geom = createCurves(device,Geometry::GTY_ORIENTED_HERMITE_CURVE); break;
       default:                                    geom = nullptr; break;
       }
       return (RTCGeometry) geom->refInc();

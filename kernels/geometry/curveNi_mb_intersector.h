@@ -196,8 +196,8 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->segment(primID),ray.time());
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->curve(primID),ray.time());
           Intersector().intersect(pre,ray,geom,primID,p0,t0,p1,t1,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
@@ -217,8 +217,8 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->segment(primID),ray.time());
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->curve(primID),ray.time());
           if (Intersector().intersect(pre,ray,geom,primID,p0,t0,p1,t1,Epilog(ray,context,geomID,primID)))
               return true;
 
@@ -241,8 +241,8 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->segment(primID),ray.time());
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time());
           Intersector().intersect(pre,ray,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
@@ -262,8 +262,8 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->segment(primID),ray.time());
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time());
           if (Intersector().intersect(pre,ray,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,context,geomID,primID)))
               return true;
 
@@ -453,8 +453,8 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->segment(primID),ray.time()[k]);
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->curve(primID),ray.time()[k]);
           Intersector().intersect(pre,ray,k,geom,primID,p0,t0,p1,t1,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
@@ -474,8 +474,8 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->segment(primID),ray.time()[k]);
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,p1,t1; geom->gather_hermite(p0,t0,p1,t1,geom->curve(primID),ray.time()[k]);
           if (Intersector().intersect(pre,ray,k,geom,primID,p0,t0,p1,t1,Epilog(ray,k,context,geomID,primID)))
             return true;
 
@@ -499,8 +499,8 @@ namespace embree
           STAT3(normal.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->segment(primID),ray.time()[k]);
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time()[k]);
           Intersector().intersect(pre,ray,k,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
@@ -520,8 +520,8 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
-          const LineSegments* geom = context->scene->get<LineSegments>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->segment(primID),ray.time()[k]);
+          const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time()[k]);
           if (Intersector().intersect(pre,ray,k,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,k,context,geomID,primID)))
             return true;
 

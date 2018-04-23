@@ -50,8 +50,6 @@ namespace embree
     vertices.resize(numTimeSteps);
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals.resize(numTimeSteps);
-    if (getCurveBasis() == GTY_BASIS_HERMITE)
-      tangents.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
 
@@ -91,20 +89,6 @@ namespace embree
       
       normals[slot].set(buffer, offset, stride, num, format);
       normals[slot].checkPadding16();
-    }
-    else if (type == RTC_BUFFER_TYPE_TANGENT)
-    {
-      if (getCurveBasis() == GTY_BASIS_HERMITE)
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
-        
-      if (format != RTC_FORMAT_FLOAT3)
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid tangent buffer format");
-
-      if (slot >= tangents.size())
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid tangent buffer slot");
-      
-      tangents[slot].set(buffer, offset, stride, num, format);
-      tangents[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -160,12 +144,6 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return normals[slot].getPtr();
     }
-    else if (type == RTC_BUFFER_TYPE_TANGENT)
-    {
-      if (slot >= tangents.size())
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return tangents[slot].getPtr();
-    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -205,12 +183,6 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       normals[slot].setModified(true);
     }
-    else if (type == RTC_BUFFER_TYPE_TANGENT)
-    {
-      if (slot >= tangents.size())
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      tangents[slot].setModified(true);
-    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -247,16 +219,10 @@ namespace embree
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
 
-    for (const auto& buffer : tangents)
-      if (buffer.getStride() != tangents[0].getStride())
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
-
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
-    if (getCurveBasis() == GTY_BASIS_HERMITE)
-      tangents0 = tangents[0];
-    
+        
     Geometry::preCommit();
   }
 
@@ -267,7 +233,6 @@ namespace embree
     segments.setModified(false);
     for (auto& buf : vertices) buf.setModified(false);
     for (auto& buf : normals)  buf.setModified(false);
-    for (auto& buf : tangents) buf.setModified(false);
     for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
@@ -285,10 +250,6 @@ namespace embree
         return false;
 
     for (const auto& buffer : normals)
-      if (vertices[0].size() != buffer.size())
-        return false;
-
-    for (const auto& buffer : tangents)
       if (vertices[0].size() != buffer.size())
         return false;
 

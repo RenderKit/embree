@@ -18,6 +18,7 @@
 #include "scene.h"
 
 #include "../subdiv/bezier_curve.h"
+#include "../subdiv/hermite_curve.h"
 #include "../subdiv/bspline_curve.h"
 #include "../subdiv/linear_bezier_patch.h"
 
@@ -54,6 +55,8 @@ namespace embree
     vertices.resize(numTimeSteps);
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals.resize(numTimeSteps);
+    if (getCurveBasis() == GTY_BASIS_HERMITE)
+      tangents.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   
@@ -93,6 +96,20 @@ namespace embree
       
       normals[slot].set(buffer, offset, stride, num, format);
       normals[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_TANGENT)
+    {
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+        
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid tangent buffer format");
+
+      if (slot >= tangents.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid tangent buffer slot");
+      
+      tangents[slot].set(buffer, offset, stride, num, format);
+      tangents[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -148,6 +165,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return normals[slot].getPtr();
     }
+    else if (type == RTC_BUFFER_TYPE_TANGENT)
+    {
+      if (slot >= tangents.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return tangents[slot].getPtr();
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -187,6 +210,13 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       normals[slot].setModified(true);
     }
+    else if (type == RTC_BUFFER_TYPE_TANGENT)
+    {
+      if (slot >= tangents.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      tangents[slot].setModified(true);
+    }
+    
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -226,9 +256,22 @@ namespace embree
       if (vertices[0].size() != buffer.size())
         return false;
 
+    for (const auto& buffer : tangents)
+      if (vertices[0].size() != buffer.size())
+        return false;
+    
     /*! verify indices */
-    for (unsigned int i=0; i<numPrimitives; i++) {
-      if (curves[i]+3 >= numVertices()) return false;
+    if (getCurveBasis() == GTY_BASIS_HERMITE)
+    {
+      for (unsigned int i=0; i<size(); i++) {
+        if (curves[i]+1 >= numVertices()) return false;
+      }
+    }
+    else
+    {
+      for (unsigned int i=0; i<numPrimitives; i++) {
+        if (curves[i]+3 >= numVertices()) return false;
+      }
     }
     
     /*! verify vertices */
@@ -254,9 +297,15 @@ namespace embree
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
 
+    for (const auto& buffer : tangents)
+      if (buffer.getStride() != tangents[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
+
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
+    if (getCurveBasis() == GTY_BASIS_HERMITE)
+      tangents0 = tangents[0];
 
     Geometry::preCommit();
   }
@@ -266,6 +315,7 @@ namespace embree
     curves.setModified(false);
     for (auto& buf : vertices) buf.setModified(false);
     for (auto& buf : normals)  buf.setModified(false);
+    for (auto& buf : tangents) buf.setModified(false);
     for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
@@ -336,6 +386,69 @@ namespace embree
         const Curve3fa center = getCurve(i,itime);
         const Curve3fa normal = getNormalCurve(i,itime);
         const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
+        return ocurve;
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurve(i,itime).xfm(space);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurve(i,itime).xfm(space,ofs,scale);
+      }
+    };
+
+    struct HermiteCurveGeometryInterface : public CurveGeometry
+    {
+      HermiteCurveGeometryInterface (Device* device, Geometry::GType gtype)
+        : CurveGeometry(device,gtype) {}
+      
+      __forceinline const HermiteCurve3fa getCurve(size_t i, size_t itime = 0) const 
+      {
+        const unsigned int index = curve(i);
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa t0 = tangent(index+0,itime);
+        const Vec3fa t1 = tangent(index+1,itime);
+        return HermiteCurve3fa (v0,t0,v1,t1);
+      }
+
+      __forceinline const HermiteCurve3fa getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      {
+        const unsigned int index = curve(i);
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa t0 = tangent(index+0,itime);
+        const Vec3fa t1 = tangent(index+1,itime);
+        Vec3fa V0 = xfmPoint(space,v0); V0.w = v0.w;
+        Vec3fa V1 = xfmPoint(space,v1); V1.w = v1.w;
+        Vec3fa T0 = xfmVector(space,t0); T0.w = t0.w;
+        Vec3fa T1 = xfmVector(space,t1); T1.w = t1.w;
+        return HermiteCurve3fa(V0,T0,V1,T1);
+      }
+
+      __forceinline const HermiteCurve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      {
+        const float r_scale = r_scale0*scale;
+        const unsigned int index = curve(i);
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa t0 = tangent(index+0,itime);
+        const Vec3fa t1 = tangent(index+1,itime);
+        Vec3fa V0 = xfmPoint(space,(v0-ofs)*Vec3fa(scale)); V0.w = v0.w*r_scale;
+        Vec3fa V1 = xfmPoint(space,(v1-ofs)*Vec3fa(scale)); V1.w = v1.w*r_scale;
+        Vec3fa T0 = xfmVector(space,t0*Vec3fa(scale)); T0.w = t0.w*r_scale;
+        Vec3fa T1 = xfmVector(space,t1*Vec3fa(scale)); T1.w = t1.w*r_scale;
+        return HermiteCurve3fa(V0,T0,V1,T1);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      {
+        const HermiteCurve3fa center = getCurve(i,itime);
+        const unsigned int index = curve(i);
+        const Vec3fa n0 = normal(index+0,itime);
+        const Vec3fa n1 = normal(index+1,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
         return ocurve;
       }
 
@@ -625,9 +738,15 @@ namespace embree
       case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+        
       case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+
+      case Geometry::GTY_ROUND_HERMITE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
+     
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }
     }
