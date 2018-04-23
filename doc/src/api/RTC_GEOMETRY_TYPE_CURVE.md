@@ -17,10 +17,10 @@
     RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE - 
       B-spline curve geometry type using a ray oriented ribbon approximation
 
-    RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BEZIER_CURVE -
+    RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE -
       flat Bézier curve geometry type oriented by normal
 
-    RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BSPLINE_CURVE - 
+    RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE - 
       flat B-spline curve geometry type oriented by normal
 
 #### SYNOPSIS
@@ -32,8 +32,8 @@
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
-    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BEZIER_CURVE);
-    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BSPLINE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
 
 #### DESCRIPTION
 
@@ -42,13 +42,13 @@ and cubic B-spline bases. Such curve geometries are created by passing
 `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
-`RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`, or
 `RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, to the `rtcNewGeometry`
 function. The curve indices can be specified through an index buffer
 (`RTC_BUFFER_TYPE_INDEX`) and the curve vertices through a vertex
-buffer (`RTC_BUFFER_TYPE_VERTEX`). For normal oriented curves a normal
+buffer (`RTC_BUFFER_TYPE_VERTEX`). For normal-oriented curves a normal
 buffer (`RTC_BUFFER_TYPE_NORMAL`) has to get specified. See
 `rtcSetGeometryBuffer` and `rtcSetSharedGeometryBuffer` for more
 details on how to set buffers.

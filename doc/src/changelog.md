@@ -10,7 +10,7 @@ Version History
 -   Bugfix to Embree2 to Embree3 conversion script.
 
 ### New Features in Embree 3.1.0
--   Added new normal oriented curve primitive for ray tracing of grass-like
+-   Added new normal-oriented curve primitive for ray tracing of grass-like
     structures.
 -   Added new grid primitive for ray tracing tessellated and displaced surfaces
     in very memory efficient manner.
