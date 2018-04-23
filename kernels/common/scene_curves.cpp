@@ -326,7 +326,7 @@ namespace embree
 
   namespace isa
   {
-    template<typename Curve3fa>
+    template<typename Curve3fa, typename Curve4f>
     struct CurveGeometryInterface : public CurveGeometry
     {
       CurveGeometryInterface (Device* device, Geometry::GType gtype)
@@ -396,6 +396,83 @@ namespace embree
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
         return getOrientedCurve(i,itime).xfm(space,ofs,scale);
       }
+
+      /*! check if the i'th primitive is valid at the itime'th time step */
+      __forceinline bool valid(Geometry::GType ctype, size_t i, const range<size_t>& itime_range) const
+      {
+        const unsigned int index = curve(i);
+        if (index+3 >= numVertices()) return false;
+        
+        for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+        {
+          const float r0 = radius(index+0,itime);
+          const float r1 = radius(index+1,itime);
+          const float r2 = radius(index+2,itime);
+          const float r3 = radius(index+3,itime);
+          if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
+            return false;
+          
+          const Vec3fa v0 = vertex(index+0,itime);
+          const Vec3fa v1 = vertex(index+1,itime);
+          const Vec3fa v2 = vertex(index+2,itime);
+          const Vec3fa v3 = vertex(index+3,itime);
+          if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
+            return false;
+
+          if (ctype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE)
+          {
+            const Vec3fa n0 = normal(index+0,itime);
+            const Vec3fa n1 = normal(index+1,itime);
+            const Vec3fa n2 = normal(index+2,itime);
+            const Vec3fa n3 = normal(index+3,itime);
+            if (!isvalid(n0) || !isvalid(n1) || !isvalid(n2) || !isvalid(n3))
+              return false;
+          }
+        }
+        
+        return true;
+      }
+
+      void interpolate(const RTCInterpolateArguments* const args)
+      {
+        unsigned int primID = args->primID;
+        float u = args->u;
+        RTCBufferType bufferType = args->bufferType;
+        unsigned int bufferSlot = args->bufferSlot;
+        float* P = args->P;
+        float* dPdu = args->dPdu;
+        float* ddPdudu = args->ddPdudu;
+        unsigned int valueCount = args->valueCount;
+        
+        /* calculate base pointer and stride */
+        assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+               (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
+        const char* src = nullptr; 
+        size_t stride = 0;
+        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+          src    = vertexAttribs[bufferSlot].getPtr();
+          stride = vertexAttribs[bufferSlot].getStride();
+        } else {
+          src    = vertices[bufferSlot].getPtr();
+          stride = vertices[bufferSlot].getStride();
+        }
+        
+        for (unsigned int i=0; i<valueCount; i+=4)
+        {
+          size_t ofs = i*sizeof(float);
+          const size_t curve = curves[primID];
+          const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
+          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+          const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+          const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+          
+          const Curve4f bezier(p0,p1,p2,p3);
+          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+        }
+      }
     };
 
     struct HermiteCurveGeometryInterface : public CurveGeometry
@@ -459,6 +536,79 @@ namespace embree
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
         return getOrientedCurve(i,itime).xfm(space,ofs,scale);
       }
+
+      /*! check if the i'th primitive is valid at the itime'th time step */
+      __forceinline bool valid(Geometry::GType ctype, size_t i, const range<size_t>& itime_range) const
+      {
+        const unsigned int index = curve(i);
+        if (index+1 >= numVertices()) return false;
+        
+        for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+        {
+          const vfloat4 v0(vertex(index+0,itime));
+          const vfloat4 v1(vertex(index+1,itime));
+          if (!isvalid(v0) || !isvalid(v1))
+            return false;
+
+          const vfloat4 t0(tangent(index+0,itime));
+          const vfloat4 t1(tangent(index+1,itime));
+          if (!isvalid(t0) || !isvalid(t1))
+            return false;
+
+          if (ctype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE)
+          {
+            const Vec3fa n0 = normal(index+0,itime);
+            const Vec3fa n1 = normal(index+1,itime);
+            if (!isvalid(n0) || !isvalid(n1))
+              return false;
+          }
+        }
+        
+        return true;
+      }
+
+      void interpolate(const RTCInterpolateArguments* const args)
+      {
+        unsigned int primID = args->primID;
+        float u = args->u;
+        RTCBufferType bufferType = args->bufferType;
+        unsigned int bufferSlot = args->bufferSlot;
+        float* P = args->P;
+        float* dPdu = args->dPdu;
+        float* ddPdudu = args->ddPdudu;
+        unsigned int valueCount = args->valueCount;
+        
+        /* calculate base pointer and stride */
+        assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
+               (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
+        const char* src = nullptr;
+        const char* dsrc = nullptr; 
+        size_t stride = 0, dstride = 0;
+        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+          assert(false);
+        } else {
+          src    = vertices[bufferSlot].getPtr();
+          dsrc   = tangents[bufferSlot].getPtr();
+          stride = vertices[bufferSlot].getStride();
+          dstride = vertices[bufferSlot].getStride();
+        }
+        
+        for (unsigned int i=0; i<valueCount; i+=4)
+        {
+          size_t ofs = i*sizeof(float);
+          const size_t curve = curves[primID];
+          const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
+          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+          const vfloat4 t0 = vfloat4::loadu(valid,(float*)&dsrc[(curve+0)*dstride+ofs]);
+          const vfloat4 t1 = vfloat4::loadu(valid,(float*)&dsrc[(curve+1)*dstride+ofs]);
+          
+          const HermiteCurveT<vfloat4> bezier(p0,t0,p1,t1);
+          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+        }
+      }
     };
     
     template<Geometry::GType ctype, typename CurveInterface, typename Curve3fa, typename Curve4f>
@@ -471,6 +621,7 @@ namespace embree
       using CurveInterface::numTimeSegments;
       using CurveInterface::tessellationRate;
 
+      using CurveInterface::valid;
       using CurveInterface::numVertices;
       using CurveInterface::vertexAttribs;
       using CurveInterface::vertices;
@@ -556,47 +707,6 @@ namespace embree
         return axis1;
       }
 
-      void interpolate(const RTCInterpolateArguments* const args)
-      {
-        unsigned int primID = args->primID;
-        float u = args->u;
-        RTCBufferType bufferType = args->bufferType;
-        unsigned int bufferSlot = args->bufferSlot;
-        float* P = args->P;
-        float* dPdu = args->dPdu;
-        float* ddPdudu = args->ddPdudu;
-        unsigned int valueCount = args->valueCount;
-        
-        /* calculate base pointer and stride */
-        assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-               (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
-        const char* src = nullptr; 
-        size_t stride = 0;
-        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-          src    = vertexAttribs[bufferSlot].getPtr();
-          stride = vertexAttribs[bufferSlot].getStride();
-        } else {
-          src    = vertices[bufferSlot].getPtr();
-          stride = vertices[bufferSlot].getStride();
-        }
-        
-        for (unsigned int i=0; i<valueCount; i+=4)
-        {
-          size_t ofs = i*sizeof(float);
-          const size_t curve = curves[primID];
-          const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
-          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-          const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-          const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
-          
-          const Curve4f bezier(p0,p1,p2,p3);
-          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
-          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
-          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
-        }
-      }
-
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
@@ -645,48 +755,12 @@ namespace embree
         return LBBox3fa([&] (size_t itime) { return bounds(ofs, scale, r_scale0, space, primID, itime); }, time_range, fnumTimeSegments);
       }
       
-      /*! check if the i'th primitive is valid at the itime'th time step */
-      __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
-      {
-        const unsigned int index = curve(i);
-        if (index+3 >= numVertices()) return false;
-        
-        for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
-        {
-          const float r0 = radius(index+0,itime);
-          const float r1 = radius(index+1,itime);
-          const float r2 = radius(index+2,itime);
-          const float r3 = radius(index+3,itime);
-          if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
-            return false;
-          
-          const Vec3fa v0 = vertex(index+0,itime);
-          const Vec3fa v1 = vertex(index+1,itime);
-          const Vec3fa v2 = vertex(index+2,itime);
-          const Vec3fa v3 = vertex(index+3,itime);
-          if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
-            return false;
-
-          if (ctype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE)
-          {
-            const Vec3fa n0 = normal(index+0,itime);
-            const Vec3fa n1 = normal(index+1,itime);
-            const Vec3fa n2 = normal(index+2,itime);
-            const Vec3fa n3 = normal(index+3,itime);
-            if (!isvalid(n0) || !isvalid(n1) || !isvalid(n2) || !isvalid(n3))
-              return false;
-          }
-        }
-        
-        return true;
-      }
-
       PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
-          if (!valid(j, make_range<size_t>(0, numTimeSegments()))) continue;
+          if (!valid(ctype, j, make_range<size_t>(0, numTimeSegments()))) continue;
           const PrimRef prim(bounds(j),this->geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
@@ -699,7 +773,7 @@ namespace embree
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
-          if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
+          if (!valid(ctype, j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
           const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
@@ -735,13 +809,13 @@ namespace embree
     CurveGeometry* createCurves(Device* device, Geometry::GType gtype)
     {
       switch (gtype) {
-      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BezierCurve3fa>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BezierCurve3fa,BezierCurveT<vfloat4>>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BezierCurve3fa,BezierCurveT<vfloat4>>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BezierCurve3fa,BezierCurveT<vfloat4>>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
         
-      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BSplineCurve3fa>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BSplineCurve3fa,BSplineCurveT<vfloat4>>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BSplineCurve3fa,BSplineCurveT<vfloat4>>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BSplineCurve3fa,BSplineCurveT<vfloat4>>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
 
       case Geometry::GTY_ROUND_HERMITE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_FLAT_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
