@@ -404,12 +404,6 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-ISAS-AVX2-TBB2017:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-ISAS-AVX512KNL-TBB2017:
-  image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:[AVX512KNL] tasking:TBB2017 intensity:0"
-  tags:   [docker]
-  only:   [schedules]
-
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-ISAS-AVX512SKX-TBB2017:
   image: embreedocker/fedora:25
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:[AVX512SKX] tasking:TBB2017 intensity:0"
