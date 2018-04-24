@@ -146,10 +146,9 @@ namespace embree
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
 
           unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vertexID,ray.time());
-          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID,ray.time());
+          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time());
 
-          Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,n0,n1,n2,n3,Epilog(ray,context,geomID,primID));
+          Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
@@ -171,10 +170,9 @@ namespace embree
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
 
           unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vertexID,ray.time());
-          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID,ray.time());
+          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time());
 
-          if (Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,n0,n1,n2,n3,Epilog(ray,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,context,geomID,primID)))
               return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
@@ -402,10 +400,9 @@ namespace embree
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
 
           unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vertexID,ray.time()[k]);
-          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID,ray.time()[k]);
+          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time()[k]);
 
-          Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,n0,n1,n2,n3,Epilog(ray,k,context,geomID,primID));
+          Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
@@ -427,10 +424,9 @@ namespace embree
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
 
           unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,vertexID,ray.time()[k]);
-          Vec3fa n0,n1,n2,n3; geom->gather_normals(n0,n1,n2,n3,vertexID,ray.time()[k]);
+          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time()[k]);
 
-          if (Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,n0,n1,n2,n3,Epilog(ray,k,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,k,context,geomID,primID)))
             return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));

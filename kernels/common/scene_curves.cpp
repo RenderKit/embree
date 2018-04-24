@@ -342,16 +342,6 @@ namespace embree
         return Curve3fa (v0,v1,v2,v3);
       }
 
-      __forceinline const Curve3fa getNormalCurve(size_t i, size_t itime = 0) const 
-      {
-        const unsigned int index = curve(i);
-        const Vec3fa n0 = normal(index+0,itime);
-        const Vec3fa n1 = normal(index+1,itime);
-        const Vec3fa n2 = normal(index+2,itime);
-        const Vec3fa n3 = normal(index+3,itime);
-        return Curve3fa (n0,n1,n2,n3);
-      }
-
       __forceinline const Curve3fa getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
@@ -384,8 +374,10 @@ namespace embree
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
       {
         const Curve3fa center = getCurve(i,itime);
-        const Curve3fa normal = getNormalCurve(i,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
+        const unsigned int index = curve(i);
+        const Vec3fa n0 = normal(index+0,itime);
+        const Vec3fa n1 = normal(index+1,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
         return ocurve;
       }
 
@@ -423,9 +415,7 @@ namespace embree
           {
             const Vec3fa n0 = normal(index+0,itime);
             const Vec3fa n1 = normal(index+1,itime);
-            const Vec3fa n2 = normal(index+2,itime);
-            const Vec3fa n3 = normal(index+3,itime);
-            if (!isvalid(n0) || !isvalid(n1) || !isvalid(n2) || !isvalid(n3))
+            if (!isvalid(n0) || !isvalid(n1))
               return false;
           }
         }
