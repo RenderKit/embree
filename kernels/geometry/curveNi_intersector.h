@@ -569,7 +569,7 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,p1,t1,geom->curve(primID));
+          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID));
           if (Intersector().intersect(pre,ray,k,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,k,context,geomID,primID)))
             return true;
           
