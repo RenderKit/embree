@@ -460,17 +460,17 @@ namespace embree
         for (unsigned int i=0; i<valueCount; i+=4)
         {
           size_t ofs = i*sizeof(float);
-          const size_t curve = curves[primID];
+          const size_t index = curves[primID];
           const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
-          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-          const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-          const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(index+0)*stride+ofs]);
+          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(index+1)*stride+ofs]);
+          const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(index+2)*stride+ofs]);
+          const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(index+3)*stride+ofs]);
           
-          const Curve4f bezier(p0,p1,p2,p3);
-          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
-          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
-          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+          const Curve4f curve(p0,p1,p2,p3);
+          if (P      ) vfloat4::storeu(valid,P+i,      curve.eval(u));
+          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   curve.eval_du(u));
+          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,curve.eval_dudu(u));
         }
       }
     };
@@ -578,35 +578,51 @@ namespace embree
         float* ddPdudu = args->ddPdudu;
         unsigned int valueCount = args->valueCount;
         
-        /* calculate base pointer and stride */
-        assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-               (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
-        const char* src = nullptr;
-        const char* dsrc = nullptr; 
-        size_t stride = 0, dstride = 0;
-        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-          assert(false);
-        } else {
-          src    = vertices[bufferSlot].getPtr();
-          dsrc   = tangents[bufferSlot].getPtr();
-          stride = vertices[bufferSlot].getStride();
-          dstride = vertices[bufferSlot].getStride();
-        }
-        
-        for (unsigned int i=0; i<valueCount; i+=4)
+        /* we interpolate vertex attributes linearly for hermite basis */
+        if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
         {
-          size_t ofs = i*sizeof(float);
-          const size_t curve = curves[primID];
-          const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
-          const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-          const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-          const vfloat4 t0 = vfloat4::loadu(valid,(float*)&dsrc[(curve+0)*dstride+ofs]);
-          const vfloat4 t1 = vfloat4::loadu(valid,(float*)&dsrc[(curve+1)*dstride+ofs]);
+          assert(bufferSlot <= vertexAttribs.size());
+          const char* vsrc = vertexAttribs[bufferSlot].getPtr();
+          const size_t vstride = vertexAttribs[bufferSlot].getStride();
           
-          const HermiteCurveT<vfloat4> bezier(p0,t0,p1,t1);
-          if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
-          if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
-          if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+          for (unsigned int i=0; i<valueCount; i+=4)
+          {
+            const size_t ofs = i*sizeof(float);
+            const size_t index = curves[primID];
+            const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
+            const vfloat4 p0 = vfloat4::loadu(valid,(float*)&vsrc[(index+0)*vstride+ofs]);
+            const vfloat4 p1 = vfloat4::loadu(valid,(float*)&vsrc[(index+1)*vstride+ofs]);
+            
+            if (P      ) vfloat4::storeu(valid,P+i,      madd(1.0f-u,p0,u*p1));
+            if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   p1-p0);
+            if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,vfloat4(zero));
+          }
+        }
+
+        /* interpolation for vertex buffers */
+        else
+        {
+          assert(bufferSlot < numTimeSteps);
+          const char* vsrc = vertices[bufferSlot].getPtr();
+          const char* tsrc = tangents[bufferSlot].getPtr();
+          const size_t vstride = vertices[bufferSlot].getStride();
+          const size_t tstride = vertices[bufferSlot].getStride();
+          
+          for (unsigned int i=0; i<valueCount; i+=4)
+          {
+            const size_t ofs = i*sizeof(float);
+            const size_t index = curves[primID];
+            const vbool4 valid = vint4((int)i)+vint4(step) < vint4((int)valueCount);
+            const vfloat4 p0 = vfloat4::loadu(valid,(float*)&vsrc[(index+0)*vstride+ofs]);
+            const vfloat4 p1 = vfloat4::loadu(valid,(float*)&vsrc[(index+1)*vstride+ofs]);
+            const vfloat4 t0 = vfloat4::loadu(valid,(float*)&tsrc[(index+0)*tstride+ofs]);
+            const vfloat4 t1 = vfloat4::loadu(valid,(float*)&tsrc[(index+1)*tstride+ofs]);
+            
+            const HermiteCurveT<vfloat4> curve(p0,t0,p1,t1);
+            if (P      ) vfloat4::storeu(valid,P+i,      curve.eval(u));
+            if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   curve.eval_du(u));
+            if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,curve.eval_dudu(u));
+          }
         }
       }
     };
