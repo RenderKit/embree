@@ -42,7 +42,7 @@ namespace embree {
 extern "C" int g_spp;
 extern "C" int g_max_path_length;
 extern "C" bool g_accumulate;
-  
+
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
@@ -1064,6 +1064,52 @@ inline Vec3fa derivBezier(const ISPCHairSet* mesh, const unsigned int primID, co
   return Vec3fa(3.0f*(p21-p20));
 }
 
+inline Vec3fa derivHermite(const ISPCHairSet* mesh, const unsigned int primID, const float u, const float time)
+{
+  Vec3fa p0, p1, t0, t1;
+  const int i = mesh->hairs[primID].vertex;
+  
+  if (mesh->numTimeSteps == 1)
+  {
+    p0 = mesh->positions[0][i+0];
+    p1 = mesh->positions[0][i+1];
+    t0 = mesh->tangents[0][i+0];
+    t1 = mesh->tangents[0][i+1];
+  }
+  else
+  {
+    float f = mesh->numTimeSteps*time;
+    int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+    float time1 = f-itime;
+    float time0 = 1.0f-time1;
+    const Vec3fa ap0 = mesh->positions[itime+0][i+0];
+    const Vec3fa ap1 = mesh->positions[itime+0][i+1];
+    const Vec3fa at0 = mesh->tangents[itime+0][i+0];
+    const Vec3fa at1 = mesh->tangents[itime+0][i+1];
+    const Vec3fa bp0 = mesh->positions[itime+1][i+0];
+    const Vec3fa bp1 = mesh->positions[itime+1][i+1];
+    const Vec3fa bt0 = mesh->tangents[itime+1][i+0];
+    const Vec3fa bt1 = mesh->tangents[itime+1][i+1];
+    p0 = time0*ap0 + time1*bp0;
+    p1 = time0*ap1 + time1*bp1;
+    t0 = time0*at0 + time1*bt0;
+    t1 = time0*at1 + time1*bt1;
+  }
+  const Vec3fa p00 = p0;
+  const Vec3fa p01 = p0+(1.0f/3.0f)*t0;
+  const Vec3fa p02 = p1-(1.0f/3.0f)*t1;
+  const Vec3fa p03 = p1;
+    
+  const float u0 = 1.0f - u, u1 = u;
+  const Vec3fa p10 = p00 * u0 + p01 * u1;
+  const Vec3fa p11 = p01 * u0 + p02 * u1;
+  const Vec3fa p12 = p02 * u0 + p03 * u1;
+  const Vec3fa p20 = p10 * u0 + p11 * u1;
+  const Vec3fa p21 = p11 * u0 + p12 * u1;
+  //const Vec3fa p30 = p20 * u0 + p21 * u1;
+  return Vec3fa(3.0f*(p21-p20));
+}
+
 inline Vec3fa derivBSpline(const ISPCHairSet* mesh, const unsigned int primID, const float t, const float time)
 {
   Vec3fa p00, p01, p02, p03;
@@ -1283,6 +1329,23 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
     {
       Vec3fa dp = derivBSpline(mesh,dg.primID,ray.u,ray.time());
+      if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
+      dg.Tx = normalize(dp);
+      dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
+      dg.Ng = dg.Ns = normalize(cross(dg.Ty,dg.Tx));
+    }
+    else if (mesh->type == RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE)
+    {
+      Vec3fa dp = derivHermite(mesh,dg.primID,ray.u,ray.time());
+      if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
+      dg.Tx = normalize(Vec3fa(dp));
+      dg.Ty = normalize(cross(Vec3fa(dp),dg.Ng));
+      dg.Ng = dg.Ns = normalize(dg.Ng);
+      dg.eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+    }
+    else if (mesh->type == RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE)
+    {
+      Vec3fa dp = derivHermite(mesh,dg.primID,ray.u,ray.time());
       if (reduce_max(abs(dp)) < 1E-6f) dp = Vec3fa(1,1,1);
       dg.Tx = normalize(dp);
       dg.Ty = normalize(cross(neg(ray.dir),dg.Tx));
