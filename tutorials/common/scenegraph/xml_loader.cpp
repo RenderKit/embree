@@ -1096,6 +1096,19 @@ namespace embree
       mesh->normals.push_back(loadVec3faArray(normals));
     }
 
+    if (type == RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE ||
+        type == RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE ||
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
+    {
+      if (Ref<XML> animation = xml->childOpt("animated_tangents")) {
+        for (size_t i=0; i<animation->size(); i++) {
+          mesh->tangents.push_back(loadVec4fArray(animation->child(i)));
+        }
+      } else if (Ref<XML> tangents = xml->childOpt("tangents")) {
+        mesh->tangents.push_back(loadVec4fArray(tangents));
+      }
+    }
+
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
@@ -1106,7 +1119,8 @@ namespace embree
     mesh->flags = loadUCharArray(xml->childOpt("flags"));
 
     if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
-        type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE) {
+        type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ||
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE) {
       for (auto& vertices : mesh->positions)
         fix_bspline_end_points(indices,vertices);
     }
@@ -1284,6 +1298,17 @@ namespace embree
             type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
           else if (str_subtype == "normal_oriented")
             type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE;
+          else
+            THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
+        }
+        else if (str_type == "hermite")
+        {
+          if (str_subtype == "flat" || str_subtype == "ribbon")
+            type = RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE;
+          else if (str_subtype == "round" ||str_subtype == "surface")
+            type = RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE;
+          else if (str_subtype == "normal_oriented")
+            type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE;
           else
             THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
         }

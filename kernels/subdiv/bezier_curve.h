@@ -181,6 +181,10 @@ namespace embree
         return v3;
       }
 
+      __forceinline Vertex center() const {
+        return 0.25f*(v0+v1+v2+v3);
+      }
+
       __forceinline Vertex begin_direction() const {
         return v1-v0;
       }

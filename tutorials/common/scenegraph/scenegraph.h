@@ -46,6 +46,7 @@ namespace embree
     Ref<Node> my_merge_quads_to_grids(Ref<SceneGraph::Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
+    Ref<Node> convert_bezier_to_hermite(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
     Ref<Node> convert_flat_to_round_curves(Ref<Node> node);
     Ref<Node> convert_round_to_flat_curves(Ref<Node> node);
@@ -299,6 +300,47 @@ namespace embree
     }
 
     template<typename Vertex>
+       std::vector<avector<Vertex>> transformMSMBlurVectorBuffer(const std::vector<avector<Vertex>>& vectors_in, const Transformations& spaces)
+    {
+      if (vectors_in.size() == 0)
+        return vectors_in;
+      
+      std::vector<avector<Vertex>> vectors_out;
+      const size_t num_time_steps = vectors_in.size();
+      const size_t num_vertices = vectors_in[0].size();
+
+      /* if we have only one set of vertices, use transformation to generate more vertex sets */
+      if (num_time_steps == 1)
+      {
+        for (size_t i=0; i<spaces.size(); i++) 
+        {
+          avector<Vertex> vecs(num_vertices);
+          for (size_t j=0; j<num_vertices; j++) {
+            vecs[j] = xfmVector(spaces[i],vectors_in[0][j]);
+            vecs[j].w = vectors_in[0][j].w;
+          }
+          vectors_out.push_back(std::move(vecs));
+        }
+      } 
+      /* otherwise transform all vertex sets with interpolated transformation */
+      else
+      {
+        for (size_t t=0; t<num_time_steps; t++) 
+        {
+          float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
+          const AffineSpace3fa space = spaces.interpolate(time);
+          avector<Vertex> vecs(num_vertices);
+          for (size_t i=0; i<num_vertices; i++) {
+            vecs[i] = xfmVector (space,vectors_in[t][i]);
+            vecs[i].w = vectors_in[t][i].w;
+          }
+          vectors_out.push_back(std::move(vecs));
+        }
+      }
+      return vectors_out;
+    }
+
+    template<typename Vertex>
        std::vector<avector<Vertex>> transformMSMBlurNormalBuffer(const std::vector<avector<Vertex>>& normals_in, const Transformations& spaces)
     {
       if (normals_in.size() == 0)
@@ -491,6 +533,12 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_bezier_to_bspline(children[i]);
+      }
+
+      void bezier_to_hermite()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_bezier_to_hermite(children[i]);
       }
 
       void bspline_to_bezier()
@@ -886,7 +934,7 @@ namespace embree
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)), normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
+        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)), normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)), tangents(transformMSMBlurVectorBuffer(imesh->tangents,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -932,6 +980,7 @@ namespace embree
 
       void convert_bezier_to_bspline();
       void convert_bspline_to_bezier();
+      void convert_bezier_to_hermite();
       void compact_vertices();
 
       void verify() const;
@@ -944,6 +993,7 @@ namespace embree
       RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<avector<Vertex>> normals;   //!< hair control normals (nx,ny,nz) for multiple timesteps
+      std::vector<avector<Vertex>> tangents;  //!< hair control tangents (tx,ty,tz,tr) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
       std::vector<unsigned char> flags;       //!< left, right end cap flags
 

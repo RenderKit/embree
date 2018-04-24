@@ -204,12 +204,6 @@ namespace embree
     template class BVHNRefitter<8>;
 #endif
     
-    Builder* BVH4Line4iMeshBuilderSAH (void* bvh, LineSegments* mesh, size_t mode);
-
-#if defined(EMBREE_GEOMETRY_CURVE)
-    Builder* BVH4Line4iMeshRefitSAH (void* accel, LineSegments* mesh, size_t mode) { return new BVHNRefitT<4,LineSegments,Line4i>((BVH4*)accel,BVH4Line4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
-#endif
-
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
     Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);

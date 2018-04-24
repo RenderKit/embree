@@ -8,6 +8,7 @@ Version History
     also contained in a single BVH.
 -   Performance improvement of up to 20% for line segments.
 -   Bugfix to Embree2 to Embree3 conversion script.
+-   Added support for Hermite curve basis.
 
 ### New Features in Embree 3.1.0
 -   Added new normal-oriented curve primitive for ray tracing of grass-like

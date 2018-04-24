@@ -106,6 +106,23 @@ namespace embree
           CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
           return TensorLinearCubicBezierSurface(L,R);
         }
+
+        template<typename SourceCurve3fa>
+        __forceinline static TensorLinearCubicBezierSurface fromCenterCurveAndNormals(const SourceCurve3fa& center, const Vec3fa& n0, const Vec3fa& n1)
+        {
+          CubicBezierCurve3fa vcurve; convert(center,vcurve);
+          
+          const Vec3fa k0 = normalize(cross(n0,vcurve.begin_direction()));
+          const Vec3fa k3 = normalize(cross(n1,vcurve.end_direction()));
+          const Vec3fa d0 = vcurve.v0.w*k0;
+          const Vec3fa d1 = vcurve.v1.w*k0;
+          const Vec3fa d2 = vcurve.v2.w*k3;
+          const Vec3fa d3 = vcurve.v3.w*k3;
+          
+          CubicBezierCurve<V> L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
+          CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
+          return TensorLinearCubicBezierSurface(L,R);
+        }
         
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
