@@ -7,9 +7,12 @@
 
     RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE -
       B-spline curve geometry type using a sweep surface
+
+    RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE -
+      Hermite curve geometry type using a sweep surface
     
     RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE -
-      linear curve geometry type
+      Linear curve geometry type
 
     RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE -
       Bézier curve geometry type using a ray oriented ribbon approximation
@@ -17,11 +20,17 @@
     RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE - 
       B-spline curve geometry type using a ray oriented ribbon approximation
 
+    RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE - 
+      Hermite curve geometry type using a ray oriented ribbon approximation
+
     RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BEZIER_CURVE -
       flat Bézier curve geometry type oriented by normal
 
     RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BSPLINE_CURVE - 
       flat B-spline curve geometry type oriented by normal
+
+    RTC_GEOMETRY_TYPE_ORIENTED_FLAT_HERMITE_CURVE - 
+      flat Hermite curve geometry type oriented by normal
 
 #### SYNOPSIS
 
@@ -29,29 +38,36 @@
 
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BSPLINE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ORIENTED_FLAT_HERMITE_CURVE);
 
 #### DESCRIPTION
 
 Curves with per vertex radii are supported with linear, cubic Bézier,
-and cubic B-spline bases. Such curve geometries are created by passing
-`RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
+cubic B-spline, and cubic Hermite bases. Such curve geometries are
+created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE`,
 `RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_ORIENTED_FLAT_BSPLINE_CURVE`,
-`RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`, or
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, to the `rtcNewGeometry`
+`RTC_GEOMETRY_TYPE_ORIENTED_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, or
+`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE` to the `rtcNewGeometry`
 function. The curve indices can be specified through an index buffer
 (`RTC_BUFFER_TYPE_INDEX`) and the curve vertices through a vertex
-buffer (`RTC_BUFFER_TYPE_VERTEX`). For normal oriented curves a normal
-buffer (`RTC_BUFFER_TYPE_NORMAL`) has to get specified. See
-`rtcSetGeometryBuffer` and `rtcSetSharedGeometryBuffer` for more
-details on how to set buffers.
+buffer (`RTC_BUFFER_TYPE_VERTEX`). For the hermite basis a tangent
+buffer (`RTC_BUFFER_TYPE_TANGENT`) and for normal oriented curves a
+normal buffer (`RTC_BUFFER_TYPE_NORMAL`) has to get specified
+additionally. See `rtcSetGeometryBuffer` and
+`rtcSetSharedGeometryBuffer` for more details on how to set buffers.
 
 The index buffer contains an array of 32-bit indices
 (`RTC_FORMAT_UINT` format), each pointing to the ID of the first
@@ -60,8 +76,11 @@ form of a single precision position and radius stored in `x`, `y`,
 `z`, `r` order in memory (`RTC_FORMAT_FLOAT4` format). The number of
 vertices is inferred from the size of this buffer. The radii may be
 smaller than zero for the B-Spline basis, but the interpolated radii
-should always be greater or equal to zero. The normal buffer stores a
-single precision normal per control vertex in `x`, `y`, `z` order.
+should always be greater or equal to zero. Similarly, the tangent
+buffer stores the derivative of each control vertex (`x`, `y`, `z`,
+`r` and `RTC_FORMAT_FLOAT4` format) and the normal buffer stores a
+single precision normal per control vertex (`x`, `y`, `z` order and
+`RTC_FORMAT_FLOAT3` format).
 
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
@@ -75,7 +94,7 @@ The `RTC_GEOMETRY_TYPE_ORIENTED_FLAT_*` mode is a mode designed to
 render grass blades. In this mode the curve is rendered as a flat band
 whose center exactly follows the provided vertex spline, whose half
 width approximately follows the provided radius spline, and whose
-orientation approximately follows the provided normal spline.
+orientation approximately follows the provided normals.
 
 More precisely, we perform a newton-raphson style intersection of a
 ray with a tensor product surface of a linear basis (perpendicular to
