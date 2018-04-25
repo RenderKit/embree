@@ -95,30 +95,31 @@ For the cubic Bézier basis the indices point to the first of 4
 consecutive control points in the vertex buffer. These control points
 use the cubic Bézier basis, where the first control point represents
 the start point of the curve, and the 4th control point the end point
-of the curve.
+of the curve. The Bézier basis is interpolating, thus the curve does
+go exactly through the first and fourth control vertex.
 
 For the cubic B-spline basis the indices point to the first of 4
 consecutive control points in the vertex buffer. These control points
 make up a cardinal cubic B-spline (implicit equidistant knot
-vector). This basis is not interpolating, thus does in general the
-curve does not go through any of the control points directly. A big
-advantage of this basis is that 3 points can be shared for two
-continuous neighboring hair segments, e.g. the curves (p0,p1,p2,p3)
+vector). This basis is not interpolating, thus the curve does in
+general not go through any of the control points directly. A big
+advantage of this basis is that 3 control points can be shared for two
+continuous neighboring curve segments, e.g. the curves (p0,p1,p2,p3)
 and (p1,p2,p3,p4) are C1 continuous. This feature make this basis a
-good choise to construct hair segments, as memory consumption can be
-kept minimal.
+good choise to construct continuous multi-segment curves, as memory
+consumption can be kept minimal.
 
 For the cubic Hermite basis the indices point to the first of 2
-consecutive points in the vertex buffer, and first of 2 consecutive
-tangents in the tangent buffer. These two points and two tangents make
-up a cubic Hermite curve. This basis is interpolating, thus does
-exactly go through the control points, and the first order derivative
-at the begin and end matches exactly the value specified in the
-tangent buffer. When connecting two segments continuously, the end
-point and tangent of the previous segment can be shared. Different
-versions of Catmull-Rom splines can be easily constructed usig the
-Hermite basis, by calculating a proper tangent buffer from the
-control points.
+consecutive points in the vertex buffer, and the first of 2
+consecutive tangents in the tangent buffer. These two points and two
+tangents make up a cubic Hermite curve. This basis is interpolating,
+thus does exactly go through the first and second control point, and
+the first order derivative at the begin and end matches exactly the
+value specified in the tangent buffer. When connecting two segments
+continuously, the end point and tangent of the previous segment can be
+shared. Different versions of Catmull-Rom splines can be easily
+constructed usig the Hermite basis, by calculating a proper tangent
+buffer from the control points.
 
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
@@ -129,10 +130,10 @@ through the `rtcSetGeometryTessellationRate` function. By default the
 tessellation rate is 4.
 
 The `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_*` mode is a mode designed to
-render grass blades. In this mode the curve is rendered as a flat band
+render blades of grass. In this mode the curve is rendered as a flat band
 whose center exactly follows the provided vertex spline, whose half
 width approximately follows the provided radius spline, and whose
-orientation approximately follows the provided normals. For normal
+orientation follows the provided normals. For normal
 oriented curves, the indices point to the first of 2 consecutive
 normals in the normal buffer. The normal of the constructed curve will
 match the direction of the first normal at the beginning, and the
@@ -140,7 +141,7 @@ direction of the second normal at the end of the curve. Please note
 that this layout of the normal buffer is independent of the used basis
 for the curve itself. For the cubic B-spline and cubic Hermite basis
 the stride from the first control vertex of the first and the next
-segment is typically 1, thus the normal buffer if compact and the
+segment is typically 1, thus the normal buffer is compact and the
 curves share the normal at the begin and end. However, for the cubic
 Bézier basis, the stride is typically 3, thus begin and end normal
 cannot get shared. We recommend using the Hermite basis instead of the
