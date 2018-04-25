@@ -886,16 +886,16 @@ namespace embree
     
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoTitleBar;
-    window_flags |= ImGuiWindowFlags_NoScrollbar;
+    //window_flags |= ImGuiWindowFlags_NoScrollbar;
     //window_flags |= ImGuiWindowFlags_MenuBar;
-    window_flags |= ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoResize;
+    //window_flags |= ImGuiWindowFlags_NoMove;
+    //window_flags |= ImGuiWindowFlags_NoResize;
     //window_flags |= ImGuiWindowFlags_NoCollapse;
     //window_flags |= ImGuiWindowFlags_NoNav;
 
-    ImGui::GetStyle().WindowBorderSize = 0.0f;
-    ImGui::SetNextWindowPos(ImVec2(width-200,0));
-    ImGui::SetNextWindowSize(ImVec2(200,height));
+    //ImGui::GetStyle().WindowBorderSize = 0.0f;
+    //ImGui::SetNextWindowPos(ImVec2(width-200,0));
+    //ImGui::SetNextWindowSize(ImVec2(200,height));
     ImGui::SetNextWindowBgAlpha(0.3f);
     ImGui::Begin("Embree", nullptr, window_flags);
     drawGUI();
