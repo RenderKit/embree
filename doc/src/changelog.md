@@ -3,12 +3,14 @@ Version History
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
--   Using GLFW and imgui in tutorials.
--   Line segments, bezier curves, and b-spline curves are now
-    also contained in a single BVH.
+-   Line segments, and other curves are now all contained in a single
+    BVH which improves performance when these are both used in a scene.
 -   Performance improvement of up to 20% for line segments.
 -   Bugfix to Embree2 to Embree3 conversion script.
 -   Added support for Hermite curve basis.
+-   Semantics of normal buffer for normal oriented curves has
+    changed to simplify usage. Please see documentation for details.
+-   Using GLFW and imgui in tutorials.
 
 ### New Features in Embree 3.1.0
 -   Added new normal-oriented curve primitive for ray tracing of grass-like
