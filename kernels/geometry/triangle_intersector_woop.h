@@ -66,6 +66,7 @@ namespace embree
     struct WoopPrecalculations1
     {
       unsigned int kx,ky,kz;
+      Vec3fa org;
       Vec3fa S;
       __forceinline WoopPrecalculations1() {}
 
@@ -79,6 +80,7 @@ namespace embree
         S.x = ray.dir[kx] * inv_dir_kz;
         S.y = ray.dir[ky] * inv_dir_kz;
         S.z = inv_dir_kz;
+        org = Vec3fa(ray.org[kx],ray.org[ky],ray.org[kz],0.0f);
       }
     };
 
@@ -104,7 +106,7 @@ namespace embree
         vbool<M> valid = valid0;
 
         /* vertices relative to ray origin */
-        const Vec3vf<M> org = Vec3vf<M>(ray.org[pre.kx],ray.org[pre.ky],ray.org[pre.kz]);
+        const Vec3vf<M> org = Vec3vf<M>(pre.org.x,pre.org.y,pre.org.z);
         const Vec3vf<M> A = Vec3vf<M>(tri_v0[pre.kx],tri_v0[pre.ky],tri_v0[pre.kz]) - org;
         const Vec3vf<M> B = Vec3vf<M>(tri_v1[pre.kx],tri_v1[pre.ky],tri_v1[pre.kz]) - org;
         const Vec3vf<M> C = Vec3vf<M>(tri_v2[pre.kx],tri_v2[pre.ky],tri_v2[pre.kz]) - org;
@@ -118,18 +120,23 @@ namespace embree
         const vfloat<M> Cy = nmadd(C.z,pre.S.y,C.y);
 
         /* scaled barycentric */
-        const vfloat<M> U = msub(Cx,By,Cy*Bx);
-        const vfloat<M> V = msub(Ax,Cy,Ay*Cx);
-        const vfloat<M> W = msub(Bx,Ay,By*Ax);
-        
-        /* perform backface culling */        
-#if defined(EMBREE_BACKFACE_CULLING)
-        valid &= (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+        const vfloat<M> U0 = Cx*By;
+        const vfloat<M> U1 = Cy*Bx;
+        const vfloat<M> V0 = Ax*Cy;
+        const vfloat<M> V1 = Ay*Cx;
+        const vfloat<M> W0 = Bx*Ay;
+        const vfloat<M> W1 = By*Ax;
+#if !defined(__AVX512F__)
+        valid &= (U0 >= U1) & (V0 >= V1) & (W0 >= W1) |
+          (U0 <= U1) & (V0 <= V1) & (W0 <= W1);
 #else
-        valid &= (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f) |
-          (U <= 0.0f) & (V <= 0.0f) & (W <= 0.0f);
+        valid &= ge(ge(U0 >= U1,V0,V1),W0,W1) | le(le(U0 <= U1,V0,V1),W0,W1);
 #endif
+
         if (likely(none(valid))) return false;
+        const vfloat<M> U = U0-U1;
+        const vfloat<M> V = V0-V1;
+        const vfloat<M> W = W0-W1;
 
         const vfloat<M> det = U+V+W;
 
@@ -146,8 +153,6 @@ namespace embree
         if (likely(none(valid))) return false;
         
         const Vec3vf<M> tri_Ng = cross(tri_v2-tri_v0,tri_v0-tri_v1);
-        valid &= (asInt(tri_Ng.x) | asInt(tri_Ng.y) | asInt(tri_Ng.z)) != 0;
-        if (likely(none(valid))) return false;
 
         /* update hit information */
         new (&hit) WoopHitM<M>(valid,U,V,t,inv_det,tri_Ng);
