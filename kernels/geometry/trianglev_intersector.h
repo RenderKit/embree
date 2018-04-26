@@ -53,7 +53,7 @@ namespace embree
     {
       typedef TriangleMv<M> Primitive;
       typedef WoopIntersector1<Mx> intersec;
-      typedef WoopPrecalculations1 Precalculations;
+      typedef WoopPrecalculations1<M> Precalculations;
 
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& tri)

@@ -63,10 +63,11 @@ namespace embree
       Vec3vf<M> vNg;
     };
 
+    template<int M>
     struct WoopPrecalculations1
     {
       unsigned int kx,ky,kz;
-      Vec3fa org;
+      Vec3vf<M> org;
       Vec3fa S;
       __forceinline WoopPrecalculations1() {}
 
@@ -80,7 +81,7 @@ namespace embree
         S.x = ray.dir[kx] * inv_dir_kz;
         S.y = ray.dir[ky] * inv_dir_kz;
         S.z = inv_dir_kz;
-        org = Vec3fa(ray.org[kx],ray.org[ky],ray.org[kz],0.0f);
+        org = Vec3vf<M>(ray.org[kx],ray.org[ky],ray.org[kz]);
       }
     };
 
@@ -89,7 +90,7 @@ namespace embree
     struct WoopIntersector1
     {
 
-        typedef WoopPrecalculations1 Precalculations;
+        typedef WoopPrecalculations1<M> Precalculations;
 
       __forceinline WoopIntersector1() {}
 
