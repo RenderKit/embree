@@ -255,7 +255,7 @@ namespace embree
   }
   
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
-    : geom(CURVES), normals(nullptr), type(type)
+    : geom(CURVES), normals(nullptr), tangents(nullptr), type(type)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -265,6 +265,12 @@ namespace embree
       normals = new Vec3fa*[in->numTimeSteps()];
       for (size_t i=0; i<in->numTimeSteps(); i++)
         normals[i] = in->normals[i].data();
+    }
+
+    if (in->tangents.size()) {
+      tangents = new Vec3fa*[in->numTimeSteps()];
+      for (size_t i=0; i<in->numTimeSteps(); i++)
+        tangents[i] = in->tangents[i].data();
     }
     
     hairs = (ISPCHair*) in->hairs.data();
@@ -279,6 +285,7 @@ namespace embree
   ISPCHairSet::~ISPCHairSet() {
     delete[] positions;
     delete[] normals;
+    delete[] tangents;
   }
 
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
@@ -456,6 +463,11 @@ namespace embree
     if (mesh->normals) {
       for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      }
+    }
+    if (mesh->tangents) {
+      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_TANGENT, t, RTC_FORMAT_FLOAT4, mesh->tangents[t], 0, sizeof(Vec3fa), mesh->numVertices);
       }
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);

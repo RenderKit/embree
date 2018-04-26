@@ -21,8 +21,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  LineSegments::LineSegments (Device* device)
-    : Geometry(device,GTY_FLAT_LINEAR_CURVE,0,1)
+  LineSegments::LineSegments (Device* device, Geometry::GType gtype)
+    : Geometry(device,gtype,0,1), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
   }
@@ -48,6 +48,8 @@ namespace embree
   void LineSegments::setNumTimeSteps (unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+      normals.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
 
@@ -73,8 +75,21 @@ namespace embree
       
       vertices[slot].set(buffer, offset, stride, num, format);
       vertices[slot].checkPadding16();
-      vertices0 = vertices[0];
-    } 
+    }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (getCurveType() != GTY_SUBTYPE_ORIENTED_CURVE)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+        
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal buffer format");
+
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal buffer slot");
+      
+      normals[slot].set(buffer, offset, stride, num, format);
+      normals[slot].checkPadding16();
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
@@ -123,6 +138,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return vertices[slot].getPtr();
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return normals[slot].getPtr();
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -156,6 +177,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertices[slot].setModified(true);
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL)
+    {
+      if (slot >= normals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      normals[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -176,6 +203,11 @@ namespace embree
     Geometry::update();
   }
 
+  void LineSegments::setTessellationRate(float N)
+  {
+    tessellationRate = clamp((int)N,1,16);
+  }
+
   void LineSegments::preCommit() 
   {
     /* verify that stride of all time steps are identical */
@@ -183,6 +215,14 @@ namespace embree
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
+    for (const auto& buffer : normals)
+      if (buffer.getStride() != normals[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
+
+    vertices0 = vertices[0];
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+      normals0 = normals[0];
+        
     Geometry::preCommit();
   }
 
@@ -191,10 +231,9 @@ namespace embree
     scene->vertices[geomID] = (float*) vertices0.getPtr();
 
     segments.setModified(false);
-    for (auto& buf : vertices)
-      buf.setModified(false);
-    for (auto& attrib : vertexAttribs)
-      attrib.setModified(false);
+    for (auto& buf : vertices) buf.setModified(false);
+    for (auto& buf : normals)  buf.setModified(false);
+    for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
     Geometry::postCommit();
@@ -203,9 +242,15 @@ namespace embree
   bool LineSegments::verify ()
   { 
     /*! verify consistent size of vertex arrays */
-    if (vertices.size() == 0) return false;
+    if (vertices.size() == 0)
+      return false;
+    
     for (const auto& buffer : vertices)
       if (buffer.size() != numVertices())
+        return false;
+
+    for (const auto& buffer : normals)
+      if (vertices[0].size() != buffer.size())
         return false;
 
     /*! verify segment indices */
@@ -265,8 +310,8 @@ namespace embree
 
   namespace isa
   {
-    LineSegments* createLineSegments(Device* device) {
-      return new LineSegmentsISA(device);
+    LineSegments* createLineSegments(Device* device, Geometry::GType gtype) {
+      return new LineSegmentsISA(device,gtype);
     }
   }
 }

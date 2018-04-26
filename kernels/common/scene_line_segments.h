@@ -26,12 +26,12 @@ namespace embree
   struct LineSegments : public Geometry
   {
     /*! type of this geometry */
-    static const Geometry::GTypeMask geom_type = Geometry::MTY_LINES;
+    static const Geometry::GTypeMask geom_type = Geometry::MTY_CURVE2;
 
   public:
 
     /*! line segments construction */
-    LineSegments (Device* device);
+    LineSegments (Device* device, Geometry::GType gtype);
 
   public:
     void enabling();
@@ -46,6 +46,7 @@ namespace embree
     void postCommit();
     bool verify ();
     void interpolate(const RTCInterpolateArguments* const args);
+    void setTessellationRate(float N);
 
   public:
 
@@ -77,6 +78,11 @@ namespace embree
       return vertices0.getPtr(i);
     }
 
+    /*! returns i'th normal of the first time step */
+    __forceinline Vec3fa normal(size_t i) const {
+      return normals0[i];
+    }
+
     /*! returns i'th radius of the first time step */
     __forceinline float radius(size_t i) const {
       return vertices0[i].w;
@@ -92,12 +98,17 @@ namespace embree
       return vertices[itime].getPtr(i);
     }
 
+    /*! returns i'th normal of itime'th timestep */
+    __forceinline Vec3fa normal(size_t i, size_t itime) const {
+      return normals[itime][i];
+    }
+
     /*! returns i'th radius of itime'th timestep */
     __forceinline float radius(size_t i, size_t itime) const {
       return vertices[itime][i].w;
     }
 
-     /*! calculates bounding box of i'th line segment */
+    /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(const Vec3fa& v0, const Vec3fa& v1) const
     {
       const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
@@ -211,17 +222,20 @@ namespace embree
   public:
     BufferView<unsigned int> segments;      //!< array of line segment indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
+    BufferView<Vec3fa> normals0;            //!< fast access to first normal buffer
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
     vector<BufferView<char>> vertexAttribs; //!< user buffers
+    int tessellationRate;                   //!< tessellation rate for bezier curve
   };
 
   namespace isa
   {
     struct LineSegmentsISA : public LineSegments
     {
-      LineSegmentsISA (Device* device)
-        : LineSegments(device) {}
+      LineSegmentsISA (Device* device, Geometry::GType gtype)
+        : LineSegments(device,gtype) {}
 
       Vec3fa computeDirection(unsigned int primID) const
       {
@@ -298,5 +312,5 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device*);
+  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Device* COMMA Geometry::GType);
 }

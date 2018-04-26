@@ -368,6 +368,10 @@ namespace embree
         sgop.push_back(CONVERT_BSPLINE_TO_BEZIER);
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
 
+    registerOption("convert-bezier-to-hermite", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(CONVERT_BEZIER_TO_HERMITE);
+      }, "--convert-bezier-to-hermite: converts all bezier curves to hermite curves");
+
     registerOption("merge-triangles-to-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
         sgop.push_back(CONVERT_TRIANGLES_TO_QUADS);
         sgop.push_back(MERGE_QUADS_TO_GRIDS);
@@ -882,16 +886,16 @@ namespace embree
     
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoTitleBar;
-    window_flags |= ImGuiWindowFlags_NoScrollbar;
+    //window_flags |= ImGuiWindowFlags_NoScrollbar;
     //window_flags |= ImGuiWindowFlags_MenuBar;
-    window_flags |= ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoResize;
+    //window_flags |= ImGuiWindowFlags_NoMove;
+    //window_flags |= ImGuiWindowFlags_NoResize;
     //window_flags |= ImGuiWindowFlags_NoCollapse;
     //window_flags |= ImGuiWindowFlags_NoNav;
 
-    ImGui::GetStyle().WindowBorderSize = 0.0f;
-    ImGui::SetNextWindowPos(ImVec2(width-200,0));
-    ImGui::SetNextWindowSize(ImVec2(200,height));
+    //ImGui::GetStyle().WindowBorderSize = 0.0f;
+    //ImGui::SetNextWindowPos(ImVec2(width-200,0));
+    //ImGui::SetNextWindowSize(ImVec2(200,height));
     ImGui::SetNextWindowBgAlpha(0.3f);
     ImGui::Begin("Embree", nullptr, window_flags);
     drawGUI();
@@ -1131,6 +1135,7 @@ namespace embree
       case CONVERT_BEZIER_TO_LINES      : scene->bezier_to_lines(); break;
       case CONVERT_BEZIER_TO_BSPLINE    : scene->bezier_to_bspline(); break;
       case CONVERT_BSPLINE_TO_BEZIER    : scene->bspline_to_bezier(); break;
+      case CONVERT_BEZIER_TO_HERMITE    : scene->bezier_to_hermite(); break;
       case CONVERT_FLAT_TO_ROUND_CURVES : scene->flat_to_round_curves(); break;
       case CONVERT_ROUND_TO_FLAT_CURVES : scene->round_to_flat_curves(); break;
       case MERGE_QUADS_TO_GRIDS         : scene->merge_quads_to_grids(); break;

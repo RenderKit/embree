@@ -103,6 +103,14 @@ namespace embree
       __forceinline Vertex end() const {
         return madd(1.0f/6.0f,v1,madd(2.0f/3.0f,v2,1.0f/6.0f*v3));
       }
+
+      __forceinline Vertex center() const {
+        return 0.25f*(v0+v1+v2+v3);
+      }
+
+      __forceinline friend BSplineCurveT operator -( const BSplineCurveT& a, const Vertex& b ) {
+        return BSplineCurveT(a.v0-b,a.v1-b,a.v2-b,a.v3-b);
+      }
       
       __forceinline Vertex eval(const float t) const 
       {

@@ -21,10 +21,6 @@ namespace embree
 {
   const char* Geometry::gtype_names[Geometry::GTY_END] =
   {
-    "triangles",
-    "quads",
-    "subdivs",
-    "usergeom",
     "flat_linear_curve",
     "round_linear_curve",
     "oriented_linear_curve",
@@ -36,10 +32,19 @@ namespace embree
     "flat_bspline_curve",
     "round_bspline_curve",
     "oriented_bspline_curve",
+    "",
+    "flat_hermite_curve",
+    "round_hermite_curve",
+    "oriented_hermite_curve",
+    "",
+    "triangles",
+    "quads",
+    "grid",
+    "subdivs",
+    "usergeom",
     "instance",
-    "grid"
-    };
-  
+  };
+     
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
     : device(device), scene(nullptr), userPtr(nullptr),
       geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)),
@@ -185,7 +190,7 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   {
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
@@ -197,7 +202,7 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   {
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_LINES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     if (scene && isEnabled()) {
