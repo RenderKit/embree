@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.0.0
+% Embree: High Performance Ray Tracing Kernels 3.1.0
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.0.0-x64.msi](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x64.msi). This
+[embree-3.1.0-x64.msi](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x64.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.0.0 x64`.
+Files\Intel\Embree v3.1.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,18 +95,18 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.0.0 x64`.
+Files\Intel\Embree v3.1.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.0.0 x64` and uninstall it.
+3.1.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file
-[embree-3.0.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x64.windows.zip). After
+[embree-3.1.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x64.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree, you also have to set the
@@ -120,17 +120,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.0.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.rpm.tar.gz)
+[embree-3.1.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.0.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.1.0.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree-lib-3.0.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-3.0.0-1.noarch.rpm
-    sudo rpm --install embree-examples-3.0.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-3.1.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-3.1.0-1.noarch.rpm
+    sudo rpm --install embree-examples-3.1.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -142,13 +142,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree-lib-3.0.0-1.x86_64.rpm
-    sudo alien embree-devel-3.0.0-1.noarch.rpm
-    sudo alien embree-examples-3.0.0-1.x86_64.rpm
+    sudo alien embree-lib-3.1.0-1.x86_64.rpm
+    sudo alien embree-devel-3.1.0-1.noarch.rpm
+    sudo alien embree-examples-3.1.0-1.x86_64.rpm
 
-    sudo dpkg -i embree-devel_3.0.0-2_all.deb
-    sudo dpkg -i embree-examples_3.0.0-2_amd64.deb
-    sudo dpkg -i embree-lib_3.0.0-2_amd64.deb
+    sudo dpkg -i embree-devel_3.1.0-2_all.deb
+    sudo dpkg -i embree-examples_3.1.0-2_amd64.deb
+    sudo dpkg -i embree-lib_3.1.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -174,20 +174,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree-lib-3.0.0-1.x86_64
-    sudo rpm --erase embree-devel-3.0.0-1.noarch
-    sudo rpm --erase embree-examples-3.0.0-1.x86_64
+    sudo rpm --erase embree-lib-3.1.0-1.x86_64
+    sudo rpm --erase embree-devel-3.1.0-1.noarch
+    sudo rpm --erase embree-examples-3.1.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.0.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.1.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.0.0.x64.linux.tar.gz
-    source embree-3.0.0.x64.linux/embree-vars.sh
+    tar xzf embree-3.1.0.x64.linux.tar.gz
+    source embree-3.1.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -200,7 +200,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.0.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.dmg). This
+[embree-3.1.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -222,12 +222,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.0.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.0.0/embree-3.0.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.1.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.0.0.x64.macosx.tar.gz
-    source embree-3.0.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.1.0.x64.macosx.tar.gz
+    source embree-3.1.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -413,19 +413,13 @@ Most configuration parameters described in the [CMake Configuration]
 can be set under Windows as well. Finally, click "Generate" to create
 the Visual Studio solution files. 
 
-  ------------------------- ------------------ ----------------------------
-  Option                    Description        Default
-  ------------------------- ------------------ ----------------------------
-  CMAKE_CONFIGURATION_TYPE  List of generated  Debug;Release;RelWithDebInfo
-                            configurations.
+The following CMake options are only available under Windows:
 
-  USE_STATIC_RUNTIME        Use the static     OFF
-                            version of the
-                            C/C++ runtime
-                            library.
-  ------------------------- ------------------ ----------------------------
-  : Windows-specific CMake build options for Embree.
++ `CMAKE_CONFIGURATION_TYPE`:  List of generated
+  configurations. Default value is Debug;Release;RelWithDebInfo.
 
++  `USE_STATIC_RUNTIME`: Use the static version of the C/C++ runtime
+  library. This option is turned OFF by default.
 
 Use the generated Visual Studio solution file `embree2.sln` to compile
 the project. To build Embree with support for the AVX2 instruction set
@@ -464,115 +458,97 @@ CMake Configuration
 -------------------
 
 The default CMake configuration in the configuration dialog should be
-appropriate for most usages. The following table describes all
+appropriate for most usages. The following list describes all
 parameters that can be configured in CMake:
 
-  ------------------------------ -------------------------------- --------
-  Option                         Description                      Default
-  ------------------------------ -------------------------------- --------
-  CMAKE_BUILD_TYPE               Can be used to switch between    Release
-                                 Debug mode (Debug), Release
-                                 mode (Release), and Release
-                                 mode with enabled assertions
-                                 and debug symbols
-                                 (RelWithDebInfo).
++ `CMAKE_BUILD_TYPE`: Can be used to switch between Debug mode
+  (Debug), Release mode (Release) (default), and Release mode with
+  enabled assertions and debug symbols (RelWithDebInfo).
 
-  EMBREE_STACK_PROTECTOR         Enables protection of return     OFF
-                                 address from buffer overwrites.
++ `EMBREE_STACK_PROTECTOR`: Enables protection of return address
+  from buffer overwrites. This option is OFF by default.
 
-  EMBREE_ISPC_SUPPORT            Enables ISPC support of Embree.  ON
++ `EMBREE_ISPC_SUPPORT`: Enables ISPC support of Embree. This option
+  is ON by default.
 
-  EMBREE_STATIC_LIB              Builds Embree as a static        OFF
-                                 library. When using the
-                                 statically compiled Embree
-                                 library, you have to define
-                                 ENABLE_STATIC_LIB before
-                                 including rtcore.h in your
-                                 application.
++ `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
+  default). When using the statically compiled Embree library, you
+  have to define ENABLE_STATIC_LIB before including rtcore.h in your
+  application. Further multiple static libraries are generated for the
+  different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
+  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512knl.a`,
+  `embree3_avx512skx.a`). You have to link these libraries in exactly
+  this order of increasing ISA.
 
-  EMBREE_IGNORE_CMAKE_CXX_FLAGS  When enabled, Embree ignores     ON
-                                 default CMAKE_CXX_FLAGS.
++ `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
+  default CMAKE_CXX_FLAGS. This option is turned ON by default.
 
-  EMBREE_TUTORIALS               Enables build of Embree          ON
-                                 tutorials.
++ `EMBREE_TUTORIALS`: Enables build of Embree tutorials (default ON).
 
-  EMBREE_BACKFACE_CULLING        Enables backface culling, i.e.   OFF
-                                 only surfaces facing a ray can
-                                 be hit.
++ `EMBREE_BACKFACE_CULLING`: Enables backface culling, i.e. only
+  surfaces facing a ray can be hit. This option is turned OFF by
+  default.
 
-  EMBREE_FILTER_FUNCTION         Enables the intersection filter  ON
-                                 feature.
++ `EMBREE_FILTER_FUNCTION`: Enables the intersection filter function
+  feature (ON by default).
 
-  EMBREE_RAY_MASK                Enables the ray masking feature. OFF
++ `EMBREE_RAY_MASK`: Enables the ray masking feature (OFF by default).
 
-  EMBREE_RAY_PACKETS             Enables ray packet support.      ON
++ `EMBREE_RAY_PACKETS`: Enables ray packet traversal kernels. This
+  feature is turned ON by default. When turned on packet traversal is
+  used internally and packets passed to rtcIntersect4/8/16 are kept
+  intact in callbacks (when the ISA of appropiate width is enabled).
 
-  EMBREE_IGNORE_INVALID_RAYS     Makes code robust against the    OFF
-                                 risk of full-tree traversals
-                                 caused by invalid rays (e.g.
-                                 rays containing INF/NaN as
-                                 origins).
++ `EMBREE_IGNORE_INVALID_RAYS`: Makes code robust against the risk of
+  full-tree traversals caused by invalid rays (e.g. rays containing
+  INF/NaN as origins). This option is turned OFF by default.
 
-  EMBREE_TASKING_SYSTEM          Chooses between Intel® Threading TBB
-                                 Building Blocks (TBB) or an
-                                 internal tasking system
-                                 (INTERNAL).
++ `EMBREE_TASKING_SYSTEM`: Chooses between Intel® Threading TBB
+  Building Blocks (TBB), Parallel Patterns Library (PPL) (Windows
+  only), or an internal tasking system (INTERNAL). By default TBB is
+  used.
 
-  EMBREE_MAX_ISA                 Select highest supported ISA     AVX2
-                                 (SSE2, SSE4.2, AVX, AVX2,
-                                 AVX512KNL, AVX512SKX, or NONE).
-                                 When set to NONE the EMBREE_ISA_*
-                                 variables can be used to enable
-                                 ISAs individually.
++ `EMBREE_MAX_ISA`: Select highest supported ISA (SSE2, SSE4.2, AVX,
+  AVX2, AVX512KNL, AVX512SKX, or NONE). When set to NONE the
+  EMBREE_ISA_* variables can be used to enable ISAs individually. By
+  default the option is set to AVX2.
 
-  EMBREE_ISA_SSE2                Enables SSE2 when                 OFF
-                                 EMBREE_MAX_ISA is set to NONE.
++ `EMBREE_ISA_SSE2`: Enables SSE2 when EMBREE_MAX_ISA is set to
+  NONE. By default this option is turned OFF.
 
-  EMBREE_ISA_SSE42               Enables SSE4.2 when               OFF
-                                 EMBREE_MAX_ISA is set to NONE.
++ `EMBREE_ISA_SSE42`: Enables SSE4.2 when EMBREE_MAX_ISA is set to
+  NONE. By default this option is turned OFF.
 
-  EMBREE_ISA_AVX                 Enables AVX when                  OFF
-                                 EMBREE_MAX_ISA is set to NONE.
++ `EMBREE_ISA_AVX`: Enables AVX when EMBREE_MAX_ISA is set to NONE. By
+  default this option is turned OFF.
 
-  EMBREE_ISA_AVX2                Enables AVX2 when                 OFF
-                                 EMBREE_MAX_ISA is set to NONE.
++ `EMBREE_ISA_AVX2`: Enables AVX2 when EMBREE_MAX_ISA is set to
+  NONE. By default this option is turned OFF.
 
-  EMBREE_ISA_AVX512KNL           Enables AVX-512 for Xeon Phi when OFF
-                                 EMBREE_MAX_ISA is set to NONE.
++ `EMBREE_ISA_AVX512KNL`: Enables AVX-512 for Xeon Phi when
+  EMBREE_MAX_ISA is set to NONE. By default this option is turned OFF.
 
-  EMBREE_ISA_AVX512SKX           Enables AVX-512 for Skylake when  OFF
-                                 EMBREE_MAX_ISA is set to NONE.
++ `EMBREE_ISA_AVX512SKX`: Enables AVX-512 for Skylake when
+  EMBREE_MAX_ISA is set to NONE. By default this option is turned OFF.
 
-  EMBREE_GEOMETRY_TRIANGLE       Enables support for triangle      ON
-                                 geometries.
++ `EMBREE_GEOMETRY_TRIANGLE`: Enables support for trianglegeometries
+  (ON by default).
 
-  EMBREE_GEOMETRY_QUAD           Enables support for quad          ON
-                                 geometries.
++ `EMBREE_GEOMETRY_QUAD`: Enables support for quad geometries (ON by
+  default).
 
-  EMBREE_GEOMETRY_CURVE          Enables support for curve         ON
-                                 geometries.
++ `EMBREE_GEOMETRY_CURVE`: Enables support for curve geometries (ON by
+  default).
 
-  EMBREE_GEOMETRY_SUBDIVISION    Enables support for subdivision   ON
-                                 geometries.
++ `EMBREE_GEOMETRY_SUBDIVISION`: Enables support for subdivision
+  geometries (ON by default).
 
-  EMBREE_GEOMETRY_USER           Enables support for user          ON
-                                 geometries.
++ `EMBREE_GEOMETRY_INSTANCE`: Enables support for instances (ON by
+  default).
 
-  EMBREE_NATIVE_SPLINE_BASIS     Specifies the spline basis        BEZIER
-                                 Embree uses internally for its
-                                 calculations. Hair and curves
-                                 using this basis can be rendered
-                                 directly, others are converted.
++ `EMBREE_GEOMETRY_USER`: Enables support for user defined geometries
+  (ON by default).
 
-  ---------------------------- -------------------------------- --------
-  : CMake build options for Embree.
-
-When using the statically compiled Embree library, you have to define
-ENABLE_STATIC_LIB before including `rtcore.h` in your application.
-Further multiple static libraries are generated for the different ISAs
-selected (e.g. `embree3.a`, `embree3_sse42.a`, `embree3_avx.a`,
-`embree3_avx2.a`, `embree3_avx512knl.a`, `embree3_avx512skx.a`). You
-have to link these libraries in exactly this order of increasing ISA.
 
 Using Embree
 =============
@@ -621,9 +597,10 @@ upgrading from the Embree 2 to the current Embree 3 API see Section
 [Upgrading from Embree 2 to Embree 3].
 
 The API supports scenes consisting of different geometry types such as
-triangle meshes, quad meshes (triangle pairs), curves, subdivision
-meshes, instanced geometries, and user-defined geometries. See Section
-[Scene Object] for more information.
+triangle meshes, quad meshes (triangle pairs), grid meshes, flat
+curves, round curves, oriented curves, subdivision meshes, instances,
+and user-defined geometries. See Section [Scene Object] for more
+information.
 
 Finding the closest hit of a ray segment with the scene
 (`rtcIntersect`-type functions), and determining whether any hit
@@ -1197,6 +1174,11 @@ Embree API Reference
 ```
 
 
+## RTC_GEOMETRY_TYPE_GRID
+``` {include=src/api/RTC_GEOMETRY_TYPE_GRID.md}
+```
+
+
 ## RTC_GEOMETRY_TYPE_SUBDIVISION
 ``` {include=src/api/RTC_GEOMETRY_TYPE_SUBDIVISION.md}
 ```
@@ -1379,6 +1361,30 @@ Embree API Reference
 ``` {include=src/api/rtcSetGeometryDisplacementFunction.md}
 ```
 
+
+## rtcGetGeometryFirstHalfEdge
+``` {include=src/api/rtcGetGeometryFirstHalfEdge.md}
+```
+
+
+## rtcGetGeometryFace
+``` {include=src/api/rtcGetGeometryFace.md}
+```
+
+
+## rtcGetGeometryNextHalfEdge
+``` {include=src/api/rtcGetGeometryNextHalfEdge.md}
+```
+
+
+## rtcGetGeometryPreviousHalfEdge
+``` {include=src/api/rtcGetGeometryPreviousHalfEdge.md}
+```
+
+
+## rtcGetGeometryOppositeHalfEdge
+``` {include=src/api/rtcGetGeometryOppositeHalfEdge.md}
+```
 
 
 ## rtcInterpolate
@@ -1907,6 +1913,15 @@ This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
 
+Grid Geometry
+---------------------
+
+![][imgGridGeometry]
+
+This tutorial demonstrates the use of the memory efficient grid
+primitive to handle highly tessellated and displaced geometry.
+
+
 Motion Blur Geometry
 --------------------
 
@@ -1970,6 +1985,7 @@ installation: `C:\Program Files\Intel\Embree3`.
 [Displacement Geometry]: #displacement-geometry
 [BVH Builder]: #bvh-builder
 [Interpolation]: #interpolation
+[imgHalfEdges]: https://embree.github.io/images/half_edges.png
 [imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
 [imgQuadUV]: https://embree.github.io/images/quad_uv.png
 [imgTriangleGeometry]: https://embree.github.io/images/triangle_geometry.jpg
@@ -1984,5 +2000,6 @@ installation: `C:\Program Files\Intel\Embree3`.
 [imgCurveGeometry]: https://embree.github.io/images/curve_geometry.jpg
 [imgSubdivisionGeometry]: https://embree.github.io/images/subdivision_geometry.jpg
 [imgDisplacementGeometry]: https://embree.github.io/images/displacement_geometry.jpg
+[imgGridGeometry]: https://embree.github.io/images/grid_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
