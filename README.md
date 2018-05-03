@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.1.0
+% Embree: High Performance Ray Tracing Kernels 3.2.0
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.1.0-x64.msi](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x64.msi). This
+[embree-3.2.0-x64.msi](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x64.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.1.0 x64`.
+Files\Intel\Embree v3.2.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,18 +95,18 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.1.0 x64`.
+Files\Intel\Embree v3.2.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.1.0 x64` and uninstall it.
+3.2.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file
-[embree-3.1.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x64.windows.zip). After
+[embree-3.2.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x64.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree, you also have to set the
@@ -120,17 +120,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.1.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.rpm.tar.gz)
+[embree-3.2.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.1.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.2.0.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree-lib-3.1.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-3.1.0-1.noarch.rpm
-    sudo rpm --install embree-examples-3.1.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-3.2.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-3.2.0-1.noarch.rpm
+    sudo rpm --install embree-examples-3.2.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -142,13 +142,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree-lib-3.1.0-1.x86_64.rpm
-    sudo alien embree-devel-3.1.0-1.noarch.rpm
-    sudo alien embree-examples-3.1.0-1.x86_64.rpm
+    sudo alien embree-lib-3.2.0-1.x86_64.rpm
+    sudo alien embree-devel-3.2.0-1.noarch.rpm
+    sudo alien embree-examples-3.2.0-1.x86_64.rpm
 
-    sudo dpkg -i embree-devel_3.1.0-2_all.deb
-    sudo dpkg -i embree-examples_3.1.0-2_amd64.deb
-    sudo dpkg -i embree-lib_3.1.0-2_amd64.deb
+    sudo dpkg -i embree-devel_3.2.0-2_all.deb
+    sudo dpkg -i embree-examples_3.2.0-2_amd64.deb
+    sudo dpkg -i embree-lib_3.2.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -174,20 +174,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree-lib-3.1.0-1.x86_64
-    sudo rpm --erase embree-devel-3.1.0-1.noarch
-    sudo rpm --erase embree-examples-3.1.0-1.x86_64
+    sudo rpm --erase embree-lib-3.2.0-1.x86_64
+    sudo rpm --erase embree-devel-3.2.0-1.noarch
+    sudo rpm --erase embree-examples-3.2.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.1.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.2.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.1.0.x64.linux.tar.gz
-    source embree-3.1.0.x64.linux/embree-vars.sh
+    tar xzf embree-3.2.0.x64.linux.tar.gz
+    source embree-3.2.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -200,7 +200,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.1.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.dmg). This
+[embree-3.2.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -222,12 +222,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.1.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.1.0/embree-3.1.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.2.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.1.0.x64.macosx.tar.gz
-    source embree-3.1.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.2.0.x64.macosx.tar.gz
+    source embree-3.2.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -275,7 +275,7 @@ version of GLUT.
 Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
-    sudo port install cmake tbb freeglut
+    sudo port install cmake tbb-devel glfw-devel
 
 Depending on your Linux distribution you can install these dependencies
 using `yum` or `apt-get`.  Some of these packages might already be
@@ -283,18 +283,15 @@ installed or might have slightly different names.
 
 Type the following to install the dependencies using `yum`:
 
-    sudo yum install cmake.x86_64
-    sudo yum install tbb.x86_64 tbb-devel.x86_64
-    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
-    sudo yum install libXmu.x86_64 libXi.x86_64
-    sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+    sudo yum install cmake
+    sudo yum install tbb-devel
+    sudo yum install glfw-devel
 
 Type the following to install the dependencies using `apt-get`:
 
     sudo apt-get install cmake-curses-gui
     sudo apt-get install libtbb-dev
-    sudo apt-get install freeglut3-dev
-    sudo apt-get install libxmu-dev libxi-dev
+    sudo apt-get install libglfw3-dev
 
 Finally you can compile Embree using CMake. Create a build directory
 inside the Embree root directory and execute `ccmake ..` inside this
