@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <PerspectiveCamera name="camera0" from="-9.333145142 2.932261944 -3.125504494" to="-10.18498802 2.06202507 -5.499505043" up="0 1 0" fov="95"/>
+
+     <DirectionalLight>
+      <AffineSpace>
+        1 0 0 0
+        0 0 -1 0
+        0 1 -0.4 0
+      </AffineSpace>
+      <E>3 3 3</E>
+     </DirectionalLight>
+     
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.9</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <!-- twisted varying radius loop -->
+    <Transform>
+      <AffineSpace translate="-10 1 -4"/>
+      
+      <Curves basis="bezier" type="normal_oriented" tessellation_rate="16">
+        
+        <positions>
+          -2 0 0 0.1
+          5 3 0 0.2
+          -5 3 0 0.2
+          2 0 -1 0.1
+        </positions>
+
+        <normals>
+          0 1 0
+          0 0 1
+          0 0 0
+          0 0 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    
+  </Group>
+</scene>
