@@ -881,7 +881,7 @@ namespace embree
 
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-    
+
     ImGui_ImplGlfwGL2_NewFrame();
     
     ImGuiWindowFlags window_flags = 0;
@@ -934,8 +934,10 @@ namespace embree
     } 
   }
 
-  void TutorialApplication::reshapeFunc(GLFWwindow* window, int width, int height)
+  void TutorialApplication::reshapeFunc(GLFWwindow* window, int, int)
   {
+    int width,height;
+    glfwGetFramebufferSize(window, &width, &height);
     resize(width,height);
     glViewport(0, 0, width, height);
     this->width = width; this->height = height;
@@ -991,6 +993,7 @@ namespace embree
      
       glfwMakeContextCurrent(window);
       glfwSwapInterval(1);
+      reshapeFunc(window,0,0);
 
       // Setup ImGui binding
       ImGui::CreateContext();
