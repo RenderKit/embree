@@ -61,15 +61,15 @@
         <animated_normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 1 0
+            0 0 0
+            0 0 0
           </normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 0 -1
+            0 0 0
+            0 0 0
           </normals>
         </animated_normals>
         
@@ -102,9 +102,9 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -136,9 +136,9 @@
         
         <normals>
           0 0 1
-          0 0 0
-          0 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -170,9 +170,9 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -204,9 +204,9 @@
         
         <normals>
           0 0 1
-          0 0 0
-          0 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -265,33 +265,33 @@
         <animated_normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             -1 0 0
             0 0 0
-            0 0 0
+            -1 0 0
             0 -1 0
             0 0 0
-            0 0 0
+            0 -1 0
             1 0 0
             0 0 0
-            0 0 0
+            1 0 0
             0 1 0
+            0 0 0
+            0 0 0
           </normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 0 -1
             0 0 0
-            0 0 0
+            0 0 -1
             0 -1 0
             0 0 0
-            0 0 0
+            0 -1 0
             1 0 0
             0 0 0
-            0 0 0
+            1 0 0
             0 1 0
+            0 0 0
+            0 0 0
           </normals>
         </animated_normals>
         
@@ -333,18 +333,18 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           -1 0 0
           0 0 0
-          0 0 0
+          -1 0 0
           0 -1 0
           0 0 0
-          0 0 0
+          0 -1 0
           1 0 0
           0 0 0
-          0 0 0
+          1 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -385,18 +385,18 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           -1 0 -1
           0 0 0
-          0 0 0
+          -1 0 -1
           0 0 -1
           0 0 0
-          0 0 0
+          0 0 -1
           -1 0 -1
           0 0 0
+          -1 0 -1
+           0 -1 0
           0 0 0
-          0 -1 0
+          0 0 0
         </normals>
         
         <indices>
@@ -437,18 +437,18 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           -1 0 0
           0 0 0
-          0 0 0
+          -1 0 0
           0 -1 0
           0 0 0
-          0 0 0
+          0 -1 0
           1 0 0
           0 0 0
-          0 0 0
+          1 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -489,18 +489,18 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           -1 0 -1
           0 0 0
-          0 0 0
+          -1 0 -1
           0 0 -1
           0 0 0
-          0 0 0
+          0 0 -1
           -1 0 -1
           0 0 0
-          0 0 0
+          -1 0 -1
           0 -1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -521,34 +521,37 @@
     <Transform>
       <AffineSpace translate="10 1 -4"/>
       
-      <Curves basis="bezier" type="normal_oriented">
+      <Curves basis="hermite" type="normal_oriented">
 
         <animated_positions>
           <positions>
             -2 0 0 0.2
-            5 3 0 0.2
-            -5 3 0 0.2
             2 0 -1 0.2
           </positions>
           <positions>
             -2 0 0 0.2
-            8 3 0 0.2
-            -8 3 0 0.2
             2 0 -1 0.2
           </positions>
         </animated_positions>
 
+        <animated_tangents>
+          <tangents>
+            21 9 0 0
+            21 -9 -3 0
+          </tangents>
+          <tangents>
+            30 9 0 0
+            30 -9 -3 0
+          </tangents>
+        </animated_tangents>
+
         <animated_normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 1 0
           </normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 1 0
           </normals>
         </animated_normals>
@@ -571,19 +574,20 @@
     <Transform>
       <AffineSpace translate="5 1 -4"/>
       
-      <Curves basis="bezier" type="normal_oriented">
+      <Curves basis="hermite" type="normal_oriented">
         
         <positions>
           -2 0 0 0.2
-          5 3 0 0.2
-          -5 3 0 0.2
           2 0 -1 0.2
         </positions>
+
+        <tangents>
+          21 9 0 0
+          21 -9 -3 0
+        </tangents>
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 1 0
         </normals>
         
@@ -605,19 +609,20 @@
     <Transform>
       <AffineSpace translate="0 1 -4"/>
       
-      <Curves basis="bezier" type="normal_oriented">
+      <Curves basis="hermite" type="normal_oriented">
         
         <positions>
           -2 0 0 0.2
-          5 3 0 0.2
-          -5 3 0 0.2
           2 0 -1 0.2
         </positions>
+
+        <tangents>
+          21 9 0 0
+          21 -9 -3 0
+        </tangents>
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 0 1
         </normals>
         
@@ -639,19 +644,20 @@
     <Transform>
       <AffineSpace translate="-5 1 -4"/>
       
-      <Curves basis="bezier" type="normal_oriented">
+      <Curves basis="hermite" type="normal_oriented">
         
         <positions>
           -2 0 0 0.1
-          5 3 0 0.5
-          -5 3 0 0.5
           2 0 -1 0.1
         </positions>
+
+        <tangents>
+          21 9 0 1.2
+          21 -9 -3 -1.2
+        </tangents>
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 1 0
         </normals>
         
@@ -673,19 +679,20 @@
     <Transform>
       <AffineSpace translate="-10 1 -4"/>
       
-      <Curves basis="bezier" type="normal_oriented">
+      <Curves basis="hermite" type="normal_oriented">
         
         <positions>
           -2 0 0 0.1
-          5 3 0 1.5
-          -5 3 0 1.5
           2 0 -1 0.1
         </positions>
+
+        <tangents>
+          21 9 0 4.2
+          21 -9 -3 -4.2
+        </tangents>
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 0 1
         </normals>
         
@@ -727,15 +734,15 @@
         <animated_normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 1 0
+            0 0 0
+            0 0 0
           </normals>
           <normals>
             0 1 0
-            0 0 0
-            0 0 0
             0 1 0
+            0 0 0
+            0 0 0
           </normals>
         </animated_normals>
         
@@ -768,9 +775,9 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -802,9 +809,9 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 1 0
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -836,9 +843,9 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 0 1
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
@@ -870,9 +877,9 @@
         
         <normals>
           0 1 0
-          0 0 0
-          0 0 0
           0 0 1
+          0 0 0
+          0 0 0
         </normals>
         
         <indices>
