@@ -11,6 +11,13 @@ Version History
 -   Semantics of normal buffer for normal oriented curves has
     changed to simplify usage. Please see documentation for details.
 -   Using GLFW and imgui in tutorials.
+-   Fixed floating point exception in static variable initialization.
+-   Fixed invalid memory access in rtcGetGeometryTransform for non-motion
+    blur instances.
+-   Improved self intersection avoidance for flat curves. Transparency rays
+    with tnear set to previous hit distance do not need curve radius
+    based self intersection avoidance as same hit is calculated again. For this
+    reason self intersection avoidance is now only applied to ray origin.
 
 ### New Features in Embree 3.1.0
 -   Added new normal-oriented curve primitive for ray tracing of grass-like
