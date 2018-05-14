@@ -19,17 +19,17 @@
 ####################################################################
 
 continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:3"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:3"
   tags:   [win7, v120]
   only:   [pushes]
 
 #continuous-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-AVX2-TBB2017:
-#  script: "scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:2"
+#  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:2"
 #  tags:   [win7, v140]
 #  only:   [pushes]
 
 continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:3"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:3"
   tags:   [win7, v141]
   only:   [pushes]
  
@@ -91,52 +91,52 @@ continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
 ####################################################################
 
 nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:4"
   tags:   [win7, v120]
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2017 intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2017 intensity:4"
   tags:   [win7, v120] # avx
   only:   [schedules]
 
 nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:2"
+  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:2"
   tags:   [win7, v140]
   only:   [schedules]
   
 nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX2-PPL:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:PPL intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:PPL intensity:4"
   tags:   [win7, v140] # avx2
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2017-STATIC:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4 STATIC_LIB:ON"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4 STATIC_LIB:ON"
   tags:   [win7, v141]
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4"
   tags:   [win7, clang]
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4"
   tags:   [win7, icc16]
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:4"
   tags:   [win7, icc17]
   only:   [schedules]
   
 nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX2-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:3"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2017 intensity:3"
   tags:   [win7, icc18]
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX512SKX-TBB2017:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2017 intensity:1 sde:skx"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2017 intensity:1 sde:skx"
   tags:   [win7, icc18]
   only:   [schedules]
 
@@ -461,7 +461,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-INSTANCE:
 ####################################################################
 
 release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
-  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:ZIP"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -471,7 +471,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-MSI:
-  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:MSI"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:MSI"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
