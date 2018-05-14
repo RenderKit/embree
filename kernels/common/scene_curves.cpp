@@ -767,7 +767,9 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           if (!valid(ctype, j, make_range<size_t>(0, numTimeSegments()))) continue;
-          const PrimRef prim(bounds(j),this->geomID,unsigned(j));
+          const BBox3fa box = bounds(j);
+          if (box.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
+          const PrimRef prim(box,this->geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
@@ -780,7 +782,9 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           if (!valid(ctype, j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
-          const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          const LBBox3fa lbox = linearBounds(j,t0t1);
+          if (lbox.bounds0.empty() || lbox.bounds1.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
+          const PrimRefMB prim(lbox,this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }
