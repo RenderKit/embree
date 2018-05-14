@@ -20,7 +20,7 @@ namespace embree
 {
   PrecomputedBSplineBasis::PrecomputedBSplineBasis(int dj)
   {
-    for (size_t i=0; i<=N; i++) 
+    for (size_t i=1; i<=N; i++) 
     {
       for (size_t j=0; j<=N; j++) 
       {
