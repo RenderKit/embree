@@ -430,6 +430,9 @@ namespace embree
         type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE ||
         type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
     {
+      if (!normals.size())
+        THROW_RUNTIME_ERROR("normal array required for oriented curve");
+
       for (const auto& n : normals) 
         if (n.size() != N) 
           THROW_RUNTIME_ERROR("incompatible normal array size");
