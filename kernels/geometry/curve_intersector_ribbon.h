@@ -121,7 +121,7 @@ namespace embree
         {
           /* ignore self intersections */
           vfloatx r = lerp(p0.w, p1.w, vu);
-          valid0 &= vt > ray_tnear+2.0f*r*depth_scale;
+          valid0 &= vt > ray_tnear & vt > 2.0f*r*depth_scale;
           
           if (any(valid0))
           {
@@ -164,7 +164,7 @@ namespace embree
           {
             /* ignore self intersections */
             vfloatx r = lerp(p0.w, p1.w, vu);
-            valid0 &= vt > ray_tnear+2.0f*r*depth_scale;
+            valid0 &= vt > ray_tnear & vt > 2.0f*r*depth_scale;
             
             if (any(valid0))
             {
