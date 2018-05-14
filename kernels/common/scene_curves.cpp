@@ -252,13 +252,35 @@ namespace embree
       if (vertices[0].size() != buffer.size())
         return false;
 
-    for (const auto& buffer : normals)
-      if (vertices[0].size() != buffer.size())
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
+      if (normals.size() == 0)
         return false;
+        
+      for (const auto& buffer : normals)
+        if (vertices[0].size() != buffer.size())
+          return false;
+    }
+    else
+    {
+      if (normals.size())
+        return false;
+    }
 
-    for (const auto& buffer : tangents)
-      if (vertices[0].size() != buffer.size())
+    if (getCurveBasis() == GTY_BASIS_HERMITE)
+    {
+      if (!tangents.size())
         return false;
+      
+      for (const auto& buffer : tangents)
+        if (vertices[0].size() != buffer.size())
+          return false;
+    }
+    else
+    {
+      if (tangents.size())
+        return false;
+    }
     
     /*! verify indices */
     if (getCurveBasis() == GTY_BASIS_HERMITE)
