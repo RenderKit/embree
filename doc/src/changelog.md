@@ -12,6 +12,8 @@ Version History
     changed to simplify usage. Please see documentation for details.
 -   Using GLFW and imgui in tutorials.
 -   Fixed floating point exception in static variable initialization.
+-   Fixed invalid memory access in rtcGetGeometryTransform for non-motion
+    blur instances.
 
 ### New Features in Embree 3.1.0
 -   Added new normal-oriented curve primitive for ray tracing of grass-like
