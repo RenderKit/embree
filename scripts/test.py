@@ -385,8 +385,8 @@ def parseCommandLine(argv):
     p = argv[0].split(":")
     if p[0] == "intensity":
       g_intensity = int(p[1])
-    if p[1].startswith('[') and p[1].endswith(']'):
-      g_config[p[0]] = p[1][1:-1].split(',')
+    if p[0] == "isas":
+      g_config["isa"] = p[1].split(',')
     else:
       g_config[p[0]] = p[1]
     parseCommandLine(argv[1:len(argv)])
