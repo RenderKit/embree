@@ -169,6 +169,14 @@ namespace embree
       return _totalTimeSegments;
     }
 
+    /*! checks if time range overlaps */
+    __forceinline bool time_range_overlap(const BBox1f& range) const
+    {
+      if (0.9999f*time_range.upper <= range.lower) return false;
+      if (1.0001f*time_range.lower >= range.upper) return false;
+      return true;
+    }
+
     /*! returns center for binning */
     __forceinline Vec3fa binCenter() const {
       return center2(bounds());

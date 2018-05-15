@@ -183,6 +183,7 @@ namespace embree
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
+
         /* early out if no valid primitives */
         if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
 

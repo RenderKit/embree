@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../common/primref_mb.h"
+#include "../../common/algorithms/parallel_filter.h"
 
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.25f
 
@@ -68,17 +69,27 @@ namespace embree
               /* find linear bounds for both time segments */
               for (size_t i=begin; i<end; i++) 
               {
-                const LBBox3fa bn0 = recalculatePrimRef.linearBounds(prims[i],dt0);
-                const LBBox3fa bn1 = recalculatePrimRef.linearBounds(prims[i],dt1);
+                if (prims[i].time_range_overlap(dt0))
+                {
+                  const LBBox3fa bn0 = recalculatePrimRef.linearBounds(prims[i],dt0);
 #if MBLUR_BIN_LBBOX
-                bounds0[b].extend(bn0);
-                bounds1[b].extend(bn1);
+                  bounds0[b].extend(bn0);
 #else
-                bounds0[b].extend(bn0.interpolate(0.5f));
-                bounds1[b].extend(bn1.interpolate(0.5f));
+                  bounds0[b].extend(bn0.interpolate(0.5f));
 #endif
-                count0[b] += prims[i].timeSegmentRange(dt0).size();
-                count1[b] += prims[i].timeSegmentRange(dt1).size();
+                  count0[b] += prims[i].timeSegmentRange(dt0).size();
+                }
+
+                if (prims[i].time_range_overlap(dt1))
+                {
+                  const LBBox3fa bn1 = recalculatePrimRef.linearBounds(prims[i],dt1);
+#if MBLUR_BIN_LBBOX
+                  bounds1[b].extend(bn1);
+#else
+                  bounds1[b].extend(bn1.interpolate(0.5f));
+#endif
+                  count1[b] += prims[i].timeSegmentRange(dt1).size();
+                }
               }
             }
           }
@@ -130,8 +141,10 @@ namespace embree
               /* calculate sah */
               const size_t lCount = (count0[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
               const size_t rCount = (count1[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
-              const float sah0 = expectedApproxHalfArea(bounds0[b])*float(lCount)*dt0.size();
-              const float sah1 = expectedApproxHalfArea(bounds1[b])*float(rCount)*dt1.size();
+              float sah0 = expectedApproxHalfArea(bounds0[b])*float(lCount)*dt0.size();
+              float sah1 = expectedApproxHalfArea(bounds1[b])*float(rCount)*dt1.size();
+              if (unlikely(lCount == 0)) sah0 = 0.0f; // happens for initial splits when objects not alive over entire shutter time
+              if (unlikely(rCount == 0)) sah1 = 0.0f;
               const float sah = sah0+sah1;
               if (sah < bestSAH) {
                 bestSAH = sah;
@@ -170,18 +183,30 @@ namespace embree
           /* calculate primrefs for first time range */
           std::unique_ptr<mvector<PrimRefMB>> new_vector(new mvector<PrimRefMB>(device, set.object_range.size()));
           PrimRefVector lprims = new_vector.get();
-
+          
           auto reduction_func0 = [&] ( const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
-              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range0);
-              (*lprims)[i-set.object_range.begin()] = prim;
-              pinfo.add_primref(prim);
+              if (likely(prims[i].time_range_overlap(time_range0)))
+              {
+                const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range0);
+                (*lprims)[i-set.object_range.begin()] = prim;
+                pinfo.add_primref(prim);
+              }
+              else
+              {
+                (*lprims)[i-set.object_range.begin()] = prims[i];
+              }
             }
             return pinfo;
           };        
-          const PrimInfoMB linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
+          PrimInfoMB linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
+
+          /* some primitives have to get filtered out */
+          if (linfo.size() != set.size())
+            linfo.object_range._end = parallel_filter(lprims->data(), linfo.object_range.begin(), linfo.object_range.end(), size_t(1024), [](const PrimRefMB& prim) { return prim.size() != 0; });
+                      
           lset = SetMB(linfo,lprims,time_range0);
 
           /* calculate primrefs for second time range */
@@ -189,13 +214,21 @@ namespace embree
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
-              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range1);
-              prims[i] = prim;
-              pinfo.add_primref(prim);
+              if (likely(prims[i].time_range_overlap(time_range1)))
+              {
+                const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range1);
+                prims[i] = prim;
+                pinfo.add_primref(prim);
+              }
             }
             return pinfo;
           };        
-          const PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
+          PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
+
+          /* some primitives have to get filtered out */
+          if (rinfo.size() != set.size())
+            rinfo.object_range._end = parallel_filter(prims.data(), rinfo.object_range.begin(), rinfo.object_range.end(), size_t(1024), [](const PrimRefMB& prim) { return prim.size() != 0; });
+        
           rset = SetMB(rinfo,&prims,set.object_range,time_range1);
 
           return new_vector;
