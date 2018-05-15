@@ -304,7 +304,7 @@ nightly-centos6.0-x64-RelWithDebInfo-GCC4.8.2-ISPC1.9.2-AVX2-TBB:
 
 nightly-fedora28-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
   image: embreedocker/fedora:28
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isas:SSE2,SSE42,AVX,AVX2,AVX512SKX tasking:TBB intensity:3" # AVX512KNL triggers internal compiler bug in GCC 8.0.1
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB intensity:3" # AVX512KNL triggers internal compiler bug in GCC 8.0.1
   tags:   [docker, skx]
   only:   [schedules]
   
@@ -461,7 +461,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX2-TBB2017-INSTANCE:
 ####################################################################
 
 release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2,SSE42,AVX,AVX2,AVX512SKX tasking:TBB2017 intensity:4 package:ZIP"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -471,7 +471,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2,SSE42,AVX,AVX2,AVX512SKX tasking:TBB2017 intensity:4 package:MSI"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2017 intensity:4 package:MSI"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -481,7 +481,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-MSI:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.2 isas:SSE2,SSE42,AVX,AVX2 tasking:TBB2017 intensity:4 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [mac, icc16]
   only:   [web]
   artifacts:
@@ -491,7 +491,7 @@ release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB-PACKAGE-PKG:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.2 isas:SSE2,SSE42,AVX,AVX2 tasking:TBB intensity:4 package:PKG"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
   tags:   [mac, icc16]
   only:   [web]
   artifacts:
@@ -502,7 +502,7 @@ release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB-PACKAGE-PKG:
 
 release-linux-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX tasking:TBB2017 intensity:4 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [docker]
   only:   [web]
   artifacts:
@@ -513,7 +513,7 @@ release-linux-x64-Release-ICC17-ISPC1.9.2-TBB2017-PACKAGE-ZIP:
 
 release-linux-x64-Release-ICC17-ISPC1.9.2-TBB-PACKAGE-RPM:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX tasking:TBB intensity:4 package:RPM"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:4 package:RPM"
   tags:   [docker]
   only:   [web]
   artifacts:
