@@ -1086,6 +1086,16 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
+  RTC_API void rtcSetGeometryTimeRange(RTCGeometry hgeometry, float startTime, float endTime)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryTimeRange);
+    RTC_VERIFY_HANDLE(hgeometry);
+    geometry->setTimeRange(BBox1f(startTime,endTime));
+    RTC_CATCH_END2(geometry);
+  }
+
   RTC_API void rtcSetGeometryVertexAttributeCount(RTCGeometry hgeometry, unsigned int N)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;

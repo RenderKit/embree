@@ -47,7 +47,7 @@ namespace embree
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
     : device(device), scene(nullptr), userPtr(nullptr),
-      geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)),
+      geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
@@ -86,6 +86,12 @@ namespace embree
     fnumTimeSegments = float(numTimeSteps_in-1);
     if (isEnabled() && scene) enabling();
     
+    Geometry::update();
+  }
+
+  void Geometry::setTimeRange (const BBox1f range)
+  {
+    time_range = range;
     Geometry::update();
   }
   

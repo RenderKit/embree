@@ -153,9 +153,12 @@ RTC_API void rtcEnableGeometry(RTCGeometry geometry);
 RTC_API void rtcDisableGeometry(RTCGeometry geometry);
 
 
-/* Sets the number of time steps of the geometry. */
+/* Sets the number of motion blur time steps of the geometry. */
 RTC_API void rtcSetGeometryTimeStepCount(RTCGeometry geometry, unsigned int timeStepCount);
 
+/* Sets the motion blur time range of the geometry. */
+RTC_API void rtcSetGeometryTimeRange(RTCGeometry geometry, float startTime, float endTime);
+  
 /* Sets the number of vertex attributes of the geometry. */
 RTC_API void rtcSetGeometryVertexAttributeCount(RTCGeometry geometry, unsigned int vertexAttributeCount);
 

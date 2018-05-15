@@ -182,6 +182,9 @@ namespace embree
     /*! sets number of time steps */
     virtual void setNumTimeSteps (unsigned int numTimeSteps_in);
 
+    /*! sets motion blur time range */
+    void setTimeRange (const BBox1f range);
+
     /*! sets number of vertex attributes */
     virtual void setVertexAttributeCount (unsigned int N) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
@@ -421,22 +424,23 @@ namespace embree
     Device* device;             //!< device this geometry belongs to
     Scene* scene;               //!< pointer to scene this mesh belongs to
 
-    void* userPtr;             //!< user pointer
+    void* userPtr;              //!< user pointer
     unsigned int geomID;        //!< internal geometry ID
     unsigned int numPrimitives; //!< number of primitives of this geometry
     
-    unsigned int numTimeSteps;     //!< number of time steps
-    float fnumTimeSegments;    //!< number of time segments (precalculation)
+    unsigned int numTimeSteps;  //!< number of time steps
+    float fnumTimeSegments;     //!< number of time segments (precalculation)
+    BBox1f time_range;          //!< motion blur time range
+    
     unsigned int mask;             //!< for masking out geometry
     struct {
-      GType gtype : 6;                 //!< geometry type
+      GType gtype : 6;                //!< geometry type
       RTCBuildQuality quality : 3;    //!< build quality for geometry
       State state : 2;
       bool numPrimitivesChanged : 1; //!< true if number of primitives changed
       bool enabled : 1;              //!< true if geometry is enabled
     };
-        
-  public:
+       
     RTCFilterFunctionN intersectionFilterN;
     RTCFilterFunctionN occlusionFilterN;
   };
