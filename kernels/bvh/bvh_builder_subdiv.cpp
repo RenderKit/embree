@@ -207,19 +207,19 @@ namespace embree
       __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1* patches)
         : bounds(bounds), patches(patches) {}
 
-      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
+      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const BBox1f prim_time_range, const unsigned prim_num_time_segments, const BBox1f time_range) const
       {
-        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
+        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, prim_time_range, (float)prim_num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(time_range, prim_time_range, (float)prim_num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), prim_time_range, prim_num_time_segments, patchIndexMB);
       }
 
       __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {
-        return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
+        return operator()(prim.ID(),prim.time_range,prim.totalTimeSegments(),time_range);
       }
 
       __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, (float)prim.totalTimeSegments());
+        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, prim.time_range, (float)prim.totalTimeSegments());
       }
     };
 
@@ -299,7 +299,7 @@ namespace embree
               }
               SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
               patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
-              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
+              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->time_range,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
               s++;
               sMB += mesh->numTimeSteps;
               pinfo.add_primref(primsMB[patchIndex]);

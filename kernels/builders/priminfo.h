@@ -175,10 +175,10 @@ namespace embree
       } 
 
       __forceinline PrimInfoMBT (EmptyTy)
-        : CentGeom<BBox>(empty), object_range(0,0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
+        : CentGeom<BBox>(empty), object_range(0,0), num_time_segments(0), max_num_time_segments(0), max_time_range(0.0f,1.0f), time_range(0.0f,1.0f) {}
 
       __forceinline PrimInfoMBT (size_t begin, size_t end)
-        : CentGeom<BBox>(empty), object_range(begin,end), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
+        : CentGeom<BBox>(empty), object_range(begin,end), num_time_segments(0), max_num_time_segments(0), max_time_range(0.0f,1.0f), time_range(0.0f,1.0f) {}
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
@@ -186,7 +186,10 @@ namespace embree
         CentGeom<BBox>::extend_primref(prim);
         object_range._end++;
         num_time_segments += prim.size();
-        max_num_time_segments = max(max_num_time_segments,size_t(prim.totalTimeSegments()));
+        if (max_num_time_segments < prim.totalTimeSegments()) {
+          max_num_time_segments = prim.totalTimeSegments();
+          max_time_range = prim.time_range;
+        }
       }
 
       __forceinline void merge(const PrimInfoMBT& other)
@@ -195,7 +198,10 @@ namespace embree
         object_range._begin += other.object_range.begin();
 	object_range._end += other.object_range.end();
         num_time_segments += other.num_time_segments;
-        max_num_time_segments = max(max_num_time_segments,other.max_num_time_segments);
+        if (max_num_time_segments < other.max_num_time_segments) {
+          max_num_time_segments = other.max_num_time_segments;
+          max_time_range = other.max_time_range;
+        }
       }
 
       static __forceinline const PrimInfoMBT merge2(const PrimInfoMBT& a, const PrimInfoMBT& b) {
@@ -218,6 +224,14 @@ namespace embree
       __forceinline float leafSAH(size_t block_shift) const { 
 	return time_range.size()*expectedApproxHalfArea(geomBounds)*float((num_time_segments+(size_t(1)<<block_shift)-1) >> block_shift);
       }
+
+      __forceinline float align_time(float ct) const
+      {
+        //return roundf(ct * float(numTimeSegments)) / float(numTimeSegments);
+        float t0 = (ct-max_time_range.lower)/max_time_range.size();
+        float t1 = roundf(t0 * float(max_num_time_segments)) / float(max_num_time_segments);
+        return t1*max_time_range.size()+max_time_range.lower;
+      }
       
       /*! stream output */
       friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMBT& pinfo) 
@@ -235,6 +249,7 @@ namespace embree
       range<size_t> object_range; //!< primitive range
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
       size_t max_num_time_segments; //!< maximum number of time segments of a primitive
+      BBox1f max_time_range; //!< time range of primitive with max_num_time_segments
       BBox1f time_range;
     };
 

@@ -25,32 +25,6 @@ namespace embree
 {
   class Scene;
 
-  /* calculate time segment itime and fractional time ftime */
-  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
-  {
-    const float timeScaled = time * numTimeSegments;
-    const float itimef = clamp(floorf(timeScaled), 0.0f, numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return int(itimef);
-  }
-
-  template<int N>
-  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
-  {
-    const vfloat<N> timeScaled = time * numTimeSegments;
-    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return vint<N>(itimef);
-  }
-
-  /* calculate overlapping time segment range */
-  __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
-  {
-    const int itime_lower = (int)floor(time_range.lower*numTimeSegments);
-    const int itime_upper = (int)ceil (time_range.upper*numTimeSegments);
-    return make_range(itime_lower, itime_upper);
-  }
-
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
   {
@@ -200,6 +174,11 @@ namespace embree
     {
       this->quality = quality_in;
       Geometry::update();
+    }
+
+    /* calculate overlapping time segment range */
+    __forceinline range<int> timeSegmentRange(const BBox1f& range) const {
+      return getTimeSegmentRange(range,time_range,fnumTimeSegments);
     }
     
     /*! for all geometries */

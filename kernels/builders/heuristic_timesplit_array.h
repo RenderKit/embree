@@ -53,13 +53,13 @@ namespace embree
             }
           }
           
-          void bin(const PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, const RecalculatePrimRef& recalculatePrimRef)
+          void bin(const PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, const SetMB& set, const RecalculatePrimRef& recalculatePrimRef)
           {
             for (int b=0; b<BINS-1; b++)
             {
               const float t = float(b+1)/float(BINS);
               const float ct = lerp(time_range.lower,time_range.upper,t);
-              const float center_time = roundf(ct * float(numTimeSegments)) / float(numTimeSegments);
+              const float center_time = set.align_time(ct);
               if (center_time <= time_range.lower) continue;
               if (center_time >= time_range.upper) continue;
               const BBox1f dt0(time_range.lower,center_time);
@@ -77,21 +77,21 @@ namespace embree
                 bounds0[b].extend(bn0.interpolate(0.5f));
                 bounds1[b].extend(bn1.interpolate(0.5f));
 #endif
-                count0[b] += getTimeSegmentRange(dt0,(float)prims[i].totalTimeSegments()).size();
-                count1[b] += getTimeSegmentRange(dt1,(float)prims[i].totalTimeSegments()).size();
+                count0[b] += prims[i].timeSegmentRange(dt0).size();
+                count1[b] += prims[i].timeSegmentRange(dt1).size();
               }
             }
           }
 
-          __forceinline void bin_parallel(const PrimRefMB* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, BBox1f time_range, size_t numTimeSegments, const RecalculatePrimRef& recalculatePrimRef) 
+          __forceinline void bin_parallel(const PrimRefMB* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, BBox1f time_range, const SetMB& set, const RecalculatePrimRef& recalculatePrimRef) 
           {
             if (likely(end-begin < parallelThreshold)) {
-              bin(prims,begin,end,time_range,numTimeSegments,recalculatePrimRef);
+              bin(prims,begin,end,time_range,set,recalculatePrimRef);
             } 
             else 
             {
               auto bin = [&](const range<size_t>& r) -> TemporalBinInfo { 
-                TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, recalculatePrimRef); return binner; 
+                TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, set, recalculatePrimRef); return binner; 
               };
               *this = parallel_reduce(begin,end,blockSize,TemporalBinInfo(empty),bin,merge2);
             }
@@ -113,7 +113,7 @@ namespace embree
             TemporalBinInfo r = a; r.merge(b); return r;
           }
                     
-          Split best(int logBlockSize, BBox1f time_range, size_t numTimeSegments)
+          Split best(int logBlockSize, BBox1f time_range, const SetMB& set)
           {
             float bestSAH = inf;
             float bestPos = 0.0f;
@@ -121,7 +121,7 @@ namespace embree
             {
               float t = float(b+1)/float(BINS);
               float ct = lerp(time_range.lower,time_range.upper,t);
-              const float center_time = roundf(ct * float(numTimeSegments)) / float(numTimeSegments);
+              const float center_time = set.align_time(ct);
               if (center_time <= time_range.lower) continue;
               if (center_time >= time_range.upper) continue;
               const BBox1f dt0(time_range.lower,center_time);
@@ -153,10 +153,9 @@ namespace embree
         const Split find(const SetMB& set, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
-          unsigned numTimeSegments = unsigned(set.max_num_time_segments);
           TemporalBinInfo binner(empty);
-          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
-          Split tsplit = binner.best((int)logBlockSize,set.time_range,numTimeSegments);
+          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,set,recalculatePrimRef);
+          Split tsplit = binner.best((int)logBlockSize,set.time_range,set);
           if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return tsplit;
         }
