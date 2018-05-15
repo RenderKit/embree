@@ -17,6 +17,7 @@
 #pragma once
 
 #include "platform.h"
+#include "../math/vec2.h"
 #include "../math/vec3.h"
 
 namespace embree
@@ -42,5 +43,6 @@ namespace embree
   std::string toLowerCase(const std::string& s);
   std::string toUpperCase(const std::string& s);
 
+  Vec2f string_to_Vec2f ( std::string str );
   Vec3f string_to_Vec3f ( std::string str );
 }

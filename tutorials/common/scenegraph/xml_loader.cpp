@@ -1331,7 +1331,12 @@ namespace embree
       else if (xml->name == "ConvertQuadsToSubdivs"  ) node = state.sceneMap[id] = convert_quads_to_subdivs  (loadNode(xml->child(0)));
       else if (xml->name == "ConvertBezierToLines"   ) node = state.sceneMap[id] = convert_bezier_to_lines   (loadNode(xml->child(0)));
       else if (xml->name == "ConvertHairToCurves"    ) node = state.sceneMap[id] = convert_flat_to_round_curves(loadNode(xml->child(0)));
-      else if (xml->name == "Flatten"                ) node = state.sceneMap[id] = flatten                   (loadNode(xml->child(0)), SceneGraph::INSTANCING_NONE);
+      else if (xml->name == "Flatten"                ) node = state.sceneMap[id] = flatten(loadNode(xml->child(0)), SceneGraph::INSTANCING_NONE);
+      else if (xml->name == "TimeRange"              ) {
+        const Vec2f time_range = xml->parm_Vec2f("time");
+        node = state.sceneMap[id] = loadNode(xml->child(0));
+        set_time_range(node,BBox1f(time_range.x,time_range.y));
+      }
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
 

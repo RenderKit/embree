@@ -933,6 +933,33 @@ namespace embree
     }
   }
 
+  void SceneGraph::set_time_range(Ref<SceneGraph::Node> node, const BBox1f& time_range)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        set_time_range(groupNode->children[i],time_range);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+  }
+  
   std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
   {
     if      (b0 == a0) return std::make_pair(p-1,b1);
