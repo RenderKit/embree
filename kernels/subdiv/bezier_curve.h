@@ -223,6 +223,15 @@ namespace embree
         return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
       }
 
+      __forceinline CubicBezierCurve<Vec3fa> xfm_pr(const LinearSpace3fa& space, const Vec3fa& p) const
+      {
+        Vec3fa q0 = xfmVector(space,v0-p); q0.w = v0.w;
+        Vec3fa q1 = xfmVector(space,v1-p); q1.w = v1.w;
+        Vec3fa q2 = xfmVector(space,v2-p); q2.w = v2.w;
+        Vec3fa q3 = xfmVector(space,v3-p); q3.w = v3.w;
+        return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+      }
+
       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p, const float s) const
       {
         const Vec3fa q0 = xfmVector(space,s*(v0-p));

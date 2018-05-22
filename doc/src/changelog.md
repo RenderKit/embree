@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.1
+-   Bugfix in flat mode for hermite curves.
+
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
 -   Line segments, and other curves are now all contained in a single
