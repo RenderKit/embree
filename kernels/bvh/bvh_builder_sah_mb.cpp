@@ -131,9 +131,9 @@ namespace embree
             const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
             const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
 
-            if (numTimeSegments == 1)
+            /*if (numTimeSegments == 1)
               buildSingleSegment(numPrimitives);
-            else
+              else*/
               buildMultiSegment(numPrimitives);
 
 #if PROFILE
@@ -146,6 +146,7 @@ namespace embree
         bvh->postBuild(t0);
       }
 
+#if 0 // No longer compatible when time_ranges are present for geometries. Would have to create temporal nodes sometimes, and put only a single geometry into leaf.
       void buildSingleSegment(size_t numPrimitives)
       {
         /* create primref array */
@@ -177,6 +178,7 @@ namespace embree
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
       }
+#endif
 
       void buildMultiSegment(size_t numPrimitives)
       {
