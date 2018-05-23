@@ -438,8 +438,22 @@ namespace embree
             /* replace already found split by fallback split */
             const BuildRecordSplit current(BuildRecord(in.prims,in.depth),findFallback(in.prims));
 
+            /* special case when directly creating leaf without any splits that could shrink time_range */
+            bool force_split = false;
+            if (current.depth == 1)
+            {
+              BBox1f c = empty;
+              BBox1f p = current.prims.time_range;
+              for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) {
+                mvector<PrimRefMB>& prims = *current.prims.prims;
+                c.extend(prims[i].time_range);
+              }
+              
+              force_split = c.lower > p.lower || c.upper < p.upper;
+            }
+
             /* create leaf for few primitives */
-            if (current.size() <= cfg.maxLeafSize && current.split.data < Split::SPLIT_ENFORCE)
+            if (current.size() <= cfg.maxLeafSize && current.split.data < Split::SPLIT_ENFORCE && !force_split)
               return createLeaf(current,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -454,9 +468,11 @@ namespace embree
               for (size_t i=0; i<children.size(); i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= cfg.maxLeafSize && children[i].split.data < Split::SPLIT_ENFORCE)
+                if (children[i].size() <= cfg.maxLeafSize && children[i].split.data < Split::SPLIT_ENFORCE && !force_split)
                   continue;
 
+                force_split = false;
+                
                 /* remember child with largest size */
                 if (children[i].size() > bestSize) {
                   bestSize = children[i].size();
@@ -478,6 +494,13 @@ namespace embree
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
             } while (children.size() < cfg.branchingFactor);
+
+            /* detect time_ranges that have shrunken */
+            for (size_t i=0; i<children.size(); i++) {
+              const BBox1f c = children[i].prims.time_range;
+              const BBox1f p = in.prims.time_range;
+              hasTimeSplits |= c.lower > p.lower || c.upper < p.upper;
+            }
 
             /* create node */
             auto node = createNode(alloc, hasTimeSplits);
@@ -556,6 +579,13 @@ namespace embree
               std::unique_ptr<mvector<PrimRefMB>> new_vector = split(csplit,brecord.prims,lrecord.prims,rrecord.prims);
               hasTimeSplits |= new_vector != nullptr;
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
+            }
+
+            /* detect time_ranges that have shrunken */
+            for (size_t i=0; i<children.size(); i++) {
+              const BBox1f c = children[i].prims.time_range;
+              const BBox1f p = current.prims.time_range;
+              hasTimeSplits |= c.lower > p.lower || c.upper < p.upper;
             }
 
             /* sort buildrecords for simpler shadow ray traversal */
