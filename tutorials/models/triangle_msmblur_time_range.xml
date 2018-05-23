@@ -34,6 +34,7 @@
     </TriangleMesh>
   </assign>
 
+<!--
   <Transform>
     <AffineSpace translate="0 4 0"/>
     <TimeRange time="-0.1 1.1">
@@ -47,6 +48,7 @@
       </Flatten>
     </TimeRange>
   </Transform>
+-->
 
   <Transform>
     <AffineSpace translate="0 0 0"/>

@@ -113,6 +113,7 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range_in, const BBox1f& geom_time_range, float geom_time_segments)
     {
+      /* normalize global time_range_in to local geom_time_range */
       const BBox1f time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
                               (time_range_in.upper-geom_time_range.lower)/geom_time_range.size());
         
@@ -120,25 +121,30 @@ namespace embree
       const float upper = time_range.upper*geom_time_segments;
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
+      const float ilowerff = max(0.0f,ilowerf);
+      const float iupperff = min(iupperf,geom_time_segments);
       const int ilower = max(0,(int)ilowerf);
       const int iupper = min((int)iupperf,(int)geom_time_segments);
+      assert(iupper-ilower > 0);
 
+      /* this larger iteration range guarantees that we process borders of geom_time_range is (partially) inside time_range_in */
+      const int ilower_iter = max(-1,(int)ilowerf);
+      const int iupper_iter = min((int)iupperf,(int)geom_time_segments+1);
+        
       const BBox<T> blower0 = bounds(ilower);
       const BBox<T> bupper1 = bounds(iupper);
-
-      assert(iupper-ilower > 0);
-      if (iupper-ilower == 1) {
-        bounds0 = lerp(blower0, bupper1, max(0.0f,lower-ilowerf));
-        bounds1 = lerp(bupper1, blower0, max(0.0f,iupperf-upper));
+      if (iupper_iter-ilower_iter == 1) {
+        bounds0 = lerp(blower0, bupper1, max(0.0f,lower-ilowerff));
+        bounds1 = lerp(bupper1, blower0, max(0.0f,iupperff-upper));
         return;
       }
 
       const BBox<T> blower1 = bounds(ilower+1);
       const BBox<T> bupper0 = bounds(iupper-1);
-      BBox<T> b0 = lerp(blower0, blower1, max(0.0f,lower-ilowerf));
-      BBox<T> b1 = lerp(bupper1, bupper0, max(0.0f,iupperf-upper));
+      BBox<T> b0 = lerp(blower0, blower1, max(0.0f,lower-ilowerff));
+      BBox<T> b1 = lerp(bupper1, bupper0, max(0.0f,iupperff-upper));
 
-      for (int i = ilower+1; i < iupper; i++)
+      for (int i = ilower_iter+1; i < iupper_iter; i++)
       {
         const float f = (float(i)/geom_time_segments - time_range.lower) / time_range.size();
         const BBox<T> bt = lerp(b0, b1, f);
