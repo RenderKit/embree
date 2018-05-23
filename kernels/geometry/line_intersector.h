@@ -74,7 +74,8 @@ namespace embree
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
           valid &= (d2 <= r2) & (vfloat<M>(ray.tnear()) < t) & (t <= vfloat<M>(ray.tfar));
-          valid &= t > ray.tnear() & t > 2.0f*r*depth_scale; // ignore self intersections
+          if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) 
+            valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*depth_scale; // ignore self intersections
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
@@ -120,7 +121,8 @@ namespace embree
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
           valid &= (d2 <= r2) & (vfloat<M>(ray.tnear()[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
-          valid &= t > ray.tnear()[k] & t > 2.0f*r*depth_scale; // ignore self intersections
+          if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) 
+            valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*depth_scale; // ignore self intersections
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */

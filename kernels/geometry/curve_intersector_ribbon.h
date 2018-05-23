@@ -116,8 +116,10 @@ namespace embree
         if (any(valid0))
         {
           /* ignore self intersections */
-          vfloatx r = lerp(p0.w, p1.w, vu);
-          valid0 &= vt > ray_tnear & vt > 2.0f*r*depth_scale;
+          if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) {
+            vfloatx r = lerp(p0.w, p1.w, vu);
+            valid0 &= vt > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*depth_scale;
+          }
           
           if (any(valid0))
           {
@@ -159,8 +161,10 @@ namespace embree
           if (any(valid0))
           {
             /* ignore self intersections */
-            vfloatx r = lerp(p0.w, p1.w, vu);
-            valid0 &= vt > ray_tnear & vt > 2.0f*r*depth_scale;
+            if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) {
+              vfloatx r = lerp(p0.w, p1.w, vu);
+              valid0 &= vt > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*depth_scale;
+            }
             
             if (any(valid0))
             {

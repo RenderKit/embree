@@ -308,6 +308,13 @@ parameters that can be configured in CMake:
 + `EMBREE_GEOMETRY_USER`: Enables support for user defined geometries
   (ON by default).
 
++ `EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR`: Specifies a
+  factor that controls the self intersection avoidance feature for flat
+  curves. Flat curve intersections which are closer than
+  curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
+  the ray origin are ignored. A value of 0.0f disables self
+  intersection avoidance while 2.0f is the default value.
+
 
 Using Embree
 =============
