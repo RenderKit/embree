@@ -29,7 +29,11 @@ namespace embree
   {
     while (cin->peek() == Token::Sym("<!--")) {
       cin->drop();
-      while (cin->peek() != Token::Sym("-->")) cin->drop();
+      while (cin->peek() != Token::Sym("-->")) {
+        if (cin->peek() == Token::Eof())
+          THROW_RUNTIME_ERROR(cin->get().Location().str()+": --> expected");
+        cin->drop();
+      }
       cin->drop();
     }
   }
