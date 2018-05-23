@@ -175,15 +175,16 @@ namespace embree
       } 
 
       __forceinline PrimInfoMBT (EmptyTy)
-        : CentGeom<BBox>(empty), object_range(0,0), num_time_segments(0), max_num_time_segments(0), max_time_range(0.0f,1.0f), time_range(0.0f,1.0f) {}
+        : CentGeom<BBox>(empty), object_range(0,0), num_time_segments(0), max_num_time_segments(0), max_time_range(0.0f,1.0f), time_range(1.0f,0.0f) {}
 
       __forceinline PrimInfoMBT (size_t begin, size_t end)
-        : CentGeom<BBox>(empty), object_range(begin,end), num_time_segments(0), max_num_time_segments(0), max_time_range(0.0f,1.0f), time_range(0.0f,1.0f) {}
+        : CentGeom<BBox>(empty), object_range(begin,end), num_time_segments(0), max_num_time_segments(0), max_time_range(0.0f,1.0f), time_range(1.0f,0.0f) {}
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
       {
         CentGeom<BBox>::extend_primref(prim);
+        time_range.extend(prim.time_range);
         object_range._end++;
         num_time_segments += prim.size();
         if (max_num_time_segments < prim.totalTimeSegments()) {
@@ -195,6 +196,7 @@ namespace embree
       __forceinline void merge(const PrimInfoMBT& other)
       {
         CentGeom<BBox>::merge(other);
+        time_range.extend(other.time_range);
         object_range._begin += other.object_range.begin();
 	object_range._end += other.object_range.end();
         num_time_segments += other.num_time_segments;
@@ -268,11 +270,11 @@ namespace embree
       __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims)
         : PrimInfoMB(pinfo_i), prims(prims) {}
 
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in) // FIXME: remove
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in = BBox1f(0.0f,1.0f))
         : PrimInfoMB(pinfo_i), prims(prims)
       {
         object_range = object_range_in;
-        time_range = time_range_in;
+        time_range = intersect(time_range,time_range_in); // FIXME: required?
       }
       
       __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in)

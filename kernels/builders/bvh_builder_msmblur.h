@@ -389,8 +389,8 @@ namespace embree
             for (size_t i=center; i<end; i++)
               rinfo.add_primref(prims[i]);
 
-            new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
-            new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
+            new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center));
+            new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ));
           }
 
           /*! checks if all primitives are from the same geometry */
@@ -425,8 +425,8 @@ namespace embree
                                                 [&] ( const PrimRefMB& prim ) { return prim.geomID() == geomID; },
                                                 [ ] ( PrimInfoMB& dst, const PrimRefMB& prim ) { dst.add_primref(prim); });
             
-            new (&lset) SetMB(left, set.prims,range<size_t>(begin,center),set.time_range);
-            new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ),set.time_range);
+            new (&lset) SetMB(left, set.prims,range<size_t>(begin,center));
+            new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ));
           }
 
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
