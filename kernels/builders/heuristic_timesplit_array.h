@@ -205,7 +205,8 @@ namespace embree
 
           /* some primitives have to get filtered out */
           if (linfo.size() != set.size())
-            linfo.object_range._end = parallel_filter(lprims->data(), linfo.object_range.begin(), linfo.object_range.end(), size_t(1024), [](const PrimRefMB& prim) { return prim.size() != 0; });
+            linfo.object_range._end = parallel_filter(lprims->data(), linfo.object_range.begin(), linfo.object_range.end(), size_t(1024),
+                                                      [&](const PrimRefMB& prim) { return prim.time_range_overlap(time_range0); });
                       
           lset = SetMB(linfo,lprims,time_range0);
 
@@ -227,7 +228,8 @@ namespace embree
 
           /* some primitives have to get filtered out */
           if (rinfo.size() != set.size())
-            rinfo.object_range._end = parallel_filter(prims.data(), rinfo.object_range.begin(), rinfo.object_range.end(), size_t(1024), [](const PrimRefMB& prim) { return prim.size() != 0; });
+            rinfo.object_range._end = parallel_filter(prims.data(), rinfo.object_range.begin(), rinfo.object_range.end(), size_t(1024),
+                                                      [&](const PrimRefMB& prim) { return prim.time_range_overlap(time_range1); });
         
           rset = SetMB(rinfo,&prims,set.object_range,time_range1);
 
