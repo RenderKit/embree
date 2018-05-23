@@ -86,6 +86,8 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
+        size_t end   = current.prims.object_range.end();
+        for (size_t i=start; i<end; i++) assert((*current.prims.prims)[start].geomID() == (*current.prims.prims)[i].geomID()); // assert that all geomIDs are identical
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
