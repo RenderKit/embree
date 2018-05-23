@@ -130,8 +130,8 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-            const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
-            const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+            //const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+            //const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
 
             /*if (numTimeSegments == 1)
               buildSingleSegment(numPrimitives);
