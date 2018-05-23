@@ -102,6 +102,7 @@ namespace embree
           /*! checks if all primitives are from the same geometry */
           __forceinline bool sameGeometry(const PrimInfoRange& range)
           {
+            if (range.size() == 0) return true;
             unsigned int firstGeomID = prims[range.begin()].geomID();
             for (size_t i=range.begin()+1; i<range.end(); i++) {
               if (prims[i].geomID() != firstGeomID){
