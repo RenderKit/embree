@@ -121,28 +121,28 @@ namespace embree
       const float upper = time_range.upper*geom_time_segments;
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
-      const float ilowerff = max(0.0f,ilowerf);
-      const float iupperff = min(iupperf,geom_time_segments);
-      const int ilower = max(0,(int)ilowerf);
-      const int iupper = min((int)iupperf,(int)geom_time_segments);
-      assert(iupper-ilower > 0);
+      const float ilowerfc = max(0.0f,ilowerf);
+      const float iupperfc = min(iupperf,geom_time_segments);
+      const int   ilowerc = (int)ilowerfc;
+      const int   iupperc = (int)iupperfc;
+      assert(iupperc-ilowerc > 0);
 
       /* this larger iteration range guarantees that we process borders of geom_time_range is (partially) inside time_range_in */
       const int ilower_iter = max(-1,(int)ilowerf);
       const int iupper_iter = min((int)iupperf,(int)geom_time_segments+1);
         
-      const BBox<T> blower0 = bounds(ilower);
-      const BBox<T> bupper1 = bounds(iupper);
+      const BBox<T> blower0 = bounds(ilowerc);
+      const BBox<T> bupper1 = bounds(iupperc);
       if (iupper_iter-ilower_iter == 1) {
-        bounds0 = lerp(blower0, bupper1, max(0.0f,lower-ilowerff));
-        bounds1 = lerp(bupper1, blower0, max(0.0f,iupperff-upper));
+        bounds0 = lerp(blower0, bupper1, max(0.0f,lower-ilowerfc));
+        bounds1 = lerp(bupper1, blower0, max(0.0f,iupperfc-upper));
         return;
       }
 
-      const BBox<T> blower1 = bounds(ilower+1);
-      const BBox<T> bupper0 = bounds(iupper-1);
-      BBox<T> b0 = lerp(blower0, blower1, max(0.0f,lower-ilowerff));
-      BBox<T> b1 = lerp(bupper1, bupper0, max(0.0f,iupperff-upper));
+      const BBox<T> blower1 = bounds(ilowerc+1);
+      const BBox<T> bupper0 = bounds(iupperc-1);
+      BBox<T> b0 = lerp(blower0, blower1, max(0.0f,lower-ilowerfc));
+      BBox<T> b1 = lerp(bupper1, bupper0, max(0.0f,iupperfc-upper));
 
       for (int i = ilower_iter+1; i < iupper_iter; i++)
       {
