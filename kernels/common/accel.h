@@ -46,6 +46,11 @@ namespace embree
       return bounds.bounds();
     }
 
+    /*! returns bounds for some time */
+    __forceinline BBox3fa getBounds(float t) const {
+      return bounds.interpolate(t);
+    }
+
     /*! returns linear bounds */
     __forceinline LBBox3fa getLinearBounds() const {
       return bounds;
