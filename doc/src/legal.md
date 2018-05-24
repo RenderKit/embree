@@ -1,7 +1,9 @@
 Disclaimer and Legal Information
 ================================
 
-© 2009–2017 Intel Corporation
+© 2009–2018 Intel Corporation
+
+[Privacy Notice](https://www.intel.com/privacy)
 
 Intel, the Intel logo, Xeon, Intel Xeon Phi, and Intel Core are
 trademarks of Intel Corporation in the U.S. and/or other countries.  
