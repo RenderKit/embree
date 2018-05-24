@@ -56,6 +56,7 @@ namespace embree
     Ref<Node> convert_grids_to_quads( Ref<Node> node);
 
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
+    void convert_mblur_to_nonmblur(Ref<Node> node);
 
     struct Statistics
     {

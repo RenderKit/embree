@@ -208,6 +208,7 @@ namespace embree
       MERGE_QUADS_TO_GRIDS,
       CONVERT_QUADS_TO_GRIDS,
       CONVERT_GRIDS_TO_QUADS,
+      CONVERT_MBLUR_TO_NONMBLUR,
     };
     std::vector<SceneGraphOperations> sgop;
 

@@ -405,6 +405,10 @@ namespace embree
         grid_resY = min(max(cin->getInt(),2),0x7fff);        
       }, "--grid-res: sets tessellation resolution for the grid primitive");
 
+    registerOption("convert-mblur-to-nonmblur", [this] (Ref<ParseStream> cin, const FileName& path) {
+         sgop.push_back(CONVERT_MBLUR_TO_NONMBLUR);
+      }, "--convert-mblur-to-nonmblur: converts all motion blur geometry to non-motion blur geometry");
+    
     registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
          remove_mblur = true;
       }, "--remove-mblur: removes all motion blur geometry");
@@ -1144,6 +1148,7 @@ namespace embree
       case MERGE_QUADS_TO_GRIDS         : scene->merge_quads_to_grids(); break;
       case CONVERT_QUADS_TO_GRIDS       : scene->quads_to_grids(grid_resX,grid_resY); break;
       case CONVERT_GRIDS_TO_QUADS       : scene->grids_to_quads(); break;
+      case CONVERT_MBLUR_TO_NONMBLUR    : convert_mblur_to_nonmblur(scene.dynamicCast<SceneGraph::Node>()); break;
       default : throw std::runtime_error("unsupported scene graph operation");
       }
     }
