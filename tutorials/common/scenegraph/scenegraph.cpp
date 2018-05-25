@@ -986,6 +986,7 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_quads ( Ref<SceneGraph::TriangleMeshNode> tmesh )
   {
     Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+    qmesh->time_range = tmesh->time_range;
 
     for (auto& p : tmesh->positions)
       qmesh->positions.push_back(p);
