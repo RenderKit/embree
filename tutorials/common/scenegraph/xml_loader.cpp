@@ -939,9 +939,7 @@ namespace embree
       for (size_t i=0; i<animation->size(); i++)
         mesh->positions.push_back(loadVec3faArray(animation->child(i)));
     } else {
-      auto vec = loadVec3faArray(xml->childOpt("normals"));
-      for (size_t i=0; i<mesh->numTimeSteps(); i++)
-        mesh->normals.push_back(vec);
+      mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
     }
 
     if (Ref<XML> animation = xml->childOpt("animated_normals")) {

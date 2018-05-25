@@ -148,7 +148,7 @@ namespace embree
                               Vec3vf<M>& p1,
                               Vec3vf<M>& p2,
                               const TriangleMesh* mesh,
-                              const int& itime) const;
+                              const int itime) const;
 
     __forceinline void gather(Vec3vf<M>& p0,
                               Vec3vf<M>& p1,
@@ -313,7 +313,7 @@ namespace embree
                                            Vec3vf4& p1,
                                            Vec3vf4& p2,
                                            const TriangleMesh* mesh,
-                                           const int& itime) const
+                                           const int itime) const
   {
     const float* vertices = (const float*) mesh->vertexPtr(0,itime);
     const vfloat4 a0 = vfloat4::loadu(vertices + v0[0]);
