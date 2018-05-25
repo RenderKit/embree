@@ -44,6 +44,7 @@ namespace embree
   namespace isa
   {
 
+#if 0
     template<int N, typename Primitive>
     struct CreateMBlurLeaf
     {
@@ -57,6 +58,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(set.size());
         size_t start = set.begin();
+        for (size_t i=start; i<end; i++) assert((*current.prims.prims)[start].geomID() == (*current.prims.prims)[i].geomID()); // assert that all geomIDs are identical
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
 
@@ -71,7 +73,7 @@ namespace embree
       PrimRef* prims;
       size_t time;
     };
-
+#endif
 
     template<int N, typename Mesh, typename Primitive>
     struct CreateMSMBlurLeaf
@@ -267,7 +269,6 @@ namespace embree
 
     };
 
-
     template<int N>
     struct CreateMSMBlurLeafGrid
     {
@@ -341,6 +342,7 @@ namespace embree
       const SubGridBuildData * const sgrids;
     };
 
+#if 0
     template<int N>
     struct CreateLeafGridMB
     {
@@ -415,7 +417,7 @@ namespace embree
       BVH* bvh;
       const SubGridBuildData * const sgrids;
     };
-
+#endif
 
 
     /* Motion blur BVH with 4D nodes and internal time splits */
@@ -556,12 +558,12 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAHGrid");
 
-        const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
-        const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
-        if (numTimeSegments == 1)
-          buildSingleSegment(numPrimitives);
-        else
-          buildMultiSegment(numPrimitives);
+        //const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
+        //const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+        //if (numTimeSegments == 1)
+        //  buildSingleSegment(numPrimitives);
+        //else
+        buildMultiSegment(numPrimitives);
 
 	/* clear temporary data for static geometry */
         if (scene->isStaticAccel()) bvh->shrink();
@@ -569,6 +571,7 @@ namespace embree
         bvh->postBuild(t0);
       }
 
+#if 0
       void buildSingleSegment(size_t numPrimitives)
       {
         /* create primref array */
@@ -605,7 +608,8 @@ namespace embree
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
       }
-
+#endif
+      
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
