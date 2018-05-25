@@ -165,7 +165,7 @@ namespace embree
     __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i, float time) const
     {
       float ftime;
-      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const size_t itime = getTimeSegment(time, time_range.lower, time_range.upper, fnumTimeSegments, ftime);
 
       const float t0 = 1.0f - ftime;
       const float t1 = ftime;
@@ -183,7 +183,7 @@ namespace embree
     __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, size_t i, float time) const
     {
       float ftime;
-      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const size_t itime = getTimeSegment(time, time_range.lower, time_range.upper, fnumTimeSegments, ftime);
 
       const float t0 = 1.0f - ftime;
       const float t1 = ftime;
@@ -221,7 +221,7 @@ namespace embree
     __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i, float time) const
     {
       float ftime;
-      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const size_t itime = getTimeSegment(time, time_range.lower, time_range.upper, fnumTimeSegments, ftime);
       const float f0 = 1.0f - ftime, f1 = ftime;
       Vec3fa ap0,at0,ap1,at1;
       gather_hermite(ap0,at0,ap1,at1,i,itime);
@@ -259,7 +259,7 @@ namespace embree
     __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, size_t i, float time) const
     {
       float ftime;
-      const size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const size_t itime = getTimeSegment(time, time_range.lower, time_range.upper, fnumTimeSegments, ftime);
       const float f0 = 1.0f - ftime, f1 = ftime;
       Vec3fa ap0,at0,an0,ap1,at1,an1;
       gather_hermite(ap0,at0,an0,ap1,at1,an1,i,itime);

@@ -293,7 +293,7 @@ namespace embree
     const LineSegments* geom = scene->get<LineSegments>(geomID());
     const vfloat4 numTimeSegments(geom->fnumTimeSegments);
     vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    const vint4 itime = getTimeSegment(vfloat4(time), vfloat4(geom->time_range.lower), vfloat4(geom->time_range.upper), numTimeSegments, ftime);
 
     Vec4vf4 a0,a1;
     gather(a0,a1,geom,itime);
@@ -369,7 +369,7 @@ namespace embree
     const LineSegments* geom = scene->get<LineSegments>(geomID());
     const vfloat8 numTimeSegments(geom->fnumTimeSegments);
     vfloat8 ftime;
-    const vint8 itime = getTimeSegment(vfloat8(time), numTimeSegments, ftime);
+    const vint8 itime = getTimeSegment(vfloat8(time), vfloat8(geom->time_range.lower), vfloat8(geom->time_range.upper), numTimeSegments, ftime);
 
     Vec4vf8 a0,a1;
     gather(a0,a1,geom,itime);

@@ -175,8 +175,22 @@ namespace embree
             if (current.depth > cfg.maxDepth)
               throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
+            /* special case when directly creating leaf without any splits that could shrink time_range */
+            bool force_split = false;
+            if (current.depth == 1)
+            {
+              BBox1f c = empty;
+              BBox1f p = current.prims.time_range;
+              for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) {
+                mvector<PrimRefMB>& prims = *current.prims.prims;
+                c.extend(prims[i].time_range);
+              }
+              
+              force_split = c.lower > p.lower || c.upper < p.upper;
+            }
+
             /* create leaf for few primitives */
-            if (current.size() <= cfg.maxLeafSize && sameGeometry(current.prims))
+            if (current.size() <= cfg.maxLeafSize && sameGeometry(current.prims) && !force_split)
               return createLeaf(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -190,8 +204,10 @@ namespace embree
               for (unsigned i=0; i<children.size(); i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= cfg.maxLeafSize && sameGeometry(children[i].prims))
+                if (children[i].size() <= cfg.maxLeafSize && sameGeometry(children[i].prims) && !force_split)
                   continue;
+
+                force_split = false;
 
                 /* remember child with largest size */
                 if (children[i].size() > bestSize) {
@@ -213,8 +229,17 @@ namespace embree
 
             } while (children.size() < cfg.branchingFactor);
 
+
+            /* detect time_ranges that have shrunken */
+            bool timesplit = false;
+            for (size_t i=0; i<children.size(); i++) {
+              const BBox1f c = children[i].prims.time_range;
+              const BBox1f p = current.prims.time_range;
+              timesplit |= c.lower > p.lower || c.upper < p.upper;
+            }
+            
             /* create node */
-            NodeRef node = createAlignedNodeMB(alloc,false);
+            NodeRef node = createAlignedNodeMB(alloc,timesplit);
 
             LBBox3fa bounds = empty;
             for (size_t i=0; i<children.size(); i++) {
@@ -223,6 +248,9 @@ namespace embree
               bounds.extend(child.lbounds);
             }
 
+            if (timesplit)
+              bounds = current.prims.linearBounds(recalculatePrimRef);
+              
             return NodeRecordMB4D(node,bounds,current.prims.time_range);
           }
 
@@ -335,6 +363,13 @@ namespace embree
               children.split(bestChild,left,right,std::move(new_vector));
 
             } while (children.size() < cfg.branchingFactor);
+
+            /* detect time_ranges that have shrunken */
+            for (size_t i=0; i<children.size(); i++) {
+              const BBox1f c = children[i].prims.time_range;
+              const BBox1f p = current.prims.time_range;
+              timesplit |= c.lower > p.lower || c.upper < p.upper;
+            }
 
             /* create time split node */
             if (timesplit)
