@@ -538,7 +538,7 @@ namespace embree
 
     if (subdivMode)
     {
-      Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial,1);
+      Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial,BBox1f(0,1),1);
       group->add(mesh.cast<SceneGraph::Node>());
 
       for (size_t i=0; i<v.size();  i++) mesh->positions[0].push_back(v[i]);
@@ -564,7 +564,7 @@ namespace embree
     }
     else
     {
-      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(curMaterial,1);
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(curMaterial,BBox1f(0,1),1);
       group->add(mesh.cast<SceneGraph::Node>());
       // merge three indices into one
       std::map<Vertex, uint32_t> vertexMap;

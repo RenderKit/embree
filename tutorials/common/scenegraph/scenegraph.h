@@ -624,8 +624,8 @@ namespace embree
         normals.push_back(normals_in);
       }
 
-      TriangleMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
-        : Node(true), time_range(0.0f,1.0f), material(material) 
+      TriangleMeshNode (Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0) 
+        : Node(true), time_range(time_range), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
@@ -712,8 +712,8 @@ namespace embree
       };
       
     public:
-      QuadMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
-        : Node(true), time_range(0.0f,1.0f), material(material) 
+      QuadMeshNode (Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0 ) 
+        : Node(true), time_range(time_range), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
@@ -789,9 +789,9 @@ namespace embree
     {
       typedef Vec3fa Vertex;
 
-      SubdivMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
+      SubdivMeshNode (Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0) 
         : Node(true),
-          time_range(0.0f,1.0f),
+          time_range(time_range),
           position_subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY), 
           normal_subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY),
           texcoord_subdiv_mode(RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY),
@@ -929,8 +929,8 @@ namespace embree
       };
       
     public:
-      HairSetNode (RTCGeometryType type, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), time_range(0.0f,1.0f), type(type), material(material), tessellation_rate(4)
+      HairSetNode (RTCGeometryType type, Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0)
+        : Node(true), time_range(time_range), type(type), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
@@ -1039,8 +1039,8 @@ namespace embree
       };
       
     public:
-      GridMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
-        : Node(true), time_range(0.0f,1.0f), material(material) 
+      GridMeshNode (Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0) 
+        : Node(true), time_range(time_range), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());

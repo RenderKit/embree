@@ -899,7 +899,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),0);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -934,7 +934,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadQuadMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material);
+    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,BBox1f(0,1),0);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -966,7 +966,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadGridMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material);
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,BBox1f(0,1),0);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -997,7 +997,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material);
+    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,BBox1f(0,1),0);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1064,7 +1064,7 @@ namespace embree
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     RTCGeometryType type = (subtype == SceneGraph::ROUND_CURVE) ? RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material,BBox1f(0,1),0);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1093,7 +1093,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadCurves(const Ref<XML>& xml, RTCGeometryType type)
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material,BBox1f(0,1),0);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++) {
@@ -1380,7 +1380,7 @@ namespace embree
   {
     size_t matid = xml->child("materiallist")->body[0].Int();
     Ref<SceneGraph::MaterialNode> material = id2material.at(matid);
-    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),0);
 
     mesh->positions.push_back(loadVec3faArray(xml->childOpt("vertex")));
     mesh->normals.push_back(loadVec3faArray(xml->childOpt("normal")));
