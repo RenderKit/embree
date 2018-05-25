@@ -245,6 +245,7 @@ namespace embree
     
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadGridMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::CurveSubtype subtype); // only for compatibility
     Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCGeometryType type);
@@ -962,6 +963,25 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadGridMesh(const Ref<XML>& xml) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material);
+
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(loadVec3faArray(animation->child(i)));
+    } else {
+      mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
+    }
+
+    std::vector<Vec4i> grids = loadVec4iArray(xml->childOpt("grids"));
+    for (size_t i=0; i<grids.size(); i++) 
+      mesh->grids.push_back(SceneGraph::GridMeshNode::Grid(grids[i].x,grids[i].y,grids[i].z,grids[i].w));
+    mesh->verify();
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   RTCSubdivisionMode parseSubdivMode(const Ref<XML>& xml)
   {
     std::string subdiv_mode = xml->parm("subdiv_mode");
@@ -1260,6 +1280,7 @@ namespace embree
       else if (xml->name == "QuadLight"       ) node = state.sceneMap[id] = loadQuadLight       (xml);
       else if (xml->name == "TriangleMesh"    ) node = state.sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "QuadMesh"        ) node = state.sceneMap[id] = loadQuadMesh        (xml);
+      else if (xml->name == "GridMesh"        ) node = state.sceneMap[id] = loadGridMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
       else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
