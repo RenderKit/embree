@@ -136,8 +136,8 @@ namespace embree
       bbox.lower.a = geomID;
       bbox.upper.a = primID;
     }
-
-    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
+    
+    __forceinline PrimRefMB (EmptyTy empty, const LBBox3fa& bounds, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
       : bbox(bounds.interpolate(0.5f)), _activeTimeSegments(activeTimeSegments), _totalTimeSegments(totalTimeSegments), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
@@ -149,7 +149,7 @@ namespace embree
       bbox.upper.u = 0;
 #endif
     }
-
+    
     /*! returns bounds for binning */
     __forceinline BBox3fa bounds() const {
       return bbox;

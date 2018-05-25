@@ -211,7 +211,7 @@ namespace embree
       {
         const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, prim_time_range, (float)prim_num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, prim_time_range, (float)prim_num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), prim_time_range, prim_num_time_segments, patchIndexMB);
+        return PrimRefMB (empty, lbounds, tbounds.size(), prim_time_range, prim_num_time_segments, patchIndexMB);
       }
 
       __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {

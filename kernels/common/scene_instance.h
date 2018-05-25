@@ -88,7 +88,7 @@ namespace embree
     __forceinline AffineSpace3fa getWorld2Local(float t) const 
     {
       float ftime;
-      const unsigned int itime = getTimeSegment(t, fnumTimeSegments, ftime);
+      const unsigned int itime = getTimeSegment(t, time_range.lower, time_range.upper, fnumTimeSegments, ftime);
       return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
     }
 
@@ -96,7 +96,7 @@ namespace embree
     __forceinline AffineSpace3vf<K> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
     { 
       vfloat<K> ftime;
-      const vint<K> itime_k = getTimeSegment(t, vfloat<K>(fnumTimeSegments), ftime);
+      const vint<K> itime_k = getTimeSegment(t, vfloat<K>(time_range.lower), vfloat<K>(time_range.upper), vfloat<K>(fnumTimeSegments), ftime);
       assert(any(valid));
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
@@ -163,8 +163,8 @@ namespace embree
         assert(r.end()   == 1);
         
         PrimInfoMB pinfo(empty);
-        if (!valid(0, getTimeSegmentRange(t0t1, fnumTimeSegments))) return pinfo;
-        const PrimRefMB prim(linearBounds(0,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(0));
+        if (!valid(0, timeSegmentRange(t0t1))) return pinfo;
+        const PrimRefMB prim(linearBounds(0,t0t1),this->numTimeSegments(),this->time_range,this->numTimeSegments(),this->geomID,unsigned(0));
         pinfo.add_primref(prim);
         prims[k++] = prim;
         return pinfo;

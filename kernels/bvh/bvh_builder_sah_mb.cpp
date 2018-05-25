@@ -252,8 +252,8 @@ namespace embree
           const size_t y = subgrid.y();
           const LBBox3fa lbounds = mesh->linearBounds(mesh->grid(primID),x,y,time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, buildID);
+          const range<int> tbounds = mesh->timeSegmentRange(time_range);
+          return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, num_time_segments, geomID, buildID);
         }
 
         __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
@@ -510,7 +510,7 @@ namespace embree
                                                          PrimInfoMB pinfoMB(empty);
                                                          for (size_t j=r.begin(); j<r.end(); j++)
                                                          {
-                                                           if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue;
+                                                           if (!mesh->valid(j, mesh->timeSegmentRange(t0t1))) continue;
                                                            LBBox3fa bounds(empty);
                                                            PrimInfoMB gridMB(0,mesh->getNumSubGrids(j));
                                                            pinfoMB.merge(gridMB);
@@ -531,13 +531,13 @@ namespace embree
                                                 PrimInfoMB pinfoMB(empty);
                                                 for (size_t j=r.begin(); j<r.end(); j++)
                                                 {
-                                                  if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue;
+                                                  if (!mesh->valid(j, mesh->timeSegmentRange(t0t1))) continue;
                                                   const GridMesh::Grid &g = mesh->grid(j);
 
                                                   for (unsigned int y=0; y<g.resY-1u; y+=2)
                                                     for (unsigned int x=0; x<g.resX-1u; x+=2)
                                                     {
-                                                      const PrimRefMB prim(mesh->linearBounds(g,x,y,t0t1),mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(p_index));
+                                                      const PrimRefMB prim(mesh->linearBounds(g,x,y,t0t1),mesh->numTimeSegments(),mesh->time_range,mesh->numTimeSegments(),mesh->geomID,unsigned(p_index));
                                                       pinfoMB.add_primref(prim);
                                                       sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                       prims[p_index++] = prim;                
