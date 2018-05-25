@@ -5,6 +5,9 @@ Version History
 -   Bugfix in flat mode for hermite curves.
 -   Added EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR cmake option to
     control self intersection avoidance for flat curves.
+-   Performance fix when instantiating motion blurred scenes. The application
+    should best use two (or more) time steps for an instance that instantiates
+    a motion blurred scene.
 -   Fixed AVX512 compile issue with GCC 6.1.1.
 
 ### New Features in Embree 3.2.0
