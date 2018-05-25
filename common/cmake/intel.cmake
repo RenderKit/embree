@@ -112,7 +112,6 @@ ELSE()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")         # makes all symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # makes all inline symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-ansi-alias")              # disables strict aliasing rules
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORTIFY_SOURCE=2")         # perform extra security checks for some standard library calls
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-vec")                     # disable auto vectorizer
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fasm-blocks")                # enable assembly blocks
   IF (EMBREE_STACK_PROTECTOR)
@@ -142,6 +141,7 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -no-inline-max-total-size")   # no size limit when performing inlining
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -no-inline-max-per-compile")  # no maximal number of inlinings per compilation unit
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -inline-factor=150")          # increase default inline factors limits by 2x
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")         # perform extra security checks for some standard library calls
 
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DDEBUG")                     # enables assertions
