@@ -383,11 +383,17 @@ namespace embree
 #if !defined(_mm_undefined_si128)
   __forceinline __m128i _mm_undefined_si128() { return _mm_setzero_si128(); }
 #endif
-#if !defined(_mm256_undefined_ps) && (__AVX__)
+#if !defined(_mm256_undefined_ps) && defined(__AVX__)
   __forceinline __m256 _mm256_undefined_ps() { return _mm256_setzero_ps(); }
 #endif
-#if !defined(_mm_undefined_si128) && (__AVX__)
+#if !defined(_mm256_undefined_si256) && defined(__AVX__)
   __forceinline __m256i _mm256_undefined_si256() { return _mm256_setzero_si256(); }
+#endif
+#if !defined(_mm512_undefined_ps) && defined(__AVX512F__)
+  __forceinline __m512 _mm512_undefined_ps() { return _mm512_setzero_ps(); }
+#endif
+#if !defined(_mm512_undefined_epi32) && defined(__AVX512F__)
+  __forceinline __m512i _mm512_undefined_epi32() { return _mm512_setzero_si512(); }
 #endif
 #endif
 
