@@ -203,6 +203,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
   }
+  else if (geometry->type == GRID_MESH)
+  {
+    uniform ISPCGridMesh* uniform mesh = (uniform ISPCGridMesh* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
   else if (geometry->type == SUBDIV_MESH)
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
