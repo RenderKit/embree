@@ -87,8 +87,7 @@ namespace embree
 
     __forceinline AffineSpace3fa getWorld2Local(float t) const 
     {
-      float ftime;
-      const unsigned int itime = getTimeSegment(t, time_range.lower, time_range.upper, fnumTimeSegments, ftime);
+      float ftime; const unsigned int itime = timeSegment(t, ftime);
       return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
     }
 
@@ -96,7 +95,7 @@ namespace embree
     __forceinline AffineSpace3vf<K> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
     { 
       vfloat<K> ftime;
-      const vint<K> itime_k = getTimeSegment(t, vfloat<K>(time_range.lower), vfloat<K>(time_range.upper), vfloat<K>(fnumTimeSegments), ftime);
+      const vint<K> itime_k = timeSegment(t, ftime);
       assert(any(valid));
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];

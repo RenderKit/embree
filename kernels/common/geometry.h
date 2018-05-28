@@ -176,6 +176,16 @@ namespace embree
       Geometry::update();
     }
 
+    /* calculate time segment itime and fractional time ftime */
+    __forceinline int timeSegment(float time, float& ftime) const {
+      return getTimeSegment(time,time_range.lower,time_range.upper,fnumTimeSegments,ftime);
+    }
+
+    template<int N>
+      __forceinline vint<N> timeSegment(const vfloat<N>& time, vfloat<N>& ftime) const {
+      return getTimeSegment(time,vfloat<N>(time_range.lower),vfloat<N>(time_range.upper),vfloat<N>(fnumTimeSegments),ftime);
+    }
+    
     /* calculate overlapping time segment range */
     __forceinline range<int> timeSegmentRange(const BBox1f& range) const {
       return getTimeSegmentRange(range,time_range,fnumTimeSegments);

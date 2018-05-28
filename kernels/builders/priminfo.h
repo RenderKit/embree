@@ -252,7 +252,7 @@ namespace embree
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
       size_t max_num_time_segments; //!< maximum number of time segments of a primitive
       BBox1f max_time_range; //!< time range of primitive with max_num_time_segments
-      BBox1f time_range;
+      BBox1f time_range; //!< merged time range of primitives when merging prims, or additionally clipped with build time range when used in SetMB
     };
 
     typedef PrimInfoMBT<typename PrimRefMB::BBox> PrimInfoMB;

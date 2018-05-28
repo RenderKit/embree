@@ -129,7 +129,7 @@ namespace embree
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
 
       vfloat<K> ftime;
-      const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->time_range.lower), vfloat<K>(mesh->time_range.upper), vfloat<K>(mesh->fnumTimeSegments), ftime);
+      const vint<K> itime = mesh->timeSegment(time, ftime);
 
       const size_t first = bsf(movemask(valid));
       if (likely(all(valid,itime[first] == itime)))
@@ -343,7 +343,7 @@ namespace embree
     const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(0)); // in mblur mode all geometries are identical
 
     float ftime;
-    const int itime = getTimeSegment(time, mesh->time_range.lower, mesh->time_range.upper, mesh->fnumTimeSegments, ftime);
+    const int itime = mesh->timeSegment(time, ftime);
 
     Vec3vf4 a0,a1,a2; gather(a0,a1,a2,mesh,itime);
     Vec3vf4 b0,b1,b2; gather(b0,b1,b2,mesh,itime+1);
