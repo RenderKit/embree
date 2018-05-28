@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### New Features in Embree 3.3.0
+-   Added support for motion blur time range per geometry. This way geometries
+    can appear and disappear during the camera shutter  and time steps do not have
+    to start and end at camera shutter interval boundaries.
+
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
 -   Line segments, and other curves are now all contained in a single
