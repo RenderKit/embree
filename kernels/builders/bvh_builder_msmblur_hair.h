@@ -475,7 +475,7 @@ namespace embree
           /*! entry point into builder */
           NodeRecordMB4D operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo)
           {
-            BuildRecord record(SetMB(pinfo,&prims),1);
+            BuildRecord record(SetMB(pinfo,&prims,BBox1f(0,1)),1);
             auto root = recurse(record,nullptr,true);
             _mm_mfence(); // to allow non-temporal stores during build
             return root;
