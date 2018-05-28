@@ -180,6 +180,12 @@ namespace embree
     __forceinline range<int> timeSegmentRange(const BBox1f& range) const {
       return getTimeSegmentRange(range,time_range,fnumTimeSegments);
     }
+
+    /* returns time that corresponds to time step */
+    __forceinline float timeStep(const int i) const {
+      assert(i>=0 && i<numTimeSteps);
+      return time_range.lower + time_range.size()*float(i)/fnumTimeSegments;
+    }
     
     /*! for all geometries */
   public:

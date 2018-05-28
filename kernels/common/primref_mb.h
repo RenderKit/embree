@@ -155,11 +155,6 @@ namespace embree
       return bbox;
     }
 
-    /* calculate overlapping time segment range */
-    __forceinline range<int> timeSegmentRange(const BBox1f& range) const {
-      return getTimeSegmentRange(range,time_range,(float)_totalTimeSegments);
-    }
-
     /*! returns the number of time segments of this primref */
     __forceinline unsigned int size() const { 
       return _activeTimeSegments;
@@ -169,6 +164,17 @@ namespace embree
       return _totalTimeSegments;
     }
 
+     /* calculate overlapping time segment range */
+    __forceinline range<int> timeSegmentRange(const BBox1f& range) const {
+      return getTimeSegmentRange(range,time_range,float(_totalTimeSegments));
+    }
+
+     /* returns time that corresponds to time step */
+    __forceinline float timeStep(const int i) const {
+      assert(i>=0 && i<=_totalTimeSegments);
+      return time_range.lower + time_range.size()*float(i)/float(_totalTimeSegments);
+    }
+    
     /*! checks if time range overlaps */
     __forceinline bool time_range_overlap(const BBox1f& range) const
     {
@@ -227,7 +233,7 @@ namespace embree
     BBox3fa bbox; // bounds, geomID, primID
     unsigned int _activeTimeSegments;
     unsigned int _totalTimeSegments;
-    BBox1f time_range;
+    BBox1f time_range; // entire geometry time range
   };
 
 #endif
