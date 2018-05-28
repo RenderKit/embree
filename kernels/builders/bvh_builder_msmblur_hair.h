@@ -177,7 +177,7 @@ namespace embree
 
             /* special case when directly creating leaf without any splits that could shrink time_range */
             bool force_split = false;
-            if (current.depth == 1)
+            if (current.depth == 1 && current.size() > 0)
             {
               BBox1f c = empty;
               BBox1f p = current.prims.time_range;
