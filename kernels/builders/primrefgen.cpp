@@ -110,6 +110,8 @@ namespace embree
             return mesh->createPrimRefMBArray(prims,t0t1,r,base.size());
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
       }
+
+      /* the BVH starts with that time range, even though primitives might have smaller/larger time range */
       pinfo.time_range = t0t1;
       return pinfo;
     }

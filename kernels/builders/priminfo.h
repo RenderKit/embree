@@ -267,6 +267,9 @@ namespace embree
 
       __forceinline SetMB() {}
 
+       __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims)
+         : PrimInfoMB(pinfo_i), prims(prims) {}
+
       __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in)
         : PrimInfoMB(pinfo_i), prims(prims)
       {

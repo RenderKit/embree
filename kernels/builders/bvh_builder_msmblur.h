@@ -632,7 +632,7 @@ namespace embree
           /*! builder entry function */
           __forceinline const NodeRecordMB4D operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo)
           {
-            const SetMB set(pinfo,&prims,BBox1f(0,1));
+            const SetMB set(pinfo,&prims);
             auto ret = recurse(BuildRecord(set,1),nullptr,true);
             _mm_mfence(); // to allow non-temporal stores during build
             return ret;
