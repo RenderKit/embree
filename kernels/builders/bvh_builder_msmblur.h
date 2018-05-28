@@ -357,12 +357,12 @@ namespace embree
               for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
               {
                 const PrimRefMB& prim = (*set.prims)[i];
-                const range<int> itime_range = getTimeSegmentRange(set.time_range,(float)prim.totalTimeSegments());
+                const range<int> itime_range = getTimeSegmentRange(set.time_range,prim.time_range,(float)prim.totalTimeSegments());
                 const int localTimeSegments = itime_range.size();
                 assert(localTimeSegments > 0);
                 if (localTimeSegments > 1) {
                   const int icenter = (itime_range.begin() + itime_range.end())/2;
-                  const float splitTime = float(icenter)/float(prim.totalTimeSegments());
+                  const float splitTime = prim.time_range.lower + prim.time_range.size()*float(icenter)/float(prim.totalTimeSegments());
                   return Split(0.0f,(unsigned)Split::SPLIT_TEMPORAL,0,splitTime);
                 }
               }
