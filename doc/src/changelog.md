@@ -9,6 +9,7 @@ Version History
     should best use two (or more) time steps for an instance that instantiates
     a motion blurred scene.
 -   Fixed AVX512 compile issue with GCC 6.1.1.
+-   Removed libmmd.dll depdendency
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
