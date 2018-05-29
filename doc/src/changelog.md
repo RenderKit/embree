@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.3.0
+-   Removed libmmd.dll depdendency
+
 ### New Features in Embree 3.2.1
 -   Bugfix in flat mode for hermite curves.
 -   Added EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR cmake option to
