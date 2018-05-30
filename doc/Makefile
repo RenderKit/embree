@@ -17,6 +17,7 @@ images: $(images_jpg) $(images_png) $(images_pdf)
 
 .PHONY: all www doc images
 
+PANDOC := pandoc
 
 ########################################################################
 ### add version
@@ -64,9 +65,9 @@ tmpdir:
 ### webpages
 ########################################################################
 
-markdown2web = pandoc --smart --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
+markdown2web = $(PANDOC) --smart --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
 
-markdown2web2 = pandoc $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | pandoc --smart --email-obfuscation=none -f markdown --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
+markdown2web2 = $(PANDOC) $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | $(PANDOC) --smart --email-obfuscation=none -f markdown --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
 
 $(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
 
@@ -141,12 +142,12 @@ tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
 tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	pandoc --smart $+ -t latex --columns=72 --chapters -o $@
+	$(PANDOC) --smart $+ -t latex --columns=72 --chapters -o $@
 
 tmp/api.tex: tmp/api.md tmp/links_local.md tmp/images_local_pdf.md
-	pandoc tmp/api.md --filter src/IncludeFilter.py -t markdown -o tmp/api_inc.md
+	$(PANDOC) tmp/api.md --filter src/IncludeFilter.py -t markdown -o tmp/api_inc.md
 	cat tmp/api_inc.md | $(convertbsp0) | $(convertbsp1) | $(convertbsp2) > tmp/api_inc1.md
-	pandoc tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp --smart -t latex --columns=72 --chapters -o $@
+	$(PANDOC) tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp --smart -t latex --columns=72 --chapters -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
@@ -160,7 +161,7 @@ doc/readme.pdf: tmp/readme.tex tmp/overview.tex tmp/changelog.tex tmp/platforms.
 ########################################################################
 
 man/man3/%.3embree3: src/api/%.md
-	pandoc -s -t man $< -o $@
+	$(PANDOC) -s -t man $< -o $@
 
 ########################################################################
 ### clean
