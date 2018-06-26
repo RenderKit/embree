@@ -39,10 +39,9 @@ IF (WIN32)
   )
 
 ELSE (WIN32)
-  
-  FIND_PACKAGE(PkgConfig REQUIRED)
-  PKG_SEARCH_MODULE(GLFW QUIET glfw3)
-  IF (NOT GLFW_FOUND)
+
+  FIND_PACKAGE(glfw3 QUIET)
+  IF (NOT glfw3_FOUND)
     MESSAGE(FATAL_ERROR "GLFW not found! Please either install GLFW or disable EMBREE_TUTORIALS.")
   ENDIF()
 
