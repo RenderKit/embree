@@ -54,7 +54,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline LineMi(const vuint<M>& v0, const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
-      : gtype((unsigned char)gtype), m(popcnt(vuint<M>(primIDs) != vuint<M>(-1))), sharedGeomID(geomIDs[0]), v0(v0), primIDs(primIDs)
+      : gtype((unsigned char)gtype), m((unsigned char)popcnt(vuint<M>(primIDs) != vuint<M>(-1))), sharedGeomID(geomIDs[0]), v0(v0), primIDs(primIDs)
     {
       assert(all(vuint<M>(geomID()) == geomIDs));
     }
@@ -137,7 +137,7 @@ namespace embree
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const LineSegments* geom = scene->get<LineSegments>(geomID(i));
+        const LineSegments* geom = scene->get<LineSegments>(geomID((unsigned int)i));
         allBounds.extend(geom->linearBounds(primID(i), time_range));
       }
       return allBounds;
