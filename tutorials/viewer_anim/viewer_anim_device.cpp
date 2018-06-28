@@ -455,7 +455,7 @@ extern "C" void device_render (int* pixels,
 #if ENABLE_ANIM == 1
 
   if (animTime < 0.0f) animTime = getTime();
-  const double atime = (getTime() - animTime) * ANIM_FPS;
+  const float atime = (getTime() - animTime) * ANIM_FPS;
   const unsigned int intpart = (unsigned int)floor(atime);
   const double fracpart = atime - (double)intpart;
   const unsigned int keyFrameID = intpart;
