@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "../common/math/random_sampler.h"
-#include "../common/math/sampling.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/math/sampling.h"
 
 namespace embree {
 
