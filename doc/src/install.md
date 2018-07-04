@@ -62,13 +62,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree-lib-<EMBREE_VERSION>-1.x86_64.rpm
-    sudo alien embree-devel-<EMBREE_VERSION>-1.noarch.rpm
-    sudo alien embree-examples-<EMBREE_VERSION>-1.x86_64.rpm
+    sudo alien embree<EMBREE_VERSION_MAJOR>-lib-<EMBREE_VERSION>-1.x86_64.rpm
+    sudo alien embree<EMBREE_VERSION_MAJOR>-devel-<EMBREE_VERSION>-1.noarch.rpm
+    sudo alien embree<EMBREE_VERSION_MAJOR>-examples-<EMBREE_VERSION>-1.x86_64.rpm
 
-    sudo dpkg -i embree-devel_<EMBREE_VERSION>-2_all.deb
-    sudo dpkg -i embree-examples_<EMBREE_VERSION>-2_amd64.deb
-    sudo dpkg -i embree-lib_<EMBREE_VERSION>-2_amd64.deb
+    sudo dpkg -i embree<EMBREE_VERSION_MAJOR>-devel_<EMBREE_VERSION>-2_all.deb
+    sudo dpkg -i embree<EMBREE_VERSION_MAJOR>-examples_<EMBREE_VERSION>-2_amd64.deb
+    sudo dpkg -i embree<EMBREE_VERSION_MAJOR>-lib_<EMBREE_VERSION>-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -94,9 +94,9 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree-lib-<EMBREE_VERSION>-1.x86_64
-    sudo rpm --erase embree-devel-<EMBREE_VERSION>-1.noarch
-    sudo rpm --erase embree-examples-<EMBREE_VERSION>-1.x86_64
+    sudo rpm --erase embree<EMBREE_VERSION_MAJOR>-lib-<EMBREE_VERSION>-1.x86_64
+    sudo rpm --erase embree<EMBREE_VERSION_MAJOR>-devel-<EMBREE_VERSION>-1.noarch
+    sudo rpm --erase embree<EMBREE_VERSION_MAJOR>-examples-<EMBREE_VERSION>-1.x86_64
 
 Linux tar.gz Files
 ------------------
