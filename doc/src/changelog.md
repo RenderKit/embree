@@ -5,7 +5,15 @@ Version History
 -   Added support for motion blur time range per geometry. This way geometries
     can appear and disappear during the camera shutter  and time steps do not have
     to start and end at camera shutter interval boundaries.
-
+### New Features in Embree 3.2.1
+-   Bugfix in flat mode for hermite curves.
+-   Added EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR cmake option to
+    control self intersection avoidance for flat curves.
+-   Performance fix when instantiating motion blurred scenes. The application
+    should best use two (or more) time steps for an instance that instantiates
+    a motion blurred scene.
+-   Fixed AVX512 compile issue with GCC 6.1.1.
+-   Removed libmmd.dll depdendency
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
 -   Line segments, and other curves are now all contained in a single

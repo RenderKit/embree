@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "../common/math/random_sampler.isph"
-#include "../common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.h"
+#include "../common/math/sampling.isph"
 
 #define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
@@ -445,7 +445,7 @@ export void device_render (uniform int* uniform pixels,
 #if ENABLE_ANIM == 1
 
   if (animTime < 0.0f) animTime = getTime();
-  const uniform double atime = (getTime() - animTime) * ANIM_FPS;
+  const uniform float atime = (float)((getTime() - animTime) * ANIM_FPS);
   const uniform unsigned int intpart = (unsigned int)floor(atime);
   const uniform double fracpart = atime - (double)intpart;
   const uniform unsigned int keyFrameID = intpart;

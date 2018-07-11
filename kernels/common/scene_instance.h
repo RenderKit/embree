@@ -56,7 +56,7 @@ namespace embree
      /*! calculates the bounds of instance */
     __forceinline BBox3fa bounds(size_t i, size_t itime) const {
       assert(i == 0);
-      return xfmBounds(local2world[itime],object->bounds.bounds());
+      return xfmBounds(local2world[itime],object->getBounds(float(itime)/fnumTimeSegments));
     }
 
      /*! calculates the linear bounds at the itimeGlobal'th time segment */

@@ -111,6 +111,15 @@ namespace embree
       __forceinline friend BSplineCurveT operator -( const BSplineCurveT& a, const Vertex& b ) {
         return BSplineCurveT(a.v0-b,a.v1-b,a.v2-b,a.v3-b);
       }
+
+      __forceinline BSplineCurveT<Vec3fa> xfm_pr(const LinearSpace3fa& space, const Vec3fa& p) const
+      {
+        Vec3fa q0 = xfmVector(space,v0-p); q0.w = v0.w;
+        Vec3fa q1 = xfmVector(space,v1-p); q1.w = v1.w;
+        Vec3fa q2 = xfmVector(space,v2-p); q2.w = v2.w;
+        Vec3fa q3 = xfmVector(space,v3-p); q3.w = v3.w;
+        return BSplineCurveT<Vec3fa>(q0,q1,q2,q3);
+      }
       
       __forceinline Vertex eval(const float t) const 
       {

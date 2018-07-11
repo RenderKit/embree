@@ -44,4 +44,4 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcGetSceneBuildQuality], [rtcSetGeometryBuildQuality]
+[rtcSetGeometryBuildQuality]

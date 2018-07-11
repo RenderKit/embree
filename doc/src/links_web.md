@@ -1,4 +1,5 @@
 [Embree API]: api.html
+[Embree Tutorials]: tutorials.html
 [Ray Layout]: api.html#ray-layout
 [Extending the Ray Structure]: api.html#extending-the-ray-structure
 [Embree Example Renderer]: renderer.html

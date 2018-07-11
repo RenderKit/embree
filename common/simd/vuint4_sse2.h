@@ -188,7 +188,7 @@ namespace embree
 
     friend __forceinline vuint4 select(const vboolf4& m, const vuint4& t, const vuint4& f) {
 #if defined(__AVX512VL__)
-      return _mm_mask_blend_epi32(m, f, t);
+      return _mm_mask_blend_epi32(m, (__m128i)f, (__m128i)t);
 #elif defined(__SSE4_1__)
       return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m)); 
 #else

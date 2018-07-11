@@ -1530,6 +1530,39 @@ namespace embree
     return node;
   }
 
+  void SceneGraph::convert_mblur_to_nonmblur(Ref<Node> node)
+  {
+     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+       xfmNode->spaces.spaces.resize(1);
+       convert_mblur_to_nonmblur(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        convert_mblur_to_nonmblur(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+      if (mesh->positions.size()) mesh->positions.resize(1);
+      if (mesh->normals.size())   mesh->normals.resize(1);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+      if (mesh->positions.size()) mesh->positions.resize(1);
+      if (mesh->normals.size())   mesh->normals.resize(1);
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      if (mesh->positions.size()) mesh->positions.resize(1);
+      if (mesh->normals.size())   mesh->normals.resize(1);
+      if (mesh->tangents.size())  mesh->tangents.resize(1);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+      if (mesh->positions.size()) mesh->positions.resize(1);
+      if (mesh->normals .size()) mesh->normals .resize(1);
+    }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+      mesh->positions.resize(1);
+    }
+  }
+
   struct SceneGraphFlattener
   {
     Ref<SceneGraph::Node> node;

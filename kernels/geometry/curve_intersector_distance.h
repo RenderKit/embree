@@ -29,8 +29,8 @@ namespace embree
       __forceinline DistanceCurveHit() {}
 
       __forceinline DistanceCurveHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
-                            const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
-        : U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3), valid(valid) {}
+                                     const NativeCurve3fa& curve3D)
+        : U(U), V(V), T(T), i(i), N(N), curve3D(curve3D), valid(valid) {}
       
       __forceinline void finalize() 
       {
@@ -42,7 +42,7 @@ namespace embree
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const { 
-        return NativeCurve3fa(p0,p1,p2,p3).eval_du(vu[i]);
+        return curve3D.eval_du(vu[i]);
       }
       
     public:
@@ -50,7 +50,7 @@ namespace embree
       vfloat<M> V;
       vfloat<M> T;
       int i, N;
-      Vec3fa p0,p1,p2,p3;
+      NativeCurve3fa curve3D;
       
     public:
       vbool<M> valid;
@@ -71,11 +71,8 @@ namespace embree
         const int N = geom->tessellationRate;
         
         /* transform control points into ray space */
-        Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
-        Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
-        Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
-        Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
-        NativeCurve3fa curve2D(w0,w1,w2,w3);
+        const NativeCurve3fa curve3D(v0,v1,v2,v3);
+        const NativeCurve3fa curve2D = curve3D.xfm_pr(pre.ray_space,ray.org);
       
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
@@ -94,12 +91,13 @@ namespace embree
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
         valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
-        valid &= t > ray.tnear()+2.0f*r*pre.depth_scale; // ignore self intersections
+        if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) 
+          valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*pre.depth_scale; // ignore self intersections
 
         /* update hit information */
         bool ishit = false;
         if (unlikely(any(valid))) {
-          DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
+          DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,0,N,curve3D);
           ishit = ishit | epilog(valid,hit);
         }
 
@@ -125,11 +123,12 @@ namespace embree
             const vfloatx r = p.w;
             const vfloatx r2 = r*r;
             valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
-            valid &= t > ray.tnear()+2.0f*r*pre.depth_scale; // ignore self intersections
+            if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
+              valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*pre.depth_scale; // ignore self intersections
 
              /* update hit information */
             if (unlikely(any(valid))) {
-              DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+              DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,curve3D);
               ishit = ishit | epilog(valid,hit);
             }
           }
@@ -137,58 +136,5 @@ namespace embree
         return ishit;
       }
     };
-
-    template<typename NativeCurve3fa, int K>
-    struct DistanceCurve1IntersectorK
-    {
-      template<typename Epilog>
-      __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
-                                   const CurveGeometry* geom, const unsigned int primID,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                   const Epilog& epilog)
-      {
-        const int N = geom->tessellationRate;
-        
-        /* load ray */
-        const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-        
-        /* transform control points into ray space */
-        Vec3fa w0 = xfmVector(pre.ray_space[k],v0-ray_org); w0.w = v0.w;
-        Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
-        Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
-        Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
-        NativeCurve3fa curve2D(w0,w1,w2,w3);
-        
-        /* process SIMD-size many segments per iteration */
-        bool ishit = false;
-        for (int i=0; i<N; i+=VSIZEX)
-        {
-          /* evaluate the bezier curve */
-          vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(i,N);
-          const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
-          
-          /* approximative intersection with cone */
-          const Vec4vfx v = p1-p0;
-          const Vec4vfx w = -p0;
-          const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
-          const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
-          const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-          const Vec4vfx p = madd(u,v,p0);
-          const vfloatx t = p.z*pre.depth_scale[k];
-          const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
-          const vfloatx r = p.w;
-          const vfloatx r2 = r*r;
-          valid &= (d2 <= r2) & (vfloatx(ray.tnear[k]) < t) & (t <= vfloatx(ray.tfar[k]));
-          valid &= t > ray.tnear[k]+2.0f*r*pre.depth_scale[k]; // ignore self intersections
-          if (likely(none(valid))) continue;
-        
-          /* update hit information */
-          DistanceCurveHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
-          ishit = ishit | epilog(valid,hit);
-        }
-        return ishit;
-      }
-    };  
   }
 }

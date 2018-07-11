@@ -1153,16 +1153,23 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
   {
+    /* parse number of time steps to use for instanced geometry */
+    int time_steps = 1;
+    std::string str_time_steps = xml->parm("time_steps");
+    if (str_time_steps != "") time_steps = max(1,std::stoi(str_time_steps));
+
+    avector<AffineSpace3fa> spaces(time_steps);
     AffineSpace3fa space = load<AffineSpace3fa>(xml->children[0]);
+    for (size_t i=0; i<time_steps; i++) spaces[i] = space;
     
     if (xml->size() == 2)
-      return new SceneGraph::TransformNode(space,loadNode(xml->children[1]));
+      return new SceneGraph::TransformNode(spaces,loadNode(xml->children[1]));
   
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
     for (size_t i=1; i<xml->size(); i++)
       group->add(loadNode(xml->children[i]));
     
-    return new SceneGraph::TransformNode(space,group.dynamicCast<SceneGraph::Node>());
+    return new SceneGraph::TransformNode(spaces,group.dynamicCast<SceneGraph::Node>());
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadMultiTransformNode(const Ref<XML>& xml) 

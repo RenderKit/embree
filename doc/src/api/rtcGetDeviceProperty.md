@@ -10,7 +10,7 @@
 
     ssize_t rtcGetDeviceProperty(
       RTCDevice device,
-      RTCDeviceProperty prop
+      enum RTCDeviceProperty prop
     );
 
 #### DESCRIPTION
@@ -116,7 +116,3 @@ denotes `true`.
 
 On failure zero is returned and an error code is set that can be
 queried using `rtcDeviceGetError`.
-
-#### SEE ALSO
-
-[rtcSetDeviceProperty]

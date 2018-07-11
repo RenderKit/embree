@@ -33,8 +33,8 @@ namespace embree
       __forceinline RibbonHit() {}
 
       __forceinline RibbonHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
-                              const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
-        : U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3), valid(valid) {}
+                              const NativeCurve3fa& curve3D)
+        : U(U), V(V), T(T), i(i), N(N), curve3D(curve3D), valid(valid) {}
       
       __forceinline void finalize() 
       {
@@ -46,7 +46,7 @@ namespace embree
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const { 
-        return NativeCurve3fa(p0,p1,p2,p3).eval_du(vu[i]);
+        return curve3D.eval_du(vu[i]);
       }
       
     public:
@@ -54,7 +54,7 @@ namespace embree
       vfloat<M> V;
       vfloat<M> T;
       int i, N;
-      Vec3fa p0,p1,p2,p3;
+      NativeCurve3fa curve3D;
       
     public:
       vbool<M> valid;
@@ -81,16 +81,12 @@ namespace embree
     template<typename NativeCurve3fa, typename Epilog>
     __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float& ray_tfar,
                                         const LinearSpace3fa& ray_space, const float& depth_scale,
-                                        const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                        const NativeCurve3fa& curve3D, const int N,
                                         const Epilog& epilog)
     {
       /* transform control points into ray space */
-      Vec3fa w0 = xfmVector(ray_space,v0-ray_org); w0.w = v0.w;
-      Vec3fa w1 = xfmVector(ray_space,v1-ray_org); w1.w = v1.w;
-      Vec3fa w2 = xfmVector(ray_space,v2-ray_org); w2.w = v2.w;
-      Vec3fa w3 = xfmVector(ray_space,v3-ray_org); w3.w = v3.w;
-      NativeCurve3fa curve2D(w0,w1,w2,w3);
-      float eps = 4.0f*float(ulp)*reduce_max(max(abs(w0),abs(w1),abs(w2),abs(w3)));
+      const NativeCurve3fa curve2D = curve3D.xfm_pr(ray_space,ray_org);
+      float eps = 4.0f*float(ulp)*reduce_max(max(abs(curve2D.v0),abs(curve2D.v1),abs(curve2D.v2),abs(curve2D.v3)));
       
       /* evaluate the bezier curve */
       bool ishit = false;
@@ -120,13 +116,15 @@ namespace embree
         if (any(valid0))
         {
           /* ignore self intersections */
-          vfloatx r = lerp(p0.w, p1.w, vu);
-          valid0 &= vt > ray_tnear & vt > 2.0f*r*depth_scale;
+          if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) {
+            vfloatx r = lerp(p0.w, p1.w, vu);
+            valid0 &= vt > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*depth_scale;
+          }
           
           if (any(valid0))
           {
             vv = madd(2.0f,vv,vfloatx(-1.0f));
-            RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,0,N,v0,v1,v2,v3);
+            RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,0,N,curve3D);
             ishit |= epilog(bhit.valid,bhit);
           }
         }
@@ -163,13 +161,15 @@ namespace embree
           if (any(valid0))
           {
             /* ignore self intersections */
-            vfloatx r = lerp(p0.w, p1.w, vu);
-            valid0 &= vt > ray_tnear & vt > 2.0f*r*depth_scale;
+            if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) {
+              vfloatx r = lerp(p0.w, p1.w, vu);
+              valid0 &= vt > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*depth_scale;
+            }
             
             if (any(valid0))
             {
               vv = madd(2.0f,vv,vfloatx(-1.0f));
-              RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,i,N,v0,v1,v2,v3);
+              RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,i,N,curve3D);
               ishit |= epilog(bhit.valid,bhit);
             }
           }
@@ -188,9 +188,10 @@ namespace embree
                                    const Epilog& epilog)
       {
         const int N = geom->tessellationRate;
+        const NativeCurve3fa curve(v0,v1,v2,v3);
         return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar,
                                                 pre.ray_space,pre.depth_scale,
-                                                v0,v1,v2,v3,N,
+                                                curve,N,
                                                 epilog);
       }
     };
@@ -205,11 +206,12 @@ namespace embree
                                    const Epilog& epilog)
       {
         const int N = geom->tessellationRate;
+        const NativeCurve3fa curve(v0,v1,v2,v3);
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
                                                 pre.ray_space[k],pre.depth_scale[k],
-                                                v0,v1,v2,v3,N,
+                                                curve,N,
                                                 epilog);
       }
     };
