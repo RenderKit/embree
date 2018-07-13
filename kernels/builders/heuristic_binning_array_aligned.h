@@ -190,7 +190,7 @@ namespace embree
         {
           ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.size(),set.centBounds);
-          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
+          bin_parallel(binner,set.prims->data(),set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           Split osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
@@ -200,8 +200,8 @@ namespace embree
         /*! array partitioning */
         __forceinline void split(const Split& split, const SetMB& set, SetMB& lset, SetMB& rset)
         {
-          const size_t begin = set.object_range.begin();
-          const size_t end   = set.object_range.end();
+          const size_t begin = set.begin();
+          const size_t end   = set.end();
           PrimInfoMB left = empty;
           PrimInfoMB right = empty;
           const vint4 vSplitPos(split.pos);

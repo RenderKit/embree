@@ -354,7 +354,7 @@ namespace embree
             if (cfg.singleLeafTimeSegment)
             {
               /* test if one primitive has more than one time segment in time range, if so split time */
-              for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
+              for (size_t i=set.begin(); i<set.end(); i++)
               {
                 const PrimRefMB& prim = (*set.prims)[i];
                 const range<int> itime_range = prim.timeSegmentRange(set.time_range);
@@ -377,8 +377,8 @@ namespace embree
           {
             mvector<PrimRefMB>& prims = *set.prims;
 
-            const size_t begin = set.object_range.begin();
-            const size_t end   = set.object_range.end();
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
             const size_t center = (begin + end)/2;
 
             PrimInfoMB linfo = empty;
@@ -398,8 +398,8 @@ namespace embree
           {
             if (set.size() == 0) return true;
             mvector<PrimRefMB>& prims = *set.prims;
-            const size_t begin = set.object_range.begin();
-            const size_t end   = set.object_range.end();
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
             unsigned int firstGeomID = prims[begin].geomID();
             for (size_t i=begin+1; i<end; i++) {
               if (prims[i].geomID() != firstGeomID){
@@ -412,11 +412,11 @@ namespace embree
           /* split by geometry ID */
           void splitByGeometry(const SetMB& set, SetMB& lset, SetMB& rset)
           {
-            assert(set.object_range.size() > 1);
+            assert(set.size() > 1);
 
             mvector<PrimRefMB>& prims = *set.prims;
-            const size_t begin = set.object_range.begin();
-            const size_t end   = set.object_range.end();
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
             
             PrimInfoMB left(empty);
             PrimInfoMB right(empty);
@@ -444,7 +444,7 @@ namespace embree
             {
               BBox1f c = empty;
               BBox1f p = current.prims.time_range;
-              for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) {
+              for (size_t i=current.prims.begin(); i<current.prims.end(); i++) {
                 mvector<PrimRefMB>& prims = *current.prims.prims;
                 c.extend(prims[i].time_range);
               }

@@ -76,7 +76,7 @@ namespace embree
           if (prims.size() == 0)
             return NodeRecordMB4D(BVH::emptyNode,empty,empty);
           
-          const unsigned int geomID0 = (*prims.prims)[prims.object_range.begin()].geomID();
+          const unsigned int geomID0 = (*prims.prims)[prims.begin()].geomID();
           if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
             return LinePrimitive::createLeafMB(bvh,prims,alloc);
           else

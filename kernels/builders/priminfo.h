@@ -198,7 +198,7 @@ namespace embree
         CentGeom<BBox>::merge(other);
         time_range.extend(other.time_range);
         object_range._begin += other.object_range.begin();
-	object_range._end += other.object_range.end();
+        object_range._end += other.object_range.end();
         num_time_segments += other.num_time_segments;
         if (max_num_time_segments < other.max_num_time_segments) {
           max_num_time_segments = other.max_num_time_segments;
@@ -208,6 +208,14 @@ namespace embree
 
       static __forceinline const PrimInfoMBT merge2(const PrimInfoMBT& a, const PrimInfoMBT& b) {
         PrimInfoMBT r = a; r.merge(b); return r;
+      }
+
+      __forceinline size_t begin() const {
+        return object_range.begin();
+      }
+
+      __forceinline size_t end() const {
+        return object_range.end();
       }
       
       /*! returns the number of primitives */

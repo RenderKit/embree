@@ -165,9 +165,9 @@ namespace embree
         /*! finds the best split */
         const Split find(const SetMB& set, const size_t logBlockSize)
         {
-          assert(set.object_range.size() > 0);
+          assert(set.size() > 0);
           TemporalBinInfo binner(empty);
-          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,set,recalculatePrimRef);
+          binner.bin_parallel(set.prims->data(),set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,set,recalculatePrimRef);
           Split tsplit = binner.best((int)logBlockSize,set.time_range,set);
           if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return tsplit;
@@ -184,19 +184,19 @@ namespace embree
           std::unique_ptr<mvector<PrimRefMB>> new_vector(new mvector<PrimRefMB>(device, set.size()));
           PrimRefVector lprims = new_vector.get();
           
-          auto reduction_func0 = [&] ( const range<size_t>& r) {
+          auto reduction_func0 = [&] (const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
               if (likely(prims[i].time_range_overlap(time_range0)))
               {
                 const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range0);
-                (*lprims)[i-set.object_range.begin()] = prim;
+                (*lprims)[i-set.begin()] = prim;
                 pinfo.add_primref(prim);
               }
               else
               {
-                (*lprims)[i-set.object_range.begin()] = prims[i];
+                (*lprims)[i-set.begin()] = prims[i];
               }
             }
             return pinfo;
@@ -212,7 +212,7 @@ namespace embree
           lset = SetMB(linfo,lprims,time_range0);
 
           /* calculate primrefs for second time range */
-          auto reduction_func1 = [&] ( const range<size_t>& r) {
+          auto reduction_func1 = [&] (const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
@@ -226,12 +226,12 @@ namespace embree
             return pinfo;
           };        
           PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
-          rinfo.object_range = range<size_t>(set.object_range.begin(), set.object_range.begin() + rinfo.size());
+          rinfo.object_range = range<size_t>(set.begin(), set.begin() + rinfo.size());
 
-          /* primrefs for second time range are in prims[set.object_range.begin() .. set.object_range.end()) */
+          /* primrefs for second time range are in prims[set.begin() .. set.end()) */
           /* some primitives may need to be filtered out */
           if (rinfo.size() != set.size())
-            rinfo.object_range._end = parallel_filter(prims.data(), set.object_range.begin(), set.object_range.end(), size_t(1024),
+            rinfo.object_range._end = parallel_filter(prims.data(), set.begin(), set.end(), size_t(1024),
                                                       [&](const PrimRefMB& prim) { return prim.time_range_overlap(time_range1); });
         
           rset = SetMB(rinfo,&prims,time_range1);

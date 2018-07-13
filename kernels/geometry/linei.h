@@ -203,10 +203,10 @@ namespace embree
       template<typename BVH, typename SetMB, typename Allocator>
     __forceinline static typename BVH::NodeRecordMB4D createLeafMB(BVH* bvh, const SetMB& prims, const Allocator& alloc)
     {
-      size_t start = prims.object_range.begin();
-      size_t end   = prims.object_range.end();
-      size_t items = LineMi::blocks(prims.object_range.size());
-      size_t numbytes = LineMi::bytes(prims.object_range.size());
+      size_t start = prims.begin();
+      size_t end   = prims.end();
+      size_t items = LineMi::blocks(prims.size());
+      size_t numbytes = LineMi::bytes(prims.size());
       LineMi* accel = (LineMi*) alloc.malloc1(numbytes,M*sizeof(float));
       const typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       

@@ -56,7 +56,7 @@ namespace embree
           : depth(depth), prims(prims) {}
 
         __forceinline size_t size() const {
-          return prims.object_range.size();
+          return prims.size();
         }
 
       public:
@@ -122,8 +122,8 @@ namespace embree
           __forceinline bool sameGeometry(const SetMB& set)
           {
             mvector<PrimRefMB>& prims = *set.prims;
-            unsigned int firstGeomID = prims[set.object_range.begin()].geomID();
-            for (size_t i=set.object_range.begin()+1; i<set.object_range.end(); i++) {
+            unsigned int firstGeomID = prims[set.begin()].geomID();
+            for (size_t i=set.begin()+1; i<set.end(); i++) {
               if (prims[i].geomID() != firstGeomID){
                 return false;
               }
@@ -136,8 +136,8 @@ namespace embree
           {
             mvector<PrimRefMB>& prims = *set.prims;
 
-            const size_t begin = set.object_range.begin();
-            const size_t end   = set.object_range.end();
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
             const size_t center = (begin + end)/2;
 
             PrimInfoMB linfo = empty;
@@ -154,9 +154,9 @@ namespace embree
 
           void splitByGeometry(const SetMB& set, SetMB& lset, SetMB& rset)
           {
-            assert(set.object_range.size() > 1);
-            const size_t begin = set.object_range.begin();
-            const size_t end   = set.object_range.end();
+            assert(set.size() > 1);
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
             PrimInfoMB linfo(empty);
             PrimInfoMB rinfo(empty);
             unsigned int geomID = (*set.prims)[begin].geomID();
@@ -181,7 +181,7 @@ namespace embree
             {
               BBox1f c = empty;
               BBox1f p = current.prims.time_range;
-              for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) {
+              for (size_t i=current.prims.begin(); i<current.prims.end(); i++) {
                 mvector<PrimRefMB>& prims = *current.prims.prims;
                 c.extend(prims[i].time_range);
               }

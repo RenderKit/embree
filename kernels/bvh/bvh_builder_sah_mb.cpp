@@ -86,15 +86,15 @@ namespace embree
 
       __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
-        size_t items = Primitive::blocks(current.prims.object_range.size());
-        size_t start = current.prims.object_range.begin();
-        size_t end   = current.prims.object_range.end();
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
+        size_t end   = current.prims.end();
         for (size_t i=start; i<end; i++) assert((*current.prims.prims)[start].geomID() == (*current.prims.prims)[i].geomID()); // assert that all geomIDs are identical
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
+          allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.end(), bvh->scene, current.prims.time_range));
         return NodeRecordMB4D(node,allBounds,current.prims.time_range);
       }
 
@@ -191,7 +191,7 @@ namespace embree
         PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
 
         /* early out if no valid primitives */
-        if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
+        if (pinfo.size() == 0) { bvh->clear(); return; }
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -280,8 +280,8 @@ namespace embree
 
       __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
-        const size_t items = current.prims.object_range.size(); 
-        const size_t start = current.prims.object_range.begin();
+        const size_t items = current.prims.size(); 
+        const size_t start = current.prims.begin();
 
         const PrimRefMB* prims = current.prims.prims->data();
         /* collect all subsets with unique geomIDs */
@@ -617,7 +617,7 @@ namespace embree
         PrimInfoMB pinfo = createPrimRefArrayMSMBlurGrid(scene,prims,bvh->scene->progressInterface);
 
         /* early out if no valid primitives */
-        if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
+        if (pinfo.size() == 0) { bvh->clear(); return; }
 
 
 

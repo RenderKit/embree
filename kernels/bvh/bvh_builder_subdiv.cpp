@@ -263,10 +263,10 @@ namespace embree
             sMB += count * mesh->numTimeSteps;
           }
           return PrimInfoMB(s,sMB);
-        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.object_range.begin()+b.object_range.begin(),a.object_range.end()+b.object_range.end()); });
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.begin()+b.begin(),a.end()+b.end()); });
 
-        numSubPatches = pinfo.object_range.begin();
-        numSubPatchesMB = pinfo.object_range.end();
+        numSubPatches = pinfo.begin();
+        numSubPatchesMB = pinfo.end();
       }
 
       void rebuild(size_t numPrimitives)
@@ -288,8 +288,8 @@ namespace embree
             BVH_Allocator alloc(bvh);
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const size_t patchIndex = base.object_range.begin()+s;
-              const size_t patchIndexMB = base.object_range.end()+sMB;
+              const size_t patchIndex = base.begin()+s;
+              const size_t patchIndexMB = base.end()+sMB;
               assert(patchIndex < numPrimitives);
 
               for (size_t t=0; t<mesh->numTimeSteps; t++)
@@ -309,14 +309,14 @@ namespace embree
           pinfo.object_range._end = sMB;
           return pinfo;
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
-        pinfo.object_range._end = pinfo.object_range.begin();
+        pinfo.object_range._end = pinfo.begin();
         pinfo.object_range._begin = 0;
 
         auto createLeafFunc = [&] (const BVHBuilderMSMBlur::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB4D {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
-          const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
+          const size_t patchIndexMB = prims[current.prims.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           NodeRef node = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geomID())->numTimeSteps;
