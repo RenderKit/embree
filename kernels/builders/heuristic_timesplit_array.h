@@ -181,7 +181,7 @@ namespace embree
           mvector<PrimRefMB>& prims = *set.prims;
           
           /* calculate primrefs for first time range */
-          std::unique_ptr<mvector<PrimRefMB>> new_vector(new mvector<PrimRefMB>(device, set.object_range.size()));
+          std::unique_ptr<mvector<PrimRefMB>> new_vector(new mvector<PrimRefMB>(device, set.size()));
           PrimRefVector lprims = new_vector.get();
           
           auto reduction_func0 = [&] ( const range<size_t>& r) {
@@ -203,9 +203,10 @@ namespace embree
           };        
           PrimInfoMB linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
 
-          /* some primitives have to get filtered out */
+          /* primrefs for first time range are in lprims[0 .. set.size()) */
+          /* some primitives may need to be filtered out */
           if (linfo.size() != set.size())
-            linfo.object_range._end = parallel_filter(lprims->data(), linfo.object_range.begin(), linfo.object_range.end(), size_t(1024),
+            linfo.object_range._end = parallel_filter(lprims->data(), size_t(0), set.size(), size_t(1024),
                                                       [&](const PrimRefMB& prim) { return prim.time_range_overlap(time_range0); });
                       
           lset = SetMB(linfo,lprims,time_range0);
@@ -225,13 +226,15 @@ namespace embree
             return pinfo;
           };        
           PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
+          rinfo.object_range = range<size_t>(set.object_range.begin(), set.object_range.begin() + rinfo.size());
 
-          /* some primitives have to get filtered out */
+          /* primrefs for second time range are in prims[set.object_range.begin() .. set.object_range.end()) */
+          /* some primitives may need to be filtered out */
           if (rinfo.size() != set.size())
-            rinfo.object_range._end = parallel_filter(prims.data(), rinfo.object_range.begin(), rinfo.object_range.end(), size_t(1024),
+            rinfo.object_range._end = parallel_filter(prims.data(), set.object_range.begin(), set.object_range.end(), size_t(1024),
                                                       [&](const PrimRefMB& prim) { return prim.time_range_overlap(time_range1); });
         
-          rset = SetMB(rinfo,&prims,set.object_range,time_range1);
+          rset = SetMB(rinfo,&prims,time_range1);
 
           return new_vector;
         }

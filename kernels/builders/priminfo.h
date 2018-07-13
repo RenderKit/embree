@@ -280,7 +280,6 @@ namespace embree
       __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in)
         : PrimInfoMB(pinfo_i), prims(prims)
       {
-        object_range = range<size_t>(0,prims->size());
         time_range = intersect(time_range,time_range_in);
       }
 
