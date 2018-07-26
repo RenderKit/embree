@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### New Features in Embree 2.17.5
+-   Improved watertightness of robust mode.
+-   Fixed floating point exception in static variable initialization.
+-   Fixed AVX512 compile issue with GCC 6.1.1.
+
 ### New Features in Embree 2.17.4
 -   Fixed AVX512 compile issue with GCC 7.
 -   Fixed issue with not thread safe local static variable
