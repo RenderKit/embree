@@ -78,6 +78,27 @@ Version History
     Contributor License Agreement (CCLA) no longer required to
     contribute to the project.
 
+### New Features in Embree 2.17.5
+-   Improved watertightness of robust mode.
+-   Fixed floating point exception in static variable initialization.
+-   Fixed AVX512 compile issue with GCC 6.1.1.
+
+### New Features in Embree 2.17.4
+-   Fixed AVX512 compile issue with GCC 7.
+-   Fixed issue with not thread safe local static variable
+    initialization in VS2013.
+-   Fixed bug in the 4 and 8-wide packet intersection of instances with
+    multi-segment motion blur on AVX-512 architectures.
+-   Fixed bug in rtcOccluded4/8/16 when only AVX-512 ISA was enabled.
+
+### New Features in Embree 2.17.3
+-   Fixed GCC compile warning in debug mode.
+-   Fixed bug of ribbon curve intersector when derivative was zero.
+-   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
+
+### New Features in Embree 2.17.2
+-   Made BVH build of curve geometry deterministic.
+
 ### New Features in Embree 2.17.1
 -   Improved performance of occlusion ray packets by up to 50%.
 -   Fixed detection of Clang for CMake 3 under MacOSX
