@@ -87,7 +87,7 @@ namespace embree
   AffineSpace3fa Instance::getTransform(float time)
   {
     if (likely(numTimeSteps <= 1))
-      return getWorld2Local();
+      return rcp(getWorld2Local());
     else
       return getWorld2Local(time);
   }

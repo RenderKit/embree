@@ -1271,7 +1271,8 @@ namespace embree
 
   RTC_API void* rtcGetGeometryUserData (RTCGeometry hgeometry)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    //Ref<Geometry> geometry = (Geometry*) hgeometry; 
+    Geometry* geometry = (Geometry*) hgeometry; // no locking in critical path, as otherwise performance tanks
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryUserData);
     RTC_VERIFY_HANDLE(hgeometry);
