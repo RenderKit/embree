@@ -2,11 +2,11 @@ Version History
 ---------------
 
 ### New Features in Embree 3.2.1
--   Bugfix in rtcGetGeometryTransform
+-   Bugfix in rtcGetGeometryTransform returning inverse matrix
 -   Improved performance for rtcGetGeometryUserData
 -   Changed glfw3 cmake integration
 -   Fixed floating point exception in static variable initialization
-
+-   Fixed hermite curve intersector
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
