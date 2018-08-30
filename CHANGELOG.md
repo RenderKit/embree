@@ -1,6 +1,13 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.1
+-   Bugfix in rtcGetGeometryTransform
+-   Improved performance for rtcGetGeometryUserData
+-   Changed glfw3 cmake integration
+-   Fixed floating point exception in static variable initialization
+
+
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
 -   Line segments, and other curves are now all contained in a single
