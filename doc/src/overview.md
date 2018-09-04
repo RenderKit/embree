@@ -38,6 +38,6 @@ Embree also supports dynamic scenes by implementing high-performance
 two-level spatial index structure construction algorithms.
 
 In addition to the ray tracing kernels, Embree provides some
-[tutorials][Embree Tutorials] to demonstrate how to use the
+[Embree Tutorials] to demonstrate how to use the
 [Embree API].
 
