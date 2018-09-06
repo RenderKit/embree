@@ -50,6 +50,7 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(QBVH8Quad4iIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_QN1 COMMA false COMMA ArrayIntersector1<QuadMiIntersector1Pluecker<4 COMMA true> > >));
 
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH8OBBVirtualCurveIntersector1,BVHNIntersector1<8 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersector1 >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR1(BVH8OBBVirtualCurveIntersector1MB,BVHNIntersector1<8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersector1 >));
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<false>> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));

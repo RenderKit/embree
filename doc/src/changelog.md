@@ -12,7 +12,9 @@ Version History
 -   Removed libmmd.dll depdendency
 -   Fixed performance issue with rtcGetGeometryUserData when used
     during rendering.
--   Fixed scaling of derivatives for grid geometry.
+-   Bugfix in length of derivatives for grid geometry.
+-   Added BVH8 support for motion blurred curves and lines. For some workloads
+    this increases performance by up to 7%.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
