@@ -10,6 +10,8 @@ Version History
     a motion blurred scene.
 -   Fixed AVX512 compile issue with GCC 6.1.1.
 -   Removed libmmd.dll depdendency
+-   Fixed performance issue with rtcGetGeometryUserData when used
+    during rendering.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
