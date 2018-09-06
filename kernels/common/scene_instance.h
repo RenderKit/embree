@@ -66,9 +66,9 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline LBBox3fa linearBounds(size_t i, const BBox1f& time_range) const {
+    __forceinline LBBox3fa linearBounds(size_t i, const BBox1f& dt) const {
       assert(i == 0);
-      return LBBox3fa([&] (size_t itime) { return bounds(i, itime); }, time_range, fnumTimeSegments);
+      return LBBox3fa([&] (size_t itime) { return bounds(i, itime); }, dt, time_range, fnumTimeSegments);
     }
 
     /*! check if the i'th primitive is valid between the specified time range */
