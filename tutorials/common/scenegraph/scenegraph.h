@@ -166,24 +166,30 @@ namespace embree
     {
       __forceinline Transformations() {}
 
-      __forceinline Transformations(OneTy) {
+      __forceinline Transformations(OneTy)
+        : time_range(0.0f,1.0f)
+      {
         spaces.push_back(one);
       }
 
-      __forceinline Transformations( size_t N ) 
-        : spaces(N) {}
+      __forceinline Transformations( const BBox1f& time_range, size_t N ) 
+        : time_range(time_range), spaces(N) {}
       
-      __forceinline Transformations(const AffineSpace3fa& space) {
+      __forceinline Transformations(const AffineSpace3fa& space)
+        : time_range(0.0f,1.0f)
+      {
         spaces.push_back(space);
       }
 
-      __forceinline Transformations(const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+      __forceinline Transformations(const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+        : time_range(0.0f,1.0f)
+      {
         spaces.push_back(space0);
         spaces.push_back(space1);
       }
 
       __forceinline Transformations(const avector<AffineSpace3fa>& spaces)
-        : spaces(spaces) { assert(spaces.size()); }
+        : time_range(0.0f,1.0f), spaces(spaces) { assert(spaces.size()); }
 
       __forceinline size_t size() const {
         return spaces.size();
@@ -227,19 +233,19 @@ namespace embree
       {
         if (a.size() == 1) 
         {
-          Transformations c(b.size());
+          Transformations c(intersect(a.time_range,b.time_range),b.size());
           for (size_t i=0; i<b.size(); i++) c[i] = a[0] * b[i];
           return c;
         } 
         else if (b.size() == 1) 
         {
-          Transformations c(a.size());
+          Transformations c(intersect(a.time_range,b.time_range),a.size());
           for (size_t i=0; i<a.size(); i++) c[i] = a[i] * b[0];
           return c;
         }
         else if (a.size() == b.size())
         {
-          Transformations c(a.size());
+          Transformations c(intersect(a.time_range,b.time_range),a.size());
           for (size_t i=0; i<a.size(); i++) c[i] = a[i] * b[i];
           return c;
         }
@@ -249,6 +255,7 @@ namespace embree
 
       AffineSpace3fa interpolate (const float gtime) const
       {
+        assert(time_range.lower == 0.0f && time_range.upper == 1.0f);
         if (spaces.size() == 1) return spaces[0];
 
         /* calculate time segment itime and fractional time ftime */
@@ -260,6 +267,7 @@ namespace embree
       }
 
     public:
+      BBox1f time_range;
       avector<AffineSpace3fa> spaces;
     };
 
@@ -406,16 +414,16 @@ namespace embree
       ALIGNED_STRUCT_(16);
 
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
-        : time_range(0.0f,1.0f), spaces(xfm), child(child) {}
+        : spaces(xfm), child(child) {}
 
       TransformNode (const AffineSpace3fa& xfm0, const AffineSpace3fa& xfm1, const Ref<Node>& child)
-        : time_range(0.0f,1.0f), spaces(xfm0,xfm1), child(child) {}
+        : spaces(xfm0,xfm1), child(child) {}
 
       TransformNode (const avector<AffineSpace3fa>& spaces, const Ref<Node>& child)
-        : time_range(0.0f,1.0f), spaces(spaces), child(child) {}
+        : spaces(spaces), child(child) {}
 
       TransformNode(const Transformations& spaces, const Ref<Node>& child)
-        : time_range(0.0f,1.0f), spaces(spaces), child(child) {}
+        : spaces(spaces), child(child) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         child->setMaterial(material);
@@ -439,7 +447,6 @@ namespace embree
       }
 
     public:
-      BBox1f time_range;
       Transformations spaces;
       Ref<Node> child;
     };

@@ -936,7 +936,7 @@ namespace embree
   void SceneGraph::set_time_range(Ref<SceneGraph::Node> node, const BBox1f& time_range)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->time_range = time_range;
+      xfmNode->spaces.time_range = time_range;
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {

@@ -304,8 +304,8 @@ namespace embree
     spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
     geom.geomID = scene->geometryID(in->child);
     child = ISPCScene::convertGeometry(scene,in->child);
-    startTime = in->time_range.lower;
-    endTime   = in->time_range.upper;
+    startTime = in->spaces.time_range.lower;
+    endTime   = in->spaces.time_range.upper;
     for (size_t i=0; i<numTimeSteps; i++)
       spaces[i] = in->spaces[i];
   }
