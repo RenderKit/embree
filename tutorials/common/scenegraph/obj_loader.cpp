@@ -36,8 +36,8 @@ namespace embree
 
   static inline bool operator < ( const Vertex& a, const Vertex& b ) {
     if (a.v  != b.v)  return a.v  < b.v;
-    if (a.vn != b.vn) return a.vn < b.vn;
-    if (a.vt != b.vt) return a.vt < b.vt;
+    //if (a.vn != b.vn) return a.vn < b.vn;
+    //if (a.vt != b.vt) return a.vt < b.vt;
     return false;
   }
 

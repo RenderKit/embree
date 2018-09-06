@@ -782,8 +782,8 @@ namespace embree
           break;
           
         case GLFW_KEY_C : std::cout << camera.str() << std::endl; break;
-          //case GLFW_KEY_ADD : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
-        case GLFW_KEY_MINUS : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+        case GLFW_KEY_HOME : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
+        case GLFW_KEY_END : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
           
         case GLFW_KEY_SPACE: {
           Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
