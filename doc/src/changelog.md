@@ -12,6 +12,7 @@ Version History
 -   Removed libmmd.dll depdendency
 -   Fixed performance issue with rtcGetGeometryUserData when used
     during rendering.
+-   Fixed scaling of derivatives for grid geometry.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
