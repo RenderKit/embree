@@ -1205,7 +1205,7 @@ namespace embree
       Ref<SceneGraph::Node> nodei = loadNode(xml->children[i]);
       SceneGraph::extend_animation(node,nodei);
     }
-    SceneGraph::optimize_animation(node);
+    //SceneGraph::optimize_animation(node);
     return node;
   }
 
