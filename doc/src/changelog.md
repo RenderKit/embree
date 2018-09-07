@@ -14,6 +14,7 @@ Version History
 -   Bugfix in length of derivatives for grid geometry.
 -   Added BVH8 support for motion blurred curves and lines. For some workloads
     this increases performance by up to 7%.
+-   Fixed rtcGetGeometryTransform to return the local to world transform.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
