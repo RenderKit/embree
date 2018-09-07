@@ -402,7 +402,7 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->hasISA(AVX2)) // only enable on HSW machines, on SNB this codepath is slower
       {
-        accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8iMB(this));
+        accels.add(device->bvh8_factory->BVH8OBBVirtualCurve8iMB(this));
       }
       else
 #endif
@@ -413,6 +413,7 @@ namespace embree
     else if (device->hair_accel_mb == "bvh4.virtualcurve4imb") accels.add(device->bvh4_factory->BVH4OBBVirtualCurve4iMB(this));
 #if defined (EMBREE_TARGET_SIMD8)
     else if (device->hair_accel_mb == "bvh4.virtualcurve8imb") accels.add(device->bvh4_factory->BVH4OBBVirtualCurve8iMB(this));
+    else if (device->hair_accel_mb == "bvh8.virtualcurve8imb") accels.add(device->bvh8_factory->BVH8OBBVirtualCurve8iMB(this));
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
 #endif

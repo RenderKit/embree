@@ -9,7 +9,11 @@ Version History
     should best use two (or more) time steps for an instance that instantiates
     a motion blurred scene.
 -   Fixed AVX512 compile issue with GCC 6.1.1.
--   Removed libmmd.dll depdendency
+-   Fixed performance issue with rtcGetGeometryUserData when used
+    during rendering.
+-   Bugfix in length of derivatives for grid geometry.
+-   Added BVH8 support for motion blurred curves and lines. For some workloads
+    this increases performance by up to 7%.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
