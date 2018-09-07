@@ -9,7 +9,6 @@ Version History
     should best use two (or more) time steps for an instance that instantiates
     a motion blurred scene.
 -   Fixed AVX512 compile issue with GCC 6.1.1.
--   Removed libmmd.dll depdendency
 -   Fixed performance issue with rtcGetGeometryUserData when used
     during rendering.
 -   Bugfix in length of derivatives for grid geometry.
