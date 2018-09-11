@@ -1028,7 +1028,7 @@ namespace embree
 
     case RTC_GEOMETRY_TYPE_INSTANCE:
     {
-#if defined(EMBREE_GEOMETRY_USER)
+#if defined(EMBREE_GEOMETRY_INSTANCE)
       createInstanceTy createInstance = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createInstance);
       Geometry* geom = createInstance(device);
