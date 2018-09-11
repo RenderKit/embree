@@ -826,7 +826,7 @@ namespace embree
       LBBox3fa bounds1;
       rtcGetSceneLinearBounds(scene,(RTCLinearBounds*)&bounds1);
       AssertNoError(device);
-      return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
+      return (VerifyApplication::TestReturnValue)(subset(bounds1,bounds0));
     }
   };
 

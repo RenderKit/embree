@@ -233,6 +233,11 @@ namespace embree
     return LBBox<T>(merge(a.bounds0, b.bounds0), merge(a.bounds1, b.bounds1));
   }
 
+   /*! subset relation */
+  template<typename T> __inline bool subset( const LBBox<T>& a, const LBBox<T>& b ) {
+    return subset(a.bounds0,b.bounds0) && subset(a.bounds1,b.bounds1);
+  }
+
   /*! default template instantiations */
   typedef LBBox<float> LBBox1f;
   typedef LBBox<Vec2f> LBBox2f;
