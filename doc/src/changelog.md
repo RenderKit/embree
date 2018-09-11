@@ -15,6 +15,8 @@ Version History
 -   Added BVH8 support for motion blurred curves and lines. For some workloads
     this increases performance by up to 7%.
 -   Fixed rtcGetGeometryTransform to return the local to world transform.
+-   Fixed bug in multi segment motion blur that caused missing of perfectly
+    axis aligned geometry.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
