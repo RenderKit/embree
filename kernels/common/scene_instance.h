@@ -81,14 +81,22 @@ namespace embree
       return true;
     }
       
+    __forceinline AffineSpace3fa getLocal2World() const {
+      return local2world[0];
+    }
+
+    __forceinline AffineSpace3fa getLocal2World(float t) const
+    {
+      float ftime; const unsigned int itime = timeSegment(t, ftime);
+      return lerp(local2world[itime+0],local2world[itime+1],ftime);
+    }
+
     __forceinline AffineSpace3fa getWorld2Local() const {
       return world2local0;
     }
 
-    __forceinline AffineSpace3fa getWorld2Local(float t) const 
-    {
-      float ftime; const unsigned int itime = timeSegment(t, ftime);
-      return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
+    __forceinline AffineSpace3fa getWorld2Local(float t) const {
+      return rcp(getLocal2World(t));
     }
 
     template<int K>

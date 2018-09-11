@@ -5,6 +5,7 @@ Version History
 -   Added support for motion blur time range per geometry. This way geometries
     can appear and disappear during the camera shutter  and time steps do not have
     to start and end at camera shutter interval boundaries.
+
 ### New Features in Embree 3.2.1
 -   Bugfix in flat mode for hermite curves.
 -   Added EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR cmake option to
@@ -13,7 +14,15 @@ Version History
     should best use two (or more) time steps for an instance that instantiates
     a motion blurred scene.
 -   Fixed AVX512 compile issue with GCC 6.1.1.
--   Removed libmmd.dll depdendency
+-   Fixed performance issue with rtcGetGeometryUserData when used
+    during rendering.
+-   Bugfix in length of derivatives for grid geometry.
+-   Added BVH8 support for motion blurred curves and lines. For some workloads
+    this increases performance by up to 7%.
+-   Fixed rtcGetGeometryTransform to return the local to world transform.
+-   Fixed bug in multi segment motion blur that caused missing of perfectly
+    axis aligned geometry.
+
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
 -   Line segments, and other curves are now all contained in a single
@@ -80,6 +89,27 @@ Version History
 -   Individual Contributor License Agreement (ICLA) and Corporate
     Contributor License Agreement (CCLA) no longer required to
     contribute to the project.
+
+### New Features in Embree 2.17.5
+-   Improved watertightness of robust mode.
+-   Fixed floating point exception in static variable initialization.
+-   Fixed AVX512 compile issue with GCC 6.1.1.
+
+### New Features in Embree 2.17.4
+-   Fixed AVX512 compile issue with GCC 7.
+-   Fixed issue with not thread safe local static variable
+    initialization in VS2013.
+-   Fixed bug in the 4 and 8-wide packet intersection of instances with
+    multi-segment motion blur on AVX-512 architectures.
+-   Fixed bug in rtcOccluded4/8/16 when only AVX-512 ISA was enabled.
+
+### New Features in Embree 2.17.3
+-   Fixed GCC compile warning in debug mode.
+-   Fixed bug of ribbon curve intersector when derivative was zero.
+-   Installing all static libraries when EMBREE_STATIC_LIB is enabled.
+
+### New Features in Embree 2.17.2
+-   Made BVH build of curve geometry deterministic.
 
 ### New Features in Embree 2.17.1
 -   Improved performance of occlusion ray packets by up to 50%.

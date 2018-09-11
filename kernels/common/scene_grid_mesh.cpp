@@ -235,6 +235,8 @@ namespace embree
     const Grid& grid = grids[primID];
     const int grid_width  = grid.resX-1;
     const int grid_height = grid.resY-1;
+    const float rcp_grid_width = rcp(float(grid_width));
+    const float rcp_grid_height = rcp(float(grid_height));
     const int iu = min((int)floor(U*grid_width ),grid_width);
     const int iv = min((int)floor(V*grid_height),grid_height);
     const float u = U*grid_width-float(iu);
@@ -263,8 +265,8 @@ namespace embree
         vfloat4::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
       }
       if (dPdu) { 
-        assert(dPdu); vfloat4::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
-        assert(dPdv); vfloat4::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
+        assert(dPdu); vfloat4::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1)*rcp_grid_width);
+        assert(dPdv); vfloat4::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2)*rcp_grid_height);
       }
       if (ddPdudu) { 
         assert(ddPdudu); vfloat4::storeu(valid,ddPdudu+i,vfloat4(zero));

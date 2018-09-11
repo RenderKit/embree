@@ -87,9 +87,9 @@ namespace embree
   AffineSpace3fa Instance::getTransform(float time)
   {
     if (likely(numTimeSteps <= 1))
-      return getWorld2Local();
+      return getLocal2World();
     else
-      return getWorld2Local(time);
+      return getLocal2World(time);
   }
   
   void Instance::setMask (unsigned mask) 
