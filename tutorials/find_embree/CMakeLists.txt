@@ -15,9 +15,9 @@
 ## ======================================================================== ##
 
 PROJECT(find_embree)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.2.0)
 
-FIND_PACKAGE(embree 2.0 REQUIRED)
+FIND_PACKAGE(embree 3.0 REQUIRED)
 
 INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
 ADD_EXECUTABLE(find_embree find_embree.cpp)
