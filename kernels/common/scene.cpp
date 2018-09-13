@@ -631,6 +631,13 @@ namespace embree
     if (flags_modified)
     {    
       accels.init();
+
+      /* we need to make all geometries modified, otherwise two level builder will 
+        not rebuild currently not modified geometries */
+      parallel_for(geometries.size(), [&] ( const size_t i ) {
+          if (geometries[i]) geometries[i]->setModified();
+        });
+      
       createTriangleAccel();
       createTriangleMBAccel();
       createQuadAccel();
