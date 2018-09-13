@@ -51,8 +51,7 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       mvector<PrimRef> prims;
-      ParallelForForPrefixSumState<PrimInfo> pstate;
-      
+            
       BVHNSubdivPatch1BuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device,0) {}
 
@@ -106,6 +105,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
+        ParallelForForPrefixSumState<PrimInfo> pstate;
+        
         /* initialize allocator and parallel_for_for_prefix_sum */
         Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
@@ -240,13 +241,12 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       mvector<PrimRefMB> primsMB;
-      mvector<BBox3fa> bounds; 
-      ParallelForForPrefixSumState<PrimInfoMB> pstate;
-
+      mvector<BBox3fa> bounds;
+      
       BVHNSubdivPatch1MBlurBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0) {}
 
-      void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
+      void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB, ParallelForForPrefixSumState<PrimInfoMB>& pstate)
       {
         Scene::Iterator<SubdivMesh,true> iter(scene);
         pstate.init(iter,size_t(1024));
@@ -269,7 +269,7 @@ namespace embree
         numSubPatchesMB = pinfo.object_range.end();
       }
 
-      void rebuild(size_t numPrimitives)
+      void rebuild(size_t numPrimitives, ParallelForForPrefixSumState<PrimInfoMB>& pstate)
       {
         SubdivPatch1* const subdiv_patches = (SubdivPatch1*) bvh->subdiv_patches.data();
         SubdivRecalculatePrimRef recalculatePrimRef(bounds,subdiv_patches);
@@ -363,10 +363,12 @@ namespace embree
         }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1MBlurBuilderSAH");
-        
+
+        ParallelForForPrefixSumState<PrimInfoMB> pstate;
+
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
-        countSubPatches(numSubPatches, numSubPatchesMB);
+        countSubPatches(numSubPatches, numSubPatchesMB, pstate);
         primsMB.resize(numSubPatches);
         bounds.resize(numSubPatchesMB);
         
@@ -381,7 +383,7 @@ namespace embree
         bvh->subdiv_patches.resize(sizeof(SubdivPatch1) * numSubPatchesMB);
 
         /* rebuild BVH */
-        rebuild(numSubPatches);
+        rebuild(numSubPatches, pstate);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStaticAccel()) {
