@@ -35,7 +35,7 @@
 namespace embree
 {
   /*! Base class all scenes are derived from */
-  class Scene : public Accel
+  class Scene : public AccelN
   {
     ALIGNED_CLASS_(16);
 
@@ -253,10 +253,13 @@ namespace embree
     
   public:
     Device* device;
+
+    /* these are to detect if we need to recreate the acceleration structures */
     bool flags_modified;
+    unsigned int enabled_geometry_types;
+    
     RTCSceneFlags scene_flags;
     RTCBuildQuality quality_flags;
-    AccelN accels;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;
@@ -299,6 +302,19 @@ namespace embree
         return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstances + numGrids;
       }
 
+      __forceinline unsigned int enabledGeometryTypesMask() const
+      {
+        unsigned int mask = 0;
+        if (numTriangles) mask |= 1 << 0;
+        if (numQuads) mask |= 1 << 1;
+        if (numBezierCurves+numLineSegments) mask |= 1 << 2;
+        if (numSubdivPatches) mask |= 1 << 3;
+        if (numUserGeometries) mask |= 1 << 4;
+        if (numInstances) mask |= 1 << 5;
+        if (numGrids) mask |= 1 << 6;
+        return mask;
+      }
+
       std::atomic<size_t> numTriangles;             //!< number of enabled triangles
       std::atomic<size_t> numQuads;                 //!< number of enabled quads
       std::atomic<size_t> numBezierCurves;          //!< number of enabled curves
@@ -307,8 +323,11 @@ namespace embree
       std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
       std::atomic<size_t> numInstances;             //!< number of enabled instances
       std::atomic<size_t> numGrids;                 //!< number of enabled grid geometries
-
     };
+
+     __forceinline unsigned int enabledGeometryTypesMask() const {
+       return (world.enabledGeometryTypesMask() << 8) + worldMB.enabledGeometryTypesMask();
+     }
     
     GeometryCounts world;               //!< counts for non-motion blurred geometry
     GeometryCounts worldMB;             //!< counts for motion blurred geometry

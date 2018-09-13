@@ -17,6 +17,7 @@ Version History
 -   Fixed rtcGetGeometryTransform to return the local to world transform.
 -   Fixed bug in multi segment motion blur that caused missing of perfectly
     axis aligned geometry.
+-   Reduced memory consumption of small scenes by 4x.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.
