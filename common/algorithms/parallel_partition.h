@@ -67,7 +67,7 @@ namespace embree
     ALIGNED_CLASS_(64);
   private:
 
-    static const size_t MAX_TASKS = 512;
+    static const size_t MAX_TASKS = 64;
 
     T* array;
     size_t N;
