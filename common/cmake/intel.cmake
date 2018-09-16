@@ -86,16 +86,6 @@ IF (WIN32)
   
   INCLUDE(msvc_post)
 
-  # remove libmmd dependency
-  IF (NOT EMBREE_STATIC_RUNTIME)
-    STRING(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " /nodefaultlib:libmmdd.lib")
-    STRING(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " /nodefaultlib:libmmd.lib")
-    STRING(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " /nodefaultlib:libmmd.lib")
-    STRING(APPEND CMAKE_SHARED_LINKER_FLAGS_DEBUG " /nodefaultlib:libmmdd.lib")
-    STRING(APPEND CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO " /nodefaultlib:libmmd.lib")
-    STRING(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /nodefaultlib:libmmd.lib")
-  ENDIF()
-
 ELSE()
 
   IF (APPLE)
