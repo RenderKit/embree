@@ -189,6 +189,10 @@ namespace embree
     return true; 
   }
 
+  template<> __inline bool subset( const BBox<Vec3fa>& a, const BBox<Vec3fa>& b ) {
+    return all(ge_mask(a.lower,b.lower)) & all(le_mask(a.upper,b.upper));
+  }
+  
   /*! blending */
   template<typename T>
     __forceinline BBox<T> lerp(const BBox<T>& b0, const BBox<T>& b1, const float t) {
