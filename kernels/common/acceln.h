@@ -28,8 +28,8 @@ namespace embree
     ~AccelN();
 
   public:
-    void add(Accel* accel);
-    void init();
+    void accels_add(Accel* accel);
+    void accels_init();
 
   public:
     static void intersect (Accel::Intersectors* This, RTCRayHit& ray, IntersectContext* context);
@@ -46,15 +46,14 @@ namespace embree
     static void occludedN (Accel::Intersectors* This, RTCRayN** ray, const size_t N, IntersectContext* context);
 
   public:
-    void print(size_t ident);
-    void immutable();
-    void build ();
-    void select(bool filter);
-    void deleteGeometry(size_t geomID);
-    void clear ();
+    void accels_print(size_t ident);
+    void accels_immutable();
+    void accels_build ();
+    void accels_select(bool filter);
+    void accels_deleteGeometry(size_t geomID);
+    void accels_clear ();
 
   public:
-    darray_t<Accel*,24> accels;
-    darray_t<Accel*,24> validAccels;
+    std::vector<Accel*> accels;
   };
 }

@@ -266,7 +266,7 @@ namespace embree
   template<typename Ty, typename Key>
     class ParallelRadixSort
   {
-    static const size_t MAX_TASKS = 512;
+    static const size_t MAX_TASKS = 64;
     static const size_t BITS = 8;
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[BUCKETS];
