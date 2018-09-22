@@ -4326,7 +4326,9 @@ namespace embree
       }
       groups.pop();
 
+#if !defined(TASKING_PPL) // FIXME: PPL has some issues here!
       groups.top()->add(new GarbageGeometryTest("build_garbage_geom",isa));
+#endif
 
       GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> sflags_quality_memory;
