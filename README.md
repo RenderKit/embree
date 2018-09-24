@@ -1,23 +1,23 @@
-% Embree: High Performance Ray Tracing Kernels 3.2.0
+% Embree: High Performance Ray Tracing Kernels 3.2.1
 % Intel Corporation
 
 Embree Overview
 ===============
 
-Embree is a collection of high-performance ray tracing kernels,
-developed at Intel. The target users of Embree are graphics application
+Intel® Embree is a collection of high-performance ray tracing kernels,
+developed at Intel. The target users of Intel® Embree are graphics application
 engineers who want to improve the performance of their
 photo-realistic rendering application by leveraging Embree's
 performance-optimized ray tracing kernels. The kernels are optimized
 for the latest Intel® processors with support for SSE, AVX, AVX2, and
-AVX-512 instructions. Embree supports runtime code selection to choose
+AVX-512 instructions. Intel® Embree supports runtime code selection to choose
 the traversal and build algorithms that best matches the instruction
-set of your CPU. We recommend using Embree through its API to get the
-highest benefit from future improvements. Embree is released as Open
+set of your CPU. We recommend using Intel® Embree through its API to get the
+highest benefit from future improvements. Intel® Embree is released as Open
 Source under the
 [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
 
-Embree supports applications written with the Intel SPMD Program
+Intel® Embree supports applications written with the Intel® SPMD Program
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible
 to write a renderer in ISPC that automatically vectorizes and
@@ -25,11 +25,11 @@ leverages SSE, AVX, AVX2, and AVX-512 instructions. ISPC also supports
 runtime code selection, thus ISPC will select the best code path for
 your application.
 
-Embree contains algorithms optimized for incoherent workloads (e.g.
+Intel® Embree contains algorithms optimized for incoherent workloads (e.g.
 Monte Carlo ray tracing algorithms) and coherent workloads
 (e.g. primary visibility and hard shadow rays).
 
-The single-ray traversal kernels of Embree provide high performance
+The single-ray traversal kernels of Intel® Embree provide high performance
 for incoherent workloads and are very easy to integrate into existing
 rendering applications. Using the stream kernels, even higher
 performance for incoherent rays is possible, but integration might
@@ -37,11 +37,11 @@ require significant code changes to the application to use the stream
 paradigm. In general for coherent workloads, the stream mode with
 coherent flag set gives the best performance.
 
-Embree also supports dynamic scenes by implementing high-performance
+Intel® Embree also supports dynamic scenes by implementing high-performance
 two-level spatial index structure construction algorithms.
 
-In addition to the ray tracing kernels, Embree provides some
-[tutorials](Embree Tutorials) to demonstrate how to use the
+In addition to the ray tracing kernels, Intel® Embree provides some
+[Embree Tutorials] to demonstrate how to use the
 [Embree API].
 
 Supported Platforms
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.2.0-x64.msi](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x64.msi). This
+[embree-3.2.1-x64.msi](https://github.com/embree/embree/releases/download/v3.2.1/embree-3.2.1.x64.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.2.0 x64`.
+Files\Intel\Embree v3.2.1 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,18 +95,18 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.2.0 x64`.
+Files\Intel\Embree v3.2.1 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.2.0 x64` and uninstall it.
+3.2.1 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file
-[embree-3.2.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x64.windows.zip). After
+[embree-3.2.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v3.2.1/embree-3.2.1.x64.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree, you also have to set the
@@ -120,17 +120,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.2.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.rpm.tar.gz)
+[embree-3.2.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.2.1/embree-3.2.1.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.2.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.2.1.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree-lib-3.2.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-3.2.0-1.noarch.rpm
-    sudo rpm --install embree-examples-3.2.0-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.2.1-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.2.1-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.2.1-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -142,13 +142,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree-lib-3.2.0-1.x86_64.rpm
-    sudo alien embree-devel-3.2.0-1.noarch.rpm
-    sudo alien embree-examples-3.2.0-1.x86_64.rpm
+    sudo alien embree3-lib-3.2.1-1.x86_64.rpm
+    sudo alien embree3-devel-3.2.1-1.noarch.rpm
+    sudo alien embree3-examples-3.2.1-1.x86_64.rpm
 
-    sudo dpkg -i embree-devel_3.2.0-2_all.deb
-    sudo dpkg -i embree-examples_3.2.0-2_amd64.deb
-    sudo dpkg -i embree-lib_3.2.0-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.2.1-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.2.1-2_all.deb
+    sudo dpkg -i embree3-examples_3.2.1-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -174,20 +174,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree-lib-3.2.0-1.x86_64
-    sudo rpm --erase embree-devel-3.2.0-1.noarch
-    sudo rpm --erase embree-examples-3.2.0-1.x86_64
+    sudo rpm --erase embree3-lib-3.2.1-1.x86_64
+    sudo rpm --erase embree3-devel-3.2.1-1.noarch
+    sudo rpm --erase embree3-examples-3.2.1-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.2.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.2.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.2.1/embree-3.2.1.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.2.0.x64.linux.tar.gz
-    source embree-3.2.0.x64.linux/embree-vars.sh
+    tar xzf embree-3.2.1.x86_64.linux.tar.gz
+    source embree-3.2.1.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -200,7 +200,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.2.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.dmg). This
+[embree-3.2.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.2.1/embree-3.2.1.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -222,12 +222,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.2.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.2.0/embree-3.2.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.2.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.2.1/embree-3.2.1.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.2.0.x64.macosx.tar.gz
-    source embree-3.2.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.2.1.x64.macosx.tar.gz
+    source embree-3.2.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -545,6 +545,13 @@ parameters that can be configured in CMake:
 
 + `EMBREE_GEOMETRY_USER`: Enables support for user defined geometries
   (ON by default).
+
++ `EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR`: Specifies a
+  factor that controls the self intersection avoidance feature for flat
+  curves. Flat curve intersections which are closer than
+  curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
+  the ray origin are ignored. A value of 0.0f disables self
+  intersection avoidance while 2.0f is the default value.
 
 
 Using Embree
@@ -1968,6 +1975,7 @@ CMake variable must be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.
 
 [Embree API]: #embree-api
+[Embree Tutorials]: #embree-tutorials
 [Ray Layout]: #ray-layout
 [Extending the Ray Structure]: #extending-the-ray-structure
 [Embree Example Renderer]: https://embree.github.io/renderer.html
