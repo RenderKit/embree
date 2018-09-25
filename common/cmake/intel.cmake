@@ -34,6 +34,7 @@ IF (WIN32)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GR")          # enable runtime type information (on by default)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qvec-")       # disable auto vectorizer
+  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qfast-transcendentals-") # disable fast transcendentals, prevents sin(x),cos(x) -> sincos(x) optimization
   IF (EMBREE_STACK_PROTECTOR)
     SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS")          # protects against return address overrides
   ELSE()
