@@ -315,6 +315,10 @@ ELSE()
   ENDIF ()
 ENDIF()
 
+IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
+  SET(EMBREE_ISA_SSE42 OFF)
+ENDIF()
+
 ##############################################################
 # ISA configuration continued
 ##############################################################
