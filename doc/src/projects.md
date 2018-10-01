@@ -18,7 +18,9 @@ note](mailto:embree_support@intel.com).
 
 * [Visual Designer 3D](http://www.vd-3d.com/) 
 
-* [Glise](http://www.twistednormal.com/) 
+* [Glise](http://www.twistednormal.com/)
+
+* [Meso Star](http://www.meso-star.com/) Understanding Complex Systems
 
 * An Autodesk [Maya 2014 viewport
   plugin](https://software.intel.com/en-us/articles/an-embree-based-viewport-plugin-for-autodesk-maya)
