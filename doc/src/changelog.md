@@ -1,7 +1,8 @@
 Version History
 ---------------
 
-### New Features in Embree 3.3.0
+### New Features in Embree 3.2.2
+-   Fixed intersection distance for unnormalized rays with line segments.
 -   Removed libmmd.dll depdendency
 
 ### New Features in Embree 3.2.1
