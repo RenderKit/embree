@@ -18,4 +18,4 @@
 #define RTC_VERSION_MINOR 2
 #define RTC_VERSION_PATCH 2
 #define RTC_VERSION 30202
-#define RTC_VERSION_STRING "3.2.2-alpha.0"
+#define RTC_VERSION_STRING "3.2.2-alpha.1"
