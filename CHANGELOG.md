@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.2
+-   Fixed intersection distance for unnormalized rays with line segments.
+-   Removed libmmd.dll depdendency
+-   Fixed detection of AppleClang compiler under MacOSX.
+
 ### New Features in Embree 3.2.1
 -   Bugfix in flat mode for hermite curves.
 -   Added EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR cmake option to
