@@ -28,7 +28,7 @@ The initialization string for the Embree device (`rtcNewDevice` call)
 can be passed to the ray tracing core through the `--rtcore` command
 line parameter, e.g.:
 
-    ./triangle_geometry --rtcore verbose=2,threads=1,accel=bvh4.triangle1
+    ./triangle_geometry --rtcore verbose=2,threads=1
 
 The navigation in the interactive display mode follows the camera orbit
 model, where the camera revolves around the current center of interest.
