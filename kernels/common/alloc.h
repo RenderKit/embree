@@ -206,7 +206,9 @@ namespace embree
       primrefarray = std::move(primrefarray_i);
     }
 
-    void unshare(mvector<PrimRef>& primrefarray_o) {
+    void unshare(mvector<PrimRef>& primrefarray_o)
+    {
+      reset(); // this removes blocks that are allocated inside the shared primref array
       primrefarray_o = std::move(primrefarray);
     }
 

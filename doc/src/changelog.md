@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.3
+-   Fixed crash when using curves with RTC_SCENE_FLAG_DYNAMIC and
+    RTC_BUILD_QUALITY_MEDIUM.
+
 ### New Features in Embree 3.2.2
 -   Fixed intersection distance for unnormalized rays with line segments.
 -   Removed libmmd.dll dependency in release builds for Windows.
