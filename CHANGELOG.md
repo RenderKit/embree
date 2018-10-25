@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 2.17.6
+-   Fixed compile issues with ICC 2019.
+
 ### New Features in Embree 2.17.5
 -   Improved watertightness of robust mode.
 -   Fixed floating point exception in static variable initialization.
