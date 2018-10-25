@@ -123,7 +123,7 @@ def runConfig(config):
   elif OS == "linux":
     if (compiler == "ICC19"):
       conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2019.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2019.0/bin/icc")
-    else if (compiler == "ICC18"):
+    elif (compiler == "ICC18"):
       conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2018.0/bin/icc")
     elif (compiler == "ICC17"):
       conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2017.1/bin/icc")
