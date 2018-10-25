@@ -454,7 +454,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-USERGEOM:
 ####################################################################
 
 release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
-  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:ZIP"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -464,7 +464,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-MSI:
-  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:MSI"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:MSI"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
