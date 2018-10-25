@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.4
+-   Fixed compile issues with ICC 2019.
+
 ### New Features in Embree 3.2.3
 -   Fixed crash when using curves with RTC_SCENE_FLAG_DYNAMIC 
     combined with RTC_BUILD_QUALITY_MEDIUM.
