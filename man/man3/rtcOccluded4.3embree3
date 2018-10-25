@@ -66,17 +66,17 @@ For \f[C]rtcOccluded4\f[] the ray packet must be aligned to 16 bytes,
 for \f[C]rtcOccluded8\f[] the alignment must be 32 bytes, and for
 \f[C]rtcOccluded16\f[] the alignment must be 64 bytes.
 .PP
-Further, \f[C]rtcOccluded4\f[] is only available when Embree was
-compiled with \f[C]EMBREE_RAY_PACKETS\f[] turned on in CMake (which is
-the default).
-Further, the \f[C]rtcOccluded8\f[] function is works only if Embree was
-compiled with \f[C]AVX\f[] or \f[C]AVX2\f[] and the CPU it is running on
-supports the enabled ISA.
-Similar, the \f[C]rtcOccluded16\f[] function works only if Embree was
-compiled with \f[C]AVX512SKX\f[] or \f[C]AVX512KNL\f[] and the CPU it is
-running on supports the enabled ISA.
-For this reason, use these functions only after checking whether they
-are available by using an \f[C]rtcGetDeviceParameter\f[] query.
+The \f[C]rtcOccluded4\f[], \f[C]rtcOccluded8\f[] and
+\f[C]rtcOccluded16\f[] functions may change the ray packet size and ray
+order when calling back into intersect filter functions or user geometry
+callbacks.
+Under some conditions the application can assume packets to stay intakt,
+which can determined by querying the
+\f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED\f[],
+\f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED\f[],
+\f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED\f[] properties through
+the \f[C]rtcGetDeviceProperty\f[] function.
+See [rtcGetDeviceProperty] for more information.
 .SS EXIT STATUS
 .PP
 For performance reasons this function does not do any error checks, thus

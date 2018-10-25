@@ -24,10 +24,10 @@ float&\ RTCRayN_dir_y(RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
 float&\ RTCRayN_dir_z(RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
 float&\ RTCRayN_time\ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
 
-float&\ \ \ \ RTCRayN_tfar\ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
-unsigned&\ RTCRayN_mask\ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
-unsigned&\ RTCRayN_id\ \ \ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
-unsigned&\ RTCRayN_flags(RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
+float&\ \ \ \ \ \ \ \ RTCRayN_tfar\ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
+unsigned\ int&\ RTCRayN_mask\ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
+unsigned\ int&\ RTCRayN_id\ \ \ (RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
+unsigned\ int&\ RTCRayN_flags(RTCRayN*\ ray,\ unsigned\ int\ N,\ unsigned\ int\ i);
 \f[]
 .fi
 .SS DESCRIPTION

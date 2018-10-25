@@ -15,7 +15,7 @@ rtcSetSceneProgressMonitorFunction\ \-\ registers\ a\ callback
 
 typedef\ bool\ (*RTCProgressMonitorFunction)(
 \ \ void*\ ptr,
-\ \ double\ progress
+\ \ double\ n
 );
 
 void\ rtcSetSceneProgressMonitorFunction(
@@ -45,7 +45,7 @@ Once registered, Embree will invoke the callback function multiple times
 during hierarchy build operations of the scene, by passing the payload
 as set at registration time (\f[C]userPtr\f[] argument), and a double in
 the range [0, 1] which estimates the progress of the operation
-(\f[C]progress\f[] argument).
+(\f[C]n\f[] argument).
 The callback function might be called from multiple threads
 concurrently.
 .PP

@@ -15,7 +15,7 @@ rtcOccludedNp\ \-\ finds\ any\ hits\ for\ a\ SOA\ ray\ stream\ of\ size\ N
 void\ rtcOccludedNp(
 \ \ RTCScene\ scene,
 \ \ struct\ RTCIntersectContext*\ context,
-\ \ struct\ RTCRayNp*\ rays,
+\ \ struct\ RTCRayNp*\ ray,
 \ \ unsigned\ int\ N
 );
 \f[]
@@ -23,9 +23,9 @@ void\ rtcOccludedNp(
 .SS DESCRIPTION
 .PP
 The \f[C]rtcOccludedNp\f[] function checks whether there are any hits
-for a SOA ray stream (\f[C]rays\f[] argument) of size \f[C]N\f[]
+for a SOA ray stream (\f[C]ray\f[] argument) of size \f[C]N\f[]
 (basically a large ray packet) with the scene (\f[C]scene\f[] argument).
-The \f[C]rays\f[] argument points to a structure of pointers with one
+The \f[C]ray\f[] argument points to a structure of pointers with one
 pointer for each ray component.
 Each of these pointers points to an array with the ray component data
 for each ray.

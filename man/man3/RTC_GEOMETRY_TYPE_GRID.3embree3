@@ -1,0 +1,82 @@
+.TH "RTC_GEOMETRY_TYPE_GRID" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_GRID\ \-\ grid\ geometry\ type
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+RTCGeometry\ geometry\ =
+\ \ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_GRID);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Grid meshes are created by passing \f[C]RTC_GEOMETRY_TYPE_GRID\f[] to
+the \f[C]rtcNewGeometry\f[] function call, and contain an array of grid
+primitives.
+This array of grids can be specified by setting up a grid buffer (with
+\f[C]RTC_BUFFER_TYPE_GRID\f[] type and \f[C]RTC_FORMAT_GRID\f[] format)
+and the grid mesh vertices by setting a vertex buffer
+(\f[C]RTC_BUFFER_TYPE_VERTEX\f[] type).
+See \f[C]rtcSetGeometryBuffer\f[] and
+\f[C]rtcSetSharedGeometryBuffer\f[] for more details on how to set
+buffers.
+The number of grid primitives in the grid mesh is inferred from the size
+of the grid buffer.
+.PP
+The vertex buffer contains an array of single precision \f[C]x\f[],
+\f[C]y\f[], \f[C]z\f[] floating point coordinates
+(\f[C]RTC_FORMAT_FLOAT3\f[] format), and the number of vertices is
+inferred from the size of that buffer.
+.PP
+Each grid in the grid buffer is of the type \f[C]RTCGrid\f[]:
+.IP
+.nf
+\f[C]
+struct\ RTCGrid
+{
+\ \ unsigned\ int\ startVertexID;
+\ \ unsigned\ int\ stride;
+\ \ unsigned\ short\ width,height;\ 
+};
+\f[]
+.fi
+.PP
+The \f[C]RTCGrid\f[] structure describes a 2D grid of vertices (with
+respect to the vertex buffer of the grid mesh).
+The \f[C]width\f[] and \f[C]height\f[] members specify the number of
+vertices in u and v direction, e.g.
+setting both \f[C]width\f[] and \f[C]height\f[] to 3 sets up a 3x3
+vertex grid.
+The maximum allowed \f[C]width\f[] and \f[C]height\f[] is 32767.
+The \f[C]startVertexID\f[] specifies the ID of the top\-left vertex in
+the vertex grid, while the \f[C]stride\f[] parameter specifies a stride
+(in number of vertices) used to step to the next row.
+.PP
+A vertex grid of dimensions \f[C]width\f[] and \f[C]height\f[] is
+treated as a \f[C](width\-1)\f[] x \f[C](height\-1)\f[] grid of
+\f[C]quads\f[] (triangle\-pairs), with the same shared edge handling as
+for regular quad meshes.
+However, the \f[C]u\f[]/\f[C]v\f[] coordinates have the uniform range
+\f[C][0..1]\f[] for an entire vertex grid.
+The \f[C]u\f[] direction follows the \f[C]width\f[] of the grid while
+the \f[C]v\f[] direction the \f[C]height\f[].
+.PP
+For multi\-segment motion blur, the number of time steps must be first
+specified using the \f[C]rtcSetGeometryTimeStepCount\f[] call.
+Then a vertex buffer for each time step can be set using different
+buffer slots, and all these buffers must have the same stride and size.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcDeviceGetError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]
