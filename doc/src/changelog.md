@@ -3,9 +3,11 @@ Version History
 
 ### New Features in Embree 3.2.4
 -   Fixed compile issues with ICC 2019.
+-   Released ZIP files for Windows are now provided in a
+    version linked against Visual Studio 2013 and Visual Studio 2015.
 
 ### New Features in Embree 3.2.3
--   Fixed crash when using curves with RTC_SCENE_FLAG_DYNAMIC 
+-   Fixed crash when using curves with RTC_SCENE_FLAG_DYNAMIC
     combined with RTC_BUILD_QUALITY_MEDIUM.
 
 ### New Features in Embree 3.2.2

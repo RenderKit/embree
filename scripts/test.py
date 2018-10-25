@@ -105,6 +105,12 @@ def runConfig(config):
     elif (compiler == "ICC18"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 18.0\"")
+    elif (compiler == "ICC17-VS14"):
+      conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
+      conf.append("-T \"Intel C++ Compiler 17.0\"")
+    elif (compiler == "ICC17-VS12"):
+      conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
+      conf.append("-T \"Intel C++ Compiler 17.0\"")
     elif (compiler == "ICC17"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
