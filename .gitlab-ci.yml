@@ -375,37 +375,37 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-STATCOUNTER:
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-ISAS-SSE2-TBB2017:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:[SSE2] tasking:TBB2017 intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isas:SSE2 tasking:TBB2017 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-ISAS-SSE42-TBB2017:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:[SSE42] tasking:TBB2017 intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isas:SSE42 tasking:TBB2017 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-ISAS-AVX-TBB2017:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:[AVX] tasking:TBB2017 intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isas:AVX tasking:TBB2017 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-ISAS-AVX2-TBB2017:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:[AVX2] tasking:TBB2017 intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isas:AVX2 tasking:TBB2017 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-ISAS-AVX512KNL-TBB2017:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:[AVX512KNL] tasking:TBB2017 intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isas:AVX512KNL tasking:TBB2017 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-ISAS-AVX512SKX-TBB2017:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isa:[AVX512SKX] tasking:TBB2017 intensity:0"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.1 isas:AVX512SKX tasking:TBB2017 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -454,7 +454,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.1-AVX2-TBB2017-USERGEOM:
 ####################################################################
 
 release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:ZIP"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -464,7 +464,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512SKX] tasking:TBB2017 intensity:4 package:MSI"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2017 intensity:4 package:MSI"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -474,7 +474,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-MSI:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC16-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2] tasking:TBB2017 intensity:4 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.1 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [mac, icc16]
   only:   [web]
   artifacts:
@@ -484,7 +484,7 @@ release-macosx-x64-Release-ICC16-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC16-ISPC1.9.1-TBB-PACKAGE-PKG:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2] tasking:TBB intensity:4 package:PKG"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.1 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
   tags:   [mac, icc16]
   only:   [web]
   artifacts:
@@ -495,7 +495,7 @@ release-macosx-x64-Release-ICC16-ISPC1.9.1-TBB-PACKAGE-PKG:
 
 release-linux-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB2017 intensity:4 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2017 intensity:4 package:ZIP"
   tags:   [docker]
   only:   [web]
   artifacts:
@@ -506,7 +506,7 @@ release-linux-x64-Release-ICC17-ISPC1.9.1-TBB2017-PACKAGE-ZIP:
 
 release-linux-x64-Release-ICC17-ISPC1.9.1-TBB-PACKAGE-RPM:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensity:4 package:RPM"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.1 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:4 package:RPM"
   tags:   [docker]
   only:   [web]
   artifacts:
