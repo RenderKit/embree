@@ -165,13 +165,9 @@ IF(WIN32)
     SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME} Win32")
   ENDIF()
 
-  IF (MSVC10)
-    SET(VCVER vc10)
-  ELSEIF (MSVC11)
-    SET(VCVER vc11)
-  ELSEIF (MSVC12)
+  IF (MSVC12)
     SET(VCVER vc12)
-  ELSE()
+  ELSEIF(MSVC14) # also for VC15, which is toolset v141
     SET(VCVER vc14)
   ENDIF()
 

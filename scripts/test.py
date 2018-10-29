@@ -105,10 +105,10 @@ def runConfig(config):
     elif (compiler == "ICC18"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 18.0\"")
-    elif (compiler == "ICC17-VS14"):
+    elif (compiler == "ICC17-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
-    elif (compiler == "ICC17-VS12"):
+    elif (compiler == "ICC17-VC12"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
     elif (compiler == "ICC17"):
@@ -235,9 +235,9 @@ def runConfig(config):
           raise ValueError('unknown tasking system: ' + tasking + '')
 
         if platform == "x64":
-          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
+          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;%PATH%")
         else:
-          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
+          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;"+tbb_path+"\\bin\\ia32\\vc14;%PATH%")
 
       else:
         sys.stderr.write("unknown operating system "+OS)

@@ -5,7 +5,7 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-<EMBREE_VERSION>-x64.vs12.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vs12.msi). This
+[embree-<EMBREE_VERSION>-x64.vc12.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
 Files\Intel\Embree v<EMBREE_VERSION> x64`.
 
@@ -26,9 +26,9 @@ Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-<EMBREE_VERSION>.x64.vs12.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vs12.windows.zip)
+[embree-<EMBREE_VERSION>.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-<EMBREE_VERSION>.x64.vs14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vs14.windows.zip)
+[embree-<EMBREE_VERSION>.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
