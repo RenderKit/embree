@@ -530,6 +530,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
 
   Vec3f Ng = normalize(ray.Ng);
+  Vec3f Nf = faceforward(Ng,ray.dir,Ng);
   Vec3f col = make_Vec3f(min(1.f,.3f+.8f*abs(dot(Ng,normalize(ray.dir)))));
 
   /* calculate hit point */
@@ -542,12 +543,13 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   RandomSampler_init(sampler, (int)x, (int)y, 0);
   for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
   {
-    Vec3f dir = cosineSampleHemisphere(RandomSampler_get2D(sampler));
+    Vec2f sample = RandomSampler_get2D(sampler);
+    Sample3f dir = cosineSampleHemisphere(sample.x,sample.y,Nf);
 
     /* initialize shadow ray */
     Ray shadow;
     shadow.org = hitPos;
-    shadow.dir = dir;
+    shadow.dir = dir.v;
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -559,11 +561,10 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
     uniform IntersectContext context;
     InitIntersectionContext(&context);
     rtcOccludedV(g_scene,&context.context,RTCRay_(shadow));
-    //rtcIntersectV(g_scene,&context.context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (shadow.tfar >= 0.0f)
       intensity += 1.0f;
   }
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;

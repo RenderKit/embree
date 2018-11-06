@@ -117,22 +117,6 @@ uniform unsigned int getNumHWThreads();
 #define MAYBE_UNUSED
 #endif
 
-struct Sample3f
-{
-  Vec3f v;
-  float pdf;
-};
-
-inline uniform Sample3f make_Sample3f(const uniform Vec3f& v, const uniform float pdf) {
-  uniform Sample3f s; s.v = v; s.pdf = pdf; return s;
-}
-
-#if defined(ISPC)
-inline Sample3f make_Sample3f(const Vec3f& v, const float pdf) {
-  Sample3f s; s.v = v; s.pdf = pdf; return s;
-}
-#endif
-
 /* draws progress bar */
 extern "C" unmasked void progressStart();
 extern "C" unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
