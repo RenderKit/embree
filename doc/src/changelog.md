@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.2.5
+-   Fixed crash with pathtracer when using --triangle-sphere commandline.
+
 ### New Features in Embree 3.2.4
 -   Fixed compile issues with ICC 2019.
 -   Released ZIP files for Windows are now provided in a
