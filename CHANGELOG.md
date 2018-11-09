@@ -5,7 +5,6 @@ Version History
 -   Fixed compile issues with ICC 2019.
 -   Released ZIP files for Windows are now provided in a
     version linked against Visual Studio 2013 and Visual Studio 2015.
--   Fixed tutorials showing a black window on macOS 10.14 until moved.
 
 ### New Features in Embree 3.2.3
 -   Fixed crash when using curves with RTC_SCENE_FLAG_DYNAMIC

@@ -4,6 +4,7 @@ Version History
 ### New Features in Embree 3.2.5
 -   Fixed crash with pathtracer when using --triangle-sphere command line.
 -   Fixed crash with pathtracer when using --shader ao command line.
+-   Fixed tutorials showing a black window on macOS 10.14 until moved.
 
 ### New Features in Embree 3.2.4
 -   Fixed compile issues with ICC 2019.
