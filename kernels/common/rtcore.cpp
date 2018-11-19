@@ -1092,6 +1092,10 @@ namespace embree
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryTimeRange);
     RTC_VERIFY_HANDLE(hgeometry);
+
+    if (startTime > endTime)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"startTime has to be smaller or equal to the endTime");
+        
     geometry->setTimeRange(BBox1f(startTime,endTime));
     RTC_CATCH_END2(geometry);
   }
