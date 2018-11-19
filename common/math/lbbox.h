@@ -136,8 +136,6 @@ namespace embree
       if (iupper_iter-ilower_iter == 1) {
         bounds0 = lerp(blower0, bupper1, max(0.0f,lower-ilowerfc));
         bounds1 = lerp(bupper1, blower0, max(0.0f,iupperfc-upper));
-        bounds0 = bounds0.enlarge_by(4.0f*float(ulp));
-        bounds1 = bounds1.enlarge_by(4.0f*float(ulp));
         return;
       }
 
@@ -157,8 +155,8 @@ namespace embree
         b0.upper += dupper; b1.upper += dupper;
       }
 
-      bounds0 = b0.enlarge_by(4.0f*float(ulp));
-      bounds1 = b1.enlarge_by(4.0f*float(ulp));
+      bounds0 = b0;
+      bounds1 = b1;
     }
 
     /*! calculates the linear bounds of a primitive for the specified time range */
