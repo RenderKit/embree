@@ -38,4 +38,4 @@ On failure an error code is set that can be queried using
 \f[C]rtcDeviceGetError\f[].
 .SS SEE ALSO
 .PP
-[rtcCommitJoinScene]
+[rtcJoinCommitScene]

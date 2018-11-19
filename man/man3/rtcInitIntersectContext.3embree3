@@ -74,12 +74,12 @@ or accumulating transparencies.
 The support for the context filter function must be enabled for a scene
 by using the \f[C]RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION\f[] scene flag.
 .PP
-Is is guaranteed that the pointer to the intersection context passed to
+It is guaranteed that the pointer to the intersection context passed to
 a ray query is directly passed to the registered callback functions.
 This way it is possible to attach arbitrary data to the end of the
 intersection context, such as a per\-ray payload.
 .PP
-Please not that the ray pointer is not guaranteed to be passed to the
+Please note that the ray pointer is not guaranteed to be passed to the
 callback functions, thus reading additional data from the ray pointer
 passed to callbacks is not possible.
 .SS EXIT STATUS

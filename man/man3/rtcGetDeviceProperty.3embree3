@@ -14,7 +14,7 @@ rtcGetDeviceProperty\ \-\ queries\ properties\ of\ the\ device
 
 ssize_t\ rtcGetDeviceProperty(
 \ \ RTCDevice\ device,
-\ \ RTCDeviceProperty\ prop
+\ \ enum\ RTCDeviceProperty\ prop
 );
 \f[]
 .fi
@@ -26,6 +26,20 @@ argument).
 The returned property is an integer of type \f[C]ssize_t\f[].
 .PP
 Possible properties to query are:
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION\f[]: Queries the combined version
+number (MAJOR.MINOR.PATCH) with two decimal digits per component.
+E.g.
+for Embree 2.8.3 the integer 208003 is returned.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION_MAJOR\f[]: Queries the major version
+number of Embree.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION_MINOR\f[]: Queries the minor version
+number of Embree.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_VERSION_PATCH\f[]: Queries the patch version
+number of Embree.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED\f[]: Queries whether the
 \f[C]rtcIntersect4\f[] and \f[C]rtcOccluded4\f[] functions preserve
@@ -77,6 +91,26 @@ with \f[C]EMBREE_FILTER_FUNCTION\f[] enabled.
 whether invalid rays are ignored, which is the case if Embree is
 compiled with \f[C]EMBREE_IGNORE_INVALID_RAYS\f[] enabled.
 .IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED\f[]: Queries
+whether triangles are supported, which is the case if Embree is compiled
+with \f[C]EMBREE_GEOMETRY_TRIANGLE\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED\f[]: Queries whether
+quads are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_QUAD\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED\f[]: Queries
+whether subdivision meshes are supported, which is the case if Embree is
+compiled with \f[C]EMBREE_GEOMETRY_SUBDIVISION\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED\f[]: Queries whether
+curves are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_CURVE\f[] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED\f[]: Queries whether
+user geometries are supported, which is the case if Embree is compiled
+with \f[C]EMBREE_GEOMETRY_USER\f[] enabled.
+.IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_TASKING_SYSTEM\f[]: Queries the tasking system
 Embree is compiled with.
 Possible return values are:
@@ -88,40 +122,6 @@ Intel Threading Building Blocks (TBB)
 .IP "2." 3
 Parallel Patterns Library (PPL)
 .RE
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_VERSION_MAJOR\f[]: Queries the major version
-number of Embree.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_VERSION_MINOR\f[]: Queries the minor version
-number of Embree.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_VERSION_PATCH\f[]: Queries the patch version
-number of Embree.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_VERSION\f[]: Queries the combined version
-number (MAJOR.MINOR.PATCH) with two decimal digits per component.
-E.g.
-for Embree 2.8.3 the integer 208003 is returned.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED\f[]: Queries
-whether triangles are supported, which is the case if Embree is compiled
-with \f[C]EMBREE_GEOMETRY_TRIANGLE\f[] enabled.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED\f[]: Queries whether
-quads are supported, which is the case if Embree is compiled with
-\f[C]EMBREE_GEOMETRY_QUAD\f[] enabled.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED\f[]: Queries whether
-curves are supported, which is the case if Embree is compiled with
-\f[C]EMBREE_GEOMETRY_CURVE\f[] enabled.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_SUBDIVISION_GEOMETRY_SUPPORTED\f[]: Queries
-whether subdivision meshes are supported, which is the case if Embree is
-compiled with \f[C]EMBREE_GEOMETRY_SUBDIVISION\f[] enabled.
-.IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED\f[]: Queries whether
-user geometries are supported, which is the case if Embree is compiled
-with \f[C]EMBREE_GEOMETRY_USER\f[] enabled.
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED\f[]: Queries whether
 \f[C]rtcJoinCommitScene\f[] is supported.
@@ -135,6 +135,3 @@ For properties returning a boolean value, the return value 0 denotes
 .PP
 On failure zero is returned and an error code is set that can be queried
 using \f[C]rtcDeviceGetError\f[].
-.SS SEE ALSO
-.PP
-[rtcSetDeviceProperty]

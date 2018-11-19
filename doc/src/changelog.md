@@ -1,10 +1,29 @@
 Version History
 ---------------
 
+
 ### New Features in Embree 3.3.0
 -   Added support for motion blur time range per geometry. This way geometries
     can appear and disappear during the camera shutter  and time steps do not have
     to start and end at camera shutter interval boundaries.
+-   Fixed crash with pathtracer when using --triangle-sphere command line.
+-   Fixed crash with pathtracer when using --shader ao command line.
+-   Fixed tutorials showing a black window on macOS 10.14 until moved.
+
+### New Features in Embree 3.2.4
+-   Fixed compile issues with ICC 2019.
+-   Released ZIP files for Windows are now provided in a
+    version linked against Visual Studio 2013 and Visual Studio 2015.
+
+### New Features in Embree 3.2.3
+-   Fixed crash when using curves with RTC_SCENE_FLAG_DYNAMIC
+    combined with RTC_BUILD_QUALITY_MEDIUM.
+
+### New Features in Embree 3.2.2
+-   Fixed intersection distance for unnormalized rays with line segments.
+-   Removed libmmd.dll dependency in release builds for Windows.
+-   Fixed detection of AppleClang compiler under MacOSX.
+
 
 ### New Features in Embree 3.2.1
 -   Bugfix in flat mode for hermite curves.
@@ -22,6 +41,8 @@ Version History
 -   Fixed rtcGetGeometryTransform to return the local to world transform.
 -   Fixed bug in multi segment motion blur that caused missing of perfectly
     axis aligned geometry.
+-   Reduced memory consumption of small scenes by 4x.
+-   Reduced temporal storage of grid builder.
 
 ### New Features in Embree 3.2.0
 -   Improved watertightness of robust mode.

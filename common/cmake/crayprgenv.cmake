@@ -20,7 +20,5 @@ SET(FLAGS_AVX2      "-target-cpu=haswell")
 SET(FLAGS_AVX512KNL "-target-cpu=mic-knl")
 SET(FLAGS_AVX512SKX "-target-cpu=x86-skylake")
 
-SET_PROPERTY(CACHE EMBREE_ISA_SSE42 PROPERTY VALUE OFF)
-
 STRING(TOLOWER "${CMAKE_CXX_COMPILER_ID}" _lower_compiler_id)
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/${_lower_compiler_id}.cmake" OPTIONAL)

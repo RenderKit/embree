@@ -34,7 +34,7 @@ directly corresponds to the number of vertex buffer slots available
 For these geometries, one vertex buffer per time step must be specified
 when creating multi\-segment motion blur geometries.
 .PP
-For instance geometries (\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[]), a
+For instance geometries (\f[C]RTC_GEOMETRY_TYPE_INSTANCE\f[]), a
 transformation must be specified for each time step (see
 \f[C]rtcSetGeometryTransform\f[]).
 .PP

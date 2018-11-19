@@ -105,6 +105,12 @@ def runConfig(config):
     elif (compiler == "ICC18"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 18.0\"")
+    elif (compiler == "ICC17-VC14"):
+      conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
+      conf.append("-T \"Intel C++ Compiler 17.0\"")
+    elif (compiler == "ICC17-VC12"):
+      conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
+      conf.append("-T \"Intel C++ Compiler 17.0\"")
     elif (compiler == "ICC17"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
@@ -121,7 +127,9 @@ def runConfig(config):
       raise ValueError('unknown compiler: ' + compiler + '')
     
   elif OS == "linux":
-    if (compiler == "ICC18"):
+    if (compiler == "ICC19"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2019.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2019.0/bin/icc")
+    elif (compiler == "ICC18"):
       conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2018.0/bin/icc")
     elif (compiler == "ICC17"):
       conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2017.1/bin/icc")
@@ -227,9 +235,9 @@ def runConfig(config):
           raise ValueError('unknown tasking system: ' + tasking + '')
 
         if platform == "x64":
-          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
+          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;%PATH%")
         else:
-          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
+          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;"+tbb_path+"\\bin\\ia32\\vc14;%PATH%")
 
       else:
         sys.stderr.write("unknown operating system "+OS)

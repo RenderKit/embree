@@ -362,17 +362,16 @@ namespace embree
       mvector<PrimRef> prims;
       mvector<SubGridBuildData> sgrids;
       GeneralBVHBuilder::Settings settings;
-      bool primrefarrayalloc;
 
-      BVHNBuilderSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, bool primrefarrayalloc = false)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
+      BVHNBuilderSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
 
       BVHNBuilderSAHGrid (BVH* bvh, GridMesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
 
       void build()
       {
-		/* we reset the allocator when the mesh size changed */
+        /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
         }
@@ -380,7 +379,7 @@ namespace embree
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
         if (settings.primrefarrayalloc != size_t(inf))
           bvh->alloc.unshare(prims);
-     
+        
         PrimInfo pinfo(empty);
         size_t numPrimitives = 0;
 
@@ -490,17 +489,16 @@ namespace embree
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
+          sgrids.clear();
           return;
         }
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
         /* create primref array */
-        if (primrefarrayalloc) {
-          settings.primrefarrayalloc = numPrimitives/1000;
-          if (settings.primrefarrayalloc < 1000)
-            settings.primrefarrayalloc = inf;
-        }
+        settings.primrefarrayalloc = numPrimitives/1000;
+        if (settings.primrefarrayalloc < 1000)
+          settings.primrefarrayalloc = inf;
 
         /* enable os_malloc for two level build */
         if (mesh)
@@ -512,7 +510,6 @@ namespace embree
 
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-
 
         /* pinfo might has zero size due to invalid geometry */
         if (unlikely(pinfo.size() == 0))
@@ -530,7 +527,7 @@ namespace embree
 
         /* clear temporary array */
         sgrids.clear();
-        
+
         /* if we allocated using the primrefarray we have to keep it alive */
         if (settings.primrefarrayalloc != size_t(inf))
           bvh->alloc.share(prims);

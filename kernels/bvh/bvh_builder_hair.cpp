@@ -46,12 +46,12 @@ namespace embree
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
         if (settings.finished_range_threshold != size_t(inf))
           bvh->alloc.unshare(prims);
-      
+
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<CurveGeometry,false>();
         if (numPrimitives == 0) {
+          bvh->clear();
           prims.clear();
-          bvh->set(BVH::emptyNode,empty,0);
           return;
         }
 
@@ -109,6 +109,7 @@ namespace embree
            scene,prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+        
         /* if we allocated using the primrefarray we have to keep it alive */
         if (settings.finished_range_threshold != size_t(inf))
           bvh->alloc.share(prims);

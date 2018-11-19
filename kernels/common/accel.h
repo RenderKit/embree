@@ -56,6 +56,11 @@ namespace embree
       return bounds;
     }
 
+    /*! checks if acceleration structure is empty */
+    __forceinline bool isEmpty() const {
+      return bounds.bounds0.lower.x == float(pos_inf);
+    }
+
   public:
     LBBox3fa bounds; // linear bounds
     Type type;

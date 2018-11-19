@@ -637,8 +637,6 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
-        for (size_t i=0; i<numTimeSteps; i++)
-          normals.push_back(avector<Vertex>());
       }
 
       TriangleMeshNode (Ref<SceneGraph::TriangleMeshNode> imesh, const Transformations& spaces)
@@ -725,8 +723,6 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
-        for (size_t i=0; i<numTimeSteps; i++)
-          normals.push_back(avector<Vertex>());
       }
 
       QuadMeshNode (Ref<SceneGraph::QuadMeshNode> imesh, const Transformations& spaces)
@@ -807,8 +803,6 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
-        for (size_t i=0; i<numTimeSteps; i++)
-          normals.push_back(avector<Vertex>());
         zero_pad_arrays();
       }
 

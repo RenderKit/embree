@@ -39,7 +39,7 @@ namespace embree
       return sequential_filter(data,begin,end,predicate);
 
     /* calculate number of tasks to use */
-    enum { MAX_TASKS = 512 };
+    enum { MAX_TASKS = 64 };
     const Index numThreads = TaskScheduler::threadCount();
     const Index numBlocks  = (end-begin+minStepSize-1)/minStepSize;
     const Index taskCount  = min(numThreads,numBlocks,(Index)MAX_TASKS);

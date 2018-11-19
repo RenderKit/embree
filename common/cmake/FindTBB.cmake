@@ -51,13 +51,10 @@ IF (WIN32)
     SET(TBB_ARCH ia32)
   ENDIF()
 
-  IF (MSVC10)
-    SET(TBB_VCVER vc10)
-  ELSEIF (MSVC11)
-    SET(TBB_VCVER vc11)
-  ELSEIF (MSVC12)
+  # precompiled TBB packages currently only support VC12 and VC14
+  IF (MSVC12)
     SET(TBB_VCVER vc12)
-  ELSE()
+  ELSEIF(MSVC14)
     SET(TBB_VCVER vc14)
   ENDIF()
 

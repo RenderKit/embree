@@ -105,16 +105,6 @@ inline Vec3f sample_component2(const Vec3f& c0, const Sample3f& wi0, const Mediu
   }
 }
 
-/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3f& N)
-{
-  Vec3f localDir = cosineSampleHemisphere(make_Vec2f(u,v));
-  Sample3f s;
-  s.v = frame(N) * localDir;
-  s.pdf = cosineSampleHemispherePDF(localDir);
-  return s;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 //                          Minneart BRDF                                     //
 ////////////////////////////////////////////////////////////////////////////////

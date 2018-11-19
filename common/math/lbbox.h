@@ -65,8 +65,8 @@ namespace embree
         b0.lower += dlower; b1.lower += dlower;
         b0.upper += dupper; b1.upper += dupper;
       }
-      bounds0 = b0.enlarge_by(4.0f*float(ulp));
-      bounds1 = b1.enlarge_by(4.0f*float(ulp));
+      bounds0 = b0;
+      bounds1 = b1;
     }
 
     /*! calculates the linear bounds of a primitive for the specified time range */
@@ -86,9 +86,6 @@ namespace embree
       if (iupper-ilower == 1) {
         bounds0 = lerp(blower0, bupper1, lower-ilowerf);
         bounds1 = lerp(bupper1, blower0, iupperf-upper);
-
-        bounds0 = bounds0.enlarge_by(4.0f*float(ulp));
-        bounds1 = bounds1.enlarge_by(4.0f*float(ulp));
         return;
       }
 
@@ -108,8 +105,8 @@ namespace embree
         b0.upper += dupper; b1.upper += dupper;
       }
 
-      bounds0 = b0.enlarge_by(4.0f*float(ulp));
-      bounds1 = b1.enlarge_by(4.0f*float(ulp));
+      bounds0 = b0;
+      bounds1 = b1;
     }
 
     /*! calculates the linear bounds of a primitive for the specified time range */
@@ -176,8 +173,8 @@ namespace embree
 
       if (iupper-ilower == 1)
       {
-        bounds0 = b0.enlarge_by(4.0f*float(ulp));
-        bounds1 = b1.enlarge_by(4.0f*float(ulp));
+        bounds0 = b0;
+        bounds1 = b1;
         return;
       }
   
@@ -192,8 +189,8 @@ namespace embree
         b0.upper += dupper; b1.upper += dupper;
       }
 
-      bounds0 = b0.enlarge_by(4.0f*float(ulp));
-      bounds1 = b1.enlarge_by(4.0f*float(ulp));
+      bounds0 = b0;
+      bounds1 = b1;
     }
 
   public:
@@ -283,6 +280,11 @@ namespace embree
   template<typename T>
   __forceinline LBBox<T> merge(const LBBox<T>& a, const LBBox<T>& b) {
     return LBBox<T>(merge(a.bounds0, b.bounds0), merge(a.bounds1, b.bounds1));
+  }
+
+   /*! subset relation */
+  template<typename T> __inline bool subset( const LBBox<T>& a, const LBBox<T>& b ) {
+    return subset(a.bounds0,b.bounds0) && subset(a.bounds1,b.bounds1);
   }
 
   /*! default template instantiations */

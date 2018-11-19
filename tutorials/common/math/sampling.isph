@@ -23,7 +23,23 @@
 // good reference is "Total Compendium" by Philip Dutre http://people.cs.kuleuven.be/~philip.dutre/GI/
 
 #include "../math/vec.isph"
+#include "../math/linearspace.isph"
 
+struct Sample3f
+{
+  Vec3f v;
+  float pdf;
+};
+
+inline uniform Sample3f make_Sample3f(const uniform Vec3f& v, const uniform float pdf) {
+  uniform Sample3f s; s.v = v; s.pdf = pdf; return s;
+}
+
+#if defined(ISPC)
+inline Sample3f make_Sample3f(const Vec3f& v, const float pdf) {
+  Sample3f s; s.v = v; s.pdf = pdf; return s;
+}
+#endif
 
 inline Vec3f cartesian(const float phi, const float sinTheta, const float cosTheta)
 {
@@ -61,6 +77,15 @@ inline float cosineSampleHemispherePDF(float cosTheta)
   return cosTheta / M_PI;
 }
 
+/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
+inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3f& N)
+{
+  Vec3f localDir = cosineSampleHemisphere(make_Vec2f(u,v));
+  Sample3f s;
+  s.v = frame(N) * localDir;
+  s.pdf = cosineSampleHemispherePDF(localDir);
+  return s;
+}
 
 /// power cosine-weighted sampling of hemisphere oriented along the +z-axis
 ////////////////////////////////////////////////////////////////////////////////

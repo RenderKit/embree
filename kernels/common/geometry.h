@@ -135,6 +135,11 @@ namespace embree
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return state != BUILD; }
 
+    /*! marks geometry modified */
+    __forceinline void setModified() {
+      if (state == BUILD) state = COMMITTED;
+    }
+
     /*! returns geometry type */
     __forceinline GType getType() const { return gtype; }
 

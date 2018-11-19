@@ -916,6 +916,19 @@ namespace embree
     
     glfwSwapBuffers(window);
 
+#ifdef __APPLE__
+    // work around glfw issue #1334
+    // https://github.com/glfw/glfw/issues/1334
+    static bool macMoved = false;
+
+    if (!macMoved) {
+      int x, y;
+      glfwGetWindowPos(window, &x, &y);
+      glfwSetWindowPos(window, ++x, y);
+      macMoved = true;
+    }
+#endif
+
     double dt1 = getSeconds()-t0;
     avg_frame_time.add(dt1);
 

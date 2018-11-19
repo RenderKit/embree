@@ -3262,7 +3262,11 @@ namespace embree
       delete thread; thread = nullptr;
       return;
     }
-    task->scene = new VerifyScene(thread->device,SceneFlags(RTC_SCENE_FLAG_DYNAMIC,RTC_BUILD_QUALITY_LOW));
+
+    RTCBuildQuality build_quality = RTC_BUILD_QUALITY_LOW;
+    if (RandomSampler_getInt(task->sampler)%2) build_quality = RTC_BUILD_QUALITY_MEDIUM;
+    
+    task->scene = new VerifyScene(thread->device,SceneFlags(RTC_SCENE_FLAG_DYNAMIC,build_quality));
     if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) task->errorCounter++;;
     if (task->cancelBuild) rtcSetSceneProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
     const size_t numSlots = 20;
@@ -3283,7 +3287,7 @@ namespace embree
 
     for (unsigned int i=0; i<task->sceneCount; i++) 
     {
-      srand(task->sceneIndex*23565+i*2242);
+      srand(task->sceneIndex*23565+i*2242); // FIXME: required?
       if (i%20 == 0) std::cout << "." << std::flush;
 
       for (unsigned int j=0; j<numIterations; j++) 
@@ -3291,7 +3295,8 @@ namespace embree
         int index = RandomSampler_getInt(task->sampler)%numSlots;
         if (geom[index].first == -1) 
         {
-          int type = RandomSampler_getInt(task->sampler)%24;
+          int type = RandomSampler_getInt(task->sampler)%27;
+          
           Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
           switch (RandomSampler_getInt(task->sampler)%16) {
           case 0: pos = Vec3fa(nan); break;
@@ -3300,7 +3305,7 @@ namespace embree
           default: break;
           };
           size_t numPhi = RandomSampler_getInt(task->sampler)%100;
-	  if (type >= 12 || type <= 17) numPhi = RandomSampler_getInt(task->sampler)%10;
+	  if (type >= 12 && type <= 17) numPhi = RandomSampler_getInt(task->sampler)%10;
 #if defined(__WIN32__)          
           numPhi = RandomSampler_getInt(task->sampler) % 4;
 #endif
@@ -3341,6 +3346,10 @@ namespace embree
           case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
           case 19: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_REFIT,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
           case 20: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_LOW,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_LOW; break;
+
+          case 24: geom[index] = task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+          case 25: geom[index] = task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_REFIT,pos,1.0f,2.0f,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+          case 26: geom[index] = task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_LOW,pos,1.0f,2.0f,numTriangles); quality[index] = RTC_BUILD_QUALITY_LOW; break;
           }; 
 	  //if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) task->errorCounter++;;
           if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) {
@@ -3383,6 +3392,9 @@ namespace embree
           case 21:
           case 22:
           case 23:
+          case 24:
+          case 25:
+          case 26:
           {
             int op = RandomSampler_getInt(task->sampler)%4;
             switch (op) {
@@ -3394,24 +3406,31 @@ namespace embree
               break;
             }
             case 1: {
-              RTCGeometry hgeom = rtcGetGeometry(*task->scene,geom[index].first);
-              Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(hgeom, RTC_BUFFER_TYPE_VERTEX, 0);
-              if (vertices) { 
-                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
-              }
-              rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 0);
-              
+
               switch (types[index])
               {
-              case 4: case 5: case 10: case 11:
-                RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
-                Vec3fa* vertices = (Vec3fa*)rtcGetGeometryBufferData(hgeom, RTC_BUFFER_TYPE_VERTEX, 1);
-                if (vertices) {
-                  for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+              case 24: case 25: case 26: break; // does not work for hair for some reason
+              default:
+                RTCGeometry hgeom = rtcGetGeometry(*task->scene,geom[index].first);
+                Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(hgeom, RTC_BUFFER_TYPE_VERTEX, 0);
+                if (vertices) { 
+                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
-                rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 1);
+                rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 0);
+                
+                switch (types[index])
+                {
+                case 4: case 5: case 10: case 11:
+                  RTCGeometry hgeom = rtcGetGeometry(*task->scene, geom[index].first);
+                  Vec3fa* vertices = (Vec3fa*)rtcGetGeometryBufferData(hgeom, RTC_BUFFER_TYPE_VERTEX, 1);
+                  if (vertices) {
+                    for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+                  }
+                  rtcUpdateGeometryBuffer(hgeom,RTC_BUFFER_TYPE_VERTEX, 1);
+                }
+                rtcCommitGeometry(hgeom);
+                break;
               }
-              rtcCommitGeometry(hgeom);
               break;
             }
             case 2: {
@@ -4211,6 +4230,7 @@ namespace embree
     sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_ROBUST | RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_MEDIUM));
     sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_NONE,       RTC_BUILD_QUALITY_HIGH));
     sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,       RTC_BUILD_QUALITY_LOW));
+    sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,       RTC_BUILD_QUALITY_MEDIUM));
     sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST,        RTC_BUILD_QUALITY_LOW));
     sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_COMPACT,       RTC_BUILD_QUALITY_LOW));
     sceneFlags.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST | RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_LOW));
@@ -4221,6 +4241,7 @@ namespace embree
     sceneFlagsRobust.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST | RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_LOW));
 
     sceneFlagsDynamic.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,       RTC_BUILD_QUALITY_LOW));
+    sceneFlagsDynamic.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC,       RTC_BUILD_QUALITY_MEDIUM));
     sceneFlagsDynamic.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST,        RTC_BUILD_QUALITY_LOW));
     sceneFlagsDynamic.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_COMPACT,       RTC_BUILD_QUALITY_LOW));
     sceneFlagsDynamic.push_back(SceneFlags(RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST | RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_LOW));
@@ -4326,7 +4347,9 @@ namespace embree
       }
       groups.pop();
 
+#if !defined(TASKING_PPL) // FIXME: PPL has some issues here!
       groups.top()->add(new GarbageGeometryTest("build_garbage_geom",isa));
+#endif
 
       GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> sflags_quality_memory;
@@ -4984,3 +5007,4 @@ int main(int argc, char** argv)
   embree::VerifyApplication app;
   return app.main(argc,argv);
 }
+
