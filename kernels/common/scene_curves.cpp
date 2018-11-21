@@ -692,8 +692,7 @@ namespace embree
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
 
-        const unsigned num_time_segments = this->numTimeSegments();
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
+        const range<int> tbounds = this->timeSegmentRange(time_range);
         if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
@@ -769,18 +768,18 @@ namespace embree
       }
 
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
-      __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+      __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& dt) const {
+        return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, dt, this->time_range, fnumTimeSegments);
       }
       
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
-      __forceinline LBBox3fa linearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds(space, primID, itime); }, time_range, fnumTimeSegments);
+      __forceinline LBBox3fa linearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& dt) const {
+        return LBBox3fa([&] (size_t itime) { return bounds(space, primID, itime); }, dt, this->time_range, fnumTimeSegments);
       }
       
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
-      __forceinline LBBox3fa linearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds(ofs, scale, r_scale0, space, primID, itime); }, time_range, fnumTimeSegments);
+      __forceinline LBBox3fa linearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& dt) const {
+        return LBBox3fa([&] (size_t itime) { return bounds(ofs, scale, r_scale0, space, primID, itime); }, dt, this->time_range, fnumTimeSegments);
       }
       
       PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
@@ -803,10 +802,10 @@ namespace embree
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
-          if (!valid(ctype, j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
+          if (!valid(ctype, j, this->timeSegmentRange(t0t1))) continue;
           const LBBox3fa lbox = linearBounds(j,t0t1);
           if (lbox.bounds0.empty() || lbox.bounds1.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
-          const PrimRefMB prim(lbox,this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          const PrimRefMB prim(lbox,this->numTimeSegments(),this->time_range,this->numTimeSegments(),this->geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }

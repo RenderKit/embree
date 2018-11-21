@@ -201,9 +201,8 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline LBBox3fa linearBounds(const Grid& g, size_t sx, size_t sy, const BBox1f& time_range) const {
-
-      return LBBox3fa([&] (size_t itime) { return bounds(g,sx,sy,itime); }, time_range, fnumTimeSegments);
+    __forceinline LBBox3fa linearBounds(const Grid& g, size_t sx, size_t sy, const BBox1f& dt) const {
+      return LBBox3fa([&] (size_t itime) { return bounds(g,sx,sy,itime); }, dt, time_range, fnumTimeSegments);
     }
 
     /* returns true if topology changed */

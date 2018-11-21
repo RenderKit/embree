@@ -140,6 +140,8 @@ namespace embree
     
     texcoords = in->texcoords.data();
     triangles = (ISPCTriangle*) in->triangles.data();
+    startTime = in->time_range.lower;
+    endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numTriangles = (unsigned) in->numPrimitives();
@@ -166,6 +168,8 @@ namespace embree
     
     texcoords = in->texcoords.data();
     quads = (ISPCQuad*) in->quads.data();
+    startTime = in->time_range.lower;
+    endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numQuads = (unsigned) in->numPrimitives();
@@ -186,6 +190,8 @@ namespace embree
       positions[i] = in->positions[i].data();
 
     grids = (ISPCGrid*) in->grids.data();
+    startTime = in->time_range.lower;
+    endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numGrids = (unsigned) in->numPrimitives();
@@ -223,6 +229,8 @@ namespace embree
     edge_crease_weights = in->edge_crease_weights.data();
     vertex_creases = in->vertex_creases.data();
     vertex_crease_weights = in->vertex_crease_weights.data();
+    startTime = in->time_range.lower;
+    endTime   = in->time_range.upper;
     numTimeSteps = unsigned(in->numTimeSteps());
     numVertices = unsigned(in->numPositions());
     numFaces = unsigned(in->numPrimitives());
@@ -275,6 +283,8 @@ namespace embree
     
     hairs = (ISPCHair*) in->hairs.data();
     flags = (unsigned char*)in->flags.data();
+    startTime = in->time_range.lower;
+    endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numHairs = (unsigned)in->numPrimitives();
@@ -294,6 +304,8 @@ namespace embree
     spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
     geom.geomID = scene->geometryID(in->child);
     child = ISPCScene::convertGeometry(scene,in->child);
+    startTime = in->spaces.time_range.lower;
+    endTime   = in->spaces.time_range.upper;
     for (size_t i=0; i<numTimeSteps; i++)
       spaces[i] = in->spaces[i];
   }
@@ -350,6 +362,7 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
     for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -367,6 +380,7 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
     for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -384,6 +398,7 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
     for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
@@ -401,6 +416,7 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
     for (unsigned int i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
@@ -455,6 +471,7 @@ namespace embree
   {
     RTCGeometry geom = rtcNewGeometry(device, mesh->type);
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
 
     for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
@@ -522,10 +539,12 @@ namespace embree
       instance->geom.geomID = geomID;
       return geomID;
     }
-    else {
+    else
+    {
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
       rtcSetGeometryInstancedScene(geom,scene_inst);
       rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
+      rtcSetGeometryTimeRange(geom,instance->startTime,instance->endTime);
       for (size_t t=0; t<instance->numTimeSteps; t++)
         rtcSetGeometryTransform(geom,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x);
       rtcCommitGeometry(geom);

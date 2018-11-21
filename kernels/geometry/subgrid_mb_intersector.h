@@ -35,7 +35,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
 
         float ftime;
-        const int itime = getTimeSegment(ray.time(), float(mesh->fnumTimeSegments), ftime);
+        const int itime = mesh->timeSegment(ray.time(), ftime);
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime,ftime);
         pre.intersect(ray,context,v0,v1,v2,v3,g,subgrid);
       }
@@ -47,7 +47,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
 
         float ftime;
-        const int itime = getTimeSegment(ray.time(), float(mesh->fnumTimeSegments), ftime);
+        const int itime = mesh->timeSegment(ray.time(), ftime);
 
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime,ftime);
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
@@ -134,7 +134,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
  
         vfloat<K> ftime;
-        const vint<K> itime = getTimeSegment(ray.time(), vfloat<K>(mesh->fnumTimeSegments), ftime);
+        const vint<K> itime = mesh->timeSegment(ray.time(), ftime);
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime[k],ftime[k]);
         pre.intersect1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }
@@ -146,7 +146,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
 
         vfloat<K> ftime;
-        const vint<K> itime = getTimeSegment(ray.time(), vfloat<K>(mesh->fnumTimeSegments), ftime);
+        const vint<K> itime = mesh->timeSegment(ray.time(), ftime);
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime[k],ftime[k]);
         return pre.occluded1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }

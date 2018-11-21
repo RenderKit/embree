@@ -129,7 +129,7 @@ namespace embree
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
 
       vfloat<K> ftime;
-      const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
+      const vint<K> itime = mesh->timeSegment(time, ftime);
 
       const size_t first = bsf(movemask(valid));
       if (likely(all(valid,itime[first] == itime)))
@@ -147,11 +147,8 @@ namespace embree
     __forceinline void gather(Vec3vf<M>& p0,
                               Vec3vf<M>& p1,
                               Vec3vf<M>& p2,
-                              const TriangleMesh* mesh0,
-                              const TriangleMesh* mesh1,
-                              const TriangleMesh* mesh2,
-                              const TriangleMesh* mesh3,
-                              const vint<M>& itime) const;
+                              const TriangleMesh* mesh,
+                              const int itime) const;
 
     __forceinline void gather(Vec3vf<M>& p0,
                               Vec3vf<M>& p1,
@@ -315,28 +312,22 @@ namespace embree
   __forceinline void TriangleMi<4>::gather(Vec3vf4& p0,
                                            Vec3vf4& p1,
                                            Vec3vf4& p2,
-                                           const TriangleMesh* mesh0,
-                                           const TriangleMesh* mesh1,
-                                           const TriangleMesh* mesh2,
-                                           const TriangleMesh* mesh3,
-                                           const vint4& itime) const
+                                           const TriangleMesh* mesh,
+                                           const int itime) const
   {
-    const float* vertices0 = (const float*) mesh0->vertexPtr(0,itime[0]);
-    const float* vertices1 = (const float*) mesh1->vertexPtr(0,itime[1]);
-    const float* vertices2 = (const float*) mesh2->vertexPtr(0,itime[2]);
-    const float* vertices3 = (const float*) mesh3->vertexPtr(0,itime[3]);
-    const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
-    const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
-    const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
-    const vfloat4 a3 = vfloat4::loadu(vertices3 + v0[3]);
-    const vfloat4 b0 = vfloat4::loadu(vertices0 + v1[0]);
-    const vfloat4 b1 = vfloat4::loadu(vertices1 + v1[1]);
-    const vfloat4 b2 = vfloat4::loadu(vertices2 + v1[2]);
-    const vfloat4 b3 = vfloat4::loadu(vertices3 + v1[3]);
-    const vfloat4 c0 = vfloat4::loadu(vertices0 + v2[0]);
-    const vfloat4 c1 = vfloat4::loadu(vertices1 + v2[1]);
-    const vfloat4 c2 = vfloat4::loadu(vertices2 + v2[2]);
-    const vfloat4 c3 = vfloat4::loadu(vertices3 + v2[3]);
+    const float* vertices = (const float*) mesh->vertexPtr(0,itime);
+    const vfloat4 a0 = vfloat4::loadu(vertices + v0[0]);
+    const vfloat4 a1 = vfloat4::loadu(vertices + v0[1]);
+    const vfloat4 a2 = vfloat4::loadu(vertices + v0[2]);
+    const vfloat4 a3 = vfloat4::loadu(vertices + v0[3]);
+    const vfloat4 b0 = vfloat4::loadu(vertices + v1[0]);
+    const vfloat4 b1 = vfloat4::loadu(vertices + v1[1]);
+    const vfloat4 b2 = vfloat4::loadu(vertices + v1[2]);
+    const vfloat4 b3 = vfloat4::loadu(vertices + v1[3]);
+    const vfloat4 c0 = vfloat4::loadu(vertices + v2[0]);
+    const vfloat4 c1 = vfloat4::loadu(vertices + v2[1]);
+    const vfloat4 c2 = vfloat4::loadu(vertices + v2[2]);
+    const vfloat4 c3 = vfloat4::loadu(vertices + v2[3]);
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
@@ -349,20 +340,16 @@ namespace embree
                                            const Scene *const scene,
                                            const float time) const
   {
-    const TriangleMesh* mesh0 = scene->get<TriangleMesh>(geomID(0));
-    const TriangleMesh* mesh1 = scene->get<TriangleMesh>(geomID(1));
-    const TriangleMesh* mesh2 = scene->get<TriangleMesh>(geomID(2));
-    const TriangleMesh* mesh3 = scene->get<TriangleMesh>(geomID(3));
+    const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(0)); // in mblur mode all geometries are identical
 
-    const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
-    vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    float ftime;
+    const int itime = mesh->timeSegment(time, ftime);
 
-    Vec3vf4 a0,a1,a2; gather(a0,a1,a2,mesh0,mesh1,mesh2,mesh3,itime);
-    Vec3vf4 b0,b1,b2; gather(b0,b1,b2,mesh0,mesh1,mesh2,mesh3,itime+1);
-    p0 = lerp(a0,b0,ftime);
-    p1 = lerp(a1,b1,ftime);
-    p2 = lerp(a2,b2,ftime);
+    Vec3vf4 a0,a1,a2; gather(a0,a1,a2,mesh,itime);
+    Vec3vf4 b0,b1,b2; gather(b0,b1,b2,mesh,itime+1);
+    p0 = lerp(a0,b0,vfloat4(ftime));
+    p1 = lerp(a1,b1,vfloat4(ftime));
+    p2 = lerp(a2,b2,vfloat4(ftime));
   }
 
   template<int M>

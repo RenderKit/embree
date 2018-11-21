@@ -933,6 +933,33 @@ namespace embree
     }
   }
 
+  void SceneGraph::set_time_range(Ref<SceneGraph::Node> node, const BBox1f& time_range)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->spaces.time_range = time_range;
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        set_time_range(groupNode->children[i],time_range);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      mesh->time_range = time_range;
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+      mesh->time_range = time_range;
+    }
+  }
+  
   std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
   {
     if      (b0 == a0) return std::make_pair(p-1,b1);
@@ -958,7 +985,7 @@ namespace embree
   
   Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_quads ( Ref<SceneGraph::TriangleMeshNode> tmesh )
   {
-    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material,tmesh->time_range,0);
 
     for (auto& p : tmesh->positions)
       qmesh->positions.push_back(p);
@@ -1015,7 +1042,7 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned int resX, const unsigned int resY )
   {
     const size_t timeSteps = qmesh->positions.size();
-    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,timeSteps);
+    Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,qmesh->time_range,timeSteps);
     std::vector<SceneGraph::QuadMeshNode::Quad>& quads = qmesh->quads;
 
     for (size_t i=0;i<quads.size();i++)
@@ -1063,7 +1090,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::convert_grids_to_quads ( Ref<SceneGraph::GridMeshNode> gmesh )
   {
-    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(gmesh->material);
+    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(gmesh->material,gmesh->time_range,0);
 
     for (size_t i=0; i<gmesh->numPrimitives(); i++)
     {
@@ -1226,7 +1253,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> qmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,qmesh->numTimeSteps());
+      Ref<SceneGraph::GridMeshNode> gmesh = new SceneGraph::GridMeshNode(qmesh->material,qmesh->time_range,qmesh->numTimeSteps());
       
       std::vector<bool> visited;
       visited.resize(qmesh->numPrimitives());
@@ -1307,7 +1334,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> tmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      Ref<SceneGraph::SubdivMeshNode> smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
+      Ref<SceneGraph::SubdivMeshNode> smesh = new SceneGraph::SubdivMeshNode(tmesh->material,tmesh->time_range,0);
 
       for (auto& p : tmesh->positions)
         smesh->positions.push_back(p);
@@ -1348,7 +1375,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE, hmesh->material);
+      Ref<SceneGraph::HairSetNode> lmesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE, hmesh->material, hmesh->time_range, 0);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);

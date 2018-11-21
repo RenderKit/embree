@@ -308,7 +308,7 @@ namespace embree
 #endif
 
       std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+3 <= extSize)
+      while (refs.size()+N-1 <= extSize)
       {
         std::pop_heap (refs.begin(),refs.end()); 
         NodeRef ref = refs.back().node;

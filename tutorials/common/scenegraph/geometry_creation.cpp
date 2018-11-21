@@ -20,7 +20,7 @@ namespace embree
 {
   Ref<SceneGraph::Node> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,1);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),1);
     mesh->positions[0].resize((width+1)*(height+1));
     mesh->triangles.resize(2*width*height);
 
@@ -49,7 +49,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createQuadPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,1);
+    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,BBox1f(0,1),1);
     mesh->positions[0].resize((width+1)*(height+1));
     mesh->quads.resize(width*height);
 
@@ -80,7 +80,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createGridPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,1);
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,BBox1f(0,1),1);
     mesh->positions[0].resize((width+1)*(height+1));
     mesh->grids.push_back(SceneGraph::GridMeshNode::Grid(0,width+1,width+1,height+1));
 
@@ -98,7 +98,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,1);
+    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,BBox1f(0,1),1);
     mesh->tessellationRate = tessellationRate;
     mesh->positions[0].resize((width+1)*(height+1));
     mesh->position_indices.resize(4*width*height);
@@ -136,7 +136,7 @@ namespace embree
     unsigned numPhi = unsigned(N);
     unsigned numTheta = 2*numPhi;
     unsigned numVertices = numTheta*(numPhi+1);
-    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,1);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),1);
     mesh->positions[0].resize(numVertices);
 
     /* create sphere geometry */
@@ -195,7 +195,7 @@ namespace embree
     unsigned numPhi = unsigned(N);
     unsigned numTheta = 2*numPhi;
     unsigned numVertices = numTheta*(numPhi+1);
-    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,1);
+    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,BBox1f(0,1),1);
     mesh->positions[0].resize(numVertices);
 
     /* create sphere geometry */
@@ -251,7 +251,7 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::createGridSphere (const Vec3fa& center, const float radius, size_t N, Ref<MaterialNode> material)
   {
     size_t grid_size = (N+1)*(N+1);
-    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,1);
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,BBox1f(0,1),1);
     mesh->positions[0].resize(grid_size*6);
 
     for (size_t i=0; i<6; i++)
@@ -284,7 +284,7 @@ namespace embree
     unsigned numPhi = unsigned(N);
     unsigned numTheta = 2*numPhi;
     unsigned numVertices = numTheta*(numPhi+1);
-    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,1);
+    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,BBox1f(0,1),1);
     mesh->tessellationRate = tessellationRate;
     mesh->positions[0].resize(numVertices);
 
@@ -350,7 +350,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,BBox1f(0,1),1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,0),radius));
@@ -365,7 +365,7 @@ namespace embree
     RandomSampler_init(sampler,hash);
 
     RTCGeometryType type = (subtype == ROUND_CURVE) ? RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE : RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,material,BBox1f(0,1),1);
 
     if (numHairs == 1) {
       const Vec3fa p0 = pos;
@@ -400,7 +400,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,mblur?2:1);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),mblur?2:1);
 
     mesh->triangles.resize(numTriangles);
     for (size_t i=0; i<numTriangles; i++) {
@@ -438,7 +438,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,mblur?2:1);
+    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material,BBox1f(0,1),mblur?2:1);
 
     mesh->quads.resize(numQuads);
     for (size_t i=0; i<numQuads; i++) {
@@ -477,7 +477,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,mblur?2:1);
+    Ref<SceneGraph::GridMeshNode> mesh = new SceneGraph::GridMeshNode(material,BBox1f(0,1),mblur?2:1);
 
     mesh->grids.resize(numGrids);
     for (size_t i=0; i<numGrids; i++) {
@@ -513,7 +513,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,material,BBox1f(0,1),mblur?2:1);
 
     mesh->hairs.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
@@ -549,7 +549,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,material,BBox1f(0,1),mblur?2:1);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {
@@ -585,7 +585,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,mblur?2:1);
+    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material,BBox1f(0,1),mblur?2:1);
 
     for (size_t i=0; i<numFaces; i++) 
     {

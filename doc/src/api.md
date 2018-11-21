@@ -111,14 +111,19 @@ assign a geometry ID) or using the `rtcAttachGeometryById` function
 to a single scene at a time.
 
 All geometry types support multi-segment motion blur with an arbitrary
-number of equidistant time steps (in the range of 2 to 129). Each
-geometry can have a different number of time steps. The motion blur
-geometry is defined by linearly interpolating the geometries of
-neighboring time steps. To construct a motion blur geometry, first the
-number of time steps of the geometry must be specified using the
+number of equidistant time steps (in the range of 2 to 129) inside a
+user specified time range. Each geometry can have a different number
+of time steps and a different time range. The motion blur geometry is
+defined by linearly interpolating the geometries of neighboring time
+steps. To construct a motion blur geometry, first the number of time
+steps of the geometry must be specified using the
 `rtcSetGeometryTimeStepCount` function, and then a vertex buffer for
 each time step must be bound, e.g. using the
-`rtcSetSharedGeometryBuffer` function.
+`rtcSetSharedGeometryBuffer` function. Optionally, a time range
+defining the start (and end time) of the first (and last) time step
+can be set using the `rtcSetGeometryTimeRange` function. This feature
+will also allow geometries to appear and disappear during the camera
+shutter time if the time range is a sub range of [0,1].
 
 The API supports per-geometry filter callback functions (see
 `rtcSetGeometryIntersectFilterFunction` and
@@ -643,6 +648,11 @@ Embree API Reference
 
 ## rtcSetGeometryTimeStepCount
 ``` {include=src/api/rtcSetGeometryTimeStepCount.md}
+```
+\pagebreak
+
+## rtcSetGeometryTimeRange
+``` {include=src/api/rtcSetGeometryTimeRange.md}
 ```
 \pagebreak
 

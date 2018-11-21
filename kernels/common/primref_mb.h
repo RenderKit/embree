@@ -129,18 +129,16 @@ namespace embree
 
     __forceinline PrimRefMB () {}
 
-    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
-      : bbox(bounds.interpolate(0.5f))
+    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
+      : bbox(bounds.interpolate(0.5f)), _activeTimeSegments(activeTimeSegments), _totalTimeSegments(totalTimeSegments), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
       bbox.lower.a = geomID;
       bbox.upper.a = primID;
-      num.x = activeTimeSegments;
-      num.y = totalTimeSegments;
     }
-
-    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
-      : bbox(bounds.interpolate(0.5f))
+    
+    __forceinline PrimRefMB (EmptyTy empty, const LBBox3fa& bounds, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
+      : bbox(bounds.interpolate(0.5f)), _activeTimeSegments(activeTimeSegments), _totalTimeSegments(totalTimeSegments), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
 #if defined(__X86_64__)
@@ -150,22 +148,39 @@ namespace embree
       bbox.lower.u = id;
       bbox.upper.u = 0;
 #endif
-      num.x = activeTimeSegments;
-      num.y = totalTimeSegments;
     }
-
+    
     /*! returns bounds for binning */
     __forceinline BBox3fa bounds() const {
       return bbox;
     }
 
     /*! returns the number of time segments of this primref */
-    __forceinline unsigned size() const { 
-      return num.x;
+    __forceinline unsigned int size() const { 
+      return _activeTimeSegments;
     }
 
-    __forceinline unsigned totalTimeSegments() const { 
-      return num.y;
+    __forceinline unsigned int totalTimeSegments() const { 
+      return _totalTimeSegments;
+    }
+
+     /* calculate overlapping time segment range */
+    __forceinline range<int> timeSegmentRange(const BBox1f& range) const {
+      return getTimeSegmentRange(range,time_range,float(_totalTimeSegments));
+    }
+
+     /* returns time that corresponds to time step */
+    __forceinline float timeStep(const int i) const {
+      assert(i>=0 && i<=_totalTimeSegments);
+      return time_range.lower + time_range.size()*float(i)/float(_totalTimeSegments);
+    }
+    
+    /*! checks if time range overlaps */
+    __forceinline bool time_range_overlap(const BBox1f& range) const
+    {
+      if (0.9999f*time_range.upper <= range.lower) return false;
+      if (1.0001f*time_range.lower >= range.upper) return false;
+      return true;
     }
 
     /*! returns center for binning */
@@ -181,12 +196,12 @@ namespace embree
     }
 
     /*! returns the geometry ID */
-    __forceinline unsigned geomID() const { 
+    __forceinline unsigned int geomID() const { 
       return bbox.lower.a;
     }
 
     /*! returns the primitive ID */
-    __forceinline unsigned primID() const { 
+    __forceinline unsigned int primID() const { 
       return bbox.upper.a;
     }
 
@@ -216,7 +231,9 @@ namespace embree
 
   public:
     BBox3fa bbox; // bounds, geomID, primID
-    Vec3ia num;   // activeTimeSegments, totalTimeSegments
+    unsigned int _activeTimeSegments;
+    unsigned int _totalTimeSegments;
+    BBox1f time_range; // entire geometry time range
   };
 
 #endif

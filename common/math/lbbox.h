@@ -111,6 +111,56 @@ namespace embree
 
     /*! calculates the linear bounds of a primitive for the specified time range */
     template<typename BoundsFunc>
+    __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range_in, const BBox1f& geom_time_range, float geom_time_segments)
+    {
+      /* normalize global time_range_in to local geom_time_range */
+      const BBox1f time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
+                              (time_range_in.upper-geom_time_range.lower)/geom_time_range.size());
+        
+      const float lower = time_range.lower*geom_time_segments;
+      const float upper = time_range.upper*geom_time_segments;
+      const float ilowerf = floor(lower);
+      const float iupperf = ceil(upper);
+      const float ilowerfc = max(0.0f,ilowerf);
+      const float iupperfc = min(iupperf,geom_time_segments);
+      const int   ilowerc = (int)ilowerfc;
+      const int   iupperc = (int)iupperfc;
+      assert(iupperc-ilowerc > 0);
+
+      /* this larger iteration range guarantees that we process borders of geom_time_range is (partially) inside time_range_in */
+      const int ilower_iter = max(-1,(int)ilowerf);
+      const int iupper_iter = min((int)iupperf,(int)geom_time_segments+1);
+        
+      const BBox<T> blower0 = bounds(ilowerc);
+      const BBox<T> bupper1 = bounds(iupperc);
+      if (iupper_iter-ilower_iter == 1) {
+        bounds0 = lerp(blower0, bupper1, max(0.0f,lower-ilowerfc));
+        bounds1 = lerp(bupper1, blower0, max(0.0f,iupperfc-upper));
+        return;
+      }
+
+      const BBox<T> blower1 = bounds(ilowerc+1);
+      const BBox<T> bupper0 = bounds(iupperc-1);
+      BBox<T> b0 = lerp(blower0, blower1, max(0.0f,lower-ilowerfc));
+      BBox<T> b1 = lerp(bupper1, bupper0, max(0.0f,iupperfc-upper));
+
+      for (int i = ilower_iter+1; i < iupper_iter; i++)
+      {
+        const float f = (float(i)/geom_time_segments - time_range.lower) / time_range.size();
+        const BBox<T> bt = lerp(b0, b1, f);
+        const BBox<T> bi = bounds(i);
+        const T dlower = min(bi.lower-bt.lower, T(zero));
+        const T dupper = max(bi.upper-bt.upper, T(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+
+      bounds0 = b0;
+      bounds1 = b1;
+    }
+
+    /*! calculates the linear bounds of a primitive for the specified time range */
+    template<typename BoundsFunc>
     __forceinline LBBox(const BoundsFunc& bounds, const range<int>& time_range, int numTimeSegments)
     {
       const int ilower = time_range.begin();

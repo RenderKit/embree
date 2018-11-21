@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<scene>
+  <PerspectiveCamera name="default" from="-20 8 -100" to="0 8 0" up="0 1 0" fov="20"/>
+
+  <assign type="scene"> -->
+    <GridMesh id="cube">
+      <material id="9">
+        <code>"OBJ"</code>
+        <parameters>
+          <float name="d">1</float>
+          <float3 name="Kd">1 0 0</float3>
+          <float3 name="Ks">0 0 0</float3>
+          <float name="Ns">1</float>
+        </parameters>
+      </material>
+      <positions>
+        -1.0 -1.0 -1.0
+        -1.0  1.0 -1.0
+        1.0 -1.0 -1.0
+        1.0  1.0 -1.0
+
+        1.0 -1.0 -1.0
+        1.0  1.0 -1.0
+        1.0 -1.0  1.0
+        1.0  1.0  1.0
+
+        1.0 -1.0  1.0
+        1.0  1.0  1.0
+        -1.0 -1.0  1.0
+        -1.0  1.0  1.0
+
+        -1.0 -1.0 -1.0
+        -1.0 -1.0  1.0
+        -1.0  1.0 -1.0
+        -1.0  1.0  1.0
+
+        -1.0  1.0 -1.0
+        -1.0  1.0  1.0
+        1.0  1.0 -1.0
+        1.0  1.0  1.0
+
+        -1.0 -1.0 -1.0
+        1.0 -1.0 -1.0
+        -1.0 -1.0  1.0
+        1.0 -1.0  1.0
+
+      </positions>
+      <grids>
+        0 2 2 2
+        4 2 2 2
+        8 2 2 2
+       12 2 2 2
+       16 2 2 2
+       20 2 2 2
+      </grids>
+    </GridMesh>
+  </assign> 
+
+  <Transform>
+    <AffineSpace translate="0 12 0"/>
+    <TimeRange time="-0.2 1.2">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-14 -4 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="14 -4 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+
+  <Transform>
+    <AffineSpace translate="0 8 0"/>
+    <TimeRange time="-0.1 1.1">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-12 -2 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="12 -2 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+
+  <Transform>
+    <AffineSpace translate="0 4 0"/>
+    <TimeRange time="0 1">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-10 0 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="10 0 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+  
+  <Transform>
+    <AffineSpace translate="0 0 0"/>
+    <TimeRange time="0.1 0.9">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-8 2 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="8 2 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+
+  <Transform>
+    <AffineSpace translate="0 -4 0"/>
+    <TimeRange time="0.2 0.8">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-6 4 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="6 4 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+
+  <Transform>
+    <AffineSpace translate="0 -8 0"/>
+    <TimeRange time="0.3 0.7">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-4 6 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="4 6 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+
+  <Transform>
+    <AffineSpace translate="0 -12 0"/>
+    <TimeRange time="0.4 0.6">
+      <Flatten>
+        <TransformAnimation>
+          <AffineSpace translate="-2 8 0"/>
+          <AffineSpace translate="0 10 0"/>
+          <AffineSpace translate="2 8 0"/>
+          <ref id="cube"/>
+        </TransformAnimation>
+      </Flatten>
+    </TimeRange>
+  </Transform>
+
+</scene>

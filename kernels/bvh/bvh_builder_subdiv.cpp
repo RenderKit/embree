@@ -208,19 +208,19 @@ namespace embree
       __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1* patches)
         : bounds(bounds), patches(patches) {}
 
-      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
+      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const BBox1f prim_time_range, const unsigned prim_num_time_segments, const BBox1f time_range) const
       {
-        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
+        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, prim_time_range, (float)prim_num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(time_range, prim_time_range, (float)prim_num_time_segments);
+        return PrimRefMB (empty, lbounds, tbounds.size(), prim_time_range, prim_num_time_segments, patchIndexMB);
       }
 
       __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {
-        return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
+        return operator()(prim.ID(),prim.time_range,prim.totalTimeSegments(),time_range);
       }
 
       __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, (float)prim.totalTimeSegments());
+        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, prim.time_range, (float)prim.totalTimeSegments());
       }
     };
 
@@ -263,10 +263,10 @@ namespace embree
             sMB += count * mesh->numTimeSteps;
           }
           return PrimInfoMB(s,sMB);
-        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.object_range.begin()+b.object_range.begin(),a.object_range.end()+b.object_range.end()); });
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.begin()+b.begin(),a.end()+b.end()); });
 
-        numSubPatches = pinfo.object_range.begin();
-        numSubPatchesMB = pinfo.object_range.end();
+        numSubPatches = pinfo.begin();
+        numSubPatchesMB = pinfo.end();
       }
 
       void rebuild(size_t numPrimitives, ParallelForForPrefixSumState<PrimInfoMB>& pstate)
@@ -288,8 +288,8 @@ namespace embree
             BVH_Allocator alloc(bvh);
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const size_t patchIndex = base.object_range.begin()+s;
-              const size_t patchIndexMB = base.object_range.end()+sMB;
+              const size_t patchIndex = base.begin()+s;
+              const size_t patchIndexMB = base.end()+sMB;
               assert(patchIndex < numPrimitives);
 
               for (size_t t=0; t<mesh->numTimeSteps; t++)
@@ -299,7 +299,7 @@ namespace embree
               }
               SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
               patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
-              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
+              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->time_range,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
               s++;
               sMB += mesh->numTimeSteps;
               pinfo.add_primref(primsMB[patchIndex]);
@@ -309,14 +309,14 @@ namespace embree
           pinfo.object_range._end = sMB;
           return pinfo;
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
-        pinfo.object_range._end = pinfo.object_range.begin();
+        pinfo.object_range._end = pinfo.begin();
         pinfo.object_range._begin = 0;
 
         auto createLeafFunc = [&] (const BVHBuilderMSMBlur::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB4D {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
-          const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
+          const size_t patchIndexMB = prims[current.prims.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           NodeRef node = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geomID())->numTimeSteps;

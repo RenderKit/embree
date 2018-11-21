@@ -167,8 +167,7 @@ namespace embree
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
         const TriangleMesh* const mesh = scene->get<TriangleMesh>(geomID);
-        const unsigned numTimeSegments = mesh->numTimeSegments();
-        const range<int> itime_range = getTimeSegmentRange(time_range, (float)numTimeSegments);
+        const range<int> itime_range = mesh->timeSegmentRange(time_range);
         assert(itime_range.size() == 1);
         const int ilower = itime_range.begin();
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
@@ -179,7 +178,7 @@ namespace embree
         const Vec3fa& b1 = mesh->vertex(tri.v[1],ilower+1);
         const Vec3fa& c0 = mesh->vertex(tri.v[2],ilower+0);
         const Vec3fa& c1 = mesh->vertex(tri.v[2],ilower+1);
-        const BBox1f time_range_v(float(ilower+0)/float(numTimeSegments),float(ilower+1)/float(numTimeSegments));
+        const BBox1f time_range_v(mesh->timeStep(ilower+0),mesh->timeStep(ilower+1));
         auto a01 = globalLinear(std::make_pair(a0,a1),time_range_v);
         auto b01 = globalLinear(std::make_pair(b0,b1),time_range_v);
         auto c01 = globalLinear(std::make_pair(c0,c1),time_range_v);

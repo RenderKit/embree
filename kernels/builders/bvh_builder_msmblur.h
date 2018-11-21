@@ -126,9 +126,8 @@ namespace embree
           const unsigned primID = prim.primID();
           const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
-          const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+          const range<int> tbounds = mesh->timeSegmentRange(time_range);
+          return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, mesh->numTimeSegments(), geomID, primID);
         }
 
         // __noinline is workaround for ICC16 bug under MacOSX
@@ -138,9 +137,8 @@ namespace embree
           const unsigned primID = prim.primID();
           const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(space, primID, time_range);
-          const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+          const range<int> tbounds = mesh->timeSegmentRange(time_range);
+          return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, mesh->numTimeSegments(), geomID, primID);
         }
 
         __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
@@ -166,9 +164,8 @@ namespace embree
         const unsigned primID = prim.primID();
         const Geometry* mesh = scene->get(geomID);
         const LBBox3fa lbounds = mesh->vlinearBounds(primID, time_range);
-        const unsigned num_time_segments = mesh->numTimeSegments();
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+        const range<int> tbounds = mesh->timeSegmentRange(time_range);
+        return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, mesh->numTimeSegments(), geomID, primID);
       }
       
       __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const
@@ -177,9 +174,8 @@ namespace embree
         const unsigned primID = prim.primID();
         const Geometry* mesh = scene->get(geomID);
         const LBBox3fa lbounds = mesh->vlinearBounds(space, primID, time_range);
-        const unsigned num_time_segments = mesh->numTimeSegments();
-        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+        const range<int> tbounds = mesh->timeSegmentRange(time_range);
+        return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, mesh->numTimeSegments(), geomID, primID);
       }
       
       __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
@@ -336,6 +332,11 @@ namespace embree
               set.deterministic_order();
               splitFallback(set,lset,rset);
             }
+            /* split by geometry */
+            else if (unlikely(split.data == Split::SPLIT_GEOMID)) {
+              set.deterministic_order();
+              splitByGeometry(set,lset,rset);
+            }
             else
               assert(false);
 
@@ -345,23 +346,27 @@ namespace embree
           /*! finds the best fallback split */
           __noinline Split findFallback(const SetMB& set)
           {
+            /* split if primitives are not from same geometry */
+            if (!sameGeometry(set))
+              return Split(0.0f,Split::SPLIT_GEOMID);
+            
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
             if (cfg.singleLeafTimeSegment)
             {
               /* test if one primitive has more than one time segment in time range, if so split time */
-              for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
+              for (size_t i=set.begin(); i<set.end(); i++)
               {
                 const PrimRefMB& prim = (*set.prims)[i];
-                const range<int> itime_range = getTimeSegmentRange(set.time_range,(float)prim.totalTimeSegments());
+                const range<int> itime_range = prim.timeSegmentRange(set.time_range);
                 const int localTimeSegments = itime_range.size();
                 assert(localTimeSegments > 0);
                 if (localTimeSegments > 1) {
                   const int icenter = (itime_range.begin() + itime_range.end())/2;
-                  const float splitTime = float(icenter)/float(prim.totalTimeSegments());
+                  const float splitTime = prim.timeStep(icenter);
                   return Split(0.0f,(unsigned)Split::SPLIT_TEMPORAL,0,splitTime);
                 }
               }
-            }
+            }        
 
             /* otherwise return fallback split */
             return Split(0.0f,Split::SPLIT_FALLBACK);
@@ -372,8 +377,8 @@ namespace embree
           {
             mvector<PrimRefMB>& prims = *set.prims;
 
-            const size_t begin = set.object_range.begin();
-            const size_t end   = set.object_range.end();
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
             const size_t center = (begin + end)/2;
 
             PrimInfoMB linfo = empty;
@@ -388,6 +393,42 @@ namespace embree
             new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
           }
 
+          /*! checks if all primitives are from the same geometry */
+          __forceinline bool sameGeometry(const SetMB& set)
+          {
+            if (set.size() == 0) return true;
+            mvector<PrimRefMB>& prims = *set.prims;
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
+            unsigned int firstGeomID = prims[begin].geomID();
+            for (size_t i=begin+1; i<end; i++) {
+              if (prims[i].geomID() != firstGeomID){
+                return false;
+              }
+            }
+            return true;
+          }
+
+          /* split by geometry ID */
+          void splitByGeometry(const SetMB& set, SetMB& lset, SetMB& rset)
+          {
+            assert(set.size() > 1);
+
+            mvector<PrimRefMB>& prims = *set.prims;
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
+            
+            PrimInfoMB left(empty);
+            PrimInfoMB right(empty);
+            unsigned int geomID = prims[begin].geomID();
+            size_t center = serial_partitioning(prims.data(),begin,end,left,right,
+                                                [&] ( const PrimRefMB& prim ) { return prim.geomID() == geomID; },
+                                                [ ] ( PrimInfoMB& dst, const PrimRefMB& prim ) { dst.add_primref(prim); });
+            
+            new (&lset) SetMB(left, set.prims,range<size_t>(begin,center),set.time_range);
+            new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ),set.time_range);
+          }
+
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
@@ -397,8 +438,22 @@ namespace embree
             /* replace already found split by fallback split */
             const BuildRecordSplit current(BuildRecord(in.prims,in.depth),findFallback(in.prims));
 
+            /* special case when directly creating leaf without any splits that could shrink time_range */
+            bool force_split = false;
+            if (current.depth == 1 && current.size() > 0)
+            {
+              BBox1f c = empty;
+              BBox1f p = current.prims.time_range;
+              for (size_t i=current.prims.begin(); i<current.prims.end(); i++) {
+                mvector<PrimRefMB>& prims = *current.prims.prims;
+                c.extend(prims[i].time_range);
+              }
+              
+              force_split = c.lower > p.lower || c.upper < p.upper;
+            }
+
             /* create leaf for few primitives */
-            if (current.size() <= cfg.maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
+            if (current.size() <= cfg.maxLeafSize && current.split.data < Split::SPLIT_ENFORCE && !force_split)
               return createLeaf(current,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -413,9 +468,11 @@ namespace embree
               for (size_t i=0; i<children.size(); i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= cfg.maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+                if (children[i].size() <= cfg.maxLeafSize && children[i].split.data < Split::SPLIT_ENFORCE && !force_split)
                   continue;
 
+                force_split = false;
+                
                 /* remember child with largest size */
                 if (children[i].size() > bestSize) {
                   bestSize = children[i].size();
@@ -437,6 +494,13 @@ namespace embree
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
             } while (children.size() < cfg.branchingFactor);
+
+            /* detect time_ranges that have shrunken */
+            for (size_t i=0; i<children.size(); i++) {
+              const BBox1f c = children[i].prims.time_range;
+              const BBox1f p = in.prims.time_range;
+              hasTimeSplits |= c.lower > p.lower || c.upper < p.upper;
+            }
 
             /* create node */
             auto node = createNode(alloc, hasTimeSplits);
@@ -515,6 +579,13 @@ namespace embree
               std::unique_ptr<mvector<PrimRefMB>> new_vector = split(csplit,brecord.prims,lrecord.prims,rrecord.prims);
               hasTimeSplits |= new_vector != nullptr;
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
+            }
+
+            /* detect time_ranges that have shrunken */
+            for (size_t i=0; i<children.size(); i++) {
+              const BBox1f c = children[i].prims.time_range;
+              const BBox1f p = current.prims.time_range;
+              hasTimeSplits |= c.lower > p.lower || c.upper < p.upper;
             }
 
             /* sort buildrecords for simpler shadow ray traversal */

@@ -216,7 +216,7 @@ namespace embree
           uint64_t bestGeomPrimID = -1;
 
           /*! find curve with minimum ID that defines valid direction */
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
+          for (size_t i=set.begin(); i<set.end(); i++)
           {
             const PrimRefMB& prim = (*set.prims)[i];
             const unsigned int geomID = prim.geomID();
@@ -225,8 +225,7 @@ namespace embree
             if (geomprimID >= bestGeomPrimID) continue;
             
             const Geometry* mesh = scene->get(geomID);
-            const unsigned num_time_segments = mesh->numTimeSegments();
-            const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
+            const range<int> tbounds = mesh->timeSegmentRange(set.time_range);
             if (tbounds.size() == 0) continue;
 
             const size_t t = (tbounds.begin()+tbounds.end())/2;
@@ -284,7 +283,7 @@ namespace embree
           BinBoundsAndCenter binBoundsAndCenter(scene,set.time_range,space);
           ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.size(),set.centBounds);
-          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,binBoundsAndCenter);
+          bin_parallel(binner,set.prims->data(),set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,binBoundsAndCenter);
           Split osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
@@ -295,8 +294,8 @@ namespace embree
         __forceinline void split(const Split& split, const LinearSpace3fa& space, const SetMB& set, SetMB& lset, SetMB& rset)
         {
           BinBoundsAndCenter binBoundsAndCenter(scene,set.time_range,space);
-          const size_t begin = set.object_range.begin();
-          const size_t end   = set.object_range.end();
+          const size_t begin = set.begin();
+          const size_t end   = set.end();
           PrimInfoMB left = empty;
           PrimInfoMB right = empty;
           const vint4 vSplitPos(split.pos);

@@ -233,4 +233,56 @@ namespace embree
   typedef BBox<Vec3vf4>  BBox3vf4;
   typedef BBox<Vec3vf8>  BBox3vf8;
   typedef BBox<Vec3vf16> BBox3vf16;
+
+
+  /* calculate time segment itime and fractional time ftime */
+  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
+  {
+    const float timeScaled = time * numTimeSegments;
+    const float itimef = clamp(floorf(timeScaled), 0.0f, numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return int(itimef);
+  }
+
+  __forceinline int getTimeSegment(float time, float start_time, float end_time, float numTimeSegments, float& ftime)
+  {
+    const float timeScaled = (time-start_time)/(end_time-start_time) * numTimeSegments;
+    const float itimef = clamp(floorf(timeScaled), 0.0f, numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return int(itimef);
+  }
+
+  template<int N>
+  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
+  {
+    const vfloat<N> timeScaled = time * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return vint<N>(itimef);
+  }
+
+  template<int N>
+    __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& start_time, const vfloat<N>& end_time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
+  {
+    const vfloat<N> timeScaled = (time-start_time)/(end_time-start_time) * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return vint<N>(itimef);
+  }
+
+  /* calculate overlapping time segment range */
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
+  {
+    const int itime_lower = (int)max(floor(time_range.lower*numTimeSegments), 0.0f);
+    const int itime_upper = (int)min(ceil (time_range.upper*numTimeSegments), numTimeSegments);
+    return make_range(itime_lower, itime_upper);
+  }
+
+  /* calculate overlapping time segment range */
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& range, BBox1f time_range, float numTimeSegments)
+  {
+    const float lower = (range.lower-time_range.lower)/time_range.size();
+    const float upper = (range.upper-time_range.lower)/time_range.size();
+    return getTimeSegmentRange(BBox1f(lower,upper),numTimeSegments);
+  }
 }

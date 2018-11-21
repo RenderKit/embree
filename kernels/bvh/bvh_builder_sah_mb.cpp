@@ -44,6 +44,7 @@ namespace embree
   namespace isa
   {
 
+#if 0
     template<int N, typename Primitive>
     struct CreateMBlurLeaf
     {
@@ -57,6 +58,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(set.size());
         size_t start = set.begin();
+        for (size_t i=start; i<end; i++) assert((*current.prims.prims)[start].geomID() == (*current.prims.prims)[i].geomID()); // assert that all geomIDs are identical
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
 
@@ -71,7 +73,7 @@ namespace embree
       PrimRef* prims;
       size_t time;
     };
-
+#endif
 
     template<int N, typename Mesh, typename Primitive>
     struct CreateMSMBlurLeaf
@@ -84,13 +86,15 @@ namespace embree
 
       __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
-        size_t items = Primitive::blocks(current.prims.object_range.size());
-        size_t start = current.prims.object_range.begin();
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
+        size_t end   = current.prims.end();
+        for (size_t i=start; i<end; i++) assert((*current.prims.prims)[start].geomID() == (*current.prims.prims)[i].geomID()); // assert that all geomIDs are identical
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
+          allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.end(), bvh->scene, current.prims.time_range));
         return NodeRecordMB4D(node,allBounds,current.prims.time_range);
       }
 
@@ -128,12 +132,12 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-            const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
-            const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+            //const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+            //const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
 
-            if (numTimeSegments == 1)
+            /*if (numTimeSegments == 1)
               buildSingleSegment(numPrimitives);
-            else
+              else*/
               buildMultiSegment(numPrimitives);
 
 #if PROFILE
@@ -146,6 +150,7 @@ namespace embree
         bvh->postBuild(t0);
       }
 
+#if 0 // No longer compatible when time_ranges are present for geometries. Would have to create temporal nodes sometimes, and put only a single geometry into leaf.
       void buildSingleSegment(size_t numPrimitives)
       {
         /* create primref array */
@@ -177,14 +182,16 @@ namespace embree
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
       }
+#endif
 
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
+
         /* early out if no valid primitives */
-        if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
+        if (pinfo.size() == 0) { bvh->clear(); return; }
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
@@ -245,8 +252,8 @@ namespace embree
           const size_t y = subgrid.y();
           const LBBox3fa lbounds = mesh->linearBounds(mesh->grid(primID),x,y,time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, buildID);
+          const range<int> tbounds = mesh->timeSegmentRange(time_range);
+          return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, num_time_segments, geomID, buildID);
         }
 
         __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
@@ -262,7 +269,6 @@ namespace embree
 
     };
 
-
     template<int N>
     struct CreateMSMBlurLeafGrid
     {
@@ -274,8 +280,8 @@ namespace embree
 
       __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
-        const size_t items = current.prims.object_range.size(); 
-        const size_t start = current.prims.object_range.begin();
+        const size_t items = current.prims.size(); 
+        const size_t start = current.prims.begin();
 
         const PrimRefMB* prims = current.prims.prims->data();
         /* collect all subsets with unique geomIDs */
@@ -336,6 +342,7 @@ namespace embree
       const SubGridBuildData * const sgrids;
     };
 
+#if 0
     template<int N>
     struct CreateLeafGridMB
     {
@@ -410,7 +417,7 @@ namespace embree
       BVH* bvh;
       const SubGridBuildData * const sgrids;
     };
-
+#endif
 
 
     /* Motion blur BVH with 4D nodes and internal time splits */
@@ -503,7 +510,7 @@ namespace embree
                                                          PrimInfoMB pinfoMB(empty);
                                                          for (size_t j=r.begin(); j<r.end(); j++)
                                                          {
-                                                           if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue;
+                                                           if (!mesh->valid(j, mesh->timeSegmentRange(t0t1))) continue;
                                                            LBBox3fa bounds(empty);
                                                            PrimInfoMB gridMB(0,mesh->getNumSubGrids(j));
                                                            pinfoMB.merge(gridMB);
@@ -524,13 +531,13 @@ namespace embree
                                                 PrimInfoMB pinfoMB(empty);
                                                 for (size_t j=r.begin(); j<r.end(); j++)
                                                 {
-                                                  if (!mesh->valid(j, getTimeSegmentRange(t0t1, mesh->fnumTimeSegments))) continue;
+                                                  if (!mesh->valid(j, mesh->timeSegmentRange(t0t1))) continue;
                                                   const GridMesh::Grid &g = mesh->grid(j);
 
                                                   for (unsigned int y=0; y<g.resY-1u; y+=2)
                                                     for (unsigned int x=0; x<g.resX-1u; x+=2)
                                                     {
-                                                      const PrimRefMB prim(mesh->linearBounds(g,x,y,t0t1),mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(p_index));
+                                                      const PrimRefMB prim(mesh->linearBounds(g,x,y,t0t1),mesh->numTimeSegments(),mesh->time_range,mesh->numTimeSegments(),mesh->geomID,unsigned(p_index));
                                                       pinfoMB.add_primref(prim);
                                                       sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                       prims[p_index++] = prim;                
@@ -551,12 +558,12 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAHGrid");
 
-        const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
-        const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
-        if (numTimeSegments == 1)
-          buildSingleSegment(numPrimitives);
-        else
-          buildMultiSegment(numPrimitives);
+        //const size_t numTimeSteps = scene->getNumTimeSteps<GridMesh,true>();
+        //const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+        //if (numTimeSegments == 1)
+        //  buildSingleSegment(numPrimitives);
+        //else
+        buildMultiSegment(numPrimitives);
 
 	/* clear temporary data for static geometry */
         if (scene->isStaticAccel()) bvh->shrink();
@@ -564,6 +571,7 @@ namespace embree
         bvh->postBuild(t0);
       }
 
+#if 0
       void buildSingleSegment(size_t numPrimitives)
       {
         /* create primref array */
@@ -600,7 +608,8 @@ namespace embree
 
         bvh->set(root.ref,root.lbounds,pinfo.size());
       }
-
+#endif
+      
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
@@ -608,7 +617,7 @@ namespace embree
         PrimInfoMB pinfo = createPrimRefArrayMSMBlurGrid(scene,prims,bvh->scene->progressInterface);
 
         /* early out if no valid primitives */
-        if (pinfo.object_range.size() == 0) { bvh->clear(); return; }
+        if (pinfo.size() == 0) { bvh->clear(); return; }
 
 
 

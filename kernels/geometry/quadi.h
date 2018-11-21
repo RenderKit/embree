@@ -144,7 +144,7 @@ namespace embree
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
 
       vfloat<K> ftime;
-      const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
+      const vint<K> itime = mesh->timeSegment(time, ftime);
 
       const size_t first = bsf(movemask(valid));
       if (likely(all(valid,itime[first] == itime)))
@@ -167,11 +167,8 @@ namespace embree
                               Vec3vf<M>& p1,
                               Vec3vf<M>& p2,
                               Vec3vf<M>& p3,
-                              const QuadMesh* mesh0,
-                              const QuadMesh* mesh1,
-                              const QuadMesh* mesh2,
-                              const QuadMesh* mesh3,
-                              const vint<M>& itime) const;
+                              const QuadMesh* mesh,
+                              const int itime) const;
 
     __forceinline void gather(Vec3vf<M>& p0,
                               Vec3vf<M>& p1,
@@ -402,16 +399,13 @@ namespace embree
                                        Vec3vf4& p1,
                                        Vec3vf4& p2,
                                        Vec3vf4& p3,
-                                       const QuadMesh* mesh0,
-                                       const QuadMesh* mesh1,
-                                       const QuadMesh* mesh2,
-                                       const QuadMesh* mesh3,
-                                       const vint4& itime) const
+                                       const QuadMesh* mesh,
+                                       const int itime) const
   {
-    const float* vertices0 = (const float*) mesh0->vertexPtr(0,itime[0]);
-    const float* vertices1 = (const float*) mesh1->vertexPtr(0,itime[1]);
-    const float* vertices2 = (const float*) mesh2->vertexPtr(0,itime[2]);
-    const float* vertices3 = (const float*) mesh3->vertexPtr(0,itime[3]);
+    const float* vertices0 = (const float*) mesh->vertexPtr(0,itime);
+    const float* vertices1 = (const float*) mesh->vertexPtr(0,itime);
+    const float* vertices2 = (const float*) mesh->vertexPtr(0,itime);
+    const float* vertices3 = (const float*) mesh->vertexPtr(0,itime);
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -442,21 +436,17 @@ namespace embree
                                        const Scene *const scene,
                                        const float time) const
   {
-    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomID(0));
-    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomID(1));
-    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomID(2));
-    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomID(3));
+    const QuadMesh* mesh = scene->get<QuadMesh>(geomID(0)); // in mblur mode all geometries are identical
 
-    const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
-    vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    float ftime;
+    const int itime = mesh->timeSegment(time, ftime);
 
-    Vec3vf4 a0,a1,a2,a3; gather(a0,a1,a2,a3,mesh0,mesh1,mesh2,mesh3,itime);
-    Vec3vf4 b0,b1,b2,b3; gather(b0,b1,b2,b3,mesh0,mesh1,mesh2,mesh3,itime+1);
-    p0 = lerp(a0,b0,ftime);
-    p1 = lerp(a1,b1,ftime);
-    p2 = lerp(a2,b2,ftime);
-    p3 = lerp(a3,b3,ftime);
+    Vec3vf4 a0,a1,a2,a3; gather(a0,a1,a2,a3,mesh,itime);
+    Vec3vf4 b0,b1,b2,b3; gather(b0,b1,b2,b3,mesh,itime+1);
+    p0 = lerp(a0,b0,vfloat4(ftime));
+    p1 = lerp(a1,b1,vfloat4(ftime));
+    p2 = lerp(a2,b2,vfloat4(ftime));
+    p3 = lerp(a3,b3,vfloat4(ftime));
   }
 
   template<int M>

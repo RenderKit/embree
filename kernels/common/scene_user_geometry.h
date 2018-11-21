@@ -77,8 +77,8 @@ namespace embree
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
-          if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments))) continue;
-          const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->numTimeSegments(),this->geomID,unsigned(j));
+          if (!valid(j, timeSegmentRange(t0t1))) continue;
+          const PrimRefMB prim(linearBounds(j,t0t1),this->numTimeSegments(),this->time_range,this->numTimeSegments(),this->geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }

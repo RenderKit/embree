@@ -1185,7 +1185,7 @@ namespace embree
       for (size_t i=0; i<N; i++) gridmesh2->grids.push_back(gridmesh2->grids.back());
       scene.addGeometry(quality,gridmesh2.dynamicCast<SceneGraph::Node>());
       
-      Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr,1);
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr,BBox1f(0,1),1);
       for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh->verticesPerFace.push_back(4);
         subdivmesh->position_indices.push_back(4*i+0);
@@ -1199,7 +1199,7 @@ namespace embree
       }
       scene.addGeometry(quality,subdivmesh.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr,1);
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr,BBox1f(0,1),1);
       for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh2->verticesPerFace.push_back(4);
         subdivmesh2->position_indices.push_back(4*i+0);
