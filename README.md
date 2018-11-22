@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.2.4
+% Embree: High Performance Ray Tracing Kernels 3.3.0
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.2.4-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x64.vc12.msi). This
+[embree-3.3.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.2.4 x64`.
+Files\Intel\Embree v3.3.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.2.4 x64`.
+Files\Intel\Embree v3.3.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.2.4 x64` and uninstall it.
+3.3.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.2.4.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x64.vc12.windows.zip)
+[embree-3.3.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.2.4.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x64.vc14.windows.zip)
+[embree-3.3.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.2.4.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x86_64.rpm.tar.gz)
+[embree-3.3.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.2.4.x86_64.rpm.tar.gz
+    tar xzf embree-3.3.0.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.2.4-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.2.4-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.2.4-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.3.0-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.3.0-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.3.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.2.4-1.x86_64.rpm
-    sudo alien embree3-devel-3.2.4-1.noarch.rpm
-    sudo alien embree3-examples-3.2.4-1.x86_64.rpm
+    sudo alien embree3-lib-3.3.0-1.x86_64.rpm
+    sudo alien embree3-devel-3.3.0-1.noarch.rpm
+    sudo alien embree3-examples-3.3.0-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.2.4-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.2.4-2_all.deb
-    sudo dpkg -i embree3-examples_3.2.4-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.3.0-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.3.0-2_all.deb
+    sudo dpkg -i embree3-examples_3.3.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.2.4-1.x86_64
-    sudo rpm --erase embree3-devel-3.2.4-1.noarch
-    sudo rpm --erase embree3-examples-3.2.4-1.x86_64
+    sudo rpm --erase embree3-lib-3.3.0-1.x86_64
+    sudo rpm --erase embree3-devel-3.3.0-1.noarch
+    sudo rpm --erase embree3-examples-3.3.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.2.4.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.3.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.2.4.x86_64.linux.tar.gz
-    source embree-3.2.4.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.3.0.x86_64.linux.tar.gz
+    source embree-3.3.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.2.4.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x86_64.dmg). This
+[embree-3.3.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.2.4.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.2.4/embree-3.2.4.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.3.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.3.0/embree-3.3.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.2.4.x64.macosx.tar.gz
-    source embree-3.2.4.x64.macosx/embree-vars.sh
+    tar xzf embree-3.3.0.x64.macosx.tar.gz
+    source embree-3.3.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -700,14 +700,19 @@ assign a geometry ID) or using the `rtcAttachGeometryById` function
 to a single scene at a time.
 
 All geometry types support multi-segment motion blur with an arbitrary
-number of equidistant time steps (in the range of 2 to 129). Each
-geometry can have a different number of time steps. The motion blur
-geometry is defined by linearly interpolating the geometries of
-neighboring time steps. To construct a motion blur geometry, first the
-number of time steps of the geometry must be specified using the
+number of equidistant time steps (in the range of 2 to 129) inside a
+user specified time range. Each geometry can have a different number
+of time steps and a different time range. The motion blur geometry is
+defined by linearly interpolating the geometries of neighboring time
+steps. To construct a motion blur geometry, first the number of time
+steps of the geometry must be specified using the
 `rtcSetGeometryTimeStepCount` function, and then a vertex buffer for
 each time step must be bound, e.g. using the
-`rtcSetSharedGeometryBuffer` function.
+`rtcSetSharedGeometryBuffer` function. Optionally, a time range
+defining the start (and end time) of the first (and last) time step
+can be set using the `rtcSetGeometryTimeRange` function. This feature
+will also allow geometries to appear and disappear during the camera
+shutter time if the time range is a sub range of [0,1].
 
 The API supports per-geometry filter callback functions (see
 `rtcSetGeometryIntersectFilterFunction` and
@@ -1232,6 +1237,11 @@ Embree API Reference
 
 ## rtcSetGeometryTimeStepCount
 ``` {include=src/api/rtcSetGeometryTimeStepCount.md}
+```
+
+
+## rtcSetGeometryTimeRange
+``` {include=src/api/rtcSetGeometryTimeRange.md}
 ```
 
 

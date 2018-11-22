@@ -1,6 +1,14 @@
 Version History
 ---------------
 
+### New Features in Embree 3.3.0
+-   Added support for motion blur time range per geometry. This way geometries
+    can appear and disappear during the camera shutter and time steps do not have
+    to start and end at camera shutter interval boundaries.
+-   Fixed crash with pathtracer when using --triangle-sphere command line.
+-   Fixed crash with pathtracer when using --shader ao command line.
+-   Fixed tutorials showing a black window on macOS 10.14 until moved.
+
 ### New Features in Embree 3.2.4
 -   Fixed compile issues with ICC 2019.
 -   Released ZIP files for Windows are now provided in a
