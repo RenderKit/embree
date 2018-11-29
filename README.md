@@ -1937,6 +1937,13 @@ Grid Geometry
 This tutorial demonstrates the use of the memory efficient grid
 primitive to handle highly tessellated and displaced geometry.
 
+Point Geometry
+---------------------
+
+![][imgPointGeometry]
+
+This tutorial demonstrates the use of the three representations
+of point geometry.
 
 Motion Blur Geometry
 --------------------
@@ -2018,5 +2025,6 @@ installation: `C:\Program Files\Intel\Embree3`.
 [imgSubdivisionGeometry]: https://embree.github.io/images/subdivision_geometry.jpg
 [imgDisplacementGeometry]: https://embree.github.io/images/displacement_geometry.jpg
 [imgGridGeometry]: https://embree.github.io/images/grid_geometry.jpg
+[imgPointGeometry]: https://embree.github.io/images/point_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg

@@ -14,5 +14,6 @@
 [imgSubdivisionGeometry]: https://embree.github.io/images/subdivision_geometry.jpg
 [imgDisplacementGeometry]: https://embree.github.io/images/displacement_geometry.jpg
 [imgGridGeometry]: https://embree.github.io/images/grid_geometry.jpg
+[imgPointGeometry]: https://embree.github.io/images/point_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg

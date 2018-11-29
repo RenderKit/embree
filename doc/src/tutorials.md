@@ -236,6 +236,13 @@ Grid Geometry
 This tutorial demonstrates the use of the memory efficient grid
 primitive to handle highly tessellated and displaced geometry.
 
+Point Geometry
+---------------------
+
+![][imgPointGeometry]
+
+This tutorial demonstrates the use of the three representations
+of point geometry.
 
 Motion Blur Geometry
 --------------------

@@ -358,7 +358,7 @@ namespace embree
 
   void Scene::createHairAccel()
   {
-#if defined(EMBREE_GEOMETRY_CURVE)
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompactAccel() + 1*(int)isRobustAccel();
@@ -395,7 +395,7 @@ namespace embree
 
   void Scene::createHairMBAccel()
   {
-#if defined(EMBREE_GEOMETRY_CURVE)
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)

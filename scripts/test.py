@@ -284,6 +284,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
+  if "POINT" in config:
+    conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")

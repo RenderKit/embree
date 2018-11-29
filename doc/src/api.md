@@ -611,6 +611,11 @@ Embree API Reference
 ```
 \pagebreak
 
+## RTC_GEOMETRY_TYPE_POINT
+``` {include=src/api/RTC_GEOMETRY_TYPE_POINT.md}
+```
+\pagebreak
+
 ## RTC_GEOMETRY_TYPE_USER
 ``` {include=src/api/RTC_GEOMETRY_TYPE_USER.md}
 ```

@@ -359,6 +359,54 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createPointSphere (const Vec3fa& center, const float radius, const float pointRadius,
+                                                       size_t N, PointSubtype subtype, Ref<MaterialNode> material)
+  {
+    unsigned numPhi = unsigned(N);
+    unsigned numTheta = 2 * numPhi;
+    unsigned numVertices = numTheta * (numPhi + 1);
+
+    RTCGeometryType type;
+    switch (subtype) {
+      case SPHERE:
+        type = RTC_GEOMETRY_TYPE_SPHERE;
+        break;
+      case DISC:
+        type = RTC_GEOMETRY_TYPE_DISC;
+        break;
+      case ORIENTED_DISC:
+        type = RTC_GEOMETRY_TYPE_ORIENTED_DISC;
+        break;
+    }
+
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type, material, 1);
+    mesh->positions[0].resize(numVertices);
+    if (subtype == ORIENTED_DISC) {
+      mesh->normals.push_back(avector<PointSetNode::Vertex>());
+      mesh->normals[0].resize(numVertices);
+    }
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp(float(numTheta));
+    const float rcpNumPhi   = rcp(float(numPhi));
+    for (unsigned int phi = 0; phi <= numPhi; phi++)
+    {
+      for (unsigned int theta = 0; theta < numTheta; theta++)
+      {
+        const float phif   = phi * float(pi) * rcpNumPhi;
+        const float thetaf = theta * 2.0f * float(pi) * rcpNumTheta;
+        mesh->positions[0][phi * numTheta + theta].x = center.x + radius * sin(phif) * sin(thetaf);
+        mesh->positions[0][phi * numTheta + theta].y = center.y + radius * cos(phif);
+        mesh->positions[0][phi * numTheta + theta].z = center.z + radius * sin(phif) * cos(thetaf);
+        mesh->positions[0][phi * numTheta + theta].w = pointRadius;
+        if (subtype == ORIENTED_DISC)
+          mesh->normals[0][phi * numTheta + theta] =
+            normalize(mesh->positions[0][phi * numTheta + theta] - center);
+      }
+    }
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, CurveSubtype subtype, Ref<MaterialNode> material)
   {
     RandomSampler sampler;
