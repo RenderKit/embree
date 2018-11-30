@@ -211,6 +211,7 @@ namespace embree
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     Vec3fa** normals;         //!< normal control points (x,y,z,r)
     Vec3fa** tangents;        //!< tangent control points (x,y,z,r)
+    Vec3fa** dnormals;         //!< normal derivative control points (x,y,z,r)
     ISPCHair* hairs;          //!< for each hair, index to first control point
 #if !defined(ISPC)
     unsigned char* flags;     //!< end cap flags per segment

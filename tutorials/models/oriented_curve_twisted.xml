@@ -13,7 +13,7 @@
       </AffineSpace>
       <E>3 3 3</E>
     </DirectionalLight>
-    
+
     <Curves basis="bspline" type="normal_oriented">
       
       <positions>

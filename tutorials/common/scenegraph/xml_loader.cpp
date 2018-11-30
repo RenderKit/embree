@@ -1127,6 +1127,17 @@ namespace embree
       }
     }
 
+    if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
+    {
+      if (Ref<XML> animation = xml->childOpt("animated_normal_derivatives")) {
+        for (size_t i=0; i<animation->size(); i++) {
+          mesh->dnormals.push_back(loadVec3faArray(animation->child(i)));
+        }
+      } else if (Ref<XML> dnormals = xml->childOpt("normal_derivatives")) {
+        mesh->dnormals.push_back(loadVec3faArray(dnormals));
+      }
+    }
+
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
