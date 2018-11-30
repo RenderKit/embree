@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.4.0
+-   Changed normal oriented curve definition to fix waving artefacts.
+
 ### New Features in Embree 3.3.0
 -   Added support for motion blur time range per geometry. This way geometries
     can appear and disappear during the camera shutter and time steps do not have
