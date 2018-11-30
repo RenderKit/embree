@@ -147,6 +147,32 @@ namespace embree
       n1 = normal(i+1,itime);
     }
 
+    /*! gathers the curve starting with i'th vertex */
+    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i) const
+    {
+      p0 = vertex(i+0);
+      p1 = vertex(i+1);
+      p2 = vertex(i+2);
+      p3 = vertex(i+3);
+      n0 = normal(i+0);
+      n1 = normal(i+1);
+      n2 = normal(i+2);
+      n3 = normal(i+3);
+    }
+
+    /*! gathers the curve starting with i'th vertex of itime'th timestep */
+    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, size_t itime) const
+    {
+      p0 = vertex(i+0,itime);
+      p1 = vertex(i+1,itime);
+      p2 = vertex(i+2,itime);
+      p3 = vertex(i+3,itime);
+      n0 = normal(i+0,itime);
+      n1 = normal(i+1,itime);
+      n2 = normal(i+2,itime);
+      n3 = normal(i+3,itime);
+    }
+
     /*! prefetches the curve starting with i'th vertex of itime'th timestep */
     __forceinline void prefetchL1_vertices(size_t i) const
     {
@@ -197,6 +223,28 @@ namespace embree
       p3 = madd(Vec3fa(t0),a3,t1*b3);
       n0 = madd(Vec3fa(t0),an0,t1*bn0);
       n1 = madd(Vec3fa(t0),an1,t1*bn1);
+    }
+
+    /*! loads curve vertices for specified time */
+    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, float time) const
+    {
+      float ftime;
+      const size_t itime = timeSegment(time, ftime);
+
+      const float t0 = 1.0f - ftime;
+      const float t1 = ftime;
+      Vec3fa a0,a1,a2,a3,an0,an1,an2,an3;
+      gather(a0,a1,a2,a3,an0,an1,an2,an3,i,itime);
+      Vec3fa b0,b1,b2,b3,bn0,bn1,bn2,bn3;
+      gather(b0,b1,b2,b3,bn0,bn1,bn2,bn3,i,itime+1);
+      p0 = madd(Vec3fa(t0),a0,t1*b0);
+      p1 = madd(Vec3fa(t0),a1,t1*b1);
+      p2 = madd(Vec3fa(t0),a2,t1*b2);
+      p3 = madd(Vec3fa(t0),a3,t1*b3);
+      n0 = madd(Vec3fa(t0),an0,t1*bn0);
+      n1 = madd(Vec3fa(t0),an1,t1*bn1);
+      n2 = madd(Vec3fa(t0),an2,t1*bn2);
+      n3 = madd(Vec3fa(t0),an3,t1*bn3);
     }
 
     /*! gathers the hermite curve starting with i'th vertex */

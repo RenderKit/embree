@@ -308,12 +308,12 @@ namespace embree
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, const unsigned int primID, 
                                 const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
-                                const Vec3fa& n0i, const Vec3fa& n3i,
+                                const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
         TensorLinearCubicBezierSurface3fa curve =
-          TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(SourceCurve3fa(v0i,v1i,v2i,v3i),n0i,n3i);
+          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
         //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
       }

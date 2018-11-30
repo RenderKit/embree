@@ -25,6 +25,8 @@
 #include "oriented_curve_intersector.h"
 #include "../bvh/node_intersector1.h"
 
+// FIXME: this file seems replicate of curve_intersector_virtual.h
+
 namespace embree
 {
   namespace isa
