@@ -233,7 +233,7 @@ def runConfig(config):
       
       elif OS == "windows":
         if tasking == "TBB2019.2": 
-          tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2010.2-windows"
+          tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"
         elif tasking == "TBB2017": 
           tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
           conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
