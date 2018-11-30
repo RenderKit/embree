@@ -378,7 +378,7 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-      __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+       __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
@@ -393,13 +393,35 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const Curve3fa getNormalCurve(size_t i, size_t itime = 0) const 
       {
-        const Curve3fa center = getCurve(i,itime);
         const unsigned int index = curve(i);
         const Vec3fa n0 = normal(index+0,itime);
         const Vec3fa n1 = normal(index+1,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
+        const Vec3fa n2 = normal(index+2,itime);
+        const Vec3fa n3 = normal(index+3,itime);
+        return Curve3fa (n0,n1,n2,n3);
+      }
+
+      __forceinline const Curve3fa getNormalCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      {
+        const unsigned int index = curve(i);
+        const Vec3fa n0 = normal(index+0,itime);
+        const Vec3fa n1 = normal(index+1,itime);
+        const Vec3fa n2 = normal(index+2,itime);
+        const Vec3fa n3 = normal(index+3,itime);
+        const Vec3fa w0 = xfmPoint(space,n0);
+        const Vec3fa w1 = xfmPoint(space,n1);
+        const Vec3fa w2 = xfmPoint(space,n2);
+        const Vec3fa w3 = xfmPoint(space,n3);
+        return Curve3fa(w0,w1,w2,w3);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      {
+        const Curve3fa center = getCurve(i,itime);
+        const Curve3fa normal = getNormalCurve(i,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
