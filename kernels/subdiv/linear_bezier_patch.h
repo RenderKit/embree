@@ -142,6 +142,7 @@ namespace embree
           return TensorLinearCubicBezierSurface(L,R);
         }
 
+#if 0
         template<typename SourceCurve3fa>
         __forceinline static TensorLinearCubicBezierSurface fromCenterCurveAndNormals(const SourceCurve3fa& center, const Vec3fa& n0, const Vec3fa& n1)
         {
@@ -158,6 +159,7 @@ namespace embree
           CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
           return TensorLinearCubicBezierSurface(L,R);
         }
+#endif
         
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
