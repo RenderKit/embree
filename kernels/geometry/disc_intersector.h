@@ -64,26 +64,31 @@ namespace embree
       static __forceinline bool intersect(
           const vbool<M>& valid_i, Ray& ray, const Precalculations& pre, const Vec4vf<M>& v0, const Epilog& epilog)
       {
-        vbool<M> valid         = valid_i;
+        vbool<M> valid = valid_i;
+
+        const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
+        const Vec3vf<M> ray_dir(ray.dir.x, ray.dir.y, ray.dir.z);
+        const vfloat<M> rd2    = rcp(dot(ray_dir, ray_dir));
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
-        const Vec3fa normal    = -ray.dir;
 
-        vfloat<M> t = dot(Vec3vf<M>(ray.org) - center, Vec3vf<M>(normal)) * rcp(dot(normal, normal));
+        const Vec3vf<M> c0     = center - ray_org;
+        const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
 
-        valid &= (vfloat<M>(ray.tnear()) < t) & (t <= vfloat<M>(ray.tfar));
+        valid &= (vfloat<M>(ray.tnear()) < projC0) & (projC0 <= vfloat<M>(ray.tfar));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
-          valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius;  // ignore self intersections
+          valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius;  // ignore self intersections
         if (unlikely(none(valid)))
           return false;
 
-        Vec3vf<M> intersection = Vec3vf<M>(ray.org) + Vec3vf<M>(ray.dir) * t;
-        vfloat<M> dist2        = dot(intersection - center, intersection - center);
-        valid &= dist2 < radius * radius;
+        const Vec3vf<M> perp   = c0 - projC0 * ray_dir;
+        const vfloat<M> l2     = dot(perp, perp);
+        const vfloat<M> r2     = radius * radius;
+        valid &= (l2 <= r2);
         if (unlikely(none(valid)))
           return false;
 
-        DiscIntersectorHitM<M> hit(zero, zero, t, normal);
+        SphereIntersectorHitM<M> hit(zero, zero, projC0, -ray_dir);
         return epilog(valid, hit);
       }
 
@@ -134,28 +139,31 @@ namespace embree
                                           const Vec4vf<M>& v0,
                                           const Epilog& epilog)
       {
-        vbool<M> valid         = valid_i;
+        vbool<M> valid = valid_i;
+
+        const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
+        const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
+        const vfloat<M> rd2    = rcp(dot(ray_dir, ray_dir));
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
-        const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
-        const Vec3fa ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
-        const Vec3fa normal = -ray_dir;
 
-        vfloat<M> t = dot(Vec3vf<M>(ray_org) - center, Vec3vf<M>(normal)) * rcp(dot(normal, normal));
+        const Vec3vf<M> c0     = center - ray_org;
+        const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
 
-        valid &= (vfloat<M>(ray.tnear()[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
+        valid &= (vfloat<M>(ray.tnear()[k]) < projC0) & (projC0 <= vfloat<M>(ray.tfar[k]));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
-          valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius;  // ignore self intersections
+          valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius;  // ignore self intersections
         if (unlikely(none(valid)))
           return false;
 
-        Vec3vf<M> intersection = Vec3vf<M>(ray_org) + Vec3vf<M>(ray_dir) * t;
-        vfloat<M> dist2        = dot(intersection - center, intersection - center);
-        valid &= dist2 < radius * radius;
+        const Vec3vf<M> perp   = c0 - projC0 * ray_dir;
+        const vfloat<M> l2     = dot(perp, perp);
+        const vfloat<M> r2     = radius * radius;
+        valid &= (l2 <= r2);
         if (unlikely(none(valid)))
           return false;
 
-        DiscIntersectorHitM<M> hit(zero, zero, t, normal);
+        SphereIntersectorHitM<M> hit(zero, zero, projC0, -ray_dir);
         return epilog(valid, hit);
       }
 
