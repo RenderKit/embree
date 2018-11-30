@@ -70,23 +70,28 @@ namespace embree
         vbool<M> valid = valid_i;
 
         const vfloat<M> rd2    = pre.one_over_raydir2;  // rcp(dot(ray.dir, ray.dir));
-        const Vec3vf<M> c0     = v0.xyz() - Vec3vf<M>(ray.org);
-        const vfloat<M> projC0 = dot(c0, Vec3vf<M>(ray.dir)) * rd2;
-        const Vec3vf<M> perp   = c0 - projC0 * Vec3vf<M>(ray.dir);
+        const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
+        const Vec3vf<M> ray_dir(ray.dir.x, ray.dir.y, ray.dir.z);
+        const Vec3vf<M> center = v0.xyz();
+        const vfloat<M> radius = v0.w;
+
+        const Vec3vf<M> c0     = center - ray_org;
+        const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
+        const Vec3vf<M> perp   = c0 - projC0 * ray_dir;
         const vfloat<M> l2     = dot(perp, perp);
-        const vfloat<M> r2     = v0.w * v0.w;
+        const vfloat<M> r2     = radius * radius;
         valid &= (l2 <= r2);
         if (unlikely(none(valid)))
           return false;
 
-        vfloat<M> d           = sqrt((r2 - l2) * rd2);
-        const vfloat<M> t_in  = projC0 - d;
-        const vfloat<M> t_out = projC0 + d;
+        vfloat<M> td          = sqrt((r2 - l2) * rd2);
+        const vfloat<M> t_in  = projC0 - td;
+        const vfloat<M> t_out = projC0 + td;
 
         const vbool<M> valid_in  = valid & (t_in > ray.tnear()) & (t_in < ray.tfar);
         const vbool<M> valid_out = valid & !valid_in & (t_out > ray.tnear()) & (t_out < ray.tfar);
 
-        d           = select(valid_in, -1.0f * d, d);
+        td          = select(valid_in, -1.0f * td, td);
         vfloat<M> t = 0.f;
         t           = select(valid_in, t_in, t);
         t           = select(valid_out, t_out, t);
@@ -94,9 +99,9 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        const Vec3vf<M> T = d * Vec3vf<M>(ray.dir) - perp;
+        const Vec3vf<M> Ng = td * ray_dir - perp;
 
-        SphereIntersectorHitM<M> hit(zero, zero, t, T);
+        SphereIntersectorHitM<M> hit(zero, zero, t, Ng);
         return epilog(valid, hit);
       }
     };
@@ -119,23 +124,26 @@ namespace embree
         const vfloat<M> rd2 = pre.one_over_raydir2[k];  // rcp(dot(ray.dir, ray.dir));
         const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
         const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
-        const Vec3vf<M> c0     = v0.xyz() - Vec3vf<M>(ray_org);
-        const vfloat<M> projC0 = dot(c0, Vec3vf<M>(ray_dir)) * rd2;
-        const Vec3vf<M> perp   = c0 - projC0 * Vec3vf<M>(ray_dir);
+        const Vec3vf<M> center = v0.xyz();
+        const vfloat<M> radius = v0.w;
+
+        const Vec3vf<M> c0     = center - ray_org;
+        const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
+        const Vec3vf<M> perp   = c0 - projC0 * ray_dir;
         const vfloat<M> l2     = dot(perp, perp);
-        const vfloat<M> r2     = v0.w * v0.w;
+        const vfloat<M> r2     = radius * radius;
         valid &= (l2 <= r2);
         if (unlikely(none(valid)))
           return false;
 
-        vfloat<M> d           = sqrt((r2 - l2) * rd2);
-        const vfloat<M> t_in  = projC0 - d;
-        const vfloat<M> t_out = projC0 + d;
+        vfloat<M> td          = sqrt((r2 - l2) * rd2);
+        const vfloat<M> t_in  = projC0 - td;
+        const vfloat<M> t_out = projC0 + td;
 
         const vbool<M> valid_in  = valid & (t_in > ray.tnear()[k]) & (t_in < ray.tfar[k]);
         const vbool<M> valid_out = valid & !valid_in & (t_out > ray.tnear()[k]) & (t_out < ray.tfar[k]);
 
-        d           = select(valid_in, -1.0f * d, d);
+        td          = select(valid_in, -1.0f * td, td);
         vfloat<M> t = 0.f;
         t           = select(valid_in, t_in, t);
         t           = select(valid_out, t_out, t);
@@ -143,9 +151,9 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        const Vec3vf<M> T = d * Vec3vf<M>(ray_dir) - perp;
+        const Vec3vf<M> Ng = td * ray_dir - perp;
 
-        SphereIntersectorHitM<M> hit(zero, zero, t, T);
+        SphereIntersectorHitM<M> hit(zero, zero, t, Ng);
         return epilog(valid, hit);
       }
     };
