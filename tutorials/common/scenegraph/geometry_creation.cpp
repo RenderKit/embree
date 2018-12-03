@@ -662,4 +662,33 @@ namespace embree
 
     return mesh.dynamicCast<SceneGraph::Node>();
   }
+
+
+  Ref<SceneGraph::Node> SceneGraph::createGarbagePointSet(int hash, size_t numPoints, bool mblur, Ref<MaterialNode> material)
+  {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
+
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(RTC_GEOMETRY_TYPE_SPHERE, material,BBox1f(0,1),mblur?2:1);
+
+    for (size_t i = 0; i < numPoints; i++)
+    {
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float r = cast_i2f(RandomSampler_getUInt(sampler));
+      mesh->positions[0].push_back(Vec3fa(x, y, z, r));
+
+      if (mblur)
+      {
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float r = cast_i2f(RandomSampler_getUInt(sampler));
+        mesh->positions[1].push_back(Vec3fa(x, y, z, r));
+      }
+    }
+
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
 }

@@ -1029,21 +1029,21 @@ namespace embree
       typedef Vec3fa Vertex;
 
     public:
-      PointSetNode (RTCGeometryType type, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), type(type), material(material)
+      PointSetNode (RTCGeometryType type, Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0)
+        : Node(true), time_range(time_range), type(type), material(material)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
       PointSetNode (const avector<Vertex>& positions_in, Ref<MaterialNode> material, RTCGeometryType type)
-        : Node(true), type(type), material(material)
+        : Node(true), time_range(0.0f, 1.0f), type(type), material(material)
       {
         positions.push_back(positions_in);
       }
 
       PointSetNode (Ref<SceneGraph::PointSetNode> imesh, const Transformations& spaces)
-        : Node(true), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        : Node(true), time_range(imesh->time_range), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         material(imesh->material) {}
 
@@ -1096,6 +1096,7 @@ namespace embree
       virtual void resetInDegree();
 
     public:
+      BBox1f time_range;                      //!< geometry time range for motion blur
       RTCGeometryType type;                   //!< type of point
       std::vector<avector<Vertex>> positions; //!< point control points (x,y,z,r) for multiple timesteps
       std::vector<avector<Vertex>> normals;   //!< point control normals (nx,ny,nz) for multiple timesteps (oriented only)

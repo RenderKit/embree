@@ -42,5 +42,6 @@ namespace embree
     Ref<Node> createGarbageHair (int hash, size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
     Ref<Node> createGarbageLineSegments (int hash, size_t numLineSegments, bool mblur, Ref<MaterialNode> material = nullptr);
     Ref<Node> createGarbageSubdivMesh (int hash, size_t numFaces, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbagePointSet(int hash, size_t numPoints, bool mblur, Ref<MaterialNode> material = nullptr);
   }
 }

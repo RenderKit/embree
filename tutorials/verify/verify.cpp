@@ -1758,8 +1758,10 @@ namespace embree
           case 7: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,true )); break;
           case 8: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false)); break;
           case 9: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,true )); break;
-            //case 10: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
-            //case 11: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
+          case 10: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbagePointSet(random_int(),numPrimitives,false)); break;
+          case 11: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbagePointSet(random_int(),numPrimitives,true )); break;
+            //case 12: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
+            //case 13: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
           }
           AssertNoError(device);
         }
