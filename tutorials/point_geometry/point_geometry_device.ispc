@@ -43,7 +43,7 @@ void addPoints (RTCScene scene, uniform RTCGeometryType gtype, const uniform Vec
     point_colors[i] = make_Vec3f(COLOR, COLOR, COLOR);
   }
 
-  if (gtype == RTC_GEOMETRY_TYPE_ORIENTED_DISC) {
+  if (gtype == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
     uniform Vec3fa* uniform point_normals = (uniform Vec3fa* uniform)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_POINTS);
     for (uniform int i = 0; i < NUM_POINTS; i++) {
       point_normals[i] = make_Vec3fa(NORMAL, NORMAL, NORMAL);
@@ -90,9 +90,9 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* add curve */
-  addPoints(g_scene, RTC_GEOMETRY_TYPE_SPHERE,        make_Vec3f( 0.0f, 0.0f, 0.0f));
-  addPoints(g_scene, RTC_GEOMETRY_TYPE_DISC,          make_Vec3f( 5.0f, 0.0f, 0.0f));
-  addPoints(g_scene, RTC_GEOMETRY_TYPE_ORIENTED_DISC, make_Vec3f(-5.0f, 0.0f, 0.0f));
+  addPoints(g_scene, RTC_GEOMETRY_TYPE_SPHERE_POINT,        make_Vec3f( 0.0f, 0.0f, 0.0f));
+  addPoints(g_scene, RTC_GEOMETRY_TYPE_DISC_POINT,          make_Vec3f( 5.0f, 0.0f, 0.0f));
+  addPoints(g_scene, RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, make_Vec3f(-5.0f, 0.0f, 0.0f));
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);

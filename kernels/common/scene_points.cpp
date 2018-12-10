@@ -24,7 +24,7 @@ namespace embree
   Points::Points(Device* device, Geometry::GType gtype) : Geometry(device, gtype, 0, 1)
   {
     vertices.resize(numTimeSteps);
-    if (getType() == GTY_ORIENTED_DISC)
+    if (getType() == GTY_ORIENTED_DISC_POINT)
       normals.resize(numTimeSteps);
   }
 
@@ -53,7 +53,7 @@ namespace embree
   void Points::setNumTimeSteps(unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
-    if (getType() == GTY_ORIENTED_DISC)
+    if (getType() == GTY_ORIENTED_DISC_POINT)
       normals.resize(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
@@ -87,7 +87,7 @@ namespace embree
       vertices[slot].checkPadding16();
       setNumPrimitives(num);
     } else if (type == RTC_BUFFER_TYPE_NORMAL) {
-      if (getType() != GTY_ORIENTED_DISC)
+      if (getType() != GTY_ORIENTED_DISC_POINT)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
 
       if (format != RTC_FORMAT_FLOAT3)
@@ -164,7 +164,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "stride of normal buffers have to be identical for each time step");
 
     vertices0 = vertices[0];
-    if (getType() == GTY_ORIENTED_DISC)
+    if (getType() == GTY_ORIENTED_DISC_POINT)
       normals0 = normals[0];
 
     Geometry::preCommit();
@@ -194,7 +194,7 @@ namespace embree
       if (buffer.size() != numVertices())
         return false;
 
-    if (getType() == GTY_ORIENTED_DISC) {
+    if (getType() == GTY_ORIENTED_DISC_POINT) {
       if (normals.size() == 0)
         return false;
 

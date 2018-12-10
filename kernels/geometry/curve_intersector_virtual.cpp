@@ -460,9 +460,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4i()
     {
       static VirtualCurveIntersector function_local_static_prim;
-      function_local_static_prim.vtbl[Geometry::GTY_SPHERE] = SphereNiIntersectors<4>();
-      function_local_static_prim.vtbl[Geometry::GTY_DISC] = DiscNiIntersectors<4>();
-      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC] = OrientedDiscNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,4>();
@@ -479,9 +479,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4v()
     {
       static VirtualCurveIntersector function_local_static_prim;
-      function_local_static_prim.vtbl[Geometry::GTY_SPHERE] = SphereNiIntersectors<4>();
-      function_local_static_prim.vtbl[Geometry::GTY_DISC] = DiscNiIntersectors<4>();
-      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC] = OrientedDiscNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<BezierCurve3fa,4>();
@@ -498,9 +498,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4iMB()
     {
       static VirtualCurveIntersector function_local_static_prim;
-      function_local_static_prim.vtbl[Geometry::GTY_SPHERE] = SphereNiMBIntersectors<4>();
-      function_local_static_prim.vtbl[Geometry::GTY_DISC] = DiscNiMBIntersectors<4>();
-      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC] = OrientedDiscNiMBIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiMBIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiMBIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiMBIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiMBIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<BezierCurve3fa,4>();
@@ -519,9 +519,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8i()
     {
       static VirtualCurveIntersector function_local_static_prim;
-      function_local_static_prim.vtbl[Geometry::GTY_SPHERE] = SphereNiIntersectors<8>();
-      function_local_static_prim.vtbl[Geometry::GTY_DISC] = DiscNiIntersectors<8>();
-      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC] = OrientedDiscNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,8>();
@@ -538,9 +538,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8v()
     {
       static VirtualCurveIntersector function_local_static_prim;
-      function_local_static_prim.vtbl[Geometry::GTY_SPHERE] = SphereNiIntersectors<8>();
-      function_local_static_prim.vtbl[Geometry::GTY_DISC] = DiscNiIntersectors<8>();
-      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC] = OrientedDiscNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<BezierCurve3fa,8>();
@@ -557,9 +557,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8iMB()
     {
       static VirtualCurveIntersector function_local_static_prim;
-      function_local_static_prim.vtbl[Geometry::GTY_SPHERE] = SphereNiMBIntersectors<8>();
-      function_local_static_prim.vtbl[Geometry::GTY_DISC] = DiscNiMBIntersectors<8>();
-      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC] = OrientedDiscNiMBIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiMBIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiMBIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiMBIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiMBIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<BezierCurve3fa,8>();

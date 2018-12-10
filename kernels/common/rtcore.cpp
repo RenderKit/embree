@@ -956,9 +956,9 @@ namespace embree
 #endif
     }
     
-    case RTC_GEOMETRY_TYPE_SPHERE:
-    case RTC_GEOMETRY_TYPE_DISC:
-    case RTC_GEOMETRY_TYPE_ORIENTED_DISC:
+    case RTC_GEOMETRY_TYPE_SPHERE_POINT:
+    case RTC_GEOMETRY_TYPE_DISC_POINT:
+    case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT:
     {
 #if defined(EMBREE_GEOMETRY_POINT)
       createPointsTy createPoints = nullptr;
@@ -966,14 +966,14 @@ namespace embree
 
       Geometry *geom;
       switch(type) {
-        case RTC_GEOMETRY_TYPE_SPHERE:
-          geom = createPoints(device, Geometry::GTY_SPHERE);
+        case RTC_GEOMETRY_TYPE_SPHERE_POINT:
+          geom = createPoints(device, Geometry::GTY_SPHERE_POINT);
           break;
-        case RTC_GEOMETRY_TYPE_DISC:
-          geom = createPoints(device, Geometry::GTY_DISC);
+        case RTC_GEOMETRY_TYPE_DISC_POINT:
+          geom = createPoints(device, Geometry::GTY_DISC_POINT);
           break;
-        case RTC_GEOMETRY_TYPE_ORIENTED_DISC:
-          geom = createPoints(device, Geometry::GTY_ORIENTED_DISC);
+        case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT:
+          geom = createPoints(device, Geometry::GTY_ORIENTED_DISC_POINT);
           break;
         default:
           geom = nullptr;

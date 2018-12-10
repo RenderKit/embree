@@ -369,13 +369,13 @@ namespace embree
     RTCGeometryType type;
     switch (subtype) {
       case SPHERE:
-        type = RTC_GEOMETRY_TYPE_SPHERE;
+        type = RTC_GEOMETRY_TYPE_SPHERE_POINT;
         break;
       case DISC:
-        type = RTC_GEOMETRY_TYPE_DISC;
+        type = RTC_GEOMETRY_TYPE_DISC_POINT;
         break;
       case ORIENTED_DISC:
-        type = RTC_GEOMETRY_TYPE_ORIENTED_DISC;
+        type = RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT;
         break;
     }
 
@@ -669,7 +669,7 @@ namespace embree
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
 
-    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(RTC_GEOMETRY_TYPE_SPHERE, material,BBox1f(0,1),mblur?2:1);
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(RTC_GEOMETRY_TYPE_SPHERE_POINT, material,BBox1f(0,1),mblur?2:1);
 
     for (size_t i = 0; i < numPoints; i++)
     {

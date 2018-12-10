@@ -517,7 +517,7 @@ namespace embree
       if (p.size() != N)
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
 
-    if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC)
+    if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT)
     {
       if (!normals.size())
         THROW_RUNTIME_ERROR("normal array required for oriented disc");

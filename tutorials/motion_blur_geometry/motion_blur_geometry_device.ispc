@@ -105,7 +105,7 @@ uniform unsigned int addSphere(RTCScene scene, const uniform Vec3f& pos, uniform
     *vertex = make_Vec3fa(xfmPoint(rotation, make_Vec3f(1, 0, 0)) + pos);
     vertex->w = 1.f;
 
-    if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC) {
+    if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
       uniform Vec3fa *normal = (uniform Vec3fa*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), 1);
       normal[0] = make_Vec3fa(1, 1, 0);
       normal[0] = normalize(normal[0]);
@@ -589,12 +589,12 @@ export void device_init (uniform int8* uniform cfg)
   sphere0 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,1,+5),1.0f,g_num_time_steps);
   sphere1 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,5,+5),1.0f,g_num_time_steps2);
 
-  addSphere(g_scene, make_Vec3f(-5, 1, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC, g_num_time_steps);
-  addSphere(g_scene, make_Vec3f(-5, 5, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC, g_num_time_steps2);
-  addSphere(g_scene, make_Vec3f( 0, 1, +10), RTC_GEOMETRY_TYPE_DISC, g_num_time_steps);
-  addSphere(g_scene, make_Vec3f( 0, 5, +10), RTC_GEOMETRY_TYPE_DISC, g_num_time_steps2);
-  addSphere(g_scene, make_Vec3f(+5, 1, +10), RTC_GEOMETRY_TYPE_SPHERE, g_num_time_steps);
-  addSphere(g_scene, make_Vec3f(+5, 5, +10), RTC_GEOMETRY_TYPE_SPHERE, g_num_time_steps2);
+  addSphere(g_scene, make_Vec3f(-5, 1, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, g_num_time_steps);
+  addSphere(g_scene, make_Vec3f(-5, 5, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, g_num_time_steps2);
+  addSphere(g_scene, make_Vec3f( 0, 1, +10), RTC_GEOMETRY_TYPE_DISC_POINT, g_num_time_steps);
+  addSphere(g_scene, make_Vec3f( 0, 5, +10), RTC_GEOMETRY_TYPE_DISC_POINT, g_num_time_steps2);
+  addSphere(g_scene, make_Vec3f(+5, 1, +10), RTC_GEOMETRY_TYPE_SPHERE_POINT, g_num_time_steps);
+  addSphere(g_scene, make_Vec3f(+5, 5, +10), RTC_GEOMETRY_TYPE_SPHERE_POINT, g_num_time_steps2);
 
   addGroundPlane(g_scene);
 
