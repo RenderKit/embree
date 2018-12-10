@@ -375,9 +375,11 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal derivative buffers have to be identical for each time step");
     
     vertices0 = vertices[0];
-    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE) {
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
       normals0 = normals[0];
-      dnormals0 = dnormals[0];
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        dnormals0 = dnormals[0];
     }
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents0 = tangents[0];
