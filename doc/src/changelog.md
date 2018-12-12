@@ -4,6 +4,7 @@ Version History
 ### New Features in Embree 3.4.0
 -   Upgraded to TBB 2019.2 for release builds.
 -   Fixed crash triggered by scenes with only invalid primitives.
+-   Added point primitives (spheres, ray-oriented discs, normal-oriented discs).
 
 ### New Features in Embree 3.3.0
 -   Added support for motion blur time range per geometry. This way geometries

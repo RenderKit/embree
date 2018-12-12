@@ -14,20 +14,10 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-set(CTEST_PROJECT_NAME "Embree")
-set(CTEST_NIGHTLY_START_TIME "22:00:00 UTC")
-set(TEST_MODELS_HASH 28f590095b79acf0507ea5ed59a4ee213d85695c)
+INCLUDE(tutorial)
+ADD_TUTORIAL(point_geometry)
+ADD_TUTORIAL_ISPC(point_geometry)
 
-IF (NOT CTEST_DROP_SITE)
-  set(CTEST_DROP_METHOD "http")
-  set(CTEST_DROP_SITE "cdash")
-  set(CTEST_DROP_LOCATION "/CDash/submit.php?project=Embree")
-  set(CTEST_DROP_SITE_CDASH TRUE)
-endif()
-
-list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #1478")  # deprecated function used
-#list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #10237") # -lcilkrts linked in dynamically, static library not available")
-list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "-Wextern-initializer")
-
-SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 200000)
-SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 800000)
+IF (EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_EMBREE_TEST(point_geometry)
+ENDIF()

@@ -266,6 +266,24 @@ namespace embree
         rtcReleaseGeometry(geom);
         return geomID;
       } 
+      else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
+      {
+        RTCGeometry geom = rtcNewGeometry (device, mesh->type);
+        AssertNoError(device);
+        rtcSetGeometryTimeStepCount(geom, (unsigned int)mesh->numTimeSteps());
+        rtcSetGeometryBuildQuality(geom,quality);
+        AssertNoError(device);
+        for (unsigned int t=0; t<mesh->numTimeSteps(); t++) {
+          rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,mesh->positions[t].data(),0,sizeof(SceneGraph::PointSetNode::Vertex), mesh->positions[t].size());
+          if (mesh->normals.size())
+            rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_NORMAL,t,RTC_FORMAT_FLOAT3,mesh->normals[t].data(),0,sizeof(SceneGraph::PointSetNode::Vertex), mesh->normals[t].size());
+        }
+        AssertNoError(device);
+        rtcCommitGeometry(geom);
+        unsigned int geomID = rtcAttachGeometry(scene,geom);
+        rtcReleaseGeometry(geom);
+        return geomID;
+      }
       else {
         THROW_RUNTIME_ERROR("unknown node type");
       }
@@ -1740,8 +1758,10 @@ namespace embree
           case 7: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageHair(random_int(),numPrimitives,true )); break;
           case 8: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false)); break;
           case 9: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,true )); break;
-            //case 10: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
-            //case 11: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
+          case 10: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbagePointSet(random_int(),numPrimitives,false)); break;
+          case 11: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbagePointSet(random_int(),numPrimitives,true )); break;
+            //case 12: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
+            //case 13: scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
           }
           AssertNoError(device);
         }
@@ -3745,6 +3765,12 @@ namespace embree
       case QUAD_MESH_MB:     scene->addGeometry(quality,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(random_motion_vector2(0.01f))); break;
       case SUBDIV_MESH:      scene->addGeometry(quality,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)); break;
       case SUBDIV_MESH_MB:   scene->addGeometry(quality,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case SPHERE_GEOMETRY:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::SPHERE)); break;
+      case SPHERE_GEOMETRY_MB:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::SPHERE)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case DISC_GEOMETRY:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::DISC)); break;
+      case DISC_GEOMETRY_MB:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::DISC)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case ORIENTED_DISC_GEOMETRY:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::ORIENTED_DISC)); break;
+      case ORIENTED_DISC_GEOMETRY_MB:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::ORIENTED_DISC)->set_motion_vector(random_motion_vector2(0.01f))); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommitScene (*scene);
@@ -3917,6 +3943,12 @@ namespace embree
       case QUAD_MESH_MB:     scene->addGeometry(quality,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(random_motion_vector2(0.01f))); break;
       case SUBDIV_MESH:      scene->addGeometry(quality,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)); break;
       case SUBDIV_MESH_MB:   scene->addGeometry(quality,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case SPHERE_GEOMETRY:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::SPHERE)); break;
+      case SPHERE_GEOMETRY_MB:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::SPHERE)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case DISC_GEOMETRY:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::DISC)); break;
+      case DISC_GEOMETRY_MB:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::DISC)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case ORIENTED_DISC_GEOMETRY:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::ORIENTED_DISC)); break;
+      case ORIENTED_DISC_GEOMETRY_MB:  scene->addGeometry(quality,SceneGraph::createPointSphere(zero, one, float(one)/100.f, numPhi, SceneGraph::ORIENTED_DISC)->set_motion_vector(random_motion_vector2(0.01f))); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommitScene (*scene);
@@ -4621,6 +4653,12 @@ namespace embree
         QUAD_MESH_MB, 
         SUBDIV_MESH, 
         //SUBDIV_MESH_MB  // FIXME: not supported yet
+        SPHERE_GEOMETRY,
+        SPHERE_GEOMETRY_MB,
+        DISC_GEOMETRY,
+        DISC_GEOMETRY_MB,
+        ORIENTED_DISC_GEOMETRY,
+        ORIENTED_DISC_GEOMETRY_MB
         // FIXME: use more geometry types
       };
 

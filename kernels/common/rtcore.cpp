@@ -956,6 +956,35 @@ namespace embree
 #endif
     }
     
+    case RTC_GEOMETRY_TYPE_SPHERE_POINT:
+    case RTC_GEOMETRY_TYPE_DISC_POINT:
+    case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT:
+    {
+#if defined(EMBREE_GEOMETRY_POINT)
+      createPointsTy createPoints = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_builder_cpu_features, createPoints);
+
+      Geometry *geom;
+      switch(type) {
+        case RTC_GEOMETRY_TYPE_SPHERE_POINT:
+          geom = createPoints(device, Geometry::GTY_SPHERE_POINT);
+          break;
+        case RTC_GEOMETRY_TYPE_DISC_POINT:
+          geom = createPoints(device, Geometry::GTY_DISC_POINT);
+          break;
+        case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT:
+          geom = createPoints(device, Geometry::GTY_ORIENTED_DISC_POINT);
+          break;
+        default:
+          geom = nullptr;
+          break;
+      }
+      return (RTCGeometry) geom->refInc();
+#else
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_POINT is not supported");
+#endif
+    }
+
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:

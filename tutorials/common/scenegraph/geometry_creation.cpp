@@ -359,6 +359,54 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createPointSphere (const Vec3fa& center, const float radius, const float pointRadius,
+                                                       size_t N, PointSubtype subtype, Ref<MaterialNode> material)
+  {
+    unsigned numPhi = unsigned(N);
+    unsigned numTheta = 2 * numPhi;
+    unsigned numVertices = numTheta * (numPhi + 1);
+
+    RTCGeometryType type;
+    switch (subtype) {
+      case SPHERE:
+        type = RTC_GEOMETRY_TYPE_SPHERE_POINT;
+        break;
+      case DISC:
+        type = RTC_GEOMETRY_TYPE_DISC_POINT;
+        break;
+      case ORIENTED_DISC:
+        type = RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT;
+        break;
+    }
+
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type, material, 1);
+    mesh->positions[0].resize(numVertices);
+    if (subtype == ORIENTED_DISC) {
+      mesh->normals.push_back(avector<PointSetNode::Vertex>());
+      mesh->normals[0].resize(numVertices);
+    }
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp(float(numTheta));
+    const float rcpNumPhi   = rcp(float(numPhi));
+    for (unsigned int phi = 0; phi <= numPhi; phi++)
+    {
+      for (unsigned int theta = 0; theta < numTheta; theta++)
+      {
+        const float phif   = phi * float(pi) * rcpNumPhi;
+        const float thetaf = theta * 2.0f * float(pi) * rcpNumTheta;
+        mesh->positions[0][phi * numTheta + theta].x = center.x + radius * sin(phif) * sin(thetaf);
+        mesh->positions[0][phi * numTheta + theta].y = center.y + radius * cos(phif);
+        mesh->positions[0][phi * numTheta + theta].z = center.z + radius * sin(phif) * cos(thetaf);
+        mesh->positions[0][phi * numTheta + theta].w = pointRadius;
+        if (subtype == ORIENTED_DISC)
+          mesh->normals[0][phi * numTheta + theta] =
+            normalize(mesh->positions[0][phi * numTheta + theta] - center);
+      }
+    }
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, CurveSubtype subtype, Ref<MaterialNode> material)
   {
     RandomSampler sampler;
@@ -609,6 +657,35 @@ namespace embree
           const float w = cast_i2f(RandomSampler_getUInt(sampler));
           mesh->positions[1].push_back(Vec3fa(x,y,z,w));
         }
+      }
+    }
+
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
+
+  Ref<SceneGraph::Node> SceneGraph::createGarbagePointSet(int hash, size_t numPoints, bool mblur, Ref<MaterialNode> material)
+  {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
+
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(RTC_GEOMETRY_TYPE_SPHERE_POINT, material,BBox1f(0,1),mblur?2:1);
+
+    for (size_t i = 0; i < numPoints; i++)
+    {
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float r = cast_i2f(RandomSampler_getUInt(sampler));
+      mesh->positions[0].push_back(Vec3fa(x, y, z, r));
+
+      if (mblur)
+      {
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float r = cast_i2f(RandomSampler_getUInt(sampler));
+        mesh->positions[1].push_back(Vec3fa(x, y, z, r));
       }
     }
 

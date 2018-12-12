@@ -94,6 +94,32 @@ unsigned int cube_quad_faces[6] = {
   4, 4, 4, 4, 4, 4
 };
 
+unsigned int addSphere(RTCScene scene, const Vec3fa& pos, RTCGeometryType type, unsigned int num_time_steps)
+{
+  RTCGeometry geom = rtcNewGeometry(g_device, type);
+  rtcSetGeometryTimeStepCount(geom, num_time_steps);
+
+  for (unsigned int t = 0; t < num_time_steps; t++)
+  {
+    RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
+    Vec3fa *vertex = (Vec3fa*)rtcSetNewGeometryBuffer(geom, bufType, t, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), 1);
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    *vertex = Vec3fa(xfmPoint(rotation, Vec3fa(1, 0, 0)) + pos);
+    vertex->w = 1.f;
+
+    if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
+      Vec3fa *normal = (Vec3fa*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), 1);
+      normal[0] = Vec3fa(1, 1, 0);
+      normal[0] = normalize(normal[0]);
+    }
+  }
+
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene, geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
+}
+
 /* adds a cube to the scene */
 unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int num_time_steps)
 {
@@ -290,7 +316,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
   RTCGeometry inst = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
    rtcSetGeometryInstancedScene(inst,scene);
    rtcSetGeometryTimeStepCount(inst,num_time_steps);
-  
+
   for (unsigned int t=0; t<num_time_steps; t++)
   {
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
@@ -330,7 +356,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
 
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);  
+  rtcReleaseGeometry(geom);
   rtcCommitScene(scene);
 
   RTCGeometry inst = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
@@ -392,9 +418,9 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 
   if (!valid[0])
     return;
-  
+
   Ray *ray = (Ray *)rays;
-  
+
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
@@ -404,7 +430,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
-  
+
   const Vec3fa v = ray->org-sphere_p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -445,7 +471,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
   if (!valid[0])
     return;
-  
+
   Ray *ray = (Ray *)rays;
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time()*(float)(time_segments);
@@ -456,7 +482,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
-  
+
   const Vec3fa v = ray->org-sphere_p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -503,9 +529,9 @@ unsigned int addGroundPlane (RTCScene scene)
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +15;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
+  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +15;
 
   /* set triangles */
   Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2);
@@ -565,6 +591,13 @@ extern "C" void device_init (char* cfg)
   sphere0 = addUserGeometrySphere   (g_scene,Vec3fa(+5,1,+5),1.0f,g_num_time_steps);
   sphere1 = addUserGeometrySphere   (g_scene,Vec3fa(+5,5,+5),1.0f,g_num_time_steps2);
 
+  addSphere(g_scene, Vec3fa(-5, 1, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, g_num_time_steps);
+  addSphere(g_scene, Vec3fa(-5, 5, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, g_num_time_steps2);
+  addSphere(g_scene, Vec3fa( 0, 1, +10), RTC_GEOMETRY_TYPE_DISC_POINT, g_num_time_steps);
+  addSphere(g_scene, Vec3fa( 0, 5, +10), RTC_GEOMETRY_TYPE_DISC_POINT, g_num_time_steps2);
+  addSphere(g_scene, Vec3fa(+5, 1, +10), RTC_GEOMETRY_TYPE_SPHERE_POINT, g_num_time_steps);
+  addSphere(g_scene, Vec3fa(+5, 5, +10), RTC_GEOMETRY_TYPE_SPHERE_POINT, g_num_time_steps2);
+
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
@@ -582,7 +615,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  
+
   float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
   if (g_time != -1) time = g_time;
 
@@ -714,7 +747,7 @@ extern "C" void device_render (int* pixels,
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  });
 }
 
 /* called by the C++ code for cleanup */
