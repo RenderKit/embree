@@ -230,6 +230,8 @@ namespace embree
 //  __forceinline vuint4 operator *(const vuint4& a, unsigned int  b) { return a * vuint4(b); }
 //  __forceinline vuint4 operator *(unsigned int  a, const vuint4& b) { return vuint4(a) * b; }
 
+  __forceinline vuint4 operator /(const vuint4& a, const vuint4& b) { return vuint4(a[0]/b[0],a[1]/b[1],a[2]/b[2],a[3]/b[3]); }
+
   __forceinline vuint4 operator &(const vuint4& a, const vuint4& b) { return _mm_and_si128(a, b); }
   __forceinline vuint4 operator &(const vuint4& a, unsigned int  b) { return a & vuint4(b); }
   __forceinline vuint4 operator &(unsigned int  a, const vuint4& b) { return vuint4(a) & b; }

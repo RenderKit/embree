@@ -139,9 +139,8 @@ namespace embree
               const BBox1f dt1(center_time,time_range.upper);
               
               /* calculate sah */
-              const int logBlockSize = bsr(sahBlockSize);
-              const size_t lCount = (count0[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
-              const size_t rCount = (count1[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
+              const size_t lCount = (count0[b]+sahBlockSize-1) / sahBlockSize;
+              const size_t rCount = (count1[b]+sahBlockSize-1) / sahBlockSize;
               float sah0 = expectedApproxHalfArea(bounds0[b])*float(lCount)*dt0.size();
               float sah1 = expectedApproxHalfArea(bounds1[b])*float(rCount)*dt1.size();
               if (unlikely(lCount == 0)) sah0 = 0.0f; // happens for initial splits when objects not alive over entire shutter time

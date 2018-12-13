@@ -366,8 +366,7 @@ namespace embree
           rAreas[i][3] = 0.0f;
         }
 	/* sweep from left to right and compute SAH */
-        const size_t blocks_shift = bsr(sahBlockSize);
-	vuint4 blocks_add = (1 << blocks_shift)-1;
+	vuint4 blocks_add = sahBlockSize-1;
 	vuint4 ii = 1; vfloat4 vbestSAH = pos_inf; vuint4 vbestPos = 0; 
 	count = 0; bx = empty; by = empty; bz = empty;
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
@@ -378,8 +377,8 @@ namespace embree
           bz.extend(bounds(i-1,2)); float Az = expectedApproxHalfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vuint4 lCount = (count     +blocks_add) >> (unsigned int)(blocks_shift); // if blocks_shift >=1 then lCount < 4B and could be represented with an vint4, which would allow for faster vfloat4 conversions.
-          const vuint4 rCount = (rCounts[i]+blocks_add) >> (unsigned int)(blocks_shift);
+          const vuint4 lCount = (count     +blocks_add) / vuint4(sahBlockSize); // if blocks_shift >=1 then lCount < 4B and could be represented with an vint4, which would allow for faster vfloat4 conversions.
+          const vuint4 rCount = (rCounts[i]+blocks_add) / vuint4(sahBlockSize);
           const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
           //const vfloat4 sah = madd(lArea,vfloat4(vint4(lCount)),rArea*vfloat4(vint4(rCount)));
 
@@ -459,7 +458,7 @@ namespace embree
       vuint4   _counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
-#if defined(__AVX512ER__) // KNL
+#if 0 && defined(__AVX512ER__) // KNL
 
    /*! mapping into bins */
    template<>

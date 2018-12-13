@@ -179,8 +179,7 @@ namespace embree
           {
             /* variable to track the SAH of the best splitting approach */
             float bestSAH = inf;
-            const int logBlockSize = bsr(cfg.sahBlockSize);
-            const size_t blocks = (pinfo.size()+(1ull<<logBlockSize)-1ull) >> logBlockSize;
+            const size_t blocks = (pinfo.size()+cfg.sahBlockSize-1) / cfg.sahBlockSize;
             const float leafSAH = intCost*float(blocks)*halfArea(pinfo.geomBounds);
 
             /* try standard binning in aligned space */

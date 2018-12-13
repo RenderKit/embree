@@ -132,9 +132,8 @@ namespace embree
           return Split(inf,axis0,axis1);
       
         /*! calculate sah for the split */
-        const size_t logBlockSize = bsr(sahBlockSize);
-        const size_t lblocks = (lnum+(1ull<<logBlockSize)-1ull) >> logBlockSize;
-        const size_t rblocks = (rnum+(1ull<<logBlockSize)-1ull) >> logBlockSize;
+        const size_t lblocks = (lnum+sahBlockSize-1ull) / sahBlockSize;
+        const size_t rblocks = (rnum+sahBlockSize-1ull) / sahBlockSize;
         const float sah = madd(float(lblocks),halfArea(lbounds),float(rblocks)*halfArea(rbounds));
         return Split(sah,axis0,axis1);
       }

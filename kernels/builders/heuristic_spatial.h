@@ -346,8 +346,6 @@ namespace embree
       /*! finds the best split by scanning binning information */
       SpatialBinSplit<BINS> best(const SpatialBinMapping<BINS>& mapping, const size_t sahBlockSize) const 
       {
-        const size_t blocks_shift = bsr(sahBlockSize);
-        
         /* sweep from right to left and compute parallel prefix of merged bounds */
         vfloat4 rAreas[BINS];
         vuint4 rCounts[BINS];
@@ -363,7 +361,7 @@ namespace embree
         }
         
         /* sweep from left to right and compute SAH */
-        vuint4 blocks_add = (1 << blocks_shift)-1;
+        vuint4 blocks_add = sahBlockSize-1;
         vuint4 ii = 1; vfloat4 vbestSAH = pos_inf; vuint4 vbestPos = 0; vuint4 vbestlCount = 0; vuint4 vbestrCount = 0;
         count = 0; bx = empty; by = empty; bz = empty;
         for (size_t i=1; i<BINS; i++, ii+=1)
@@ -374,8 +372,8 @@ namespace embree
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vuint4 lCount = (count     +blocks_add) >> (unsigned int)(blocks_shift);
-          const vuint4 rCount = (rCounts[i]+blocks_add) >> (unsigned int)(blocks_shift);
+          const vuint4 lCount = (count     +blocks_add) / vuint4(sahBlockSize);
+          const vuint4 rCount = (rCounts[i]+blocks_add) / vuint4(sahBlockSize);
           const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
           // const vfloat4 sah = madd(lArea,vfloat4(vint4(lCount)),rArea*vfloat4(vint4(rCount)));
           const vbool4 mask = sah < vbestSAH;
