@@ -40,7 +40,8 @@ namespace embree
 	return expectedApproxHalfArea(geomBounds)*float(size()); 
       }
       
-      __forceinline float leafSAH(size_t block_shift) const { 
+      __forceinline float leafSAH(size_t sahBlockSize) const {
+        const size_t block_shift = bsr(sahBlockSize);
 	return expectedApproxHalfArea(geomBounds)*float((size()+(size_t(1)<<block_shift)-1) >> block_shift);
       }
     };
