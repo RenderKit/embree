@@ -201,7 +201,7 @@ namespace embree
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
-        size_t sahBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t sahBlockSize;     //!< blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimum size of a leaf
         size_t maxLeafSize;      //!< maximum size of a leaf
         float travCost;          //!< estimated cost of one traversal step
