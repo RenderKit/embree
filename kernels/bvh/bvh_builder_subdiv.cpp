@@ -171,7 +171,7 @@ namespace embree
 
         /* settings for BVH build */
         GeneralBVHBuilder::Settings settings;
-        settings.logBlockSize = bsr(N);
+        settings.sahBlockSize = N;
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;
@@ -328,7 +328,7 @@ namespace embree
         BVHBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
-        settings.logBlockSize = bsr(N);
+        settings.sahBlockSize = N;
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;

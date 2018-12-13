@@ -36,12 +36,12 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), finished_range_threshold(inf) {}
+        : branchingFactor(2), maxDepth(32), sahBlockSize(1), minLeafSize(1), maxLeafSize(8), finished_range_threshold(inf) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
-        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t sahBlockSize;     //!< log2 of blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimum size of a leaf
         size_t maxLeafSize;      //!< maximum size of a leaf
         size_t finished_range_threshold;  //!< finished range threshold
@@ -179,14 +179,15 @@ namespace embree
           {
             /* variable to track the SAH of the best splitting approach */
             float bestSAH = inf;
-            const size_t blocks = (pinfo.size()+(1ull<<cfg.logBlockSize)-1ull) >> cfg.logBlockSize;
+            const int logBlockSize = bsr(cfg.sahBlockSize);
+            const size_t blocks = (pinfo.size()+(1ull<<logBlockSize)-1ull) >> logBlockSize;
             const float leafSAH = intCost*float(blocks)*halfArea(pinfo.geomBounds);
 
             /* try standard binning in aligned space */
             float alignedObjectSAH = inf;
             HeuristicBinningSAH::Split alignedObjectSplit;
             if (aligned) {
-              alignedObjectSplit = alignedHeuristic.find(pinfo,cfg.logBlockSize);
+              alignedObjectSplit = alignedHeuristic.find(pinfo,cfg.sahBlockSize);
               alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
               bestSAH = min(alignedObjectSAH,bestSAH);
             }
@@ -198,7 +199,7 @@ namespace embree
             if (bestSAH > 0.7f*leafSAH) {
               uspace = unalignedHeuristic.computeAlignedSpace(pinfo);
               const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
-              unalignedObjectSplit = unalignedHeuristic.find(sinfo,cfg.logBlockSize,uspace);
+              unalignedObjectSplit = unalignedHeuristic.find(sinfo,cfg.sahBlockSize,uspace);
               unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
               bestSAH = min(unalignedObjectSAH,bestSAH);
             }
@@ -207,7 +208,7 @@ namespace embree
             HeuristicStrandSplitSAH::Split strandSplit;
             float strandSAH = inf;
             if (bestSAH > 0.7f*leafSAH && pinfo.size() <= 256) {
-              strandSplit = strandHeuristic.find(pinfo,cfg.logBlockSize);
+              strandSplit = strandHeuristic.find(pinfo,cfg.sahBlockSize);
               strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
               bestSAH = min(strandSAH,bestSAH);
             }

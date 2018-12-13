@@ -34,12 +34,12 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8) {}
+        : branchingFactor(2), maxDepth(32), sahBlockSize(1), minLeafSize(1), maxLeafSize(8) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
-        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t sahBlockSize;     //!< log2 of blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimum size of a leaf
         size_t maxLeafSize;      //!< maximum size of a leaf
       };
@@ -259,10 +259,10 @@ namespace embree
           {
             /* variable to track the SAH of the best splitting approach */
             float bestSAH = inf;
-            const float leafSAH = current.prims.leafSAH(cfg.logBlockSize);
+            const float leafSAH = current.prims.leafSAH(cfg.sahBlockSize);
 
             /* perform standard binning in aligned space */
-            HeuristicBinning::Split alignedObjectSplit = alignedHeuristic.find(current.prims,cfg.logBlockSize);
+            HeuristicBinning::Split alignedObjectSplit = alignedHeuristic.find(current.prims,cfg.sahBlockSize);
             float alignedObjectSAH = alignedObjectSplit.splitSAH();
             bestSAH = min(alignedObjectSAH,bestSAH);
 
@@ -273,7 +273,7 @@ namespace embree
             if (alignedObjectSAH > 0.7f*leafSAH) {
               uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims);
               const SetMB sset = current.prims.primInfo(recalculatePrimRef,uspace);
-              unalignedObjectSplit = unalignedHeuristic.find(sset,cfg.logBlockSize,uspace);
+              unalignedObjectSplit = unalignedHeuristic.find(sset,cfg.sahBlockSize,uspace);
               unalignedObjectSAH = 1.3f*unalignedObjectSplit.splitSAH(); // makes unaligned splits more expensive
               bestSAH = min(unalignedObjectSAH,bestSAH);
             }
@@ -283,7 +283,7 @@ namespace embree
             typename HeuristicTemporal::Split temporal_split;
             if (bestSAH > 0.5f*leafSAH) {
               if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
-                temporal_split = temporalSplitHeuristic.find(current.prims,cfg.logBlockSize);
+                temporal_split = temporalSplitHeuristic.find(current.prims,cfg.sahBlockSize);
                 temporal_split_sah = temporal_split.splitSAH();
                 bestSAH = min(temporal_split_sah,bestSAH);
               }

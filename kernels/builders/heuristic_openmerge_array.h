@@ -246,7 +246,7 @@ namespace embree
           }
         } 
 
-        __noinline const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const Split find(PrimInfoExtRange& set, const size_t sahBlockSize)
         {
           /* single element */
           if (set.size() <= 1)
@@ -294,28 +294,28 @@ namespace embree
           }
                     
           /* find best split */
-          return object_find(set,logBlockSize);
+          return object_find(set,sahBlockSize);
         }
 
 
         /*! finds the best object split */
-        __forceinline const Split object_find(const PrimInfoExtRange& set,const size_t logBlockSize)
+        __forceinline const Split object_find(const PrimInfoExtRange& set,const size_t sahBlockSize)
         {
-          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize);
-          else                                 return parallel_object_find  (set,logBlockSize);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,sahBlockSize);
+          else                                 return parallel_object_find  (set,sahBlockSize);
         }
 
         /*! finds the best object split */
-        __noinline const Split sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const Split sequential_object_find(const PrimInfoExtRange& set, const size_t sahBlockSize)
         {
           Binner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(set.centBounds);
           binner.bin(prims0,set.begin(),set.end(),mapping);
-          return binner.best(mapping,logBlockSize);
+          return binner.best(mapping,sahBlockSize);
         }
 
         /*! finds the best split */
-        __noinline const Split parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const Split parallel_object_find(const PrimInfoExtRange& set, const size_t sahBlockSize)
         {
           Binner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(set.centBounds);
@@ -327,7 +327,7 @@ namespace embree
             Binner r = b0; r.merge(b1,_mapping.size()); return r; 
           };
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,body,reduction);
-          return binner.best(mapping,logBlockSize);
+          return binner.best(mapping,sahBlockSize);
         }
         
         /*! array partitioning */

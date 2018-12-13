@@ -124,7 +124,7 @@ namespace embree
             TemporalBinInfo r = a; r.merge(b); return r;
           }
                     
-          Split best(int logBlockSize, BBox1f time_range, const SetMB& set)
+          Split best(int sahBlockSize, BBox1f time_range, const SetMB& set)
           {
             float bestSAH = inf;
             float bestPos = 0.0f;
@@ -139,6 +139,7 @@ namespace embree
               const BBox1f dt1(center_time,time_range.upper);
               
               /* calculate sah */
+              const int logBlockSize = bsr(sahBlockSize);
               const size_t lCount = (count0[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
               const size_t rCount = (count1[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
               float sah0 = expectedApproxHalfArea(bounds0[b])*float(lCount)*dt0.size();
@@ -163,12 +164,12 @@ namespace embree
         };
         
         /*! finds the best split */
-        const Split find(const SetMB& set, const size_t logBlockSize)
+        const Split find(const SetMB& set, const size_t sahBlockSize)
         {
           assert(set.size() > 0);
           TemporalBinInfo binner(empty);
           binner.bin_parallel(set.prims->data(),set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,set,recalculatePrimRef);
-          Split tsplit = binner.best((int)logBlockSize,set.time_range,set);
+          Split tsplit = binner.best((int)sahBlockSize,set.time_range,set);
           if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return tsplit;
         }

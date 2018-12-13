@@ -70,21 +70,21 @@ namespace embree
           : prims(prims) {}
 
         /*! finds the best split */
-        __noinline const Split find(const PrimInfoRange& pinfo, const size_t logBlockSize)
+        __noinline const Split find(const PrimInfoRange& pinfo, const size_t sahBlockSize)
         {
           if (likely(pinfo.size() < PARALLEL_THRESHOLD))
-            return find_template<false>(pinfo,logBlockSize);
+            return find_template<false>(pinfo,sahBlockSize);
           else
-            return find_template<true>(pinfo,logBlockSize);
+            return find_template<true>(pinfo,sahBlockSize);
         }
 
         template<bool parallel>
-        __forceinline const Split find_template(const PrimInfoRange& pinfo, const size_t logBlockSize)
+        __forceinline const Split find_template(const PrimInfoRange& pinfo, const size_t sahBlockSize)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
           bin_serial_or_parallel<parallel>(binner,prims,pinfo.begin(),pinfo.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
-          return binner.best(mapping,logBlockSize);
+          return binner.best(mapping,sahBlockSize);
         }
 
         /*! array partitioning */
@@ -186,12 +186,12 @@ namespace embree
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
         /*! finds the best split */
-        const Split find(const SetMB& set, const size_t logBlockSize)
+        const Split find(const SetMB& set, const size_t sahBlockSize)
         {
           ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.size(),set.centBounds);
           bin_parallel(binner,set.prims->data(),set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
-          Split osplit = binner.best(mapping,logBlockSize);
+          Split osplit = binner.best(mapping,sahBlockSize);
           osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return osplit;

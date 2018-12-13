@@ -344,8 +344,10 @@ namespace embree
       }
       
       /*! finds the best split by scanning binning information */
-      SpatialBinSplit<BINS> best(const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift) const 
+      SpatialBinSplit<BINS> best(const SpatialBinMapping<BINS>& mapping, const size_t sahBlockSize) const 
       {
+        const size_t blocks_shift = bsr(sahBlockSize);
+        
         /* sweep from right to left and compute parallel prefix of merged bounds */
         vfloat4 rAreas[BINS];
         vuint4 rCounts[BINS];

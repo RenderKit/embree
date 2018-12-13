@@ -186,10 +186,10 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        const Split find(const PrimInfoExtRange& set, const size_t sahBlockSize)
         {
           SplitInfo oinfo;
-          const ObjectSplit object_split = object_find(set,logBlockSize,oinfo);
+          const ObjectSplit object_split = object_find(set,sahBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
 
           if (unlikely(set.has_ext_range()))
@@ -200,7 +200,7 @@ namespace embree
             if (safeArea(overlap) >= SPATIAL_ASPLIT_AREA_THRESHOLD*safeArea(root_info.geomBounds) &&
                 safeArea(overlap) >= SPATIAL_ASPLIT_OVERLAP_THRESHOLD*safeArea(set.geomBounds))
             {              
-              const SpatialSplit spatial_split = spatial_find(set, logBlockSize);
+              const SpatialSplit spatial_split = spatial_find(set, sahBlockSize);
               const float spatial_split_sah = spatial_split.splitSAH();
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
@@ -216,25 +216,25 @@ namespace embree
         }
 
         /*! finds the best object split */
-        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo &info)
+        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set, const size_t sahBlockSize, SplitInfo &info)
         {
-          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize,info);
-          else                                 return parallel_object_find  (set,logBlockSize,info);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,sahBlockSize,info);
+          else                                 return parallel_object_find  (set,sahBlockSize,info);
         }
 
         /*! finds the best object split */
-        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t sahBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(set);
           binner.bin(prims0,set.begin(),set.end(),mapping);
-          ObjectSplit s = binner.best(mapping,logBlockSize);
+          ObjectSplit s = binner.best(mapping,sahBlockSize);
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
         /*! finds the best split */
-        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t sahBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(set);
@@ -242,29 +242,29 @@ namespace embree
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
                                    [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
-          ObjectSplit s = binner.best(mapping,logBlockSize);
+          ObjectSplit s = binner.best(mapping,sahBlockSize);
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
         /*! finds the best spatial split */
-        __forceinline const SpatialSplit spatial_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __forceinline const SpatialSplit spatial_find(const PrimInfoExtRange& set, const size_t sahBlockSize)
         {
-          if (set.size() < PARALLEL_THRESHOLD) return sequential_spatial_find(set, logBlockSize);
-          else                                 return parallel_spatial_find  (set, logBlockSize);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_spatial_find(set, sahBlockSize);
+          else                                 return parallel_spatial_find  (set, sahBlockSize);
         }
 
         /*! finds the best spatial split */
-        __noinline const SpatialSplit sequential_spatial_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const SpatialSplit sequential_spatial_find(const PrimInfoExtRange& set, const size_t sahBlockSize)
         {
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(set);
           binner.bin2(splitterFactory,prims0,set.begin(),set.end(),mapping);
           /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
-          return binner.best(mapping,logBlockSize); //,set.ext_size());
+          return binner.best(mapping,sahBlockSize); //,set.ext_size());
         }
 
-        __noinline const SpatialSplit parallel_spatial_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const SpatialSplit parallel_spatial_find(const PrimInfoExtRange& set, const size_t sahBlockSize)
         {
           SpatialBinner binner(empty);
           const SpatialBinMapping<SPATIAL_BINS> mapping(set);
@@ -276,7 +276,7 @@ namespace embree
                                      return binner; },
                                    [&] (const SpatialBinner& b0, const SpatialBinner& b1) -> SpatialBinner { return SpatialBinner::reduce(b0,b1); });
           /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
-          return binner.best(mapping,logBlockSize); //,set.ext_size());
+          return binner.best(mapping,sahBlockSize); //,set.ext_size());
         }
 
 

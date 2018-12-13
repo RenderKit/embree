@@ -350,7 +350,7 @@ namespace embree
       }
       
       /*! finds the best split by scanning binning information */
-      __forceinline Split best(const BinMapping<BINS>& mapping, const size_t blocks_shift) const
+      __forceinline Split best(const BinMapping<BINS>& mapping, const size_t sahBlockSize) const
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
 	vfloat4 rAreas[BINS];
@@ -366,6 +366,7 @@ namespace embree
           rAreas[i][3] = 0.0f;
         }
 	/* sweep from left to right and compute SAH */
+        const size_t blocks_shift = bsr(sahBlockSize);
 	vuint4 blocks_add = (1 << blocks_shift)-1;
 	vuint4 ii = 1; vfloat4 vbestSAH = pos_inf; vuint4 vbestPos = 0; 
 	count = 0; bx = empty; by = empty; bz = empty;
@@ -831,8 +832,10 @@ namespace embree
       }
 
       /*! finds the best split by scanning binning information */
-      __forceinline Split best(const BinMapping<16>& mapping, const size_t blocks_shift) const
+      __forceinline Split best(const BinMapping<16>& mapping, const size_t sahBlockSize) const
       {
+        const size_t blocks_shift = bsr(sahBlockSize);
+        
 	/* find best dimension */
 	float bestSAH = inf;
 	int   bestDim = -1;

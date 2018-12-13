@@ -104,23 +104,23 @@ namespace embree
         };
         
         /*! finds the best split */
-        __forceinline const Split find(const PrimInfoRange& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        __forceinline const Split find(const PrimInfoRange& pinfo, const size_t sahBlockSize, const LinearSpace3fa& space)
         {
           if (likely(pinfo.size() < 10000))
-            return find_template<false>(pinfo,logBlockSize,space);
+            return find_template<false>(pinfo,sahBlockSize,space);
           else
-            return find_template<true>(pinfo,logBlockSize,space);
+            return find_template<true>(pinfo,sahBlockSize,space);
         }
 
         /*! finds the best split */
         template<bool parallel>
-        const Split find_template(const PrimInfoRange& set, const size_t logBlockSize, const LinearSpace3fa& space)
+        const Split find_template(const PrimInfoRange& set, const size_t sahBlockSize, const LinearSpace3fa& space)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(set);
           BinBoundsAndCenter binBoundsAndCenter(scene,space);
           bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,binBoundsAndCenter);
-          return binner.best(mapping,logBlockSize);
+          return binner.best(mapping,sahBlockSize);
         }
         
         /*! array partitioning */
@@ -278,13 +278,13 @@ namespace embree
         };
 
         /*! finds the best split */
-        const Split find(const SetMB& set, const size_t logBlockSize, const LinearSpace3fa& space)
+        const Split find(const SetMB& set, const size_t sahBlockSize, const LinearSpace3fa& space)
         {
           BinBoundsAndCenter binBoundsAndCenter(scene,set.time_range,space);
           ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.size(),set.centBounds);
           bin_parallel(binner,set.prims->data(),set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,binBoundsAndCenter);
-          Split osplit = binner.best(mapping,logBlockSize);
+          Split osplit = binner.best(mapping,sahBlockSize);
           osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return osplit;

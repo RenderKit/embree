@@ -194,14 +194,14 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), sahBlockSize(1), minLeafSize(1), maxLeafSize(8),
           travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false),
           singleThreadThreshold(1024) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
-        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t sahBlockSize;     //!< log2 of blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimum size of a leaf
         size_t maxLeafSize;      //!< maximum size of a leaf
         float travCost;          //!< estimated cost of one traversal step
@@ -294,18 +294,18 @@ namespace embree
           const Split find(const SetMB& set)
           {
             /* first try standard object split */
-            const Split object_split = heuristicObjectSplit.find(set,cfg.logBlockSize);
+            const Split object_split = heuristicObjectSplit.find(set,cfg.sahBlockSize);
             const float object_split_sah = object_split.splitSAH();
 
             /* test temporal splits only when object split was bad */
-            const float leaf_sah = set.leafSAH(cfg.logBlockSize);
+            const float leaf_sah = set.leafSAH(cfg.sahBlockSize);
             if (object_split_sah < 0.50f*leaf_sah)
               return object_split;
 
             /* do temporal splits only if the the time range is big enough */
             if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
             {
-              const Split temporal_split = heuristicTemporalSplit.find(set,cfg.logBlockSize);
+              const Split temporal_split = heuristicTemporalSplit.find(set,cfg.sahBlockSize);
               const float temporal_split_sah = temporal_split.splitSAH();
 
               /* take temporal split if it improved SAH */
@@ -534,7 +534,7 @@ namespace embree
             const Split csplit = find(current.prims);
 
             /*! compute leaf and split cost */
-            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.logBlockSize);
+            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.sahBlockSize);
             const float splitSAH = cfg.travCost*current.prims.halfArea()+cfg.intCost*csplit.splitSAH();
             assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 

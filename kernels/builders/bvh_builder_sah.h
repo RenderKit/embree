@@ -45,17 +45,17 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), sahBlockSize(1), minLeafSize(1), maxLeafSize(8),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf) {}
 
         /*! initialize settings from API settings */
         Settings (const RTCBuildArguments& settings)
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), sahBlockSize(1), minLeafSize(1), maxLeafSize(8),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
         {
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
-          if (RTC_BUILD_ARGUMENTS_HAS(settings,sahBlockSize      )) logBlockSize    = bsr(settings.sahBlockSize);
+          if (RTC_BUILD_ARGUMENTS_HAS(settings,sahBlockSize      )) sahBlockSize    = settings.sahBlockSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,traversalCost     )) travCost        = settings.traversalCost;
@@ -63,13 +63,13 @@ namespace embree
         }
 
         Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
-        : branchingFactor(2), maxDepth(32), logBlockSize(bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+        : branchingFactor(2), maxDepth(32), sahBlockSize(sahBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
           travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
-        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t sahBlockSize;        //!< blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimum size of a leaf
         size_t maxLeafSize;      //!< maximum size of a leaf
         float travCost;          //!< estimated cost of one traversal step
@@ -213,10 +213,10 @@ namespace embree
               progressMonitor(current.size());
 
             /*! find best split */
-            auto split = heuristic.find(current.prims,cfg.logBlockSize);
+            auto split = heuristic.find(current.prims,cfg.sahBlockSize);
 
             /*! compute leaf and split cost */
-            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.logBlockSize);
+            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.sahBlockSize);
             const float splitSAH = cfg.travCost*halfArea(current.prims.geomBounds)+cfg.intCost*split.splitSAH();
             assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 
@@ -260,7 +260,7 @@ namespace embree
               BuildRecord& brecord = children[bestChild];
               BuildRecord lrecord(current.depth+1);
               BuildRecord rrecord(current.depth+1);
-              auto split = heuristic.find(brecord.prims,cfg.logBlockSize);
+              auto split = heuristic.find(brecord.prims,cfg.sahBlockSize);
               heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
               children[bestChild  ] = lrecord;
               children[numChildren] = rrecord;

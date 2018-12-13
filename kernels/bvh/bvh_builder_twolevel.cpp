@@ -212,7 +212,7 @@ namespace embree
             GeneralBVHBuilder::Settings settings;
             settings.branchingFactor = N;
             settings.maxDepth = BVH::maxBuildDepthLeaf;
-            settings.logBlockSize = bsr(N);
+            settings.sahBlockSize = N;
             settings.minLeafSize = 1;
             settings.maxLeafSize = 1;
             settings.travCost = 1.0f;
