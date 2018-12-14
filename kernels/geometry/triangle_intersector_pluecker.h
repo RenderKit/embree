@@ -86,7 +86,7 @@ namespace embree
       {
         /* calculate vertices relative to ray origin */
         const Vec3vf<M> O = Vec3vf<M>(ray.org);
-        const Vec3vf<M> D = Vec3vf<M>(ray.dir);
+	const Vec3vf<M> D = Vec3vf<M>(ray.dir);
         const Vec3vf<M> v0 = tri_v0-O;
         const Vec3vf<M> v1 = tri_v1-O;
         const Vec3vf<M> v2 = tri_v2-O;
