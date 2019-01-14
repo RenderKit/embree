@@ -124,7 +124,7 @@ images/%.pdf: images/%.fig
 convertnbsp = sed -e 's@\\ @ @g'
 convertpagebreak = sed -e 's@\\pagebreak@@g'
 
-doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
+doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api_inc1.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
 	cat $+ | $(convertnbsp) | $(convertpagebreak) > $@
 
 doc/CHANGELOG.md: tmp/changelog.md
