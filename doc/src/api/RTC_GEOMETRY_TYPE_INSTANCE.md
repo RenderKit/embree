@@ -14,7 +14,7 @@
 #### DESCRIPTION
 
 Embree supports instancing of scenes using affine transformations
-(3x3 matrix plus translation). As the instanced scene is stored only a
+(3×3 matrix plus translation). As the instanced scene is stored only a
 single time, even if instanced to multiple locations, this feature can
 be used to create very complex scenes with small memory footprint. Only
 single-level instancing is supported natively by Embree, however,
