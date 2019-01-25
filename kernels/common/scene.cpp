@@ -119,6 +119,14 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
+    /* the collision code only works for BVH4Triangle4v acceleration structure */
+    if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+      accels.add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST));
+    } else {
+      accels.add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST));
+    }
+    return;
+
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     if (device->tri_accel == "default") 
     {

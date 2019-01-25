@@ -74,6 +74,9 @@ namespace embree
 
     struct Intersectors;
 
+    /*! Type of collide function */
+    typedef void (*CollideFunc)(void* bvh0, void* bvh1, RTCCollideFunc callback, void* userPtr);
+
     /*! Type of intersect function pointer for single rays. */
     typedef void (*IntersectFunc)(Intersectors* This,  /*!< this pointer to accel */
                                   RTCRayHit& ray,      /*!< ray to intersect */
@@ -134,6 +137,21 @@ namespace embree
                                   IntersectContext* context /*!< layout flags */);
     typedef void (*ErrorFunc) ();
 
+    struct Collider
+    {
+      Collider (ErrorFunc error = nullptr) 
+      : collide((CollideFunc)error), name(nullptr) {}
+
+      Collider (CollideFunc collide, const char* name)
+      : collide(collide), name(name) {}
+
+      operator bool() const { return name; }
+
+    public:
+      CollideFunc collide;  
+      const char* name;
+    };
+    
     struct Intersector1
     {
       Intersector1 (ErrorFunc error = nullptr)
@@ -222,13 +240,17 @@ namespace embree
     struct Intersectors 
     {
       Intersectors() 
-        : ptr(nullptr), leafIntersector(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
+      : ptr(nullptr), collider(nullptr), leafIntersector(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), leafIntersector(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
+      : ptr(nullptr), collider(error), leafIntersector(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
+        if (collider.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "collider  = " << collider.name << std::endl;
+        }
         if (intersector1.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
           std::cout << "intersector1  = " << intersector1.name << std::endl;
@@ -269,6 +291,12 @@ namespace embree
 	  if (filter) intersectorN = intersectorN_filter;
 	  else        intersectorN = intersectorN_nofilter;
 	}        
+      }
+
+      /*! collides two scenes */
+      __forceinline void collide (Accel* scene0, Accel* scene1, RTCCollideFunc callback, void* userPtr) {
+        assert(intersectors.collider.collide);
+        intersectors.collider.collide(scene0->intersectors.ptr,scene1->intersectors.ptr,callback,userPtr);
       }
 
       /*! Intersects a single ray with the scene. */
@@ -403,6 +431,7 @@ namespace embree
     public:
       AccelData* ptr;
       void* leafIntersector;
+      Collider collider;
       Intersector1 intersector1;
       Intersector4 intersector4;
       Intersector4 intersector4_filter;
@@ -441,6 +470,11 @@ namespace embree
     Intersectors intersectors;
   };
 
+#define DEFINE_COLLIDER(symbol,collider)                            \
+  Accel::Collider symbol((Accel::CollideFunc)collider::collide,     \
+                         TOSTRING(isa) "::" TOSTRING(symbol));
+
+  
 #define DEFINE_INTERSECTOR1(symbol,intersector)                              \
   Accel::Intersector1 symbol() {                                             \
     return Accel::Intersector1((Accel::IntersectFunc)intersector::intersect, \

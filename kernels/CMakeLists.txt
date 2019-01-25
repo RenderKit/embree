@@ -122,7 +122,8 @@ MACRO(embree_files TARGET ISA)
       common/scene_line_segments.cpp
       common/scene_grid_mesh.cpp
       common/scene_points.cpp
-      
+
+      bvh/bvh_collider.cpp
       bvh/bvh_refit.cpp
       bvh/bvh_builder.cpp
       bvh/bvh_builder_hair.cpp

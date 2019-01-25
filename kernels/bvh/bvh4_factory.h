@@ -110,6 +110,10 @@ namespace embree
     static void createUserGeometryMesh(UserGeometry* mesh, AccelData*& accel, Builder*& builder);
     
   private:
+
+    DEFINE_SYMBOL2(Accel::Collider,BVH4ColliderTriangle4v);
+    DEFINE_SYMBOL2(Accel::Collider,BVH4ColliderUserGeom);
+
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1MB);
     

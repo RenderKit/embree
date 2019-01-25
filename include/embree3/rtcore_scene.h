@@ -144,6 +144,14 @@ RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, 
 inline RTCSceneFlags operator|(RTCSceneFlags a, RTCSceneFlags b) {
   return (RTCSceneFlags)((size_t)a | (size_t)b);
 }
+
+/*! collision callback */
+struct RTCCollision { unsigned int geomID0; unsigned int primID0; unsigned int geomID1; unsigned int primID1; };
+typedef void (*RTCCollideFunc) (void* userPtr, RTCCollision* collisions, size_t num_collisions);
+
+/*! Performs collision detection of two scenes */
+RTC_API void rtcCollide (RTCScene scene0, RTCScene scene1, RTCCollideFunc callback, void* userPtr);
+ 
   
 }
 #endif
