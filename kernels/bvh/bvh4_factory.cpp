@@ -584,7 +584,7 @@ namespace embree
     intersectors.intersector16 = BVH4Triangle4vIntersector16HybridPluecker();
     intersectors.intersectorN  = BVH4Triangle4vIntersectorStreamPluecker();
 #endif
-    intersectors.collider      = BVH4ColliderTriangle4v;
+    intersectors.collider      = BVH4ColliderTriangle4v();
     return intersectors;
   }
 
@@ -817,7 +817,7 @@ namespace embree
     intersectors.intersector16 = BVH4VirtualIntersector16Chunk();
     intersectors.intersectorN  = BVH4VirtualIntersectorStream();
 #endif
-    intersectors.collider      = BVH4ColliderUserGeom;
+    intersectors.collider      = BVH4ColliderUserGeom();
     return intersectors;
   }
 

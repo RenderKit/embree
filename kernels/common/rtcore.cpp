@@ -297,23 +297,21 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcCollide (RTCScene hscene0, RTCScene hscene1, RTCCollideFunc callback, void* userPtr)
+  RTC_API void rtcCollide (RTCScene hscene0, RTCScene hscene1, RTCCollideFunc callback, void* userPtr)
   {
     Scene* scene0 = (Scene*) hscene0;
     Scene* scene1 = (Scene*) hscene1;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcCollide);
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcCollide);
 #if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene0);
-    RTCORE_VERIFY_HANDLE(hscene1);
-    if (scene0->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (scene1->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (scene0->device != scene1->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes are from different devices");
+    RTC_VERIFY_HANDLE(hscene0);
+    RTC_VERIFY_HANDLE(hscene1);
+    if (scene0->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
+    if (scene1->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
+    if (scene0->device != scene1->device) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes are from different devices");
 #endif
-    if (!isCollidable(scene0->aflags)) throw_RTCError(RTC_INVALID_OPERATION,"rtcCollide not supported for this scene");
-    if (!isCollidable(scene1->aflags)) throw_RTCError(RTC_INVALID_OPERATION,"rtcCollide not supported for this scene");
-    scene0->collide(scene0,scene1,callback,userPtr);
-    RTCORE_CATCH_END(scene0->device);
+    scene0->intersectors.collide(scene0,scene1,callback,userPtr);
+    RTC_CATCH_END(scene0->device);
   }
   
   RTC_API void rtcIntersect1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit) 

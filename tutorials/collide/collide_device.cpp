@@ -30,18 +30,20 @@ extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   /* initialize ray */
-  RTCRay ray;
+  Ray ray;
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
+  ray.tnear() = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0.0f;
+  ray.time() = 0.0f;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -59,6 +61,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -88,7 +91,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -96,14 +99,14 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;
@@ -120,16 +123,17 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene); g_scene = nullptr;
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  rtcReleaseScene (g_scene); g_scene = nullptr;
+  rtcReleaseDevice(g_device); g_device = nullptr;
 }
 
 } // namespace embree

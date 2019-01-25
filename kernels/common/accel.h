@@ -240,10 +240,10 @@ namespace embree
     struct Intersectors 
     {
       Intersectors() 
-      : ptr(nullptr), collider(nullptr), leafIntersector(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
+      : ptr(nullptr), leafIntersector(nullptr), collider(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), collider(error), leafIntersector(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
+      : ptr(nullptr), leafIntersector(nullptr), collider(error), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
@@ -295,8 +295,8 @@ namespace embree
 
       /*! collides two scenes */
       __forceinline void collide (Accel* scene0, Accel* scene1, RTCCollideFunc callback, void* userPtr) {
-        assert(intersectors.collider.collide);
-        intersectors.collider.collide(scene0->intersectors.ptr,scene1->intersectors.ptr,callback,userPtr);
+        assert(collider.collide);
+        collider.collide(scene0->intersectors.ptr,scene1->intersectors.ptr,callback,userPtr);
       }
 
       /*! Intersects a single ray with the scene. */
@@ -470,10 +470,11 @@ namespace embree
     Intersectors intersectors;
   };
 
-#define DEFINE_COLLIDER(symbol,collider)                            \
-  Accel::Collider symbol((Accel::CollideFunc)collider::collide,     \
-                         TOSTRING(isa) "::" TOSTRING(symbol));
-
+#define DEFINE_COLLIDER(symbol,collider)                                \
+  Accel::Collider symbol() {                                            \
+    return Accel::Collider((Accel::CollideFunc)collider::collide,       \
+                           TOSTRING(isa) "::" TOSTRING(symbol));        \
+  }
   
 #define DEFINE_INTERSECTOR1(symbol,intersector)                              \
   Accel::Intersector1 symbol() {                                             \

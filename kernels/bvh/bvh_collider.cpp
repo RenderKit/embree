@@ -24,15 +24,15 @@ namespace embree
 #define CSTAT(x) 
 
     size_t parallel_depth_threshold = 6;
-    std::atomic<size_t> bvh_collide_traversal_steps(0);
-    std::atomic<size_t> bvh_collide_leaf_pairs(0);
-    std::atomic<size_t> bvh_collide_leaf_iterations(0);
-    std::atomic<size_t> bvh_collide_prim_intersections1(0);
-    std::atomic<size_t> bvh_collide_prim_intersections2(0);
-    std::atomic<size_t> bvh_collide_prim_intersections3(0);
-    std::atomic<size_t> bvh_collide_prim_intersections4(0);
-    std::atomic<size_t> bvh_collide_prim_intersections5(0);
-    std::atomic<size_t> bvh_collide_prim_intersections(0);
+    CSTAT(std::atomic<size_t> bvh_collide_traversal_steps(0));
+    CSTAT(std::atomic<size_t> bvh_collide_leaf_pairs(0));
+    CSTAT(std::atomic<size_t> bvh_collide_leaf_iterations(0));
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections1(0));
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections2(0));
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections3(0))
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections4(0))
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections5(0))
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections(0))
 
     struct Collision
     {
@@ -86,8 +86,8 @@ namespace embree
     bool intersect_triangle_triangle (Scene* scene0, unsigned geomID0, unsigned primID0, Scene* scene1, unsigned geomID1, unsigned primID1)
     {
       CSTAT(bvh_collide_prim_intersections1++);
-      const TriangleMesh* mesh0 = scene0->getTriangleMesh(geomID0);
-      const TriangleMesh* mesh1 = scene1->getTriangleMesh(geomID1);
+      const TriangleMesh* mesh0 = scene0->get<TriangleMesh>(geomID0);
+      const TriangleMesh* mesh1 = scene1->get<TriangleMesh>(geomID1);
       const TriangleMesh::Triangle& tri0 = mesh0->triangle(primID0);
       const TriangleMesh::Triangle& tri1 = mesh1->triangle(primID1);
       
@@ -137,7 +137,7 @@ namespace embree
         {
           CSTAT(bvh_collide_leaf_iterations++);
           size_t mask = movemask(tris1.valid()) & overlap(bounds0,i,bounds1);
-          for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) 
+          for (size_t m=mask, j=bsf(m); m!=0; m=btc(m,j), j=bsf(m)) 
           {
             const unsigned geomID0 = tris0.geomID(i);
             const unsigned primID0 = tris0.primID(i);
@@ -156,7 +156,7 @@ namespace embree
         {
           CSTAT(bvh_collide_leaf_iterations++);
           size_t mask = movemask(tris0.valid()) & overlap(bounds1,j,bounds0);
-          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+          for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             const unsigned geomID0 = tris0.geomID(i);
             const unsigned primID0 = tris0.primID(i);
             const unsigned geomID1 = tris1.geomID(j);
@@ -192,10 +192,10 @@ namespace embree
       size_t N1; Object* leaf1 = (Object*) node1.leaf(N1);
       for (size_t i=0; i<N0; i++) {
         for (size_t j=0; j<N1; j++) {
-          const unsigned geomID0 = leaf0[i].geomID;
-          const unsigned primID0 = leaf0[i].primID;
-          const unsigned geomID1 = leaf1[j].geomID;
-          const unsigned primID1 = leaf1[j].primID;
+          const unsigned geomID0 = leaf0[i].geomID();
+          const unsigned primID0 = leaf0[i].primID();
+          const unsigned geomID1 = leaf1[j].geomID();
+          const unsigned primID1 = leaf1[j].primID();
           if (this->scene0 == this->scene1 && geomID0 == geomID1 && primID0 == primID1) continue;
           collisions[num_collisions++] = Collision(geomID0,primID0,geomID1,primID1);
           if (num_collisions == 16) {
@@ -242,7 +242,7 @@ namespace embree
       recurse_node0:
         AlignedNode* node0 = ref0.alignedNode();
         size_t mask = overlap<N>(bounds1,*node0);
-        //for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+        //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
         if (depth < parallel_depth_threshold) 
         {
@@ -255,7 +255,7 @@ namespace embree
         } 
         else 
         {
-          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+          for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
             collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth+1);
           }
@@ -267,7 +267,7 @@ namespace embree
       recurse_node1:
         AlignedNode* node1 = ref1.alignedNode();
         size_t mask = overlap<N>(bounds0,*node1);
-        //for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+        //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
         if (depth < parallel_depth_threshold) 
         {
@@ -280,7 +280,7 @@ namespace embree
         }
         else
         {
-          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+          for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
             collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth+1);
           }
@@ -311,7 +311,6 @@ namespace embree
       CSTAT(PRINT(bvh_collide_prim_intersections4));
       CSTAT(PRINT(bvh_collide_prim_intersections5));
       CSTAT(PRINT(bvh_collide_prim_intersections));
-      AVX_ZERO_UPPER();
     }
    
 
@@ -329,6 +328,7 @@ namespace embree
         collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds(),0);
     }
 
+#if 0
 #if !defined (__SSE4_1__)
     struct collision_regression_test : public RegressionTest
     {
@@ -364,6 +364,7 @@ namespace embree
     };
 
     collision_regression_test collision_regression("collision_regression_test");
+#endif
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
