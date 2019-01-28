@@ -450,6 +450,10 @@ namespace embree
 
   void Scene::createUserGeometryAccel()
   {
+    /* the collision code only works for BVH4Triangle4v acceleration structure */
+    accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
+    return;
+    
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel == "default") 
     {
