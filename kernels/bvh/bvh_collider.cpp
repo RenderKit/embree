@@ -21,7 +21,7 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x) 
+#define CSTAT(x)
 
     size_t parallel_depth_threshold = 6;
     CSTAT(std::atomic<size_t> bvh_collide_traversal_steps(0));
@@ -29,10 +29,10 @@ namespace embree
     CSTAT(std::atomic<size_t> bvh_collide_leaf_iterations(0));
     CSTAT(std::atomic<size_t> bvh_collide_prim_intersections1(0));
     CSTAT(std::atomic<size_t> bvh_collide_prim_intersections2(0));
-    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections3(0))
-    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections4(0))
-    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections5(0))
-    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections(0))
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections3(0));
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections4(0));
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections5(0));
+    CSTAT(std::atomic<size_t> bvh_collide_prim_intersections(0));
 
     struct Collision
     {
