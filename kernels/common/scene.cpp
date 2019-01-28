@@ -451,7 +451,11 @@ namespace embree
   void Scene::createUserGeometryAccel()
   {
     /* the collision code only works for BVH4Triangle4v acceleration structure */
-    accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
+    if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+      accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
+    } else {
+      accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC)); // FIXME: only enable when memory consumption issue with instancing is solved
+    }
     return;
     
 #if defined(EMBREE_GEOMETRY_USER)
