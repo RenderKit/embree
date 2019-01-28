@@ -48,6 +48,11 @@ namespace embree
                                                                                                     size_t numOctantRays,
                                                                                                     IntersectContext* context)
     {
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
       // Only the coherent code path is implemented
       assert(context->isCoherent());
       intersectCoherent(This, (RayHitK<VSIZEL>**)inputPackets, numOctantRays, context);
@@ -167,6 +172,11 @@ namespace embree
                                                                                                    size_t numOctantRays,
                                                                                                    IntersectContext* context)
     {
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
       if (unlikely(context->isCoherent()))
         occludedCoherent(This, (RayK<VSIZEL>**)inputPackets, numOctantRays, context);
       else

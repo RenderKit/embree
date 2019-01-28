@@ -45,8 +45,13 @@ namespace embree
                                                                               RayHit& __restrict__ ray,
                                                                               IntersectContext* __restrict__ context)
     {
-      /* perform per ray precalculations required by the primitive intersector */
       const BVH* __restrict__ bvh = (const BVH*)This->ptr;
+      
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
+      /* perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray, bvh);
 
       /* stack state */
@@ -55,8 +60,11 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
+      
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
       /* filter out invalid rays */
-
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
 #endif
@@ -128,12 +136,17 @@ namespace embree
                                                                              Ray& __restrict__ ray,
                                                                              IntersectContext* __restrict__ context)
     {
+      const BVH* __restrict__ bvh = (const BVH*)This->ptr;
+      
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      if (bvh->root == BVH::emptyNode)
+        return;
+       
       /* early out for already occluded rays */
       if (unlikely(ray.tfar < 0.0f))
         return;
 
       /* perform per ray precalculations required by the primitive intersector */
-      const BVH* __restrict__ bvh = (const BVH*)This->ptr;
       Precalculations pre(ray, bvh);
 
       /* stack state */

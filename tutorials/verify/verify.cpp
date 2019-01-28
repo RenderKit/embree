@@ -2656,7 +2656,6 @@ namespace embree
       RTCRayHit invalid_ray; clearRay(invalid_ray);
       invalid_ray.ray.tnear = pos_inf;
       invalid_ray.ray.tfar  = 0.0f;
-      invalid_ray = invalid_ray;
       
       size_t numFailures = 0;
       for (size_t i=0; i<size_t(N*state->intensity); i++) 

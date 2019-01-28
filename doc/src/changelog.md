@@ -1,8 +1,12 @@
 Version History
 ---------------
 
-### New Features in Embree 3.4.0
+### New Features in Embree 3.5.0
 -   Changed normal oriented curve definition to fix waving artefacts.
+
+### New Features in Embree 3.4.0
+-   Upgraded to TBB 2019.2 for release builds.
+-   Fixed crash triggered by scenes with only invalid primitives.
 
 ### New Features in Embree 3.3.0
 -   Added support for motion blur time range per geometry. This way geometries

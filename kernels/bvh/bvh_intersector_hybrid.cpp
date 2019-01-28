@@ -129,7 +129,11 @@ namespace embree
                                                                                                IntersectContext* __restrict__ context)
     {
       BVH* __restrict__ bvh = (BVH*)This->ptr;
-
+      
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      if (bvh->root == BVH::emptyNode)
+        return;
+            
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && context->isCoherent()))
@@ -620,6 +624,11 @@ namespace embree
                                                                                               IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*)This->ptr;
+      
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && context->isCoherent()))
