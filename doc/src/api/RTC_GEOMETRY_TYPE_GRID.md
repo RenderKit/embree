@@ -39,7 +39,7 @@ Each grid in the grid buffer is of the type `RTCGrid`:
 The `RTCGrid` structure describes a 2D grid of vertices (with respect
 to the vertex buffer of the grid mesh). The `width` and `height`
 members specify the number of vertices in u and v direction,
-e.g. setting both `width` and `height` to 3 sets up a 3x3 vertex
+e.g. setting both `width` and `height` to 3 sets up a 3×3 vertex
 grid. The maximum allowed `width` and `height` is 32767. The
 `startVertexID` specifies the ID of the top-left vertex in the vertex
 grid, while the `stride` parameter specifies a stride (in number of

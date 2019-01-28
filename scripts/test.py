@@ -284,6 +284,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
+  if "POINT" in config:
+    conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
@@ -324,8 +326,8 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_PREFIX=/opt/local")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
-      conf.append("-D CMAKE_INSTALL_DOCDIR=../../Applications/Embree2/doc")
-      conf.append("-D CMAKE_INSTALL_BINDIR=../../Applications/Embree2/bin")
+      conf.append("-D CMAKE_INSTALL_DOCDIR=../../Applications/Embree3/doc")
+      conf.append("-D CMAKE_INSTALL_BINDIR=../../Applications/Embree3/bin")
       conf.append("-D EMBREE_TBB_ROOT=/opt/local")
     elif OS == "windows" and config["package"] == "ZIP":
       conf.append("-D EMBREE_SIGN_FILE=\\\\sdvis-nas\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")

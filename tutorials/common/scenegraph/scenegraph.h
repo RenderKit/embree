@@ -67,7 +67,8 @@ namespace embree
         numSubdivMeshes(0),   numPatches(0),   numSubdivBytes(0),
         numCurveSets(0),      numCurves(0),    numCurveBytes(0),
         numGridMeshNodes(0),  numGrids(0),     numGridBytes(0),
-        numTransformNodes(0), 
+        numPointSets(0),      numPoints(0),    numPointBytes(0),
+        numTransformNodes(0),
         numTransformedObjects(0),
         numLights(0),
         numCameras(0),
@@ -95,6 +96,10 @@ namespace embree
       size_t numGrids;
       size_t numGridBytes;
       
+      size_t numPointSets;
+      size_t numPoints;
+      size_t numPointBytes;
+
       size_t numTransformNodes;
       size_t numTransformedObjects;
       
@@ -1020,6 +1025,87 @@ namespace embree
       unsigned tessellation_rate;
     };
 
+    /*! Point Set. */
+    struct PointSetNode : public Node
+    {
+      typedef Vec3fa Vertex;
+
+    public:
+      PointSetNode (RTCGeometryType type, Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0)
+        : Node(true), time_range(time_range), type(type), material(material)
+      {
+        for (size_t i=0; i<numTimeSteps; i++)
+          positions.push_back(avector<Vertex>());
+      }
+
+      PointSetNode (const avector<Vertex>& positions_in, Ref<MaterialNode> material, RTCGeometryType type)
+        : Node(true), time_range(0.0f, 1.0f), type(type), material(material)
+      {
+        positions.push_back(positions_in);
+      }
+
+      PointSetNode (Ref<SceneGraph::PointSetNode> imesh, const Transformations& spaces)
+        : Node(true), time_range(imesh->time_range), type(imesh->type), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+          normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
+        material(imesh->material) {}
+
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (const auto& p : positions)
+          for (auto x : p)
+            b.extend(x);
+        return b;
+      }
+
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t])
+            b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
+      }
+
+      virtual size_t numPrimitives() const {
+        return numVertices();
+      }
+
+      size_t numVertices() const {
+        assert(positions.size());
+        return positions[0].size();
+      }
+
+      size_t numTimeSteps() const {
+        return positions.size();
+      }
+
+      size_t numBytes() const {
+        return numVertices()*numTimeSteps()*sizeof(Vertex);
+      }
+
+      void verify() const;
+
+      virtual void calculateStatistics(Statistics& stat);
+      virtual void calculateInDegree();
+      virtual void resetInDegree();
+
+    public:
+      BBox1f time_range;                      //!< geometry time range for motion blur
+      RTCGeometryType type;                   //!< type of point
+      std::vector<avector<Vertex>> positions; //!< point control points (x,y,z,r) for multiple timesteps
+      std::vector<avector<Vertex>> normals;   //!< point control normals (nx,ny,nz) for multiple timesteps (oriented only)
+
+      Ref<MaterialNode> material;
+    };
+
     struct GridMeshNode : public Node
     {
       typedef Vec3fa Vertex;
@@ -1121,6 +1207,13 @@ namespace embree
     {
       ROUND_CURVE,
       FLAT_CURVE
+    };
+
+    enum PointSubtype
+    {
+      SPHERE,
+      DISC,
+      ORIENTED_DISC
     };
   }
 }

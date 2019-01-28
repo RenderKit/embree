@@ -5,8 +5,10 @@ Version History
 -   Changed normal oriented curve definition to fix waving artefacts.
 
 ### New Features in Embree 3.4.0
--   Upgraded to TBB 2019.2 for release builds.
+-   Added point primitives (spheres, ray-oriented discs, normal-oriented discs).
 -   Fixed crash triggered by scenes with only invalid primitives.
+-   Improved robustness of quad/grid-based intersectors.
+-   Upgraded to TBB 2019.2 for release builds.
 
 ### New Features in Embree 3.3.0
 -   Added support for motion blur time range per geometry. This way geometries

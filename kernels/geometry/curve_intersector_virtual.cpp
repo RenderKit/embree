@@ -21,6 +21,9 @@
 #include "../subdiv/bspline_curve.h"
 #include "../subdiv/hermite_curve.h"
 
+#include "spherei_intersector.h"
+#include "disci_intersector.h"
+
 #include "linei_intersector.h"
 
 #include "curveNi_intersector.h"
@@ -74,6 +77,120 @@ namespace embree
       return intersectors;
     }
     
+    template<int N>
+    static VirtualCurveIntersector::Intersectors SphereNiIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&SphereMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &SphereMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&SphereMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &SphereMiIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&SphereMiIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &SphereMiIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&SphereMiIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &SphereMiIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors SphereNiMBIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&SphereMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &SphereMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&SphereMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &SphereMiMBIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&SphereMiMBIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &SphereMiMBIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&SphereMiMBIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &SphereMiMBIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors DiscNiIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&DiscMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &DiscMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&DiscMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &DiscMiIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&DiscMiIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &DiscMiIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&DiscMiIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &DiscMiIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors DiscNiMBIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&DiscMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &DiscMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&DiscMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &DiscMiMBIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&DiscMiMBIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &DiscMiMBIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&DiscMiMBIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &DiscMiMBIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors OrientedDiscNiIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&OrientedDiscMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &OrientedDiscMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&OrientedDiscMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &OrientedDiscMiIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&OrientedDiscMiIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &OrientedDiscMiIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&OrientedDiscMiIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &OrientedDiscMiIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors OrientedDiscNiMBIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&OrientedDiscMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &OrientedDiscMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&OrientedDiscMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &OrientedDiscMiMBIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&OrientedDiscMiMBIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &OrientedDiscMiMBIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&OrientedDiscMiMBIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &OrientedDiscMiMBIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
     template<typename Curve3fa, int N>
     static VirtualCurveIntersector::Intersectors RibbonNiIntersectors()
     {
@@ -343,6 +460,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4i()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,4>();
@@ -359,6 +479,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4v()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<BezierCurve3fa,4>();
@@ -375,6 +498,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector4iMB()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiMBIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiMBIntersectors<4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiMBIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiMBIntersectors<4>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <BezierCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<BezierCurve3fa,4>();
@@ -393,6 +519,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8i()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiIntersectors<BezierCurve3fa,8>();
@@ -409,6 +538,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8v()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNvIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNvIntersectors<BezierCurve3fa,8>();
@@ -425,6 +557,9 @@ namespace embree
     VirtualCurveIntersector* VirtualCurveIntersector8iMB()
     {
       static VirtualCurveIntersector function_local_static_prim;
+      function_local_static_prim.vtbl[Geometry::GTY_SPHERE_POINT] = SphereNiMBIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_DISC_POINT] = DiscNiMBIntersectors<8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_DISC_POINT] = OrientedDiscNiMBIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_LINEAR_CURVE ] = LinearRibbonNiMBIntersectors<8>();
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_BEZIER_CURVE] = CurveNiMBIntersectors <BezierCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_BEZIER_CURVE ] = RibbonNiMBIntersectors<BezierCurve3fa,8>();

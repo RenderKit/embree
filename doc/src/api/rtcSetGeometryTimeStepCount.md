@@ -21,7 +21,8 @@ steps for multi-segment motion blur (`timeStepCount` parameter) of the
 specified geometry (`geometry` parameter).
 
 For triangle meshes (`RTC_GEOMETRY_TYPE_TRIANGLE`), quad meshes
-(`RTC_GEOMETRY_TYPE_QUAD`), curves (`RTC_GEOMETRY_TYPE_CURVE`), and
+(`RTC_GEOMETRY_TYPE_QUAD`), curves (`RTC_GEOMETRY_TYPE_CURVE`), points
+(`RTC_GEOMETRY_TYPE_POINT`), and
 subdivision geometries (`RTC_GEOMETRY_TYPE_SUBDIVISION`), the number
 of time steps directly corresponds to the number of vertex buffer
 slots available (`RTC_BUFFER_TYPE_VERTEX` buffer type). For these

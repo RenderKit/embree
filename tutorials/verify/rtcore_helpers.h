@@ -873,7 +873,13 @@ namespace embree
     CURVE_GEOMETRY,
     CURVE_GEOMETRY_MB,
     LINE_GEOMETRY,
-    LINE_GEOMETRY_MB
+    LINE_GEOMETRY_MB,
+    SPHERE_GEOMETRY,
+    SPHERE_GEOMETRY_MB,
+    DISC_GEOMETRY,
+    DISC_GEOMETRY_MB,
+    ORIENTED_DISC_GEOMETRY,
+    ORIENTED_DISC_GEOMETRY_MB
   };
 
   inline std::string to_string(GeometryType gtype)
@@ -891,8 +897,14 @@ namespace embree
     case HAIR_GEOMETRY_MB : return "hair_mb";
     case CURVE_GEOMETRY   : return "curves";
     case CURVE_GEOMETRY_MB: return "curves_mb";
-    case LINE_GEOMETRY   : return "lines";
-    case LINE_GEOMETRY_MB: return "lines_mb";
+    case LINE_GEOMETRY    : return "lines";
+    case LINE_GEOMETRY_MB : return "lines_mb";
+    case SPHERE_GEOMETRY          : return "spheres";
+    case SPHERE_GEOMETRY_MB       : return "spheres_mb";
+    case DISC_GEOMETRY            : return "disc";
+    case DISC_GEOMETRY_MB         : return "disc_mb";
+    case ORIENTED_DISC_GEOMETRY   : return "oriented_disc";
+    case ORIENTED_DISC_GEOMETRY_MB: return "oriented_disc_mb";
     }
     return "";
   }

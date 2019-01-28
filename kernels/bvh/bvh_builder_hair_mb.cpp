@@ -17,17 +17,18 @@
 #include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
+#include "../geometry/pointi.h"
 #include "../geometry/linei.h"
 #include "../geometry/curveNi_mb.h"
 
-#if defined(EMBREE_GEOMETRY_CURVE)
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
 
 namespace embree
 {
   namespace isa
   {
     /* FIXME: add fast path for single-segment motion blur */
-    template<int N, typename CurvePrimitive, typename LinePrimitive>
+    template<int N, typename CurvePrimitive, typename LinePrimitive, typename PointPrimitive>
     struct BVHNHairMBlurBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -77,7 +78,9 @@ namespace embree
             return NodeRecordMB4D(BVH::emptyNode,empty,empty);
           
           const unsigned int geomID0 = (*prims.prims)[prims.begin()].geomID();
-          if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
+          if (scene->get(geomID0)->getTypeMask() & Geometry::MTY_POINTS)
+            return PointPrimitive::createLeafMB(bvh,prims,alloc);
+          else if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
             return LinePrimitive::createLeafMB(bvh,prims,alloc);
           else
             return CurvePrimitive::createLeafMB(bvh,prims,alloc);
@@ -111,11 +114,11 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4OBBCurve4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve4iMB,Line4i>((BVH4*)bvh,scene); }
+    Builder* BVH4OBBCurve4iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve4iMB,Line4i,Point4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB,Line8i>((BVH4*)bvh,scene); }
-    Builder* BVH8OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Curve8iMB,Line8i>((BVH8*)bvh,scene); }
+    Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB,Line8i,Point8i>((BVH4*)bvh,scene); }
+    Builder* BVH8OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Curve8iMB,Line8i,Point8i>((BVH8*)bvh,scene); }
 #endif
 
   }

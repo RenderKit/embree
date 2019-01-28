@@ -555,6 +555,30 @@ namespace embree
         scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial));
       }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
 
+    registerOption("point-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const float pointR = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial));
+      }, "--point-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of spheres.");
+
+    registerOption("disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const float pointR = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::DISC, new OBJMaterial));
+      }, "--disc-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of discs.");
+
+    registerOption("oriented-disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const float pointR = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::ORIENTED_DISC, new OBJMaterial));
+      }, "--oriented-disc-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of oriented discs.");
+
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_scene_cameras = true;
       }, "--print-cameras: prints all camera names of the scene");

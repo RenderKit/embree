@@ -41,6 +41,11 @@ namespace embree
     "quads",
     "grid",
     "subdivs",
+    "",
+    "sphere",
+    "disc",
+    "oriented_disc",
+    "",
     "usergeom",
     "instance",
   };

@@ -77,6 +77,7 @@ ADD_SUBDIRECTORY(motion_blur_geometry)
 ADD_SUBDIRECTORY(interpolation)
 ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(curve_geometry)
+ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 
 IF (EMBREE_RAY_PACKETS)

@@ -109,6 +109,18 @@ namespace embree
     }
   }
 
+  void SceneGraph::PointSetNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) {
+      stat.numCurveSets++;
+      stat.numCurves += numPrimitives();
+      stat.numCurveBytes += numBytes();
+      material->calculateStatistics(stat);
+    }
+  }
+
+
   void SceneGraph::GridMeshNode::calculateStatistics(Statistics& stat)
   {
     indegree++;
@@ -166,6 +178,8 @@ namespace embree
     std::cout << "    # curves        : " << numCurves << std::endl;
     std::cout << "  # grid meshes     : " << numGridMeshNodes << " ( " << 1E-6*numGridBytes << " MB )" << std::endl;
     std::cout << "    # grids         : " << numGrids << std::endl;
+    std::cout << "  # point sets      : " << numPointSets << " ( " << 1E-6*numPointBytes << " MB )" << std::endl;
+    std::cout << "    # points        : " << numPoints << std::endl;
     std::cout << "  # lights          : " << numLights << std::endl;
     std::cout << "  # cameras         : " << numCameras << std::endl;
     std::cout << "  # materials       : " << numMaterials << std::endl;
@@ -200,6 +214,13 @@ namespace embree
   {
     indegree++;
     if (indegree == 1) 
+      material->calculateInDegree();
+  }
+
+  void SceneGraph::PointSetNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1)
       material->calculateInDegree();
   }
 
@@ -314,6 +335,15 @@ namespace embree
       material->resetInDegree();
     indegree--;
   }
+
+  void SceneGraph::PointSetNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1)
+      material->resetInDegree();
+    indegree--;
+  }
+
 
   void SceneGraph::GridMeshNode::resetInDegree()
   {
@@ -492,6 +522,30 @@ namespace embree
     
     if (flags.size() != 0 && flags.size() != hairs.size())
       THROW_RUNTIME_ERROR("size of flags array does not match size of curve array");
+  }
+
+  void SceneGraph::PointSetNode::verify() const
+  {
+    const size_t N = numVertices();
+
+    for (const auto& p : positions)
+      if (p.size() != N)
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+
+    if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT)
+    {
+      if (!normals.size())
+        THROW_RUNTIME_ERROR("normal array required for oriented disc");
+
+      for (const auto& n : normals)
+        if (n.size() != N)
+          THROW_RUNTIME_ERROR("incompatible normal array size");
+    }
+    else
+    {
+      if (normals.size())
+        THROW_RUNTIME_ERROR("normal array not supported for this geometry type");
+    }
   }
 
   avector<Vec3fa> bspline_to_bezier_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
@@ -731,9 +785,21 @@ namespace embree
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh0 = node0.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    else if (Ref<SceneGraph::PointSetNode> mesh0 = node0.dynamicCast<SceneGraph::PointSetNode>())
     {
-      if (Ref<SceneGraph::SubdivMeshNode> mesh1 = node1.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+      if (Ref<SceneGraph::PointSetNode> mesh1 = node1.dynamicCast<SceneGraph::PointSetNode>())
+      {
+        if (mesh0->numVertices() != mesh1->numVertices())
+          THROW_RUNTIME_ERROR("incompatible scene graph");
+
+        for (auto& p : mesh1->positions)
+          mesh0->positions.push_back(std::move(p));
+      }
+      else THROW_RUNTIME_ERROR("incompatible scene graph");
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh0 = node0.dynamicCast<SceneGraph::SubdivMeshNode>())
+    {
+      if (Ref<SceneGraph::SubdivMeshNode> mesh1 = node1.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
         if (mesh0->numPositions() != mesh1->numPositions())
           THROW_RUNTIME_ERROR("incompatible scene graph");
@@ -784,7 +850,16 @@ namespace embree
       if (equal)
         mesh->positions.resize(1);
     }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
+    {
+      bool equal = true;
+      for (size_t i=1; i<mesh->numTimeSteps(); i++)
+        equal &= mesh->positions[0] == mesh->positions[i];
+
+      if (equal)
+        mesh->positions.resize(1);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
       bool equal = true;
       for (size_t i=1; i<mesh->numTimeSteps(); i++)
@@ -833,10 +908,17 @@ namespace embree
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
     {
       avector<Vec3fa> positions1;
-      for (auto P : mesh->positions.back()) 
+      for (auto P : mesh->positions.back())
+        positions1.push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
+    {
+      avector<Vec3fa> positions1;
+      for (auto P : mesh->positions.back())
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
@@ -892,7 +974,17 @@ namespace embree
         mesh->positions.push_back(std::move(tpositions));
       }
     }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
       avector<Vec3fa> positions = std::move(mesh->positions[0]);
       mesh->positions.clear();
@@ -941,7 +1033,12 @@ namespace embree
         else                        mesh->hairs.push_back(mesh->hairs[j]);
       }
     }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
+    {
+      if (mesh->positions.size() <= N) return;
+      mesh->positions.resize(N);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
       if (mesh->verticesPerFace.size() <= N) return;
       mesh->verticesPerFace.resize(N);
@@ -1542,6 +1639,11 @@ namespace embree
       if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
+    {
+      if ((mesh->numTimeSteps() > 1) == mblur)
+        return nullptr;
+    }
     return node;
   }
 
@@ -1569,6 +1671,10 @@ namespace embree
       if (mesh->normals.size())   mesh->normals.resize(1);
       if (mesh->tangents.size())  mesh->tangents.resize(1);
       if (mesh->dnormals.size())  mesh->dnormals.resize(1);
+    }
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>()) {
+      if (mesh->positions.size()) mesh->positions.resize(1);
+      if (mesh->normals.size())   mesh->normals.resize(1);
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
       if (mesh->positions.size()) mesh->positions.resize(1);
@@ -1661,6 +1767,9 @@ namespace embree
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
         group.push_back(new SceneGraph::HairSetNode(mesh,spaces));
+      }
+      else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>()) {
+        group.push_back(new SceneGraph::PointSetNode(mesh,spaces));
       }
     }
 

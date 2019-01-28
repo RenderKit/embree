@@ -35,6 +35,7 @@ namespace embree
     case QUAD_MESH: delete (ISPCQuadMesh*) geom; break;
     case CURVES: delete (ISPCHairSet*) geom; break;
     case GRID_MESH: delete (ISPCGridMesh*) geom; break;
+    case POINTS: delete (ISPCPointSet*) geom; break;
     default: assert(false); break;
     }
   }
@@ -305,6 +306,30 @@ namespace embree
     delete[] dnormals;
   }
 
+  ISPCPointSet::ISPCPointSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in)
+    : geom(POINTS), positions(nullptr), normals(nullptr), type(type)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+
+    if (in->normals.size()) {
+      normals = new Vec3fa*[in->numTimeSteps()];
+      for (size_t i=0; i<in->numTimeSteps(); i++)
+        normals[i] = in->normals[i].data();
+    }
+
+    numTimeSteps = (unsigned) in->numTimeSteps();
+    numVertices = (unsigned) in->numVertices();
+    geom.materialID = scene_in->materialID(in->material);
+  }
+
+  ISPCPointSet::~ISPCPointSet () {
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;
+  }
+
+
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
     : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size())) 
   {
@@ -329,7 +354,7 @@ namespace embree
     for (size_t i=0; i<numGeometries; i++)
       geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
   }
-  
+
   ISPCGroup::~ISPCGroup()
   {
     for (size_t i=0; i<numGeometries; i++)
@@ -358,6 +383,8 @@ namespace embree
       geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
       geom = (ISPCGeometry*) new ISPCGroup(scene,mesh);
+    else if (Ref<SceneGraph::PointSetNode> mesh = in.dynamicCast<SceneGraph::PointSetNode>())
+      geom = (ISPCGeometry*) new ISPCPointSet(scene, mesh->type, mesh);
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
 
@@ -516,7 +543,30 @@ namespace embree
     mesh->geom.geomID = geomID;
     return geomID;
   }
-  
+
+  unsigned int ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  {
+    RTCGeometry geom = rtcNewGeometry(device, mesh->type);
+    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
+    rtcSetGeometryBuildQuality(geom, quality);
+
+    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+    }
+    if (mesh->normals) {
+      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      }
+    }
+    rtcCommitGeometry(geom);
+
+    rtcAttachGeometryByID(scene_out,geom,geomID);
+    mesh->geom.geometry = geom;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
+    return geomID;
+  }
+
   void ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
   {
     for (unsigned int i=0; i<group->numGeometries; i++)
@@ -532,6 +582,8 @@ namespace embree
         ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, scene_out, i);
       else if (geometry->type == GRID_MESH)
         ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, scene_out, i);
+      else if (geometry->type == POINTS)
+        ConvertPoints(device,(ISPCPointSet*) geometry, quality, scene_out, i);
       else
         assert(false);
     }
@@ -614,6 +666,8 @@ namespace embree
           ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, scene_out, i);
          else if (geometry->type == GRID_MESH)
           ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, scene_out, i);
+         else if (geometry->type == POINTS)
+          ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, scene_out, i);
         else
           assert(false);
       }

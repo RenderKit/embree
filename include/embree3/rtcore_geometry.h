@@ -51,6 +51,10 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE  = 41, // flat (ribbon-like) Hermite curves
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE  = 42, // flat normal-oriented Hermite curves
 
+  RTC_GEOMETRY_TYPE_SPHERE_POINT = 50,
+  RTC_GEOMETRY_TYPE_DISC_POINT = 51,
+  RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT = 52,
+
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };

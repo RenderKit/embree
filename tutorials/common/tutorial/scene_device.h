@@ -74,8 +74,8 @@ namespace embree
 #endif
   };
 
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH, GRID_MESH };
-  
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH, GRID_MESH, POINTS };
+
   struct ISPCGeometry
   {
 #if !defined(ISPC)
@@ -226,6 +226,28 @@ namespace embree
     unsigned int numHairs;
     unsigned int numHairCurves;
     unsigned int tessellation_rate;
+  };
+
+  struct ISPCPointSet
+  {
+#if !defined(ISPC)
+    ISPCPointSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in);
+    ~ISPCPointSet();
+
+  private:
+    ISPCPointSet (const ISPCPointSet& other) DELETED; // do not implement
+    ISPCPointSet& operator= (const ISPCPointSet& other) DELETED; // do not implement
+
+  public:
+#endif
+
+    ISPCGeometry geom;
+    Vec3fa** positions;       //!< hair control points (x,y,z,r)
+    Vec3fa** normals;         //!< normal control points (x,y,z,r)
+
+    RTCGeometryType type;
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
   };
 
   struct ISPCGridMesh
