@@ -203,10 +203,10 @@ namespace embree
       registerOption("i", [] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
           Ref<SceneGraph::Node> scene = SceneGraph::load(filename);
-          Ref<SceneGraph::GroupNode> group;
+          Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
           group->add(scene);
           std::shared_ptr<TutorialScene> tscene(new TutorialScene);
-          tscene->add(group); 
+          tscene->add(group);
           g_animation.push_back(tscene);
         }, "-i <filename>: parses scene from <filename>");
 
