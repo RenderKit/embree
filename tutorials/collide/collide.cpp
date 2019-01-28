@@ -45,8 +45,8 @@ namespace embree
   bool intersect_triangle_triangle (TutorialScene* scene0, unsigned geomID0, unsigned primID0, TutorialScene* scene1, unsigned geomID1, unsigned primID1)
   {
     //CSTAT(bvh_collide_prim_intersections1++);
-    Ref<SceneGraph::TriangleMeshNode> mesh0 = scene0->geometries[geomID0].dynamicCast<SceneGraph::TriangleMeshNode>();
-    Ref<SceneGraph::TriangleMeshNode> mesh1 = scene1->geometries[geomID1].dynamicCast<SceneGraph::TriangleMeshNode>();
+    const SceneGraph::TriangleMeshNode* mesh0 = (SceneGraph::TriangleMeshNode*) scene0->geometries[geomID0].ptr;
+    const SceneGraph::TriangleMeshNode* mesh1 = (SceneGraph::TriangleMeshNode*) scene1->geometries[geomID1].ptr;
     const SceneGraph::TriangleMeshNode::Triangle& tri0 = mesh0->triangles[primID0];
     const SceneGraph::TriangleMeshNode::Triangle& tri1 = mesh1->triangles[primID1];
     
