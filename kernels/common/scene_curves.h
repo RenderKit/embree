@@ -215,6 +215,25 @@ namespace embree
       n3 = madd(Vec3fa(t0),an3,t1*bn3);
     }
 
+    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(const unsigned int primID, const size_t itime) const
+    {
+      Vec3fa v0,v1,v2,v3,n0,n1,n2,n3;
+      unsigned int vertexID = curve(primID);
+      gather(v0,v1,v2,v3,n0,n1,n2,n3,vertexID,itime);
+      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0,v1,v2,v3),SourceCurve3fa(n0,n1,n2,n3));
+    }
+
+    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(const unsigned int primID, const float time) const
+    {
+      float ftime;
+      const size_t itime = timeSegment(time, ftime);
+      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
+      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
+      return lerp(curve0,curve1,ftime);
+    }
+
     /*! gathers the hermite curve starting with i'th vertex */
     __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i) const
     {
@@ -293,6 +312,25 @@ namespace embree
       t1 = madd(Vec3fa(f0),at1,f1*bt1);
       n1 = madd(Vec3fa(f0),an1,f1*bn1);
       dn1= madd(Vec3fa(f0),adn1,f1*bdn1);
+    }
+
+    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(const unsigned int primID, const size_t itime) const
+    {
+      Vec3fa v0,t0,n0,dn0,v1,t1,n1,dn1;
+      unsigned int vertexID = curve(primID);
+      gather_hermite(v0,t0,n0,dn0,v1,t1,n1,dn1,vertexID,itime);
+      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0,t0,v1,t1),SourceCurve3fa(n0,dn0,n1,dn1));
+    }
+
+    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(const unsigned int primID, const float time) const
+    {
+      float ftime;
+      const size_t itime = timeSegment(time, ftime);
+      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedHermiteCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
+      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedHermiteCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
+      return lerp(curve0,curve1,ftime);
     }
 
   public:
