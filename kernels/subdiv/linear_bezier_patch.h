@@ -92,8 +92,8 @@ namespace embree
         template<typename SourceCurve3fa>
         __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve3fa& center, const SourceCurve3fa& normal)
         {
-          CubicBezierCurve3fa vcurve; convert(center,vcurve);
-          CubicBezierCurve3fa ncurve; convert(normal,ncurve);
+          SourceCurve3fa vcurve = center;
+          SourceCurve3fa ncurve = normal;
           
           /* here we construct a patch which follows the curve l(t) =
            * p(t) +/- r(t)*normalize(cross(n(t),dp(t))) */
@@ -142,25 +142,6 @@ namespace embree
           return TensorLinearCubicBezierSurface(L,R);
         }
 
-#if 0
-        template<typename SourceCurve3fa>
-        __forceinline static TensorLinearCubicBezierSurface fromCenterCurveAndNormals(const SourceCurve3fa& center, const Vec3fa& n0, const Vec3fa& n1)
-        {
-          CubicBezierCurve3fa vcurve; convert(center,vcurve);
-          
-          const Vec3fa k0 = normalize(cross(n0,vcurve.begin_direction()));
-          const Vec3fa k3 = normalize(cross(n1,vcurve.end_direction()));
-          const Vec3fa d0 = vcurve.v0.w*k0;
-          const Vec3fa d1 = vcurve.v1.w*k0;
-          const Vec3fa d2 = vcurve.v2.w*k3;
-          const Vec3fa d3 = vcurve.v3.w*k3;
-          
-          CubicBezierCurve<V> L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
-          CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
-          return TensorLinearCubicBezierSurface(L,R);
-        }
-#endif
-        
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
         }
