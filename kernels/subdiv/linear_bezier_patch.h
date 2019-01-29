@@ -253,7 +253,7 @@ namespace embree
                       << "}";
         }
 
-        friend __forceinline TensorLinearCubicBezierSurface lerp(const TensorLinearCubicBezierSurface& a, const TensorLinearCubicBezierSurface& b, const float t) {
+        friend __forceinline TensorLinearCubicBezierSurface clerp(const TensorLinearCubicBezierSurface& a, const TensorLinearCubicBezierSurface& b, const float t) {
           return TensorLinearCubicBezierSurface(clerp(a.L,b.L,V(t)), clerp(a.R,b.R,V(t)));
         }
       };

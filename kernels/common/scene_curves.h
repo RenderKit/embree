@@ -231,7 +231,7 @@ namespace embree
       const size_t itime = timeSegment(time, ftime);
       const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
       const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
-      return lerp(curve0,curve1,ftime);
+      return clerp(curve0,curve1,ftime);
     }
 
     /*! gathers the hermite curve starting with i'th vertex */
@@ -330,7 +330,7 @@ namespace embree
       const size_t itime = timeSegment(time, ftime);
       const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedHermiteCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
       const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedHermiteCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
-      return lerp(curve0,curve1,ftime);
+      return clerp(curve0,curve1,ftime);
     }
 
   public:
