@@ -91,7 +91,7 @@ continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
 ####################################################################
 
 nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
   tags:   [win7, v120]
   only:   [schedules]
 
@@ -106,12 +106,12 @@ nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-AVX2-TBB2019.2:
   only:   [schedules]
   
 nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX2-PPL:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:PPL intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:PPL intensity:2"
   tags:   [win7, v140] # avx2
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 STATIC_LIB:ON"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2 STATIC_LIB:ON"
   tags:   [win7, v141]
   only:   [schedules]
 
@@ -121,7 +121,7 @@ nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2"
   tags:   [win7, icc16]
   only:   [schedules]
 
@@ -135,10 +135,10 @@ nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX2-TBB2019.2:
   tags:   [win7, icc18]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX512SKX-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:1 sde:skx"
-  tags:   [win7, icc18]
-  only:   [schedules]
+#nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX512SKX-TBB2019.2:
+#  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:1 sde:skx"
+#  tags:   [win7, icc18]
+#  only:   [schedules]
 
 
 # CLANG compilation and testing of different ISAs
