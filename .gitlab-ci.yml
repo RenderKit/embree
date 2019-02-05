@@ -19,40 +19,40 @@
 ####################################################################
 
 continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:3"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [win7, v120]
   only:   [pushes]
 
 #continuous-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-AVX2-TBB2019.2:
-#  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2"
+#  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
 #  tags:   [win7, v140]
 #  only:   [pushes]
 
 continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:3"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [win7, v141]
   only:   [pushes]
  
 continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [mac, clang]
   only:   [pushes]
 
 continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX512SKX-TBB2019.2:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:2"
   tags:   [docker, skx]
   only:   [pushes]
 
 continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX512SKX-TBB2019.2:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:2"
   tags:   [docker, skx]
   only:   [pushes]
 
 #continuous-linux-knl-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX512KNL-TBB2019.2:
 #  image: embreedocker/fedora:26
-#  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX512KNL tasking:TBB2019.2 intensity:3"
+#  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX512KNL tasking:TBB2019.2 intensity:2"
 #  tags:   [docker-knl]
 #  only:   [pushes]
   
@@ -64,19 +64,19 @@ continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
 
 continuous-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
   image: embreedocker/ubuntu:17.10
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:1"
   tags:   [docker]
   only:   [pushes]
 
 continuous-centos7.4-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
   image: embreedocker/centos:7.4
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:1"
   tags:   [docker]
   only:   [pushes]
 
 continuous-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
   image: embreedocker/fedora:27
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [docker, skx]
   only:   [pushes]
 
