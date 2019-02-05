@@ -55,7 +55,7 @@ MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
                      --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
   ENDIF()
   
-  IF (EMBREE_ISPC_SUPPORT AND NOT DISABLE_ISPC_TEST)
+  IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
@@ -91,7 +91,7 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
                      --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
   ENDIF()
   
-  IF (EMBREE_ISPC_SUPPORT AND NOT DISABLE_ISPC_TEST)
+  IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
@@ -106,68 +106,23 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   ENDIF()
 ENDMACRO()
   
-IF (EMBREE_TESTING_MODEL_DIR AND EMBREE_TESTING_INTENSITY GREATER 0)
-  
-  IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-subdiv.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity2.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity3.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity4.txt")
-    MESSAGE(FATAL_ERROR "Invalid Embree testing model repository.")
-  ENDIF()
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-subdiv.txt" models_subdiv)
-  STRING(REGEX REPLACE "\n" ";" models_subdiv "${models_subdiv}")
+MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
 
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity2.txt" models_intensity2)
-  STRING(REGEX REPLACE "\n" ";" models_intensity2 "${models_intensity2}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity3.txt" models_intensity3)
-  STRING(REGEX REPLACE "\n" ";" models_intensity3 "${models_intensity3}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity4.txt" models_intensity4)
-  STRING(REGEX REPLACE "\n" ";" models_intensity4 "${models_intensity4}")
-
-  IF (EMBREE_TESTING_INTENSITY GREATER 1)
-    LIST(APPEND models ${models_intensity2})
+  SET(full_model_list_file ${EMBREE_TESTING_MODEL_DIR}/${model_list_file})
+    
+  IF(NOT EXISTS "${full_model_list_file}")
+    MESSAGE(FATAL_ERROR "File ${EMBREE_TESTING_MODEL_DIR}/${model_list_file} does not exist!")
   ENDIF()
 
-  IF (EMBREE_TESTING_INTENSITY GREATER 2)
-    LIST(APPEND models ${models_intensity3})
-  ENDIF()
-
-  CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
-  IF (EMBREE_TESTING_INTENSITY GREATER 3 AND ${memory} GREATER 10000)
-    LIST(APPEND models ${models_intensity4})
-  ENDIF()
-
-  MACRO (ADD_EMBREE_MODELS_TEST name reference executable)
-    FOREACH (model ${models})
-      STRING(REGEX REPLACE "/" "_" modelname "${model}")
-      STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
-    ENDFOREACH()
-  ENDMACRO()
-
-  MACRO (ADD_EMBREE_SUBDIV_MODELS_TEST name reference executable)
-    FOREACH (model ${models_subdiv})
-      STRING(REGEX REPLACE "/" "_" modelname "${model}")
-      STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
-    ENDFOREACH()
-  ENDMACRO()
-
-ELSE()
-
-  MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
-  ENDMACRO()
-
-  MACRO (ADD_EMBREE_SUBDIV_MODELS_TEST name reference executable)
-  ENDMACRO()
-
-  MACRO (ADD_EMBREE_MODELS_TEST name)
-  ENDMACRO()
-
-ENDIF()
+  FILE(READ "${full_model_list_file}" models)
+  STRING(REGEX REPLACE "\n" ";" models "${models}")
+    
+  FOREACH (model ${models})
+    STRING(REGEX REPLACE "/" "_" modelname "${model}")
+    STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
+    ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
+  ENDFOREACH()
+ENDMACRO()
 
 # add klocwork test
 IF (EMBREE_TESTING_KLOCWORK)
