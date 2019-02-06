@@ -92,38 +92,56 @@ namespace embree
         template<typename SourceCurve3fa>
         __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve3fa& center, const SourceCurve3fa& normal)
         {
-          CubicBezierCurve3fa vcurve; convert(center,vcurve);
-          CubicBezierCurve3fa ncurve; convert(normal,ncurve);
+          SourceCurve3fa vcurve = center;
+          SourceCurve3fa ncurve = normal;
           
-          const Vec3fa k0 = normalize(cross(ncurve.begin(),vcurve.begin_direction()));
-          const Vec3fa k3 = normalize(cross(ncurve.end()  ,vcurve.end_direction()));
-          const Vec3fa d0 = vcurve.v0.w*k0;
-          const Vec3fa d1 = vcurve.v1.w*k0;
-          const Vec3fa d2 = vcurve.v2.w*k3;
-          const Vec3fa d3 = vcurve.v3.w*k3;
+          /* here we construct a patch which follows the curve l(t) =
+           * p(t) +/- r(t)*normalize(cross(n(t),dp(t))) */
           
-          CubicBezierCurve<V> L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
-          CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
+          const Vec3fa p0   = vcurve.eval(0.0f);
+          const Vec3fa dp0  = vcurve.eval_du(0.0f);
+          const Vec3fa ddp0 = vcurve.eval_dudu(0.0f);
+
+          const Vec3fa n0   = ncurve.eval(0.0f);
+          const Vec3fa dn0  = ncurve.eval_du(0.0f);
+
+          const Vec3fa p1   = vcurve.eval(1.0f);
+          const Vec3fa dp1  = vcurve.eval_du(1.0f);
+          const Vec3fa ddp1 = vcurve.eval_dudu(1.0f);
+
+          const Vec3fa n1   = ncurve.eval(1.0f);
+          const Vec3fa dn1  = ncurve.eval_du(1.0f);
+
+          const Vec3fa bt0  = cross(n0,dp0);
+          const Vec3fa dbt0 = cross(dn0,dp0) + cross(n0,ddp0);
+
+          const Vec3fa bt1  = cross(n1,dp1);
+          const Vec3fa dbt1 = cross(dn1,dp1) + cross(n1,ddp1);
+            
+          const Vec3fa k0  = normalize(bt0);
+          const Vec3fa dk0 = dnormalize(bt0,dbt0);
+          
+          const Vec3fa k1 = normalize(bt1);
+          const Vec3fa dk1 = dnormalize(bt1,dbt1);
+                    
+          const Vec3fa l0 = p0 - p0.w*k0;
+          const Vec3fa dl0 = dp0 - (dp0.w*k0 + p0.w*dk0);
+
+          const Vec3fa r0 = p0 + p0.w*k0;
+          const Vec3fa dr0 = dp0 + (dp0.w*k0 + p0.w*dk0);
+
+          const Vec3fa l1 = p1 - p1.w*k1;
+          const Vec3fa dl1 = dp1 - (dp1.w*k1 + p1.w*dk1);
+
+          const Vec3fa r1 = p1 + p1.w*k1;
+          const Vec3fa dr1 = dp1 + (dp1.w*k1 + p1.w*dk1);
+
+          const float scale = 1.0f/3.0f;
+          CubicBezierCurve<V> L(l0,l0+scale*dl0,l1-scale*dl1,l1);
+          CubicBezierCurve<V> R(r0,r0+scale*dr0,r1-scale*dr1,r1);
           return TensorLinearCubicBezierSurface(L,R);
         }
 
-        template<typename SourceCurve3fa>
-        __forceinline static TensorLinearCubicBezierSurface fromCenterCurveAndNormals(const SourceCurve3fa& center, const Vec3fa& n0, const Vec3fa& n1)
-        {
-          CubicBezierCurve3fa vcurve; convert(center,vcurve);
-          
-          const Vec3fa k0 = normalize(cross(n0,vcurve.begin_direction()));
-          const Vec3fa k3 = normalize(cross(n1,vcurve.end_direction()));
-          const Vec3fa d0 = vcurve.v0.w*k0;
-          const Vec3fa d1 = vcurve.v1.w*k0;
-          const Vec3fa d2 = vcurve.v2.w*k3;
-          const Vec3fa d3 = vcurve.v3.w*k3;
-          
-          CubicBezierCurve<V> L(vcurve.v0-d0,vcurve.v1-d1,vcurve.v2-d2,vcurve.v3-d3);
-          CubicBezierCurve<V> R(vcurve.v0+d0,vcurve.v1+d1,vcurve.v2+d2,vcurve.v3+d3);
-          return TensorLinearCubicBezierSurface(L,R);
-        }
-        
         __forceinline BBox<V> bounds() const {
           return merge(L.bounds(),R.bounds());
         }
@@ -233,6 +251,10 @@ namespace embree
                       << "  L = " << a.L << ", " << std::endl
                       << "  R = " << a.R << std::endl
                       << "}";
+        }
+
+        friend __forceinline TensorLinearCubicBezierSurface clerp(const TensorLinearCubicBezierSurface& a, const TensorLinearCubicBezierSurface& b, const float t) {
+          return TensorLinearCubicBezierSurface(clerp(a.L,b.L,V(t)), clerp(a.R,b.R,V(t)));
         }
       };
     

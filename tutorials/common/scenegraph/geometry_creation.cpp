@@ -379,7 +379,7 @@ namespace embree
         break;
     }
 
-    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type, material, 1);
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type, material, BBox1f(0,1), 1);
     mesh->positions[0].resize(numVertices);
     if (subtype == ORIENTED_DISC) {
       mesh->normals.push_back(avector<PointSetNode::Vertex>());

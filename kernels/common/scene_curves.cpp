@@ -53,10 +53,17 @@ namespace embree
   void CurveGeometry::setNumTimeSteps (unsigned int numTimeSteps)
   {
     vertices.resize(numTimeSteps);
+    
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
       normals.resize(numTimeSteps);
+      
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        dnormals.resize(numTimeSteps);
+    }
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents.resize(numTimeSteps);
+    
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   
@@ -110,6 +117,20 @@ namespace embree
       
       tangents[slot].set(buffer, offset, stride, num, format);
       tangents[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
+    {
+      if (getCurveType() != GTY_SUBTYPE_ORIENTED_CURVE)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+        
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal derivative buffer format");
+
+      if (slot >= dnormals.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal derivative buffer slot");
+      
+      dnormals[slot].set(buffer, offset, stride, num, format);
+      dnormals[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -171,6 +192,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return tangents[slot].getPtr();
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
+    {
+      if (slot >= dnormals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return dnormals[slot].getPtr();
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -216,7 +243,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       tangents[slot].setModified(true);
     }
-    
+    else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
+    {
+      if (slot >= dnormals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      dnormals[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -254,12 +286,27 @@ namespace embree
 
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
     {
-      if (normals.size() == 0)
+      if (!normals.size())
         return false;
         
       for (const auto& buffer : normals)
         if (vertices[0].size() != buffer.size())
           return false;
+
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+      {
+        if (!dnormals.size())
+          return false;
+        
+        for (const auto& buffer : dnormals)
+          if (vertices[0].size() != buffer.size())
+            return false;
+      }
+      else
+      {
+        if (dnormals.size())
+          return false;
+      }
     }
     else
     {
@@ -323,9 +370,17 @@ namespace embree
       if (buffer.getStride() != tangents[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
 
+    for (const auto& buffer : dnormals)
+      if (buffer.getStride() != dnormals[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal derivative buffers have to be identical for each time step");
+    
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
       normals0 = normals[0];
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        dnormals0 = dnormals[0];
+    }
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents0 = tangents[0];
 
@@ -338,6 +393,7 @@ namespace embree
     for (auto& buf : vertices) buf.setModified(false);
     for (auto& buf : normals)  buf.setModified(false);
     for (auto& buf : tangents) buf.setModified(false);
+    for (auto& buf : dnormals)  buf.setModified(false);
     for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
@@ -378,7 +434,7 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-      __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+       __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
@@ -393,13 +449,21 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const Curve3fa getNormalCurve(size_t i, size_t itime = 0) const 
       {
-        const Curve3fa center = getCurve(i,itime);
         const unsigned int index = curve(i);
         const Vec3fa n0 = normal(index+0,itime);
         const Vec3fa n1 = normal(index+1,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
+        const Vec3fa n2 = normal(index+2,itime);
+        const Vec3fa n3 = normal(index+3,itime);
+        return Curve3fa (n0,n1,n2,n3);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      {
+        const Curve3fa center = getCurve(i,itime);
+        const Curve3fa normal = getNormalCurve(i,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
@@ -531,13 +595,21 @@ namespace embree
         return HermiteCurve3fa(V0,T0,V1,T1);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3fa getNormalCurve(size_t i, size_t itime = 0) const 
       {
-        const HermiteCurve3fa center = getCurve(i,itime);
         const unsigned int index = curve(i);
         const Vec3fa n0 = normal(index+0,itime);
         const Vec3fa n1 = normal(index+1,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
+        const Vec3fa dn0 = dnormal(index+0,itime);
+        const Vec3fa dn1 = dnormal(index+1,itime);
+        return HermiteCurve3fa (n0,dn0,n1,dn1);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      {
+        const HermiteCurve3fa center = getCurve(i,itime);
+        const HermiteCurve3fa normal = getNormalCurve(i,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
@@ -572,6 +644,11 @@ namespace embree
             const Vec3fa n0 = normal(index+0,itime);
             const Vec3fa n1 = normal(index+1,itime);
             if (!isvalid(n0) || !isvalid(n1))
+              return false;
+
+            const Vec3fa dn0 = dnormal(index+0,itime);
+            const Vec3fa dn1 = dnormal(index+1,itime);
+            if (!isvalid(dn0) || !isvalid(dn1))
               return false;
           }
         }

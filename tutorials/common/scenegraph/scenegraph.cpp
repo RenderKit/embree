@@ -487,6 +487,21 @@ namespace embree
         THROW_RUNTIME_ERROR("tangent array not supported for this geometry type");
     }
 
+    if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
+    {
+      if (!dnormals.size())
+        THROW_RUNTIME_ERROR("normal derivative array required for oriented hermite curve");
+
+      for (const auto& n : dnormals) 
+        if (n.size() != N) 
+          THROW_RUNTIME_ERROR("incompatible normal derivative array size");
+    }
+    else
+    {
+      if (dnormals.size())
+        THROW_RUNTIME_ERROR("normal derivative array not supported for this geometry type");
+    }
+
     if (type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE ||
         //type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE ||
         //type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE ||
@@ -1655,6 +1670,7 @@ namespace embree
       if (mesh->positions.size()) mesh->positions.resize(1);
       if (mesh->normals.size())   mesh->normals.resize(1);
       if (mesh->tangents.size())  mesh->tangents.resize(1);
+      if (mesh->dnormals.size())  mesh->dnormals.resize(1);
     }
     else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>()) {
       if (mesh->positions.size()) mesh->positions.resize(1);

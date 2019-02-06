@@ -17,6 +17,7 @@
 #pragma once
 
 #include "curveNi_mb.h"
+#include "../subdiv/linear_bezier_patch.h"
 
 namespace embree
 {
@@ -144,11 +145,8 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-
-          unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time());
-
-          Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,context,geomID,primID));
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time());
+          Intersector().intersect(pre,ray,geom,primID,curve,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
@@ -168,11 +166,9 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time());
 
-          unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time());
-
-          if (Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,geom,primID,curve,Epilog(ray,context,geomID,primID)))
               return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
@@ -240,8 +236,8 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time());
-          Intersector().intersect(pre,ray,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,context,geomID,primID));
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedHermiteCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time());
+          Intersector().intersect(pre,ray,geom,primID,curve,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
@@ -261,8 +257,8 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time());
-          if (Intersector().intersect(pre,ray,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,context,geomID,primID)))
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedHermiteCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time());
+          if (Intersector().intersect(pre,ray,geom,primID,curve,Epilog(ray,context,geomID,primID)))
               return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
@@ -398,11 +394,8 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-
-          unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time()[k]);
-
-          Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,k,context,geomID,primID));
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time()[k]);
+          Intersector().intersect(pre,ray,k,geom,primID,curve,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
@@ -422,11 +415,9 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-
-          unsigned int vertexID = geom->curve(primID);
-          Vec3fa a0,a1,a2,a3,n0,n1; geom->gather(a0,a1,a2,a3,n0,n1,vertexID,ray.time()[k]);
-
-          if (Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,n0,n1,Epilog(ray,k,context,geomID,primID)))
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time()[k]);
+          
+          if (Intersector().intersect(pre,ray,k,geom,primID,curve,Epilog(ray,k,context,geomID,primID)))
             return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
@@ -496,8 +487,8 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time()[k]);
-          Intersector().intersect(pre,ray,k,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,k,context,geomID,primID));
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedHermiteCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time()[k]);
+          Intersector().intersect(pre,ray,k,geom,primID,curve,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
@@ -517,8 +508,8 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-          Vec3fa p0,t0,n0,p1,t1,n1; geom->gather_hermite(p0,t0,n0,p1,t1,n1,geom->curve(primID),ray.time()[k]);
-          if (Intersector().intersect(pre,ray,k,geom,primID,p0,t0,n0,p1,t1,n1,Epilog(ray,k,context,geomID,primID)))
+          const TensorLinearCubicBezierSurface3fa curve = geom->getNormalOrientedHermiteCurve<typename Intersector::Curve, TensorLinearCubicBezierSurface3fa>(primID,ray.time()[k]);
+          if (Intersector().intersect(pre,ray,k,geom,primID,curve,Epilog(ray,k,context,geomID,primID)))
             return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
