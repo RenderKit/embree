@@ -914,6 +914,9 @@ namespace embree
       for (auto P : mesh->positions.back())
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
+
+      if (mesh->normals.size())
+        mesh->normals.push_back(mesh->normals[0]);
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
@@ -982,6 +985,10 @@ namespace embree
         avector<Vec3fa> tpositions(positions.size());
         for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
         mesh->positions.push_back(std::move(tpositions));
+      }
+      if (mesh->normals.size()) {
+        for (size_t t=1; t<motion_vector.size(); t++)
+          mesh->normals.push_back(mesh->normals[0]);
       }
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
