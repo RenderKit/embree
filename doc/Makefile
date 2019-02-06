@@ -67,7 +67,7 @@ convertbsp = sed -e 's@\\\[@[@g' -e 's@\\\]@]@g' -e 's@\\_]@_@g'
 ### webpages
 ########################################################################
 
-markdown2web = $(PANDOC) --smart --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
+markdown2web = $(PANDOC) --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
 
 $(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
 
@@ -84,7 +84,7 @@ www/legal.html: tmp/legal.md
 
 www/api.html: tmp/api.md
 	$(PANDOC) $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | $(convertbsp) > tmp/api_webinc.md
-	$(PANDOC) --smart --email-obfuscation=none -f markdown --template tmp/webtemplate tmp/api_webinc.md  tmp/links_web.md tmp/images_local_png.md --indented-code-classes=cpp -V select_$(basename $(@F)) -o $@
+	$(PANDOC) --email-obfuscation=none -f markdown --template tmp/webtemplate tmp/api_webinc.md  tmp/links_web.md tmp/images_local_png.md --indented-code-classes=cpp -V select_$(basename $(@F)) -o $@
 
 www/images/%.jpg: images/%.jpg
 	cp $< $@ 
@@ -138,12 +138,12 @@ tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
 tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) --smart $+ -t latex --columns=72 --chapters -o $@
+	$(PANDOC) $+ -t latex --columns=72 --chapters -o $@
 
 tmp/api.tex: tmp/api.md tmp/links_local.md tmp/images_local_pdf.md
 	$(PANDOC) tmp/api.md --filter src/IncludeFilter.py -t markdown -o tmp/api_inc.md
 	cat tmp/api_inc.md | $(convertbsp) > tmp/api_inc1.md
-	$(PANDOC) tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp --smart -t latex --columns=72 --chapters -o $@
+	$(PANDOC) tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp -t latex --columns=72 --chapters -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
