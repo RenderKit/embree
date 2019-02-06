@@ -563,6 +563,15 @@ namespace embree
         scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial));
       }, "--point-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of spheres.");
 
+     registerOption("point-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const Vec3fa dp = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const float pointR = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)->set_motion_vector(dp));
+      }, "--point-sphere p.x p.y p.z d.x d.y d.z r pointR numPhi: adds a sphere at position p, motion vector d, with radius r and tesselation numPhi build of spheres.");
+
     registerOption("disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();
