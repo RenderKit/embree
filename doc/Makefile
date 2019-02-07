@@ -124,7 +124,10 @@ images/%.pdf: images/%.fig
 
 convertnbsppagebreak = sed -e 's@\\ @ @g' -e 's@\\pagebreak@@g'
 
-doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api_inc1.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
+tmp/api_inc.md: tmp/api.md
+	$(PANDOC) --columns=71 $+ --filter src/IncludeFilter.py -t markdown | $(convertbsp) > $@
+
+doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api_inc.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
 	cat $+ | $(convertnbsppagebreak) > $@
 
 doc/CHANGELOG.md: tmp/changelog.md
@@ -138,12 +141,10 @@ tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
 tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) $+ -t latex --columns=72 --chapters -o $@
+	$(PANDOC) $+ -t latex --columns=72 --top-level-division=chapter -o $@
 
-tmp/api.tex: tmp/api.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) tmp/api.md --filter src/IncludeFilter.py -t markdown -o tmp/api_inc.md
-	cat tmp/api_inc.md | $(convertbsp) > tmp/api_inc1.md
-	$(PANDOC) tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp -t latex --columns=72 --chapters -o $@
+tmp/api.tex: tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md
+	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 --top-level-division=chapter -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
