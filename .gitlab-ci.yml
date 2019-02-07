@@ -130,10 +130,10 @@ nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2019.2:
   tags:   [win7, icc17]
   only:   [schedules]
   
-nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:3"
-  tags:   [win7, icc18]
-  only:   [schedules]
+#nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX2-TBB2019.2:
+#  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:3"
+#  tags:   [win7, icc18]
+#  only:   [schedules]
 
 #nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX512SKX-TBB2019.2:
 #  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:1 sde:skx"
