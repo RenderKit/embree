@@ -11,7 +11,8 @@ def include(key, val):
             if kv[0] == 'include':
                 src0 = subprocess.check_output(['pandoc', '-s', kv[1], '-t', 'json'])
                 j = json.loads(src0)
-                return recurse(j['blocks'])
+                if type(j) is list: return recurse(j[1])
+                else              : return recurse(j['blocks'])
             elif kv[0] == 'image':
                 return {"t":"Para","c":[{"t":"Str","c":"![][" + kv[1] + "]"}]}
     return None
