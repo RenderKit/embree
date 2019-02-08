@@ -124,6 +124,13 @@ images/%.pdf: images/%.fig
 
 convertnbsppagebreak = sed -e 's@\\ @ @g' -e 's@\\pagebreak@@g'
 
+pandoc_version_major := $(shell $(PANDOC) --version | head -n 1 | sed -e 's/[^0-9]*\([0-9]*\).*/\1/')
+ifeq ($(pandoc_version_major),1)
+top_level_chapter = --chapters
+else
+top_level_chapter = --top-level-division=chapter
+endif
+
 tmp/api_inc.md: tmp/api.md
 	$(PANDOC) --columns=71 $+ --filter src/IncludeFilter.py -t markdown | $(convertbsp) > $@
 
@@ -141,10 +148,10 @@ tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
 tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) $+ -t latex --columns=72 --top-level-division=chapter -o $@
+	$(PANDOC) $+ -t latex --columns=72 $(top_level_chapter) -o $@
 
 tmp/api.tex: tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 --top-level-division=chapter -o $@
+	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 $(top_level_chapter) -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
