@@ -141,10 +141,10 @@ tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
 tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) $+ -t latex --columns=72 --top-level-division=chapter -o $@
+	$(PANDOC) $+ -t latex --columns=72 -o $@
 
 tmp/api.tex: tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 --top-level-division=chapter -o $@
+	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
