@@ -107,21 +107,23 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
 ENDMACRO()
   
 MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
+  IF (BUILD_TESTING)  
 
-  SET(full_model_list_file ${EMBREE_TESTING_MODEL_DIR}/${model_list_file})
+    SET(full_model_list_file ${EMBREE_TESTING_MODEL_DIR}/${model_list_file})
     
-  IF(NOT EXISTS "${full_model_list_file}")
-    MESSAGE(FATAL_ERROR "File ${EMBREE_TESTING_MODEL_DIR}/${model_list_file} does not exist!")
+    IF(NOT EXISTS "${full_model_list_file}")
+      MESSAGE(FATAL_ERROR "File ${EMBREE_TESTING_MODEL_DIR}/${model_list_file} does not exist!")
+    ENDIF()
+
+    FILE(READ "${full_model_list_file}" models)
+    STRING(REGEX REPLACE "\n" ";" models "${models}")
+    
+    FOREACH (model ${models})
+      STRING(REGEX REPLACE "/" "_" modelname "${model}")
+      STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
+      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
+    ENDFOREACH()
   ENDIF()
-
-  FILE(READ "${full_model_list_file}" models)
-  STRING(REGEX REPLACE "\n" ";" models "${models}")
-    
-  FOREACH (model ${models})
-    STRING(REGEX REPLACE "/" "_" modelname "${model}")
-    STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-    ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
-  ENDFOREACH()
 ENDMACRO()
 
 # add klocwork test
