@@ -27,7 +27,8 @@ parameter) of the specified geometry (\f[C]geometry\f[] parameter).
 .PP
 For triangle meshes (\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[]), quad meshes
 (\f[C]RTC_GEOMETRY_TYPE_QUAD\f[]), curves
-(\f[C]RTC_GEOMETRY_TYPE_CURVE\f[]), and subdivision geometries
+(\f[C]RTC_GEOMETRY_TYPE_CURVE\f[]), points
+(\f[C]RTC_GEOMETRY_TYPE_POINT\f[]), and subdivision geometries
 (\f[C]RTC_GEOMETRY_TYPE_SUBDIVISION\f[]), the number of time steps
 directly corresponds to the number of vertex buffer slots available
 (\f[C]RTC_BUFFER_TYPE_VERTEX\f[] buffer type).

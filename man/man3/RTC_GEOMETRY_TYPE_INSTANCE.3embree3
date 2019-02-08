@@ -18,7 +18,7 @@ RTCGeometry\ geometry\ =
 .fi
 .SS DESCRIPTION
 .PP
-Embree supports instancing of scenes using affine transformations (3x3
+Embree supports instancing of scenes using affine transformations (3×3
 matrix plus translation).
 As the instanced scene is stored only a single time, even if instanced
 to multiple locations, this feature can be used to create very complex

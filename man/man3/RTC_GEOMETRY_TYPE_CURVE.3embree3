@@ -72,8 +72,10 @@ The curve indices can be specified through an index buffer
 (\f[C]RTC_BUFFER_TYPE_INDEX\f[]) and the curve vertices through a vertex
 buffer (\f[C]RTC_BUFFER_TYPE_VERTEX\f[]).
 For the Hermite basis a tangent buffer
-(\f[C]RTC_BUFFER_TYPE_TANGENT\f[]) and for normal oriented curves a
-normal buffer (\f[C]RTC_BUFFER_TYPE_NORMAL\f[]) has to get specified
+(\f[C]RTC_BUFFER_TYPE_TANGENT\f[]), normal oriented curves a normal
+buffer (\f[C]RTC_BUFFER_TYPE_NORMAL\f[]), and for normal oriented
+Hermite curves a normal derivative buffer
+(\f[C]RTC_BUFFER_TYPE_NORMAL_DERIVATIVE\f[]) has to get specified
 additionally.
 See \f[C]rtcSetGeometryBuffer\f[] and
 \f[C]rtcSetSharedGeometryBuffer\f[] for more details on how to set
@@ -150,55 +152,30 @@ By default the tessellation rate is 4.
 .PP
 The \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_*\f[] mode is a mode designed
 to render blades of grass.
-In this mode the curve is rendered as a flat band whose center exactly
-follows the provided vertex spline, whose half width approximately
-follows the provided radius spline, and whose orientation follows the
-provided normals.
-For normal oriented curves, the indices point to the first of 2
-consecutive normals in the normal buffer.
-The normal of the constructed curve will match the direction of the
-first normal at the beginning, and the direction of the second normal at
-the end of the curve.
-Please note that this layout of the normal buffer is independent of the
-used basis for the curve itself.
-For the cubic B\-spline and cubic Hermite basis the stride from the
-first control vertex of the first and the next segment is typically 1,
-thus the normal buffer is compact and the curves share the normal at the
-begin and end.
-However, for the cubic Bézier basis, the stride is typically 3, thus
-begin and end normal cannot get shared.
-We recommend using the Hermite basis instead of the Bézier basis, as it
-allows a more compact layout.
+In this mode a vertex spline has to get specified as for the previous
+modes, but additionally a normal spline is required.
+If the Hermite basis is used, the \f[C]RTC_BUFFER_TYPE_NORMAL\f[] and
+\f[C]RTC_BUFFER_TYPE_NORMAL_DERIVATIVE\f[] buffers have both to be set.
+.PP
+The curve is rendered as a flat band whose center approximately follows
+the provided vertex spline, whose half width approximately follows the
+provided radius spline, and whose normal orientation approximately
+follows the provided normal spline.
 .PP
 To intersect the normal oriented curve, we perform a newton\-raphson
 style intersection of a ray with a tensor product surface of a linear
 basis (perpendicular to the curve) and cubic Bézier basis (along the
 curve).
-We construct the 8 control points of this surface in Bézier basis by
-calculating a normalized direction \f[C]d01=normalize(v1\-v0,n0)\f[] and
-\f[C]d23=normalize(v3\-v2,n1)\f[].
-These directions are perpendicular to the tangent direction of the
-center curve and first and second specified normal.
-The 8 control vertices of the surface are constructed as:
-.IP
-.nf
-\f[C]
-\ p00\ =\ v0\-r0*d01,\ p10\ =\ v0+r0*d01
-\ p01\ =\ v1\-r1*d01,\ p11\ =\ v1+r1*d01
-\ p02\ =\ v2\-r2*d23,\ p12\ =\ v2+r2*d23
-\ p03\ =\ v3\-r3*d23,\ p13\ =\ v3+r3*d23
-\f[]
-.fi
-.PP
-The center of this curve exactly follows the specified center spline,
-the normal at the start (and end) exactly match the fisrst (and second)
-specified normal, and the half width exactly matches the evaluated
-radius spline at the start (and end).
-In\-between the radius and orientation of the curve changes smoothly.
-Note that the construction does not work when the provided normals are
-parallel to the curve direction, as then no well defined perpendicular
-direction \f[C]d01\f[] or \f[C]d23\f[] are defined.
-For this reason thus the provided normals should best be kept as
+We use a guide curve and its derivatives to construct the control points
+of that surface.
+The guide curve is defined by a sweep surface defined by sweeping a line
+centered at the vertex spline location along the curve.
+At each parameter value the half width of the line matches the radius
+spline, and the direction matches the cross product of the normal from
+the normal spline and tangent of the vertex spline.
+Note that this construction does not work when the provided normals are
+parallel to the curve direction.
+For this reason the provided normals should best be kept as
 perpendicular to the curve direction as possible.
 .PP
 In the \f[C]RTC_GEOMETRY_TYPE_ROUND_*\f[] round mode, a real geometric

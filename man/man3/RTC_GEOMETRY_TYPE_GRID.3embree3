@@ -53,7 +53,7 @@ The \f[C]RTCGrid\f[] structure describes a 2D grid of vertices (with
 respect to the vertex buffer of the grid mesh).
 The \f[C]width\f[] and \f[C]height\f[] members specify the number of
 vertices in u and v direction, e.g.
-setting both \f[C]width\f[] and \f[C]height\f[] to 3 sets up a 3x3
+setting both \f[C]width\f[] and \f[C]height\f[] to 3 sets up a 3×3
 vertex grid.
 The maximum allowed \f[C]width\f[] and \f[C]height\f[] is 32767.
 The \f[C]startVertexID\f[] specifies the ID of the top\-left vertex in

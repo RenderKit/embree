@@ -1,6 +1,12 @@
 Version History
 ---------------
 
+### New Features in Embree 3.5.0
+-   Changed normal oriented curve definition to fix waving artefacts.
+-   Fixed bounding issue for normal oriented motion blurred curves.
+-   Fixed performance issue with motion blurred point geometry.
+-   Fixed generation of documentation with new pandoc versions.
+
 ### New Features in Embree 3.4.0
 -   Added point primitives (spheres, ray-oriented discs, normal-oriented discs).
 -   Fixed crash triggered by scenes with only invalid primitives.

@@ -38,7 +38,7 @@ in row\-major form.
 out in column\-major form.
 .IP \[bu] 2
 \f[C]RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR\f[]: The 3×4 float matrix is laid
-out in column\-major form as a 4x4 homogeneous matrix with last row
+out in column\-major form as a 4×4 homogeneous matrix with last row
 equal to (0, 0, 0, 1).
 .SS EXIT STATUS
 .PP

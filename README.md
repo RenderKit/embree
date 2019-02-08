@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.4.0
+% Embree: High Performance Ray Tracing Kernels 3.5.0
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.4.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x64.vc12.msi). This
+[embree-3.5.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.4.0 x64`.
+Files\Intel\Embree v3.5.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.4.0 x64`.
+Files\Intel\Embree v3.5.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.4.0 x64` and uninstall it.
+3.5.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.4.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x64.vc12.windows.zip)
+[embree-3.5.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.4.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x64.vc14.windows.zip)
+[embree-3.5.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.4.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.rpm.tar.gz)
+[embree-3.5.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.4.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.5.0.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.4.0-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.4.0-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.4.0-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.5.0-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.5.0-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.5.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.4.0-1.x86_64.rpm
-    sudo alien embree3-devel-3.4.0-1.noarch.rpm
-    sudo alien embree3-examples-3.4.0-1.x86_64.rpm
+    sudo alien embree3-lib-3.5.0-1.x86_64.rpm
+    sudo alien embree3-devel-3.5.0-1.noarch.rpm
+    sudo alien embree3-examples-3.5.0-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.4.0-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.4.0-2_all.deb
-    sudo dpkg -i embree3-examples_3.4.0-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.5.0-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.5.0-2_all.deb
+    sudo dpkg -i embree3-examples_3.5.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.4.0-1.x86_64
-    sudo rpm --erase embree3-devel-3.4.0-1.noarch
-    sudo rpm --erase embree3-examples-3.4.0-1.x86_64
+    sudo rpm --erase embree3-lib-3.5.0-1.x86_64
+    sudo rpm --erase embree3-devel-3.5.0-1.noarch
+    sudo rpm --erase embree3-examples-3.5.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.4.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.5.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.4.0.x86_64.linux.tar.gz
-    source embree-3.4.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.5.0.x86_64.linux.tar.gz
+    source embree-3.5.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.4.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.dmg). This
+[embree-3.5.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.4.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.5.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.4.0.x64.macosx.tar.gz
-    source embree-3.4.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.5.0.x64.macosx.tar.gz
+    source embree-3.5.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -756,9 +756,9 @@ See Sections [rtcIntersect1](#rtcintersect1) and
 [rtcOccluded1](#rtcoccluded1) for a detailed description of how to set
 up and trace a ray.
 
-See tutorial [Triangle Geometry] for a complete example of how to
-trace single rays and ray packets. Also have a look at the tutorial
-[Stream Viewer] for an example of how to trace ray streams.
+See tutorial [Triangle Geometry] for a complete example of how to trace
+single rays and ray packets. Also have a look at the tutorial [Stream
+Viewer] for an example of how to trace ray streams.
 
 Miscellaneous
 -------------
@@ -834,10 +834,10 @@ Device
 Scene
 -----
 
--   The API no longer distinguishes between a static and a
-    dynamic scene. Some users had issues as they wanted to do minor
-    modifications to static scenes, but maintain high
-    traversal performance.
+-   The API no longer distinguishes between a static and a dynamic
+    scene. Some users had issues as they wanted to do minor
+    modifications to static scenes, but maintain high traversal
+    performance.
 
     The new approach gives more flexibility, as each scene is
     changeable, and build quality settings can be changed on a commit
@@ -873,8 +873,8 @@ Geometry
     script does all required changed automatically. However, in some
     cases the script may introduce `rtcGetGeometry(scene, geomID)`
     calls to retrieve the geometry handle. Best store the geometry
-    handle inside your scene representation (and release it in
-    the destructor) and access the handle directly instead of calling
+    handle inside your scene representation (and release it in the
+    destructor) and access the handle directly instead of calling
     `rtcGetGeometry`.
 
 -   Geometries are not included inside a scene anymore but can be
@@ -887,8 +887,8 @@ Geometry
     earlier error checking and pre-calculating internal data per
     geometry object.
 
-    Such commit points were previously not required in the Embree
-    2 API. The upgrade script attempts to insert the commits
+    Such commit points were previously not required in the Embree 2
+    API. The upgrade script attempts to insert the commits
     automatically, but cannot do so properly under all circumstances.
     Thus please check if every `rtcCommitGeometry` call inserted by the
     script is properly placed, and if a `rtcCommitGeometry` call is
@@ -971,8 +971,8 @@ Miscellaneous
     by side. We made the headers C99 compliant.
 
 -   All API objects are now reference counted with release functions to
-    decrement and retain functions to increment the reference count
-    (if required).
+    decrement and retain functions to increment the reference count (if
+    required).
 
 -   Most callback functions no longer get different arguments as input,
     but a pointer to a structure containing all arguments. This results
@@ -991,8 +991,8 @@ Miscellaneous
     the header (e.g. write `const int` instead of `int const` or
     convert the callback manually).
 
--   An intersection context is now required for each ray
-    query invocation. The context should be initialized using the
+-   An intersection context is now required for each ray query
+    invocation. The context should be initialized using the
     `rtcInitIntersectContext` function.
 
 -   The `rtcIntersect`-type functions get as input an `RTCRayHit` type,
@@ -1024,13 +1024,13 @@ Miscellaneous
     context with a pointer to that data.
 
     This change cannot be done by the script. Further, code will still
-    work if you extend the ray as the implementation did not
-    change yet.
+    work if you extend the ray as the implementation did not change
+    yet.
 
--   The ray structure now contains an additional `id` and
-    `flags` field. The `id` can be used to store the index of the ray
-    with respect to a ray packet or ray stream. The `flags` is reserved
-    for future use, and currently must be set to 0.
+-   The ray structure now contains an additional `id` and `flags`
+    field. The `id` can be used to store the index of the ray with
+    respect to a ray packet or ray stream. The `flags` is reserved for
+    future use, and currently must be set to 0.
 
 -   All previous intersection filter callback variants have been
     removed, except for the `RTCFilterFuncN` which gets a varying size
@@ -1041,25 +1041,25 @@ Miscellaneous
 
     We kept the guarantee that for `rtcIntersect1/4/8/16` and
     `rtcOccluded1/4/8/16` calls the packet size and ray order will not
-    change from the initial size and ordering when entering a
-    filter callback.
+    change from the initial size and ordering when entering a filter
+    callback.
 
 -   We no longer export ISPC-specific symbols. This has the advantage
     that certain linking issues went away, e.g. it is now possible to
     link an ISPC application compiled for any combination of ISAs, and
-    link this to an Embree library compiled with a different set
-    of ISAs. Previously the ISAs of the application had to be a subset
-    of the ISAs of Embree, and when the user enabled exactly one ISA,
-    they had to do this in Embree and the application.
+    link this to an Embree library compiled with a different set of
+    ISAs. Previously the ISAs of the application had to be a subset of
+    the ISAs of Embree, and when the user enabled exactly one ISA, they
+    had to do this in Embree and the application.
 
 -   We no longer export the ISPC tasking system, which means that the
     application has the responsibility to implement the ISPC tasking
     system itself. ISPC comes with example code on how to do this. This
     change is not performed by the script and must be done manually.
 
--   Fixed many naming inconsistencies, and changed names of further
-    API functions. All these renamings are properly done by the script
-    and need no further attention.
+-   Fixed many naming inconsistencies, and changed names of further API
+    functions. All these renamings are properly done by the script and
+    need no further attention.
 
 
 
@@ -1121,12 +1121,12 @@ The following configuration is supported:
     to hardware threads. This option is disabled by default on standard
     CPUs, and enabled by default on Xeon Phi Processors.
 
--   `start_threads=[0/1]`: When enabled, the build threads are
-    started upfront. This can be useful for benchmarking to exclude
-    thread creation time. This option is disabled by default.
+-   `start_threads=[0/1]`: When enabled, the build threads are started
+    upfront. This can be useful for benchmarking to exclude thread
+    creation time. This option is disabled by default.
 
--   `isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Use
-    specified ISA. By default the ISA is selected automatically.
+-   `isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Use specified
+    ISA. By default the ISA is selected automatically.
 
 -   `max_isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Configures
     the automated ISA selection to use maximally the specified ISA.
@@ -1138,16 +1138,16 @@ The following configuration is supported:
 -   `enable_selockmemoryprivilege=[0/1]`: When set to 1, this enables
     the `SeLockMemoryPrivilege` privilege with is required to use huge
     pages on Windows. This option has an effect only under Windows and
-    is ignored on other platforms. See Section [Huge Page Support]
-    for more details.
+    is ignored on other platforms. See Section [Huge Page Support] for
+    more details.
 
--   `ignore_config_files=[0/1]`: When set to 1, configuration files
-    are ignored. Default is 0.
+-   `ignore_config_files=[0/1]`: When set to 1, configuration files are
+    ignored. Default is 0.
 
 -   `verbose=[0,1,2,3]`: Sets the verbosity of the output. When set to
     0, no output is printed by Embree, when set to a higher level more
-    output is printed. By default Embree does not print anything on
-    the console.
+    output is printed. By default Embree does not print anything on the
+    console.
 
 Different configuration options should be separated by commas, e.g.:
 
@@ -1256,9 +1256,9 @@ property is an integer of type `ssize_t`.
 
 Possible properties to query are:
 
--   `RTC_DEVICE_PROPERTY_VERSION`: Queries the combined version
-    number (MAJOR.MINOR.PATCH) with two decimal digits per component.
-    E.g. for Embree 2.8.3 the integer 208003 is returned.
+-   `RTC_DEVICE_PROPERTY_VERSION`: Queries the combined version number
+    (MAJOR.MINOR.PATCH) with two decimal digits per component. E.g. for
+    Embree 2.8.3 the integer 208003 is returned.
 
 -   `RTC_DEVICE_PROPERTY_VERSION_MAJOR`: Queries the major version
     number of Embree.
@@ -1518,15 +1518,15 @@ threads concurrently.
 
 The application can track the current memory usage of the Embree device
 by atomically accumulating the `bytes` input parameter provided to the
-callback function. This parameter will be &gt;0 for allocations and
-&lt;0 for deallocations.
+callback function. This parameter will be \>0 for allocations and \<0
+for deallocations.
 
 Embree will continue its operation normally when returning `true` from
 the callback function. If `false` is returned, Embree will cancel the
 current operation with the `RTC_ERROR_OUT_OF_MEMORY` error code.
 Issuing multiple cancel requests from different threads is allowed.
 Canceling will only happen when the callback was called for allocations
-(bytes &gt; 0), otherwise the cancel request will be ignored.
+(bytes \> 0), otherwise the cancel request will be ignored.
 
 If a callback to cancel was invoked before the allocation happens
 (`post == false`), then the `bytes` parameter should not be
@@ -2075,8 +2075,8 @@ for the specified scene (`scene` argument). Possible scene flags are:
 -   `RTC_SCENE_FLAG_ROBUST`: Uses acceleration structures that allow
     for robust traversal, and avoids optimizations that reduce
     arithmetic accuracy. This mode is typically used for avoiding
-    artifacts caused by rays shooting through edges of
-    neighboring primitives.
+    artifacts caused by rays shooting through edges of neighboring
+    primitives.
 
 -   `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION`: Enables support for a
     filter function inside the intersection context. See Section
@@ -2447,8 +2447,8 @@ over the quadrilateral the following way:
 
 Mixed triangle/quad meshes are supported by encoding a triangle as a
 quad, which can be achieved by replicating the last triangle vertex
-(`v0,v1,v2` -&gt; `v0,v1,v2,v2`). This way the second triangle is a
-line (which can never get hit), and the parametrization of the first
+(`v0,v1,v2` -\> `v0,v1,v2,v2`). This way the second triangle is a line
+(which can never get hit), and the parametrization of the first
 triangle is compatible with the standard triangle parametrization.
 
 A quad whose vertices are laid out counter-clockwise has its geometry
@@ -2515,7 +2515,7 @@ Each grid in the grid buffer is of the type `RTCGrid`:
 The `RTCGrid` structure describes a 2D grid of vertices (with respect
 to the vertex buffer of the grid mesh). The `width` and `height`
 members specify the number of vertices in u and v direction, e.g.
-setting both `width` and `height` to 3 sets up a 3x3 vertex grid. The
+setting both `width` and `height` to 3 sets up a 3×3 vertex grid. The
 maximum allowed `width` and `height` is 32767. The `startVertexID`
 specifies the ID of the top-left vertex in the vertex grid, while the
 `stride` parameter specifies a stride (in number of vertices) used to
@@ -2787,9 +2787,10 @@ created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 function. The curve indices can be specified through an index buffer
 (`RTC_BUFFER_TYPE_INDEX`) and the curve vertices through a vertex
 buffer (`RTC_BUFFER_TYPE_VERTEX`). For the Hermite basis a tangent
-buffer (`RTC_BUFFER_TYPE_TANGENT`) and for normal oriented curves a
-normal buffer (`RTC_BUFFER_TYPE_NORMAL`) has to get specified
-additionally. See `rtcSetGeometryBuffer` and
+buffer (`RTC_BUFFER_TYPE_TANGENT`), normal oriented curves a normal
+buffer (`RTC_BUFFER_TYPE_NORMAL`), and for normal oriented Hermite
+curves a normal derivative buffer (`RTC_BUFFER_TYPE_NORMAL_DERIVATIVE`)
+has to get specified additionally. See `rtcSetGeometryBuffer` and
 `rtcSetSharedGeometryBuffer` for more details on how to set buffers.
 
 The index buffer contains an array of 32-bit indices (`RTC_FORMAT_UINT`
@@ -2852,47 +2853,29 @@ through the `rtcSetGeometryTessellationRate` function. By default the
 tessellation rate is 4.
 
 The `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_*` mode is a mode designed to
-render blades of grass. In this mode the curve is rendered as a flat
-band whose center exactly follows the provided vertex spline, whose
-half width approximately follows the provided radius spline, and whose
-orientation follows the provided normals. For normal oriented curves,
-the indices point to the first of 2 consecutive normals in the normal
-buffer. The normal of the constructed curve will match the direction of
-the first normal at the beginning, and the direction of the second
-normal at the end of the curve. Please note that this layout of the
-normal buffer is independent of the used basis for the curve itself.
-For the cubic B-spline and cubic Hermite basis the stride from the
-first control vertex of the first and the next segment is typically 1,
-thus the normal buffer is compact and the curves share the normal at
-the begin and end. However, for the cubic Bézier basis, the stride is
-typically 3, thus begin and end normal cannot get shared. We recommend
-using the Hermite basis instead of the Bézier basis, as it allows a
-more compact layout.
+render blades of grass. In this mode a vertex spline has to get
+specified as for the previous modes, but additionally a normal spline
+is required. If the Hermite basis is used, the `RTC_BUFFER_TYPE_NORMAL`
+and `RTC_BUFFER_TYPE_NORMAL_DERIVATIVE` buffers have both to be set.
+
+The curve is rendered as a flat band whose center approximately follows
+the provided vertex spline, whose half width approximately follows the
+provided radius spline, and whose normal orientation approximately
+follows the provided normal spline.
 
 To intersect the normal oriented curve, we perform a newton-raphson
 style intersection of a ray with a tensor product surface of a linear
 basis (perpendicular to the curve) and cubic Bézier basis (along the
-curve). We construct the 8 control points of this surface in Bézier
-basis by calculating a normalized direction `d01=normalize(v1-v0,n0)`
-and `d23=normalize(v3-v2,n1)`. These directions are perpendicular to
-the tangent direction of the center curve and first and second
-specified normal. The 8 control vertices of the surface are constructed
-as:
-
-     p00 = v0-r0*d01, p10 = v0+r0*d01
-     p01 = v1-r1*d01, p11 = v1+r1*d01
-     p02 = v2-r2*d23, p12 = v2+r2*d23
-     p03 = v3-r3*d23, p13 = v3+r3*d23
-
-The center of this curve exactly follows the specified center spline,
-the normal at the start (and end) exactly match the fisrst (and second)
-specified normal, and the half width exactly matches the evaluated
-radius spline at the start (and end). In-between the radius and
-orientation of the curve changes smoothly. Note that the construction
-does not work when the provided normals are parallel to the curve
-direction, as then no well defined perpendicular direction `d01` or
-`d23` are defined. For this reason thus the provided normals should
-best be kept as perpendicular to the curve direction as possible.
+curve). We use a guide curve and its derivatives to construct the
+control points of that surface. The guide curve is defined by a sweep
+surface defined by sweeping a line centered at the vertex spline
+location along the curve. At each parameter value the half width of the
+line matches the radius spline, and the direction matches the cross
+product of the normal from the normal spline and tangent of the vertex
+spline. Note that this construction does not work when the provided
+normals are parallel to the curve direction. For this reason the
+provided normals should best be kept as perpendicular to the curve
+direction as possible.
 
 In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric surface
 is rendered for the curve, which is more expensive but allows closeup
@@ -2922,8 +2905,8 @@ basis also a tangent buffer has to be set for each time step and for
 normal oriented curves a normal buffer has to get specified for each
 time step.
 
-Also see tutorials [Hair] and [Curves] for examples of how to
-create and use curve geometries.
+Also see tutorials [Hair] and [Curves] for examples of how to create
+and use curve geometries.
 
 #### EXIT STATUS {#exit-status}
 
@@ -2986,16 +2969,19 @@ The `RTC_GEOMETRY_TYPE_DISC_POINT` flat mode is a fast mode designed to
 render distant points. In this mode the point is rendered as a ray
 facing disc.
 
-The `RTC_GEOMETRY_TYPE__ORIENTED_DISC_POINT` mode is a mode designed as
+The `RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT` mode is a mode designed as
 a midpoint geometrically between ray facing discs and spheres. In this
 mode the point is rendered as a normal oriented disc.
+
+For all point types, only the hit distance and geometry normal is
+returned as hit information, u and v are set to zero.
 
 For multi-segment motion blur, the number of time steps must be first
 specified using the `rtcSetGeometryTimeStepCount` call. Then a vertex
 buffer for each time step can be set using different buffer slots, and
 all these buffers must have the same stride and size.
 
-Also see tutorials[Points] for an example of how to create and use
+Also see tutorial [Points] for an example of how to create and use
 point geometries.
 
 #### EXIT STATUS {#exit-status}
@@ -3089,7 +3075,7 @@ RTC\_GEOMETRY\_TYPE\_INSTANCE
 
 #### DESCRIPTION {#description}
 
-Embree supports instancing of scenes using affine transformations (3x3
+Embree supports instancing of scenes using affine transformations (3×3
 matrix plus translation). As the instanced scene is stored only a
 single time, even if instanced to multiple locations, this feature can
 be used to create very complex scenes with small memory footprint. Only
@@ -3384,9 +3370,9 @@ camera shutter closes. The startTime has to be smaller or equal to the
 endTime.
 
 The default time range when this function is not called is the entire
-camera shutter [0,1]. For best performance at most one time segment
-of the piece wise linear definition of the motion should fall outside
-the shutter window to the left and to the right. Thus do not set the
+camera shutter [0,1]. For best performance at most one time segment of
+the piece wise linear definition of the motion should fall outside the
+shutter window to the left and to the right. Thus do not set the
 startTime or endTime too far outside the [0,1] interval for best
 performance.
 
@@ -3520,8 +3506,8 @@ two-level acceleration structure is build, and geometries build a
 separate acceleration structure using the geometry build quality. The
 per-geometry build quality can be one of:
 
--   `RTC_BUILD_QUALITY_LOW`: Creates lower quality data
-    structures, e.g. for dynamic scenes.
+-   `RTC_BUILD_QUALITY_LOW`: Creates lower quality data structures,
+    e.g. for dynamic scenes.
 
 -   `RTC_BUILD_QUALITY_MEDIUM`: Default build quality for most usages.
     Gives a good compromise between build and render performance.
@@ -4530,7 +4516,7 @@ Possible formats for the returned matrix are:
     out in column-major form.
 
 -   `RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR`: The 3×4 float matrix is laid
-    out in column-major form as a 4x4 homogeneous matrix with last row
+    out in column-major form as a 4×4 homogeneous matrix with last row
     equal to (0, 0, 0, 1).
 
 #### EXIT STATUS {#exit-status}
@@ -4722,8 +4708,7 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO {#see-also}
 
-[rtcSetGeometrySubdivisionMode], [rtcInterpolate],
-[rtcInterpolateN]
+[rtcSetGeometrySubdivisionMode], [rtcInterpolate], [rtcInterpolateN]
 
 
 
@@ -4801,8 +4786,8 @@ All passed arrays must be aligned to 64 bytes and properly padded to
 make wide vector processing inside the displacement function easily
 possible.
 
-Also see tutorial [Displacement Geometry] for an example of how to
-use the displacement mapping functions.
+Also see tutorial [Displacement Geometry] for an example of how to use
+the displacement mapping functions.
 
 #### EXIT STATUS {#exit-status}
 
@@ -5411,8 +5396,8 @@ is considered valid.
 
 The ray segment must be in the range $[0, ∞]$, thus ranges that start
 behind the ray origin are not allowed, but ranges can reach to
-infinity. For rays inside a ray stream, `tfar` &lt; `tnear` identifies
-an inactive ray.
+infinity. For rays inside a ray stream, `tfar` \< `tnear` identifies an
+inactive ray.
 
 The ray further contains a motion blur time in the range $[0, 1]$
 (`time` member), a ray mask (`mask` member), a ray ID (`id` member),
@@ -6107,8 +6092,8 @@ The `rtcIntersect1M` function finds the closest hits for a stream of
 `M` single rays (`rayhit` argument) with the scene (`scene` argument).
 The `rayhit` argument points to an array of ray and hit data with
 specified byte stride (`byteStride` argument) between the ray/hit
-structures. See Section [rtcIntersect1] for a description of how to
-set up and trace rays.
+structures. See Section [rtcIntersect1] for a description of how to set
+up and trace rays.
 
 The intersection context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
@@ -6410,8 +6395,8 @@ The `rtcOccludedNM` function checks whether there are any hits for a
 stream of `M` ray packets (`ray` argument) of size `N` with the scene
 (`scene` argument). The `ray` argument points to an array of ray
 packets with specified byte stride (`byteStride` argument) between the
-ray packets. See Section [rtcOccluded1] for a description of how to
-set up and trace occlusion rays.
+ray packets. See Section [rtcOccluded1] for a description of how to set
+up and trace occlusion rays.
 
 The intersection context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
@@ -6980,9 +6965,9 @@ Linux](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
 To use huge pages under Windows, the current user must have the "Lock
 pages in memory" (SeLockMemoryPrivilege) assigned. This can be
 configured through the "Local Security Policy" application, by adding a
-user to "Local Policies" -&gt; "User Rights Assignment" -&gt; "Lock
-pages in memory". You have to log out and in again for this change to
-take effect.
+user to "Local Policies" -\> "User Rights Assignment" -\> "Lock pages
+in memory". You have to log out and in again for this change to take
+effect.
 
 Further, your application must be executed as an elevated process ("Run
 as administrator") and the "SeLockMemoryPrivilege" must be explicitly
