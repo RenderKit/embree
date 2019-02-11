@@ -53,7 +53,7 @@ triangle meshes.
 #### EXIT STATUS
 
 On failure `NULL` is returned and an error code is set that be get
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

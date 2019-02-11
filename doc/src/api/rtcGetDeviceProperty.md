@@ -119,4 +119,4 @@ returning a boolean value, the return value 0 denotes `false` and 1
 denotes `true`.
 
 On failure zero is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.

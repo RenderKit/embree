@@ -30,7 +30,7 @@ subdivision geometries (`RTC_GEOMETRY_TYPE_SUBDIVISION`).
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

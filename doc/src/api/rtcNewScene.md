@@ -20,7 +20,7 @@ scene handle can be released using the `rtcReleaseScene` API call.
 #### EXIT STATUS
 
 On success a scene handle is returned. On failure `NULL` is returned
-and an error code is set that can be queried using `rtcDeviceGetError`.
+and an error code is set that can be queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

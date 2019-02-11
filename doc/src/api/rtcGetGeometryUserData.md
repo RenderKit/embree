@@ -20,7 +20,7 @@ previously set with `rtcSetGeometryUserData`. When
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

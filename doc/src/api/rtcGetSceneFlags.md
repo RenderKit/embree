@@ -22,7 +22,7 @@ changing other flags the following way:
 #### EXIT STATUS
 
 On failure `RTC_SCENE_FLAG_NONE` is returned and an error code is set
-that can be queried using `rtcDeviceGetError`.
+that can be queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

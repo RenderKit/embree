@@ -89,7 +89,7 @@ Different configuration options should be separated by commas, e.g.:
 
 On success returns a handle of the created device. On failure returns
 `NULL` as device and sets a per-thread error code that can be queried
-using `rtcDeviceGetError(NULL)`.
+using `rtcGetDeviceError(NULL)`.
 
 #### SEE ALSO
 

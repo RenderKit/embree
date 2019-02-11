@@ -66,7 +66,7 @@ use point geometries.
 #### EXIT STATUS
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

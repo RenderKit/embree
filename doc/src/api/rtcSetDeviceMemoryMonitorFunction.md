@@ -67,7 +67,7 @@ properly happened and a deallocation will later free that data block.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 
