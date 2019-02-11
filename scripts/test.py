@@ -128,21 +128,21 @@ def runConfig(config):
     
   elif OS == "linux":
     if (compiler == "ICC19"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2019.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2019.0/bin/icc")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2019.0/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2019.0/bin/icc")
     elif (compiler == "ICC18"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2018.0/bin/icc")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2018.0/bin/icc")
     elif (compiler == "ICC17"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2017.1/bin/icc")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2017.1/bin/icc")
     elif (compiler == "ICC16"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2016.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2016.3/bin/icc")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2016.3/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2016.3/bin/icc")
     elif (compiler == "ICC15"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2015.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2015.3/bin/icc")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2015.3/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2015.3/bin/icc")
     elif (compiler == "GCC"):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
     elif (compiler == "CLANG5"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v5.0.0/bin/clang++ -D CMAKE_C_COMPILER="+nas+"/clang/v5.0.0/bin/clang")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/clang/v5.0.0/bin/clang++ -D CMAKE_C_COMPILER=/NAS/packages/apps/clang/v5.0.0/bin/clang")
     elif (compiler == "CLANG4"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v4.0.0/bin/clang++ -D CMAKE_C_COMPILER="+nas+"/clang/v4.0.0/bin/clang")
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/clang/v4.0.0/bin/clang++ -D CMAKE_C_COMPILER=/NAS/packages/apps/clang/v4.0.0/bin/clang")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     else:
@@ -175,7 +175,7 @@ def runConfig(config):
       if OS == "linux":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"-linux/ispc")
       elif OS == "macosx":
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/net/nas/volume1/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
       elif OS == "windows":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\ispc.exe")
       else:
@@ -223,9 +223,9 @@ def runConfig(config):
       
       elif OS == "macosx":
         if tasking == "TBB2019.2":
-          conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2019.2-osx")
+          conf.append("-D EMBREE_TBB_ROOT=/net/nas/volume1/NAS/packages/apps/tbb/tbb-2019.2-osx")
         elif tasking == "TBB2017":
-          conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
+          conf.append("-D EMBREE_TBB_ROOT=/net/nas/volume1/NAS/packages/apps/tbb/tbb-2017-osx")
         elif tasking == "TBB":
           conf.append("-D EMBREE_TBB_ROOT=/opt/local")
         else:
