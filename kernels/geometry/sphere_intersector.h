@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "point_precalculations.h"
+#include "curve_intersector_precalculations.h"
 
 namespace embree
 {
@@ -61,7 +61,7 @@ namespace embree
     template<int M>
     struct SphereIntersector1
     {
-      typedef SpherePrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       template<typename Epilog>
       static __forceinline bool intersect(
@@ -69,7 +69,7 @@ namespace embree
       {
         vbool<M> valid = valid_i;
 
-        const vfloat<M> rd2    = pre.one_over_raydir2;  // rcp(dot(ray.dir, ray.dir));
+        const vfloat<M> rd2    = rcp(dot(ray.dir, ray.dir));
         const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
         const Vec3vf<M> ray_dir(ray.dir.x, ray.dir.y, ray.dir.z);
         const Vec3vf<M> center = v0.xyz();
@@ -109,7 +109,7 @@ namespace embree
     template<int M, int K>
     struct SphereIntersectorK
     {
-      typedef SpherePrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       template<typename Epilog>
       static __forceinline bool intersect(const vbool<M>& valid_i,
@@ -121,9 +121,9 @@ namespace embree
       {
         vbool<M> valid = valid_i;
 
-        const vfloat<M> rd2 = pre.one_over_raydir2[k];  // rcp(dot(ray.dir, ray.dir));
         const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
         const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
+        const vfloat<M> rd2 = rcp(dot(ray_dir, ray_dir));
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
 

@@ -28,7 +28,7 @@ namespace embree
     struct SphereMiIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -61,7 +61,7 @@ namespace embree
     struct SphereMiMBIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -94,7 +94,7 @@ namespace embree
     struct SphereMiIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& sphere)
@@ -133,7 +133,7 @@ namespace embree
     struct SphereMiMBIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& sphere)

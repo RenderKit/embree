@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### New Features in Embree 3.5.1
+-   Fixed ray/sphere intersector to work also for non-normalized rays.
+
 ### New Features in Embree 3.5.0
 -   Changed normal oriented curve definition to fix waving artefacts.
 -   Fixed bounding issue for normal oriented motion blurred curves.

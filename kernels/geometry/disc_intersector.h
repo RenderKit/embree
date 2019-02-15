@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "point_precalculations.h"
+#include "curve_intersector_precalculations.h"
 
 namespace embree
 {
@@ -58,7 +58,7 @@ namespace embree
     template<int M>
     struct DiscIntersector1
     {
-      typedef DiscPrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       template<typename Epilog>
       static __forceinline bool intersect(
@@ -129,7 +129,7 @@ namespace embree
     template<int M, int K>
     struct DiscIntersectorK
     {
-      typedef DiscPrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       template<typename Epilog>
       static __forceinline bool intersect(const vbool<M>& valid_i,
