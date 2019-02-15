@@ -86,7 +86,7 @@ namespace embree
     CPU_CORE_SANDYBRIDGE,
     CPU_HASWELL,
     CPU_KNIGHTS_LANDING,
-    CPU_SKYLAKE
+    CPU_SKYLAKE_SERVER
   };
 
   /*! get the full path to the running executable */
@@ -136,7 +136,8 @@ namespace embree
   static const int CPU_FEATURE_YMM_ENABLED = 1 << 26;
   static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
  
-  
+  static const int CPU_FEATURE_PSEUDO_HIFREQ256BIT = 1 << 30;
+ 
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -158,6 +159,9 @@ namespace embree
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
   static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD | CPU_FEATURE_ZMM_ENABLED;
   static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
+
+  static const int AVX_FAST = AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
+  static const int AVX2_FAST = AVX2 | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);
