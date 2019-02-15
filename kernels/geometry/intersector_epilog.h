@@ -305,7 +305,7 @@ namespace embree
       }
     };
 
-#if defined(__AVX512F__)
+#if 0 && defined(__AVX512F__) // do not enable, this reduced frequency for BVH4
     template<int M, bool filter>
     struct Intersect1EpilogM<M,16,filter>
     {
@@ -866,7 +866,7 @@ namespace embree
 #endif
         assert(i<M);
         /* update hit information */
-#if defined(__AVX512F__)
+#if 0 && defined(__AVX512F__) // do not enable, this reduced frequency for BVH4
         ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<Mx>(hit.vNg.x),vfloat<Mx>(hit.vNg.y),vfloat<Mx>(hit.vNg.z),geomID,vuint<Mx>(primIDs));
         ray.instID[k] = context->instID;
 #else
@@ -1011,7 +1011,7 @@ namespace embree
 #endif
 
         /* update hit information */
-#if defined(__AVX512F__)
+#if 0 && defined(__AVX512F__) // do not enable, this reduced frequency for BVH4
         const Vec3fa Ng = hit.Ng(i);
         ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<M>(Ng.x),vfloat<M>(Ng.y),vfloat<M>(Ng.z),geomID,vuint<M>(primID));
         ray.instID[k] = context->instID;

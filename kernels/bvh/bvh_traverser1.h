@@ -235,7 +235,7 @@ namespace embree
     }
 #endif
 
-#if defined(__AVX512F__) && defined(__AVX512VL__) // SKX
+#if 0 && defined(__AVX512F__) && defined(__AVX512VL__) // SKX // do not enable, this reduced frequency for BVH4
 
     template<int N>
     __forceinline void isort_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
@@ -472,7 +472,7 @@ namespace embree
       typedef BVH4::BaseNode BaseNode;
 
 
-#if defined(__AVX512VL__)
+#if 0 && defined(__AVX512VL__) // do not enable, this reduced frequency for BVH4
     template<class NodeRef, class BaseNode>
       static __forceinline void traverseClosestHitAVX512VL4(NodeRef& cur,
                                                             size_t mask,
@@ -566,17 +566,11 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-#if defined(__AVX512F__)
-
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
-#elif defined(__AVX512VL__)
+#elif 0 && defined(__AVX512VL__) // do not enable, this reduced frequency for BVH4
         //traverseClosestHitAVX512VL<4,4,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
         traverseClosestHitAVX512VL4<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
-#else
-        static_assert(false);
-#endif
-
 #else
         const BaseNode* node = cur.baseNode(types);
 
@@ -696,7 +690,7 @@ namespace embree
       typedef BVH8::NodeRef NodeRef;
       typedef BVH8::BaseNode BaseNode;
       
-#if defined(__AVX512VL__)
+#if 0 && defined(__AVX512VL__) // do not enable, this reduced frequency for BVH4
       template<class NodeRef, class BaseNode>
         static __forceinline void traverseClosestHitAVX512VL8(NodeRef& cur,
                                                               size_t mask,
@@ -823,18 +817,13 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-#if defined(__AVX512F__)
-
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
-#elif defined(__AVX512VL__)
+#elif 0 && defined(__AVX512VL__) // do not enable, this reduced frequency for BVH4
         //traverseClosestHitAVX512VL<8,8,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
         traverseClosestHitAVX512VL8<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
-        static_assert(false);
-#endif
 
-#else
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
