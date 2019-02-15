@@ -99,6 +99,9 @@ namespace embree
 
   CPUModel getCPUModel() 
   {
+    if (getCPUVendor() != "GenuineIntel")
+      return CPU_UNKNOWN;
+    
     int out[4];
     __cpuid(out, 0);
     if (out[0] < 1) return CPU_UNKNOWN;
@@ -119,6 +122,7 @@ namespace embree
     if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
     if (model == 0x45) return CPU_HASWELL;           // Haswell
     if (model == 0x3C) return CPU_HASWELL;           // Haswell
+    if (model == 0x55) return CPU_SKYLAKE_SERVER;   // Skylake server based CPUs
     return CPU_UNKNOWN;
   }
 
@@ -131,7 +135,7 @@ namespace embree
     case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
     case CPU_HASWELL         : return "Haswell";
     case CPU_KNIGHTS_LANDING : return "Knights Landing";
-    case CPU_SKYLAKE         : return "Skylake";
+    case CPU_SKYLAKE_SERVER  : return "Skylake Server";
     default                  : return "Unknown CPU";
     }
   }
@@ -242,7 +246,7 @@ namespace embree
     if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_1) cpu_features |= CPU_FEATURE_SSE41;
     if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
     if (               cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
-    if (ymm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX;
+    if (ymm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
     if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_F16C  ) cpu_features |= CPU_FEATURE_F16C;
     if (               cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
     if (ymm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX2  ) cpu_features |= CPU_FEATURE_AVX2;
@@ -260,6 +264,9 @@ namespace embree
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
+
+    if (getCPUModel() == CPU_SKYLAKE_SERVER)
+      cpu_features &= ~CPU_FEATURE_PSEUDO_HIFREQ256BIT;
 
     return cpu_features;
   }

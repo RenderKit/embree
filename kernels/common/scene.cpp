@@ -153,7 +153,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX))
+          if (device->hasISA(AVX_FAST))
 	  {
             if (isHighQuality()) 
               accels.add(device->bvh8_factory->BVH8Triangle4(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
@@ -172,7 +172,7 @@ namespace embree
 
         case /*0b01*/ 1: 
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX)) 
+          if (device->hasISA(AVX_FAST)) 
             accels.add(device->bvh8_factory->BVH8Triangle4v(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::ROBUST));
           else
 #endif
@@ -186,7 +186,7 @@ namespace embree
       else /* dynamic */
       {
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX))
+          if (device->hasISA(AVX_FAST))
 	  {
             int mode =  2*(int)isCompact() + 1*(int)isRobust();
             switch (mode) {
@@ -233,7 +233,7 @@ namespace embree
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
       
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
+      if (device->hasISA(AVX2_FAST)) // BVH8 reduces performance on AVX only-machines
       {
         switch (mode) {
         case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST  )); break;
@@ -275,7 +275,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0:
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX))
+          if (device->hasISA(AVX_FAST))
           {
             if (isHighQuality()) 
               accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::HIGH_QUALITY,BVHFactory::IntersectVariant::FAST));
@@ -294,7 +294,7 @@ namespace embree
 
         case /*0b01*/ 1:
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX))
+          if (device->hasISA(AVX_FAST))
             accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::ROBUST));
           else
 #endif
@@ -308,7 +308,7 @@ namespace embree
       else /* dynamic */
       {
 #if defined (EMBREE_TARGET_SIMD8)
-          if (device->hasISA(AVX))
+          if (device->hasISA(AVX_FAST))
 	  {
             int mode =  2*(int)isCompact() + 1*(int)isRobust();
             switch (mode) {
@@ -353,7 +353,7 @@ namespace embree
       switch (mode) {
       case /*0b00*/ 0:
 #if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX))
+        if (device->hasISA(AVX_FAST))
           accels.add(device->bvh8_factory->BVH8Quad4iMB(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST));
         else
 #endif
@@ -362,7 +362,7 @@ namespace embree
 
       case /*0b01*/ 1:
 #if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX))
+        if (device->hasISA(AVX_FAST))
           accels.add(device->bvh8_factory->BVH8Quad4iMB(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::ROBUST));
         else
 #endif
@@ -390,7 +390,7 @@ namespace embree
       if (isStatic())
       {
 #if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
+        if (device->hasISA(AVX2_FAST)) // only enable on HSW machines, for SNB this codepath is slower
         {
           switch (mode) {
           case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
@@ -438,7 +438,7 @@ namespace embree
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX2) && !isCompact()) // only enable on HSW machines, on SNB this codepath is slower
+      if (device->hasISA(AVX2_FAST) && !isCompact()) // only enable on HSW machines, on SNB this codepath is slower
       {
         accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
       }
@@ -464,7 +464,7 @@ namespace embree
       if (isStatic())
       {
 #if defined (EMBREE_TARGET_SIMD8)
-        if (device->hasISA(AVX) && !isCompact())
+        if (device->hasISA(AVX_FAST) && !isCompact())
           accels.add(device->bvh8_factory->BVH8Line4i(this));
         else
 #endif
@@ -489,7 +489,7 @@ namespace embree
     if (device->line_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompact())
+      if (device->hasISA(AVX_FAST) && !isCompact())
         accels.add(device->bvh8_factory->BVH8Line4iMB(this));
       else
 #endif
@@ -543,7 +543,7 @@ namespace embree
     if (device->object_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompact())
+      if (device->hasISA(AVX_FAST) && !isCompact())
       {
         //if (isStatic()) {
         accels.add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::STATIC));
@@ -574,7 +574,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel_mb == "default"    ) {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->hasISA(AVX) && !isCompact())
+      if (device->hasISA(AVX_FAST) && !isCompact())
         accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
       else
 #endif
