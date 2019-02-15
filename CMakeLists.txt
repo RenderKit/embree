@@ -321,6 +321,36 @@ IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
   SET(EMBREE_ISA_SSE42 OFF)
 ENDIF()
 
+IF (APPLE AND EMBREE_STATIC_LIB)
+
+  # count number of set ISAs
+  SET(NUMISA 0)
+  IF (EMBREE_ISA_SSE2)
+    MATH(EXPR NUMISA "${NUMISA}+1")
+  ENDIF()
+  IF (EMBREE_ISA_SSE42)
+    MATH(EXPR NUMISA "${NUMISA}+1")
+  ENDIF()
+  IF (EMBREE_ISA_AVX)
+    MATH(EXPR NUMISA "${NUMISA}+1")
+  ENDIF()
+  IF (EMBREE_ISA_AVX2)
+    MATH(EXPR NUMISA "${NUMISA}+1")
+  ENDIF()
+  IF (EMBREE_ISA_AVX512KNL)
+    MATH(EXPR NUMISA "${NUMISA}+1")
+  ENDIF()
+  IF (EMBREE_ISA_AVX512SKX)
+    MATH(EXPR NUMISA "${NUMISA}+1")
+  ENDIF()
+
+  IF (NUMISA GREATER 1)
+    IF (${CMAKE_CXX_COMPILER_ID} MATCHES "^AppleClang 9.*")
+      MESSAGE(FATAL_ERROR "Using Embree as static library is not supported with AppleClang 9.X when multiple ISAs are selected. Please either build a shared library or enable only one ISA.")
+    ENDIF()
+  ENDIF()
+ENDIF()
+
 ##############################################################
 # ISA configuration continued
 ##############################################################
