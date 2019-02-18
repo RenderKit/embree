@@ -154,7 +154,7 @@ nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX-INT:
   only:   [schedules]
 
 nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 STATIC_LIB:ON"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 STATIC_LIB:ON"
   tags:   [mac, clang] # avx2
   only:   [schedules]
 
