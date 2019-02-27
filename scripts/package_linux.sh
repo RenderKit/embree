@@ -59,7 +59,7 @@ if [ "$1" == "OFF" ]; then
 
   # sign all RPM files
   if [ $# -eq 4 ]; then
-    ${EMBREE_SIGN_FILE} -c embree_rpm -vv embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
+    ${EMBREE_SIGN_FILE} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
   fi
     
   # create TGZ of RPMs

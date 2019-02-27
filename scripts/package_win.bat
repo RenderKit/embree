@@ -15,7 +15,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 IF [%signfile%] NEQ [] (
-  %signfile% -vv %outfile%
+  %signfile% %outfile%
 )
 
 IF %ERRORLEVEL% NEQ 0 (

@@ -13,6 +13,6 @@ cmake --build . --config $CONFIG --target package
 # sign PKG package
 if [ ${PACKAGE: -4} == ".pkg" ]; then
   if [ -n "${EMBREE_SIGN_FILE}" ]; then
-    ${EMBREE_SIGN_FILE} -c embree -vv $PACKAGE
+    ${EMBREE_SIGN_FILE} $PACKAGE
   fi
 fi
