@@ -167,4 +167,65 @@ namespace embree
     StackArray& operator= (const StackArray& other) DELETED; // do not implement
 
   };
+
+  /*! dynamic sized array that is allocated on the stack */
+  template<typename Ty, size_t max_stack_elements, size_t max_total_elements>
+    struct __aligned(64) DynamicStackArray
+  {
+    __forceinline DynamicStackArray ()
+      : data(&arr[0]) {}
+
+    __forceinline ~DynamicStackArray () {
+      if (!isStackAllocated()) alignedFree(data);
+    }
+
+    __forceinline bool isStackAllocated() const {
+      return data == &arr[0];
+    }
+
+    __forceinline size_t size() const
+    {
+      if (isStackAllocated()) return max_stack_elements;
+      else return max_total_elements;
+    }
+
+    __forceinline void resize(size_t M)
+    {
+      assert(M <= max_total_elements);
+      if (likely(M <= max_stack_elements)) return;
+      if (likely(!isStackAllocated())) return;
+      data = (Ty*) alignedMalloc(max_total_elements*sizeof(Ty),64); 
+      for (size_t i=0; i<max_stack_elements; i++)
+        data[i] = arr[i];
+    }
+
+    __forceinline operator       Ty* ()       { return data; }
+    __forceinline operator const Ty* () const { return data; }
+
+    __forceinline       Ty& operator[](const int i)       { assert(i>=0 && i<max_total_elements); resize(i+1); return data[i]; }
+    __forceinline       Ty& operator[](const unsigned i)       { assert(i<max_total_elements); resize(i+1); return data[i]; }
+
+#if defined(__X86_64__)
+    __forceinline       Ty& operator[](const size_t i)       { assert(i<max_total_elements); resize(i+1); return data[i]; }
+#endif
+
+    __forceinline DynamicStackArray (const DynamicStackArray& other)
+      : data(&arr[0]) 
+    {
+      for (size_t i=0; i<other.size(); i++)
+        this->operator[] (i) = other[i];
+    }
+     
+    DynamicStackArray& operator= (const DynamicStackArray& other)
+    {
+      for (size_t i=0; i<other.size(); i++)
+        this->operator[] (i) = other[i];
+
+      return *this;
+    }
+
+  private:
+    Ty arr[max_stack_elements];
+    Ty* data;
+  };
 }

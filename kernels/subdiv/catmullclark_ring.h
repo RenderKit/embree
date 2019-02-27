@@ -34,13 +34,13 @@ namespace embree
     unsigned int face_valence;                          //!< number of adjacent quad faces
     unsigned int edge_valence;                          //!< number of adjacent edges (2*face_valence)
     float vertex_crease_weight;                         //!< weight of vertex crease (0 if no vertex crease)
-    array_t<float,MAX_RING_FACE_VALENCE> crease_weight; //!< edge crease weights for each adjacent edge
+    DynamicStackArray<float,16,MAX_RING_FACE_VALENCE> crease_weight; //!< edge crease weights for each adjacent edge
     float vertex_level;                                 //!< maximum level of all adjacent edges
     float edge_level;                                   //!< level of first edge
     unsigned int eval_start_index;                      //!< topology dependent index to start evaluation
     unsigned int eval_unique_identifier;                //!< topology dependent unique identifier for this ring 
     Vertex vtx;                                         //!< center vertex
-    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring;         //!< ring of neighboring vertices
+    DynamicStackArray<Vertex,32,MAX_RING_EDGE_VALENCE> ring;  //!< ring of neighboring vertices
    
   public:
     CatmullClark1RingT () 
@@ -153,7 +153,7 @@ namespace embree
       vertex_crease_weight = h->vertex_crease_weight;
       
       HalfEdge* p = (HalfEdge*) h;
-      
+
       unsigned i=0;
       unsigned min_vertex_index = (unsigned)-1;
       unsigned min_vertex_index_face = (unsigned)-1;
@@ -546,8 +546,8 @@ namespace embree
     };
 
     Vertex vtx;
-    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring; 
-    array_t<Face,MAX_RING_FACE_VALENCE> faces;
+    DynamicStackArray<Vertex,32,MAX_RING_EDGE_VALENCE> ring; 
+    DynamicStackArray<Face,16,MAX_RING_FACE_VALENCE> faces;
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
