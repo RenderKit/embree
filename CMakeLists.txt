@@ -32,12 +32,12 @@ MACRO (SIGN_TARGET target)
     IF (WIN32)
       # on Windows we only strip as debug symbols not included in binary
       ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
-        COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_FILE:${target}>)
+        COMMAND ${EMBREE_SIGN_FILE} $<TARGET_FILE:${target}>)
     ELSEIF (APPLE)
       # on MacOSX we strip and sign
       ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
         COMMAND ${CMAKE_STRIP} -x $<TARGET_FILE:${target}>
-        COMMAND ${EMBREE_SIGN_FILE} -vv -c embree $<TARGET_FILE:${target}>)
+        COMMAND ${EMBREE_SIGN_FILE} $<TARGET_FILE:${target}>)
     ELSE()
       # on Linux just strip as signing not supported
       ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
