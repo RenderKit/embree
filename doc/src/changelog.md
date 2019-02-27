@@ -5,6 +5,7 @@ Version History
 -   Fixed ray/sphere intersector to work also for non-normalized rays.
 -   Fixed self intersection avoidance for ray oriented discs when
     non-normalized rays were used.
+-   Increased maximal face valence for subdiv patch to 64.
 
 ### New Features in Embree 3.5.0
 -   Changed normal oriented curve definition to fix waving artefacts.
