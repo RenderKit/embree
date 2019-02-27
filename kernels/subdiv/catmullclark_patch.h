@@ -296,7 +296,7 @@ namespace embree
     typedef BezierCurveT<Vertex> BezierCurve;
 
     static const unsigned SIZE = MAX_PATCH_VALENCE;
-    array_t<GeneralCatmullClark1RingT<Vertex,Vertex_t>,SIZE> ring;
+    DynamicStackArray<GeneralCatmullClark1RingT<Vertex,Vertex_t>,8,SIZE> ring;
     unsigned N;
     
     __forceinline GeneralCatmullClarkPatchT () 

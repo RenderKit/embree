@@ -30,6 +30,8 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) CatmullClark1RingT
   {
+    ALIGNED_STRUCT_(64);
+    
     int border_index;                                   //!< edge index where border starts
     unsigned int face_valence;                          //!< number of adjacent quad faces
     unsigned int edge_valence;                          //!< number of adjacent edges (2*face_valence)
@@ -531,6 +533,8 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) GeneralCatmullClark1RingT
   {
+    ALIGNED_STRUCT_(64);
+    
     typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
     
     struct Face 
