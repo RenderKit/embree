@@ -232,7 +232,40 @@ namespace embree
       for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++);
       return N;
     }
-    
+
+    /*! calculates face and edge valence */
+    __forceinline void calculateFaceValenceAndEdgeValence(size_t& faceValence, size_t& edgeValence) const 
+    {
+      faceValence = 0;
+      edgeValence = 0;
+      
+      const HalfEdge* p = this;
+      do 
+      {
+         /* calculate bounds of current face */
+        unsigned int numEdges = p->numEdges();
+        assert(numEdges >= 3);
+        edgeValence += numEdges-2;
+        
+        faceValence++;
+        p = p->prev();
+        
+        /* continue with next face */
+        if (likely(p->hasOpposite())) 
+          p = p->opposite();
+        
+        /* if there is no opposite go the long way to the other side of the border */
+        else {
+          faceValence++;
+          edgeValence++;
+          p = this;
+          while (p->hasOpposite()) 
+            p = p->opposite()->next();
+        }
+        
+      } while (p != this); 
+    }
+
     /*! stream output */
     friend __forceinline std::ostream &operator<<(std::ostream &o, const HalfEdge &h)
     {
