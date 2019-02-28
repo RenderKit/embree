@@ -76,7 +76,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   /* initialize ray */
   Ray2 primary;
   init_Ray(primary.ray,make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
-  primary.ray.mask = programIndex; // needs to encode rayID for filter
+  primary.ray.id = programIndex; // needs to encode rayID for filter
   primary.transparency = 0.0f;
 
 
@@ -101,7 +101,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     /* initialize shadow ray */
     Ray2 shadow;
     init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), 0.001f, inf);
-    shadow.ray.mask = programIndex; // needs to encode rayID for filter
+    shadow.ray.id = programIndex; // needs to encode rayID for filter
     shadow.transparency = 1.0f;
     shadow.firstHit = 0;
     shadow.lastHit = 0;
@@ -260,9 +260,9 @@ unmasked void intersectionFilterN(const RTCFilterFunctionNArguments* uniform arg
     /* otherwise accept hit and remember transparency */
     else
     {
-    /* decode ray IDs */
-      const unsigned int pid = (ray->mask & 0xFFFF) / programCount;
-      const unsigned int rid = (ray->mask & 0xFFFF) % programCount;
+      /* decode ray IDs */
+      const unsigned int pid = ray->id / programCount;
+      const unsigned int rid = ray->id % programCount;
       varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
       assert(ray2);
       scatter(ray2->transparency,sizeof(Ray2),pid,rid,T);
@@ -343,8 +343,8 @@ unmasked void occlusionFilterN(const RTCFilterFunctionNArguments* uniform args)
     const unsigned int hit_primID = hit.primID;
 
     /* decode ray IDs */
-    const unsigned int pid = (ray->mask & 0xFFFF) / programCount;
-    const unsigned int rid = (ray->mask & 0xFFFF) % programCount;
+    const unsigned int pid = ray->id / programCount;
+    const unsigned int rid = ray->id % programCount;
     varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
     assert(ray2);
 
@@ -434,7 +434,7 @@ void renderTileStandardStream(uniform int taskIndex,
     }
     init_Ray(primary.ray, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.ray.tnear, primary.ray.tfar);
  
-    primary.ray.mask = 0xFFFF0000 + N*programCount + programIndex;
+    primary.ray.id = N*programCount + programIndex;
     primary.transparency = 0.0f;
 
     N++;
@@ -489,7 +489,7 @@ void renderTileStandardStream(uniform int taskIndex,
         shadow.ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
       }
       init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), shadow.ray.tnear, shadow.ray.tfar);
-      shadow.ray.mask = 0xFFFF0000 + N*programCount + programIndex;
+      shadow.ray.id = N*programCount + programIndex;
       shadow.transparency = 1.0f;
       shadow.firstHit = 0;
       shadow.lastHit = 0;

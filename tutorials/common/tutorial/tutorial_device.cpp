@@ -566,7 +566,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, R
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.tfar >=0.0f)
+    if (shadow.tfar >= 0.0f)
       intensity += 1.0f;
   }
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;

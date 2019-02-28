@@ -78,7 +78,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   /* initialize ray */
   Ray2 primary;
   init_Ray(primary.ray,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
-  primary.ray.mask = 0; // needs to encode rayID for filter
+  primary.ray.id = 0; // needs to encode rayID for filter
   primary.transparency = 0.0f;
 
 
@@ -103,7 +103,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     /* initialize shadow ray */
     Ray2 shadow;
     init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), 0.001f, inf);
-    shadow.ray.mask = 0; // needs to encode rayID for filter
+    shadow.ray.id = 0; // needs to encode rayID for filter
     shadow.transparency = 1.0f;
     shadow.firstHit = 0;
     shadow.lastHit = 0;
@@ -262,9 +262,9 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* args)
     /* otherwise accept hit and remember transparency */
     else
     {
-    /* decode ray IDs */
-      const unsigned int pid = (ray->mask & 0xFFFF) / 1;
-      const unsigned int rid = (ray->mask & 0xFFFF) % 1;
+      /* decode ray IDs */
+      const unsigned int pid = ray->id / 1;
+      const unsigned int rid = ray->id % 1;
       Ray2* ray2 = (Ray2*) context->userRayExt;
       assert(ray2);
       scatter(ray2->transparency,sizeof(Ray2),pid,rid,T);
@@ -345,8 +345,8 @@ void occlusionFilterN(const RTCFilterFunctionNArguments* args)
     const unsigned int hit_primID = hit.primID;
 
     /* decode ray IDs */
-    const unsigned int pid = (ray->mask & 0xFFFF) / 1;
-    const unsigned int rid = (ray->mask & 0xFFFF) % 1;
+    const unsigned int pid = ray->id / 1;
+    const unsigned int rid = ray->id % 1;
     Ray2* ray2 = (Ray2*) context->userRayExt;
     assert(ray2);
 
@@ -436,7 +436,7 @@ void renderTileStandardStream(int taskIndex,
     }
     init_Ray(primary.ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.ray.tnear(), primary.ray.tfar);
  
-    primary.ray.mask = 0xFFFF0000 + N*1 + 0;
+    primary.ray.id = N*1 + 0;
     primary.transparency = 0.0f;
 
     N++;
@@ -491,7 +491,7 @@ void renderTileStandardStream(int taskIndex,
         shadow.ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
       }
       init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), shadow.ray.tnear(), shadow.ray.tfar);
-      shadow.ray.mask = 0xFFFF0000 + N*1 + 0;
+      shadow.ray.id = N*1 + 0;
       shadow.transparency = 1.0f;
       shadow.firstHit = 0;
       shadow.lastHit = 0;

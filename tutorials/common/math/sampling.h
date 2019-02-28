@@ -43,7 +43,6 @@ inline Sample3f make_Sample3f(const Vec3fa& v, const float pdf) {
 }
 #endif
 
-
 inline Vec3fa cartesian(const float phi, const float sinTheta, const float cosTheta)
 {
   float sinPhi, cosPhi;

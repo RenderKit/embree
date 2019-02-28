@@ -103,7 +103,7 @@ unsigned int addSphere(RTCScene scene, const Vec3fa& pos, RTCGeometryType type, 
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa *vertex = (Vec3fa*)rtcSetNewGeometryBuffer(geom, bufType, t, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), 1);
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0), Vec3fa(0,1,0), 2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     *vertex = Vec3fa(xfmPoint(rotation, Vec3fa(1, 0, 0)) + pos);
     vertex->w = 1.f;
 
@@ -316,7 +316,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
   RTCGeometry inst = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
    rtcSetGeometryInstancedScene(inst,scene);
    rtcSetGeometryTimeStepCount(inst,num_time_steps);
-
+  
   for (unsigned int t=0; t<num_time_steps; t++)
   {
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
@@ -356,7 +356,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
 
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);
+  rtcReleaseGeometry(geom);  
   rtcCommitScene(scene);
 
   RTCGeometry inst = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
@@ -418,9 +418,9 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 
   if (!valid[0])
     return;
-
+  
   Ray *ray = (Ray *)rays;
-
+  
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
@@ -430,7 +430,7 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
-
+  
   const Vec3fa v = ray->org-sphere_p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -471,7 +471,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
   if (!valid[0])
     return;
-
+  
   Ray *ray = (Ray *)rays;
   const int time_segments = sphere.num_time_steps-1;
   const float time = ray->time()*(float)(time_segments);
@@ -482,7 +482,7 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
-
+  
   const Vec3fa v = ray->org-sphere_p;
   const float A = dot(ray->dir,ray->dir);
   const float B = 2.0f*dot(v,ray->dir);
@@ -615,7 +615,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-
+  
   float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
   if (g_time != -1) time = g_time;
 
@@ -747,7 +747,7 @@ extern "C" void device_render (int* pixels,
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  }); 
 }
 
 /* called by the C++ code for cleanup */
