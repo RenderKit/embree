@@ -58,9 +58,9 @@ make -j 16 package
 if [ "$1" == "OFF" ]; then
 
   # sign all RPM files
-  #if [ $# -eq 4 ]; then
-  #  ${EMBREE_SIGN_FILE} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
-  #fi
+  if [ $# -eq 4 ]; then
+    ${EMBREE_SIGN_FILE} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
+  fi
     
   # create TGZ of RPMs
   embree_tgz=embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz
