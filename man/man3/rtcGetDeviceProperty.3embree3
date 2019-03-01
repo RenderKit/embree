@@ -138,4 +138,4 @@ For properties returning a boolean value, the return value 0 denotes
 \f[C]false\f[] and 1 denotes \f[C]true\f[].
 .PP
 On failure zero is returned and an error code is set that can be queried
-using \f[C]rtcDeviceGetError\f[].
+using \f[C]rtcGetDeviceError\f[].

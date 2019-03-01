@@ -75,7 +75,7 @@ To detect whether \f[C]rtcJoinCommitScene\f[] is supported, use the
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcCommitScene], [rtcGetDeviceProperty]

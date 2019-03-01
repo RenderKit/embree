@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.5.0
+% Embree: High Performance Ray Tracing Kernels 3.5.1
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.5.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x64.vc12.msi). This
+[embree-3.5.1-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.5.0 x64`.
+Files\Intel\Embree v3.5.1 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.5.0 x64`.
+Files\Intel\Embree v3.5.1 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.5.0 x64` and uninstall it.
+3.5.1 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.5.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x64.vc12.windows.zip)
+[embree-3.5.1.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.5.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x64.vc14.windows.zip)
+[embree-3.5.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.5.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.rpm.tar.gz)
+[embree-3.5.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.5.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.5.1.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.5.0-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.5.0-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.5.0-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.5.1-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.5.1-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.5.1-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.5.0-1.x86_64.rpm
-    sudo alien embree3-devel-3.5.0-1.noarch.rpm
-    sudo alien embree3-examples-3.5.0-1.x86_64.rpm
+    sudo alien embree3-lib-3.5.1-1.x86_64.rpm
+    sudo alien embree3-devel-3.5.1-1.noarch.rpm
+    sudo alien embree3-examples-3.5.1-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.5.0-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.5.0-2_all.deb
-    sudo dpkg -i embree3-examples_3.5.0-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.5.1-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.5.1-2_all.deb
+    sudo dpkg -i embree3-examples_3.5.1-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.5.0-1.x86_64
-    sudo rpm --erase embree3-devel-3.5.0-1.noarch
-    sudo rpm --erase embree3-examples-3.5.0-1.x86_64
+    sudo rpm --erase embree3-lib-3.5.1-1.x86_64
+    sudo rpm --erase embree3-devel-3.5.1-1.noarch
+    sudo rpm --erase embree3-examples-3.5.1-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.5.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.5.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.5.0.x86_64.linux.tar.gz
-    source embree-3.5.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.5.1.x86_64.linux.tar.gz
+    source embree-3.5.1.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.5.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.dmg). This
+[embree-3.5.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.5.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.5.0/embree-3.5.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.5.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.5.0.x64.macosx.tar.gz
-    source embree-3.5.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.5.1.x64.macosx.tar.gz
+    source embree-3.5.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -1157,7 +1157,7 @@ Different configuration options should be separated by commas, e.g.:
 
 On success returns a handle of the created device. On failure returns
 `NULL` as device and sets a per-thread error code that can be queried
-using `rtcDeviceGetError(NULL)`.
+using `rtcGetDeviceError(NULL)`.
 
 #### SEE ALSO
 
@@ -1189,7 +1189,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1224,7 +1224,7 @@ unless these objects are destroyed first.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1353,7 +1353,7 @@ returning a boolean value, the return value 0 denotes `false` and 1
 denotes `true`.
 
 On failure zero is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 
 
@@ -1460,7 +1460,7 @@ The error code is also set if an error callback function is registered.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1538,7 +1538,7 @@ happened and a deallocation will later free that data block.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1569,7 +1569,7 @@ scene handle can be released using the `rtcReleaseScene` API call.
 #### EXIT STATUS {#exit-status}
 
 On success a scene handle is returned. On failure `NULL` is returned
-and an error code is set that can be queried using `rtcDeviceGetError`.
+and an error code is set that can be queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1601,7 +1601,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1636,7 +1636,7 @@ count decremented.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1689,7 +1689,7 @@ map to its geometry representation. See `rtcSetGeometryUserData` and
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1741,7 +1741,7 @@ consumption and performance overhead.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1774,7 +1774,7 @@ geometries from a scene at the same time.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1811,7 +1811,7 @@ geometry handle from that representation directly.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1853,7 +1853,7 @@ causing overflows).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1925,7 +1925,7 @@ To detect whether `rtcJoinCommitScene` is supported, use the
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1987,7 +1987,7 @@ allowed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2038,7 +2038,7 @@ for a scene is `RTC_BUILD_QUALITY_MEDIUM`.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2088,7 +2088,7 @@ Multiple flags can be enabled using an `or` operation, e.g.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2121,7 +2121,7 @@ other flags the following way:
 #### EXIT STATUS {#exit-status}
 
 On failure `RTC_SCENE_FLAG_NONE` is returned and an error code is set
-that can be queried using `rtcDeviceGetError`.
+that can be queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2166,7 +2166,7 @@ result is undefined.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2213,7 +2213,7 @@ result is undefined.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2326,7 +2326,7 @@ is set as the scene build quality. See Section
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2397,7 +2397,7 @@ triangle meshes.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that be get
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2465,7 +2465,7 @@ all these buffers must have the same stride and size.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2536,7 +2536,7 @@ all these buffers must have the same stride and size.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2712,7 +2712,7 @@ However, the indices of the topologies themselves may be different.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2911,7 +2911,7 @@ and use curve geometries.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2987,7 +2987,7 @@ point geometries.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3049,7 +3049,7 @@ user-defined geometries.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3117,7 +3117,7 @@ instances.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3150,7 +3150,7 @@ handle the ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3181,7 +3181,7 @@ geometry gets destroyed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3213,7 +3213,7 @@ or to commit a scene containing the geometry using `rtcCommitScene`.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3246,7 +3246,7 @@ committed using `rtcCommitScene` for the change to have effect.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3279,7 +3279,7 @@ committed using `rtcCommitScene` for the change to have effect.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3331,7 +3331,7 @@ the motion-blurred geometry at the ray time.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3386,7 +3386,7 @@ to see how to define the time steps for the specified time range.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3426,7 +3426,7 @@ and subdivision geometries (`RTC_GEOMETRY_TYPE_SUBDIVISION`).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3471,7 +3471,7 @@ whether ray masks are enabled by querying the
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3522,7 +3522,7 @@ per-geometry build quality can be one of:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3573,7 +3573,7 @@ reference to the buffer object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3639,7 +3639,7 @@ the vertex buffer, resulting in even higher memory savings.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3687,7 +3687,7 @@ element should be readable using 16-byte SSE load instructions.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3723,7 +3723,7 @@ argument).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3765,7 +3765,7 @@ modifications after the first `rtcCommitScene`.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3880,7 +3880,7 @@ proper packet types.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3930,7 +3930,7 @@ callback function.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4043,7 +4043,7 @@ set user data pointer of a geometry.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4074,7 +4074,7 @@ previously set with `rtcSetGeometryUserData`. When
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4108,7 +4108,7 @@ specified user-defined geometry (`geometry` parameter).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4178,7 +4178,7 @@ bounding box to the destination structure (`bounds_o` member).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4287,7 +4287,7 @@ the per-ray data.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4389,7 +4389,7 @@ the per-ray data.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4424,7 +4424,7 @@ argument).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4473,7 +4473,7 @@ are supported:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4522,7 +4522,7 @@ Possible formats for the returned matrix are:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4560,7 +4560,7 @@ quads along each edge.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4600,7 +4600,7 @@ specified, then the individual topologies can be configured using
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4657,7 +4657,7 @@ certain parts of the subdivision mesh:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4704,7 +4704,7 @@ textures onto one subdivision geometry.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4792,7 +4792,7 @@ the displacement mapping functions.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4839,7 +4839,7 @@ edge e5, etc.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4881,7 +4881,7 @@ function does not depend on the topology ID.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4922,7 +4922,7 @@ function does not depend on the topology ID.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4964,7 +4964,7 @@ function does not depend on the topology ID.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5011,7 +5011,7 @@ have different index buffers assigned.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5203,7 +5203,7 @@ storage for at least one more float to the end of the buffer.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5256,7 +5256,7 @@ the `rtcNewSharedBuffer` function will fail.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5288,7 +5288,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5319,7 +5319,7 @@ destroyed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5348,7 +5348,7 @@ the specified buffer object (`buffer` argument).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6585,7 +6585,7 @@ over user-specified primitives. See the documentation of the
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6617,7 +6617,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6647,7 +6647,7 @@ argument). When the reference count falls to 0, the BVH gets destroyed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6849,7 +6849,7 @@ the build.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 

@@ -27,7 +27,7 @@ committed using \f[C]rtcCommitScene\f[] for the change to have effect.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcNewGeometry], [rtcDisableGeometry], [rtcCommitScene]

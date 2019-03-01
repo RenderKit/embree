@@ -28,7 +28,7 @@ See the documentation of the \f[C]rtcBuildBVH\f[] call for more details.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcRetainBVH], [rtcReleaseBVH], [rtcBuildBVH]

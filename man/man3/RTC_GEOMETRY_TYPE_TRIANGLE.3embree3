@@ -69,7 +69,7 @@ triangle meshes.
 .SS EXIT STATUS
 .PP
 On failure \f[C]NULL\f[] is returned and an error code is set that be
-get queried using \f[C]rtcDeviceGetError\f[].
+get queried using \f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcNewGeometry]

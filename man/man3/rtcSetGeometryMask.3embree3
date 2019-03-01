@@ -40,7 +40,7 @@ One can query whether ray masks are enabled by querying the
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [RTCRay], [rtcGetDeviceProperty]

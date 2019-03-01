@@ -105,7 +105,7 @@ rtcNewDevice("threads=1,isa=avx");
 .PP
 On success returns a handle of the created device.
 On failure returns \f[C]NULL\f[] as device and sets a per\-thread error
-code that can be queried using \f[C]rtcDeviceGetError(NULL)\f[].
+code that can be queried using \f[C]rtcGetDeviceError(NULL)\f[].
 .SS SEE ALSO
 .PP
 [rtcRetainDevice], [rtcReleaseDevice]

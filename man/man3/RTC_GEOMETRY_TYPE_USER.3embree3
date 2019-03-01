@@ -63,7 +63,7 @@ user\-defined geometries.
 .SS EXIT STATUS
 .PP
 On failure \f[C]NULL\f[] is returned and an error code is set that can
-be queried using \f[C]rtcDeviceGetError\f[].
+be queried using \f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcNewGeometry], [rtcSetGeometryUserPrimitiveCount],
