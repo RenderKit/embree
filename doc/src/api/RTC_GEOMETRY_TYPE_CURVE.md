@@ -168,9 +168,10 @@ supported for the linear basis.
 The intersection with the curve segment stores the parametric hit
 location along the curve segment as u-coordinate (range 0 to +1).
 
-For Bézier, B-spline, and Hermite curves, the v-coordinate is set to
-the normalized distance in the range -1 to +1. For the linear basis
-and in round mode the v-coordinate is set to zero.
+For flat curves, the v-coordinate is set to the normalized distance in
+the range -1 to +1. For normal oriented curves the v-coordinate is in
+the range 0 to 1. For the linear basis and in round mode the
+v-coordinate is set to zero.
 
 In flat mode, the geometry normal `Ng` is set to the tangent of the
 curve at the hit location. In round mode and for normal oriented
