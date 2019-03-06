@@ -140,6 +140,11 @@ namespace embree
     bool start_threads;                    //!< true when threads should be started at device creation time
     int enabled_cpu_features;              //!< CPU ISA features to use
     int enabled_builder_cpu_features;      //!< CPU ISA features to use for builders only
+    enum FREQUENCY_LEVEL {
+      FREQUENCY_SIMD128,
+      FREQUENCY_SIMD256,
+      FREQUENCY_SIMD512
+    } frequency_level;                     //!< frequency level the app wants to run on (default is SIMD256)
     bool enable_selockmemoryprivilege;     //!< configures the SeLockMemoryPrivilege under Windows to enable huge pages
     bool hugepages;                        //!< true if huge pages should get used
     bool hugepages_success;                //!< status for enabling huge pages
@@ -151,6 +156,17 @@ namespace embree
     int alloc_single_thread_alloc;         //!< in single mode nodes and leaves use same thread local allocator
 
   public:
+
+    /*! checks if we can use AVX */
+    bool canUseAVX() {
+      return hasISA(AVX) && frequency_level != FREQUENCY_SIMD128;
+    }
+
+    /*! checks if we can use AVX2 */
+    bool canUseAVX2() {
+      return hasISA(AVX2) && frequency_level != FREQUENCY_SIMD128;
+    }
+    
     struct ErrorHandler
     {
     public:
