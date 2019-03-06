@@ -47,7 +47,10 @@ ENDIF()
 ##############################################################
 # Install Models
 ##############################################################
-INSTALL(DIRECTORY tutorials/models DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
+
+IF (EMBREE_TUTORIALS)
+  INSTALL(DIRECTORY tutorials/models DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
+ENDIF()
 
 ##############################################################
 # Install Documentation
