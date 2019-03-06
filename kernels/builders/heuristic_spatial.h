@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  static const unsigned int RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS = 6;
+  static const unsigned int RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS = 5;
 
   namespace isa
   {
