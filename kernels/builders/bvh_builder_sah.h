@@ -483,6 +483,7 @@ namespace embree
                 // FIXME: is there a better general heuristic ?
                 const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
                 unsigned int n = 4+min((int)maxSplits-4, max(1, (int)(nf)));
+                //unsigned int n = min((int)maxSplits, max(1, (int)(nf)));
                 prim.lower.u |= n << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
               }
             });
