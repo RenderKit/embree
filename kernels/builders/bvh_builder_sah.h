@@ -411,8 +411,8 @@ namespace embree
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
       typedef GeneralBVHBuilder::Settings Settings;
 
-      static const unsigned GEOMID_MASK = 0x00FFFFFF;
-      static const unsigned SPLITS_MASK = 0xFF000000;
+      static const unsigned int GEOMID_MASK = 0xFFFFFFFF >>     RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS;
+      static const unsigned int SPLITS_MASK = 0xFFFFFFFF << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
 
       template<typename ReductionTy, typename UserCreateLeaf>
       struct CreateLeafExt
@@ -425,7 +425,7 @@ namespace embree
         __noinline ReductionTy operator() (PrimRef* prims, const range<size_t>& range, Allocator alloc) const
         {
           for (size_t i=range.begin(); i<range.end(); i++)
-            prims[i].lower.a &= GEOMID_MASK;
+            prims[i].lower.u &= GEOMID_MASK;
 
           return userCreateLeaf(prims,range,alloc);
         }
@@ -469,7 +469,9 @@ namespace embree
               return A;
             },std::plus<double>());
 
+
           /* calculate maximum number of spatial splits per primitive */
+          const unsigned int maxSplits = ((size_t)1 << RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)-1;
           const float f = 10.0f;
           const float invA = 1.0f / A;
           parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {
@@ -477,11 +479,11 @@ namespace embree
               for (size_t i=r.begin(); i<r.end(); i++)
               {
                 PrimRef& prim = prims[i];
-                assert((prim.lower.a & SPLITS_MASK) == 0);
-                const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
+                assert((prim.geomID() & SPLITS_MASK) == 0);
                 // FIXME: is there a better general heuristic ?
-                size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-                prim.lower.a |= n << 24;
+                const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
+                unsigned int n = 4+min((int)maxSplits-4, max(1, (int)(nf)));
+                prim.lower.u |= n << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
               }
             });
 

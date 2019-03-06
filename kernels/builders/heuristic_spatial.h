@@ -21,8 +21,11 @@
 
 namespace embree
 {
+  static const unsigned int RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS = 6;
+
   namespace isa
   {
+
     /*! mapping into bins */
     template<size_t BINS>
       struct SpatialBinMapping
@@ -177,7 +180,7 @@ namespace embree
         for (size_t i=0; i<N; i++)
         {
           const PrimRef prim = prims[i];
-          unsigned splits = prim.geomID() >> 24;
+          unsigned splits = prim.geomID() >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
 
           if (unlikely(splits == 1))
           {

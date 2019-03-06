@@ -96,7 +96,8 @@ namespace embree
     {
       __forceinline TriangleSplitter(const Scene* scene, const PrimRef& prim)
       {
-        const TriangleMesh* mesh = (const TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
+        const unsigned int mask = 0xFFFFFFFF >> RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS;
+        const TriangleMesh* mesh = (const TriangleMesh*) scene->get(prim.geomID() & mask );  
         TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
         v[0] = mesh->vertex(tri.v[0]);
         v[1] = mesh->vertex(tri.v[1]);
@@ -137,7 +138,8 @@ namespace embree
     {
       __forceinline QuadSplitter(const Scene* scene, const PrimRef& prim)
       {
-        const QuadMesh* mesh = (const QuadMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
+        const unsigned int mask = 0xFFFFFFFF >> RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS;
+        const QuadMesh* mesh = (const QuadMesh*) scene->get(prim.geomID() & mask );  
         QuadMesh::Quad quad = mesh->quad(prim.primID());
         v[0] = mesh->vertex(quad.v[0]);
         v[1] = mesh->vertex(quad.v[1]);

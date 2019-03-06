@@ -293,10 +293,13 @@ namespace embree
           
           const float fpos = split.mapping.pos(split.pos,split.dim);
         
+          const unsigned int mask = 0xFFFFFFFF >> RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS;
+
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
-                const unsigned int splits = prims0[i].geomID() >> 24;
+                const unsigned int splits = prims0[i].geomID() >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
+                //std::cout << "i " << i << " splits " << splits << std::endl;
 
                 if (likely(splits <= 1)) continue; /* todo: does this ever happen ? */
 
@@ -314,8 +317,8 @@ namespace embree
                   // no empty splits
                   if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
                 
-                  left.lower.a  = (left.lower.a & 0x00FFFFFF) | (splits << 24);
-                  right.lower.a = (right.lower.a & 0x00FFFFFF) | (splits << 24);
+                  left.lower.u  = (left.lower.u  & mask) | ((splits-1) << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS));
+                  right.lower.u = (right.lower.u & mask) | ((splits-1) << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS));
 
                   const size_t ID = ext_elements.fetch_add(1);
 
@@ -394,7 +397,7 @@ namespace embree
                                               [&] (const PrimRef& ref) { 
                                                 return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);
                                               },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.a >> 24); });          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.u >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)); });          
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
@@ -429,7 +432,7 @@ namespace embree
                                                 const Vec3fa c = ref.bounds().center();
                                                 return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); 
                                               },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.a >> 24); });
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.u >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)); });
 
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
@@ -460,7 +463,7 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.a >> 24); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.u >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
@@ -500,7 +503,7 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.a >> 24); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.u >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
@@ -534,13 +537,13 @@ namespace embree
 
           PrimInfo left(empty);
           for (size_t i=begin; i<center; i++) {
-            left.add_center2(prims0[i],prims0[i].lower.a >> 24);
+            left.add_center2(prims0[i],prims0[i].lower.u >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS));
           }
           const size_t lweight = left.end;
           
           PrimInfo right(empty);
           for (size_t i=center; i<end; i++) {
-            right.add_center2(prims0[i],prims0[i].lower.a >> 24);	
+            right.add_center2(prims0[i],prims0[i].lower.u >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS));	
           }
           const size_t rweight = right.end;
 
