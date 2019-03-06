@@ -1,6 +1,13 @@
 Version History
 ---------------
 
+### New Features in Embree 3.5.2
+-   Added frequency_level device configuration to allow app to specify the
+    frequency level they wants to run on. This forces Embree to not use optimizations that
+    may reduce the CPU frequency below that level. By default Embree is configured to the
+    the AVX-heavy frequency level, thus if your app uses solely non-AVX code, configuring
+    devices Embree with "frequency_level=simd128" may give better performance.
+
 ### New Features in Embree 3.5.1
 -   Fixed ray/sphere intersector to work also for non-normalized rays.
 -   Fixed self intersection avoidance for ray oriented discs when

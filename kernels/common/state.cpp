@@ -49,7 +49,8 @@ namespace embree
 
   State::State () 
     : enabled_cpu_features(getCPUFeatures()),
-      enabled_builder_cpu_features(enabled_cpu_features)
+      enabled_builder_cpu_features(enabled_cpu_features),
+      frequency_level(FREQUENCY_SIMD256)
   {
     tri_accel = "default";
     tri_builder = "default";
@@ -272,6 +273,13 @@ namespace embree
         enabled_builder_cpu_features &= string_to_cpufeatures(isa);
       }
 
+      else if (tok == Token::Id("frequency_level") && cin->trySymbol("=")) {
+        std::string freq = cin->get().Identifier();
+        if      (freq == "simd128") frequency_level = FREQUENCY_SIMD128;
+        else if (freq == "simd256") frequency_level = FREQUENCY_SIMD256;
+        else if (freq == "simd512") frequency_level = FREQUENCY_SIMD512;
+      }
+
       else if (tok == Token::Id("enable_selockmemoryprivilege") && cin->trySymbol("=")) {
         enable_selockmemoryprivilege = cin->get().Int();
       }
@@ -440,6 +448,13 @@ namespace embree
     std::cout << "  build threads = " << numThreads   << std::endl;
     std::cout << "  start_threads = " << start_threads << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
+    std::cout << "  frequency_level = ";
+    switch (frequency_level) {
+    case FREQUENCY_SIMD128: std::cout << "simd128" << std::endl; break;
+    case FREQUENCY_SIMD256: std::cout << "simd256" << std::endl; break;
+    case FREQUENCY_SIMD512: std::cout << "simd512" << std::endl; break;
+    default: std::cout << "error" << std::endl; break;
+    }
     
     std::cout << "  hugepages     = ";
     if (!hugepages) std::cout << "disabled" << std::endl;
