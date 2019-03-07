@@ -14,24 +14,19 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef _WIN32
-#  define RTC_API extern "C" __declspec(dllexport)
-#else
-#  define RTC_API extern "C" __attribute__ ((visibility ("default")))
-#endif
-
 #include "default.h"
 #include "device.h"
 #include "scene.h"
 #include "context.h"
 #include "../../include/embree3/rtcore_ray.h"
+using namespace embree;
 
-namespace embree
-{  
+RTC_NAMESPACE_BEGIN;
+
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
 
-  RTC_API RTCDevice rtcNewDevice(const char* config)
+  RTC_API_EXPORT RTCDevice rtcNewDevice(const char* config)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewDevice);
@@ -42,7 +37,7 @@ namespace embree
     return (RTCDevice) nullptr;
   }
 
-  RTC_API void rtcRetainDevice(RTCDevice hdevice) 
+  RTC_API_EXPORT void rtcRetainDevice(RTCDevice hdevice) 
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -53,7 +48,7 @@ namespace embree
     RTC_CATCH_END(nullptr);
   }
   
-  RTC_API void rtcReleaseDevice(RTCDevice hdevice) 
+  RTC_API_EXPORT void rtcReleaseDevice(RTCDevice hdevice) 
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -64,7 +59,7 @@ namespace embree
     RTC_CATCH_END(nullptr);
   }
   
-  RTC_API ssize_t rtcGetDeviceProperty(RTCDevice hdevice, RTCDeviceProperty prop)
+  RTC_API_EXPORT ssize_t rtcGetDeviceProperty(RTCDevice hdevice, RTCDeviceProperty prop)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -76,7 +71,7 @@ namespace embree
     return 0;
   }
 
-  RTC_API void rtcSetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop, ssize_t val)
+  RTC_API_EXPORT void rtcSetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop, ssize_t val)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -88,7 +83,7 @@ namespace embree
     RTC_CATCH_END(device);
   }
 
-  RTC_API RTCError rtcGetDeviceError(RTCDevice hdevice)
+  RTC_API_EXPORT RTCError rtcGetDeviceError(RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -99,7 +94,7 @@ namespace embree
     return RTC_ERROR_UNKNOWN;
   }
 
-  RTC_API void rtcSetDeviceErrorFunction(RTCDevice hdevice, RTCErrorFunction error, void* userPtr)
+  RTC_API_EXPORT void rtcSetDeviceErrorFunction(RTCDevice hdevice, RTCErrorFunction error, void* userPtr)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -109,7 +104,7 @@ namespace embree
     RTC_CATCH_END(device);
   }
 
-  RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunction memoryMonitor, void* userPtr)
+  RTC_API_EXPORT void rtcSetDeviceMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunction memoryMonitor, void* userPtr)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -118,7 +113,7 @@ namespace embree
     RTC_CATCH_END(device);
   }
 
-  RTC_API RTCBuffer rtcNewBuffer(RTCDevice hdevice, size_t byteSize)
+  RTC_API_EXPORT RTCBuffer rtcNewBuffer(RTCDevice hdevice, size_t byteSize)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewBuffer);
@@ -129,7 +124,7 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice hdevice, void* ptr, size_t byteSize)
+  RTC_API_EXPORT RTCBuffer rtcNewSharedBuffer(RTCDevice hdevice, void* ptr, size_t byteSize)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSharedBuffer);
@@ -140,7 +135,7 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void* rtcGetBufferData(RTCBuffer hbuffer)
+  RTC_API_EXPORT void* rtcGetBufferData(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;
     RTC_CATCH_BEGIN;
@@ -151,7 +146,7 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void rtcRetainBuffer(RTCBuffer hbuffer)
+  RTC_API_EXPORT void rtcRetainBuffer(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;
     RTC_CATCH_BEGIN;
@@ -161,7 +156,7 @@ namespace embree
     RTC_CATCH_END2(buffer);
   }
   
-  RTC_API void rtcReleaseBuffer(RTCBuffer hbuffer)
+  RTC_API_EXPORT void rtcReleaseBuffer(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;
     RTC_CATCH_BEGIN;
@@ -171,7 +166,7 @@ namespace embree
     RTC_CATCH_END2(buffer);
   }
 
-  RTC_API RTCScene rtcNewScene (RTCDevice hdevice) 
+  RTC_API_EXPORT RTCScene rtcNewScene (RTCDevice hdevice) 
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewScene);
@@ -182,7 +177,7 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
+  RTC_API_EXPORT void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -193,7 +188,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
+  RTC_API_EXPORT void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -207,7 +202,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags flags) 
+  RTC_API_EXPORT void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -217,7 +212,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API RTCSceneFlags rtcGetSceneFlags(RTCScene hscene)
+  RTC_API_EXPORT RTCSceneFlags rtcGetSceneFlags(RTCScene hscene)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -228,7 +223,7 @@ namespace embree
     return RTC_SCENE_FLAG_NONE;
   }
   
-  RTC_API void rtcCommitScene (RTCScene hscene) 
+  RTC_API_EXPORT void rtcCommitScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -238,7 +233,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcJoinCommitScene (RTCScene hscene) 
+  RTC_API_EXPORT void rtcJoinCommitScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -248,7 +243,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcGetSceneBounds(RTCScene hscene, RTCBounds* bounds_o)
+  RTC_API_EXPORT void rtcGetSceneBounds(RTCScene hscene, RTCBounds* bounds_o)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -267,7 +262,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcGetSceneLinearBounds(RTCScene hscene, RTCLinearBounds* bounds_o)
+  RTC_API_EXPORT void rtcGetSceneLinearBounds(RTCScene hscene, RTCLinearBounds* bounds_o)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -297,7 +292,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcIntersect1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit) 
+  RTC_API_EXPORT void rtcIntersect1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -316,7 +311,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit4* rayhit) 
+  RTC_API_EXPORT void rtcIntersect4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit4* rayhit) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -347,7 +342,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcIntersect8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit8* rayhit) 
+  RTC_API_EXPORT void rtcIntersect8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit8* rayhit) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -380,7 +375,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcIntersect16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit16* rayhit) 
+  RTC_API_EXPORT void rtcIntersect16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit16* rayhit) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -413,7 +408,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect1M (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit, unsigned int M, size_t byteStride) 
+  RTC_API_EXPORT void rtcIntersect1M (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -444,7 +439,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect1Mp (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** rn, unsigned int M) 
+  RTC_API_EXPORT void rtcIntersect1Mp (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit** rn, unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -475,7 +470,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersectNM (RTCScene hscene, RTCIntersectContext* user_context, struct RTCRayHitN* rayhit, unsigned int N, unsigned int M, size_t byteStride) 
+  RTC_API_EXPORT void rtcIntersectNM (RTCScene hscene, RTCIntersectContext* user_context, struct RTCRayHitN* rayhit, unsigned int N, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -513,7 +508,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersectNp (RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* rayhit, unsigned int N) 
+  RTC_API_EXPORT void rtcIntersectNp (RTCScene hscene, RTCIntersectContext* user_context, const RTCRayHitNp* rayhit, unsigned int N) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -551,7 +546,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray) 
+  RTC_API_EXPORT void rtcOccluded1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -567,7 +562,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay4* ray) 
+  RTC_API_EXPORT void rtcOccluded4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay4* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -598,7 +593,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
  
-  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay8* ray) 
+  RTC_API_EXPORT void rtcOccluded8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay8* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -632,7 +627,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay16* ray) 
+  RTC_API_EXPORT void rtcOccluded16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay16* ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -666,7 +661,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcOccluded1M(RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray, unsigned int M, size_t byteStride) 
+  RTC_API_EXPORT void rtcOccluded1M(RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray, unsigned int M, size_t byteStride) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -695,7 +690,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded1Mp(RTCScene hscene, RTCIntersectContext* user_context, RTCRay** ray, unsigned int M) 
+  RTC_API_EXPORT void rtcOccluded1Mp(RTCScene hscene, RTCIntersectContext* user_context, RTCRay** ray, unsigned int M) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -725,7 +720,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccludedNM(RTCScene hscene, RTCIntersectContext* user_context, RTCRayN* ray, unsigned int N, unsigned int M, size_t byteStride)
+  RTC_API_EXPORT void rtcOccludedNM(RTCScene hscene, RTCIntersectContext* user_context, RTCRayN* ray, unsigned int N, unsigned int M, size_t byteStride)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -764,7 +759,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccludedNp(RTCScene hscene, RTCIntersectContext* user_context, const RTCRayNp* ray, unsigned int N)
+  RTC_API_EXPORT void rtcOccludedNp(RTCScene hscene, RTCIntersectContext* user_context, const RTCRayNp* ray, unsigned int N)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -794,7 +789,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcRetainScene (RTCScene hscene) 
+  RTC_API_EXPORT void rtcRetainScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -804,7 +799,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcReleaseScene (RTCScene hscene) 
+  RTC_API_EXPORT void rtcReleaseScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -814,7 +809,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
+  RTC_API_EXPORT void rtcSetGeometryInstancedScene(RTCGeometry hgeometry, RTCScene hscene)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     Ref<Scene> scene = (Scene*) hscene;
@@ -889,7 +884,7 @@ namespace embree
     }
   }
 
-  RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeStep, RTCFormat format, const void* xfm)
+  RTC_API_EXPORT void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeStep, RTCFormat format, const void* xfm)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -901,7 +896,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcGetGeometryTransform(RTCGeometry hgeometry, float time, RTCFormat format, void* xfm)
+  RTC_API_EXPORT void rtcGetGeometryTransform(RTCGeometry hgeometry, float time, RTCFormat format, void* xfm)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -911,19 +906,19 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTC_API_EXPORT void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     args->report(args,filter_args);
   }
 
-  RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTC_API_EXPORT void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     args->report(args,filter_args);
   }
   
-  RTC_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
+  RTC_API_EXPORT RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
   {
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
@@ -1087,7 +1082,7 @@ namespace embree
     return nullptr;
   }
   
-  RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
+  RTC_API_EXPORT void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1101,7 +1096,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int timeStepCount)
+  RTC_API_EXPORT void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int timeStepCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1115,7 +1110,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryTimeRange(RTCGeometry hgeometry, float startTime, float endTime)
+  RTC_API_EXPORT void rtcSetGeometryTimeRange(RTCGeometry hgeometry, float startTime, float endTime)
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1129,7 +1124,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryVertexAttributeCount(RTCGeometry hgeometry, unsigned int N)
+  RTC_API_EXPORT void rtcSetGeometryVertexAttributeCount(RTCGeometry hgeometry, unsigned int N)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1139,7 +1134,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryTopologyCount(RTCGeometry hgeometry, unsigned int N)
+  RTC_API_EXPORT void rtcSetGeometryTopologyCount(RTCGeometry hgeometry, unsigned int N)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1150,7 +1145,7 @@ namespace embree
   }
  
   /*! sets the build quality of the geometry */
-  RTC_API void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
+  RTC_API_EXPORT void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1165,7 +1160,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
   
-  RTC_API void rtcSetGeometryMask (RTCGeometry hgeometry, unsigned int mask) 
+  RTC_API_EXPORT void rtcSetGeometryMask (RTCGeometry hgeometry, unsigned int mask) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1175,7 +1170,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometrySubdivisionMode (RTCGeometry hgeometry, unsigned topologyID, RTCSubdivisionMode mode) 
+  RTC_API_EXPORT void rtcSetGeometrySubdivisionMode (RTCGeometry hgeometry, unsigned topologyID, RTCSubdivisionMode mode) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1185,7 +1180,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryVertexAttributeTopology(RTCGeometry hgeometry, unsigned int vertexAttributeID, unsigned int topologyID)
+  RTC_API_EXPORT void rtcSetGeometryVertexAttributeTopology(RTCGeometry hgeometry, unsigned int vertexAttributeID, unsigned int topologyID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1195,7 +1190,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, RTCBuffer hbuffer, size_t byteOffset, size_t byteStride, size_t itemCount)
+  RTC_API_EXPORT void rtcSetGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, RTCBuffer hbuffer, size_t byteOffset, size_t byteStride, size_t itemCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     Ref<Buffer> buffer = (Buffer*)hbuffer;
@@ -1214,7 +1209,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, size_t byteOffset, size_t byteStride, size_t itemCount)
+  RTC_API_EXPORT void rtcSetSharedGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, size_t byteOffset, size_t byteStride, size_t itemCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1229,7 +1224,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount)
+  RTC_API_EXPORT void* rtcSetNewGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1251,7 +1246,7 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void* rtcGetGeometryBufferData(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot)
+  RTC_API_EXPORT void* rtcGetGeometryBufferData(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1262,7 +1257,7 @@ namespace embree
     return nullptr;
   }
   
-  RTC_API void rtcEnableGeometry (RTCGeometry hgeometry) 
+  RTC_API_EXPORT void rtcEnableGeometry (RTCGeometry hgeometry) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1272,7 +1267,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcUpdateGeometryBuffer (RTCGeometry hgeometry, RTCBufferType type, unsigned int slot) 
+  RTC_API_EXPORT void rtcUpdateGeometryBuffer (RTCGeometry hgeometry, RTCBufferType type, unsigned int slot) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1282,7 +1277,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcDisableGeometry (RTCGeometry hgeometry) 
+  RTC_API_EXPORT void rtcDisableGeometry (RTCGeometry hgeometry) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1292,7 +1287,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryTessellationRate (RTCGeometry hgeometry, float tessellationRate)
+  RTC_API_EXPORT void rtcSetGeometryTessellationRate (RTCGeometry hgeometry, float tessellationRate)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1302,7 +1297,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryUserData (RTCGeometry hgeometry, void* ptr) 
+  RTC_API_EXPORT void rtcSetGeometryUserData (RTCGeometry hgeometry, void* ptr) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1312,7 +1307,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void* rtcGetGeometryUserData (RTCGeometry hgeometry)
+  RTC_API_EXPORT void* rtcGetGeometryUserData (RTCGeometry hgeometry)
   {
     Geometry* geometry = (Geometry*) hgeometry; // no ref counting here!
     RTC_CATCH_BEGIN;
@@ -1323,7 +1318,7 @@ namespace embree
     return nullptr;
   }
 
-  RTC_API void rtcSetGeometryBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
+  RTC_API_EXPORT void rtcSetGeometryBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1333,7 +1328,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunctionN displacement)
+  RTC_API_EXPORT void rtcSetGeometryDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunctionN displacement)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1343,7 +1338,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunctionN intersect) 
+  RTC_API_EXPORT void rtcSetGeometryIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunctionN intersect) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1353,7 +1348,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry hgeometry, unsigned int faceID)
+  RTC_API_EXPORT unsigned int rtcGetGeometryFirstHalfEdge(RTCGeometry hgeometry, unsigned int faceID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1363,7 +1358,7 @@ namespace embree
     return -1;
   }
 
-  RTC_API unsigned int rtcGetGeometryFace(RTCGeometry hgeometry, unsigned int edgeID)
+  RTC_API_EXPORT unsigned int rtcGetGeometryFace(RTCGeometry hgeometry, unsigned int edgeID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1373,7 +1368,7 @@ namespace embree
     return -1;
   }
 
-  RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
+  RTC_API_EXPORT unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1383,7 +1378,7 @@ namespace embree
     return -1;
   }
 
-  RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
+  RTC_API_EXPORT unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1393,7 +1388,7 @@ namespace embree
     return -1;
   }
 
-  RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int topologyID, unsigned int edgeID)
+  RTC_API_EXPORT unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int topologyID, unsigned int edgeID)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1403,7 +1398,7 @@ namespace embree
     return -1;
   }
 
-  RTC_API void rtcSetGeometryOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
+  RTC_API_EXPORT void rtcSetGeometryOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1413,7 +1408,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryIntersectFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN filter) 
+  RTC_API_EXPORT void rtcSetGeometryIntersectFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN filter) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1423,7 +1418,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryOccludedFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN filter) 
+  RTC_API_EXPORT void rtcSetGeometryOccludedFilterFunction (RTCGeometry hgeometry, RTCFilterFunctionN filter) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1433,7 +1428,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcInterpolate(const RTCInterpolateArguments* const args)
+  RTC_API_EXPORT void rtcInterpolate(const RTCInterpolateArguments* const args)
   {
     Geometry* geometry = (Geometry*) args->geometry;
     RTC_CATCH_BEGIN;
@@ -1445,7 +1440,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcInterpolateN(const RTCInterpolateNArguments* const args)
+  RTC_API_EXPORT void rtcInterpolateN(const RTCInterpolateNArguments* const args)
   {
     Geometry* geometry = (Geometry*) args->geometry;
     RTC_CATCH_BEGIN;
@@ -1457,7 +1452,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcCommitGeometry (RTCGeometry hgeometry)
+  RTC_API_EXPORT void rtcCommitGeometry (RTCGeometry hgeometry)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1467,7 +1462,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API unsigned int rtcAttachGeometry (RTCScene hscene, RTCGeometry hgeometry)
+  RTC_API_EXPORT unsigned int rtcAttachGeometry (RTCScene hscene, RTCGeometry hgeometry)
   {
     Scene* scene = (Scene*) hscene;
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1482,7 +1477,7 @@ namespace embree
     return -1;
   }
 
-  RTC_API void rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
+  RTC_API_EXPORT void rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1497,7 +1492,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcDetachGeometry (RTCScene hscene, unsigned int geomID)
+  RTC_API_EXPORT void rtcDetachGeometry (RTCScene hscene, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -1508,7 +1503,7 @@ namespace embree
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcRetainGeometry (RTCGeometry hgeometry)
+  RTC_API_EXPORT void rtcRetainGeometry (RTCGeometry hgeometry)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1518,7 +1513,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
   
-  RTC_API void rtcReleaseGeometry (RTCGeometry hgeometry)
+  RTC_API_EXPORT void rtcReleaseGeometry (RTCGeometry hgeometry)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1528,7 +1523,7 @@ namespace embree
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
+  RTC_API_EXPORT RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -1541,4 +1536,5 @@ namespace embree
     RTC_CATCH_END2(scene);
     return nullptr;
   }
-}
+
+RTC_NAMESPACE_END

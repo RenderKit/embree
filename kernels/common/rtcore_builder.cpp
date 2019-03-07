@@ -14,12 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef _WIN32
-#  define RTC_API extern "C" __declspec(dllexport)
-#else
-#  define RTC_API extern "C" __attribute__ ((visibility ("default")))
-#endif
-
 #include "default.h"
 #include "device.h"
 #include "scene.h"
@@ -51,17 +45,6 @@ namespace embree
       mvector<BVHBuilderMorton::BuildPrim> morton_src;
       mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
     };
-
-    RTC_API RTCBVH rtcNewBVH(RTCDevice device)
-    {
-      RTC_CATCH_BEGIN;
-      RTC_TRACE(rtcNewAllocator);
-      RTC_VERIFY_HANDLE(device);
-      BVH* bvh = new BVH((Device*)device);
-      return (RTCBVH) bvh->refInc();
-      RTC_CATCH_END((Device*)device);
-      return nullptr;
-    }
 
     void* rtcBuildBVHMorton(const RTCBuildArguments* arguments)
     {
@@ -333,8 +316,26 @@ namespace embree
       bvh->allocator.cleanup();
       return root;
     }
+  }
+}
 
-    RTC_API void* rtcBuildBVH(const RTCBuildArguments* arguments)
+using namespace embree;
+using namespace embree::isa;
+
+RTC_NAMESPACE_BEGIN
+
+    RTC_API_EXPORT RTCBVH rtcNewBVH(RTCDevice device)
+    {
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcNewAllocator);
+      RTC_VERIFY_HANDLE(device);
+      BVH* bvh = new BVH((Device*)device);
+      return (RTCBVH) bvh->refInc();
+      RTC_CATCH_END((Device*)device);
+      return nullptr;
+    }
+
+    RTC_API_EXPORT void* rtcBuildBVH(const RTCBuildArguments* arguments)
     {
       BVH* bvh = (BVH*) arguments->bvh;
       RTC_CATCH_BEGIN;
@@ -378,7 +379,7 @@ namespace embree
       return nullptr;
     }
 
-    RTC_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
+    RTC_API_EXPORT void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
     {
       FastAllocator::CachedAllocator* alloc = (FastAllocator::CachedAllocator*) localAllocator;
       RTC_CATCH_BEGIN;
@@ -388,7 +389,7 @@ namespace embree
       return nullptr;
     }
 
-    RTC_API void rtcMakeStaticBVH(RTCBVH hbvh)
+    RTC_API_EXPORT void rtcMakeStaticBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       RTC_CATCH_BEGIN;
@@ -399,7 +400,7 @@ namespace embree
       RTC_CATCH_END(bvh->device);
     }
 
-    RTC_API void rtcRetainBVH(RTCBVH hbvh)
+    RTC_API_EXPORT void rtcRetainBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
@@ -410,7 +411,7 @@ namespace embree
       RTC_CATCH_END(device);
     }
     
-    RTC_API void rtcReleaseBVH(RTCBVH hbvh)
+    RTC_API_EXPORT void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
@@ -420,6 +421,7 @@ namespace embree
       bvh->refDec();
       RTC_CATCH_END(device);
     }
-  }
-}
+
+RTC_NAMESPACE_END
+
 

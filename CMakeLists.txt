@@ -69,6 +69,14 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
   "${PROJECT_SOURCE_DIR}/kernels/hash.h"
 )
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map.in"
+  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map"
+)
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map.in"
+  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
+)
 
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
@@ -113,6 +121,11 @@ ENDIF()
 
 OPTION(EMBREE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
 OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
+SET(EMBREE_API_NAMESPACE "" CACHE STRING "C++ namespace to put API symbols into.")
+
+IF (EMBREE_API_NAMESPACE AND EMBREE_ISPC_SUPPORT)
+   MESSAGE(FATAL_ERROR "You cannot enable ISPC when EMBREE_API_NAMESPACE is used.")
+ENDIF()
 
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)

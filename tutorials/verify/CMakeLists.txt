@@ -14,7 +14,9 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_LIBRARY(c99_compile_test STATIC api_c99.c)
+IF(NOT EMBREE_API_NAMESPACE)
+  ADD_LIBRARY(c99_compile_test STATIC api_c99.c)
+ENDIF()
 
 ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)

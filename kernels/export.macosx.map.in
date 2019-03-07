@@ -1,9 +1,9 @@
 _rtc*
-__ZN?rtc*
-__ZN??rtc*
-__ZN???rtc*
-__ZN????rtc*
-__ZN?????rtc*
+__ZN?@EMBREE_API_NAMESPACE@rtc*
+__ZN?@EMBREE_API_NAMESPACE@?rtc*
+__ZN?@EMBREE_API_NAMESPACE@??rtc*
+__ZN?@EMBREE_API_NAMESPACE@???rtc*
+__ZN?@EMBREE_API_NAMESPACE@????rtc*
 __ZN6embree13TaskScheduler10swapThreadEPNS0_6ThreadE*
 __ZN6embree13TaskScheduler11threadCountEv*
 __ZN6embree13TaskScheduler11threadIndexEv*

@@ -1,0 +1,12 @@
+{
+global:
+  rtc*;
+  _ZN?@EMBREE_API_NAMESPACE@rtc*;
+  _ZN?@EMBREE_API_NAMESPACE@?rtc*;
+  _ZN?@EMBREE_API_NAMESPACE@??rtc*;
+  _ZN?@EMBREE_API_NAMESPACE@???rtc*;
+  _ZN?@EMBREE_API_NAMESPACE@????rtc*;
+  _ZN6embree13TaskScheduler*;
+local: 
+  *;
+};

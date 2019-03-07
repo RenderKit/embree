@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### New Features in Embree 3.5.3
+-   Added EMBREE_ISA_NAMESPACE cmake option that allows to put all Embree API functions
+    inside a user defined namespace.
+
 ### New Features in Embree 3.5.2
 -   Added frequency_level device configuration to allow app to specify the
     frequency level they wants to run on. This forces Embree to not use optimizations that

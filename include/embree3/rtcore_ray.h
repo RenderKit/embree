@@ -18,9 +18,7 @@
 
 #include "rtcore_common.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
 
 /* Ray structure for a single ray */
 struct RTC_ALIGN(16) RTCRay
@@ -232,10 +230,6 @@ struct RTCHitN;
 struct RTCRayHitN;
 
 #if defined(__cplusplus)
-}
-#endif
-
-#if defined(__cplusplus)
 
 /* Helper functions to access ray packets of runtime size N */
 RTC_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ray, unsigned int N, unsigned int i) { return ((float*)ray)[0*N+i]; }
@@ -392,3 +386,6 @@ RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* rayhitN, unsigned 
 }
 
 #endif
+
+RTC_NAMESPACE_END
+
