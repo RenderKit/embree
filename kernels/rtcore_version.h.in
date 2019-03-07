@@ -34,6 +34,8 @@
 #  define RTC_NAMESPACE_OPEN
 #  if defined(__cplusplus)
 #    define RTC_API_EXTERN_C extern "C"
+#  elif defined(ISPC)
+#    define RTC_API_EXTERN_C extern "C" unmasked
 #  else
 #    define RTC_API_EXTERN_C
 #  endif
