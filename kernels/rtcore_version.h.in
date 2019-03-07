@@ -36,21 +36,20 @@
 #  define RTC_NAMESPACE_OPEN
 #  if defined(__cplusplus)
 #    define RTC_API_EXTERN_C extern "C"
-#  elif defined(ISPC)
-#    define RTC_API_EXTERN_C extern "C" unmasked
 #  else
 #    define RTC_API_EXTERN_C
 #  endif
 #endif
 
-#if defined(_WIN32)
-#  if defined(EMBREE_STATIC_LIB)
-#    define RTC_API_IMPORT RTC_API_EXTERN_C
-#    define RTC_API_EXPORT RTC_API_EXTERN_C
-#  else
-#    define RTC_API_IMPORT RTC_API_EXTERN_C __declspec(dllimport)
-#    define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport)
-#  endif
+#if defined(ISPC)
+#  define RTC_API_IMPORT extern "C" unmasked
+#  define RTC_API_EXPORT extern "C" unmasked
+#elif defined(EMBREE_STATIC_LIB)
+#  define RTC_API_IMPORT RTC_API_EXTERN_C
+#  define RTC_API_EXPORT RTC_API_EXTERN_C
+#elif defined(_WIN32)
+#  define RTC_API_IMPORT RTC_API_EXTERN_C __declspec(dllimport)
+#  define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport)
 #else
 #  define RTC_API_IMPORT RTC_API_EXTERN_C
 #  define RTC_API_EXPORT RTC_API_EXTERN_C __attribute__ ((visibility ("default")))
