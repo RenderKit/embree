@@ -37,6 +37,11 @@ bool g_subdiv_mode = false;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
+bool monitorProgressFunction(void* ptr, double dn) 
+{
+  return true;
+}
+  
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
   const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
@@ -137,6 +142,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,nullptr);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
