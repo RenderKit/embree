@@ -230,6 +230,12 @@ namespace embree
       return root;
     }
 
+    static __forceinline const std::pair<CentGeomBBox3fa,unsigned int> mergePair(const std::pair<CentGeomBBox3fa,unsigned int>& a, const std::pair<CentGeomBBox3fa,unsigned int>& b) {
+      CentGeomBBox3fa centBounds = CentGeomBBox3fa::merge2(a.first,b.first);
+      unsigned int maxGeomID = max(a.second,b.second); 
+      return std::pair<CentGeomBBox3fa,unsigned int>(centBounds,maxGeomID);
+    }
+
     void* rtcBuildBVHSpatialSAH(const RTCBuildArguments* arguments)
     {
       BVH* bvh = (BVH*) arguments->bvh;
@@ -246,15 +252,31 @@ namespace embree
       std::atomic<size_t> progress(0);
   
       /* calculate priminfo */
-      auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
+
+      auto computeBounds = [&](const range<size_t>& r) -> std::pair<CentGeomBBox3fa,unsigned int>
         {
           CentGeomBBox3fa bounds(empty);
+          unsigned maxGeomID = 0;
           for (size_t j=r.begin(); j<r.end(); j++)
+          {
             bounds.extend((BBox3fa&)prims[j]);
-          return bounds;
+            maxGeomID = max(maxGeomID,prims[j].geomID);
+          }
+          return std::pair<CentGeomBBox3fa,unsigned int>(bounds,maxGeomID);
         };
-      const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+
+
+      const std::pair<CentGeomBBox3fa,unsigned int> pair = 
+        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),std::pair<CentGeomBBox3fa,unsigned int>(CentGeomBBox3fa(empty),0), computeBounds, mergePair);
+
+      CentGeomBBox3fa bounds = pair.first;
+      const unsigned int maxGeomID = pair.second;
+      
+      if (unlikely(maxGeomID >= ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS))))
+        {
+          /* fallback code for max geomID larger than threshold */
+          return rtcBuildBVHBinnedSAH(arguments);
+        }
 
       const PrimInfo pinfo(0,primitiveCount,bounds);
 
