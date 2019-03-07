@@ -140,7 +140,6 @@ namespace embree
         }
         else
         {
-          PRINT("fallback solution");
           /* fallback for max geomID > 2^27 */
           root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafSpatial<N,Primitive>(bvh),bvh->scene->progressInterface,prims0.data(),pinfo,settings);
         }
