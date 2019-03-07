@@ -254,7 +254,7 @@ def runConfig(config):
 
   if "api_namespace" in config:
     conf.append("-D EMBREE_API_NAMESPACE="+config["api_namespace"])
-    conf.append("-D EMBREE_ISPC_SUPPORT=OFF"])
+    conf.append("-D EMBREE_ISPC_SUPPORT=OFF")
   if "ISPC_SUPPORT" in config:
     conf.append("-D EMBREE_ISPC_SUPPORT="+config["ISPC_SUPPORT"])
   if "STATIC_LIB" in config:
