@@ -472,8 +472,7 @@ namespace embree
 
           /* calculate maximum number of spatial splits per primitive */
           const unsigned int maxSplits = ((size_t)1 << RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)-1;
-          const float f = 4.0f; //10.0f;
-          //const float f = 10.0f;
+          const float f = 10.0f;
 
           const float invA = 1.0f / A;
           parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {
@@ -484,8 +483,7 @@ namespace embree
                 assert((prim.geomID() & SPLITS_MASK) == 0);
                 // FIXME: is there a better general heuristic ?
                 const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
-                //unsigned int n = 4+min((int)maxSplits-4, max(1, (int)(nf)));
-                unsigned int n = 1 + min((int)maxSplits-1, max(1, (int)(nf)));
+                unsigned int n = 4+min((int)maxSplits-4, max(1, (int)(nf)));
                 prim.lower.u |= n << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
               }
             });

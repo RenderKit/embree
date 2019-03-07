@@ -141,6 +141,36 @@ namespace embree
         else
         {
           /* fallback for max geomID > 2^27 */
+#if 0
+          /* pre splits */
+          const unsigned int LATTICE_BITS_PER_DIM = 10;
+          const Vec3fa base  = pinfo.geomBounds.lower;
+          const Vec3fa diag  = pinfo.geomBounds.upper - pinfo.geomBounds.lower;
+          const Vec3fa scale = select(gt_mask(diag,Vec3fa(1E-19f)), (Vec3fa)((float)LATTICE_BITS_PER_DIM) * (Vec3fa)(1.0f-(float)ulp) / diag, (Vec3fa)(0.0f));
+          PRINT(base);
+          PRINT(diag);
+          PRINT(scale);
+          PRINT(pinfo.size());
+
+          
+          for (size_t i=0;i<pinfo.size();i++)
+          {
+            const Vec3ia lower_binID = (Vec3ia)((prims0[i].lower-base)*scale);
+            const Vec3ia upper_binID = (Vec3ia)((prims0[i].upper-base)*scale);
+            const unsigned int lower_code = bitInterleave(lower_binID.x,lower_binID.y,lower_binID.z);
+            const unsigned int upper_code = bitInterleave(upper_binID.x,upper_binID.y,upper_binID.z);
+            unsigned int diff       = 32 - lzcnt(lower_code^upper_code);
+
+            diff = 1 + min((int)diff,(1<<RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)-1);
+
+            //const unsigned int log_diff   = (diff != 0) ? bsf(diff) : 0;
+            //PRINT(i);
+            //PRINT(diff);
+            //diff = 2;
+            //prims0[i].lower.u |= diff << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
+          }
+          /* ==================== */
+#endif
           root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafSpatial<N,Primitive>(bvh),bvh->scene->progressInterface,prims0.data(),pinfo,settings);
         }
 
