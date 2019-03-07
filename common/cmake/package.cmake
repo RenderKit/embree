@@ -39,6 +39,7 @@ ENDIF()
 ##############################################################
 # Install Headers
 ##############################################################
+
 INSTALL(DIRECTORY include/embree3 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
 IF (NOT WIN32)
   INSTALL(DIRECTORY man/man3 DESTINATION ${CMAKE_INSTALL_MANDIR} COMPONENT devel)
@@ -47,7 +48,10 @@ ENDIF()
 ##############################################################
 # Install Models
 ##############################################################
-INSTALL(DIRECTORY tutorials/models DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
+
+IF (EMBREE_TUTORIALS)
+  INSTALL(DIRECTORY tutorials/models DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
+ENDIF()
 
 ##############################################################
 # Install Documentation
