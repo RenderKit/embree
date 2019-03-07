@@ -20,6 +20,7 @@
 #define RTC_VERSION 30502
 #define RTC_VERSION_STRING "3.5.2-alpha.0"
 
+/* #undef EMBREE_STATIC_LIB */
 /* #undef EMBREE_API_NAMESPACE */
 
 #if defined(EMBREE_API_NAMESPACE)
@@ -38,9 +39,14 @@
 #  endif
 #endif
 
-#if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
-#  define RTC_API        RTC_API_EXTERN_C __declspec(dllimport)
-#  define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport) 
+#if defined(_WIN32)
+#  if defined(EMBREE_STATIC_LIB)
+#    define RTC_API        RTC_API_EXTERN_C
+#    define RTC_API_EXPORT RTC_API_EXTERN_C
+#  else
+#    define RTC_API        RTC_API_EXTERN_C __declspec(dllimport)
+#    define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport)
+#endif
 #else
 #  define RTC_API        RTC_API_EXTERN_C
 #  define RTC_API_EXPORT RTC_API_EXTERN_C __attribute__ ((visibility ("default")))

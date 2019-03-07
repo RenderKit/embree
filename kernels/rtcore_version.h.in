@@ -20,6 +20,7 @@
 #define RTC_VERSION @EMBREE_VERSION_NUMBER@
 #define RTC_VERSION_STRING "@EMBREE_VERSION_MAJOR@.@EMBREE_VERSION_MINOR@.@EMBREE_VERSION_PATCH@@EMBREE_VERSION_NOTE@"
 
+#cmakedefine EMBREE_STATIC_LIB
 #cmakedefine EMBREE_API_NAMESPACE
 
 #if defined(EMBREE_API_NAMESPACE)
@@ -38,9 +39,14 @@
 #  endif
 #endif
 
-#if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
-#  define RTC_API        RTC_API_EXTERN_C __declspec(dllimport)
-#  define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport) 
+#if defined(_WIN32)
+#  if defined(EMBREE_STATIC_LIB)
+#    define RTC_API        RTC_API_EXTERN_C
+#    define RTC_API_EXPORT RTC_API_EXTERN_C
+#  else
+#    define RTC_API        RTC_API_EXTERN_C __declspec(dllimport)
+#    define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport)
+#endif
 #else
 #  define RTC_API        RTC_API_EXTERN_C
 #  define RTC_API_EXPORT RTC_API_EXTERN_C __attribute__ ((visibility ("default")))

@@ -231,9 +231,7 @@ parameters that can be configured in CMake:
   is ON by default.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
-  default). When using the statically compiled Embree library, you
-  have to define ENABLE_STATIC_LIB before including rtcore.h in your
-  application. Further multiple static libraries are generated for the
+  default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
   `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512knl.a`,
   `embree3_avx512skx.a`). You have to link these libraries in exactly
