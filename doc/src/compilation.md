@@ -241,6 +241,9 @@ parameters that can be configured in CMake:
   API symbols inside. By default no namespace is used and plain C symbols
   exported.
 
++ `EMBREE_LIBRARY_NAME`: Specifies the name of the Embree library file
+  created. By default the name embree3 is used.
+
 + `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
   default CMAKE_CXX_FLAGS. This option is turned ON by default.
 

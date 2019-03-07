@@ -121,6 +121,7 @@ ENDIF()
 OPTION(EMBREE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
 OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
 SET(EMBREE_API_NAMESPACE "" CACHE STRING "C++ namespace to put API symbols into.")
+SET(EMBREE_LIBRARY_NAME  "embree${EMBREE_VERSION_MAJOR}" CACHE STRING "Name of the embree library file (default is embree${EMBREE_VERSION_MAJOR})")
 
 IF (EMBREE_API_NAMESPACE AND EMBREE_ISPC_SUPPORT)
    MESSAGE(FATAL_ERROR "You cannot enable ISPC when EMBREE_API_NAMESPACE is used.")

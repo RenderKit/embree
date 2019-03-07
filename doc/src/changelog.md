@@ -4,6 +4,7 @@ Version History
 ### New Features in Embree 3.5.3
 -   Added EMBREE_ISA_NAMESPACE cmake option that allows to put all Embree API functions
     inside a user defined namespace.
+-   Added EMBREE_LIBRARY_NAME cmake option that allows to rename the Embree library.
 -   When Embree is compiled as static library, EMBREE_STATIC_LIB has no longer to get
     defined before including the Embree API headers.
 
