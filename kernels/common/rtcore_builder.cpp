@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define RTC_EXPORT_API
+
 #include "default.h"
 #include "device.h"
 #include "scene.h"
@@ -324,7 +326,7 @@ using namespace embree::isa;
 
 RTC_NAMESPACE_BEGIN
 
-    RTC_API_EXPORT RTCBVH rtcNewBVH(RTCDevice device)
+    RTC_API RTCBVH rtcNewBVH(RTCDevice device)
     {
       RTC_CATCH_BEGIN;
       RTC_TRACE(rtcNewAllocator);
@@ -335,7 +337,7 @@ RTC_NAMESPACE_BEGIN
       return nullptr;
     }
 
-    RTC_API_EXPORT void* rtcBuildBVH(const RTCBuildArguments* arguments)
+    RTC_API void* rtcBuildBVH(const RTCBuildArguments* arguments)
     {
       BVH* bvh = (BVH*) arguments->bvh;
       RTC_CATCH_BEGIN;
@@ -379,7 +381,7 @@ RTC_NAMESPACE_BEGIN
       return nullptr;
     }
 
-    RTC_API_EXPORT void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
+    RTC_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
     {
       FastAllocator::CachedAllocator* alloc = (FastAllocator::CachedAllocator*) localAllocator;
       RTC_CATCH_BEGIN;
@@ -389,7 +391,7 @@ RTC_NAMESPACE_BEGIN
       return nullptr;
     }
 
-    RTC_API_EXPORT void rtcMakeStaticBVH(RTCBVH hbvh)
+    RTC_API void rtcMakeStaticBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       RTC_CATCH_BEGIN;
@@ -400,7 +402,7 @@ RTC_NAMESPACE_BEGIN
       RTC_CATCH_END(bvh->device);
     }
 
-    RTC_API_EXPORT void rtcRetainBVH(RTCBVH hbvh)
+    RTC_API void rtcRetainBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
@@ -411,7 +413,7 @@ RTC_NAMESPACE_BEGIN
       RTC_CATCH_END(device);
     }
     
-    RTC_API_EXPORT void rtcReleaseBVH(RTCBVH hbvh)
+    RTC_API void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       Device* device = bvh ? bvh->device : nullptr;
@@ -423,5 +425,3 @@ RTC_NAMESPACE_BEGIN
     }
 
 RTC_NAMESPACE_END
-
-

@@ -24,10 +24,12 @@
 #cmakedefine EMBREE_API_NAMESPACE
 
 #if defined(EMBREE_API_NAMESPACE)
+#  define RTC_NAMESPACE @EMBREE_API_NAMESPACE@
 #  define RTC_NAMESPACE_BEGIN namespace @EMBREE_API_NAMESPACE@ {
 #  define RTC_NAMESPACE_END }
 #  define RTC_NAMESPACE_OPEN using namespace @EMBREE_API_NAMESPACE@;
 #  define RTC_API_EXTERN_C
+#  undef EMBREE_API_NAMESPACE
 #else
 #  define RTC_NAMESPACE_BEGIN
 #  define RTC_NAMESPACE_END
@@ -43,13 +45,19 @@
 
 #if defined(_WIN32)
 #  if defined(EMBREE_STATIC_LIB)
-#    define RTC_API        RTC_API_EXTERN_C
+#    define RTC_API_IMPORT RTC_API_EXTERN_C
 #    define RTC_API_EXPORT RTC_API_EXTERN_C
 #  else
-#    define RTC_API        RTC_API_EXTERN_C __declspec(dllimport)
+#    define RTC_API_IMPORT RTC_API_EXTERN_C __declspec(dllimport)
 #    define RTC_API_EXPORT RTC_API_EXTERN_C __declspec(dllexport)
-#endif
+#  endif
 #else
-#  define RTC_API        RTC_API_EXTERN_C
+#  define RTC_API_IMPORT RTC_API_EXTERN_C
 #  define RTC_API_EXPORT RTC_API_EXTERN_C __attribute__ ((visibility ("default")))
+#endif
+
+#if defined(RTC_EXPORT_API)
+#  define RTC_API RTC_API_EXPORT
+#else
+#  define RTC_API RTC_API_IMPORT
 #endif
