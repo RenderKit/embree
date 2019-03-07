@@ -98,6 +98,7 @@ namespace embree
           return;
         }
 
+        const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<Mesh,false>();
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
 
         /* create primref array */
@@ -121,16 +122,27 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
 
-        NodeRef root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
-          typename BVH::CreateAlloc(bvh),
-          typename BVH::AlignedNode::Create2(),
-          typename BVH::AlignedNode::Set2(),
-          CreateLeafSpatial<N,Primitive>(bvh),
-          splitter,
-          bvh->scene->progressInterface,
-          prims0.data(),
-          numSplitPrimitives,
-          pinfo,settings);
+        /* call BVH builder */
+        NodeRef root(0);
+
+        if (likely(maxGeomID < ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS))))
+        {
+          root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
+            typename BVH::CreateAlloc(bvh),
+            typename BVH::AlignedNode::Create2(),
+            typename BVH::AlignedNode::Set2(),
+            CreateLeafSpatial<N,Primitive>(bvh),
+            splitter,
+            bvh->scene->progressInterface,
+            prims0.data(),
+            numSplitPrimitives,
+            pinfo,settings);
+        }
+        else
+        {
+          /* fallback for max geomID > 2^27 */
+          root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafSpatial<N,Primitive>(bvh),bvh->scene->progressInterface,prims0.data(),pinfo,settings);
+        }
 
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));

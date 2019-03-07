@@ -84,6 +84,17 @@ namespace embree
         return ret;
       }
 
+      __forceinline unsigned int maxGeomID() 
+      {
+        unsigned int ret = 0;
+        for (size_t i=0; i<scene->size(); i++) {
+          Ty* mesh = at(i);
+          if (mesh == nullptr) continue;
+          ret = max(ret,mesh->geomID);
+        }
+        return ret;
+      }
+
       __forceinline unsigned maxTimeStepsPerGeometry()
       {
         unsigned ret = 0;
@@ -351,6 +362,13 @@ namespace embree
 
       Scene::Iterator<Mesh,mblur> iter(this);
       return iter.maxTimeStepsPerGeometry();
+    }
+
+    template<typename Mesh, bool mblur>
+    __forceinline unsigned int getMaxGeomID()
+    {
+      Scene::Iterator<Mesh,mblur> iter(this);
+      return iter.maxGeomID();
     }
    
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets

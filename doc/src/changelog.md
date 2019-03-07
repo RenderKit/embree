@@ -2,11 +2,13 @@ Version History
 ---------------
 
 ### New Features in Embree 3.5.2
--   Added frequency_level device configuration to allow app to specify the
-    frequency level they wants to run on. This forces Embree to not use optimizations that
+-   Added CPU frequency_level device configuration to allow an application to specify the
+    frequency level it wants to run on. This forces Embree to not use optimizations that
     may reduce the CPU frequency below that level. By default Embree is configured to the
-    the AVX-heavy frequency level, thus if your app uses solely non-AVX code, configuring
-    devices Embree with "frequency_level=simd128" may give better performance.
+    the AVX-heavy frequency level, thus if the application uses solely non-AVX code, configuring
+    the Embree device with "frequency_level=simd128" may give better performance.
+-   The spatial split SAH BVH builder will now automatically fallback to the standard
+    SAH BVH builder for scenes with > 2^27 geometries.
 
 ### New Features in Embree 3.5.1
 -   Fixed ray/sphere intersector to work also for non-normalized rays.
