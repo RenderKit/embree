@@ -18,9 +18,7 @@
 
 #include "rtcore_buffer.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
 
 /* Opaque scene type */
 typedef struct RTCSceneTy* RTCScene;
@@ -376,7 +374,6 @@ struct RTCGrid
   unsigned short width,height; // max is a 32k x 32k grid
 };
 
-#if defined(__cplusplus)
-}
-#endif
+RTC_NAMESPACE_END
+
 

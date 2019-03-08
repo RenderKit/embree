@@ -18,9 +18,7 @@
 
 #include "rtcore_common.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
 
 /* Opaque device type */
 typedef struct RTCDeviceTy* RTCDevice;
@@ -96,6 +94,4 @@ typedef bool (*RTCMemoryMonitorFunction)(void* ptr, ssize_t bytes, bool post);
 /* Sets the memory monitor callback function. */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction memoryMonitor, void* userPtr);
 
-#if defined(__cplusplus)
-}
-#endif
+RTC_NAMESPACE_END

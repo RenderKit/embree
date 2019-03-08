@@ -62,9 +62,9 @@ continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   tags:   [docker]
   only:   [pushes]
 
-continuous-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
+continuous-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-NAMESPACE:
   image: embreedocker/ubuntu:17.10
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:1"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"
   tags:   [docker]
   only:   [pushes]
 
@@ -115,8 +115,8 @@ nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
   tags:   [win7, v141]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
+nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
   tags:   [win7, clang]
   only:   [schedules]
 
@@ -143,8 +143,8 @@ nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2019.2:
 
 # CLANG compilation and testing of different ISAs
 
-nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-SSE2-TBB2019.2:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4"
+nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-SSE2-TBB2019.2-NAMESPACE:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
   tags:   [mac, clang]
   only:   [schedules]
 
@@ -173,9 +173,9 @@ nightly-macosx-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
 
 # CLANG compilation and testing of different ISAs
 
-nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-SSE2-TBB:
+nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-SSE2-TBB-NAMESPACE:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
   tags:   [docker]
   only:   [schedules]
 

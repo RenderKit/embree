@@ -18,9 +18,7 @@
 
 #include "rtcore_scene.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
   
 /* Opaque BVH type */
 typedef struct RTCBVHTy* RTCBVH;
@@ -131,6 +129,5 @@ RTC_API void rtcRetainBVH(RTCBVH bvh);
 /* Releases the BVH (decrements reference count). */
 RTC_API void rtcReleaseBVH(RTCBVH bvh);
 
-#if defined(__cplusplus)
-}
-#endif
+RTC_NAMESPACE_END
+
