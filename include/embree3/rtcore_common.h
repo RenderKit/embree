@@ -20,23 +20,13 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
 
 #if defined(_WIN32)
 #if defined(_M_X64)
 typedef long long ssize_t;
 #else
 typedef int ssize_t;
-#endif
-#endif
-
-#ifndef RTC_API
-#if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
-#  define RTC_API __declspec(dllimport) 
-#else
-#  define RTC_API 
 #endif
 #endif
 
@@ -229,6 +219,4 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
   context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
   
-#if defined(__cplusplus)
-}
-#endif
+RTC_NAMESPACE_END

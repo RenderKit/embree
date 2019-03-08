@@ -18,9 +18,7 @@
 
 #include "rtcore_device.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
   
 /* Forward declarations for ray structures */
 struct RTCRayHit;
@@ -144,6 +142,8 @@ RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, 
 inline RTCSceneFlags operator|(RTCSceneFlags a, RTCSceneFlags b) {
   return (RTCSceneFlags)((size_t)a | (size_t)b);
 }
-  
-}
+
 #endif
+
+RTC_NAMESPACE_END
+

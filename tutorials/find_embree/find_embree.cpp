@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include <embree3/rtcore.h>
+RTC_NAMESPACE_OPEN
 
 #include <xmmintrin.h>
 //#include <pmmintrin.h> // use this to get _MM_SET_DENORMALS_ZERO_MODE when compiling for SSE3 or higher

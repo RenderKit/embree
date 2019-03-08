@@ -18,6 +18,7 @@
 
 #include "lights.h"
 #include "../../../include/embree3/rtcore.h"
+RTC_NAMESPACE_OPEN
 #include "../math/random_sampler.h"
 
 namespace embree

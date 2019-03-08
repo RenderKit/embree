@@ -14,20 +14,17 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef _WIN32
-#  define RTC_API extern "C" __declspec(dllexport)
-#else
-#  define RTC_API extern "C" __attribute__ ((visibility ("default")))
-#endif
+#define RTC_EXPORT_API
 
 #include "default.h"
 #include "device.h"
 #include "scene.h"
 #include "context.h"
 #include "../../include/embree3/rtcore_ray.h"
+using namespace embree;
 
-namespace embree
-{  
+RTC_NAMESPACE_BEGIN;
+
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
 
@@ -1541,4 +1538,5 @@ namespace embree
     RTC_CATCH_END2(scene);
     return nullptr;
   }
-}
+
+RTC_NAMESPACE_END

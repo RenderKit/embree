@@ -251,7 +251,11 @@ def runConfig(config):
         
     else:
       raise ValueError('unknown tasking system: ' + tasking)      
-    
+
+  if "api_namespace" in config:
+    conf.append("-D EMBREE_API_NAMESPACE="+config["api_namespace"])
+    conf.append("-D EMBREE_LIBRARY_NAME="+config["api_namespace"])  # we test different library name at the same time
+    conf.append("-D EMBREE_ISPC_SUPPORT=OFF")
   if "ISPC_SUPPORT" in config:
     conf.append("-D EMBREE_ISPC_SUPPORT="+config["ISPC_SUPPORT"])
   if "STATIC_LIB" in config:
