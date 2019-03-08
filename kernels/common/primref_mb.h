@@ -171,7 +171,7 @@ namespace embree
 
      /* returns time that corresponds to time step */
     __forceinline float timeStep(const int i) const {
-      assert(i>=0 && i<=_totalTimeSegments);
+      assert(i>=0 && i<=(int)_totalTimeSegments);
       return time_range.lower + time_range.size()*float(i)/float(_totalTimeSegments);
     }
     
