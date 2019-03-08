@@ -95,6 +95,7 @@ namespace embree
     object_accel_mb_max_leaf_size = 1;
 
     max_spatial_split_replications = 2.0f;
+    useSpatialPreSplits = false;
 
     tessellation_cache_size = 128*1024*1024;
 
@@ -419,6 +420,9 @@ namespace embree
       
       else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
         max_spatial_split_replications = cin->get().Float();
+
+      else if (tok == Token::Id("presplits") && cin->trySymbol("="))
+        useSpatialPreSplits = cin->get().Int() != 0 ? true : false;
 
       else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);

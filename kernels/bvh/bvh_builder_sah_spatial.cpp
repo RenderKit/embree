@@ -125,7 +125,8 @@ namespace embree
         /* call BVH builder */
         NodeRef root(0);
 
-        if (likely(maxGeomID < ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS))))
+        const bool usePreSplits = scene->device->useSpatialPreSplits;
+        if (likely( !usePreSplits && (maxGeomID < ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)))))
         {
           root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
             typename BVH::CreateAlloc(bvh),
@@ -140,35 +141,117 @@ namespace embree
         }
         else
         {
-          /* fallback for max geomID > 2^27 */
-#if 0
+          /* fallback for max geomID > 2^27 or activated pre-splits */
+
+#define ENABLE_PRESPLITS 1
+#if ENABLE_PRESPLITS == 1
           /* pre splits */
           const unsigned int LATTICE_BITS_PER_DIM = 10;
+          const unsigned int LATTICE_SIZE_PER_DIM = (1 << LATTICE_BITS_PER_DIM);
           const Vec3fa base  = pinfo.geomBounds.lower;
           const Vec3fa diag  = pinfo.geomBounds.upper - pinfo.geomBounds.lower;
-          const Vec3fa scale = select(gt_mask(diag,Vec3fa(1E-19f)), (Vec3fa)((float)LATTICE_BITS_PER_DIM) * (Vec3fa)(1.0f-(float)ulp) / diag, (Vec3fa)(0.0f));
-          PRINT(base);
-          PRINT(diag);
-          PRINT(scale);
-          PRINT(pinfo.size());
+          const Vec3fa scale = select(gt_mask(diag,Vec3fa(1E-19f)), (Vec3fa)((float)LATTICE_SIZE_PER_DIM) * (Vec3fa)(1.0f-(float)ulp) / diag, (Vec3fa)(0.0f));
+          const float inv_lattice_size_per_dim = 1.0f / (float)LATTICE_SIZE_PER_DIM;
+          const Vec3fa min_diag_threshold = diag * (Vec3fa)(inv_lattice_size_per_dim * 0.5f);
 
-          
+          struct PreSplitProbEntry{ 
+            unsigned int index; float prob; 
+            __forceinline bool operator<(PreSplitProbEntry const &b) const { return prob > b.prob; }
+          };
+
+          avector<PreSplitProbEntry> presplit_prio;
+          presplit_prio.resize(pinfo.size());
+
+          /* =========================================== */                   
+          /* == compute split probability per primref == */
+          /* =========================================== */
+
           for (size_t i=0;i<pinfo.size();i++)
           {
-            const Vec3ia lower_binID = (Vec3ia)((prims0[i].lower-base)*scale);
-            const Vec3ia upper_binID = (Vec3ia)((prims0[i].upper-base)*scale);
+            const Vec3fa lower = prims0[i].lower;
+            const Vec3fa upper = prims0[i].upper;
+            const Vec3ia lower_binID = (Vec3ia)((lower-base)*scale);
+            const Vec3ia upper_binID = (Vec3ia)((upper-base)*scale);
             const unsigned int lower_code = bitInterleave(lower_binID.x,lower_binID.y,lower_binID.z);
             const unsigned int upper_code = bitInterleave(upper_binID.x,upper_binID.y,upper_binID.z);
-            unsigned int diff       = 32 - lzcnt(lower_code^upper_code);
 
-            diff = 1 + min((int)diff,(1<<RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)-1);
+            const unsigned int diff = lzcnt(lower_code^upper_code);
+            const float priority_diff = diff < 32 ? 1.0f / (float)diff : 0.0f;
+            const uint dim = (31 - diff) % 3;
 
-            //const unsigned int log_diff   = (diff != 0) ? bsf(diff) : 0;
-            //PRINT(i);
-            //PRINT(diff);
-            //diff = 2;
-            //prims0[i].lower.u |= diff << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
+            const unsigned int split_binID = (lower_binID[dim] + upper_binID[dim] + 1)/2;
+            const float split_ratio = (float)split_binID * inv_lattice_size_per_dim;
+            const float pos = base[dim] + split_ratio * diag[dim];
+
+            const float pos_prob = ((pos - lower[dim]) > min_diag_threshold[dim] && (upper[dim] - pos) > min_diag_threshold[dim]) ? 1.0f : 0.0f;
+            const float prob = priority_diff * pos_prob;
+            presplit_prio[i].index = i;
+            presplit_prio[i].prob  = prob;
           }
+
+          /* ============================================================ */                   
+          /* == sort split probabilities to ensure being deterministic == */
+          /* ============================================================ */
+
+          std::sort(presplit_prio.data(),presplit_prio.data()+pinfo.size());
+
+          std::atomic<size_t> ext_elements;
+          ext_elements.store(pinfo.size());
+
+          /* =================================== */                   
+          /* == split selected primrefs once  == */
+          /* =================================== */
+
+          const size_t extraSize = min(numSplitPrimitives - pinfo.size(),pinfo.size());
+          for (size_t i=0;i<extraSize;i++)
+          {
+            const unsigned int ID  = presplit_prio[i].index;
+            const float prob       = presplit_prio[i].prob;
+
+            if (prob > 0.0f)
+            {
+              const Vec3fa lower = prims0[ID].lower;
+              const Vec3fa upper = prims0[ID].upper;
+              const Vec3ia lower_binID = (Vec3ia)((lower-base)*scale);
+              const Vec3ia upper_binID = (Vec3ia)((upper-base)*scale);
+              const unsigned int lower_code = bitInterleave(lower_binID.x,lower_binID.y,lower_binID.z);
+              const unsigned int upper_code = bitInterleave(upper_binID.x,upper_binID.y,upper_binID.z);
+              const unsigned int diff = lzcnt(lower_code^upper_code);
+              const uint dim = (31 - diff) % 3;
+
+              const unsigned int split_binID = (lower_binID[dim] + upper_binID[dim] + 1)/2;
+              const float split_ratio = (float)split_binID * inv_lattice_size_per_dim;
+              const float pos = base[dim] + split_ratio * diag[dim];
+              BBox3fa left,right;
+
+              if ( (pos - lower[dim]) > min_diag_threshold[dim] && (upper[dim] - pos) > min_diag_threshold[dim])
+              {
+                BBox3fa rest = prims0[ID].bounds();
+                const auto spatial_splitter = splitter(prims0[ID]);
+                BBox3fa left,right;
+                spatial_splitter(rest,dim,pos,left,right);
+                const size_t rightID = ext_elements.fetch_add(1);
+
+                prims0[ID     ] = PrimRef(  left,lower.u,upper.u);
+                prims0[rightID] = PrimRef( right,lower.u,upper.u);
+              }
+            }            
+          }
+
+          pinfo.end = ext_elements.load();
+          assert(numSplitPrimitives >= pinfo.end);
+
+          /* ================================ */                   
+          /* == recompute centroid bounds  == */
+          /* ================================ */
+
+          BBox3fa centroid_bounds(empty);
+
+          for (size_t i=pinfo.begin;i<pinfo.end;i++)
+            centroid_bounds.extend(prims0[i].bounds().center2());
+
+          pinfo.centBounds = centroid_bounds;
+
           /* ==================== */
 #endif
           root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafSpatial<N,Primitive>(bvh),bvh->scene->progressInterface,prims0.data(),pinfo,settings);
