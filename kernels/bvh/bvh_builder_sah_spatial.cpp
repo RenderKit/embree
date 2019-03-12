@@ -143,7 +143,7 @@ namespace embree
         {
           /* fallback for max geomID > 2^27 or activated pre-splits */
 
-#define ENABLE_PRESPLITS 1
+#define ENABLE_PRESPLITS 0
 #if ENABLE_PRESPLITS == 1
           /* pre splits */
           const unsigned int LATTICE_BITS_PER_DIM = 10;
