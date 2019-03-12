@@ -151,7 +151,7 @@ namespace embree
     /*! check if the i'th primitive is valid between the specified time range */
     __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
-      const unsigned int index = i;
+      const unsigned int index = (unsigned int)i;
       if (index >= numVertices())
         return false;
 

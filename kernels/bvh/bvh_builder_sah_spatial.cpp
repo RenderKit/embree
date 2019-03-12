@@ -177,7 +177,7 @@ namespace embree
 
             const unsigned int diff = lzcnt(lower_code^upper_code);
             const float priority_diff = diff < 32 ? 1.0f / (float)diff : 0.0f;
-            const uint dim = (31 - diff) % 3;
+            const unsigned int dim = (31 - diff) % 3;
 
             const unsigned int split_binID = (lower_binID[dim] + upper_binID[dim] + 1)/2;
             const float split_ratio = (float)split_binID * inv_lattice_size_per_dim;
@@ -185,7 +185,7 @@ namespace embree
 
             const float pos_prob = ((pos - lower[dim]) > min_diag_threshold[dim] && (upper[dim] - pos) > min_diag_threshold[dim]) ? 1.0f : 0.0f;
             const float prob = priority_diff * pos_prob;
-            presplit_prio[i].index = i;
+            presplit_prio[i].index = (unsigned int)i;
             presplit_prio[i].prob  = prob;
           }
 
@@ -217,7 +217,7 @@ namespace embree
               const unsigned int lower_code = bitInterleave(lower_binID.x,lower_binID.y,lower_binID.z);
               const unsigned int upper_code = bitInterleave(upper_binID.x,upper_binID.y,upper_binID.z);
               const unsigned int diff = lzcnt(lower_code^upper_code);
-              const uint dim = (31 - diff) % 3;
+              const unsigned int dim = (31 - diff) % 3;
 
               const unsigned int split_binID = (lower_binID[dim] + upper_binID[dim] + 1)/2;
               const float split_ratio = (float)split_binID * inv_lattice_size_per_dim;
