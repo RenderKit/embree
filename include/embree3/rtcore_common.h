@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
+#include "rtcore_version.h"
+
 RTC_NAMESPACE_BEGIN
 
 #if defined(_WIN32)
