@@ -12,8 +12,8 @@ Version History
     may reduce the CPU frequency below that level. By default Embree is configured to the
     the AVX-heavy frequency level, thus if the application uses solely non-AVX code, configuring
     the Embree device with "frequency_level=simd128" may give better performance.
--   The spatial split SAH BVH builder will now automatically fallback to the standard
-    SAH BVH builder for scenes with > 2^27 geometries.
+-   Fixed a bug in the spatial split builder which caused it to fail
+    for scenes with more than 2^24 geometries.
 
 ### New Features in Embree 3.5.1
 -   Fixed ray/sphere intersector to work also for non-normalized rays.
