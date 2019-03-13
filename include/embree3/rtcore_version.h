@@ -18,7 +18,7 @@
 #define RTC_VERSION_MINOR 5
 #define RTC_VERSION_PATCH 2
 #define RTC_VERSION 30502
-#define RTC_VERSION_STRING "3.5.2-alpha.0"
+#define RTC_VERSION_STRING "3.5.2"
 
 /* #undef EMBREE_STATIC_LIB */
 /* #undef EMBREE_API_NAMESPACE */
