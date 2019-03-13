@@ -1,6 +1,20 @@
 Version History
 ---------------
 
+### New Features in Embree 3.5.2
+-   Added EMBREE_ISA_NAMESPACE cmake option that allows to put all Embree API functions
+    inside a user defined namespace.
+-   Added EMBREE_LIBRARY_NAME cmake option that allows to rename the Embree library.
+-   When Embree is compiled as static library, EMBREE_STATIC_LIB has no longer to get
+    defined before including the Embree API headers.
+-   Added CPU frequency_level device configuration to allow an application to specify the
+    frequency level it wants to run on. This forces Embree to not use optimizations that
+    may reduce the CPU frequency below that level. By default Embree is configured to the
+    the AVX-heavy frequency level, thus if the application uses solely non-AVX code, configuring
+    the Embree device with "frequency_level=simd128" may give better performance.
+-   Fixed a bug in the spatial split builder which caused it to fail
+    for scenes with more than 2^24 geometries.
+
 ### New Features in Embree 3.5.1
 -   Fixed ray/sphere intersector to work also for non-normalized rays.
 -   Fixed self intersection avoidance for ray oriented discs when

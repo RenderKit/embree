@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.5.1
+% Embree: High Performance Ray Tracing Kernels 3.5.2
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.5.1-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x64.vc12.msi). This
+[embree-3.5.2-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.5.1 x64`.
+Files\Intel\Embree v3.5.2 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.5.1 x64`.
+Files\Intel\Embree v3.5.2 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.5.1 x64` and uninstall it.
+3.5.2 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.5.1.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x64.vc12.windows.zip)
+[embree-3.5.2.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.5.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x64.vc14.windows.zip)
+[embree-3.5.2.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.5.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.rpm.tar.gz)
+[embree-3.5.2.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.5.1.x86_64.rpm.tar.gz
+    tar xzf embree-3.5.2.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.5.1-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.5.1-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.5.1-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.5.2-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.5.2-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.5.2-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.5.1-1.x86_64.rpm
-    sudo alien embree3-devel-3.5.1-1.noarch.rpm
-    sudo alien embree3-examples-3.5.1-1.x86_64.rpm
+    sudo alien embree3-lib-3.5.2-1.x86_64.rpm
+    sudo alien embree3-devel-3.5.2-1.noarch.rpm
+    sudo alien embree3-examples-3.5.2-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.5.1-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.5.1-2_all.deb
-    sudo dpkg -i embree3-examples_3.5.1-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.5.2-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.5.2-2_all.deb
+    sudo dpkg -i embree3-examples_3.5.2-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.5.1-1.x86_64
-    sudo rpm --erase embree3-devel-3.5.1-1.noarch
-    sudo rpm --erase embree3-examples-3.5.1-1.x86_64
+    sudo rpm --erase embree3-lib-3.5.2-1.x86_64
+    sudo rpm --erase embree3-devel-3.5.2-1.noarch
+    sudo rpm --erase embree3-examples-3.5.2-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.5.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.5.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.5.1.x86_64.linux.tar.gz
-    source embree-3.5.1.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.5.2.x86_64.linux.tar.gz
+    source embree-3.5.2.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.5.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.dmg). This
+[embree-3.5.2.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.5.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.5.1/embree-3.5.1.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.5.2.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.5.2/embree-3.5.2.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.5.1.x64.macosx.tar.gz
-    source embree-3.5.1.x64.macosx/embree-vars.sh
+    tar xzf embree-3.5.2.x64.macosx.tar.gz
+    source embree-3.5.2.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -471,13 +471,18 @@ parameters that can be configured in CMake:
   is ON by default.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
-  default). When using the statically compiled Embree library, you
-  have to define ENABLE_STATIC_LIB before including rtcore.h in your
-  application. Further multiple static libraries are generated for the
+  default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
   `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512knl.a`,
   `embree3_avx512skx.a`). You have to link these libraries in exactly
   this order of increasing ISA.
+
++ `EMBREE_ISA_NAMESPACE`: Specifies a namespace name to put all Embree
+  API symbols inside. By default no namespace is used and plain C symbols
+  exported.
+
++ `EMBREE_LIBRARY_NAME`: Specifies the name of the Embree library file
+  created. By default the name embree3 is used.
 
 + `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
   default CMAKE_CXX_FLAGS. This option is turned ON by default.
@@ -1148,6 +1153,21 @@ The following configuration is supported:
     0, no output is printed by Embree, when set to a higher level more
     output is printed. By default Embree does not print anything on the
     console.
+
+-   `frequency_level=[simd128,simd256,simd512]`: Specifies the
+    frequency level the application want to run on, which can be
+    either: a) simd128 for apps that do not use AVX instructions, b)
+    simd256 for apps that use heavy AVX instruction, c) simd512 for
+    apps that use heavy AVX-512 instructions. When some frequency level
+    is specified, Embree will avoid doing optimizations that may reduce
+    the frequency level below the level specified. E.g. if your app
+    does not use AVX instructions setting "frequency\_level=simd128"
+    will cause some CPUs to run at highest frequency, which may result
+    in higher application performance. However, this will prevent
+    Embree from using AVX optimizations to achieve higher ray tracing
+    performance, thus applications that trace many rays may still
+    perform better with the default setting of simd256, even though
+    this reduces frequency on some CPUs.
 
 Different configuration options should be separated by commas, e.g.:
 
@@ -2888,9 +2908,10 @@ the linear basis.
 The intersection with the curve segment stores the parametric hit
 location along the curve segment as u-coordinate (range 0 to +1).
 
-For Bézier, B-spline, and Hermite curves, the v-coordinate is set to
-the normalized distance in the range -1 to +1. For the linear basis and
-in round mode the v-coordinate is set to zero.
+For flat curves, the v-coordinate is set to the normalized distance in
+the range -1 to +1. For normal oriented curves the v-coordinate is in
+the range 0 to 1. For the linear basis and in round mode the
+v-coordinate is set to zero.
 
 In flat mode, the geometry normal `Ng` is set to the tangent of the
 curve at the hit location. In round mode and for normal oriented
