@@ -40,10 +40,11 @@ function check_symbols
 }
 
 # read embree version
-EMBREE_LIBRARY_NAME=$1
-EMBREE_VERSION=$2
-EMBREE_VERSION_MAJOR=$3
-EMBREE_SIGN_FILE=$4
+EMBREE_ZIP_MODE=$1
+EMBREE_LIBRARY_NAME=$2
+EMBREE_VERSION=$3
+EMBREE_VERSION_MAJOR=$4
+EMBREE_SIGN_FILE=$5
 
 # create package
 make -j 16 preinstall
@@ -52,10 +53,10 @@ check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBCXX 3 4 11
 check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 0
 make -j 16 package
 
-if [ "$1" == "OFF" ]; then
+if [ "$EMBREE_ZIP_MODE" == "OFF" ]; then
 
   # sign all RPM files
-  if [ $# -eq 4 ]; then
+  if [ $# -eq 5 ]; then
     ${EMBREE_SIGN_FILE} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
   fi
     
