@@ -477,7 +477,7 @@ parameters that can be configured in CMake:
   `embree3_avx512skx.a`). You have to link these libraries in exactly
   this order of increasing ISA.
 
-+ `EMBREE_ISA_NAMESPACE`: Specifies a namespace name to put all Embree
++ `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
   API symbols inside. By default no namespace is used and plain C symbols
   exported.
 
