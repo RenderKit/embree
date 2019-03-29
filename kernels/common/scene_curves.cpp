@@ -20,6 +20,7 @@
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/hermite_curve.h"
 #include "../subdiv/bspline_curve.h"
+#include "../subdiv/catmullrom_curve.h"
 #include "../subdiv/linear_bezier_patch.h"
 
 namespace embree
@@ -932,6 +933,10 @@ namespace embree
       case Geometry::GTY_ROUND_HERMITE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_FLAT_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_ORIENTED_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
+
+      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
      
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }

@@ -56,6 +56,7 @@ SET(EMBREE_LIBRARY_FILES
 
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
+  subdiv/catmullrom_curve.cpp
 
   geometry/primitive4.cpp
   geometry/instance_intersector.cpp

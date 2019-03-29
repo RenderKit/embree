@@ -919,10 +919,12 @@ namespace embree
       case QUAD_MESH_MB     : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_QUAD); break;
       case SUBDIV_MESH      : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION); break;
       case SUBDIV_MESH_MB   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION); break;
-      case HAIR_GEOMETRY    : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE); break;
-      case HAIR_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE); break;
-      case CURVE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE); break;
-      case CURVE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE); break;
+      case BEZIER_GEOMETRY    : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE); break;
+      case BEZIER_GEOMETRY_MB : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE); break;
+      case BSPLINE_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE); break;
+      case BSPLINE_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE); break;
+      case CATMULL_GEOMETRY   : geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE); break;
+      case CATMULL_GEOMETRY_MB: geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE); break;
       default               : return VerifyApplication::PASSED;
       }
       AssertNoError(device);
@@ -948,10 +950,12 @@ namespace embree
         vertexFormat = RTC_FORMAT_FLOAT3;
         break;
 
-      case HAIR_GEOMETRY:
-      case HAIR_GEOMETRY_MB:
-      case CURVE_GEOMETRY:
-      case CURVE_GEOMETRY_MB:
+      case BEZIER_GEOMETRY:
+      case BEZIER_GEOMETRY_MB:
+      case BSPLINE_GEOMETRY:
+      case BSPLINE_GEOMETRY_MB:
+      case CATMULL_GEOMETRY:
+      case CATMULL_GEOMETRY_MB:
         indexFormat  = RTC_FORMAT_UINT;
         vertexFormat = RTC_FORMAT_FLOAT4;
         break;
@@ -1319,14 +1323,14 @@ namespace embree
           default: return inf;
           }
           
-        case HAIR_GEOMETRY: switch (sflags.sflags) {
+        case BEZIER_GEOMETRY: switch (sflags.sflags) {
           case RTC_SCENE_FLAG_NONE: return has_avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
           case RTC_SCENE_FLAG_ROBUST : return has_avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
           case RTC_SCENE_FLAG_COMPACT: return has_avx2 ?  105.0f*NN : 105.0f*NN; // bezier1i
           default: return inf;
           }
           
-        case HAIR_GEOMETRY_MB: switch (sflags.sflags) {
+        case BEZIER_GEOMETRY_MB: switch (sflags.sflags) {
           case RTC_SCENE_FLAG_NONE: return has_avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds
           case RTC_SCENE_FLAG_ROBUST : return has_avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds 
           case RTC_SCENE_FLAG_COMPACT: return has_avx2 ?  190.0f*NN : 190.0f*NN; // bezier1i
@@ -1389,8 +1393,12 @@ namespace embree
       case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); break;
       case SUBDIV_MESH:      
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
-      case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::FLAT_CURVE); break;
+      case BEZIER_GEOMETRY:    
+      case BEZIER_GEOMETRY_MB: 
+      case BSPLINE_GEOMETRY:
+      case BSPLINE_GEOMETRY_MB:
+      case CATMULL_GEOMETRY:
+      case CATMULL_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::FLAT_CURVE); break;
       case LINE_GEOMETRY:    
       case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::FLAT_CURVE); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
@@ -1406,7 +1414,9 @@ namespace embree
       case TRIANGLE_MESH_MB: 
       case QUAD_MESH_MB:     
       case SUBDIV_MESH_MB:   
-      case HAIR_GEOMETRY_MB: 
+      case BEZIER_GEOMETRY_MB: 
+      case BSPLINE_GEOMETRY_MB:
+      case CATMULL_GEOMETRY_MB:
       case LINE_GEOMETRY_MB: mesh = mesh->set_motion_vector(random_motion_vector2(0.0001f)); break;
       default: break;
       }
@@ -1426,8 +1436,12 @@ namespace embree
       switch (gtype) {
       case LINE_GEOMETRY:    
       case LINE_GEOMETRY_MB: 
-      case HAIR_GEOMETRY:
-      case HAIR_GEOMETRY_MB: maxN = 250000; break;
+      case BEZIER_GEOMETRY:
+      case BEZIER_GEOMETRY_MB:
+      case BSPLINE_GEOMETRY:
+      case BSPLINE_GEOMETRY_MB:
+      case CATMULL_GEOMETRY:
+      case CATMULL_GEOMETRY_MB: maxN = 250000; break;
       default: maxN = 1000000; break;
       }
       
@@ -4090,12 +4104,16 @@ namespace embree
         case TRIANGLE_MESH:    
         case QUAD_MESH:        
         case SUBDIV_MESH:      
-        case HAIR_GEOMETRY:
+        case BEZIER_GEOMETRY:
+        case BSPLINE_GEOMETRY:
+        case CATMULL_GEOMETRY:
         case LINE_GEOMETRY:
         case TRIANGLE_MESH_MB: 
         case QUAD_MESH_MB:     
         case SUBDIV_MESH_MB:   
-        case HAIR_GEOMETRY_MB:
+        case BEZIER_GEOMETRY_MB:
+        case BSPLINE_GEOMETRY_MB:
+        case CATMULL_GEOMETRY_MB:
         case LINE_GEOMETRY_MB:
           scene->addGeometry(quality,geometries[i]); 
           break;
@@ -4128,8 +4146,12 @@ namespace embree
         case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,float(i+1),numPhi)); break;
         case SUBDIV_MESH:      
         case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
-        case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::FLAT_CURVE)); break;
+        case BEZIER_GEOMETRY:    
+        case BEZIER_GEOMETRY_MB:
+        case BSPLINE_GEOMETRY:
+        case BSPLINE_GEOMETRY_MB:
+        case CATMULL_GEOMETRY:
+        case CATMULL_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::FLAT_CURVE)); break;
         case LINE_GEOMETRY: 
         case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::FLAT_CURVE)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
@@ -4145,7 +4167,9 @@ namespace embree
         case TRIANGLE_MESH_MB: 
         case QUAD_MESH_MB:     
         case SUBDIV_MESH_MB:   
-        case HAIR_GEOMETRY_MB: 
+        case BEZIER_GEOMETRY_MB:
+        case BSPLINE_GEOMETRY_MB:
+        case CATMULL_GEOMETRY_MB:
         case LINE_GEOMETRY_MB: geometries.back() = geometries.back()->set_motion_vector(random_motion_vector2(0.0001f)); break;
         default: break;
         }
@@ -4211,7 +4235,8 @@ namespace embree
 
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, GRID_MESH, GRID_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
     GeometryType gtypes_all[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, GRID_MESH, GRID_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB, 
-                                  HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
+                                  BEZIER_GEOMETRY, BEZIER_GEOMETRY_MB, BSPLINE_GEOMETRY, BSPLINE_GEOMETRY_MB, CATMULL_GEOMETRY, CATMULL_GEOMETRY_MB,
+                                  LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
 #if defined(EMBREE_TARGET_SSE2)
@@ -4382,7 +4407,7 @@ namespace embree
       groups.top()->add(new GarbageGeometryTest("build_garbage_geom",isa));
 #endif
 
-      GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
+      GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, BEZIER_GEOMETRY, BEZIER_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<SceneFlags,RTCBuildQuality>> sflags_quality_memory;
       sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_NONE   ,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
       sflags_quality_memory.push_back(std::make_pair(SceneFlags(RTC_SCENE_FLAG_COMPACT,RTC_BUILD_QUALITY_MEDIUM), RTC_BUILD_QUALITY_MEDIUM));
@@ -4685,8 +4710,12 @@ namespace embree
         TRIANGLE_MESH_MB, 
         QUAD_MESH, 
         QUAD_MESH_MB, 
-        HAIR_GEOMETRY,
-        HAIR_GEOMETRY_MB,
+        BEZIER_GEOMETRY,
+        BEZIER_GEOMETRY_MB,
+        BSPLINE_GEOMETRY,
+        BSPLINE_GEOMETRY_MB,
+        CATMULL_GEOMETRY,
+        CATMULL_GEOMETRY_MB,
         LINE_GEOMETRY,
         LINE_GEOMETRY_MB
       };

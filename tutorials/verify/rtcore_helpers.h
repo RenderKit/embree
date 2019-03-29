@@ -869,10 +869,12 @@ namespace embree
     GRID_MESH_MB,
     SUBDIV_MESH,
     SUBDIV_MESH_MB,
-    HAIR_GEOMETRY,
-    HAIR_GEOMETRY_MB,
-    CURVE_GEOMETRY,
-    CURVE_GEOMETRY_MB,
+    BEZIER_GEOMETRY,
+    BEZIER_GEOMETRY_MB,
+    BSPLINE_GEOMETRY,
+    BSPLINE_GEOMETRY_MB,
+    CATMULL_GEOMETRY,
+    CATMULL_GEOMETRY_MB,
     LINE_GEOMETRY,
     LINE_GEOMETRY_MB,
     SPHERE_GEOMETRY,
@@ -894,10 +896,12 @@ namespace embree
     case GRID_MESH_MB     : return "grids_mb";
     case SUBDIV_MESH      : return "subdivs";
     case SUBDIV_MESH_MB   : return "subdivs_mb";
-    case HAIR_GEOMETRY    : return "hair";
-    case HAIR_GEOMETRY_MB : return "hair_mb";
-    case CURVE_GEOMETRY   : return "curves";
-    case CURVE_GEOMETRY_MB: return "curves_mb";
+    case BEZIER_GEOMETRY  : return "bezier";
+    case BEZIER_GEOMETRY_MB: return "bezier_mb";
+    case BSPLINE_GEOMETRY : return "bspline";
+    case BSPLINE_GEOMETRY_MB: return "bspline_mb";
+    case CATMULL_GEOMETRY : return "catmull";
+    case CATMULL_GEOMETRY_MB : return "catmull_mb";
     case LINE_GEOMETRY    : return "lines";
     case LINE_GEOMETRY_MB : return "lines_mb";
     case SPHERE_GEOMETRY          : return "spheres";
