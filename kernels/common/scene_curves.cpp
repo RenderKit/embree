@@ -26,10 +26,25 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
+  void CurveGeometry::resizeBuffers(unsigned int numSteps)
+  {
+     vertices.resize(numSteps);
+
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
+      normals.resize(numSteps);
+
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        dnormals.resize(numSteps);
+    }
+    if (getCurveBasis() == GTY_BASIS_HERMITE)
+      tangents.resize(numSteps);
+  }
+
   CurveGeometry::CurveGeometry (Device* device, GType gtype)
     : Geometry(device,gtype,0,1), tessellationRate(4)
   {
-    vertices.resize(numTimeSteps);
+    resizeBuffers(numTimeSteps);
   }
 
   void CurveGeometry::enabling() 
@@ -52,18 +67,7 @@ namespace embree
 
   void CurveGeometry::setNumTimeSteps (unsigned int numTimeSteps)
   {
-    vertices.resize(numTimeSteps);
-    
-    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
-    {
-      normals.resize(numTimeSteps);
-      
-      if (getCurveBasis() == GTY_BASIS_HERMITE)
-        dnormals.resize(numTimeSteps);
-    }
-    if (getCurveBasis() == GTY_BASIS_HERMITE)
-      tangents.resize(numTimeSteps);
-    
+    resizeBuffers(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   

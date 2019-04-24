@@ -333,6 +333,9 @@ namespace embree
       return clerp(curve0,curve1,ftime);
     }
 
+  private:
+    void resizeBuffers(unsigned int numSteps);
+
   public:
     BufferView<unsigned int> curves;        //!< array of curve indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
