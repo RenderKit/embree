@@ -76,11 +76,13 @@ Section [Ray Queries]) or to query the scene bounding box (see
 [rtcGetSceneBounds] and [rtcGetSceneLinearBounds]).
 
 If scene geometries get modified or attached or detached, the
-`rtcCommitScene` call must be invoked before performing any further ray
-queries for the scene; otherwise the effect of the ray query is
+`rtcCommitScene` call must be invoked before performing any further
+ray queries for the scene; otherwise the effect of the ray query is
 undefined. The modification of a geometry, committing the scene, and
-tracing of rays must always happen sequentially, and never at the
-same time.
+tracing of rays must always happen sequentially, and never at the same
+time. Any API call that sets a property of the scene or geometries
+contained in the scene count as scene modification, e.g. including
+setting of intersection filter functions.
 
 Scene flags can be used to configure a scene to use less memory
 (`RTC_SCENE_FLAG_COMPACT`), use more robust traversal algorithms
