@@ -461,7 +461,6 @@ namespace embree
       }
     };
 
-    
     template<int M, bool filter>
     struct Intersect1EpilogMU
     {

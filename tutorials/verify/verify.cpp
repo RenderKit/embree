@@ -19,7 +19,9 @@
 #include "verify.h"
 #include "../common/scenegraph/scenegraph.h"
 #include "../common/scenegraph/geometry_creation.h"
+#include "../common/math/closest_point.h"
 #include "../../common/algorithms/parallel_for.h"
+#include "../../kernels/common/context.h"
 #include <regex>
 #include <stack>
 
@@ -3206,6 +3208,312 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
+  
+  struct PointQueryInstanceStackTest : public VerifyApplication::Test
+  {
+    PointQueryInstanceStackTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      // This test assures that we can properly cast RTCPointQueryInstanceStack
+      // to PointQueryInstanceStack and vice versa
+      {
+        PointQueryInstanceStack stack;
+        stack.instI2W[0] = AffineSpace3fa::rotate(Vec3f(1.f, 1.f, 1.f), M_PI/2.f);
+        float* raw = (float*)&(stack.instI2W[0]);
+
+        RTCPointQueryInstanceStack* rtcStack = (RTCPointQueryInstanceStack*)&stack;
+        float* rtc_raw = &(rtcStack->inst2world[0][0]);
+
+        if(raw != rtc_raw)                                        return VerifyApplication::FAILED;
+        if((void*)&stack != (void*)rtcStack)                      return VerifyApplication::FAILED;
+        if(rtcStack->inst2world[0][0] != stack.instI2W[0].l.vx.x) return VerifyApplication::FAILED;
+        if(rtcStack->inst2world[0][1] != stack.instI2W[0].l.vx.y) return VerifyApplication::FAILED;
+        if(rtcStack->inst2world[0][2] != stack.instI2W[0].l.vx.z) return VerifyApplication::FAILED;
+        if(rtcStack->inst2world[0][4] != stack.instI2W[0].l.vy.x) return VerifyApplication::FAILED;
+        if(rtcStack->inst2world[0][5] != stack.instI2W[0].l.vy.y) return VerifyApplication::FAILED;
+        if(rtcStack->inst2world[0][6] != stack.instI2W[0].l.vy.z) return VerifyApplication::FAILED;
+      }
+      
+      {
+        RTCPointQueryInstanceStack rtcStack;
+        rtcInitPointQueryInstanceStack(&rtcStack);
+        for (int i = 0; i < RTC_MAX_INSTANCE_LEVEL_COUNT; ++i) {
+          rtcStack.instID[i] = i;
+          for (int k = 0; k < 16; ++k)
+          {
+            rtcStack.inst2world[i][k] = i * 16 + k;
+            rtcStack.world2inst[i][k] = -(i * 16 + k);
+          }
+        }
+
+        PointQueryInstanceStack* stack = (PointQueryInstanceStack*)&rtcStack;
+        if((void*)stack != (void*)&rtcStack) return VerifyApplication::FAILED;
+        for (int i = 0; i < RTC_MAX_INSTANCE_LEVEL_COUNT; ++i) {
+          if (stack->instID[i] != i) return VerifyApplication::FAILED;
+          float* i2w = (float*)&stack->instI2W[i];
+          float* w2i = (float*)&stack->instW2I[i];
+          for (int k = 0; k < 16; ++k)
+          {
+            if (i2w[k] != i * 16 + k)    return VerifyApplication::FAILED;
+            if (w2i[k] != -(i * 16 + k)) return VerifyApplication::FAILED;
+          }
+        }
+      }
+
+      return VerifyApplication::PASSED;
+    }
+  };
+  
+  struct PointQueryTest : public VerifyApplication::Test
+  {
+    SceneFlags sflags; 
+    std::string tri_accel;
+
+    PointQueryTest (std::string name, int isa, SceneFlags sflags, std::string tri_accel = "")
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), tri_accel(tri_accel) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ((tri_accel != "") ? ",tri_accel="+tri_accel : "");
+      //printf("run test %s\n", cfg.c_str());
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+     
+      RTCSceneRef scene = rtcNewScene(device);
+      rtcSetSceneFlags(scene,sflags.sflags);
+      rtcSetSceneBuildQuality(scene,sflags.qflags);
+      
+      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+      rtcSetGeometryBuildQuality(geom,sflags.qflags);
+
+      Vec3f* vertices = (Vec3f*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3f), 3*32);
+      Triangle* triangles = (Triangle*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3, sizeof(Triangle), 32);
+      for (int i = 0; i < 32; ++i) {
+        float xi = random_float();
+        vertices[3*i+0] = Vec3f(0.0f,          0.0f,          i);
+        vertices[3*i+1] = Vec3f(1.0f + 5.f*xi, 0.0f,          i);
+        vertices[3*i+2] = Vec3f(0.0f,          1.0f + 5.f*xi, i);
+        triangles[i] = Triangle(3*i+0, 3*i+1, 3*i+2);
+      };
+
+      rtcCommitGeometry(geom);
+      rtcAttachGeometry(scene,geom);
+      rtcReleaseGeometry(geom);
+      rtcCommitScene (scene);
+      AssertNoError(device);
+
+      struct UserData
+      {
+        Vec3f* vertices;
+        Triangle* triangles;
+        Vec3f result;
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+      };
+
+      for (int i = 0; i < 64; ++i)
+      {
+        RTCPointQuery query;
+        query.x = 0.25f;
+        query.y = 0.75f;
+        query.z = -0.25f + i * 0.5f;
+        query.time = 0.f;
+        query.radius = inf;
+
+        UserData data;
+        data.vertices  = vertices;
+        data.triangles = triangles;
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query, &instStack, [](RTCPointQueryFunctionArguments* args) -> bool
+        {
+          UserData* data = (UserData*)args->userPtr;
+          // get triangle info
+          Triangle const& t = data->triangles[args->primID];
+          Vec3f const& v0 = data->vertices[t.v0];
+          Vec3f const& v1 = data->vertices[t.v1];
+          Vec3f const& v2 = data->vertices[t.v2];
+          
+          // determine closest point on triangle
+          const Vec3f q(args->query->x, args->query->y, args->query->z);
+          const Vec3f p = closestPointTriangle(q, v0, v1, v2);
+          const float d = distance(q, p);
+
+          if (d < args->query->radius) {
+            args->query->radius = d;
+            data->result = p;
+            data->primID = args->primID;
+            return true;
+          }
+          return false; 
+        }, &data);
+
+        if ((int)data.primID != i/2) return VerifyApplication::FAILED;
+        if (abs(data.result.x- 0.25f) > 1e-4f)        return VerifyApplication::FAILED;
+        if (abs(data.result.y- 0.75f) > 1e-4f)        return VerifyApplication::FAILED;
+        if (abs(data.result.z- (float)(i/2)) > 1e-4f) return VerifyApplication::FAILED;
+        AssertNoError(device);
+      }
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  struct PointQueryMotionBlurTest : public VerifyApplication::Test
+  {
+    SceneFlags sflags; 
+    std::string tri_accel;
+
+    PointQueryMotionBlurTest (std::string name, int isa, SceneFlags sflags, std::string tri_accel = "")
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), tri_accel(tri_accel) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + (tri_accel != "" ? ",tri_accel="+tri_accel : "");
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+     
+      Vec3f vertices_t0[4] = { 
+        Vec3f(-1.f, -1.f, -1.f), 
+        Vec3f( 1.f, -1.f, -1.f), 
+        Vec3f( 0.f,  1.f, -1.f), 
+        Vec3f(0.f) // 16 byte padding
+      };
+      Vec3f vertices_t1[4] = { 
+        Vec3f(-1.f, -1.f, 1.f), 
+        Vec3f( 1.f, -1.f, 1.f), 
+        Vec3f( 0.f,  1.f, 1.f), 
+        Vec3f(0.f) // 16 byte padding
+      };
+
+      // duplicate triangle to make sure the bvh is not only a leaf node
+      Triangle triangles[64];
+      for (int i = 0; i < 64; ++i)
+        triangles[i] = Triangle(0, 1, 2);
+
+      RTCSceneRef scene = rtcNewScene(device);
+      rtcSetSceneFlags(scene,sflags.sflags);
+      rtcSetSceneBuildQuality(scene,sflags.qflags);
+      
+      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+      rtcSetGeometryBuildQuality(geom,sflags.qflags);
+      rtcSetGeometryTimeStepCount(geom,2);
+      rtcSetGeometryPointQueryFunction(geom, [](RTCPointQueryFunctionArguments* args) -> bool
+      {
+        // set primID (userPtr) to something != RTC_INVALID_GEOMETRY_ID to signal that 
+        // the query overlapped some geometry
+        *((unsigned int*)args->userPtr) = 0;
+        return true;
+      });
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertices_t0, 0, sizeof(Vec3f),     3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT3, vertices_t1, 0, sizeof(Vec3f),     3);
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  triangles,   0, sizeof(Triangle), 64);
+      rtcCommitGeometry(geom);
+      rtcAttachGeometry(scene,geom);
+      rtcReleaseGeometry(geom);
+      rtcCommitScene (scene);
+      AssertNoError(device);
+
+      RTCPointQuery query0;
+      query0.x      =  0.0f;
+      query0.y      =  0.0f;
+      query0.z      = -1.0f;
+      query0.radius =  0.1f;
+      
+      RTCPointQuery query1;
+      query1.x      =  0.0f;
+      query1.y      =  0.0f;
+      query1.z      =  0.0f;
+      query1.radius =  0.1f;
+      
+      RTCPointQuery query2;
+      query2.x      =  0.0f;
+      query2.y      =  0.0f;
+      query2.z      =  1.0f;
+      query2.radius =  0.1f;
+
+      // time t = 0, only query0 should overlap
+      query0.time = query1.time = query2.time = 0.f;
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query0, &instStack, nullptr, &primID);
+        if (primID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query1, &instStack, nullptr, &primID);
+        if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query2, &instStack, nullptr, &primID);
+        if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+
+      // time t = 0.5, only query1 should overlap
+      query0.time = query1.time = query2.time = 0.5f;
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query0, &instStack, nullptr, &primID);
+        if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query1, &instStack, nullptr, &primID);
+        if (primID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query2, &instStack, nullptr, &primID);
+        if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      
+      // time t = 1.0, only query2 should overlap
+      query0.time = query1.time = query2.time = 1.f;
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query0, &instStack, nullptr, &primID);
+        if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query1, &instStack, nullptr, &primID);
+        if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+      {
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        rtcPointQuery(scene, &query2, &instStack, nullptr, &primID);
+        if (primID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+      }
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
 
   void shootRandomRays (int hash, std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const VerifyScene& scene)
   {
@@ -4764,6 +5072,32 @@ namespace embree
                   groups.top()->add(new InfTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
         groups.pop();
       }
+      
+      /**************************************************************************/
+      /*                      Point Query Tests                                */
+      /**************************************************************************/
+
+      push(new TestGroup("point_query",true,true));
+      for (auto sflags : sceneFlags) {
+        groups.top()->add(new PointQueryInstanceStackTest(to_string(sflags),isa));
+        if (stringOfISA(isa) == "SSE4.1" || stringOfISA(isa) == "SSE4.2") {
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh4.triangle4v"));
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh4.triangle4i"));
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"qbvh4.triangle4i"));
+        }
+        if (stringOfISA(isa) == "AVX" || stringOfISA(isa) == "AVX2") {
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh8.triangle4v"));
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh8.triangle4i"));
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"qbvh8.triangle4"));
+          groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"qbvh8.triangle4i"));
+        }
+        groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags));
+      }
+
+      groups.top()->add(new PointQueryMotionBlurTest("point_query_motion_blur_aligned_node",isa,SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM),"bvh4.triangle4i"));
+      groups.top()->add(new PointQueryMotionBlurTest("point_query_motion_blur_quantized_node",isa,SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM),"qbvh4.triangle4i"));
+      groups.top()->add(new PointQueryMotionBlurTest("point_query_motion_blur_quantized_node",isa,SceneFlags(RTC_SCENE_FLAG_NONE,RTC_BUILD_QUALITY_MEDIUM)));
+      groups.pop();
     
       /**************************************************************************/
       /*                  Randomized Stress Testing                             */

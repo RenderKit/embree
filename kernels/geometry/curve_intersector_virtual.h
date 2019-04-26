@@ -40,6 +40,8 @@ namespace embree
     typedef void (*Intersect16Ty)(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive);
     typedef bool (*Occluded16Ty) (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive);
     
+    typedef void (*PointQuery1Ty)(PointQuery* query, PointQueryContext* context, const void* primitive);
+
   public:
     struct Intersectors
     {
@@ -50,6 +52,8 @@ namespace embree
 
       template<int K> void intersect(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive);
       template<int K> bool occluded (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive);
+      
+      template<int K> void pointQuery (PointQuery* query, PointQueryContext* context, const void* primitive);
 
     public:
       Intersect1Ty intersect1;
@@ -60,13 +64,15 @@ namespace embree
       Occluded8Ty  occluded8;
       Intersect16Ty intersect16;
       Occluded16Ty  occluded16;
+      PointQuery1Ty pointQuery1;
     };
     
     Intersectors vtbl[Geometry::GTY_END];
   };
 
-  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<1>(void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
-  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<1> (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(occluded1); return occluded1(pre,ray,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<1> (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
+  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<1>  (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(occluded1); return occluded1(pre,ray,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::pointQuery<1>(PointQuery* query, PointQueryContext* context, const void* primitive)   { assert(pointQuery1); pointQuery1(query,context,primitive); }
       
   template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<4>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect4); intersect4(pre,ray,k,context,primitive); }
   template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<4> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded4); return occluded4(pre,ray,k,context,primitive); }
@@ -107,6 +113,16 @@ namespace embree
         VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
         return leafIntersector.occluded<1>(&pre,&ray,context,prim);
       }
+      
+      template<int N>
+        static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      {
+        assert(num == 1);
+        RTCGeometryType ty = (RTCGeometryType)(*prim);
+        assert(This->leafIntersector);
+        VirtualCurveIntersector::Intersectors& leafIntersector = ((VirtualCurveIntersector*) This->leafIntersector)->vtbl[ty];
+        leafIntersector.pointQuery<1>(query,context,prim);
+      }
     };
 
     template<int K>
@@ -142,7 +158,7 @@ namespace embree
           }
           return valid_o;
         }
-
+        
         template<int N, int Nx, bool robust>              
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {

@@ -43,7 +43,15 @@ namespace embree
     
     accels.clear();
   }
-  
+
+  void AccelN::pointQuery (Accel::Intersectors* This_in, PointQuery* query, PointQueryContext* context)
+  {
+    AccelN* This = (AccelN*)This_in->ptr;
+    for (size_t i=0; i<This->accels.size(); i++)
+      if (!This->accels[i]->isEmpty())
+        This->accels[i]->intersectors.pointQuery(query,context);
+  }
+
   void AccelN::intersect (Accel::Intersectors* This_in, RTCRayHit& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)This_in->ptr;
@@ -200,7 +208,7 @@ namespace embree
     {
       type = AccelData::TY_ACCELN;
       intersectors.ptr = this;
-      intersectors.intersector1  = Intersector1(&intersect,&occluded,valid1 ? "AccelN::intersector1": nullptr);
+      intersectors.intersector1  = Intersector1(&intersect,&occluded,&pointQuery,valid1 ? "AccelN::intersector1": nullptr);
       intersectors.intersector4  = Intersector4(&intersect4,&occluded4,valid4 ? "AccelN::intersector4" : nullptr);
       intersectors.intersector8  = Intersector8(&intersect8,&occluded8,valid8 ? "AccelN::intersector8" : nullptr);
       intersectors.intersector16 = Intersector16(&intersect16,&occluded16,valid16 ? "AccelN::intersector16": nullptr);

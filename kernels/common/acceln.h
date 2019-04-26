@@ -32,6 +32,9 @@ namespace embree
     void accels_init();
 
   public:
+    static void pointQuery (Accel::Intersectors* This, PointQuery* query, PointQueryContext* context);
+
+  public:
     static void intersect (Accel::Intersectors* This, RTCRayHit& ray, IntersectContext* context);
     static void intersect4 (const void* valid, Accel::Intersectors* This, RTCRayHit4& ray, IntersectContext* context);
     static void intersect8 (const void* valid, Accel::Intersectors* This, RTCRayHit8& ray, IntersectContext* context);

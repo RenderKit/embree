@@ -203,4 +203,102 @@ struct RTCFilterFunctionNArguments
 /* Filter callback function */
 typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform args);
 
+/* Point query structure for closest point query */
+struct RTCPointQuery 
+{
+  float x;      // x coordinate of the query point
+  float y;      // y coordinate of the query point
+  float z;      // z coordinate of the query point
+  float time;   // time for motion blur
+  float radius; // radius for the point query
+};
+
+/* Structure of a packet of 4 query points */
+struct RTCPointQuery4
+{
+  float x[4];
+  float y[4];
+  float z[4];
+  float time[4];
+  float radius[4];
+};
+
+/* Structure of a packet of 8 query points */
+struct RTCPointQuery8
+{
+  float x[8];
+  float y[8];
+  float z[8];
+  float time[8];
+  float radius[8];
+};
+
+/* Structure of a packet of 16 query points */
+struct RTCPointQuery16
+{
+  float x[16]; 
+  float y[16];
+  float z[16];
+  float time[16];
+  float radius[16];
+};
+
+struct RTCPointQueryN;
+
+struct RTCPointQueryInstanceStack
+{
+  // number of instances currently on the stack.
+  unsigned int size;                                 
+
+  // instance ids.
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; 
+
+  // accumulated 4x4 column major matrices from world space to instance space.
+  // undefined if size == 0.
+  float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
+
+  // accumulated 4x4 column major matrices from instance space to world space.
+  // undefined if size == 0.
+  float inst2world[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
+};
+
+/* Initializes an intersection context. */
+RTC_FORCEINLINE void rtcInitPointQueryInstanceStack(uniform RTCPointQueryInstanceStack* uniform instStack)
+{
+  instStack->size = 0;
+  instStack->instID[0] = RTC_INVALID_GEOMETRY_ID;
+}
+
+struct RTCPointQueryFunctionArguments
+{
+  // The query object that was passed as an argument of rtcPointQuery. The
+  // radius of the query can be decreased inside the callback to shrink the
+  // search domain. Increasing the radius or modifying the time or position of
+  // the query results in undefined behaviour.
+  RTCPointQuery* uniform query;
+
+  // Used for user input/output data. Will not be read or modified internally.
+  void* uniform userPtr;
+
+  // primitive and geometry ID of primitive
+  unsigned int  primID;        
+  unsigned int  geomID;    
+
+  // the instance stack with transformation information
+  RTCPointQueryInstanceStack* uniform instStack;
+  
+  // If the current instance transform M (= instStack->world2inst[instStack->size]) 
+  // is a similarity matrix, i.e there is a constant factor similarityScale such that,
+  //    for all x,y: dist(Mx, My) = similarityScale * dist(x, y),
+  // The similarity scale is 0, if the current instance transform is not a
+  // similarity transform and vice versa. The similarity scale allows to compute
+  // distance information in instance space and scale the distances accordingly
+  // into world space, for example, to update the query radius. If the current
+  // instance transform is not a similarity transform (similarityScale = 0), the
+  // distance computation has to be performed in world space to ensure correctness.
+  // if there is no instance transform (instStack->size == 0), the similarity scale is 1.
+  float similarityScale;
+};
+
+typedef unmasked bool (*uniform RTCPointQueryFunction)(struct RTCPointQueryFunctionArguments* uniform args);
 #endif

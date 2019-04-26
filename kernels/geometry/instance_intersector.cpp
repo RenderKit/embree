@@ -39,6 +39,38 @@ namespace embree
       assert(context && context->instStackSize > 0);
       context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
     }
+    
+    /* Push an instance to the stack. */
+    RTC_FORCEINLINE bool pushInstance(PointQueryContext* context, 
+                      unsigned int instanceId, 
+                      AffineSpace3fa const& w2i, 
+                      AffineSpace3fa const& i2w)
+    {
+      PointQueryInstanceStack* stack = context->instStack;
+      const size_t stackSize = stack->size;
+      const bool spaceAvailable = context && stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT;
+      assert(spaceAvailable); 
+      if (likely(spaceAvailable)) 
+      {
+        stack->instID[stackSize] = instanceId;
+        stack->instW2I[stackSize] = w2i;
+        stack->instI2W[stackSize] = i2w;
+        if (unlikely(stackSize > 0))
+        {
+          stack->instW2I[stackSize] = stack->instW2I[stackSize  ] * stack->instW2I[stackSize-1];
+          stack->instI2W[stackSize] = stack->instI2W[stackSize-1] * stack->instI2W[stackSize  ];
+        }
+        stack->size++;
+      }
+      return spaceAvailable;
+    }
+
+    /* Pop the last instance pushed to the stack. Do not call on an empty stack. */
+    RTC_FORCEINLINE void popInstance(PointQueryContext* context)
+    {
+      assert(context && context->instStack->size > 0);
+      context->instStack->instID[--context->instStack->size] = RTC_INVALID_GEOMETRY_ID;
+    }
 
     void InstanceIntersector1::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
@@ -94,6 +126,38 @@ namespace embree
       }
       return occluded;
     }
+    
+    void InstanceIntersector1::pointQuery(PointQuery* query, PointQueryContext* context, const InstancePrimitive& prim)
+    {
+      const Instance* instance = prim.instance;
+
+      const AffineSpace3fa local2world = instance->getLocal2World();
+      const AffineSpace3fa world2local = instance->getWorld2Local();
+      float similarityScale = 0.f;
+      const bool similtude = context->query_type == POINT_QUERY_TYPE_SPHERE
+                           && similarityTransform(world2local, &similarityScale);
+      assert((similtude && similarityScale > 0) || !similtude);
+
+      if (likely(pushInstance(context, instance->geomID, world2local, local2world)))
+      {
+        PointQuery query_inst;
+        query_inst.time = query->time;
+        query_inst.p = xfmPoint(world2local, query->p); 
+        query_inst.radius = query->radius * similarityScale;
+        
+        PointQueryContext context_inst(
+          (Scene*)instance->object, 
+          context->query_ws, 
+          similtude ? POINT_QUERY_TYPE_SPHERE : POINT_QUERY_TYPE_AABB,
+          context->func, 
+          (RTCPointQueryInstanceStack*)context->instStack,
+          similarityScale,
+          context->userPtr); 
+
+        instance->object->intersectors.pointQuery(&query_inst, &context_inst);
+        popInstance(context);
+      }
+    }
 
     void InstanceIntersector1MB::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
@@ -148,6 +212,37 @@ namespace embree
         popInstance(user_context);      
       }
       return occluded;
+    }
+    
+    void InstanceIntersector1MB::pointQuery(PointQuery* query, PointQueryContext* context, const InstancePrimitive& prim)
+    {
+      const Instance* instance = prim.instance;
+
+      const AffineSpace3fa local2world = instance->getLocal2World(query->time);
+      const AffineSpace3fa world2local = instance->getWorld2Local(query->time);
+      float similarityScale = 0.f;
+      const bool similtude = context->query_type == POINT_QUERY_TYPE_SPHERE
+                           && similarityTransform(world2local, &similarityScale);
+
+      if (likely(pushInstance(context, instance->geomID, world2local, local2world)))
+      {
+        PointQuery query_inst;
+        query_inst.time = query->time;
+        query_inst.p = xfmPoint(world2local, query->p); 
+        query_inst.radius = query->radius * similarityScale;
+        
+        PointQueryContext context_inst(
+          (Scene*)instance->object, 
+          context->query_ws, 
+          similtude ? POINT_QUERY_TYPE_SPHERE : POINT_QUERY_TYPE_AABB,
+          context->func, 
+          (RTCPointQueryInstanceStack*)context->instStack,
+          similarityScale,
+          context->userPtr); 
+
+        instance->object->intersectors.pointQuery(&query_inst, &context_inst);
+        popInstance(context);
+      }
     }
     
     template<int K>
@@ -208,7 +303,7 @@ namespace embree
       }
       return occluded;    
     }
-
+    
     template<int K>
     void InstanceIntersectorKMB<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
     {

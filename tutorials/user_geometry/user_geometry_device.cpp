@@ -833,6 +833,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi+1));
@@ -880,7 +881,6 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
   }
 
   rtcCommitGeometry(geom);
-  unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }

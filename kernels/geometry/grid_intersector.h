@@ -64,6 +64,14 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
         return occluded(pre,ray,context,prim,ty,lazy_node);
       }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) {
+        assert(false && "not implemented");
+      }
+
+      static __forceinline void intersect(PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
+        assert(false && "not implemented");
+      }
     };
 
     template <int K>

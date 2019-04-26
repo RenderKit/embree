@@ -14,44 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "../common/default.h"
-#include "../common/scene.h"
-#include "../../common/simd/simd.h"
-#include "../common/primref.h"
-#include "../common/primref_mb.h"
+#include "../common/tutorial/tutorial.h"
 
 namespace embree
 {
-  struct PrimitiveType
-  {
-    /*! returns name of this primitive type */
-    virtual const char* name() const = 0;
-    
-    /*! Returns the number of stored active primitives in a block. */
-    virtual size_t sizeActive(const char* This) const = 0;
+  extern "C" {
+    bool g_animate = false;
+    bool g_userDefinedInstancing = false;
+  }
 
-    /*! Returns the number of stored active and inactive primitives in a block. */
-    virtual size_t sizeTotal(const char* This) const = 0;
-
-    /*! Returns the number of bytes of block. */
-    virtual size_t getBytes(const char* This) const = 0;
-  };
-  
-  template<typename Primitive>
-  struct PrimitivePointQuery1
+  struct Tutorial : public TutorialApplication 
   {
-    static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
+    Tutorial()
+      : TutorialApplication("closest_point",FEATURE_RTCORE | FEATURE_STREAM) 
     {
-      for (size_t i = 0; i < Primitive::max_size(); i++)
-      {
-        if (!prim.valid(i)) break;
-        AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID(i));
-        context->geomID = prim.geomID(i);
-        context->primID = prim.primID(i);
-        accel->pointQuery(query, context);
-      }
+      camera.from = Vec3fa(8.74064, 8.84506, 7.48329);
+      camera.to = Vec3fa(-0.106665, -1.8421, -6.5347);
+      camera.fov  = 60;
+    }
+    
+    void drawGUI() override
+    {
+      ImGui::Checkbox  ("Animate", &g_animate);
+      ImGui::Checkbox  ("User Defined Instancing", &g_userDefinedInstancing);
     }
   };
+
+}
+
+int main(int argc, char** argv) {
+  return embree::Tutorial().main(argc,argv);
 }
