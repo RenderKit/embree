@@ -177,7 +177,7 @@ def runConfig(config):
       elif OS == "macosx":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=/net/nas/volume1/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
       elif OS == "windows":
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\ispc.exe")
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\ispc.exe")
       else:
         sys.stderr.write("unknown operating system "+OS)
         sys.exit(1)
@@ -233,9 +233,9 @@ def runConfig(config):
       
       elif OS == "windows":
         if tasking == "TBB2019.2": 
-          tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"
+          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"
         elif tasking == "TBB2017": 
-          tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
+          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
           conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
@@ -335,7 +335,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_BINDIR=../../Applications/Embree3/bin")
       conf.append("-D EMBREE_TBB_ROOT=/opt/local")
     elif OS == "windows" and config["package"] == "ZIP":
-      conf.append("-D EMBREE_SIGN_FILE=\\\\sdvis-nas\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
+      conf.append("-D EMBREE_SIGN_FILE=\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
@@ -344,7 +344,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
     elif OS == "windows" and config["package"] == "MSI":
-      conf.append("-D EMBREE_SIGN_FILE=\\\\sdvis-nas\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
+      conf.append("-D EMBREE_SIGN_FILE=\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=OFF")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
