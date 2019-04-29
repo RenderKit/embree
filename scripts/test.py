@@ -175,7 +175,7 @@ def runConfig(config):
       if OS == "linux":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"-linux/ispc")
       elif OS == "macosx":
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=/net/nas/volume1/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"-osx/ispc")
       elif OS == "windows":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\ispc.exe")
       else:
@@ -223,9 +223,9 @@ def runConfig(config):
       
       elif OS == "macosx":
         if tasking == "TBB2019.2":
-          conf.append("-D EMBREE_TBB_ROOT=/net/nas/volume1/NAS/packages/apps/tbb/tbb-2019.2-osx")
+          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2019.2-osx")
         elif tasking == "TBB2017":
-          conf.append("-D EMBREE_TBB_ROOT=/net/nas/volume1/NAS/packages/apps/tbb/tbb-2017-osx")
+          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-osx")
         elif tasking == "TBB":
           conf.append("-D EMBREE_TBB_ROOT=/opt/local")
         else:
