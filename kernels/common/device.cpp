@@ -336,7 +336,9 @@ namespace embree
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
-    arena = make_unique(new tbb::task_arena( (int)min(maxNumThreads+numUserThreads,TaskScheduler::threadCount()), (unsigned int)max(numUserThreads,(size_t)1) ));
+    int nThreads = (int)min(maxNumThreads,TaskScheduler::threadCount());
+    int uThreads = min((int)max(numUserThreads,(size_t)1),nThreads);
+    arena = make_unique(new tbb::task_arena(nThreads,uThreads));
 #endif
   }
 
