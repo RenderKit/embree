@@ -19,7 +19,7 @@
 export void ispcEntry()
 {
   /* create new Embree device */
-  RTCDevice device = rtcNewDevice();
+  RTCDevice device = rtcNewDevice(NULL);
 
   /* delete Embree device again */
   rtcReleaseDevice(device);
