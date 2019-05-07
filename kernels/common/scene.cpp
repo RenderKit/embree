@@ -777,7 +777,6 @@ namespace embree
     {
       if (!join) 
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
-      
 #if USE_TASK_ARENA
       device->arena->execute([&]{ group->wait(); });
 #else
