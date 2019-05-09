@@ -45,31 +45,6 @@ namespace embree
       }
     };
 
-#if defined(__AVX__)
-    template<bool filter>
-    struct TriangleMIntersector1Moeller<4,8,filter>
-    {
-      static const size_t M = 4;
-      static const size_t Mx = 8;
-
-      typedef TriangleM<M> Primitive;
-      typedef MoellerTrumboreIntersector1<Mx> Precalculations;
-
-      static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const TriangleM<M>& tri)
-      {
-        STAT3(normal.trav_prims,1,1,1);
-        pre.intersect(ray,tri.v0,tri.e1,tri.e2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
-      }
-
-      /*! Test if the ray is occluded by one of M triangles. */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
-      {
-        STAT3(shadow.trav_prims,1,1,1);
-        return pre.intersect(ray,tri.v0,tri.e1,tri.e2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
-      }
-    };
-#endif
-
     /*! Intersects M triangles with K rays. */
     template<int M, int Mx, int K, bool filter>
     struct TriangleMIntersectorKMoeller
