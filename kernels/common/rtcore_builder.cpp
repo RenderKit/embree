@@ -119,9 +119,15 @@ namespace embree
         /* lambda function that creates BVH leaves */
         [&]( const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc) -> std::pair<void*,BBox3fa>
         {
-          const size_t id = morton_src[current.begin()].index;
-          const BBox3fa bounds = prims[id].bounds(); 
-          void* node = createLeaf((RTCThreadLocalAllocator)&alloc,prims_i+current.begin(),current.size(),userPtr);
+	  RTCBuildPrimitive localBuildPrims[RTC_BUILD_MAX_PRIMITIVES_PER_LEAF];
+	  BBox3fa bounds = empty;
+	  for (size_t i=0;i<current.size();i++)
+	    {
+	      const size_t id = morton_src[current.begin()+i].index;
+	      bounds.extend(prims[id].bounds());
+	      localBuildPrims[i] = prims_i[id];
+	    }
+          void* node = createLeaf((RTCThreadLocalAllocator)&alloc,localBuildPrims,current.size(),userPtr);
           return std::make_pair(node,bounds);
         },
         

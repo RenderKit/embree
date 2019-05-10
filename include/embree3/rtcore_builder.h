@@ -56,7 +56,12 @@ enum RTCBuildFlags
   RTC_BUILD_FLAG_NONE    = 0,
   RTC_BUILD_FLAG_DYNAMIC = (1 << 0),
 };
-  
+
+enum RTCBuildConstants
+{
+  RTC_BUILD_MAX_PRIMITIVES_PER_LEAF = 32
+};
+
 /* Input for builders */
 struct RTCBuildArguments
 {
@@ -97,7 +102,7 @@ RTC_FORCEINLINE struct RTCBuildArguments rtcDefaultBuildArguments()
   args.maxDepth = 32;
   args.sahBlockSize = 1;
   args.minLeafSize = 1;
-  args.maxLeafSize = 32;
+  args.maxLeafSize = RTC_BUILD_MAX_PRIMITIVES_PER_LEAF;
   args.traversalCost = 1.0f;
   args.intersectionCost = 1.0f;
   args.bvh = NULL;
