@@ -2384,9 +2384,9 @@ specified by setting an index buffer (`RTC_BUFFER_TYPE_INDEX` type) and
 the triangle vertices by setting a vertex buffer
 (`RTC_BUFFER_TYPE_VERTEX` type). See `rtcSetGeometryBuffer` and
 `rtcSetSharedGeometryBuffer` for more details on how to set buffers.
-The index buffer contains an array of three 32-bit indices per triangle
-(`RTC_FORMAT_UINT` format) and the number of primitives is inferred
-from the size of that buffer. The vertex buffer contains an array of
+The index buffer must contain an array of three 32-bit indices per triangle
+(`RTC_FORMAT_UINT3` format) and the number of primitives is inferred
+from the size of that buffer. The vertex buffer must contain an array of
 single precision `x`, `y`, `z` floating point coordinates
 (`RTC_FORMAT_FLOAT3` format), and the number of vertices are inferred
 from the size of that buffer. The vertex buffer can be at most 16 GB
