@@ -2,8 +2,9 @@ Version History
 ---------------
 
 ### New Features in Embree 3.5.3
--   Added new config flag "user_threads=N" to device which sets the number of
-    threads used by TBB but created by the user.
+-   Fixed bug in external BVH builder when configured for dynamic build.
+-   Added support for new config flag "user_threads=N" to device initialization
+    which sets the number of threads used by TBB but created by the user.
 
 ### New Features in Embree 3.5.2
 -   Added EMBREE_ISA_NAMESPACE cmake option that allows to put all Embree API functions
