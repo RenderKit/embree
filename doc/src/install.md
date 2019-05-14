@@ -122,7 +122,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-<EMBREE_VERSION>.x86_64.dmg](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.dmg). This
+[embree-<EMBREE_VERSION>.x86_64.pkg](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree<EMBREE_VERSION_MAJOR>` directory.
