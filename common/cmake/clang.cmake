@@ -99,6 +99,10 @@ ELSE()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # makes all inline symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")        # disables strict aliasing rules
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")         # disable auto vectorizer
+
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmismatched-tags -Wpessimizing-move ")           # disable DPC++ warnings    
+
+  
   IF (EMBREE_STACK_PROTECTOR)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")           # protects against return address overrides
   ENDIF()
@@ -108,9 +112,15 @@ ELSE()
     ENDIF()
   ENDMACRO()
 
-  IF (EMBREE_ADDRESS_SANITIZER)
+  IF (EMBREE_ADDRESS_SANITIZER)    
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   ENDIF()
+
+  IF (EMBREE_DPCPP_SUPPORT)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEMBREE_DPCPP_SUPPORT")      # enable DPC++ code in Embree
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lOpenCL -lsycl")     # link against DPC++ libs
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lOpenCL -lsycl")           # we do not need an executable stack
+  ENDIF(EMBREE_DPCPP_SUPPORT)
 
   SET(CMAKE_CXX_FLAGS_DEBUG "")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")          # enable assertions
@@ -143,5 +153,6 @@ ELSE()
       SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")                     # enables position independent execution for executable
     ENDIF()
   ENDIF(APPLE)
+
 
 ENDIF()

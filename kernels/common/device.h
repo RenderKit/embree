@@ -95,4 +95,17 @@ namespace embree
     /* ray streams filter */
     RayStreamFilterFuncs rayStreamFilters;
   };
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+  
+  class DeviceDPCPP : public Device
+  {
+  public:
+
+    DeviceDPCPP(const char* cfg);
+
+  };
+
+#endif
+
 }

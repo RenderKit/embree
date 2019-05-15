@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+
 namespace embree {
 
 /* scene data */
@@ -216,7 +217,7 @@ extern "C" void device_render (int* pixels,
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  });
 }
 
 /* called by the C++ code for cleanup */

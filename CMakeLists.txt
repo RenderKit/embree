@@ -136,6 +136,8 @@ MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 
+OPTION(EMBREE_DPCPP_SUPPORT "Enables DPC++ support." OFF)
+
 OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)

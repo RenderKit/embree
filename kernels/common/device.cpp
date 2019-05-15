@@ -35,6 +35,10 @@
 #include "../../common/tasking/taskscheduler.h"
 #include "../../common/sys/alloc.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#include <CL/sycl.hpp>
+#endif
+
 namespace embree
 {
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
@@ -510,4 +514,16 @@ namespace embree
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown readable property"); break;
     };
   }
+
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+#include <CL/sycl.hpp>
+
+  DeviceDPCPP::DeviceDPCPP(const char* cfg) : Device(cfg)
+  {
+    
+  }
+  
+#endif
 }
