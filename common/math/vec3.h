@@ -28,10 +28,16 @@ namespace embree
 
   template<typename T> struct Vec3
   {
-    T x, y, z;
+    enum { N  = 3 };
+
+    union {
+      struct {
+	T x, y, z;
+      };
+      T components[N];
+    };
 
     typedef T Scalar;
-    enum { N  = 3 };
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Construction
@@ -47,6 +53,8 @@ namespace embree
     template<typename T1> __forceinline Vec3( const Vec3<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)) {}
     template<typename T1> __forceinline Vec3& operator =(const Vec3<T1>& other) { x = other.x; y = other.y; z = other.z; return *this; }
 
+    __forceinline Vec3& operator =(const Vec3& other) { x = other.x; y = other.y; z = other.z; return *this; }
+	
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -56,8 +64,8 @@ namespace embree
     __forceinline Vec3( PosInfTy ) : x(pos_inf), y(pos_inf), z(pos_inf) {}
     __forceinline Vec3( NegInfTy ) : x(neg_inf), y(neg_inf), z(neg_inf) {}
 
-    __forceinline const T& operator []( const size_t axis ) const { assert(axis < 3); return (&x)[axis]; }
-    __forceinline       T& operator []( const size_t axis )       { assert(axis < 3); return (&x)[axis]; }
+    __forceinline const T& operator []( const size_t axis ) const { assert(axis < 3); return components[axis]; }
+    __forceinline       T& operator []( const size_t axis )       { assert(axis < 3); return components[axis]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
