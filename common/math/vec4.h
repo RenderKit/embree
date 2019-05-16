@@ -27,10 +27,15 @@ namespace embree
 
   template<typename T> struct Vec4
   {
-    T x, y, z, w;
+    enum { N = 4 };    
+    union {
+      struct { T x, y, z, w; };
+#if !(defined(__WIN32__) && _MSC_VER == 1800) // workaround for older VS 2013 compiler
+      T components[N];
+#endif
+    };
 
     typedef T Scalar;
-    enum { N = 4 };
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Construction
@@ -47,6 +52,8 @@ namespace embree
     template<typename T1> __forceinline Vec4( const Vec4<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)), w(T(a.w)) {}
     template<typename T1> __forceinline Vec4& operator =(const Vec4<T1>& other) { x = other.x; y = other.y; z = other.z; w = other.w; return *this; }
 
+    __forceinline Vec4& operator =(const Vec4& other) { x = other.x; y = other.y; z = other.z; w = other.w; return *this; }
+
     __forceinline operator Vec3<T> () const { return Vec3<T>(x,y,z); }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -58,8 +65,13 @@ namespace embree
     __forceinline Vec4( PosInfTy ) : x(pos_inf), y(pos_inf), z(pos_inf), w(pos_inf) {}
     __forceinline Vec4( NegInfTy ) : x(neg_inf), y(neg_inf), z(neg_inf), w(neg_inf) {}
 
-    __forceinline const T& operator []( const size_t axis ) const { assert(axis < 4); return (&x)[axis]; }
-    __forceinline       T& operator []( const size_t axis )       { assert(axis < 4); return (&x)[axis]; }
+#if defined(__WIN32__) && (_MSC_VER == 1800) // workaround for older VS 2013 compiler
+	__forceinline const T& operator [](const size_t axis) const { assert(axis < 4); return (&x)[axis]; }
+	__forceinline       T& operator [](const size_t axis)       { assert(axis < 4); return (&x)[axis]; }
+#else
+	__forceinline const T& operator [](const size_t axis ) const { assert(axis < 4); return components[axis]; }
+	__forceinline       T& operator [](const size_t axis)        { assert(axis < 4); return components[axis]; }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Swizzles
