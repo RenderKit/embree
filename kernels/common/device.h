@@ -28,6 +28,7 @@ namespace embree
 {
   class BVH4Factory;
   class BVH8Factory;
+  class BVHGPUFactory;
 
   class Device : public State, public MemoryMonitorInterface
   {
@@ -91,6 +92,7 @@ namespace embree
 #if defined(EMBREE_TARGET_SIMD8)
     std::unique_ptr<BVH8Factory> bvh8_factory;
 #endif
+    std::unique_ptr<BVHGPUFactory> bvh_gpu_factory;
     
 #if USE_TASK_ARENA
     std::unique_ptr<tbb::task_arena> arena;

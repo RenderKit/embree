@@ -66,6 +66,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_statistics.cpp
   bvh/bvh4_factory.cpp
   bvh/bvh8_factory.cpp
+  bvh/bvh_gpu_factory.cpp
 
   bvh/bvh_rotate.cpp
   bvh/bvh_refit.cpp

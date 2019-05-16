@@ -31,6 +31,7 @@
 
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
+#include "../bvh/bvh_gpu_factory.h"
 
 #include "../../common/tasking/taskscheduler.h"
 #include "../../common/sys/alloc.h"
@@ -102,6 +103,9 @@ namespace embree
 #if defined(EMBREE_TARGET_SIMD8)
     bvh8_factory = make_unique(new BVH8Factory(enabled_builder_cpu_features, enabled_cpu_features));
 #endif
+
+    /* register GPU algorithms */
+    bvh_gpu_factory = make_unique(new BVHGPUFactory());
 
     /* setup tasking system */
     initTaskingSystem(numThreads);
