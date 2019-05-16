@@ -77,6 +77,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_sah_spatial.cpp
   bvh/bvh_builder_sah_mb.cpp
   bvh/bvh_builder_twolevel.cpp
+  bvh/bvh_builder_gpu.cpp
 
   bvh/bvh_intersector1_bvh4.cpp
   )

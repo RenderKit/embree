@@ -264,6 +264,8 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh    * COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderMortonGeneral,void* COMMA UserGeometry    * COMMA size_t);
 
+  DECLARE_ISA_FUNCTION(Builder*,BVHNTriangle1vSceneBuilderSAH_GPU,void* COMMA Scene* COMMA size_t);
+  
   BVH4Factory::BVH4Factory(int bfeatures, int ifeatures)
   {
     selectBuilders(bfeatures);
