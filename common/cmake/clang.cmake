@@ -100,7 +100,6 @@ ELSE()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")        # disables strict aliasing rules
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")         # disable auto vectorizer
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmismatched-tags -Wpessimizing-move ")           # disable DPC++ warnings    
 
   
   IF (EMBREE_STACK_PROTECTOR)
@@ -117,6 +116,8 @@ ELSE()
   ENDIF()
 
   IF (EMBREE_DPCPP_SUPPORT)
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -fsycl") # disable DPC++ warnings    
+    
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEMBREE_DPCPP_SUPPORT")      # enable DPC++ code in Embree
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lOpenCL -lsycl")     # link against DPC++ libs
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lOpenCL -lsycl")           # we do not need an executable stack

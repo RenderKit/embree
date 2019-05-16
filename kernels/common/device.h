@@ -20,6 +20,10 @@
 #include "state.h"
 #include "accel.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#include <CL/sycl.hpp>
+#endif
+
 namespace embree
 {
   class BVH4Factory;
@@ -98,11 +102,26 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
   
+  class NEOGPUDeviceSelector : public cl::sycl::device_selector {
+  public:
+    int operator()(const cl::sycl::device &Device) const override {
+      using namespace cl::sycl::info;
+
+      const std::string DeviceName = Device.get_info<device::name>();
+      const std::string DeviceVendor = Device.get_info<device::vendor>();
+
+      return Device.is_gpu() && DeviceName.find("HD Graphics NEO") ? 1 : -1;
+    }
+  };
+   
   class DeviceDPCPP : public Device
   {
   public:
 
     DeviceDPCPP(const char* cfg);
+    ~DeviceDPCPP();
+    cl::sycl::queue  dpcpp_queue;
+    cl::sycl::device dpcpp_device;
 
   };
 
