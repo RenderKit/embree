@@ -1548,4 +1548,5 @@ namespace embree
 
   typedef BVHN<4> BVH4;
   typedef BVHN<8> BVH8;
+  typedef BVHN<16> BVH16;
 }

@@ -519,8 +519,10 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
   
-  DeviceDPCPP::DeviceDPCPP(const char* cfg) : Device(cfg)
+  DeviceDPCPP::DeviceDPCPP(const char* cfg) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
   {
+    
+    
     using namespace cl::sycl;
 
     NEOGPUDeviceSelector selector;

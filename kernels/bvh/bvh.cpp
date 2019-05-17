@@ -199,5 +199,6 @@ namespace embree
 #if !defined(__AVX__) || !defined(EMBREE_TARGET_SSE2) && !defined(EMBREE_TARGET_SSE42)
   template class BVHN<4>;
 #endif
+
 }
 

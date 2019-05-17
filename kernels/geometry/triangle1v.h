@@ -110,4 +110,7 @@ namespace embree
     unsigned int geomId; // geometry ID
     unsigned int primId; // primitive ID
   };
+
+  //typename Triangle1v::Type Triangle1v::type;
+
 }

@@ -28,14 +28,14 @@ namespace embree
 
   public:
     Accel* BVHGPUTriangle1v   (Scene* scene);
-    Accel::Intersectors BVHGPUTriangle1vIntersectors(BVH8* bvh);
+    Accel::Intersectors BVHGPUTriangle1vIntersectors(BVH4* bvh);
 			
   private:
     void selectBuilders(int features);
     void selectIntersectors(int features);
 
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVHNTriangle1vSceneBuilderSAH_GPU,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
   };
 }

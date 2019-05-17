@@ -24,7 +24,7 @@
 
 namespace embree
 {
-  DECLARE_ISA_FUNCTION(Builder*,BVHNTriangle1vSceneBuilderSAH_GPU,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
   BVHGPUFactory::BVHGPUFactory()
   {
@@ -35,7 +35,7 @@ namespace embree
 
   void BVHGPUFactory::selectBuilders(int features)
   {
-    
+    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT(features,BVHGPUTriangle1vSceneBuilderSAH));
   }
 
   void BVHGPUFactory::selectIntersectors(int features)
@@ -43,7 +43,7 @@ namespace embree
     
   }
 
-  Accel::Intersectors BVHGPUFactory::BVHGPUTriangle1vIntersectors(BVH8* bvh)
+  Accel::Intersectors BVHGPUFactory::BVHGPUTriangle1vIntersectors(BVH4* bvh)
   {
     PING;
     Accel::Intersectors intersectors;
@@ -62,11 +62,12 @@ namespace embree
   Accel* BVHGPUFactory::BVHGPUTriangle1v(Scene* scene)
   {
     PING;
-    BVH8* accel = nullptr; //new BVH8(Triangle1v::type,scene);
+    BVH4* accel = new BVH4(Triangle1v::type,scene);
     Accel::Intersectors intersectors = BVHGPUTriangle1vIntersectors(accel); 
-    Builder* builder = BVHNTriangle1vSceneBuilderSAH_GPU(accel,scene,0);
+    Builder* builder = BVHGPUTriangle1vSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
+
 
 }
 

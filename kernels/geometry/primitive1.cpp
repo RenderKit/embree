@@ -21,7 +21,8 @@ namespace embree
 {
 
   /********************** Triangle1v **************************/
-
+  Triangle1v::Type Triangle1v::type;
+  
   const char* Triangle1v::Type::name () const {
     return "triangle1v";
   }
