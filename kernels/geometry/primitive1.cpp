@@ -14,28 +14,28 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "bvh_factory.h"
+#include "primitive.h"
+#include "triangle1v.h"
 
 namespace embree
 {
-  /*! BVHGPU instantiations */
-  class BVHGPUFactory : public BVHFactory
-  {
-  public:
-    BVHGPUFactory();
 
-  public:
-    Accel* BVHGPUTriangle1v   (Scene* scene);
-    Accel::Intersectors BVHGPUTriangle1vIntersectors(BVH8* bvh);
-			
-  private:
-    void selectBuilders(int features);
-    void selectIntersectors(int features);
+  /********************** Triangle1v **************************/
 
-  private:
-    DEFINE_ISA_FUNCTION(Builder*,BVHNTriangle1vSceneBuilderSAH_GPU,void* COMMA Scene* COMMA size_t);
+  const char* Triangle1v::Type::name () const {
+    return "triangle1v";
+  }
 
-  };
+  size_t Triangle1v::Type::sizeActive(const char* This) const {
+    return ((Triangle1v*)This)->size();
+  }
+
+  size_t Triangle1v::Type::sizeTotal(const char* This) const {
+    return 1;
+  }
+
+  size_t Triangle1v::Type::getBytes(const char* This) const {
+    return sizeof(Triangle1v);
+  }
+  
 }

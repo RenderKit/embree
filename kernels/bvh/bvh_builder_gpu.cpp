@@ -18,17 +18,8 @@
 #include "bvh_builder.h"
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
+#include "../geometry/triangle1v.h"
 
-#include "../geometry/linei.h"
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/quadv.h"
-#include "../geometry/quadi.h"
-#include "../geometry/object.h"
-#include "../geometry/instance.h"
-#include "../geometry/subgrid.h"
 
 #include "../common/state.h"
 #include "../../common/algorithms/parallel_for_for.h"
@@ -42,7 +33,7 @@ namespace embree
   namespace isa
   {
 
-    template<int N, typename Mesh>
+    template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderSAH_GPU : public Builder
     {
       typedef BVHN<N> BVH;
@@ -152,7 +143,7 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHNTriangle1vSceneBuilderSAH_GPU (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH_GPU<4,TriangleMesh>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
+    Builder* BVHNTriangle1vSceneBuilderSAH_GPU (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH_GPU<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
 #endif
     
   }

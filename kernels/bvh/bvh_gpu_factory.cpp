@@ -19,10 +19,12 @@
 
 #include "bvh_gpu_factory.h"
 #include "../bvh/bvh.h"
+#include "../geometry/triangle1v.h"
 #include "../common/accelinstance.h"
 
 namespace embree
 {
+  DECLARE_ISA_FUNCTION(Builder*,BVHNTriangle1vSceneBuilderSAH_GPU,void* COMMA Scene* COMMA size_t);
 
   BVHGPUFactory::BVHGPUFactory()
   {
@@ -41,11 +43,28 @@ namespace embree
     
   }
 
+  Accel::Intersectors BVHGPUFactory::BVHGPUTriangle1vIntersectors(BVH8* bvh)
+  {
+    PING;
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1    = NULL;
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4    = NULL;
+    intersectors.intersector8    = NULL;
+    intersectors.intersector16   = NULL;
+    intersectors.intersectorN    = NULL;
+#endif
+    return intersectors;
+  
+  }
+
   Accel* BVHGPUFactory::BVHGPUTriangle1v(Scene* scene)
   {
-    BVH8* accel = nullptr;
-    Accel::Intersectors intersectors; 
-    Builder* builder = nullptr;
+    PING;
+    BVH8* accel = nullptr; //new BVH8(Triangle1v::type,scene);
+    Accel::Intersectors intersectors = BVHGPUTriangle1vIntersectors(accel); 
+    Builder* builder = BVHNTriangle1vSceneBuilderSAH_GPU(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
