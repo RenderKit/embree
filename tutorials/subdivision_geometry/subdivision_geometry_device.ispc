@@ -121,7 +121,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, cube_indices, 0, sizeof(uniform unsigned int), NUM_INDICES);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE, 0, RTC_FORMAT_UINT, cube_faces, 0, sizeof(uniform unsigned int), NUM_FACES);
 
-  /* edge or vertex creases disabled */
+  /* edge and vertex creases disabled */
 #if 0  
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_UINT2, cube_edge_crease_indices,   0, 2*sizeof(uniform unsigned int), 12);
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT, cube_edge_crease_weights,   0, sizeof(uniform float), 12);
