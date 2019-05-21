@@ -15,10 +15,10 @@
 // ======================================================================== //
 
 #define RTC_VERSION_MAJOR 3
-#define RTC_VERSION_MINOR 5
-#define RTC_VERSION_PATCH 3
-#define RTC_VERSION 30503
-#define RTC_VERSION_STRING "3.5.3-alpha.0"
+#define RTC_VERSION_MINOR 6
+#define RTC_VERSION_PATCH 0
+#define RTC_VERSION 30600
+#define RTC_VERSION_STRING "3.6.0-alpha.0"
 
 /* #undef EMBREE_STATIC_LIB */
 /* #undef EMBREE_API_NAMESPACE */
