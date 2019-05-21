@@ -123,11 +123,11 @@ namespace embree
 	    cl::sycl::buffer<gpu::AABB, 1> test_buffer((gpu::AABB*)prims.data(),pinfo.size());
 #if 1
 	    gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		auto accessor_buf = test_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+		auto accessor_buf = test_buffer.get_access<cl::sycl::access::mode::read>(cgh);
 
 		cgh.parallel_for<class TestKernel>(cl::sycl::range<1> { pinfo.size() },[=](cl::sycl::id<1> idx)
 						   {//kernel code
-						     gpu::AABB &aabb = accessor_buf[idx];
+						     gpu::AABB aabb = accessor_buf[idx];
 
 						   });//end of parallel_for
 
