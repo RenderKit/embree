@@ -519,7 +519,7 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
   
-  DeviceDPCPP::DeviceDPCPP(const char* cfg) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
+  DeviceGPU::DeviceGPU(const char* cfg) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
   {
     
     
@@ -528,35 +528,20 @@ namespace embree
     NEOGPUDeviceSelector selector;
 
     try {
-      dpcpp_queue = queue(selector);
-      dpcpp_device = device(selector);
+      gpu_queue = queue(selector);
+      gpu_device = device(selector);
     } catch (cl::sycl::invalid_parameter_error &E) {
       std::cout << E.what() << std::endl;
     }
 
     // Printing Device Information
-    std::cout << "Info: Running on " << dpcpp_queue.get_device().get_info<cl::sycl::info::device::name>() << std::endl;
-    auto device = dpcpp_queue.get_device();
+    std::cout << "Info: Running on " << gpu_queue.get_device().get_info<cl::sycl::info::device::name>() << std::endl;
+    auto device = gpu_queue.get_device();
     auto maxBlockSize = device.get_info<cl::sycl::info::device::max_work_group_size>();
     std::cout << "Info: The Device Max Work Group Size is : " << maxBlockSize << std::endl;
-    float input[1024];
-    buffer<float, 1> test_buffer(input,1024);
-    
-     
-    dpcpp_queue.submit([&](handler &cgh) {
-	auto accessor_buf = test_buffer.get_access<access::mode::write>(cgh);
-
-	cgh.parallel_for<class TestKernel>(cl::sycl::range<1> { 1024 },[=](id<1> idx)
-                    {//kernel code
-		      accessor_buf[idx] = 0.0f;
-                    });//end of parallel_for
-
-	});
-    dpcpp_queue.wait_and_throw();
-
   }
 
-  DeviceDPCPP::~DeviceDPCPP()
+  DeviceGPU::~DeviceGPU()
   {
     
   }

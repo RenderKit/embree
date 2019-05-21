@@ -50,7 +50,7 @@ RTC_NAMESPACE_BEGIN;
     std::string new_cfg(config);
     //new_cfg += " tri_accel=bvh4.triangle4";
 
-    DeviceDPCPP* device = new DeviceDPCPP(new_cfg.c_str());
+    DeviceGPU* device = new DeviceGPU(new_cfg.c_str());
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;

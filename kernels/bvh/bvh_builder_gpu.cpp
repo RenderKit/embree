@@ -25,14 +25,15 @@
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
+#include "../gpu/AABB.h"
+
 #define PROFILE 0
 #define PROFILE_RUNS 20
 
 namespace embree
 {
   namespace isa
-  {
-
+  {    
     template<int N, typename Mesh, typename Primitive>
     struct BVHGPUBuilderSAH : public Builder
     {
@@ -58,7 +59,6 @@ namespace embree
 
       void build()
       {
-	PING;
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
@@ -104,6 +104,9 @@ namespace embree
               createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
               createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
 
+
+	    
+	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
             {
@@ -111,10 +114,33 @@ namespace embree
               prims.clear();
               return;
             }
+	    PRINT(pinfo.size());
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+	    
+	    cl::sycl::queue &gpu_queue = ((DeviceGPU*)scene->device)->gpu_queue;
+	    
+	    cl::sycl::buffer<gpu::AABB, 1> test_buffer((gpu::AABB*)prims.data(),pinfo.size());
+#if 1
+	    gpu_queue.submit([&](cl::sycl::handler &cgh) {
+		auto accessor_buf = test_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+
+		cgh.parallel_for<class TestKernel>(cl::sycl::range<1> { pinfo.size() },[=](cl::sycl::id<1> idx)
+						   {//kernel code
+						     gpu::AABB &aabb = accessor_buf[idx];
+
+						   });//end of parallel_for
+
+	      });
+	    gpu_queue.wait_and_throw();
+#endif
+	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 	    PING;
+	    exit(0);
+
+#endif	    
             //bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
 	    bvh->clear();
 #if PROFILE

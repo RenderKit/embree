@@ -116,15 +116,15 @@ namespace embree
     }
   };
    
-  class DeviceDPCPP : public Device
+  class DeviceGPU : public Device
   {
   public:
 
-    DeviceDPCPP(const char* cfg);
-    ~DeviceDPCPP();
-    cl::sycl::queue  dpcpp_queue;
-    cl::sycl::device dpcpp_device;
+    DeviceGPU(const char* cfg);
+    ~DeviceGPU();
 
+    cl::sycl::queue  gpu_queue;
+    cl::sycl::device gpu_device;
   };
 
 #endif
