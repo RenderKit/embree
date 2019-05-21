@@ -14,6 +14,9 @@
     RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE - 
       flat curve geometry with cubic Hermite basis
 
+    RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE - 
+      flat curve geometry with Catmull-Rom basis
+
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE -
       flat normal oriented curve geometry with cubic Bézier basis
 
@@ -22,6 +25,9 @@
 
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE - 
       flat normal oriented curve geometry with cubic Hermite basis
+
+    RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE - 
+      flat normal oriented curve geometry with Catmull-Rom basis
 
     RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE -
       sweep surface curve geometry with cubic Bézier basis
@@ -32,6 +38,9 @@
     RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE -
       sweep surface curve geometry with cubic Hermite basis
 
+    RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE -
+      sweep surface curve geometry with Catmull-Rom basis
+
 #### SYNOPSIS
 
     #include <embree3/rtcore.h>
@@ -40,12 +49,15 @@
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE);
 
 #### DESCRIPTION
 
@@ -55,12 +67,15 @@ created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, or
-`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE` to the `rtcNewGeometry`
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE`, or
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` to the `rtcNewGeometry`
 function. The curve indices can be specified through an index buffer
 (`RTC_BUFFER_TYPE_INDEX`) and the curve vertices through a vertex
 buffer (`RTC_BUFFER_TYPE_VERTEX`). For the Hermite basis a tangent
@@ -122,6 +137,10 @@ continuously, the end point and tangent of the previous segment can be
 shared. Different versions of Catmull-Rom splines can be easily
 constructed usig the Hermite basis, by calculating a proper tangent
 buffer from the control points.
+
+For the Catmull-Rom basis the indices point to the first of 4
+consecutive control points in the vertex buffer.  This basis goes
+through p0 and p3, with p0-p1 and p2-p3 tangents.
 
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected

@@ -204,12 +204,12 @@ Hair
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
 
-Bézier Curves
--------------
+Curve Geometry
+--------------
 
 ![][imgCurveGeometry]
 
-This tutorial demonstrates the use of the Bézier curve geometry.
+This tutorial demonstrates the use of the B-Spline and Catmull-Rom curve geometries.
 
 Subdivision Geometry
 --------------------
