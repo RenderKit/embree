@@ -126,7 +126,7 @@ namespace embree
 	      gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  auto accessor_aabb = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
 
-		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(pinfo.size(),64),[=](cl::sycl::nd_item<1> item)
+		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(pinfo.size(),deviceGPU->getMaxWorkGroupSize()),[=](cl::sycl::nd_item<1> item)
 						     {//kernel code
 						       const gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
 						       
