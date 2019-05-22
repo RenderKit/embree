@@ -127,11 +127,10 @@ namespace embree
     cl::sycl::queue  gpu_queue;
     cl::sycl::device gpu_device;
     unsigned int maxWorkGroupSize;
-    
+    unsigned int maxComputeUnits;
   public:
     inline cl::sycl::queue  &getQueue() { return gpu_queue; }
     inline unsigned int getMaxWorkGroupSize() { return maxWorkGroupSize; }
-    
   };
 
 #endif

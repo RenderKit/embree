@@ -37,7 +37,7 @@ namespace embree
 	lower = (cl::sycl::float4)(pos_inf,pos_inf,pos_inf,0);
 	upper = (cl::sycl::float4)(neg_inf,neg_inf,neg_inf,0);	
       }
-
+      
       inline void extend(class AABB &aabb)
       {
 	lower = min(lower,aabb.lower);
@@ -66,8 +66,63 @@ namespace embree
 	return upper + lower;
       }
 
-      
+      static inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB &aabb)
+      {
+	AABB result;
+	result.lower.x() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.x());
+	result.lower.y() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.y());
+	result.lower.z() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.z());
+	result.lower.w() = 0.0f;
+	result.upper.x() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.x());
+	result.upper.y() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.y());
+	result.upper.z() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.z());
+	result.upper.w() = 0.0f;	
+	return result;	
+      }
 
+      static inline AABB sub_group_broadcast(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      {
+	AABB result;
+	result.lower.x() = sg.broadcast<float>(aabb.lower.x(),localID);
+	result.lower.y() = sg.broadcast<float>(aabb.lower.y(),localID);
+	result.lower.z() = sg.broadcast<float>(aabb.lower.z(),localID);
+	result.lower.w() = 0.0f;
+	result.upper.x() = sg.broadcast<float>(aabb.upper.x(),localID);
+	result.upper.y() = sg.broadcast<float>(aabb.upper.y(),localID);
+	result.upper.z() = sg.broadcast<float>(aabb.upper.z(),localID);
+	result.upper.w() = 0.0f;	
+	return result;	
+      }
+
+      static inline AABB sub_group_scan_exclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      {
+	AABB result;
+	result.lower.x() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.x());
+	result.lower.y() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.y());
+	result.lower.z() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.z());
+	result.lower.w() = 0.0f;
+	result.upper.x() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.x());
+	result.upper.y() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.y());
+	result.upper.z() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.z());
+	result.upper.w() = 0.0f;	
+	return result;	
+      }
+
+      static inline AABB sub_group_scan_inclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      {
+	AABB result;
+	result.lower.x() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.x());
+	result.lower.y() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.y());
+	result.lower.z() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.z());
+	result.lower.w() = 0.0f;
+	result.upper.x() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.x());
+	result.upper.y() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.y());
+	result.upper.z() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.z());
+	result.upper.w() = 0.0f;	
+	return result;	
+      }
+      
+      
     };
   };
 };
