@@ -536,9 +536,8 @@ namespace embree
 
     // Printing Device Information
     std::cout << "Info: Running on " << gpu_queue.get_device().get_info<cl::sycl::info::device::name>() << std::endl;
-    auto device = gpu_queue.get_device();
-    auto maxBlockSize = device.get_info<cl::sycl::info::device::max_work_group_size>();
-    std::cout << "Info: The Device Max Work Group Size is : " << maxBlockSize << std::endl;
+    maxWorkGroupSize =  gpu_device.get_info<cl::sycl::info::device::max_work_group_size>();
+    std::cout << "Info: The Device Max Work Group Size is : " << maxWorkGroupSize << std::endl;
   }
 
   DeviceGPU::~DeviceGPU()

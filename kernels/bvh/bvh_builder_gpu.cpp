@@ -117,23 +117,25 @@ namespace embree
 	    PRINT(pinfo.size());
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-	    
-	    cl::sycl::queue &gpu_queue = ((DeviceGPU*)scene->device)->gpu_queue;
-	    
-	    cl::sycl::buffer<gpu::AABB, 1> test_buffer((gpu::AABB*)prims.data(),pinfo.size());
+	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+	      
+	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
+	    {
+	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
 #if 1
-	    gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		auto accessor_buf = test_buffer.get_access<cl::sycl::access::mode::read>(cgh);
+	      gpu_queue.submit([&](cl::sycl::handler &cgh) {
+		  auto accessor_aabb = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
 
-		cgh.parallel_for<class TestKernel>(cl::sycl::range<1> { pinfo.size() },[=](cl::sycl::id<1> idx)
-						   {//kernel code
-						     gpu::AABB aabb = accessor_buf[idx];
-
-						   });//end of parallel_for
-
-	      });
-	    gpu_queue.wait_and_throw();
+		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(pinfo.size(),64),[=](cl::sycl::nd_item<1> item)
+						     {//kernel code
+						       const gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
+						       
+						     });//end of parallel_for
+		  
+		});
+	      gpu_queue.wait_and_throw();
 #endif
+	    }
 	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
