@@ -78,7 +78,7 @@ ADD_SUBDIRECTORY(interpolation)
 ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
-# ADD_SUBDIRECTORY(convert) disable for now due to linking error
+ADD_SUBDIRECTORY(convert)
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)

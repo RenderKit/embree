@@ -118,18 +118,25 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
-	      
+
+	    gpu::AABB bounds;
+	    bounds.init();
+	    
 	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 	    {
 	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
+	      cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
+	      
 #if 1
 	      gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_aabb = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
+		  auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
+		  auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
 
 		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(pinfo.size(),deviceGPU->getMaxWorkGroupSize()),[=](cl::sycl::nd_item<1> item)
 						     {//kernel code
-						       const gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
-						       
+						       //gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
+						       //gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
+						       //accessor_bounds[0] = reduced_aabb;
 						     });//end of parallel_for
 		  
 		});
@@ -140,6 +147,7 @@ namespace embree
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 	    PING;
+	    std::cout << "bounds " << (float)bounds.lower.x() << std::endl;
 	    exit(0);
 
 #endif	    

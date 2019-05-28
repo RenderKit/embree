@@ -45,7 +45,6 @@ namespace embree
 
   Accel::Intersectors BVHGPUFactory::BVHGPUTriangle1vIntersectors(BVH4* bvh)
   {
-    PING;
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1    = NULL;

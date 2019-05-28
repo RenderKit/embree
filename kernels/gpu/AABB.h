@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/device.h"
+#include "common.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
@@ -128,7 +129,21 @@ namespace embree
 	result.upper.w() = 0.0f;	
 	return result;	
       }
-      
+
+      static inline AABB work_group_reduce(const AABB &aabb)
+      {
+	AABB result;
+	result.lower.x() = work_group_reduce_min(aabb.lower.x());
+	result.lower.y() = work_group_reduce_min(aabb.lower.y());
+	result.lower.z() = work_group_reduce_min(aabb.lower.z());
+	result.lower.w() = 0.0f;
+	result.upper.x() = work_group_reduce_max(aabb.upper.x());
+	result.upper.y() = work_group_reduce_max(aabb.upper.y());
+	result.upper.z() = work_group_reduce_max(aabb.upper.z());
+	result.upper.w() = 0.0f;	
+	return result;	
+      }
+
       
     };
   };
