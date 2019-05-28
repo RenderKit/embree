@@ -26,122 +26,106 @@ namespace embree
 {
   namespace gpu
   {
-    class AABB {
+    class AABB3f {
     public:
-      cl::sycl::float4 lower;
-      cl::sycl::float4 upper;
-      AABB() = default;
+      cl::sycl::float3 lower;
+      cl::sycl::float3 upper;
+      
+      AABB3f() = default;
 
       inline void init()
       {
 	const float pos_inf =  INFINITY;
 	const float neg_inf = -INFINITY;       
-	lower = (cl::sycl::float4)(pos_inf,pos_inf,pos_inf,0);
-	upper = (cl::sycl::float4)(neg_inf,neg_inf,neg_inf,0);	
+	lower = (cl::sycl::float3)(pos_inf,pos_inf,pos_inf);
+	upper = (cl::sycl::float3)(neg_inf,neg_inf,neg_inf);	
       }
       
-      inline void extend(class AABB &aabb)
+      inline void extend(class AABB3f &aabb)
       {
 	lower = min(lower,aabb.lower);
 	upper = max(upper,aabb.upper);	
       }
 
-      inline void extend(const cl::sycl::float4 &v)
+      inline void extend(const cl::sycl::float3 &v)
       {
 	lower = min(lower,v);
 	upper = max(upper,v);	
       }
 
-      inline void enlarge(const cl::sycl::float4 &v)
+      inline void enlarge(const cl::sycl::float3 &v)
       {
 	lower -= v;
 	upper += v;	
       }
 
-      inline cl::sycl::float4 size()
+      inline cl::sycl::float3 size()
       {
 	return upper - lower;
       }
 
-      inline cl::sycl::float4 centroid2()
+      inline cl::sycl::float3 centroid2()
       {
 	return upper + lower;
       }
-
-      inline void atomic_merge_global(float *dest)
-      {
-	cl::sycl::multi_ptr<float,cl::sycl::access::address_space::global_space> ptr(dest);
-	cl::sycl::atomic<float> t(ptr);
-	//cl::sycl::atomic_fetch_min<float,cl::sycl::access::address_space::global_space>(t,1.0f); ???
-      }
       
-      static inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB &aabb)
+      static inline AABB3f sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB3f &aabb)
       {
-	AABB result;
+	AABB3f result;
 	result.lower.x() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.x());
 	result.lower.y() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.y());
 	result.lower.z() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.z());
-	result.lower.w() = 0.0f;
 	result.upper.x() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.x());
 	result.upper.y() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.y());
 	result.upper.z() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.z());
-	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB sub_group_broadcast(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      static inline AABB3f sub_group_broadcast(cl::sycl::intel::sub_group& sg, const AABB3f &aabb, const cl::sycl::id<1> &localID)
       {
-	AABB result;
+	AABB3f result;
 	result.lower.x() = sg.broadcast<float>(aabb.lower.x(),localID);
 	result.lower.y() = sg.broadcast<float>(aabb.lower.y(),localID);
 	result.lower.z() = sg.broadcast<float>(aabb.lower.z(),localID);
-	result.lower.w() = 0.0f;
 	result.upper.x() = sg.broadcast<float>(aabb.upper.x(),localID);
 	result.upper.y() = sg.broadcast<float>(aabb.upper.y(),localID);
 	result.upper.z() = sg.broadcast<float>(aabb.upper.z(),localID);
-	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB sub_group_scan_exclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      static inline AABB3f sub_group_scan_exclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB3f &aabb, const cl::sycl::id<1> &localID)
       {
-	AABB result;
+	AABB3f result;
 	result.lower.x() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.x());
 	result.lower.y() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.y());
 	result.lower.z() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.z());
-	result.lower.w() = 0.0f;
 	result.upper.x() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.x());
 	result.upper.y() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.y());
 	result.upper.z() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.z());
-	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB sub_group_scan_inclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      static inline AABB3f sub_group_scan_inclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB3f &aabb, const cl::sycl::id<1> &localID)
       {
-	AABB result;
+	AABB3f result;
 	result.lower.x() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.x());
 	result.lower.y() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.y());
 	result.lower.z() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.z());
-	result.lower.w() = 0.0f;
 	result.upper.x() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.x());
 	result.upper.y() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.y());
 	result.upper.z() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.z());
-	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB work_group_reduce(const AABB &aabb)
+      static inline AABB3f work_group_reduce(const AABB3f &aabb)
       {
-	AABB result;
+	AABB3f result;
 	result.lower.x() = work_group_reduce_min(aabb.lower.x());
 	result.lower.y() = work_group_reduce_min(aabb.lower.y());
 	result.lower.z() = work_group_reduce_min(aabb.lower.z());
-	result.lower.w() = 0.0f;
 	result.upper.x() = work_group_reduce_max(aabb.upper.x());
 	result.upper.y() = work_group_reduce_max(aabb.upper.y());
 	result.upper.z() = work_group_reduce_max(aabb.upper.z());
-	result.upper.w() = 0.0f;	
 	return result;	
       }
 

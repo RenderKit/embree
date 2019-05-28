@@ -26,6 +26,7 @@
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
 #include "../gpu/AABB.h"
+#include "../gpu/AABB3f.h"
 
 #define PROFILE 0
 #define PROFILE_RUNS 20
@@ -127,13 +128,13 @@ namespace embree
 	      //gpu::AABB bounds;
 	      //bounds.init();
 	      
-	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
-	      //cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
+	      //cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
+	      //cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds);
 
-	      const int sizeWG = 128; // hmm, everything except 1 fails here !!!!// deviceGPU->getMaxWorkGroupSize();
+	      const int sizeWG = 16; // hmm, everything except 1 fails here !!!!// deviceGPU->getMaxWorkGroupSize();
 	      
-	      gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
+	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
+		  //auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
 		  //auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
 		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG)),[=](cl::sycl::nd_item<1> item)
 						     {//kernel code
@@ -143,7 +144,8 @@ namespace embree
 						     });//end of parallel_for
 		  
 		});
-	      gpu_queue.wait_and_throw();
+	      queue_event.wait();
+	      //gpu_queue.wait_and_throw();
 	    }
 	    
             /* call BVH builder */
