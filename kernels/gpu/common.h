@@ -1,4 +1,3 @@
-
 // ======================================================================== //
 // Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
@@ -46,5 +45,23 @@ float work_group_reduce_max(float x) { return x; }
 //float atomic_max(volatile __local  float *p, float val) { return val; };
 
 #endif
+
+namespace embree
+{
+  namespace gpu
+  {
+
+    inline float halfarea(const cl::sycl::float3 &d)
+    {
+      return fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
+    }
+    
+    inline float area(const cl::sycl::float3 &d)
+    {
+      return halfarea(d) * 2.0f;
+    }
+  };
+};
+
 
 #endif

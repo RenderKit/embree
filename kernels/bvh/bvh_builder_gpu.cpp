@@ -27,6 +27,7 @@
 
 #include "../gpu/AABB.h"
 #include "../gpu/AABB3f.h"
+#include "../gpu/builder.h"
 
 #define PROFILE 0
 #define PROFILE_RUNS 20

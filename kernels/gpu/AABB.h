@@ -30,6 +30,7 @@ namespace embree
     public:
       cl::sycl::float4 lower;
       cl::sycl::float4 upper;
+
       AABB() = default;
 
       inline void init()
