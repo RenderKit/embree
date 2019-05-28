@@ -117,22 +117,25 @@ namespace embree
 	    PRINT(pinfo.size());
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
 
-	    gpu::AABB bounds;
-	    bounds.init();
+	      
+	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+	    PRINT(deviceGPU->getMaxWorkGroupSize());
 	    
 	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 	    {
-	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
-	      cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
+	      //gpu::AABB bounds;
+	      //bounds.init();
 	      
-#if 1
+	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
+	      //cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
+
+	      const int sizeWG = 128; // hmm, everything except 1 fails here !!!!// deviceGPU->getMaxWorkGroupSize();
+	      
 	      gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
-		  auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
-
-		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(pinfo.size(),deviceGPU->getMaxWorkGroupSize()),[=](cl::sycl::nd_item<1> item)
+		  //auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG)),[=](cl::sycl::nd_item<1> item)
 						     {//kernel code
 						       //gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
 						       //gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
@@ -141,13 +144,12 @@ namespace embree
 		  
 		});
 	      gpu_queue.wait_and_throw();
-#endif
 	    }
 	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 	    PING;
-	    std::cout << "bounds " << (float)bounds.lower.x() << std::endl;
+	    //std::cout << "bounds " << (float)bounds.lower.x() << std::endl;
 	    exit(0);
 
 #endif	    

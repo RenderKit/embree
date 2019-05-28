@@ -79,6 +79,7 @@ ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(convert)
+ADD_SUBDIRECTORY(viewer_gpu)
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)

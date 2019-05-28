@@ -60,7 +60,6 @@ namespace embree
 
   Accel* BVHGPUFactory::BVHGPUTriangle1v(Scene* scene)
   {
-    PING;
     BVH4* accel = new BVH4(Triangle1v::type,scene);
     Accel::Intersectors intersectors = BVHGPUTriangle1vIntersectors(accel); 
     Builder* builder = BVHGPUTriangle1vSceneBuilderSAH(accel,scene,0);

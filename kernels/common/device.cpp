@@ -541,7 +541,6 @@ namespace embree
     std::cout << "Device: " << gpu_queue.get_device().get_info<cl::sycl::info::device::name>() << std::endl;
     std::cout << "- Max Work Group Size : " << maxWorkGroupSize << std::endl;
     std::cout << "- Max Compute Units   : " << maxComputeUnits  << std::endl;
-    
   }
 
   DeviceGPU::~DeviceGPU()
