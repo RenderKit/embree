@@ -75,11 +75,10 @@ ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(motion_blur_geometry)
 ADD_SUBDIRECTORY(interpolation)
-ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
-ADD_SUBDIRECTORY(viewer_dpcpp)
+# ADD_SUBDIRECTORY(convert) disable for now due to linking error
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)

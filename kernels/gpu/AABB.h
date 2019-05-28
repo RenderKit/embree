@@ -66,6 +66,13 @@ namespace embree
 	return upper + lower;
       }
 
+      inline void atomic_merge_global(float *dest)
+      {
+	cl::sycl::multi_ptr<float,cl::sycl::access::address_space::global_space> ptr(dest);
+	cl::sycl::atomic<float> t(ptr);
+	//cl::sycl::atomic_fetch_min<float,cl::sycl::access::address_space::global_space>(t,1.0f); ???
+      }
+      
       static inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB &aabb)
       {
 	AABB result;
