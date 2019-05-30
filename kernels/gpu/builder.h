@@ -32,6 +32,21 @@ namespace embree
   namespace gpu
   {
 
+    struct BVHBase
+    {
+      unsigned long rootNodeOffset; 
+      AABB3f bounds;
+
+      unsigned int nodeDataStart;
+      unsigned int nodeDataCur;
+      unsigned int leafDataStart;
+      unsigned int leafDataCur;
+      unsigned int proceduralDataStart;
+      unsigned int proceduralDataCur;
+      unsigned int backPointerDataStart;
+      unsigned int backPointerDataEnd;
+    };
+    
     struct Globals
     {
       /* 1. cacheline */
@@ -73,6 +88,74 @@ namespace embree
       unsigned int shift;                // used by adaptive mc-builder
       unsigned int shift_mask;           // used by adaptive mc-builder
       unsigned int binary_hierarchy_root;
+
+      inline void init(char *bvh_mem,
+		       unsigned int _numPrimitives,
+		       unsigned int _node_data_start,
+		       unsigned int _leaf_data_start,
+		       unsigned int _procedural_data_start,
+		       unsigned int _back_pointer_start,
+		       unsigned int _totalBytes,
+		       unsigned int _leafPrimType,
+		       unsigned int _leafSize)
+      {
+	struct BVHBase *base       = (struct BVHBase*)bvh_mem;
+	base->nodeDataStart        = _node_data_start/64;
+	base->nodeDataCur          = _node_data_start/64;
+	base->leafDataStart        = _leaf_data_start/64;
+	base->leafDataCur          = _leaf_data_start/64;
+	base->proceduralDataStart  = _procedural_data_start/64;
+	base->proceduralDataCur    = _procedural_data_start/64;
+	base->backPointerDataStart = _back_pointer_start/64;
+	base->backPointerDataEnd   = _totalBytes/64;
+	base->rootNodeOffset       = _node_data_start; // FIXME: should be set by builder
+
+	geometryBounds.init();
+	centroidBounds.init();
+
+	node_mem_allocator_cur         = _node_data_start;
+	node_mem_allocator_start       = _node_data_start;
+	leaf_mem_allocator_cur         = _leaf_data_start;
+	leaf_mem_allocator_start       = _leaf_data_start;
+	procedural_mem_allocator_cur   = _procedural_data_start;
+	procedural_mem_allocator_start = _procedural_data_start;
+	back_pointer_start             = _back_pointer_start;
+
+	numBuildRecords          = 0;
+	numBuildRecords_extended = 0;
+	numPrimitives            = _numPrimitives;
+	init_numPrimitives       = 0;
+	numSplittedPrimitives    = 0;
+	totalAllocatedMem        = _totalBytes;
+	sync                     = 0;
+	probThreshold            = 0.0f;
+	leafPrimType             = _leafPrimType;
+	leafSize                 = _leafSize;
+	numGlobalBuildRecords    = 0;
+      }
+      
+      inline void resetGlobalCounters()
+      {
+	node_mem_allocator_cur = node_mem_allocator_start;
+	leaf_mem_allocator_cur = leaf_mem_allocator_start;
+	numBuildRecords = 0;	
+      }
+
+      
+#if 0
+      inline uint alloc_node_mem(const uint size)
+      {
+	const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
+	return atomic_add(&globals->node_mem_allocator_cur,aligned_size);
+      }
+
+      inline uint alloc_leaf_mem(const uint size)
+      {
+	const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
+	return atomic_add(&leaf_mem_allocator_cur,aligned_size);
+      }
+#endif
+      
     };
 
     struct Range {

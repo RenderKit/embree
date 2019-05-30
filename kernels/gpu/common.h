@@ -23,6 +23,7 @@
 
 #ifdef __SYCL_DEVICE_ONLY__
 #define GLOBAL __global
+#define LOCAL  __local
 
 extern int   work_group_reduce_add(int x);
 extern float work_group_reduce_min(float x);
@@ -35,6 +36,7 @@ extern float atomic_max(volatile __local  float *p, float val);
 
 #else
 #define GLOBAL 
+#define LOCAL 
 
 /* dummy functions for host */
 int   work_group_reduce_add(int x) { return x; }

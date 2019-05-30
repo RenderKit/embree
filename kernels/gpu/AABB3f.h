@@ -68,6 +68,17 @@ namespace embree
       {
 	return upper + lower;
       }
+
+      inline void atomic_merge_global(GLOBAL AABB3f *dest)
+      {
+	atomic_min(((volatile GLOBAL float *)dest) + 0,lower.x());
+	atomic_min(((volatile GLOBAL float *)dest) + 1,lower.y());
+	atomic_min(((volatile GLOBAL float *)dest) + 2,lower.z());
+
+	atomic_max(((volatile GLOBAL float *)dest) + 4,upper.x());
+	atomic_max(((volatile GLOBAL float *)dest) + 5,upper.y());
+	atomic_max(((volatile GLOBAL float *)dest) + 6,upper.z());	
+      }
       
       static inline AABB3f sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB3f &aabb)
       {

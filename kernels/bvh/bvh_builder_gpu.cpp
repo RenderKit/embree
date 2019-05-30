@@ -119,25 +119,42 @@ namespace embree
 	    PRINT(pinfo.size());
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-
 	      
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 
+	    /* --- init globals --- */
+	    gpu::Globals globals;
+	    cl::sycl::buffer<gpu::Globals, 1> globals_buffer(&globals,1);
+	    {
+	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
+
+		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+		  cgh.single_task<class init_first_kernel>([&](){
+		      gpu::Globals *g  = accessor_globals.get_pointer();
+		      
+		    });
+		  
+		  
+		});
+	      queue_event.wait();
+	    }
+	    
+	    
 	    gpu::AABB bounds;
 	    bounds.init();
 	    
 	    PRINT(deviceGPU->getMaxWorkGroupSize());
+	    //PRINT(nd_range1.get_global_range().size());
+	    //PRINT(nd_range1.get_local_range().size());
 	    
-	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 	    {
 	      const int sizeWG = deviceGPU->getMaxWorkGroupSize();
 
-	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
+	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),numPrimitives);
 	      cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
  
 	      const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG));
-	      PRINT(nd_range1.get_global_range().size());
-	      PRINT(nd_range1.get_local_range().size());
 	      
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -149,20 +166,7 @@ namespace embree
 						       gpu::AABB aabb         = accessor_aabb[item.get_global_id(0)];
 						       gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
 						       cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::global_space> ptr(&accessor_bounds[0]);
-#ifdef __SYCL_DEVICE_ONLY__
-#if 1
 						       reduced_aabb.atomic_merge_global(ptr.get());
-#else						       
-						       __global gpu::AABB *dest = ptr.get();
-						       atomic_min(((volatile __global float *)dest) + 0,reduced_aabb.lower.x());
-						       atomic_min(((volatile __global float *)dest) + 1,reduced_aabb.lower.y());
-						       atomic_min(((volatile __global float *)dest) + 2,reduced_aabb.lower.z());
-						       
-						       atomic_max(((volatile __global float *)dest) + 4,reduced_aabb.upper.x());
-						       atomic_max(((volatile __global float *)dest) + 5,reduced_aabb.upper.y());
-						       atomic_max(((volatile __global float *)dest) + 6,reduced_aabb.upper.z());	
-#endif						       
-#endif						       
 						     });//end of parallel_for
 		  
 		});
