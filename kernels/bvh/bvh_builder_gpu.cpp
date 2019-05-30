@@ -123,16 +123,30 @@ namespace embree
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
 	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 
+	    /* --- estimate size of the BVH --- */
+	    unsigned int totalSize       = 64 + numPrimitives * 2 * 64;
+	    unsigned int node_data_start = 64;
+	    unsigned int leaf_data_start = numPrimitives * 64;
+
+	    /* --- allocate the bvh --- */
+	    
+	    cl::sycl::buffer<char> bvh_buffer(numPrimitives);
+	    
 	    /* --- init globals --- */
 	    gpu::Globals globals;
-	    cl::sycl::buffer<gpu::Globals, 1> globals_buffer(&globals,1);
+	    cl::sycl::buffer<gpu::Globals, 1> globals_buffer(&globals,1);	    
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
-		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
+		  auto accessor_bvh = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
+		  
 		  cgh.single_task<class init_first_kernel>([&](){
+#if 1		      
 		      gpu::Globals *g  = accessor_globals.get_pointer();
-		      
+		      //char *bvh_mem    = accessor_bvh.get_pointer();		      
+		      //g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
+#endif		      
 		    });
 		  
 		  
@@ -165,7 +179,7 @@ namespace embree
 						     {//kernel code
 						       gpu::AABB aabb         = accessor_aabb[item.get_global_id(0)];
 						       gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
-						       cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::global_space> ptr(&accessor_bounds[0]);
+						       cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::global_space> ptr(accessor_bounds.get_pointer());
 						       reduced_aabb.atomic_merge_global(ptr.get());
 						     });//end of parallel_for
 		  

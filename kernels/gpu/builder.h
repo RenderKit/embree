@@ -133,6 +133,15 @@ namespace embree
 	leafSize                 = _leafSize;
 	numGlobalBuildRecords    = 0;
       }
+
+      inline void init(char *bvh_mem,
+		       unsigned int _numPrimitives,
+		       unsigned int _node_data_start,
+		       unsigned int _leaf_data_start,
+		       unsigned int _totalBytes)
+      {
+	init(bvh_mem,_numPrimitives,_node_data_start,_leaf_data_start,0,0,_totalBytes,0,64);
+      }
       
       inline void resetGlobalCounters()
       {
@@ -146,6 +155,8 @@ namespace embree
       inline uint alloc_node_mem(const uint size)
       {
 	const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
+	cl::sycl::multi_ptr<char,cl::sycl::access::address_space::global_space> ptr(&accessor_bounds[0]);
+
 	return atomic_add(&globals->node_mem_allocator_cur,aligned_size);
       }
 
