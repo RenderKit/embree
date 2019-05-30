@@ -122,32 +122,61 @@ namespace embree
 
 	      
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+
+	    gpu::AABB bounds;
+	    bounds.init();
+	    
 	    PRINT(deviceGPU->getMaxWorkGroupSize());
 	    
 	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 	    {
-	      //gpu::AABB bounds;
-	      //bounds.init();
-	      
-	      //cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
-	      //cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds);
+	      const int sizeWG = deviceGPU->getMaxWorkGroupSize();
 
-	      const int sizeWG = 16; // hmm, everything except 1 fails here !!!!// deviceGPU->getMaxWorkGroupSize();
+	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),pinfo.size());
+	      cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
+ 
+	      const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG));
+	      PRINT(nd_range1.get_global_range().size());
+	      PRINT(nd_range1.get_local_range().size());
 	      
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  //auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  //auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
-		  cgh.parallel_for<class TestKernel>(cl::sycl::nd_range<1>(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG)),[=](cl::sycl::nd_item<1> item)
+
+		  auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
+		  auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+		  
+		  cgh.parallel_for<class K>(nd_range1,[=](cl::sycl::nd_item<1> item)
 						     {//kernel code
-						       //gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
-						       //gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
-						       //accessor_bounds[0] = reduced_aabb;
+						       gpu::AABB aabb         = accessor_aabb[item.get_global_id(0)];
+						       gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
+						       cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::global_space> ptr(&accessor_bounds[0]);
+#ifdef __SYCL_DEVICE_ONLY__
+#if 1
+						       reduced_aabb.atomic_merge_global(ptr.get());
+#else						       
+						       __global gpu::AABB *dest = ptr.get();
+						       atomic_min(((volatile __global float *)dest) + 0,reduced_aabb.lower.x());
+						       atomic_min(((volatile __global float *)dest) + 1,reduced_aabb.lower.y());
+						       atomic_min(((volatile __global float *)dest) + 2,reduced_aabb.lower.z());
+						       
+						       atomic_max(((volatile __global float *)dest) + 4,reduced_aabb.upper.x());
+						       atomic_max(((volatile __global float *)dest) + 5,reduced_aabb.upper.y());
+						       atomic_max(((volatile __global float *)dest) + 6,reduced_aabb.upper.z());	
+#endif						       
+#endif						       
 						     });//end of parallel_for
 		  
 		});
 	      queue_event.wait();
-	      //gpu_queue.wait_and_throw();
 	    }
+	    std::cout << "bounds min " << (float)bounds.lower.x() << " " << (float)bounds.lower.y() << " " << (float)bounds.lower.z() << " max " << (float)bounds.upper.x() << " " << (float)bounds.upper.y() << " " << (float)bounds.upper.z() << std::endl;
+		  //
+	      //
+						       //gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
+						       //accessor_bounds[0] = reduced_aabb;
+
+
+	      //gpu_queue.wait_and_throw();
+	    
 	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);

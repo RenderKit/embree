@@ -49,7 +49,7 @@ namespace embree
   };
 
   template<typename T>
-    __forceinline void atomic_min(std::atomic<T>& aref, const T& bref)
+    __forceinline void _atomic_min(std::atomic<T>& aref, const T& bref)
   {
     const T b = bref.load();
     while (true) {
@@ -60,7 +60,7 @@ namespace embree
   }
 
   template<typename T>
-    __forceinline void atomic_max(std::atomic<T>& aref, const T& bref)
+    __forceinline void _atomic_max(std::atomic<T>& aref, const T& bref)
   {
     const T b = bref.load();
     while (true) {

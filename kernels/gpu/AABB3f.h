@@ -36,9 +36,9 @@ namespace embree
       inline void init()
       {
 	const float pos_inf =  INFINITY;
-	const float neg_inf = -INFINITY;       
-	lower = (cl::sycl::float3)(pos_inf,pos_inf,pos_inf);
-	upper = (cl::sycl::float3)(neg_inf,neg_inf,neg_inf);	
+	const float neg_inf = -INFINITY;
+	lower = { pos_inf,pos_inf,pos_inf };
+	upper = { neg_inf,neg_inf,neg_inf };	
       }
       
       inline void extend(class AABB3f &aabb)

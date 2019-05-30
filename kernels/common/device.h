@@ -124,12 +124,17 @@ namespace embree
     ~DeviceGPU();
 
   private:
-    cl::sycl::queue  gpu_queue;
-    cl::sycl::device gpu_device;
+    cl::sycl::queue   gpu_queue;
+    cl::sycl::device  gpu_device;
+    cl::sycl::context gpu_context;
+    
     unsigned int maxWorkGroupSize;
     unsigned int maxComputeUnits;
   public:
-    inline cl::sycl::queue  &getQueue() { return gpu_queue; }
+    inline cl::sycl::queue   &getQueue()   { return gpu_queue; }
+    inline cl::sycl::device  &getDevice()  { return gpu_device; }        
+    inline cl::sycl::context &getContext() { return gpu_context; }    
+
     inline unsigned int getMaxWorkGroupSize() { return maxWorkGroupSize; }
   };
 

@@ -22,6 +22,7 @@
 
 #include <CL/sycl.hpp>
 
+
 namespace embree
 {
   namespace gpu
@@ -36,9 +37,9 @@ namespace embree
       inline void init()
       {
 	const float pos_inf =  INFINITY;
-	const float neg_inf = -INFINITY;       
-	lower = (cl::sycl::float4)(pos_inf,pos_inf,pos_inf,0);
-	upper = (cl::sycl::float4)(neg_inf,neg_inf,neg_inf,0);	
+	const float neg_inf = -INFINITY;
+	lower = { pos_inf,pos_inf,pos_inf,0 };
+	upper = { neg_inf,neg_inf,neg_inf,0 };	
       }
       
       inline void extend(class AABB &aabb)
@@ -69,11 +70,15 @@ namespace embree
 	return upper + lower;
       }
 
-      inline void atomic_merge_global(float *dest)
+      inline void atomic_merge_global(GLOBAL AABB *dest)
       {
-	cl::sycl::multi_ptr<float,cl::sycl::access::address_space::global_space> ptr(dest);
-	cl::sycl::atomic<float> t(ptr);
-	//cl::sycl::atomic_fetch_min<float,cl::sycl::access::address_space::global_space>(t,1.0f); ???
+	atomic_min(((volatile GLOBAL float *)dest) + 0,lower.x());
+	atomic_min(((volatile GLOBAL float *)dest) + 1,lower.y());
+	atomic_min(((volatile GLOBAL float *)dest) + 2,lower.z());
+
+	atomic_max(((volatile GLOBAL float *)dest) + 4,upper.x());
+	atomic_max(((volatile GLOBAL float *)dest) + 5,upper.y());
+	atomic_max(((volatile GLOBAL float *)dest) + 6,upper.z());	
       }
       
       static inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB &aabb)
