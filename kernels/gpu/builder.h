@@ -189,6 +189,21 @@ namespace embree
       struct AABB centroidBounds;
       unsigned int start, end;
       void *current;
+
+      inline void init(unsigned int _start, unsigned int _end, AABB &bounds)
+      {
+	centroidBounds = bounds;
+	start = _start;
+	end   = _end;
+	current = NULL;	
+      }
+
+      inline void extend(AABB &primref)
+      {
+	centroidBounds.extend(primref.centroid2());
+      }
+
+      inline unsigned int size() { return end - start; } 
     };
 
     struct BinaryMortonCodeHierarchy

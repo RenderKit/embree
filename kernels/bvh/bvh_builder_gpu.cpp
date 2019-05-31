@@ -136,16 +136,13 @@ namespace embree
 	    
 	    /* --- init globals --- */
 	    {
-	      const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>(1),cl::sycl::range<1>(1));      
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
 		  auto accessor_bvh = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-
 		  cgh.single_task<class init_first_kernel>([=]() {
 		      gpu::Globals *g  = accessor_globals.get_pointer();
 		      char *bvh_mem    = accessor_bvh.get_pointer();
 		      g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
-		      g->geometryBounds.print();
 		    });
 		});
 	      queue_event.wait();
@@ -159,27 +156,39 @@ namespace embree
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
 		  auto accessor_aabb    = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
-		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  
+		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);		  
 		  cgh.parallel_for<class init_bounds>(nd_range1,[=](cl::sycl::nd_item<1> item)
-		                                     {//kernel code
-						       gpu::AABB aabb         = accessor_aabb[item.get_global_id(0)];
-						       gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
+		                                     {
+						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
+						       gpu::AABB aabb_centroid(aabb_geom.centroid2());
+						       gpu::AABB reduced_geometry_aabb = gpu::AABB::work_group_reduce(aabb_geom);
+						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid); // <== this causes seg fault on the host???
 						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
-						       reduced_aabb.atomic_merge_global(&ptr.get()->geometryBounds);
-						       if (item.get_global_id(0) == 0)
-							 accessor_globals.get_pointer()->geometryBounds.print();
-						     });//end of parallel_for
+						       //reduced_centroid_aabb.atomic_merge_global(&ptr.get()->centroidBounds);
+						       reduced_geometry_aabb.atomic_merge_global(&ptr.get()->geometryBounds);						       
+						     });
 		  
 		});
 	      queue_event.wait();
 	    }
-	    
-	    //printf("geometryBounds "); globals.geometryBounds.print();
-	    //printf("centroidBounds "); globals.centroidBounds.print();
 
-	      //gpu_queue.wait_and_throw();
-	    
+	    /* --- init bvh sah builder --- */
+	    {
+	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
+		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
+		  auto accessor_bvh = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
+		  cgh.single_task<class init_builder>([=]() {
+		      gpu::Globals *globals  = accessor_globals.get_pointer();
+		      char *bvh_mem    = accessor_bvh.get_pointer();
+		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
+		      record->init(0,numPrimitives,globals->centroidBounds);
+		      globals->geometryBounds.print();
+		      globals->centroidBounds.print();		      
+		    });
+		});
+	      queue_event.wait();
+	    }
+	    	    
 	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);

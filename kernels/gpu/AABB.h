@@ -34,6 +34,10 @@ namespace embree
 
       AABB() = default;
 
+      //AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
+
+      AABB(const cl::sycl::float4 &v) : lower(v),upper(v) {}
+      
       inline void init()
       {
 	const float pos_inf =  INFINITY;
@@ -42,7 +46,7 @@ namespace embree
 	upper = { neg_inf,neg_inf,neg_inf,0 };	
       }
       
-      inline void extend(class AABB &aabb)
+      inline void extend(AABB &aabb)
       {
 	lower = min(lower,aabb.lower);
 	upper = max(upper,aabb.upper);	
@@ -53,7 +57,7 @@ namespace embree
 	lower = min(lower,v);
 	upper = max(upper,v);	
       }
-
+      
       inline void enlarge(const cl::sycl::float4 &v)
       {
 	lower -= v;
