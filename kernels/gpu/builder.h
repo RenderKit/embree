@@ -149,23 +149,22 @@ namespace embree
 	leaf_mem_allocator_cur = leaf_mem_allocator_start;
 	numBuildRecords = 0;	
       }
-
       
-#if 0
       inline uint alloc_node_mem(const uint size)
       {
 	const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
-	cl::sycl::multi_ptr<char,cl::sycl::access::address_space::global_space> ptr(&accessor_bounds[0]);
-
-	return atomic_add(&globals->node_mem_allocator_cur,aligned_size);
+	cl::sycl::multi_ptr<unsigned int,cl::sycl::access::address_space::global_space> ptr(&node_mem_allocator_cur);
+	cl::sycl::atomic<unsigned int> counter(ptr);
+	return atomic_fetch_add(counter,aligned_size);
       }
 
       inline uint alloc_leaf_mem(const uint size)
       {
 	const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
-	return atomic_add(&leaf_mem_allocator_cur,aligned_size);
+	cl::sycl::multi_ptr<unsigned int,cl::sycl::access::address_space::global_space> ptr(&leaf_mem_allocator_cur);
+	cl::sycl::atomic<unsigned int> counter(ptr);
+	return atomic_fetch_add(counter,aligned_size);
       }
-#endif
       
     };
 

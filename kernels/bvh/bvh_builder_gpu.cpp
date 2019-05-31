@@ -128,70 +128,55 @@ namespace embree
 	    unsigned int node_data_start = 64;
 	    unsigned int leaf_data_start = numPrimitives * 64;
 
-	    /* --- allocate the bvh --- */
+	    /* --- allocate buffers --- */
 	    
-	    cl::sycl::buffer<char> bvh_buffer(numPrimitives);
+	    cl::sycl::buffer<char> bvh_buffer(totalSize);
+	    cl::sycl::buffer<gpu::AABB> aabb_buffer((gpu::AABB*)prims.data(),numPrimitives);
+	    cl::sycl::buffer<gpu::Globals> globals_buffer(1);	    
 	    
 	    /* --- init globals --- */
-	    gpu::Globals globals;
-	    cl::sycl::buffer<gpu::Globals, 1> globals_buffer(&globals,1);	    
 	    {
+	      const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>(1),cl::sycl::range<1>(1));      
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-
 		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
 		  auto accessor_bvh = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  
-		  cgh.single_task<class init_first_kernel>([&](){
-#if 1		      
+
+		  cgh.single_task<class init_first_kernel>([=]() {
 		      gpu::Globals *g  = accessor_globals.get_pointer();
-		      //char *bvh_mem    = accessor_bvh.get_pointer();		      
-		      //g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
-#endif		      
+		      char *bvh_mem    = accessor_bvh.get_pointer();
+		      g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
+		      g->geometryBounds.print();
 		    });
-		  
-		  
 		});
 	      queue_event.wait();
 	    }
-	    
-	    
-	    gpu::AABB bounds;
-	    bounds.init();
-	    
+	    	    
 	    PRINT(deviceGPU->getMaxWorkGroupSize());
-	    //PRINT(nd_range1.get_global_range().size());
-	    //PRINT(nd_range1.get_local_range().size());
-	    
 	    {
 	      const int sizeWG = deviceGPU->getMaxWorkGroupSize();
-
-	      cl::sycl::buffer<gpu::AABB, 1> aabb_buffer((gpu::AABB*)prims.data(),numPrimitives);
-	      cl::sycl::buffer<gpu::AABB, 1> bounds_buffer(&bounds,1);
- 
-	      const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG));
+	      const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG));	      
 	      
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
-		  auto accessor_aabb   = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
-		  auto accessor_bounds = bounds_buffer.get_access<cl::sycl::access::mode::write>(cgh);
+		  auto accessor_aabb    = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
+		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
 		  
-		  cgh.parallel_for<class K>(nd_range1,[=](cl::sycl::nd_item<1> item)
-						     {//kernel code
+		  cgh.parallel_for<class init_bounds>(nd_range1,[=](cl::sycl::nd_item<1> item)
+		                                     {//kernel code
 						       gpu::AABB aabb         = accessor_aabb[item.get_global_id(0)];
 						       gpu::AABB reduced_aabb = gpu::AABB::work_group_reduce(aabb);
-						       cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::global_space> ptr(accessor_bounds.get_pointer());
-						       reduced_aabb.atomic_merge_global(ptr.get());
+						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
+						       reduced_aabb.atomic_merge_global(&ptr.get()->geometryBounds);
+						       if (item.get_global_id(0) == 0)
+							 accessor_globals.get_pointer()->geometryBounds.print();
 						     });//end of parallel_for
 		  
 		});
 	      queue_event.wait();
 	    }
-	    std::cout << "bounds min " << (float)bounds.lower.x() << " " << (float)bounds.lower.y() << " " << (float)bounds.lower.z() << " max " << (float)bounds.upper.x() << " " << (float)bounds.upper.y() << " " << (float)bounds.upper.z() << std::endl;
-		  //
-	      //
-						       //gpu::AABB aabb = accessor_aabb[item.get_local_id(0)];
-						       //accessor_bounds[0] = reduced_aabb;
-
+	    
+	    //printf("geometryBounds "); globals.geometryBounds.print();
+	    //printf("centroidBounds "); globals.centroidBounds.print();
 
 	      //gpu_queue.wait_and_throw();
 	    

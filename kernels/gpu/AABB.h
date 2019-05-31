@@ -150,8 +150,11 @@ namespace embree
 	result.upper.w() = 0.0f;	
 	return result;	
       }
-
       
+      inline void print()
+      {
+	printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z());	
+      }
     };
   };
 };
