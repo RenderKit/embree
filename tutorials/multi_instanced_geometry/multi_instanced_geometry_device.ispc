@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -15,243 +15,552 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
+#include "../common/math/random_sampler.isph"
+#include "../common/math/sampling.isph"
+#include "scene.isph"
 
-const uniform int numPhi = 5;
-const uniform int numTheta = 2*numPhi;
+RTCScene g_scene = NULL;
+uniform InstanceLevels g_instanceLevels;
 
-void renderTileStandardStream(uniform int taskIndex,
-                              uniform int threadIndex,
-                              uniform int* uniform pixels,
-                              const uniform unsigned int width,
-                              const uniform unsigned int height,
-                              const uniform float time,
-                              const uniform ISPCCamera& camera,
-                              const uniform int numTilesX,
-                              const uniform int numTilesY);
+/* accumulation buffer */
+uniform Vec3fa* uniform g_accu = NULL;
+uniform unsigned int g_accu_width = 0;
+uniform unsigned int g_accu_height = 0;
+uniform unsigned int g_accu_count = 0;
+uniform Vec3fa g_accu_vx;
+uniform Vec3fa g_accu_vy;
+uniform Vec3fa g_accu_vz;
+uniform Vec3fa g_accu_p;
+extern uniform bool g_changed;
 
-uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
+#define STREAM_SIZE (TILE_SIZE_X * TILE_SIZE_Y)
+
+/*
+ * There is an issue in ISPC where foreach_tiled can generate
+ * empty gangs. This is problematic when scalar operations
+ * (e.g. uniform increment) run inside the loop.
+ */
+#define FOREACH_TILED_MITIGATION if (lanemask() == 0) { continue; }
+
+/*
+ * There is an instance stack on RTCIntersectContext, but it is used by 
+ * Embree internally.
+ * We must copy this stack for all intersections we find.
+ * This struct is here to provide storage for this purpose.
+ */
+struct InstanceStack
 {
-  /* create triangle mesh */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  unsigned int instanceStackSize[STREAM_SIZE];
+  unsigned int instanceStack[STREAM_SIZE][RTC_MAX_INSTANCE_LEVEL_COUNT];
+};
 
-  /* map triangle and vertex buffers */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),numTheta*(numPhi+1));
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(uniform Triangle),2*numTheta*(numPhi-1));
-
-  /* create sphere */
-  uniform int tri = 0;
-  const uniform float rcpNumTheta = rcp((uniform float)numTheta);
-  const uniform float rcpNumPhi   = rcp((uniform float)numPhi);
-  for (uniform int phi=0; phi<=numPhi; phi++)
+/* 
+ * Copy an instance stack. This is called from the intersection filter below.
+ */
+void copyInstanceStack(uniform const RTCIntersectContext* uniform context,
+                       unsigned rayId,
+                       uniform InstanceStack uniform* stack)
+{
+  assert(context);
+  assert(stack);
+  if (context && stack && rayId < STREAM_SIZE)
   {
-    for (uniform int theta=0; theta<numTheta; theta++)
+    const unsigned size = context->instStackSize;
+    assert(size <= RTC_MAX_INSTANCE_LEVEL_COUNT);
+    foreach_active(active)
     {
-      const uniform float phif   = phi*pi*rcpNumPhi;
-      const uniform float thetaf = theta*2.0f*pi*rcpNumTheta;
-
-      uniform Vertex& v = vertices[phi*numTheta+theta];
-      v.x = p.x + r*sin(phif)*sin(thetaf);
-      v.y = p.y + r*cos(phif);
-      v.z = p.z + r*sin(phif)*cos(thetaf);
+      unmasked {
+        foreach (i = 0 ... extract(size, active))
+          stack->instanceStack[extract(rayId, active)][i] = context->instID[i];
+      }
     }
-    if (phi == 0) continue;
+    stack->instanceStackSize[rayId] = size;
+  }
+}
 
-    for (uniform int theta=1; theta<=numTheta; theta++)
+/*
+ * The intersection filter we use to copy instance stacks.
+ * In this tutorial, we set it as the context intersection filter so that we do not
+ * have to worry about setting it on all geometries.
+ * This may be inefficient if your scene contains many geometries that are not
+ * instanced.
+ */
+unmasked void intersectFilter(uniform const RTCFilterFunctionNArguments* uniform args)
+{
+  assert(args);
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform)(args->context);
+  assert(context);
+  uniform InstanceStack* uniform stack = (uniform InstanceStack* uniform)(context->userRayExt);
+  if (stack)
+  {
+    foreach (i = 0 ... args->N) 
     {
-      uniform int p00 = (phi-1)*numTheta+theta-1;
-      uniform int p01 = (phi-1)*numTheta+theta%numTheta;
-      uniform int p10 = phi*numTheta+theta-1;
-      uniform int p11 = phi*numTheta+theta%numTheta;
-
-      if (phi > 1) {
-        triangles[tri].v0 = p10;
-        triangles[tri].v1 = p01;
-        triangles[tri].v2 = p00;
-        tri++;
-      }
-
-      if (phi < numPhi) {
-        triangles[tri].v0 = p11;
-        triangles[tri].v1 = p01;
-        triangles[tri].v2 = p10;
-        tri++;
-      }
+      unsigned int rayId = RTCRayN_id(args->ray, args->N, extract(i, 0));
+      if (args->valid[i])
+        copyInstanceStack(&context->context, rayId, stack);
     }
   }
-
-  rtcCommitGeometry(geom);
-  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);
-  return geomID;
 }
 
-/* creates a ground plane */
-uniform unsigned int createGroundPlane (RTCScene scene)
+/* 
+ * Accumulate an instance transformation given an instance stack. 
+ * We use this only for normal transformations in this example.
+ */
+LinearSpace3f accumulateNormalTransform(const uniform struct InstanceStack* uniform stack,
+                                        unsigned rayId,
+                                        float time)
 {
-  /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-  /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),4);
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-
-  /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(uniform Triangle),2);
-  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
-
-  rtcCommitGeometry(geom);
-  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);
-  return geomID;
+  LinearSpace3f transform = make_LinearSpace3f_identity();
+  if (rayId < STREAM_SIZE)
+  {
+    const unsigned int stackSize = stack->instanceStackSize[rayId];
+    for (unsigned int level = 0; level < stackSize; ++level)
+    {
+      assert(level < g_instanceLevels.numLevels);
+      const unsigned int instId = stack->instanceStack[rayId][level];
+      assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
+      LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
+      transform = transform * make_LinearSpace3f(M);
+    }
+  }
+  return transform;
 }
 
-/* scene data */
-RTCScene g_scene  = NULL; // full world
-RTCScene g_scene0 = NULL; // set of four clusters
-RTCScene g_scene1 = NULL; // four spheres
 
-RTCGeometry g_instance0 = NULL;
-RTCGeometry g_instance1 = NULL;
-RTCGeometry g_instance2 = NULL;
-RTCGeometry g_instance3 = NULL;
-uniform AffineSpace3f instance_xfm[4];
-uniform LinearSpace3f normal_xfm[4];
-
-RTCGeometry g_instance00 = NULL;
-RTCGeometry g_instance11 = NULL;
-uniform AffineSpace3f instance_top_xfm[4];
-
-uniform Vec3f colors[4][4];
-
-/* called by the C++ code for initialization */
-export void device_init (uniform int8* uniform cfg)
+/*
+ * A simplistic sky model consisting of a directional sun
+ * and a constant sky.
+ */
+void sampleLightDirection(Vec3fa xi,
+                          Vec3f& dir,
+                          Vec3f& emission)
 {
-  /* create scene */
-  g_scene = rtcNewScene(g_device);
-  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
+  const Vec3f sunDir = normalize(make_Vec3f(-1.f, 1.f, 1.f));
+  const Vec3f sunEmission = make_Vec3f(1.f);
+  const Vec3f skyEmission = make_Vec3f(.2f);
+  const float skyPdf = 1.f/4.f/M_PI;
+  const float sunWeight = .1f; // Put most samples into the sky, the sun will converge instantly.
 
-  g_scene0 = rtcNewScene(g_device);
+  if (xi.z < sunWeight)
+    dir = normalize(make_Vec3f(-1.f, 1.f, 1.f));
+  else
+  {
+    // Uniform sphere sampling around +Y axis.
+    const float theta = acos(1.f - 2.f * xi.x);
+    const float phi = 2.f * M_PI * xi.y;
+    const float st = sin(theta);
+    dir = make_Vec3f(st * cos(phi), cos(theta), -st * sin(phi));
+  }
 
-  /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcNewScene(g_device);
-  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5f);
-  createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5f);
-  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5f);
-  createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5f);
-  rtcCommitScene (g_scene1);
+  emission = skyEmission;
+  float pdf = (1.f-sunWeight) * skyPdf;
+  if (sunDir.x == dir.x && sunDir.y == dir.y && sunDir.z == dir.z)
+  {
+    emission = emission + sunEmission;
+    pdf = pdf + sunWeight;
+  }
 
-  /* instantiate geometry */
-  g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance0,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance0,1);
-  g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance1,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance1,1);
-  g_instance2 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance2,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance2,1);
-  g_instance3 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance3,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance3,1);
-  rtcAttachGeometry(g_scene0,g_instance0);
-  rtcAttachGeometry(g_scene0,g_instance1);
-  rtcAttachGeometry(g_scene0,g_instance2);
-  rtcAttachGeometry(g_scene0,g_instance3);
-  rtcReleaseGeometry(g_instance0);
-  rtcReleaseGeometry(g_instance1);
-  rtcReleaseGeometry(g_instance2);
-  rtcReleaseGeometry(g_instance3);
+  emission = emission * rcp(pdf);
+}
 
-  g_instance00 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance00, g_scene0);
-  rtcSetGeometryTimeStepCount(g_instance00,1);
-  g_instance11 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance11, g_scene0);
-  rtcSetGeometryTimeStepCount(g_instance11,1);
-  rtcAttachGeometry(g_scene, g_instance00);
-  rtcAttachGeometry(g_scene, g_instance11);
-  rtcReleaseGeometry(g_instance00);
-  rtcReleaseGeometry(g_instance11);
-  
-  createGroundPlane(g_scene);
+/*
+ * Safely invalidate a packet of rays.
+ */
+inline void invalidateRay(Ray& ray)
+{
+  // Initialize the whole ray so that it is invalid. This is important because
+  // in streamed mode, active state of lanes is forgotten between ray
+  // generation and traversal.
+  unmasked {
+    ray.org = make_Vec3f(0.f);
+    ray.dir = make_Vec3f(0.f);
+    ray.tnear = pos_inf;
+    ray.tfar = neg_inf;
+  }
+}
 
-  /* set all colors */
-  colors[0][0] = make_Vec3f(0.25f, 0.f, 0.f);
-  colors[0][1] = make_Vec3f(0.50f, 0.f, 0.f);
-  colors[0][2] = make_Vec3f(0.75f, 0.f, 0.f);
-  colors[0][3] = make_Vec3f(1.00f, 0.f, 0.f);
+/*
+ * Pixel filter importance sampling.
+ * This uses the Box-Mueller transform to obtain Gaussian samples.
+ */
+Vec2f sampleGaussianPixelFilter(RandomSampler& sampler)
+{
+  const float phi = 2.f * M_PI * RandomSampler_get1D(sampler);
+  const float threeSigma = 1.f;
+  const float sigma = threeSigma / 3.f;
 
-  colors[1][0] = make_Vec3f(0.f, 0.25f, 0.f);
-  colors[1][1] = make_Vec3f(0.f, 0.50f, 0.f);
-  colors[1][2] = make_Vec3f(0.f, 0.75f, 0.f);
-  colors[1][3] = make_Vec3f(0.f, 1.00f, 0.f);
+  // Rejection sampling: we don't want any samples outside 3 sigma.
+  float radius = (float)inf;
+  while (radius <= 0.f || radius > threeSigma)
+  {
+    const float xi = RandomSampler_get1D(sampler);
+    radius = sqrtf(sigma * (-2.f) * log(xi));
+  }
 
-  colors[2][0] = make_Vec3f(0.f, 0.f, 0.25f);
-  colors[2][1] = make_Vec3f(0.f, 0.f, 0.50f);
-  colors[2][2] = make_Vec3f(0.f, 0.f, 0.75f);
-  colors[2][3] = make_Vec3f(0.f, 0.f, 1.00f);
+  return make_Vec2f(radius * cos(phi), radius * sin(phi));
+}
 
-  colors[3][0] = make_Vec3f(0.25f, 0.25f, 0.f);
-  colors[3][1] = make_Vec3f(0.50f, 0.50f, 0.f);
-  colors[3][2] = make_Vec3f(0.75f, 0.75f, 0.f);
-  colors[3][3] = make_Vec3f(1.00f, 1.00f, 0.f);
+/*
+ * Sample a primary ray.
+ */
+Ray samplePrimaryRay(unsigned int x,
+                     unsigned int x0,
+                     unsigned int y,
+                     unsigned int y0,
+                     const uniform ISPCCamera& camera,
+                     RandomSampler& sampler,
+                     uniform RayStats& stats)
+{
+  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
 
-  /* set start render mode */
-  if (g_mode == MODE_NORMAL) renderTile = renderTileStandard;
-  else                       renderTile = renderTileStandardStream;
+  const unsigned int id = (y-y0) * TILE_SIZE_X + (x-x0);
+  const Vec2f offset = sampleGaussianPixelFilter(sampler);
+  const float fx = (float)x + 0.5f + offset.x;
+  const float fy = (float)y + 0.5f + offset.y;
+  const Vec3f o = make_Vec3f(camera.xfm.p);
+  const Vec3f w = make_Vec3f(normalize(fx*camera.xfm.l.vx 
+                                     + fy*camera.xfm.l.vy 
+                                     + camera.xfm.l.vz));
+
+  Ray ray;
+  init_Ray(ray, o, w, 0.f, (float)inf);
+  ray.id = id;
+  RayStats_addRay(stats);
+  return ray;
+}
+
+/* 
+ * Make a new shadow ray.
+ */
+inline Ray makeShadowRay(const Ray& primary,
+                         const Vec3f& lightDir,
+                         uniform RayStats& stats)
+{
+  const Vec3f o = primary.org + primary.tfar * primary.dir;
+
+  Ray ray;
+  init_Ray(ray, o, lightDir, 0.001f, (float)inf);
+  ray.id = -1;
+  RayStats_addShadowRay(stats);
+  return ray;
+} 
+
+/*
+ * Our shader for this scene: Lambertian shading with normal display.
+ */
+Vec3f shader(const uniform InstanceStack& instanceStack,
+             const Ray& primaryRay, 
+             const Ray& shadowRay,
+             const Vec3f& lightDir,
+             const Vec3f& emission)
+{
+  if (primaryRay.geomID == RTC_INVALID_GEOMETRY_ID || shadowRay.tfar < 0.f)
+    return make_Vec3f(0.f);
+
+  const LinearSpace3f xfm = accumulateNormalTransform(&instanceStack, primaryRay.id, 0.f);
+  Vec3f Ns = normalize(xfmVector(xfm, make_Vec3f(primaryRay.Ng)));
+
+  const float cosThetaOut = dot(Ns, lightDir);
+  const float cosThetaIn = -dot(Ns, primaryRay.dir);
+
+  // Block transmission.
+  if ((cosThetaOut >= 0) != (cosThetaIn >= 0))
+    return make_Vec3f(0.f);
+
+  // Make sure backfaces shade correctly.
+  if (cosThetaIn < 0.f)
+    Ns = -1.f * Ns;
+
+  return emission
+       * clamp(abs(cosThetaOut), 0.f, 1.f) 
+       * (make_Vec3f(0.5f) + 0.5f * Ns);
+}
+
+/*
+ * Convert a floating-point value in [0, 1] to 8 bit.
+ */
+inline unsigned int floatToByte(float channel)
+{
+  channel = 255.1f * clamp(channel, 0.f, 1.f);
+  return 0xff & (unsigned int) channel;
+}
+
+/*
+ * Pack an RGB8 color value from three floats.
+ */
+inline unsigned int packRGB8(Vec3f color)
+{
+  const unsigned int r = floatToByte(color.x);
+  const unsigned int g = floatToByte(color.y);
+  const unsigned int b = floatToByte(color.z);
+  return (b << 16) + (g << 8) + r;
+}
+
+/*
+ * Splat a color into the framebuffer.
+ */
+void splat(uniform int* uniform pixels,
+           const uniform unsigned int width,
+           unsigned int x,
+           unsigned int y,
+           const Vec3f& color)
+{
+  const unsigned int pixIdx = y * width + x;
+  const Vec3fa accu_color = g_accu[pixIdx] + make_Vec3fa(color.x,color.y,color.z,1.0f); 
+  g_accu[pixIdx] = accu_color;
+  if (accu_color.w > 0)
+  {
+    float f = rcp(accu_color.w);
+    pixels[pixIdx] = packRGB8(make_Vec3f(accu_color * f));
+  }
+}
+
+/* 
+ * Renders a single screen tile.
+ */
+void renderTileStream(uniform int* uniform pixels,
+                      const uniform unsigned int width,
+                      const uniform float time,
+                      const uniform ISPCCamera& camera,
+                      const uniform unsigned int x0,
+                      const uniform unsigned int x1,
+                      const uniform unsigned int y0,
+                      const uniform unsigned int y1,
+                      uniform IntersectContext& primaryContext,
+                      uniform IntersectContext& shadowContext,
+                      uniform InstanceStack& instanceStack,
+                      uniform RayStats& stats)
+{
+  RandomSampler sampler;
+  Ray primary[STREAM_SIZE];
+  Ray shadow[STREAM_SIZE];
+  Vec3f lightDir[STREAM_SIZE];
+  Vec3f emission[STREAM_SIZE];
+
+  uniform unsigned int numPackets = 0;
+  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
+  {
+    FOREACH_TILED_MITIGATION
+
+    primary[numPackets] = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
+
+    ++numPackets;
+  }
+
+  rtcIntersectVM(g_scene, 
+                 &primaryContext.context,
+                 (varying RTCRayHit* uniform)&primary,
+                 numPackets,
+                 sizeof(Ray));
+
+  numPackets = 0;
+  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
+  {
+    FOREACH_TILED_MITIGATION
+
+    // This is only needed for streaming mode, as we keep invalid
+    // rays in flight. This call will invalidate instances that 
+    // are not currently active.
+    invalidateRay(shadow[numPackets]);
+
+    if (primary[numPackets].geomID != RTC_INVALID_GEOMETRY_ID)
+    {
+      sampleLightDirection(RandomSampler_get3D(sampler),
+                           lightDir[numPackets],
+                           emission[numPackets]);
+      shadow[numPackets] = makeShadowRay(primary[numPackets], lightDir[numPackets], stats);
+    }
+
+    ++numPackets;
+  }
+
+  rtcOccludedVM(g_scene, 
+                &shadowContext.context, 
+                (varying RTCRay* uniform)&shadow,
+                numPackets, 
+                sizeof(Ray));
+
+  numPackets = 0;
+  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
+  {
+    FOREACH_TILED_MITIGATION
+
+    const Vec3f color = shader(instanceStack, 
+                               primary[numPackets],
+                               shadow[numPackets],
+                               lightDir[numPackets],
+                               emission[numPackets]);
+
+    splat(pixels, width, x, y, color);
+
+    ++numPackets;
+  }
+}
+
+/*
+ * Render a single tile without streams.
+ */
+void renderTileNormal(uniform int* uniform pixels,
+                      const uniform unsigned int width,
+                      const uniform float time,
+                      const uniform ISPCCamera& camera,
+                      const uniform unsigned int x0,
+                      const uniform unsigned int x1,
+                      const uniform unsigned int y0,
+                      const uniform unsigned int y1,
+                      uniform IntersectContext& primaryContext,
+                      uniform IntersectContext& shadowContext,
+                      uniform InstanceStack& instanceStack,
+                      uniform RayStats& stats)
+{
+  RandomSampler sampler;
+
+  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
+  {
+    FOREACH_TILED_MITIGATION
+
+    Ray primaryRay = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
+    rtcIntersectV(g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
+
+    Vec3f color = make_Vec3f(0.f);
+    if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
+    {
+      Vec3f lightDir;
+      Vec3f emission;
+      sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
+      Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
+      rtcOccludedV(g_scene, &shadowContext.context, RTCRay_(shadowRay));
+      color = shader(instanceStack, primaryRay, shadowRay, lightDir, emission);
+    }
+
+    splat(pixels, width, x, y, color);
+  }
+}
+
+// ======================================================================== //
+// TUTORIAL API.
+// ======================================================================== //
+
+/*
+ * A task that renders a single screen tile.
+ */
+task void renderTileTask(uniform int* uniform pixels,
+  const uniform unsigned int width,
+  const uniform unsigned int height,
+  const uniform float time,
+  const uniform ISPCCamera& camera,
+  const uniform int numTilesX,
+  const uniform int numTilesY)
+{
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0 + TILE_SIZE_X, width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0 + TILE_SIZE_Y, height);
+
+  uniform IntersectContext primaryContext;
+  uniform IntersectContext shadowContext;
+
+  InitIntersectionContext(&primaryContext);
+  InitIntersectionContext(&shadowContext);
+
+  // Primary rays in this scene are coherent. This is not the case
+  // for shadow rays, since there is a spherical environment light.
+  primaryContext.context.flags = g_iflags_coherent; 
+
+  // For multi-level instancing to work, we need to set up an intersection
+  // filter that copies intstance stacks for later use in shading, as well
+  // as storage for these stacks.
+  primaryContext.context.filter = intersectFilter;
+  uniform InstanceStack instanceStack;
+  foreach (i = 0 ... STREAM_SIZE) { instanceStack.instanceStackSize[i] = 0; }
+  primaryContext.userRayExt = &instanceStack;
+
+  if (g_mode == MODE_NORMAL) 
+    renderTileNormal(pixels, width,
+                     time, camera,
+                     x0, x1, y0, y1,
+                     primaryContext,
+                     shadowContext,
+                     instanceStack,
+                     g_stats[threadIndex]);
+  else                       
+    renderTileStream(pixels, width,
+                     time, camera,
+                     x0, x1, y0, y1,
+                     primaryContext,
+                     shadowContext,
+                     instanceStack,
+                     g_stats[threadIndex]);
+}
+
+/* 
+ * Called by the C++ code for initialization. 
+ */
+export void device_init(uniform int8* uniform cfg)
+{
+  g_scene = initializeScene(g_device, &g_instanceLevels);
   key_pressed_handler = device_key_pressed_default;
 }
 
-/* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+/* 
+ * Called by the C++ code to render. 
+ */
+export void device_render(uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  
-  /* initialize ray */
-  Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
-
-  /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixels */
-  Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-  {
-    /* calculate shading normal in world space */
-    Vec3f Ns = ray.Ng;
-    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[ray.instID],Ns);
-    Ns = normalize(Ns);
-
-    /* calculate diffuse color of geometries */
-    Vec3f diffuse = make_Vec3f(1,1,1);
-    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[ray.instID][ray.geomID];
-    color = color + diffuse*0.5;
-
-    /* initialize shadow ray */
-    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
-
-    /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
-    RayStats_addShadowRay(stats);
-
-    /* add light contribution */
-    if (shadow.tfar >= 0.0f)
-      color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
+  if (g_accu_width != width || g_accu_height != height) {
+    delete[] g_accu;
+    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu_width = width;
+    g_accu_height = height;
+    for (uniform unsigned int i=0; i<width*height; i++)
+      g_accu[i] = make_Vec3fa(0.0f);
   }
-  return color;
+
+  uniform bool camera_changed = g_changed; 
+  g_changed = false;
+  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
+
+  if (camera_changed)
+  {
+    g_accu_count=0;
+    for (uniform unsigned int i=0; i<width*height; i++)
+      g_accu[i] = make_Vec3fa(0.0f);
+  }
+  else
+    g_accu_count++;
+
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
-/* renders a single screen tile */
+/*
+ * Called by the C++ code for cleanup.
+ */
+export void device_cleanup ()
+{
+  rtcReleaseScene(g_scene);
+  g_scene = NULL;
+  cleanupScene();
+  delete[] g_accu; 
+  g_accu = NULL;
+  g_accu_width = 0;
+  g_accu_height = 0;
+  g_accu_count = 0;
+}
+
+/*
+ * This must be here for the linker to find, but we will not use it.
+ */
 void renderTileStandard(uniform int taskIndex,
                         uniform int threadIndex,
                         uniform int* uniform pixels,
@@ -260,255 +569,4 @@ void renderTileStandard(uniform int taskIndex,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX,
-                        const uniform int numTilesY)
-{
-  const uniform unsigned int tileY = taskIndex / numTilesX;
-  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
-
-/* renders a single screen tile */
-void renderTileStandardStream(uniform int taskIndex,
-                              uniform int threadIndex,
-                              uniform int* uniform pixels,
-                              const uniform unsigned int width,
-                              const uniform unsigned int height,
-                              const uniform float time,
-                              const uniform ISPCCamera& camera,
-                              const uniform int numTilesX,
-                              const uniform int numTilesY)
-{
-  const uniform unsigned int tileY = taskIndex / numTilesX;
-  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  uniform RayStats& stats = g_stats[threadIndex];
-
-  Ray primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  Ray shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  Vec3f color_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
-
-  /* generate stream of primary rays */
-  uniform int N = 0;
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    /* ISPC workaround for mask == 0 */
-    if (all(__mask == 0)) continue;
-
-    /* initialize variables */
-    color_stream[N] = make_Vec3f(0.0f);
-    bool mask = __mask; unmasked { valid_stream[N] = mask; }
-
-    /* initialize ray */
-    Ray& primary = primary_stream[N];
-    mask = __mask; unmasked { // invalidates inactive rays
-      primary.tnear = mask ? 0.0f         : (float)(pos_inf);
-      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
-    }
-    init_Ray(primary, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.tnear, primary.tfar);
-
-    N++;
-    RayStats_addRay(stats);
-  }
-
-  Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-
-  /* trace rays */
-  uniform RTCIntersectContext primary_context;
-  rtcInitIntersectContext(&primary_context);
-  primary_context.flags = g_iflags_coherent;
-  rtcIntersectVM(g_scene,&primary_context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray));
-
-  /* terminate rays and update color */
-  N = -1;
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    N++;
-    /* ISPC workaround for mask == 0 */
-    if (all(__mask == 0)) continue;
-
-    /* invalidate shadow rays by default */
-    Ray& shadow = shadow_stream[N];
-    unmasked {
-      shadow.tnear = (float)(pos_inf);
-      shadow.tfar  = (float)(neg_inf);
-    }
-
-    /* ignore invalid rays */
-    if (valid_stream[N] == false) continue;
-
-    /* terminate rays that hit nothing */
-    if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID) {
-      valid_stream[N] = false;
-      continue;
-    }
-
-    /* calculate shading normal in world space */
-    Ray& primary = primary_stream[N];
-    Vec3f Ns = primary.Ng;
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[primary.instID],Ns);
-    Ns = normalize(Ns);
-
-    /* calculate diffuse color of geometries */
-    Vec3f diffuse = make_Vec3f(1,1,1);
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[primary.instID][primary.geomID];
-    color_stream[N] = color_stream[N] + diffuse*0.5;
-
-    /* initialize shadow ray tnear/tfar */
-    bool mask = __mask; unmasked {
-      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
-    }
-    init_Ray(shadow, primary.org + primary.tfar*primary.dir, neg(lightDir), shadow.tnear, shadow.tfar);
-
-    RayStats_addShadowRay(stats);
-  }
-  N++;
-
-  /* trace shadow rays */
-  uniform RTCIntersectContext shadow_context;
-  rtcInitIntersectContext(&shadow_context);
-  shadow_context.flags = g_iflags_coherent;
-  rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
-
-  /* add light contribution */
-  N = -1;
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    N++;
-    /* ISPC workaround for mask == 0 */
-    if (all(__mask == 0)) continue;
-
-    /* ignore invalid rays */
-    if (valid_stream[N] == false) continue;
-
-    /* calculate shading normal in world space */
-    Ray& primary = primary_stream[N];
-    Vec3f Ns = primary.Ng;
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[primary.instID],Ns);
-    Ns = normalize(Ns);
-
-    /* calculate diffuse color of geometries */
-    Vec3f diffuse = make_Vec3f(1,1,1);
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[primary.instID][primary.geomID];
-
-    /* add light contrinution */
-    Ray& shadow = shadow_stream[N];
-    if (shadow.tfar >= 0.0f) {
-      color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
-    }
-  }
-  N++;
-
-  /* framebuffer writeback */
-  N = 0;
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    /* ISPC workaround for mask == 0 */
-    if (all(__mask == 0)) continue;
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color_stream[N].x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color_stream[N].y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color_stream[N].z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-    N++;
-  }
-}
-
-/* task that renders a single screen tile */
-task void renderTileTask(uniform int* uniform pixels,
-                         const uniform unsigned int width,
-                         const uniform unsigned int height,
-                         const uniform float time,
-                         const uniform ISPCCamera& camera,
-                         const uniform int numTilesX,
-                         const uniform int numTilesY)
-{
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-}
-
-/* called by the C++ code to render */
-export void device_render (uniform int* uniform pixels,
-                           const uniform unsigned int width,
-                           const uniform unsigned int height,
-                           const uniform float time,
-                           const uniform ISPCCamera& camera)
-{
-  uniform float t0 = 0.7f*time;
-  uniform float t1 = 1.5f*time;
-  uniform float t2 = 0.5f*time;
-
-  /* rotate instances around themselves */
-  uniform LinearSpace3f xfm;
-  xfm.vx = make_Vec3f(cos(t1),0,sin(t1));
-  xfm.vy = make_Vec3f(0,1,0);
-  xfm.vz = make_Vec3f(-sin(t1),0,cos(t1));
-
-  /* calculate transformations to move instances in cirle */
-  for (uniform int i=0; i<4; i++) {
-    uniform float t = t0+i*2.0f*M_PI/4.0f;
-    instance_xfm[i] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t),0.0f,+sin(t)));
-  }
-
-  instance_top_xfm[0] = make_AffineSpace3f_translate(make_Vec3f(4.f*cos(t2), 0, 4.f*sin(t2)));
-  instance_top_xfm[1] = make_AffineSpace3f_translate(make_Vec3f(-4.f*cos(t2), 0, -4.f*sin(t2)));
-
-  /* calculate transformations to properly transform normals */
-  for (uniform int i=0; i<4; i++)
-    normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
-
-  /* set instance transformations */
-  rtcSetGeometryTransform(g_instance0,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[0]);
-  rtcSetGeometryTransform(g_instance1,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[1]);
-  rtcSetGeometryTransform(g_instance2,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[2]);
-  rtcSetGeometryTransform(g_instance3,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[3]);
-  rtcSetGeometryTransform(g_instance00,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_top_xfm[0]);
-  rtcSetGeometryTransform(g_instance11,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_top_xfm[1]);  
-
-  /* update scene */
-  rtcCommitGeometry(g_instance0);
-  rtcCommitGeometry(g_instance1);
-  rtcCommitGeometry(g_instance2);
-  rtcCommitGeometry(g_instance3);
-  rtcCommitScene (g_scene0);
-  rtcCommitGeometry(g_instance00);
-  rtcCommitGeometry(g_instance11);
-  rtcCommitScene (g_scene);
-
-  /* render all pixels */
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
-}
-
-/* called by the C++ code for cleanup */
-export void device_cleanup ()
-{
-  rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseScene (g_scene0); g_scene0 = NULL;
-  rtcReleaseScene (g_scene1); g_scene1 = NULL;
-}
+                        const uniform int numTilesY) { }

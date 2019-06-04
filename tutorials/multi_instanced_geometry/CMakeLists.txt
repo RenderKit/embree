@@ -15,14 +15,10 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(multi_instanced_geometry)
-ADD_TUTORIAL_ISPC(multi_instanced_geometry)
+ADD_TUTORIAL(multi_instanced_geometry scene.cpp)
+ADD_TUTORIAL_ISPC(multi_instanced_geometry scene.cpp)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(multi_instanced_geometry)
-  IF(EMBREE_RAY_PACKETS)
-    ADD_EMBREE_TEST2(multi_instanced_geometry_stream_coherent   instanced_geometry "--mode stream --coherent")
-    ADD_EMBREE_TEST2(multi_instanced_geometry_stream_incoherent instanced_geometry "--mode stream --incoherent")
-  ENDIF()
 ENDIF()
 

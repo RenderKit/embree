@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,22 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/tutorial/tutorial.h"
+#pragma once
 
-namespace embree
+#include "../common/tutorial/tutorial_device.h"
+#include "../common/math/linearspace.h"
+#include "../../include/embree3/rtcore.h"
+
+extern "C" struct InstanceLevels
 {
-  struct Tutorial : public TutorialApplication 
-  {
-    Tutorial()
-      : TutorialApplication("multi_instanced_geometry", FEATURE_RTCORE | FEATURE_STREAM) 
-    {
-      camera.from = Vec3fa(130.f, 50.f, 130.f);
-      camera.to   = Vec3fa(0.0f, 0.0f, 0.0f);
-    }
-  };
+  unsigned int numLevels;
+  const unsigned int* numInstancesOnLevel;
+  embree::LinearSpace3fa** normalTransforms;
+};
 
-}
+extern "C" RTCScene initializeScene(RTCDevice device,
+                                    struct InstanceLevels* levels);
 
-int main(int argc, char** argv) {
-  return embree::Tutorial().main(argc,argv);
-}
+extern "C" void cleanupScene();
