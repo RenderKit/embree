@@ -29,6 +29,32 @@ void renderTileStandardStream(uniform int taskIndex,
                               const uniform int numTilesX,
                               const uniform int numTilesY);
 
+/*
+ * Safely invalidate a packet of rays.
+ */
+inline void invalidateRay(Ray& ray)
+{
+  // Initialize the whole ray so that it is invalid. This is important because
+  // in streamed mode, active state of lanes is forgotten between ray
+  // generation and traversal.
+  unmasked {
+    ray.org = make_Vec3f(0.f);
+    ray.dir = make_Vec3f(0.f);
+    ray.tnear = pos_inf;
+    ray.tfar = neg_inf;
+  }
+}
+
+inline void pushInstanceId(uniform RTCIntersectContext* uniform ctx, uniform unsigned int id)
+{
+  ctx->instID[ctx->instStackSize++] = id;
+}
+
+inline void popInstanceId(uniform RTCIntersectContext* uniform ctx)
+{
+  ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+}
+
 // ======================================================================== //
 //                         User defined instancing                          //
 // ======================================================================== //
@@ -92,9 +118,9 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   ray->dir = xfmVector(instance->world2local,ray_dir);
   ray->tnear = ray_tnear;
   ray->tfar  = ray_tfar;
-  context->instID[0] = instance->userID;
+  pushInstanceId(context, instance->userID);
   rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
-  context->instID[0] = -1;
+  popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
   ray->dir = ray_dir;
@@ -121,9 +147,9 @@ unmasked void instanceOccludedFunc(const RTCOccludedFunctionNArguments* uniform 
   ray->dir    = xfmVector(instance->world2local,ray_dir);
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
-  context->instID[0] = instance->userID;
+  pushInstanceId(context, instance->userID);
   rtcOccludedV(instance->object,context,RTCRay_(*ray));
-  context->instID[0] = -1;
+  popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
   ray->dir    = ray_dir;
@@ -158,22 +184,21 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
 
     /* create transformed ray */
     Ray ray;
+    invalidateRay(ray);
     const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
-    bool mask = __mask; unmasked {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
-    }
+    ray.tnear = RTCRayN_tnear(rays,N,ui);
+    ray.tfar  = RTCRayN_tfar(rays,N,ui);
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    context->instID[0] = instance->userID;
+    pushInstanceId(context, instance->userID);
     rtcIntersectV(instance->object,context,RTCRayHit_(ray));
-    context->instID[0] = -1;
+    popInstanceId(context);
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
 
     /* update hit */
@@ -207,22 +232,21 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
 
     /* create transformed ray */
     Ray ray;
+    invalidateRay(ray);
     const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
-    bool mask = __mask; unmasked {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : (float)(neg_inf);
-    }
+    ray.tnear = RTCRayN_tnear(rays,N,ui);
+    ray.tfar = RTCRayN_tfar(rays,N,ui);
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    context->instID[0] = instance->userID;
+    pushInstanceId(context, instance->userID);
     rtcOccludedV(instance->object,context,RTCRay_(ray));
-    context->instID[0] = -1;
+    popInstanceId(context);
     if (ray.tfar >= 0.0f) continue;
 
     /* update hit */
@@ -322,7 +346,7 @@ unmasked void sphereIntersectFunc(const RTCIntersectFunctionNArguments* uniform 
   varying RTCHit potentialHit;
   potentialHit.u = 0.0f;
   potentialHit.v = 0.0f;
-  potentialHit.instID[0] = args->context->instID[0];
+  potentialHit.instID = args->context->instID[0];
   potentialHit.geomID = sphere.geomID;
   potentialHit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
@@ -416,7 +440,7 @@ unmasked void sphereOccludedFunc(const RTCOccludedFunctionNArguments* uniform ar
   varying RTCHit potentialHit;
   potentialHit.u = 0.0f;
   potentialHit.v = 0.0f;
-  potentialHit.instID[0] = args->context->instID[0];
+  potentialHit.instID = args->context->instID[0];
   potentialHit.geomID = sphere.geomID;
   potentialHit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
@@ -526,7 +550,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     RTCHit potentialhit;
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
-    potentialhit.instID[0] = args->context->instID[0];
+    potentialhit.instID = args->context->instID[0];
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
 
@@ -633,7 +657,7 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
 
     potentialhit.u = 0.0f;
     potentialhit.v = 0.0f;
-    potentialhit.instID[0] = args->context->instID[0];
+    potentialhit.instID = args->context->instID[0];
     potentialhit.geomID = sphere.geomID;
     potentialhit.primID = primID;
     if ((ray_tnear < t0) & (t0 < ray_tfar))
@@ -1110,12 +1134,10 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* initialize ray */
     Ray& primary = primary_stream[N];
-    mask = __mask; unmasked { // invalidates inactive rays
-      primary.tnear = mask ? 0.0f         : (float)(pos_inf);
-      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
-    }
+    invalidateRay(primary);
 
-    init_Ray(primary, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), primary.tnear, primary.tfar, 0.0f, -1,
+    init_Ray(primary, make_Vec3f(camera.xfm.p), make_Vec3f(normalize((float)x*camera.xfm.l.vx +
+    (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.f, pos_inf, 0.0f, -1,
              RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
     N++;
     RayStats_addRay(stats);
@@ -1140,6 +1162,8 @@ void renderTileStandardStream(uniform int taskIndex,
     /* invalidate shadow rays by default */
     Ray& shadow = shadow_stream[N];
     unmasked {
+      shadow.org = make_Vec3f(0.f);
+      shadow.dir = make_Vec3f(0.f);
       shadow.tnear = (float)(pos_inf);
       shadow.tfar  = (float)(neg_inf);
     }
@@ -1163,11 +1187,7 @@ void renderTileStandardStream(uniform int taskIndex,
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
     /* initialize shadow ray */
-    bool mask = __mask; unmasked {
-      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
-    }
-    init_Ray(shadow,primary.org + 0.999f*primary.tfar*primary.dir, neg(lightDir), shadow.tnear, shadow.tfar, 0.0f, N*programCount + programIndex);
+    init_Ray(shadow,primary.org + 0.999f*primary.tfar*primary.dir, neg(lightDir), 0.001f, pos_inf, 0.0f, N*programCount + programIndex);
 
     RayStats_addShadowRay(stats);
   }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,35 +14,5 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "default.h"
-#include "rtcore.h"
-
-namespace embree
-{
-  class Scene;
-
-  struct IntersectContext
-  {
-  public:
-    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context)
-      : scene(scene), user(user_context) {}
-
-    __forceinline bool hasContextFilter() const {
-      return user->filter != nullptr;
-    }
-
-    __forceinline bool isCoherent() const {
-      return embree::isCoherent(user->flags);
-    }
-
-    __forceinline bool isIncoherent() const {
-      return embree::isIncoherent(user->flags);
-    }
-    
-  public:
-    Scene* scene;
-    RTCIntersectContext* user;
-  };
-}
+// Maximum number of instancing levels.
+#define RTC_MAX_INSTANCE_LEVEL_COUNT 8

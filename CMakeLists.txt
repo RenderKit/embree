@@ -65,6 +65,13 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/rtcore_version.h.in"
   "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_version.h"
 )
+
+SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 8 CACHE INT "Maximum number of instance levels.")
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/rtcore_instance_levels.h.in"
+  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_instance_levels.h"
+)
+
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
   "${PROJECT_SOURCE_DIR}/kernels/hash.h"

@@ -60,8 +60,7 @@ typedef int ssize_t;
 /* Maximum number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
 
-/* Maximum number of instancing levels */
-#define RTC_MAX_INSTANCE_LEVEL_COUNT 1
+#include "rtcore_instance_levels.h"
 
 /* Formats of buffers and other data structures */
 enum RTCFormat
@@ -210,7 +209,8 @@ struct RTCIntersectContext
 {
   enum RTCIntersectContextFlags flags;               // intersection flags
   RTCFilterFunctionN filter;                         // filter function to execute
-  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // will be set to geomID of instance when instance is entered
+  unsigned int instStackSize;                        // Number of instances currently on the stack.
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
 };
 
 /* Initializes an intersection context. */
@@ -218,6 +218,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
 {
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
+  context->instStackSize = 0;
   context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
   
