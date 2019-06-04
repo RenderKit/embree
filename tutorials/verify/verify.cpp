@@ -164,7 +164,7 @@ namespace embree
   struct VerifyScene : public RefCount
   {
     VerifyScene (const RTCDeviceRef& device, SceneFlags sflags)
-      : device(device), scene(rtcNewScene(device))
+      : device(device), scene(rtcNewScene(device)), flags(sflags)
     {
       rtcSetSceneFlags(scene,sflags.sflags);
       rtcSetSceneBuildQuality(scene,sflags.qflags);     
@@ -284,6 +284,27 @@ namespace embree
         rtcReleaseGeometry(geom);
         return geomID;
       }
+      else if (Ref<SceneGraph::TransformNode> mesh = node.dynamicCast<SceneGraph::TransformNode>())
+      {
+        VerifyScene exemplar(device, flags);
+        exemplar.addGeometry(quality, mesh->child);
+        rtcCommitScene(exemplar);
+
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
+        rtcSetGeometryInstancedScene(geom, exemplar);
+        rtcSetGeometryTimeStepCount(geom, mesh->spaces.size());
+        for (size_t i = 0; i < mesh->spaces.size(); ++i)
+        {
+          rtcSetGeometryTransform(geom,
+                                  i,
+                                  RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
+                                  reinterpret_cast<float*>(&mesh->spaces[i]));
+        }
+        rtcCommitGeometry(geom);
+        unsigned int geomID = rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        return geomID;
+      }
       else {
         THROW_RUNTIME_ERROR("unknown node type");
       }
@@ -387,6 +408,7 @@ namespace embree
   public:
     const RTCDeviceRef& device;
     RTCSceneRef scene;
+    SceneFlags flags;
     std::vector<Ref<SceneGraph::Node>> nodes;
   };
 
@@ -2661,6 +2683,105 @@ namespace embree
       return (VerifyApplication::TestReturnValue) passed;
     }
   };
+
+  struct InstancingTest : public VerifyApplication::IntersectTest
+  {
+    SceneFlags sflags;
+    RTCBuildQuality quality;
+    bool subdiv;
+
+    InstancingTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), subdiv(subdiv) {
+      }
+
+    struct IntersectContext {
+      RTCIntersectContext context;
+      int numHits[16];
+    };
+    
+    static void intersectFilter(const RTCFilterFunctionNArguments* args)
+    {
+      assert(args);
+      assert(args->context);
+
+      IntersectContext* context = (IntersectContext*)(args->context);
+
+      for (unsigned int i=0; i<args->N; i++) 
+      {
+        const unsigned int rayId = RTCRayN_id(args->ray, args->N, i);
+        if(args->valid[i] && rayId >= 16)
+          throw std::runtime_error("Invalid ray id in intersection filter.");
+        if (args->valid[i])
+        {
+          assert(rayId < 16);
+          context->numHits[rayId] += 1;
+        }
+      }
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+      if (!supportsIntersectMode(device,imode))
+        return VerifyApplication::SKIPPED;
+
+      Ref<SceneGraph::Node> child;
+      Ref<SceneGraph::Node> parent;
+      if (subdiv)
+        child = SceneGraph::createSubdivSphere(Vec3fa(0.f), 1.f, 32, 2.f);
+      else
+        child = SceneGraph::createQuadSphere(Vec3fa(0.f), 1.f, 32);
+
+      for (int i = 0; i < RTC_MAX_INSTANCE_LEVEL_COUNT; ++i)
+      { 
+        parent = new SceneGraph::TransformNode(AffineSpace3fa(one), child);
+        child = parent;
+      }
+
+      sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
+      IntersectContext ctx;
+      rtcInitIntersectContext(&ctx.context);
+      ctx.context.filter = intersectFilter;
+
+      VerifyScene scene(device, sflags);
+      scene.addGeometry(quality, parent);
+      rtcCommitScene(scene);
+      AssertNoError(device);
+
+      RTCRayHit rays[16];
+      for (unsigned int iy=0; iy<4; iy++) 
+      {
+        for (unsigned int ix=0; ix<4; ix++) 
+        {
+          const int id = iy*4+ix;
+          rays[id] = makeRay(Vec3fa(float(ix)/10.f,float(iy)/10.f,-2.0f),Vec3fa(0,0,1));
+          rays[id].ray.id = id;
+          ctx.numHits[id] = 0;
+        }
+      }
+      IntersectWithMode(imode,ivariant,scene,rays,16,&ctx.context);
+      bool passed = true;
+      for (unsigned int iy=0; iy<4; iy++) 
+      {
+        for (unsigned int ix=0; ix<4; ix++) 
+        {
+          const unsigned id = iy*4+ix;
+          passed &= (ctx.numHits[id] > 0);
+          RTCRayHit& ray = rays[id];
+          if (ivariant & VARIANT_INTERSECT)
+            passed &= (ray.hit.geomID != RTC_INVALID_GEOMETRY_ID);
+          else
+            passed &= (ray.ray.tfar == (float)neg_inf);
+        }
+      }
+      assert(passed);
+      AssertNoError(device);
+
+      return (VerifyApplication::TestReturnValue) passed;
+    }
+  };
     
   struct InactiveRaysTest : public VerifyApplication::IntersectTest
   {
@@ -4513,6 +4634,19 @@ namespace embree
               if (has_variant(imode,ivariant))
                   groups.top()->add(new IntersectionFilterTest("subdiv."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,true,imode,ivariant));
       }
+      groups.pop();
+
+      push(new TestGroup("instancing",true,true));
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              if (has_variant(imode,ivariant)) 
+                groups.top()->add(new InstancingTest("instancing."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,false,imode,ivariant));
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              if (has_variant(imode,ivariant)) 
+                groups.top()->add(new InstancingTest("instancing."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,true,imode,ivariant));
       groups.pop();
       
       push(new TestGroup("inactive_rays",true,true));
