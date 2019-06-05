@@ -147,17 +147,6 @@ tutorial to work:
 
     ./viewer_stream -i model.obj
 
-Instanced Geometry
-------------------
-
-![][imgInstancedGeometry]
-
-This tutorial demonstrates the in-build instancing feature of Embree, by
-instancing a number of other scenes built from triangulated spheres. The
-spheres are again colored using the instance ID and geometry ID of the
-hit sphere, to demonstrate how the same geometry instanced in different
-ways can be distinguished.
-
 Intersection Filter
 -------------------
 
@@ -170,6 +159,37 @@ transparent. Otherwise, the shading loop handles the transparency
 properly, by potentially shooting secondary rays. The filter function
 used for shadow rays accumulates the transparency of all surfaces along
 the ray, and terminates traversal if an opaque occluder is hit.
+
+Instanced Geometry
+------------------
+
+![][imgInstancedGeometry]
+
+This tutorial demonstrates the in-build instancing feature of Embree, by
+instancing a number of other scenes built from triangulated spheres. The
+spheres are again colored using the instance ID and geometry ID of the
+hit sphere, to demonstrate how the same geometry instanced in different
+ways can be distinguished.
+
+Multi Level Instancing
+----------------------
+
+![][imgMultiLevelInstancing]
+
+This tutorial demonstrates multi-level instancing, i.e., nesting instances
+into instances. The renderer uses a basic path tracing approach, and the
+image will progressively refine over time.
+There are two levels of instances in this scene: multiple instances of
+the same tree nest instances of a twig.
+Intersection on up to `RTC_MAX_INSTANCE_LEVEL_COUNT` nested levels of
+instances work out of the box. However, to be able to correctly transform shading 
+information from local instance space to world space, users must obtain a 
+copy of the current *instance id stack* during traversal.
+The tutorial uses a context intersection filter to copy the stack,
+but users may prefer to instead use per-geometry intersection filters.
+During shading, the instance ID stack is used to accumulate
+normal transformation matrices for each hit. The tutorial visualizes
+transformed normals as colors.
 
 Path Tracer
 -----------

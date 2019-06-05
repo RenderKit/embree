@@ -8,6 +8,7 @@ Version History
 -   Fixed bug in external BVH builder when configured for dynamic build.
 -   Added support for new config flag "user_threads=N" to device initialization
     which sets the number of threads used by TBB but created by the user.
+-   Added support for multi-level instancing.
 
 ### New Features in Embree 3.5.2
 -   Added EMBREE_API_NAMESPACE cmake option that allows to put all Embree API functions
