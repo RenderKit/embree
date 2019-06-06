@@ -132,7 +132,7 @@ void sampleLightDirection(const Vec3fa& xi,
   const float sunWeight = .1f; // Put most samples into the sky, the sun will converge instantly.
 
   if (xi.z < sunWeight)
-    dir = normalize(Vec3fa(-1.f, 1.f, 1.f));
+    dir = sunDir;
   else
   {
     // Uniform sphere sampling around +Y axis.
