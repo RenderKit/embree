@@ -131,7 +131,7 @@ LinearSpace3f accumulateNormalTransform(const uniform struct InstanceStack* unif
  * A simplistic sky model consisting of a directional sun
  * and a constant sky.
  */
-void sampleLightDirection(Vec3fa xi,
+void sampleLightDirection(const Vec3fa& xi,
                           Vec3f& dir,
                           Vec3f& emission)
 {
@@ -288,7 +288,7 @@ inline unsigned int floatToByte(float channel)
 /*
  * Pack an RGB8 color value from three floats.
  */
-inline unsigned int packRGB8(Vec3f color)
+inline unsigned int packRGB8(const Vec3f& color)
 {
   const unsigned int r = floatToByte(color.x);
   const unsigned int g = floatToByte(color.y);

@@ -194,17 +194,15 @@ void addInstances(RTCDevice device,
 
 static const unsigned int g_instancesOnLevel[] = { Trees::instances.numInstances, 
                                                    Twigs01::instances.numInstances };
-static LinearSpace3fa**   g_normalTransforms;
+static LinearSpace3fa** g_normalTransforms;
 
 void cleanupScene()
 {
   if ( g_normalTransforms )
   {
-    delete[] g_normalTransforms[0];
-    g_normalTransforms[0] = nullptr;
-    delete[] g_normalTransforms[1];
-    g_normalTransforms[1] = nullptr;
-    delete[] g_normalTransforms;
+    alignedFree(g_normalTransforms[0]);
+    alignedFree(g_normalTransforms[1]);
+    alignedFree(g_normalTransforms);
     g_normalTransforms = nullptr;
   }
 }
@@ -213,9 +211,9 @@ RTCScene initializeScene(RTCDevice device, InstanceLevels* levels)
 {
   cleanupScene();
 
-  g_normalTransforms = new LinearSpace3fa*[2];
-  g_normalTransforms[0] = new LinearSpace3fa[ g_instancesOnLevel[0] ];
-  g_normalTransforms[1] = new LinearSpace3fa[ g_instancesOnLevel[1] ];
+  g_normalTransforms = (LinearSpace3fa**)alignedMalloc(2*sizeof(LinearSpace3fa*), 16);
+  g_normalTransforms[0] = (LinearSpace3fa*)alignedMalloc(g_instancesOnLevel[0]*sizeof(LinearSpace3fa), 16);
+  g_normalTransforms[1] = (LinearSpace3fa*)alignedMalloc(g_instancesOnLevel[1]*sizeof(LinearSpace3fa), 16);
   levels->numLevels = 2;
   levels->numInstancesOnLevel = g_instancesOnLevel;
   levels->normalTransforms = g_normalTransforms;
