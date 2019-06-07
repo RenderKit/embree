@@ -172,21 +172,6 @@ namespace embree
 		});
 	      queue_event.wait();
 	    }
-#if 0
-	    {
-	      
-	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_aabb    = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);
-		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);		  
-		  cgh.parallel_for<class init_bounds1>(nd_range1,[=](cl::sycl::nd_item<1> item)
-		                                     {
-						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];\
-						     });
-		  
-		});
-	      queue_event.wait();
-	    }
-#endif	    
 	    /* --- init bvh sah builder --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {

@@ -34,7 +34,7 @@ namespace embree
 
       AABB() = default;
 
-      //AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
+      AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
 
       //AABB(const cl::sycl::float4 &v) : lower(v),upper(v) {}
       
