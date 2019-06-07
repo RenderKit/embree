@@ -160,8 +160,13 @@ namespace embree
 		                                     {
 						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
 						       gpu::AABB reduced_geometry_aabb = gpu::AABB::work_group_reduce(aabb_geom);
+						       gpu::AABB aabb_centroid;
+						       aabb_centroid.lower = aabb_geom.centroid2();
+						       aabb_centroid.upper = aabb_geom.centroid2();						       						       
 						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
 						       reduced_geometry_aabb.atomic_merge_global(&ptr.get()->geometryBounds);
+						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid);
+						       reduced_centroid_aabb.atomic_merge_global(&ptr.get()->centroidBounds);						       
 						     });
 		  
 		});
@@ -176,12 +181,6 @@ namespace embree
 		  cgh.parallel_for<class init_bounds1>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		                                     {
 						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];\
-						       gpu::AABB aabb_centroid;
-						       //aabb_centroid.lower = aabb_geom.centroid2();
-						       //aabb_centroid.upper = aabb_geom.centroid2();						       
-						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid);
-						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
-						       reduced_centroid_aabb.atomic_merge_global(&ptr.get()->centroidBounds);						       
 						     });
 		  
 		});
