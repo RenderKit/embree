@@ -70,6 +70,20 @@ MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
   ENDIF()
 ENDMACRO()
 
+MACRO (ADD_EMBREE_TEST_WITHOUT_ISPC name)
+  IF (BUILD_TESTING)  
+    ADD_TEST(NAME ${name}
+             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
+             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
+                     --name ${name}
+                     --reference ${name}
+                     --modeldir ${EMBREE_MODEL_DIR}
+                     --model default
+                     --sde ${EMBREE_TESTING_SDE}
+                     --execute ${MY_PROJECT_BINARY_DIR}/${name})
+  ENDIF()
+ENDMACRO()
+
 MACRO (ADD_EMBREE_TEST name)
   ADD_EMBREE_NORMAL_TEST(${name} ${name} ${name} "")
 ENDMACRO()
