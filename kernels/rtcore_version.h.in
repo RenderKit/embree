@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #define RTC_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
 #define RTC_VERSION_MINOR @EMBREE_VERSION_MINOR@
 #define RTC_VERSION_PATCH @EMBREE_VERSION_PATCH@
