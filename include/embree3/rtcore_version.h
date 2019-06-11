@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #define RTC_VERSION_MAJOR 3
 #define RTC_VERSION_MINOR 6
 #define RTC_VERSION_PATCH 0
