@@ -7,8 +7,8 @@ x64
 .DS_Store
 kernels/config.h
 kernels/hash.h
+include/embree3/rtcore_instance_levels.h
 build
 models
 tbb
 doc/intelstyle
-

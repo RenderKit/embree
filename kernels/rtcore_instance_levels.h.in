@@ -14,5 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 // Maximum number of instancing levels.
 #define RTC_MAX_INSTANCE_LEVEL_COUNT @EMBREE_MAX_INSTANCE_LEVEL_COUNT@
