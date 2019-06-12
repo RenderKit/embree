@@ -123,7 +123,7 @@ namespace embree
   void Geometry::preCommit()
   {
     if (state == MODIFIED)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry got not committed");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
   }
 
   void Geometry::postCommit()
