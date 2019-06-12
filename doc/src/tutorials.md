@@ -2,8 +2,10 @@ Embree Tutorials
 ================
 
 Embree comes with a set of tutorials aimed at helping users understand
-how Embree can be used and extended. All tutorials exist in an ISPC and
-C++ version to demonstrate the two versions of the API. Look for files
+how Embree can be used and extended. There is a very basic minimal
+that can be compiled as both C and C++, which should get new users started quickly. 
+All other tutorials exist in an ISPC and C++ version to demonstrate 
+the two versions of the API. Look for files
 named `tutorialname_device.ispc` for the ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
@@ -11,9 +13,10 @@ executables, to start the ISPC version use the `tutorialname_ispc`
 executables. All tutorials can print available command line options
 using the `--help` command line parameter.
 
-For all tutorials, you can select an initial camera using the `--vp`
-(camera position), `--vi` (camera look-at point), `--vu` (camera up
-vector), and `--fov` (vertical field of view) command line parameters:
+For all tutorials except minimal, you can select an initial camera using 
+the `--vp` (camera position), `--vi` (camera look-at point), `--vu` 
+(camera up vector), and `--fov` (vertical field of view) command line 
+parameters:
 
     ./triangle_geometry --vp 10 10 10 --vi 0 0 0
 
@@ -82,6 +85,14 @@ ESC
 
 q
 :   Exits the tutorial.
+
+Minimal
+-------
+
+This tutorial is designed to get new users started with Embree.
+It can be compiled as both C and C++. It demonstrates how to initialize
+a device and scene, and how to intersect rays with the scene.
+There is no image output to keep the tutorial as simple as possible.
 
 Triangle Geometry
 -----------------
