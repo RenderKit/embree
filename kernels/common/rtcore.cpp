@@ -1247,7 +1247,7 @@ RTC_NAMESPACE_BEGIN;
     /* vertex buffers need to get overallocated slightly as elements are accessed using SSE loads */
     size_t bytes = itemCount*byteStride;
     if (type == RTC_BUFFER_TYPE_VERTEX || type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
-      bytes += (byteStride+15)%16 - byteStride;
+      bytes += (16 - (byteStride%16))%16;
       
     Ref<Buffer> buffer = new Buffer(geometry->device, bytes);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
