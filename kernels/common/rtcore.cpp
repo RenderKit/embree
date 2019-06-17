@@ -33,7 +33,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
-    Device* device = new Device(config);
+    embree::Device* device = new embree::Device(config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
@@ -60,7 +60,7 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API void rtcRetainDevice(RTCDevice hdevice) 
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcRetainDevice);
     RTC_VERIFY_HANDLE(hdevice);
@@ -71,7 +71,7 @@ RTC_NAMESPACE_BEGIN;
   
   RTC_API void rtcReleaseDevice(RTCDevice hdevice) 
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcReleaseDevice);
     RTC_VERIFY_HANDLE(hdevice);
@@ -82,7 +82,7 @@ RTC_NAMESPACE_BEGIN;
   
   RTC_API ssize_t rtcGetDeviceProperty(RTCDevice hdevice, RTCDeviceProperty prop)
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetDeviceProperty);
     RTC_VERIFY_HANDLE(hdevice);
@@ -94,7 +94,7 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API void rtcSetDeviceProperty(RTCDevice hdevice, const RTCDeviceProperty prop, ssize_t val)
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetDeviceProperty);
     const bool internal_prop = (size_t)prop >= 1000000 && (size_t)prop < 1000004;
@@ -106,7 +106,7 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API RTCError rtcGetDeviceError(RTCDevice hdevice)
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetDeviceError);
     if (device == nullptr) return Device::getThreadErrorCode();
@@ -117,7 +117,7 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API void rtcSetDeviceErrorFunction(RTCDevice hdevice, RTCErrorFunction error, void* userPtr)
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetDeviceErrorFunction);
     RTC_VERIFY_HANDLE(hdevice);
@@ -127,7 +127,7 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunction memoryMonitor, void* userPtr)
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetDeviceMemoryMonitorFunction);
     device->setMemoryMonitorFunction(memoryMonitor, userPtr);
@@ -139,9 +139,9 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewBuffer);
     RTC_VERIFY_HANDLE(hdevice);
-    Buffer* buffer = new Buffer((Device*)hdevice, byteSize);
+    Buffer* buffer = new Buffer((embree::Device*)hdevice, byteSize);
     return (RTCBuffer)buffer->refInc();
-    RTC_CATCH_END((Device*)hdevice);
+    RTC_CATCH_END((embree::Device*)hdevice);
     return nullptr;
   }
 
@@ -150,9 +150,9 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSharedBuffer);
     RTC_VERIFY_HANDLE(hdevice);
-    Buffer* buffer = new Buffer((Device*)hdevice, byteSize, ptr);
+    Buffer* buffer = new Buffer((embree::Device*)hdevice, byteSize, ptr);
     return (RTCBuffer)buffer->refInc();
-    RTC_CATCH_END((Device*)hdevice);
+    RTC_CATCH_END((embree::Device*)hdevice);
     return nullptr;
   }
 
@@ -192,9 +192,9 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewScene);
     RTC_VERIFY_HANDLE(hdevice);
-    Scene* scene = new Scene((Device*)hdevice);
+    Scene* scene = new Scene((embree::Device*)hdevice);
     return (RTCScene) scene->refInc();
-    RTC_CATCH_END((Device*)hdevice);
+    RTC_CATCH_END((embree::Device*)hdevice);
     return nullptr;
   }
 
@@ -941,7 +941,7 @@ RTC_NAMESPACE_BEGIN;
   
   RTC_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
   {
-    Device* device = (Device*) hdevice;
+    embree::Device* device = (embree::Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewGeometry);
     RTC_VERIFY_HANDLE(hdevice);

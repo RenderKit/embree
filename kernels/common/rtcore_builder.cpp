@@ -31,7 +31,7 @@ namespace embree
   {
     struct BVH : public RefCount
     {
-      BVH (Device* device)
+      BVH (embree::Device* device)
         : device(device), allocator(device,true), morton_src(device,0), morton_tmp(device,0)
       {
         device->refInc();
@@ -42,7 +42,7 @@ namespace embree
       }
 
     public:
-      Device* device;
+      embree::Device* device;
       FastAllocator allocator;
       mvector<BVHBuilderMorton::BuildPrim> morton_src;
       mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
@@ -359,9 +359,9 @@ RTC_NAMESPACE_BEGIN
       RTC_CATCH_BEGIN;
       RTC_TRACE(rtcNewAllocator);
       RTC_VERIFY_HANDLE(device);
-      BVH* bvh = new BVH((Device*)device);
+      BVH* bvh = new BVH((embree::Device*)device);
       return (RTCBVH) bvh->refInc();
-      RTC_CATCH_END((Device*)device);
+      RTC_CATCH_END((embree::Device*)device);
       return nullptr;
     }
 
@@ -433,7 +433,7 @@ RTC_NAMESPACE_BEGIN
     RTC_API void rtcRetainBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
-      Device* device = bvh ? bvh->device : nullptr;
+      embree::Device* device = bvh ? bvh->device : nullptr;
       RTC_CATCH_BEGIN;
       RTC_TRACE(rtcRetainBVH);
       RTC_VERIFY_HANDLE(hbvh);
@@ -444,7 +444,7 @@ RTC_NAMESPACE_BEGIN
     RTC_API void rtcReleaseBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
-      Device* device = bvh ? bvh->device : nullptr;
+      embree::Device* device = bvh ? bvh->device : nullptr;
       RTC_CATCH_BEGIN;
       RTC_TRACE(rtcReleaseBVH);
       RTC_VERIFY_HANDLE(hbvh);

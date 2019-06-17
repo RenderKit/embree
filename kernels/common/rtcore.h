@@ -53,16 +53,16 @@ namespace embree
   
 #define RTC_CATCH_END2(scene)                                                \
   } catch (std::bad_alloc&) {                                                   \
-    Device* device = scene ? scene->device : nullptr;                           \
+    embree::Device* device = scene ? scene->device : nullptr;		\
     Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
   } catch (rtcore_error& e) {                                                   \
-    Device* device = scene ? scene->device : nullptr;                           \
+    embree::Device* device = scene ? scene->device : nullptr;                           \
     Device::process_error(device,e.error,e.what());                             \
   } catch (std::exception& e) {                                                 \
-    Device* device = scene ? scene->device : nullptr;                           \
+    embree::Device* device = scene ? scene->device : nullptr;                           \
     Device::process_error(device,RTC_ERROR_UNKNOWN,e.what());                   \
   } catch (...) {                                                               \
-    Device* device = scene ? scene->device : nullptr;                           \
+    embree::Device* device = scene ? scene->device : nullptr;                           \
     Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
   }
 

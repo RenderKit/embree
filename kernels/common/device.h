@@ -21,6 +21,7 @@
 #include "accel.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
+#define CL_TARGET_OPENCL_VERSION 220
 #include <CL/sycl.hpp>
 #endif
 
