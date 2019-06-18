@@ -16,10 +16,13 @@
 Embree supports instancing of scenes using affine transformations
 (3×3 matrix plus translation). As the instanced scene is stored only a
 single time, even if instanced to multiple locations, this feature can
-be used to create very complex scenes with small memory footprint. Only
-single-level instancing is supported natively by Embree, however,
-multi-level instancing can be manually implemented through user
-geometries.
+be used to create very complex scenes with small memory footprint. 
+
+Embree supports both single-level instancing and multi-level instancing.
+The maximum instance nesting depth is `RTC_MAX_INSTANCE_LEVEL_COUNT`; it
+can be configured at compile-time using the constant `EMBREE_MAX_INSTANCE_LEVEL_COUNT`. 
+Users should adapt this constant to their needs: instances nested any deeper are silently 
+ignored in release mode, and cause assertions in debug mode.
 
 Instances are created by passing `RTC_GEOMETRY_TYPE_INSTANCE` to the
 `rtcNewGeometry` function call. The instanced scene can be set using
@@ -50,8 +53,8 @@ specified using the `rtcSetGeometryTimeStepCount` function. Then a
 transformation for each time step can be specified using the
 `rtcSetGeometryTransform` function.
 
-See tutorial [Instanced Geometry] for an example of how to use
-instances.
+See tutorials [Instanced Geometry] and [Multi Level Instancing] for 
+examples of how to use instances.
 
 #### EXIT STATUS
 

@@ -14,35 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "default.h"
-#include "rtcore.h"
+#include "../common/tutorial/tutorial.h"
 
 namespace embree
 {
-  class Scene;
-
-  struct IntersectContext
+  struct Tutorial : public TutorialApplication 
   {
-  public:
-    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context)
-      : scene(scene), user(user_context) {}
-
-    __forceinline bool hasContextFilter() const {
-      return user->filter != nullptr;
+    Tutorial()
+      : TutorialApplication("multi_instanced_geometry", FEATURE_RTCORE | FEATURE_STREAM) 
+    {
+      camera.from = Vec3fa(130.f, 50.f, 130.f);
+      camera.to   = Vec3fa(0.0f, 0.0f, 0.0f);
     }
-
-    __forceinline bool isCoherent() const {
-      return embree::isCoherent(user->flags);
-    }
-
-    __forceinline bool isIncoherent() const {
-      return embree::isIncoherent(user->flags);
-    }
-    
-  public:
-    Scene* scene;
-    RTCIntersectContext* user;
   };
+
+}
+
+int main(int argc, char** argv) {
+  return embree::Tutorial().main(argc,argv);
 }

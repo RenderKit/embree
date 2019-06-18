@@ -7,6 +7,7 @@
 [imgViewer]: https://embree.github.io/images/viewer.jpg
 [imgViewerStream]: https://embree.github.io/images/viewer_stream.jpg
 [imgInstancedGeometry]: https://embree.github.io/images/instanced_geometry.jpg
+[imgMultiLevelInstancing]: https://embree.github.io/images/multi_level_instancing.jpg
 [imgIntersectionFilter]: https://embree.github.io/images/intersection_filter.jpg
 [imgPathtracer]: https://embree.github.io/images/pathtracer.jpg
 [imgHairGeometry]: https://embree.github.io/images/hair_geometry.jpg

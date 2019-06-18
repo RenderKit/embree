@@ -31,7 +31,10 @@ sed -i.backup  's/uintptr_t/size_t/g' $2
 sed -i.backup  's/intptr_t/ssize_t/g' $2
 
 sed -i.backup  's/__mask/1/g' $2
+sed -i.backup  's/lanemask()/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
+
+sed -i.backup  's/extract[ ]*(\([^,]*\),[^)]*)/\1/g' $2
 
 sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/programCount/1/g' $2
@@ -81,6 +84,7 @@ sed -i.backup 's/make_LinearSpace3fa_rotate/LinearSpace3fa::rotate/g' $2
 sed -i.backup 's/make_AffineSpace3fa_scale/AffineSpace3fa::scale/g' $2
 sed -i.backup 's/make_AffineSpace3fa_rotate/AffineSpace3fa::rotate/g' $2
 sed -i.backup 's/make_AffineSpace3fa_translate/AffineSpace3fa::translate/g' $2
+sed -i.backup 's/make_LinearSpace3fa_identity()/LinearSpace3fa(one)/g' $2
 
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2

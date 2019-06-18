@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,33 +16,18 @@
 
 #pragma once
 
-#include "default.h"
-#include "rtcore.h"
+#include "../common/tutorial/tutorial_device.isph"
+#include "../common/math/linearspace.isph"
+#include "../../include/embree3/rtcore.isph"
 
-namespace embree
+extern "C" struct InstanceLevels
 {
-  class Scene;
+  unsigned int numLevels;
+  const uniform unsigned int* uniform numInstancesOnLevel;
+  uniform LinearSpace3fa* uniform * uniform normalTransforms;
+};
 
-  struct IntersectContext
-  {
-  public:
-    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context)
-      : scene(scene), user(user_context) {}
+extern "C" uniform RTCScene initializeScene(uniform RTCDevice device,
+                                            uniform struct InstanceLevels* uniform levels);
 
-    __forceinline bool hasContextFilter() const {
-      return user->filter != nullptr;
-    }
-
-    __forceinline bool isCoherent() const {
-      return embree::isCoherent(user->flags);
-    }
-
-    __forceinline bool isIncoherent() const {
-      return embree::isIncoherent(user->flags);
-    }
-    
-  public:
-    Scene* scene;
-    RTCIntersectContext* user;
-  };
-}
+extern "C" void cleanupScene();

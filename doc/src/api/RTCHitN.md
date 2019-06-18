@@ -19,7 +19,7 @@
 
     unsigned& RTCHitN_primID(RTCHitN* hit, unsigned int N, unsigned int i);
     unsigned& RTCHitN_geomID(RTCHitN* hit, unsigned int N, unsigned int i);
-    unsigned& RTCHitN_instID(RTCHitN* hit, unsigned int N, unsigned int i, unsigned int l);
+    unsigned& RTCHitN_instID(RTCHitN* hit, unsigned int N, unsigned int i);
 
 #### DESCRIPTION
 

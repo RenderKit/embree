@@ -19,7 +19,7 @@
 
       unsigned int primID; // geometry ID
       unsigned int geomID; // primitive ID
-      unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // instance ID
+      unsigned int instID; // instance ID
     };
 
 #### DESCRIPTION
@@ -29,7 +29,9 @@ result. The hit contains the unnormalized geometric normal in object
 space at the hit location (`Ng_x`, `Ng_y`, `Ng_z` members), the
 barycentric u/v coordinates of the hit (`u` and `v` members), as well
 as the primitive ID (`primID` member), geometry ID (`geomID` member),
-and instance ID (`instID` member) of the hit. The parametric
+and instance ID (`instID` member) of the hit. The latter is only useful
+in single-level instancing. For multi-level instancing, the user must
+intercept the instance ID stack in an intersection filter. The parametric
 intersection distance is not stored inside the hit, but stored inside
 the `tfar` member of the ray.
 
@@ -43,4 +45,4 @@ hit packets of an arbitrary compile-time size.
 
 #### SEE ALSO
 
-[RTCRay]
+[RTCRay], [Multi-Level Instancing]

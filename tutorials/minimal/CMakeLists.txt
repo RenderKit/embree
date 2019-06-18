@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -14,6 +14,10 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-set(CTEST_PROJECT_NAME "Embree")
-set(CTEST_NIGHTLY_START_TIME "22:00:00 UTC")
-set(TEST_MODELS_HASH fa148f9c3dd78ebd821cb45f60d9872bf4f30cd6)
+ADD_EXECUTABLE(minimal minimal.cpp)
+TARGET_LINK_LIBRARIES(minimal embree)
+TARGET_INCLUDE_DIRECTORIES(minimal PRIVATE ${PROJECT_SOURCE_DIR}/include)
+SET_PROPERTY(TARGET minimal PROPERTY FOLDER tutorials/single)
+SET_PROPERTY(TARGET minimal APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+INSTALL(TARGETS minimal DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
+SIGN_TARGET(minimal)

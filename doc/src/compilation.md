@@ -323,6 +323,11 @@ parameters that can be configured in CMake:
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
 
++ `EMBREE_MAX_INSTANCE_LEVEL_COUNT`: Specifies the maximum number of nested
+  instance levels. Should be greater than 0; the default value is 8.
+  Instances nested any deeper than this value will silently disappear in
+  release mode, and cause assertions in debug mode.
+
 
 Using Embree
 =============

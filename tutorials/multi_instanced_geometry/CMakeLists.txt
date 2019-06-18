@@ -14,6 +14,11 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-set(CTEST_PROJECT_NAME "Embree")
-set(CTEST_NIGHTLY_START_TIME "22:00:00 UTC")
-set(TEST_MODELS_HASH fa148f9c3dd78ebd821cb45f60d9872bf4f30cd6)
+INCLUDE(tutorial)
+ADD_TUTORIAL(multi_instanced_geometry scene.cpp)
+ADD_TUTORIAL_ISPC(multi_instanced_geometry scene.cpp)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_EMBREE_TEST(multi_instanced_geometry)
+ENDIF()
+

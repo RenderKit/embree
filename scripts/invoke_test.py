@@ -30,10 +30,19 @@ reference = ""
 modeldir = ""
 sde = "OFF"
 
+def assert_fatal(condition, error):
+  if not condition:
+    sys.stdout.write("[error] %s\n" % error)
+    sys.exit(1)
+
+def assert_image_exists(name, path):
+  assert_fatal(os.path.isfile(path), "%s image %s does not exist." % (name, path))
+
+
 def compareImages(image0,image1,dimage):
-  if not os.path.isfile(image0) or not os.path.isfile(image1): return False
-  #try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stderr=subprocess.STDOUT, shell=True)
-  #except subprocess.CalledProcessError, e: line = e.output
+  error = float("inf")
+  assert_image_exists("output", image0)
+  assert_image_exists("reference", image1)
   line, unused_err = subprocess.Popen("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
   try: error = float(line[line.index('(')+1:line.index(')')])
   except ValueError:
@@ -90,20 +99,19 @@ else:
 # parse arguments
 executable = parseArgs(sys.argv[1:len(sys.argv)])
 
+assert_fatal(model != "", "--model must be set")
+assert_fatal(os.path.isdir(modeldir), "--modeldir must exist")
+
 refImageFileTga = modeldir + dash + "reference" + dash + reference + ".tga"
-refImageFileJpg = name + ".reference.jpg"
 outImageFileTga = name + ".tga"
-outImageFileJpg = name + ".jpg"
 diffImageFileTga= name + ".diff.tga"
-diffImageFileJpg= name + ".diff.jpg"
 
 executable = executable + " -rtcore verbose=0"
 
 if (model != "" and model != "default"):
   executable = executable + " -c " + modeldir + dash + model
 
-if (model != ""):
-  executable = executable + " -o " + outImageFileTga
+executable = executable + " -o " + outImageFileTga
 
 if (sde != "" and sde != "OFF"):
   if sys.platform.startswith("win"):
@@ -112,28 +120,12 @@ if (sde != "" and sde != "OFF"):
     executable = "sde64 -" + sde + " -- " + executable
 
 print(executable)
-  
+
 ret = os.system(executable)
 
-if ret == 0 and modeldir == "none":
-   sys.stdout.write("WARNING: not comparing to reference image\n");
-
-if ret == 0 and modeldir != "none":
+if ret == 0:
   diff = compareImages(outImageFileTga,refImageFileTga,diffImageFileTga)
   if diff > 0.00056:
-    
-#    if os.path.isfile(outImageFileTga):
-#      os.system("convert -quality 98 " + outImageFileTga    + " " + outImageFileJpg)
-#      sys.stdout.write("<DartMeasurementFile name=\"Output\"    type=\"image/jpeg\">" + outImageFileJpg + "</DartMeasurementFile>\n");
-      
-#    if os.path.isfile(refImageFileTga):
-#      os.system("convert -quality 98 " + refImageFileTga + " " + refImageFileJpg)
-#      sys.stdout.write("<DartMeasurementFile name=\"Reference\" type=\"image/jpeg\">" + refImageFileJpg + "</DartMeasurementFile>\n");
-      
-#    if os.path.isfile(diffImageFileTga):
-#      os.system("convert -quality 98 " + diffImageFileTga + " " + diffImageFileJpg)
-#      sys.stdout.write("<DartMeasurementFile name=\"Difference\" type=\"image/jpeg\">" + diffImageFileJpg + "</DartMeasurementFile>\n");
-      
     sys.stdout.write(" [failed] [images differ by %f]\n" % diff)
     sys.exit(2)
 
