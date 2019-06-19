@@ -142,7 +142,7 @@ namespace embree
 		  cgh.single_task<class init_first_kernel>([=]() {
 		      gpu::Globals *g  = accessor_globals.get_pointer();
 		      char *bvh_mem    = accessor_bvh.get_pointer();
-		      //g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
+		      g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
 		    });
 		});
 	      queue_event.wait();
@@ -159,20 +159,18 @@ namespace embree
 		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		                                     {
 						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
+						       gpu::AABB aabb_centroid(aabb_geom.centroid2());						       
 						       gpu::AABB reduced_geometry_aabb = gpu::AABB::work_group_reduce(aabb_geom);
-						       gpu::AABB aabb_centroid;
-						       aabb_centroid.lower = aabb_geom.centroid2();
-						       aabb_centroid.upper = aabb_geom.centroid2();						       						       
+						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid);						       
 						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
 						       reduced_geometry_aabb.atomic_merge_global(&ptr.get()->geometryBounds);
-						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid);
 						       reduced_centroid_aabb.atomic_merge_global(&ptr.get()->centroidBounds);						       
 						     });
 		  
 		});
 	      queue_event.wait();
 	    }
-#if 1
+
 	    /* --- init bvh sah builder --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
@@ -183,15 +181,12 @@ namespace embree
 		      char *bvh_mem    = accessor_bvh.get_pointer();
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      record->init(0,numPrimitives,globals->centroidBounds);
-#if 1 // causes seg fault	 	      
 		      globals->geometryBounds.print();
 		      globals->centroidBounds.print();
-#endif		      
 		    });
 		});
 	      queue_event.wait();
 	    }
-#endif   	    
 	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
