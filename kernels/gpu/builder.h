@@ -207,7 +207,7 @@ namespace embree
 
       inline void print()
       {
-	printf("buildrecord: start %d end %d current %p \n",start,end,current);
+	printf("buildrecord: start %d end %d size %d current %p \n",start,end,size(),current);
 	centroidBounds.print();
       }
     };

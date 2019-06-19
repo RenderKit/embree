@@ -31,16 +31,123 @@
 
 #define PROFILE 0
 #define PROFILE_RUNS 20
+#define BVH_NODE_N 16
+#define NUM_BUILDRECORD_STACK_ENTRIES 128
 
 namespace embree
 {
-  [[cl::intel_reqd_sub_group_size(16)]] inline void bvh_build_serial(gpu::BuildRecord &record,
-								     char *bvh_mem,
-								     const gpu::AABB *const primref,
-								     uint *primref_index0,
-								     uint *primref_index1)
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_serial(gpu::BuildRecord &record,
+									     char *bvh_mem,
+									     const gpu::AABB *const primref,
+									     uint *primref_index0,
+									     uint *primref_index1,
+									     gpu::BinInfo &binInfo,
+									     gpu::BuildRecord &current,
+									     gpu::BuildRecord &brecord,
+									     gpu::Split &split,
+									     gpu::AABB childrenABBB[BVH_NODE_N],
+									     gpu::BuildRecord stack[NUM_BUILDRECORD_STACK_ENTRIES])
   {
+    uint sindex = 1;
+    stack[0] = record;	  
+
+    record.print();
     
+    while(sindex) 
+      {
+	/* next element from stack */
+	sindex--;      
+	current = stack[sindex];
+
+#if 0			      
+	    /*! find best split */
+	    struct BinMapping binMapping;
+
+	    const uint items = getNumPrims(&current.binBounds);
+	    const uint start = current.binBounds.start;
+	    const uint end   = current.binBounds.end;
+	  
+	    /*! create a leaf node when #items < threshold */
+	    if (items <= cfg_minLeafSize)
+	      {
+		if (subgroupLocalID == 0)
+		  {
+		    //printf("items %d start %d \n",items,start);
+		    const uint leaf_offset = subgroup_createLeaf_index(globals,
+								       start,
+								       start + items,
+								       primref,
+								       primref_index0,
+								       bvh_mem);		  
+		    *current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,leaf_offset);
+		  }
+	      }
+	    else
+	      {	  
+		uint numChildren = 2;
+		struct BuildRecord *children = &stack[sindex];
+		initBinMapping(&binMapping,&current.binBounds.centroidBounds,BINS);
+
+		serial_find_split(primref,&binMapping,&current.binBounds,&split,&binInfo,primref_index0,primref_index1);
+		split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,current.binBounds.start,current.binBounds.end);	      
+	      
+		serial_partition_index(primref,&binMapping,&current.binBounds,&split,&children[0].binBounds,&children[1].binBounds,&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1);
+	      
+		while (numChildren < BVH_NODE_N)
+		  {
+		    /*! find best child to split */
+		    float bestArea = -(float)INFINITY;
+		    int bestChild = -1;
+		    for (int i=0; i<numChildren; i++)
+		      {
+			/* ignore leaves as they cannot get split */
+			if (getNumPrims(&children[i].binBounds) <= cfg_minLeafSize) continue;
+
+			/* find child with largest surface area */
+			if (halfArea(&childrenAABB[i]) > bestArea) {
+			  bestChild = i;
+			  bestArea = halfArea(&childrenAABB[i]);
+			}
+		      }
+		    if (bestChild == -1) break;
+
+		    /* perform best found split */
+		    brecord = children[bestChild];
+		    struct BuildRecord *lrecord = &children[bestChild];
+		    struct BuildRecord *rrecord = &children[numChildren];	
+
+		    initBinMapping(&binMapping,&brecord.binBounds.centroidBounds,BINS);
+		    serial_find_split(primref,&binMapping,&brecord.binBounds,&split,&binInfo,primref_index0,primref_index1);
+		    split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,brecord.binBounds.start,brecord.binBounds.end);
+
+		    DBG(printf("split sah %f dim %d pos %d \n",split.sah,split.dim,split.pos));
+
+		    serial_partition_index(primref,&binMapping,&brecord.binBounds,&split,&lrecord->binBounds,&rrecord->binBounds,&childrenAABB[bestChild],&childrenAABB[numChildren],primref_index0,primref_index1);
+
+		    numChildren++;
+		  }
+
+		/* sort children based on range size */
+		const uint numPrimsIDs = select((uint)0,(as_uint(childrenAABB[subgroupLocalID].upper.w) << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
+		const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
+
+		uint node_offset = subgroup_createNode(globals,IDs,childrenAABB,numChildren,bvh_mem);
+	  
+		/* set parent pointer in child build records */
+		global struct BVHNodeN *node = (global struct BVHNodeN*)(bvh_mem + node_offset);
+		if (subgroupLocalID < numChildren)
+		  {
+		    children[IDs].binBounds.parent = ((global uint *)&node->offset) + subgroupLocalID;
+		  }
+
+		/* update parent pointer */
+		*current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,node_offset);
+
+		sindex += numChildren;
+	      }
+#endif			      
+	  }
+			      
   }
 
   namespace isa
@@ -147,8 +254,8 @@ namespace embree
 	    /* --- init globals --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  auto accessor_bvh = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
+		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
+		  auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
 		  cgh.single_task<class init_first_kernel>([=]() {
 		      gpu::Globals *g  = accessor_globals.get_pointer();
 		      char *bvh_mem    = accessor_bvh.get_pointer();
@@ -164,8 +271,8 @@ namespace embree
 	    {
 	      
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);		  
-		  auto accessor_aabb    = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);		  
+		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);		  
+		  auto accessor_aabb    = aabb_buffer.get_access<sycl_read>(cgh);		  
 		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		                                     {
 						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
@@ -184,11 +291,11 @@ namespace embree
 	    /* --- init bvh sah builder --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  auto accessor_bvh     = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
+		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
+		  auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
 		  cgh.single_task<class init_builder>([=]() {
-		      gpu::Globals *globals  = accessor_globals.get_pointer();
-		      char *bvh_mem    = accessor_bvh.get_pointer();
+		      gpu::Globals *globals    = accessor_globals.get_pointer();
+		      char *bvh_mem            = accessor_bvh.get_pointer();
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      record->init(0,numPrimitives,globals->centroidBounds);
 		      globals->numBuildRecords = 1;
@@ -204,134 +311,40 @@ namespace embree
 	    /* --- single HW thread recursive build --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals       = globals_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  auto accessor_bvh           = bvh_buffer.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  auto accessor_aabb          = aabb_buffer.get_access<cl::sycl::access::mode::read>(cgh);		  		  
-		  auto accessor_primref_index = primref_index.get_access<cl::sycl::access::mode::read_write>(cgh);
-		  const cl::sycl::nd_range<1> nd_range16(cl::sycl::range<1>(16),cl::sycl::range<1>(16));
+		  auto accessor_globals       = globals_buffer.get_access<sycl_read_write>(cgh);
+		  auto accessor_bvh           = bvh_buffer.get_access<sycl_read_write>(cgh);
+		  auto accessor_aabb          = aabb_buffer.get_access<sycl_read>(cgh);		  		  
+		  auto accessor_primref_index = primref_index.get_access<sycl_read_write>(cgh);
+		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
+		  
+		  /* local variables */
+		  cl::sycl::accessor< gpu::BinInfo    , 0, sycl_read_write, sycl_local> binInfo(cgh);
+		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> current(cgh);
+		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> brecord(cgh);
+		  cl::sycl::accessor< gpu::Split      , 0, sycl_read_write, sycl_local> split(cgh);		  
+		  cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N),cgh);
 
-												       
-		  cl::sycl::accessor< gpu::BinInfo, 0, cl::sycl::access::mode::read_write, cl::sycl::access::target::local> binInfo(cgh);
-
-		  cgh.parallel_for<class serial_build>(nd_range16,[=](cl::sycl::nd_item<1> item) {
+		  cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> stack(cl::sycl::range<1>(NUM_BUILDRECORD_STACK_ENTRIES),cgh);
+		  
+		  
+		  
+		  //private struct BuildRecord stack
+		  cgh.parallel_for<class serial_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		      const uint groupID   = item.get_group(0);
+		      const uint numGroups = item.get_group_range(0);
+		      //printf("groupID %d numGroups %d \n",groupID,numGroups);
+		      
 		      gpu::Globals *globals  = accessor_globals.get_pointer();
 		      char *bvh_mem          = accessor_bvh.get_pointer();
 		      gpu::AABB *primref     = accessor_aabb.get_pointer();
 		      uint *primref_index0   = accessor_primref_index.get_pointer() + 0;
 		      uint *primref_index1   = accessor_primref_index.get_pointer() + globals->numPrimitives;		      
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
-		      bvh_build_serial(*record,bvh_mem,primref,primref_index0,primref_index1);
-#if 0														 
-		      private struct Split split;
-		      private struct BuildRecord current;
-		      private struct BuildRecord brecord;
-  
-		      private struct AABB childrenAABB[BVH_NODE_N];
+		      
 		      const uint numRecords = globals->numBuildRecords;
-								      private struct BuildRecord stack[128];
-  
+
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
-			{
-			  uint sindex = 1;
-			  stack[0] = record[recordID];	  
-  
-			  while(sindex) 
-			    {
-			      /* next element from stack */
-			      sindex--;      
-			      current = stack[sindex];
-
-#if 0			      
-			      /*! find best split */
-			      struct BinMapping binMapping;
-
-			      const uint items = getNumPrims(&current.binBounds);
-			      const uint start = current.binBounds.start;
-			      const uint end   = current.binBounds.end;
-	  
-			      /*! create a leaf node when #items < threshold */
-			      if (items <= cfg_minLeafSize)
-				{
-				  if (subgroupLocalID == 0)
-				    {
-				      //printf("items %d start %d \n",items,start);
-				      const uint leaf_offset = subgroup_createLeaf_index(globals,
-											 start,
-											 start + items,
-											 primref,
-											 primref_index0,
-											 bvh_mem);		  
-				      *current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,leaf_offset);
-				    }
-				}
-			      else
-				{	  
-				  uint numChildren = 2;
-				  struct BuildRecord *children = &stack[sindex];
-				  initBinMapping(&binMapping,&current.binBounds.centroidBounds,BINS);
-
-				  serial_find_split(primref,&binMapping,&current.binBounds,&split,&binInfo,primref_index0,primref_index1);
-				  split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,current.binBounds.start,current.binBounds.end);	      
-	      
-				  serial_partition_index(primref,&binMapping,&current.binBounds,&split,&children[0].binBounds,&children[1].binBounds,&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1);
-	      
-				  while (numChildren < BVH_NODE_N)
-				    {
-				      /*! find best child to split */
-				      float bestArea = -(float)INFINITY;
-				      int bestChild = -1;
-				      for (int i=0; i<numChildren; i++)
-					{
-					  /* ignore leaves as they cannot get split */
-					  if (getNumPrims(&children[i].binBounds) <= cfg_minLeafSize) continue;
-
-					  /* find child with largest surface area */
-					  if (halfArea(&childrenAABB[i]) > bestArea) {
-					    bestChild = i;
-					    bestArea = halfArea(&childrenAABB[i]);
-					  }
-					}
-				      if (bestChild == -1) break;
-
-				      /* perform best found split */
-				      brecord = children[bestChild];
-				      struct BuildRecord *lrecord = &children[bestChild];
-				      struct BuildRecord *rrecord = &children[numChildren];	
-
-				      initBinMapping(&binMapping,&brecord.binBounds.centroidBounds,BINS);
-				      serial_find_split(primref,&binMapping,&brecord.binBounds,&split,&binInfo,primref_index0,primref_index1);
-				      split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,brecord.binBounds.start,brecord.binBounds.end);
-
-				      DBG(printf("split sah %f dim %d pos %d \n",split.sah,split.dim,split.pos));
-
-				      serial_partition_index(primref,&binMapping,&brecord.binBounds,&split,&lrecord->binBounds,&rrecord->binBounds,&childrenAABB[bestChild],&childrenAABB[numChildren],primref_index0,primref_index1);
-
-				      numChildren++;
-				    }
-
-				  /* sort children based on range size */
-				  const uint numPrimsIDs = select((uint)0,(as_uint(childrenAABB[subgroupLocalID].upper.w) << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
-				  const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
-
-				  uint node_offset = subgroup_createNode(globals,IDs,childrenAABB,numChildren,bvh_mem);
-	  
-				  /* set parent pointer in child build records */
-				  global struct BVHNodeN *node = (global struct BVHNodeN*)(bvh_mem + node_offset);
-				  if (subgroupLocalID < numChildren)
-				    {
-				      children[IDs].binBounds.parent = ((global uint *)&node->offset) + subgroupLocalID;
-				    }
-
-				  /* update parent pointer */
-				  *current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,node_offset);
-
-				  sindex += numChildren;
-				}
-#endif			      
-			    }
-			  
-			}
-#endif		      
+			bvh_build_serial(record[recordID],bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,split,childrenAABB.get_pointer(),stack.get_pointer());
 		    });
 		});
 	      queue_event.wait();

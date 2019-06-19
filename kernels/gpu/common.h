@@ -48,6 +48,11 @@ float atomic_max(volatile float *p, float val) { return val; };
 
 #endif
 
+constexpr cl::sycl::access::target sycl_local    = cl::sycl::access::target::local;
+constexpr cl::sycl::access::mode sycl_read_write = cl::sycl::access::mode::read_write;
+constexpr cl::sycl::access::mode sycl_read       = cl::sycl::access::mode::read;
+constexpr cl::sycl::access::mode sycl_write      = cl::sycl::access::mode::write;
+
 namespace embree
 {
   namespace gpu
