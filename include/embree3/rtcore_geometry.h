@@ -203,6 +203,8 @@ RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 /* Gets the user-defined data pointer of the geometry. */
 RTC_API void* rtcGetGeometryUserData(RTCGeometry geometry);
 
+/* Set the point query callback function of a geometry. */
+RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQueryFunction pointQuery);
 
 /* Sets the number of primitives of a user geometry. */
 RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);

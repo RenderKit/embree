@@ -51,6 +51,11 @@ namespace embree
         const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
         return pre.intersect(ray,v0,v1,v2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
+      }
     };
     
     /*! Intersects M motion blur triangles with K rays. */
@@ -93,7 +98,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri)
       {
@@ -144,6 +149,11 @@ namespace embree
         const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
         const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
         return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
+      }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
       }
     };
     

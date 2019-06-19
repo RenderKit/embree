@@ -63,7 +63,7 @@ namespace embree
       state(MODIFIED),
       numPrimitivesChanged(false),
       enabled(true),
-      intersectionFilterN(nullptr), occlusionFilterN(nullptr)
+      intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
   {
     device->refInc();
   }
@@ -226,6 +226,15 @@ namespace embree
     }
     occlusionFilterN = filter;
   }
+  
+  void Geometry::setPointQueryFunction (RTCPointQueryFunction func) 
+  {
+    // TODO: PointQuery test if all these primitve types work
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"point query functions not supported for this geometry"); 
+
+    pointQueryFunc = func;
+  }
 
   void Geometry::interpolateN(const RTCInterpolateNArguments* const args)
   {
@@ -297,6 +306,34 @@ namespace embree
           ddPdvdv[j*N+i] = ddPdvdvt[j];
           ddPdudv[j*N+i] = ddPdudvt[j];
         }
+      }
+    }
+  }
+    
+  void Geometry::pointQuery(PointQuery* query, PointQueryContext* context)
+  {
+    assert(context->primID < size());
+   
+    RTCPointQueryFunctionArguments args;
+    args.query           = (RTCPointQuery*)context->query_ws;
+    args.userPtr         = context->userPtr;
+    args.primID          = context->primID;
+    args.geomID          = context->geomID;
+    args.instStack       = (RTCPointQueryInstanceStack*)context->instStack;
+    args.similarityScale = context->similarityScale;
+    
+    bool update = false;
+    if(context->func)  update |= context->func(&args);
+    if(pointQueryFunc) update |= pointQueryFunc(&args);
+
+    if (update && context->instStack->size > 0) 
+    {
+      // update point query
+      if (context->query_type == POINT_QUERY_TYPE_AABB) {
+        context->updateAABB();
+      } else {
+        assert(context->similarityScale > 0.f);
+        query->radius = context->query_ws->radius * context->similarityScale;
       }
     }
   }

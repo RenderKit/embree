@@ -19,11 +19,13 @@
 #include "default.h"
 #include "device.h"
 #include "buffer.h"
+#include "../common/point_query.h"
 #include "../builders/priminfo.h"
 
 namespace embree
 {
   class Scene;
+  class Geometry;
 
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
@@ -281,6 +283,9 @@ namespace embree
     /*! interpolates user data to the specified u/v locations */
     virtual void interpolateN(const RTCInterpolateNArguments* const args);
 
+    /* point query api */
+    void pointQuery(PointQuery* query, PointQueryContext* context);
+
     /*! for subdivision surfaces only */
   public:
     virtual void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode) {
@@ -376,6 +381,9 @@ namespace embree
     virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded) { 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
+    
+    /*! Set point query function. */
+    void setPointQueryFunction(RTCPointQueryFunction func);
 
     /*! returns number of time segments */
     __forceinline unsigned numTimeSegments () const {
@@ -463,5 +471,6 @@ namespace embree
        
     RTCFilterFunctionN intersectionFilterN;
     RTCFilterFunctionN occlusionFilterN;
+    RTCPointQueryFunction pointQueryFunc;
   };
 }

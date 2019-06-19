@@ -14,44 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "../common/default.h"
-#include "../common/scene.h"
-#include "../../common/simd/simd.h"
-#include "../common/primref.h"
-#include "../common/primref_mb.h"
+#include "../common/tutorial/tutorial.h"
 
 namespace embree
 {
-  struct PrimitiveType
-  {
-    /*! returns name of this primitive type */
-    virtual const char* name() const = 0;
-    
-    /*! Returns the number of stored active primitives in a block. */
-    virtual size_t sizeActive(const char* This) const = 0;
+  typedef void (*DrawGUI)(void);
 
-    /*! Returns the number of stored active and inactive primitives in a block. */
-    virtual size_t sizeTotal(const char* This) const = 0;
+  extern "C" {
+    int g_num_points = 128;
+    int g_num_knn = 4;
+    bool g_show_voronoi = true;
+    bool g_point_repulsion = false;
+    float g_tmax = inf;
+    DrawGUI g_drawGUI = nullptr;
+  }
 
-    /*! Returns the number of bytes of block. */
-    virtual size_t getBytes(const char* This) const = 0;
-  };
-  
-  template<typename Primitive>
-  struct PrimitivePointQuery1
+  struct Tutorial : public TutorialApplication 
   {
-    static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
+    Tutorial()
+      : TutorialApplication("voronoi", FEATURE_RTCORE | FEATURE_STREAM) 
+    { }
+
+    void drawGUI() override
     {
-      for (size_t i = 0; i < Primitive::max_size(); i++)
-      {
-        if (!prim.valid(i)) break;
-        AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID(i));
-        context->geomID = prim.geomID(i);
-        context->primID = prim.primID(i);
-        accel->pointQuery(query, context);
-      }
+      ImGui::SliderInt ("Number of points", &g_num_points, 4, 4096);
+      if (g_drawGUI)
+        g_drawGUI();
     }
   };
+
+}
+
+int main(int argc, char** argv) {
+  return embree::Tutorial().main(argc,argv);
 }

@@ -45,6 +45,11 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         return pre.intersect(ray,tri.v0,tri.v1,tri.v2,/*UVIdentity<Mx>(),*/Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
+      }
     };
 
 
@@ -67,6 +72,11 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         return intersec::intersect(ray,pre,tri.v0,tri.v1,tri.v2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
+      }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
       }
     };
 
@@ -109,7 +119,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
       {
@@ -144,6 +154,11 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
+      }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
       }
     };
 
@@ -185,7 +200,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& tri)
       {

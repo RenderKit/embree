@@ -55,6 +55,13 @@ namespace embree
         return SphereIntersector1<Mx>::intersect(
             valid, ray, pre, v0, Occluded1EpilogM<M, Mx, filter>(ray, context, sphere.geomID(), sphere.primID()));
       }
+      
+      static __forceinline void pointQuery(PointQuery* query,
+                                           PointQueryContext* context,
+                                           const Primitive& sphere)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
+      }
     };
 
     template<int M, int Mx, bool filter>
@@ -87,6 +94,13 @@ namespace embree
         const vbool<Mx> valid = sphere.template valid<Mx>();
         return SphereIntersector1<Mx>::intersect(
             valid, ray, pre, v0, Occluded1EpilogM<M, Mx, filter>(ray, context, sphere.geomID(), sphere.primID()));
+      }
+
+      static __forceinline void pointQuery(PointQuery* query,
+                                           PointQueryContext* context,
+                                           const Primitive& sphere)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
       }
     };
 

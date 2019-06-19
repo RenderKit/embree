@@ -207,13 +207,15 @@ void renderTileStandard(int taskIndex,
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
+#if defined(EMBREE_DPCPP_SUPPORT)
+  
   /* init embree GPU device */
   g_device = rtcNewDeviceGPU(cfg);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
-  
+#endif  
 }
 
 /* called by the C++ code to render */

@@ -34,9 +34,9 @@ namespace embree
 
       AABB() = default;
 
-      //AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
+      AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
 
-      //AABB(const cl::sycl::float4 &v) : lower(v),upper(v) {}
+      AABB(const cl::sycl::float4 &v) : lower(v),upper(v) {}
       
       inline void init()
       {
@@ -157,7 +157,7 @@ namespace embree
       
       inline void print()
       {
-	printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z());	
+	DBG_PRINT(printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z()));	
       }
     };
   };

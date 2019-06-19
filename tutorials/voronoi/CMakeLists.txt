@@ -14,6 +14,12 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-set(CTEST_PROJECT_NAME "Embree")
-set(CTEST_NIGHTLY_START_TIME "22:00:00 UTC")
-set(TEST_MODELS_HASH a5736fc55fe9b8cfe2b34e6f49b236896242801a)
+INCLUDE(tutorial)
+ADD_TUTORIAL(voronoi)
+ADD_TUTORIAL_ISPC(voronoi)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_EMBREE_TEST(voronoi)
+ENDIF()
+
+

@@ -116,7 +116,7 @@ ELSE()
   ENDIF()
 
   IF (EMBREE_DPCPP_SUPPORT)
-   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -fsycl") # disable DPC++ warnings    
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -fsycl") # disable DPC++ warnings    
     
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEMBREE_DPCPP_SUPPORT")      # enable DPC++ code in Embree
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lOpenCL -lsycl")     # link against DPC++ libs

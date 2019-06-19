@@ -702,7 +702,9 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseGeometry(gmesh.geom);
+  alignedFree(gmesh.normals);
+  rtcReleaseGeometry (gmesh.geom);
+  rtcReleaseGeometry (gmesh.geomNormals);
   rtcReleaseScene (g_scene); g_scene = nullptr;
 }
 

@@ -61,6 +61,14 @@ namespace embree
         return ray.tfar < 0.0f;
       }
       
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
+      {
+        AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID());
+        context->geomID = prim.geomID();
+        context->primID = prim.primID();
+        accel->pointQuery(query, context);
+      }
+      
       template<int K>
       static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
       {
@@ -110,7 +118,7 @@ namespace embree
         accel->occluded(valid,ray,prim.primID(),context,&reportOcclusion1);
         return ray.tfar < 0.0f;
       }
-
+      
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
         intersect(vbool<K>(1<<int(k)),pre,ray,context,prim);
       }

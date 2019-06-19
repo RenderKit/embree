@@ -1085,6 +1085,8 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
+    if (all(__mask == 0)) continue;
+
     /* calculate pixel color */
     Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 

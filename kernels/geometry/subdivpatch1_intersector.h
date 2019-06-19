@@ -80,6 +80,17 @@ namespace embree
       static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravRay<N,Nx,robust> &tray, size_t& lazy_node) {
         return occluded(This,pre,ray,context,prim,ty,tray,lazy_node);
       }
+      
+      template<int N>
+        static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
+      {
+          assert(false && "not implemented");
+      }
+
+      template<int N>
+      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
+        pointQuery(This,query,context,prim,ty,tquery,lazy_node);
+      }
     };
 
     class SubdivPatch1MBIntersector1
@@ -123,6 +134,17 @@ namespace embree
       template<int N, int Nx, bool robust>
       static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravRay<N,Nx,robust> &tray, size_t& lazy_node) {
         return occluded(This,pre,ray,context,prim,ty,tray,lazy_node);
+      }
+      
+      template<int N>
+        static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
+      {
+          assert(false && "not implemented");
+      }
+
+      template<int N, int Nx, bool robust>
+      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
+        pointQuery(This,query,context,prim,ty,tquery,lazy_node);
       }
     };
 
@@ -201,7 +223,7 @@ namespace embree
         if (likely(ty == 0)) return GridSOAMBIntersectorK<K>::occluded(valid,pre,ray,context,prim,lazy_node);
         else                 return processLazyNode(pre,context,prim,lazy_node);
       }
-
+      
       template<int N, int Nx, bool robust>      
       static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {

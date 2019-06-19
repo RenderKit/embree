@@ -165,6 +165,20 @@ See tutorial [Triangle Geometry] for a complete example of how to
 trace single rays and ray packets. Also have a look at the tutorial
 [Stream Viewer] for an example of how to trace ray streams.
 
+Point Queries
+-----------
+
+The API supports traversal of the BVH using a point query object that
+specifies a location and a query radius. For all primitives intersecting the
+according domain, a user defined callback function is called which allows
+queries such as finding the closest point on the surface geometries of the
+scene (see Tutorial [ClosestPoint]) or nearest neighbour queries (see
+Tutorial [Voronoi]).
+
+See Section [rtcPointQuery] for a detailed description of how to set up
+point queries.
+
+
 Miscellaneous
 -------------
 
@@ -754,6 +768,10 @@ Embree API Reference
 ```
 \pagebreak
 
+## rtcSetGeometryPointQueryFunction
+``` {include=src/api/rtcSetGeometryPointQueryFunction.md}
+```
+\pagebreak
 
 ## rtcSetGeometryInstancedScene
 ``` {include=src/api/rtcSetGeometryInstancedScene.md}
@@ -950,6 +968,16 @@ Embree API Reference
 ## rtcOccludedNp
 ``` {include=src/api/rtcOccludedNp.md}
 ```
+\pagebreak
+
+## rtcInitPointQueryInstanceStack
+``` {include=src/api/rtcInitPointQueryInstanceStack.md}
+```
+\pagebreak
+## rtcPointQuery
+``` {include=src/api/rtcPointQuery.md}
+```
+
 \pagebreak
 
 ## rtcNewBVH

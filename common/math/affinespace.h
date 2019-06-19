@@ -166,6 +166,33 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /*! Template Specialization for 2D: return matrix for rotation around point (rotation around arbitrarty vector is not meaningful in 2D) */
   template<> __forceinline AffineSpace2f AffineSpace2f::rotate(const Vec2f& p, const float& r) { return translate(+p) * AffineSpace2f(LinearSpace2f::rotate(r)) * translate(-p); }
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // Similarity Transform
+  //
+  // checks, if M is a similarity transformation, i.e if there exists a factor D
+  // such that for all x,y: distance(Mx, My) = D * distance(x, y) 
+  ////////////////////////////////////////////////////////////////////////////////
+  __forceinline bool similarityTransform(const AffineSpace3fa& M, float* D)
+  {
+    if (D) *D = 0.f;
+    if (abs(dot(M.l.vx, M.l.vy)) > 1e-5f) return false;
+    if (abs(dot(M.l.vx, M.l.vz)) > 1e-5f) return false;
+    if (abs(dot(M.l.vy, M.l.vz)) > 1e-5f) return false;
+
+    const float D_x = dot(M.l.vx, M.l.vx);
+    const float D_y = dot(M.l.vy, M.l.vy);
+    const float D_z = dot(M.l.vz, M.l.vz);
+
+    if (abs(D_x - D_y) > 1e-5f || 
+        abs(D_x - D_z) > 1e-5f || 
+        abs(D_y - D_z) > 1e-5f)
+      return false;
+
+    if (D) *D = sqrtf(D_x);
+    return true;
+  }
+    
 
   #undef VectorT
   #undef ScalarT

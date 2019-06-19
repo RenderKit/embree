@@ -45,6 +45,11 @@ namespace embree
         const vbool<Mx> valid = line.template valid<Mx>();
         return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
+      }
     };
 
     template<int M, int Mx, bool filter>
@@ -67,6 +72,11 @@ namespace embree
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
         return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+      }
+      
+      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
+      {
+        PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
       }
     };
 

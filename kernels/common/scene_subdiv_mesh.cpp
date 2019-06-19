@@ -23,6 +23,9 @@
 #include "../../common/algorithms/parallel_prefix_sum.h"
 #include "../../common/algorithms/parallel_for.h"
 
+/*! maximum number of user vertex buffers for subdivision surfaces */
+#define RTC_MAX_USER_VERTEX_BUFFERS 65536
+
 namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)

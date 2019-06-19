@@ -213,5 +213,89 @@ namespace embree
         }
       }
     }
+
+    template<int N, int types, bool robust, typename PrimitiveIntersector1>
+    void BVHNIntersector1<N, types, robust, PrimitiveIntersector1>::pointQuery(const Accel::Intersectors* This, 
+                                                                               PointQuery* query, 
+                                                                               PointQueryContext* context)
+    {
+      const BVH* __restrict__ bvh = (const BVH*)This->ptr;
+      
+      /* we may traverse an empty BVH in case all geometry was invalid */
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
+      /* stack state */
+      StackItemT<NodeRef> stack[stackSize];    // stack of nodes
+      StackItemT<NodeRef>* stackPtr = stack+1; // current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack+stackSize;
+      stack[0].ptr  = bvh->root;
+      stack[0].dist = neg_inf;
+      
+      if (bvh->root == BVH::emptyNode)
+        return;
+      
+      /* verify correct input */
+      assert(!(types & BVH_MB) || (query->time >= 0.0f && query->time <= 1.0f));
+
+      /* load the point query into SIMD registers */
+      TravPointQuery<N> tquery(query->p, context->query_radius);
+
+      /* initialize the node traverser */
+      BVHNNodeTraverser1Hit<N, N, types> nodeTraverser;
+
+      /* pop loop */
+      while (true) pop:
+      {
+        /* pop next node */
+        if (unlikely(stackPtr == stack)) break;
+        stackPtr--;
+        NodeRef cur = NodeRef(stackPtr->ptr);
+
+        /* if popped node is too far, pop next one */
+        const float cull_radius = context->query_type == POINT_QUERY_TYPE_SPHERE
+                                ? query->radius * query->radius
+                                : dot(context->query_radius, context->query_radius);
+        if (unlikely(*(float*)&stackPtr->dist > cull_radius))
+          continue;
+
+        /* downtraversal loop */
+        while (true)
+        {
+          /* intersect node */
+          size_t mask; vfloat<N> tNear;
+          STAT3(normal.trav_nodes,1,1,1);
+          bool nodeIntersected;
+          if (likely(context->query_type == POINT_QUERY_TYPE_SPHERE)) {
+            nodeIntersected = BVHNNodePointQuerySphere1<N, types>::pointQuery(cur, tquery, query->time, tNear, mask);
+          } else {
+            nodeIntersected = BVHNNodePointQueryAABB1  <N, types>::pointQuery(cur, tquery, query->time, tNear, mask);
+          }
+          if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
+
+          /* if no child is hit, pop next node */
+          if (unlikely(mask == 0))
+            goto pop;
+
+          /* select next child and push other children */
+          nodeTraverser.traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
+        }
+
+        /* this is a leaf node */
+        assert(cur != BVH::emptyNode);
+        STAT3(normal.trav_leaves,1,1,1);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+        size_t lazy_node = 0;
+        PrimitiveIntersector1::pointQuery(This, query, context, prim, num, tquery, lazy_node);
+        tquery.rad = context->query_radius;
+
+        /* push lazy node onto stack */
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = neg_inf;
+          stackPtr++;
+        }
+      }
+    }
   }
 }

@@ -696,6 +696,8 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  delete gmesh.normals;
   rtcReleaseGeometry(gmesh.geom);
+  rtcReleaseGeometry(gmesh.geomNormals);
   rtcReleaseScene (g_scene); g_scene = NULL;
 }
