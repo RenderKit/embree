@@ -19,8 +19,6 @@
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-#define DBG_PRINT(x) x
-
 #include <CL/sycl.hpp>
 
 #ifdef __SYCL_DEVICE_ONLY__

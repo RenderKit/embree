@@ -157,7 +157,7 @@ namespace embree
       
       inline void print()
       {
-	DBG_PRINT(printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z()));	
+	printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z());	
       }
     };
   };

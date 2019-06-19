@@ -203,7 +203,13 @@ namespace embree
 	centroidBounds.extend(primref.centroid2());
       }
 
-      inline unsigned int size() { return end - start; } 
+      inline unsigned int size() { return end - start; }
+
+      inline void print()
+      {
+	printf("buildrecord: start %d end %d current %p \n",start,end,current);
+	centroidBounds.print();
+      }
     };
 
     struct BinaryMortonCodeHierarchy
@@ -247,6 +253,7 @@ namespace embree
       struct AABB3f boundsY[BINS];
       struct AABB3f boundsZ[BINS];
       cl::sycl::uint3 counts[BINS];
+      
     };
 
     struct BinInfo2 {
