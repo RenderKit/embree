@@ -20,13 +20,7 @@
 RTC_NAMESPACE_OPEN
 
 namespace embree
-{
-/*! maximum number of user vertex buffers */
-#define RTC_MAX_USER_VERTEX_BUFFERS 65536
-
-/*! maximum number of index buffers for subdivision surfaces */
-#define RTC_MAX_INDEX_BUFFERS 65536
-
+{  
   /*! decoding of intersection flags */
   __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_COHERENT; }
   __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT; }
