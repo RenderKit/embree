@@ -24,8 +24,17 @@
 #include "AABB.h"
 #include "AABB3f.h"
 
-#define BUILDRECORD_STACK_SIZE 48
+#define BUILDRECORD_STACK_SIZE 64
 #define BINS 16
+
+#define BVH_LEAF_MASK       8
+#define BVH_INVALID_NODE    3
+#define BVH_NODE_N           16
+#define BVH_NODE_N_LOG       4
+#define SAH_LOG_BLOCK_SHIFT  2
+#define BVH_LEAF_N_MIN       4
+#define BVH_LEAF_N_MAX       4
+
 
 namespace embree
 {
@@ -263,6 +272,26 @@ namespace embree
       cl::sycl::uint3 counts[BINS*2];
     };
 
+    inline uint encodeOffset(char *bvh_mem, uint *parent, uint global_child_offset)
+    {
+      ulong global_parent_offset = (ulong)parent - (ulong)bvh_mem;
+      global_parent_offset = global_parent_offset & (~(64-1));
+      uint relative_offset = global_child_offset - global_parent_offset;
+      return relative_offset;
+    }
+
+    inline uint createLeaf(struct Globals *globals,		 
+			   const uint start,
+			   const uint end,
+			   const uint stride)
+    {
+      const uint items  = end - start;
+      const uint offset = globals->leaf_mem_allocator[1] + start * stride;
+      const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
+      return final;
+    }
+
+    
   };
 };
 
