@@ -34,6 +34,53 @@
 
 namespace embree
 {
+
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref)
+{
+#if 0  
+  const float4 lower = primref->lower;
+  const float4 upper = primref->upper;
+  const float4 p = lower+upper;
+  const uint4 i = convert_uint4((p-binMapping->ofs)*binMapping->scale);
+  atomicUpdateLocalAABB3f_nocheck(&binInfo->boundsX[i.x],lower,upper);
+  atomicUpdateLocalAABB3f_nocheck(&binInfo->boundsY[i.y],lower,upper);
+  atomicUpdateLocalAABB3f_nocheck(&binInfo->boundsZ[i.z],lower,upper);
+  atomic_add((local uint*)&binInfo->counts[i.x] + 0,1);
+  atomic_add((local uint*)&binInfo->counts[i.y] + 1,1);
+  atomic_add((local uint*)&binInfo->counts[i.z] + 2,1);
+#endif    
+}
+  
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void serial_find_split(const gpu::BuildRecord &record,
+									      const gpu::AABB *const primref,
+									      gpu::BinMapping &binMapping,			      
+									      gpu::Split &split,
+									      gpu::BinInfo &binInfo,
+									      uint *primref_index0,
+									      uint *primref_index1,
+									      const cl::sycl::intel::sub_group &subgroup)
+{
+  const uint startID = record.start;
+  const uint endID   = record.end;
+  
+  binInfo.init(subgroup);
+
+  const uint subgroupLocalID = subgroup.get_local_id()[0];
+  const uint subgroupSize    = subgroup.get_local_range().size();
+
+  for (uint t=startID+subgroupLocalID;t<endID;t+=subgroupSize)
+    {
+      const uint index = primref_index0[t];
+      primref_index1[t] = index;
+      atomicUpdateLocalBinInfo(binMapping,binInfo,primref[index]);      
+    }
+}
+
+  /* ======================================== */  
+  /* === build bvh for single buildrecord === */
+  /* ======================================== */
+  
+     
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_serial(gpu::BuildRecord &record,
 									     const gpu::Globals &globals,									     
 									     char *bvh_mem,
@@ -60,7 +107,7 @@ namespace embree
 	/* next element from stack */
 	sindex--;      
 	current = stack[sindex];
-	struct gpu::BinMapping binMapping;
+	gpu::BinMapping binMapping;
 
 	const uint items = current.size();
 	  
@@ -79,9 +126,10 @@ namespace embree
 		uint numChildren = 2;
 		struct gpu::BuildRecord *children = &stack[sindex];
 		binMapping.init(current.centroidBounds,BINS);
+		serial_find_split(current,primref,binMapping,split,binInfo,primref_index0,primref_index1,subgroup);
+
 #if 0			      
 		
-		serial_find_split(primref,&binMapping,&current.binBounds,&split,&binInfo,primref_index0,primref_index1);
 		split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,current.binBounds.start,current.binBounds.end);	      
 	      
 		serial_partition_index(primref,&binMapping,&current.binBounds,&split,&children[0].binBounds,&children[1].binBounds,&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1);

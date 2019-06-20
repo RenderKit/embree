@@ -79,6 +79,17 @@ namespace embree
 	atomic_max(((volatile GLOBAL float *)dest) + 5,upper.y());
 	atomic_max(((volatile GLOBAL float *)dest) + 6,upper.z());	
       }
+
+      inline void atomic_merge_local(AABB3f *dest)
+      {
+	atomic_min(((volatile LOCAL float *)dest) + 0,lower.x());
+	atomic_min(((volatile LOCAL float *)dest) + 1,lower.y());
+	atomic_min(((volatile LOCAL float *)dest) + 2,lower.z());
+
+	atomic_max(((volatile LOCAL float *)dest) + 4,upper.x());
+	atomic_max(((volatile LOCAL float *)dest) + 5,upper.y());
+	atomic_max(((volatile LOCAL float *)dest) + 6,upper.z());	
+      }
       
       static inline AABB3f sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB3f &aabb)
       {

@@ -272,6 +272,29 @@ namespace embree
       struct AABB3f boundsY[BINS];
       struct AABB3f boundsZ[BINS];
       cl::sycl::uint3 counts[BINS];
+
+      inline void init()
+      {
+	for (uint i=0;i<BINS;i++)
+	  {
+	    boundsX[i].init();
+	    boundsY[i].init();
+	    boundsZ[i].init();
+	    counts[i] = (cl::sycl::uint3)(0);
+	  }	
+      }
+
+      inline void init(const cl::sycl::intel::sub_group &subgroup)
+      {
+	printf("subgroup.get_local_range().size() %d \n",(uint)subgroup.get_local_range().size());
+	for (uint i=subgroup.get_local_id()[0];i<BINS;i+=subgroup.get_local_range().size())
+	  {
+	    boundsX[i].init();
+	    boundsY[i].init();
+	    boundsZ[i].init();
+	    counts[i] = (cl::sycl::uint3)(0);
+	  }	
+      }
       
     };
 
