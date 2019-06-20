@@ -35,6 +35,7 @@
 namespace embree
 {
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_serial(gpu::BuildRecord &record,
+									     const gpu::Globals &globals,									     
 									     char *bvh_mem,
 									     const gpu::AABB *const primref,
 									     uint *primref_index0,
@@ -61,36 +62,25 @@ namespace embree
 	current = stack[sindex];
 	struct gpu::BinMapping binMapping;
 
-#if 0			      
-	    /*! find best split */
-
+	const uint items = current.size();
 	  
 	    /*! create a leaf node when #items < threshold */
 	    if (items <= cfg_minLeafSize)
 	      {
-
-		const uint items = getNumPrims(&current.binBounds);
-		const uint start = current.binBounds.start;
-		const uint end   = current.binBounds.end;
-		
-		if (subgroupLocalID == 0)
+		if (subgroup.get_local_id() == 0)
 		  {
-		    //printf("items %d start %d \n",items,start);
-		    const uint leaf_offset = subgroup_createLeaf_index(globals,
-								       start,
-								       start + items,
-								       primref,
-								       primref_index0,
-								       bvh_mem);		  
-		    *current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,leaf_offset);
+		    const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1));  
+		    *current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);
 		  }
 	      }
 	    else
-	      {	  
+	      {
+		
 		uint numChildren = 2;
-		struct BuildRecord *children = &stack[sindex];
-		initBinMapping(&binMapping,&current.binBounds.centroidBounds,BINS);
-
+		struct gpu::BuildRecord *children = &stack[sindex];
+		binMapping.init(current.centroidBounds,BINS);
+#if 0			      
+		
 		serial_find_split(primref,&binMapping,&current.binBounds,&split,&binInfo,primref_index0,primref_index1);
 		split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,current.binBounds.start,current.binBounds.end);	      
 	      
@@ -147,8 +137,9 @@ namespace embree
 		*current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,node_offset);
 
 		sindex += numChildren;
-	      }
 #endif			      
+		
+	      }
 	  }
 			      
   }
@@ -329,9 +320,7 @@ namespace embree
 
 		  cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> stack(cl::sycl::range<1>(BUILDRECORD_STACK_SIZE),cgh);
 		  
-		  
-		  
-		  //private struct BuildRecord stack
+		  		  
 		  cgh.parallel_for<class serial_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		      const uint groupID   = item.get_group(0);
 		      const uint numGroups = item.get_group_range(0);
@@ -349,7 +338,7 @@ namespace embree
 		      const uint numRecords = globals->numBuildRecords;
 
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
-			bvh_build_serial(record[recordID],bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,split,childrenAABB.get_pointer(),stack.get_pointer(),subgroup);
+			bvh_build_serial(record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,split,childrenAABB.get_pointer(),stack.get_pointer(),subgroup);
 		    });
 		});
 	      queue_event.wait();

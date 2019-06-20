@@ -197,14 +197,14 @@ namespace embree
     {
       struct AABB centroidBounds;
       unsigned int start, end;
-      void *current;
+      uint *parent;
 
       inline void init(unsigned int _start, unsigned int _end, AABB &bounds)
       {
 	centroidBounds = bounds;
 	start = _start;
 	end   = _end;
-	current = NULL;	
+	parent = NULL;	
       }
 
       inline void extend(AABB &primref)
@@ -216,7 +216,7 @@ namespace embree
 
       inline void print()
       {
-	printf("buildrecord: start %d end %d size %d current %p \n",start,end,size(),current);
+	printf("buildrecord: start %d end %d size %d parent %p \n",start,end,size(),parent);
 	centroidBounds.print();
       }
     };
@@ -255,6 +255,16 @@ namespace embree
     struct BinMapping
     {
       cl::sycl::float4 ofs, scale;
+
+      inline void init(const AABB &centBounds, const uint bins)
+      {
+	const cl::sycl::float4 eps(1E-34f);
+	const cl::sycl::float4 diag = max(eps, centBounds.upper - centBounds.lower);
+	scale = (cl::sycl::float4)(0.99f*(float)bins)/diag;
+	scale = select((cl::sycl::float4)(0.0f), scale, (diag > eps));
+	ofs  = centBounds.lower;
+      }
+
     };
 
     struct BinInfo {
@@ -280,17 +290,20 @@ namespace embree
       return relative_offset;
     }
 
-    inline uint createLeaf(struct Globals *globals,		 
+    inline uint createLeaf(const Globals &globals,		 
 			   const uint start,
-			   const uint end,
+			   const uint items,
 			   const uint stride)
     {
-      const uint items  = end - start;
-      const uint offset = globals->leaf_mem_allocator[1] + start * stride;
+      const uint offset = globals.leaf_mem_allocator[1] + start * stride;
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
       return final;
     }
 
+    struct Quad1
+    {
+      cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
+    };
     
   };
 };
