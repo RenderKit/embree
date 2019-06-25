@@ -37,14 +37,27 @@ namespace embree
 
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref)
 {
-#if 0  
-  const float4 lower = primref->lower;
-  const float4 upper = primref->upper;
-  const float4 p = lower+upper;
-  const uint4 i = convert_uint4((p-binMapping->ofs)*binMapping->scale);
-  atomicUpdateLocalAABB3f_nocheck(&binInfo->boundsX[i.x],lower,upper);
-  atomicUpdateLocalAABB3f_nocheck(&binInfo->boundsY[i.y],lower,upper);
-  atomicUpdateLocalAABB3f_nocheck(&binInfo->boundsZ[i.z],lower,upper);
+  const cl::sycl::float4 p = primref.centroid2();
+  const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
+  cl::sycl::uint4 i;
+  i.x() = (uint)bin4.x();
+  i.y() = (uint)bin4.y();
+  i.z() = (uint)bin4.z();
+  //i.x() = bin4.x().convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+
+  assert(i.x() < BINS);
+  assert(i.y() < BINS);
+  assert(i.z() < BINS);
+  
+  gpu::AABB3f bounds = convert_AABB3f(primref);
+  bounds.atomic_merge_local(binInfo.boundsX[i.x()]);
+  bounds.atomic_merge_local(binInfo.boundsX[i.y()]);
+  bounds.atomic_merge_local(binInfo.boundsX[i.z()]);
+
+  gpu::atomic_add_uint<cl::sycl::access::address_space::global_space>((uint *)&binInfo.counts[i.x()] + 0,1);
+      
+#if 0
+  
   atomic_add((local uint*)&binInfo->counts[i.x] + 0,1);
   atomic_add((local uint*)&binInfo->counts[i.y] + 1,1);
   atomic_add((local uint*)&binInfo->counts[i.z] + 2,1);
@@ -322,8 +335,8 @@ namespace embree
 						       gpu::AABB reduced_geometry_aabb = gpu::AABB::work_group_reduce(aabb_geom);
 						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid);						       
 						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
-						       reduced_geometry_aabb.atomic_merge_global(&ptr.get()->geometryBounds);
-						       reduced_centroid_aabb.atomic_merge_global(&ptr.get()->centroidBounds);						       
+						       reduced_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
+						       reduced_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);						       
 						     });
 		  
 		});

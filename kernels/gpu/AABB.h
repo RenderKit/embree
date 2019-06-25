@@ -64,25 +64,25 @@ namespace embree
 	upper += v;	
       }
 
-      inline cl::sycl::float4 size()
+      inline cl::sycl::float4 size() const
       {
 	return upper - lower;
       }
 
-      inline cl::sycl::float4 centroid2()
+      inline cl::sycl::float4 centroid2() const
       {
 	return upper + lower;
       }
 
-      inline void atomic_merge_global(GLOBAL AABB *dest)
+      inline void atomic_merge_global(GLOBAL AABB &dest)
       {
-	atomic_min(((volatile GLOBAL float *)dest) + 0,lower.x());
-	atomic_min(((volatile GLOBAL float *)dest) + 1,lower.y());
-	atomic_min(((volatile GLOBAL float *)dest) + 2,lower.z());
+	atomic_min(((volatile GLOBAL float *)&dest) + 0,lower.x());
+	atomic_min(((volatile GLOBAL float *)&dest) + 1,lower.y());
+	atomic_min(((volatile GLOBAL float *)&dest) + 2,lower.z());
 
-	atomic_max(((volatile GLOBAL float *)dest) + 4,upper.x());
-	atomic_max(((volatile GLOBAL float *)dest) + 5,upper.y());
-	atomic_max(((volatile GLOBAL float *)dest) + 6,upper.z());	
+	atomic_max(((volatile GLOBAL float *)&dest) + 4,upper.x());
+	atomic_max(((volatile GLOBAL float *)&dest) + 5,upper.y());
+	atomic_max(((volatile GLOBAL float *)&dest) + 6,upper.z());	
       }
       
       static inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB &aabb)

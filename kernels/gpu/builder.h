@@ -40,7 +40,7 @@ namespace embree
 {
   namespace gpu
   {
-
+    
     struct BVHBase
     {
       unsigned long rootNodeOffset; 
@@ -267,6 +267,18 @@ namespace embree
 
     };
 
+    inline AABB3f convert_AABB3f(const AABB &aabb)
+    {
+      AABB3f aabb3f;
+      aabb3f.lower.x() = aabb.lower.x();
+      aabb3f.lower.y() = aabb.lower.y();
+      aabb3f.lower.z() = aabb.lower.z();      
+      aabb3f.upper.x() = aabb.upper.x();
+      aabb3f.upper.y() = aabb.upper.y();
+      aabb3f.upper.z() = aabb.upper.z();
+      return aabb3f;
+    }
+    
     struct BinInfo {
       struct AABB3f boundsX[BINS];
       struct AABB3f boundsY[BINS];
@@ -295,6 +307,7 @@ namespace embree
 	    counts[i] = (cl::sycl::uint3)(0);
 	  }	
       }
+      
       
     };
 
@@ -327,6 +340,15 @@ namespace embree
     {
       cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
     };
+
+
+    template<cl::sycl::access::address_space space>
+    inline uint atomic_add_uint(uint *dest, const uint count=1)
+    {
+      cl::sycl::multi_ptr<unsigned int,space> ptr(dest);
+      cl::sycl::atomic<unsigned int> counter(ptr);
+      return atomic_fetch_add(counter,count);      
+    }
     
   };
 };
