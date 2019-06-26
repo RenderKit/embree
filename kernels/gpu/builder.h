@@ -15,12 +15,8 @@
 // ======================================================================== //
 #pragma once
 
-#include "../common/device.h"
-
 #if defined(EMBREE_DPCPP_SUPPORT)
-
-#include <CL/sycl.hpp>
-
+#include "../gpu/common.h"
 #include "AABB.h"
 #include "AABB3f.h"
 
@@ -270,6 +266,9 @@ namespace embree
     inline AABB3f convert_AABB3f(const AABB &aabb)
     {
       AABB3f aabb3f;
+      aabb3f.lower = aabb.lower.xyz();
+      aabb3f.upper = aabb.upper.xyz();
+      
       aabb3f.lower.x() = aabb.lower.x();
       aabb3f.lower.y() = aabb.lower.y();
       aabb3f.lower.z() = aabb.lower.z();      

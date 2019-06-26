@@ -15,13 +15,9 @@
 // ======================================================================== //
 #pragma once
 
-#include "../common/device.h"
-#include "common.h"
-
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-#include <CL/sycl.hpp>
-
+#include "../gpu/common.h"
 
 namespace embree
 {

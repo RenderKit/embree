@@ -15,10 +15,8 @@
 // ======================================================================== //
 #pragma once
 
-#include "../common/device.h"
-
 #if defined(EMBREE_DPCPP_SUPPORT)
-
+#define CL_TARGET_OPENCL_VERSION 220
 #define SYCL_SIMPLE_SWIZZLES
 #include <CL/sycl.hpp>
 
@@ -40,12 +38,12 @@ extern float atomic_max(volatile __local  float *p, float val);
 #define LOCAL 
 
 /* dummy functions for host */
-int   work_group_reduce_add(int x) { return x; }
-float work_group_reduce_min(float x) { return x; }
-float work_group_reduce_max(float x) { return x; }
+inline int   work_group_reduce_add(int x) { return x; }
+inline float work_group_reduce_min(float x) { return x; }
+inline float work_group_reduce_max(float x) { return x; }
 
-float atomic_min(volatile float *p, float val) { return val; };
-float atomic_max(volatile float *p, float val) { return val; };
+inline float atomic_min(volatile float *p, float val) { return val; };
+inline float atomic_max(volatile float *p, float val) { return val; };
 
 #endif
 
