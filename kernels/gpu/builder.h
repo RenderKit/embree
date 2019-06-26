@@ -279,9 +279,9 @@ namespace embree
     }
     
     struct BinInfo {
-      struct AABB3f boundsX[BINS];
-      struct AABB3f boundsY[BINS];
-      struct AABB3f boundsZ[BINS];
+      AABB3f boundsX[BINS];
+      AABB3f boundsY[BINS];
+      AABB3f boundsZ[BINS];
       cl::sycl::uint3 counts[BINS];
 
       inline void init()
@@ -308,96 +308,111 @@ namespace embree
       }
 
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float left_to_right_area(cl::sycl::intel::sub_group &sg, const AABB3f &low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float left_to_right_area16(cl::sycl::intel::sub_group &sg, const AABB3f &low)
       {
 	struct AABB3f low_prefix = low.sub_group_scan_exclusive_min_max(sg);
 	return low_prefix.halfArea();
       }
 
-#if 0
-      inline uint left_to_right_counts16(uint low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint left_to_right_counts16(cl::sycl::intel::sub_group &sg, uint low)
       {
-	return sub_group_scan_exclusive_add(low);
+	return sg.exclusive_scan<uint,cl::sycl::intel::plus>(low);
       }
 
-      inline float right_to_left_area16(struct AABB3f *low)
+
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float right_to_left_area16(cl::sycl::intel::sub_group &sg, const AABB3f &low)
       {
-	const uint subgroupLocalID = get_sub_group_local_id();  
-	const uint subgroup_size   = get_sub_group_size();
-	const uint ID              = subgroup_size - 1 - subgroupLocalID;  
-	struct AABB3f low_reverse  = subgroupBroadcastAABB3f(low,ID);
-	struct AABB3f low_prefix   = subgroupInclusivePrefixMinMaxAABB3f(&low_reverse);
-	const float low_area       = sub_group_broadcast(halfArea_AABB3f(&low_prefix),ID);
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();	
+	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
+	AABB3f low_reverse         = low.sub_group_broadcast(sg,ID);
+	AABB3f low_prefix          = low_reverse.sub_group_scan_inclusive_min_max(sg);
+	const float low_area       = sg.broadcast<float>(low_prefix.halfArea(),ID);
 	return low_area;
       }
 
-      inline uint right_to_left_counts16(uint low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint right_to_left_counts16(cl::sycl::intel::sub_group &sg, uint low)
       {
-	const uint subgroupLocalID = get_sub_group_local_id();  
-	const uint subgroup_size   = get_sub_group_size();
-	const uint ID = subgroup_size - 1 - subgroupLocalID;  
-	const uint low_reverse  = sub_group_broadcast(low,ID);
-	const uint low_prefix  = sub_group_scan_inclusive_add(low_reverse);
-	return sub_group_broadcast(low_prefix,ID);
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();	
+	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
+	const uint low_reverse     = sg.broadcast<uint>(low,ID);
+	const uint low_prefix      = sg.inclusive_scan<float,cl::sycl::intel::plus>(low_reverse);
+	return sg.broadcast<uint>(low_prefix,ID);
       }
-      
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(const float4 scale, const uint startID, const uint endID, const cl::sycl::intel::sub_group &subgroup)
+
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(const cl::sycl::float3 sah, uint ID, const cl::sycl::float4 scale, const ulong defaultSplit)
       {
-	const uint subgroupLocalID = subgroup.get_local_id()[0];
-	const uint subgroupSize    = subgroup.get_local_range().size();
-    
-	const struct AABB3f boundsX  = boundsX[subgroupLocalID];
+#if 0	
+	ulong splitX = (((ulong)as_uint(sah.x)) << 32) | ((uint)ID << 2) | 0;
+	ulong splitY = (((ulong)as_uint(sah.y)) << 32) | ((uint)ID << 2) | 1;
+	ulong splitZ = (((ulong)as_uint(sah.z)) << 32) | ((uint)ID << 2) | 2;
+	/* ignore zero sized dimensions */
+	splitX = select( splitX, defaultSplit, (ulong)(scale.x == 0));
+	splitY = select( splitY, defaultSplit, (ulong)(scale.y == 0));
+	splitZ = select( splitZ, defaultSplit, (ulong)(scale.z == 0));
+	ulong bestSplit = min(min(splitX,splitY),splitZ);
+	bestSplit = sub_group_reduce_min(bestSplit);
+	return bestSplit;
+#else
+	return defaultSplit;
+#endif	
+      }
 
-	const float lr_areaX = left_to_right_area16(boundsX,subgroup);
-	const float rl_areaX = right_to_left_area16(boundsX,subgroup);
-  
-	const struct AABB3f boundsY  = boundsY[subgroupLocalID];
-
-	const float lr_areaY = left_to_right_area16(boundsY,subgroup);
-	const float rl_areaY = right_to_left_area16(boundsY,subgroup);
-  
-	const struct AABB3f boundsZ  = boundsZ[subgroupLocalID];
-
-	const float lr_areaZ = left_to_right_area16(boundsZ,subgroup);
-	const float rl_areaZ = right_to_left_area16(boundsZ,subgroup);
-  
-	const uint3 counts  = counts[subgroupLocalID];
-
-	const uint lr_countsX = left_to_right_counts16(counts.x,subgroup);
-	const uint rl_countsX = right_to_left_counts16(counts.x,subgroup);
-	const uint lr_countsY = left_to_right_counts16(counts.y,subgroup);
-	const uint rl_countsY = right_to_left_counts16(counts.y,subgroup);  
-	const uint lr_countsZ = left_to_right_counts16(counts.z,subgroup);
-	const uint rl_countsZ = right_to_left_counts16(counts.z,subgroup);
+      
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const cl::sycl::float4 scale, const uint startID, const uint endID)
+      {
+	const uint subgroupLocalID = sg.get_local_id()[0];	
+	const AABB3f &bX      = boundsX[subgroupLocalID];
+	const float lr_areaX  = left_to_right_area16(sg,bX);
+	const float rl_areaX  = right_to_left_area16(sg,bX);
+	const AABB3f &bY      = boundsY[subgroupLocalID];
+	const float lr_areaY  = left_to_right_area16(sg,bY);
+	const float rl_areaY  = right_to_left_area16(sg,bY);
+	const AABB3f &bZ      = boundsZ[subgroupLocalID];
+	const float lr_areaZ  = left_to_right_area16(sg,bZ);
+	const float rl_areaZ  = right_to_left_area16(sg,bZ);
+	const cl::sycl::uint3 &c = counts[subgroupLocalID];
+	const uint lr_countsX = left_to_right_counts16(sg,c.x());
+	const uint rl_countsX = right_to_left_counts16(sg,c.x());
+	const uint lr_countsY = left_to_right_counts16(sg,c.y());
+	const uint rl_countsY = right_to_left_counts16(sg,c.y());  
+	const uint lr_countsZ = left_to_right_counts16(sg,c.z());
+	const uint rl_countsZ = right_to_left_counts16(sg,c.z());
   
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;  
-	uint3 blocks_add = (uint3)((1 << blocks_shift)-1);
+	cl::sycl::uint3 blocks_add = (cl::sycl::uint3)((1 << blocks_shift)-1);
 
-	const float3 lr_area = (float3)(lr_areaX,lr_areaY,lr_areaZ);
-	const float3 rl_area = (float3)(rl_areaX,rl_areaY,rl_areaZ);
-	const uint3 lr_count = ((uint3)(lr_countsX,lr_countsY,lr_countsZ)+blocks_add) >> blocks_shift;
-	const uint3 rl_count = ((uint3)(rl_countsX,rl_countsY,rl_countsZ)+blocks_add) >> blocks_shift;
-	float3 sah           = fma(lr_area,convert_float3(lr_count),rl_area*convert_float3(rl_count));
+	const cl::sycl::float3 lr_area = (cl::sycl::float3)(lr_areaX,lr_areaY,lr_areaZ);
+	const cl::sycl::float3 rl_area = (cl::sycl::float3)(rl_areaX,rl_areaY,rl_areaZ);
+	const cl::sycl::uint3 lr_count = ((cl::sycl::uint3)(lr_countsX,lr_countsY,lr_countsZ)+blocks_add) >> blocks_shift;
+	const cl::sycl::uint3 rl_count = ((cl::sycl::uint3)(rl_countsX,rl_countsY,rl_countsZ)+blocks_add) >> blocks_shift;
+
+	// FIXME !!!
+	const cl::sycl::float3 lr_count_f((float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z());
+	const cl::sycl::float3 rl_count_f((float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z());	
+	
+	cl::sycl::float3 sah           = fma(lr_area,lr_count_f,rl_area*rl_count_f);
 
 	/* first bin is invalid */
 
-	sah.x = select( (float)(INFINITY), sah.x, subgroupLocalID != 0);
-	sah.y = select( (float)(INFINITY), sah.y, subgroupLocalID != 0);
-	sah.z = select( (float)(INFINITY), sah.z, subgroupLocalID != 0);
+	sah.x() = select( (float)(INFINITY), sah.x(), subgroupLocalID != 0);
+	sah.y() = select( (float)(INFINITY), sah.y(), subgroupLocalID != 0);
+	sah.z() = select( (float)(INFINITY), sah.z(), subgroupLocalID != 0);
 
 	//printf("sah xyz %f blocks_shift %d \n",sah,blocks_shift);
 	const uint mid = (startID+endID)/2;
-	const ulong defaultSplit = (((ulong)as_uint((float)(INFINITY))) << 32) | ((uint)mid << 2) | 0;    
+	const uint maxSAH = 0x7F800000; //reinterpret_cast<uint>((float)(INFINITY));
+	const ulong defaultSplit = (((ulong)maxSAH) << 32) | ((uint)mid << 2) | 0;    
 	const ulong bestSplit = getBestSplit(sah, subgroupLocalID, scale, defaultSplit);
 
 	gpu::Split split;
-	split.sah = as_float((uint)(bestSplit >> 32));
+	split.sah = 0; // as_float((uint)(bestSplit >> 32)); //FIXME
 	split.dim = (uint)bestSplit & 3;
 	split.pos = (uint)bestSplit >> 2;
   
 	return split;
       }
-#endif
       
       
     };
