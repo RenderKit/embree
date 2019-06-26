@@ -68,13 +68,20 @@ namespace embree
     }
 
     template<typename T, cl::sycl::access::address_space space>
-    inline uint atomic_add(T *dest, const T count=1)
-    {
-      cl::sycl::multi_ptr<T,space> ptr(dest);
-      cl::sycl::atomic<T,space> counter(ptr);
-      return atomic_fetch_add(counter,count);      
-    }
+      static inline uint atomic_add(T *dest, const T count=1)
+      {
+	cl::sycl::multi_ptr<T,space> ptr(dest);
+	cl::sycl::atomic<T,space> counter(ptr);
+	return atomic_fetch_add(counter,count);      
+      }
 
+    template<typename T>
+      static inline uint as_uint(T t)
+      {
+	const uint &t_ref = reinterpret_cast<const uint&>(t);	
+	return t_ref;
+      }
+    
   };
 };
 

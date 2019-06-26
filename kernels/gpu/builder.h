@@ -341,22 +341,20 @@ namespace embree
 	return sg.broadcast<uint>(low_prefix,ID);
       }
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(const cl::sycl::float3 sah, uint ID, const cl::sycl::float4 scale, const ulong defaultSplit)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(cl::sycl::intel::sub_group &sg, const cl::sycl::float3 sah, uint ID, const cl::sycl::float4 scale, const ulong defaultSplit)
       {
-#if 0	
-	ulong splitX = (((ulong)as_uint(sah.x)) << 32) | ((uint)ID << 2) | 0;
-	ulong splitY = (((ulong)as_uint(sah.y)) << 32) | ((uint)ID << 2) | 1;
-	ulong splitZ = (((ulong)as_uint(sah.z)) << 32) | ((uint)ID << 2) | 2;
+	ulong splitX = (((ulong)as_uint((float)sah.x())) << 32) | ((uint)ID << 2) | 0;
+	ulong splitY = (((ulong)as_uint((float)sah.y())) << 32) | ((uint)ID << 2) | 1;
+	ulong splitZ = (((ulong)as_uint((float)sah.z())) << 32) | ((uint)ID << 2) | 2;
+	
+	
 	/* ignore zero sized dimensions */
-	splitX = select( splitX, defaultSplit, (ulong)(scale.x == 0));
-	splitY = select( splitY, defaultSplit, (ulong)(scale.y == 0));
-	splitZ = select( splitZ, defaultSplit, (ulong)(scale.z == 0));
+	splitX = cl::sycl::select( splitX, defaultSplit, (ulong)(scale.x() == 0));
+	splitY = cl::sycl::select( splitY, defaultSplit, (ulong)(scale.y() == 0));
+	splitZ = cl::sycl::select( splitZ, defaultSplit, (ulong)(scale.z() == 0));
 	ulong bestSplit = min(min(splitX,splitY),splitZ);
-	bestSplit = sub_group_reduce_min(bestSplit);
+	bestSplit = sg.reduce<ulong,cl::sycl::intel::minimum>(bestSplit);
 	return bestSplit;
-#else
-	return defaultSplit;
-#endif	
       }
 
       
@@ -383,8 +381,8 @@ namespace embree
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;  
 	cl::sycl::uint3 blocks_add = (cl::sycl::uint3)((1 << blocks_shift)-1);
 
-	const cl::sycl::float3 lr_area = (cl::sycl::float3)(lr_areaX,lr_areaY,lr_areaZ);
-	const cl::sycl::float3 rl_area = (cl::sycl::float3)(rl_areaX,rl_areaY,rl_areaZ);
+	const cl::sycl::float3 lr_area(lr_areaX,lr_areaY,lr_areaZ);
+	const cl::sycl::float3 rl_area(rl_areaX,rl_areaY,rl_areaZ);
 	const cl::sycl::uint3 lr_count = ((cl::sycl::uint3)(lr_countsX,lr_countsY,lr_countsZ)+blocks_add) >> blocks_shift;
 	const cl::sycl::uint3 rl_count = ((cl::sycl::uint3)(rl_countsX,rl_countsY,rl_countsZ)+blocks_add) >> blocks_shift;
 
@@ -402,12 +400,22 @@ namespace embree
 
 	//printf("sah xyz %f blocks_shift %d \n",sah,blocks_shift);
 	const uint mid = (startID+endID)/2;
-	const uint maxSAH = 0x7F800000; //reinterpret_cast<uint>((float)(INFINITY));
+#if 0	
+	const uint &maxSAH = reinterpret_cast<const uint&>((float)(INFINITY));
+#else
+	const float inf = (float)(INFINITY);
+	const uint &maxSAH = reinterpret_cast<const uint&>(inf);	
+#endif	
 	const ulong defaultSplit = (((ulong)maxSAH) << 32) | ((uint)mid << 2) | 0;    
-	const ulong bestSplit = getBestSplit(sah, subgroupLocalID, scale, defaultSplit);
-
+	const ulong bestSplit = getBestSplit(sg, sah, subgroupLocalID, scale, defaultSplit);
+#if 0
+	const float& split_sah = reinterpret_cast<const float&>((uint)(bestSplit >> 32));
+#else
+	const uint bestSplit32 = (uint)(bestSplit >> 32);
+	const float& split_sah = reinterpret_cast<const float&>(bestSplit32);	
+#endif	
 	gpu::Split split;
-	split.sah = 0; // as_float((uint)(bestSplit >> 32)); //FIXME
+	split.sah = split_sah;
 	split.dim = (uint)bestSplit & 3;
 	split.pos = (uint)bestSplit >> 2;
   
