@@ -60,6 +60,8 @@ namespace embree
   gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.y()] + 1,1);
   gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.z()] + 2,1);        
 }
+
+
   
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void serial_find_split(const gpu::BuildRecord &record,
 									      const gpu::AABB *const primref,
@@ -327,10 +329,10 @@ namespace embree
 		  auto accessor_aabb    = aabb_buffer.get_access<sycl_read>(cgh);		  
 		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		                                     {
-						       gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
-						       gpu::AABB aabb_centroid(aabb_geom.centroid2());						       
-						       gpu::AABB reduced_geometry_aabb = gpu::AABB::work_group_reduce(aabb_geom);
-						       gpu::AABB reduced_centroid_aabb = gpu::AABB::work_group_reduce(aabb_centroid);						       
+						       const gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
+						       const gpu::AABB aabb_centroid(aabb_geom.centroid2());						       
+						       const gpu::AABB reduced_geometry_aabb = aabb_geom.work_group_reduce();
+						       const gpu::AABB reduced_centroid_aabb = aabb_centroid.work_group_reduce();						       
 						       cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
 						       reduced_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
 						       reduced_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);						       

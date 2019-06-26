@@ -70,7 +70,7 @@ namespace embree
 	return upper + lower;
       }
 
-      inline void atomic_merge_global(GLOBAL AABB &dest)
+      inline void atomic_merge_global(GLOBAL AABB &dest) const
       {
 	atomic_min(((volatile GLOBAL float *)&dest) + 0,lower.x());
 	atomic_min(((volatile GLOBAL float *)&dest) + 1,lower.y());
@@ -80,73 +80,84 @@ namespace embree
 	atomic_max(((volatile GLOBAL float *)&dest) + 5,upper.y());
 	atomic_max(((volatile GLOBAL float *)&dest) + 6,upper.z());	
       }
+
+      inline void atomic_merge_local(GLOBAL AABB &dest) const
+      {
+	atomic_min(((volatile LOCAL float *)&dest) + 0,lower.x());
+	atomic_min(((volatile LOCAL float *)&dest) + 1,lower.y());
+	atomic_min(((volatile LOCAL float *)&dest) + 2,lower.z());
+
+	atomic_max(((volatile LOCAL float *)&dest) + 4,upper.x());
+	atomic_max(((volatile LOCAL float *)&dest) + 5,upper.y());
+	atomic_max(((volatile LOCAL float *)&dest) + 6,upper.z());	
+      }
       
-      static inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg, const AABB &aabb)
+      inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg) const
       {
 	AABB result;
-	result.lower.x() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.x());
-	result.lower.y() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.y());
-	result.lower.z() = sg.reduce<float,cl::sycl::intel::minimum>(aabb.lower.z());
+	result.lower.x() = sg.reduce<float,cl::sycl::intel::minimum>(lower.x());
+	result.lower.y() = sg.reduce<float,cl::sycl::intel::minimum>(lower.y());
+	result.lower.z() = sg.reduce<float,cl::sycl::intel::minimum>(lower.z());
 	result.lower.w() = 0.0f;
-	result.upper.x() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.x());
-	result.upper.y() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.y());
-	result.upper.z() = sg.reduce<float,cl::sycl::intel::maximum>(aabb.upper.z());
+	result.upper.x() = sg.reduce<float,cl::sycl::intel::maximum>(upper.x());
+	result.upper.y() = sg.reduce<float,cl::sycl::intel::maximum>(upper.y());
+	result.upper.z() = sg.reduce<float,cl::sycl::intel::maximum>(upper.z());
 	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB sub_group_broadcast(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      inline AABB sub_group_broadcast(cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
       {
 	AABB result;
-	result.lower.x() = sg.broadcast<float>(aabb.lower.x(),localID);
-	result.lower.y() = sg.broadcast<float>(aabb.lower.y(),localID);
-	result.lower.z() = sg.broadcast<float>(aabb.lower.z(),localID);
+	result.lower.x() = sg.broadcast<float>(lower.x(),localID);
+	result.lower.y() = sg.broadcast<float>(lower.y(),localID);
+	result.lower.z() = sg.broadcast<float>(lower.z(),localID);
 	result.lower.w() = 0.0f;
-	result.upper.x() = sg.broadcast<float>(aabb.upper.x(),localID);
-	result.upper.y() = sg.broadcast<float>(aabb.upper.y(),localID);
-	result.upper.z() = sg.broadcast<float>(aabb.upper.z(),localID);
+	result.upper.x() = sg.broadcast<float>(upper.x(),localID);
+	result.upper.y() = sg.broadcast<float>(upper.y(),localID);
+	result.upper.z() = sg.broadcast<float>(upper.z(),localID);
 	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB sub_group_scan_exclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      inline AABB sub_group_scan_exclusive_min_max(cl::sycl::intel::sub_group& sg) const
       {
 	AABB result;
-	result.lower.x() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.x());
-	result.lower.y() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.y());
-	result.lower.z() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.z());
+	result.lower.x() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.x());
+	result.lower.y() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.y());
+	result.lower.z() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.z());
 	result.lower.w() = 0.0f;
-	result.upper.x() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.x());
-	result.upper.y() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.y());
-	result.upper.z() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.z());
+	result.upper.x() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(upper.x());
+	result.upper.y() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(upper.y());
+	result.upper.z() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(upper.z());
 	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB sub_group_scan_inclusive_min_max(cl::sycl::intel::sub_group& sg, const AABB &aabb, const cl::sycl::id<1> &localID)
+      inline AABB sub_group_scan_inclusive_min_max(cl::sycl::intel::sub_group& sg) const 
       {
 	AABB result;
-	result.lower.x() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.x());
-	result.lower.y() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.y());
-	result.lower.z() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(aabb.lower.z());
+	result.lower.x() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.x());
+	result.lower.y() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.y());
+	result.lower.z() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.z());
 	result.lower.w() = 0.0f;
-	result.upper.x() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.x());
-	result.upper.y() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.y());
-	result.upper.z() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(aabb.upper.z());
+	result.upper.x() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(upper.x());
+	result.upper.y() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(upper.y());
+	result.upper.z() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(upper.z());
 	result.upper.w() = 0.0f;	
 	return result;	
       }
 
-      static inline AABB work_group_reduce(const AABB &aabb)
+      inline AABB work_group_reduce() const
       {
 	AABB result;
-	result.lower.x() = work_group_reduce_min(aabb.lower.x());
-	result.lower.y() = work_group_reduce_min(aabb.lower.y());
-	result.lower.z() = work_group_reduce_min(aabb.lower.z());
+	result.lower.x() = work_group_reduce_min(lower.x());
+	result.lower.y() = work_group_reduce_min(lower.y());
+	result.lower.z() = work_group_reduce_min(lower.z());
 	result.lower.w() = 0.0f;
-	result.upper.x() = work_group_reduce_max(aabb.upper.x());
-	result.upper.y() = work_group_reduce_max(aabb.upper.y());
-	result.upper.z() = work_group_reduce_max(aabb.upper.z());
+	result.upper.x() = work_group_reduce_max(upper.x());
+	result.upper.y() = work_group_reduce_max(upper.y());
+	result.upper.z() = work_group_reduce_max(upper.z());
 	result.upper.w() = 0.0f;	
 	return result;	
       }
