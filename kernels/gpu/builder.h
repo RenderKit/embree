@@ -342,13 +342,6 @@ namespace embree
     };
 
 
-    template<cl::sycl::access::address_space space>
-    inline uint atomic_add_uint(uint *dest, const uint count=1)
-    {
-      cl::sycl::multi_ptr<unsigned int,space> ptr(dest);
-      cl::sycl::atomic<unsigned int> counter(ptr);
-      return atomic_fetch_add(counter,count);      
-    }
     
   };
 };

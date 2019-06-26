@@ -19,6 +19,7 @@
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
+#define SYCL_SIMPLE_SWIZZLES
 #include <CL/sycl.hpp>
 
 #ifdef __SYCL_DEVICE_ONLY__
@@ -67,6 +68,15 @@ namespace embree
     {
       return halfarea(d) * 2.0f;
     }
+
+    template<typename T, cl::sycl::access::address_space space>
+    inline uint atomic_add(T *dest, const T count=1)
+    {
+      cl::sycl::multi_ptr<T,space> ptr(dest);
+      cl::sycl::atomic<T,space> counter(ptr);
+      return atomic_fetch_add(counter,count);      
+    }
+
   };
 };
 

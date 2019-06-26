@@ -40,10 +40,12 @@ namespace embree
   const cl::sycl::float4 p = primref.centroid2();
   const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
   cl::sycl::uint4 i;
+  
   i.x() = (uint)bin4.x();
   i.y() = (uint)bin4.y();
   i.z() = (uint)bin4.z();
-  //i.x() = bin4.x().convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+
+  //i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
 
   assert(i.x() < BINS);
   assert(i.y() < BINS);
@@ -54,14 +56,9 @@ namespace embree
   bounds.atomic_merge_local(binInfo.boundsX[i.y()]);
   bounds.atomic_merge_local(binInfo.boundsX[i.z()]);
 
-  gpu::atomic_add_uint<cl::sycl::access::address_space::global_space>((uint *)&binInfo.counts[i.x()] + 0,1);
-      
-#if 0
-  
-  atomic_add((local uint*)&binInfo->counts[i.x] + 0,1);
-  atomic_add((local uint*)&binInfo->counts[i.y] + 1,1);
-  atomic_add((local uint*)&binInfo->counts[i.z] + 2,1);
-#endif    
+  gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.x()] + 0,1);
+  gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.y()] + 1,1);
+  gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.z()] + 2,1);        
 }
   
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void serial_find_split(const gpu::BuildRecord &record,
