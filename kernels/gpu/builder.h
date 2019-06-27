@@ -203,6 +203,15 @@ namespace embree
 	parent = NULL;	
       }
 
+      inline void init(unsigned int _start, unsigned int _end)
+      {
+	centroidBounds.init();
+	start = _start;
+	end   = _end;
+	parent = NULL;	
+      }
+      
+
       inline void extend(AABB &primref)
       {
 	centroidBounds.extend(primref.centroid2());

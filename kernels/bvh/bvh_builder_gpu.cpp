@@ -36,30 +36,30 @@ namespace embree
 {
 
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref)
-{
-  const cl::sycl::float4 p = primref.centroid2();
-  const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
-  cl::sycl::uint4 i;
+  {
+    const cl::sycl::float4 p = primref.centroid2();
+    const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
+    cl::sycl::uint4 i;
   
-  i.x() = (uint)bin4.x();
-  i.y() = (uint)bin4.y();
-  i.z() = (uint)bin4.z();
+    i.x() = (uint)bin4.x();
+    i.y() = (uint)bin4.y();
+    i.z() = (uint)bin4.z();
 
-  //i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+    //i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
 
-  assert(i.x() < BINS);
-  assert(i.y() < BINS);
-  assert(i.z() < BINS);
+    assert(i.x() < BINS);
+    assert(i.y() < BINS);
+    assert(i.z() < BINS);
   
-  gpu::AABB3f bounds = convert_AABB3f(primref);
-  bounds.atomic_merge_local(binInfo.boundsX[i.x()]);
-  bounds.atomic_merge_local(binInfo.boundsX[i.y()]);
-  bounds.atomic_merge_local(binInfo.boundsX[i.z()]);
+    gpu::AABB3f bounds = convert_AABB3f(primref);
+    bounds.atomic_merge_local(binInfo.boundsX[i.x()]);
+    bounds.atomic_merge_local(binInfo.boundsX[i.y()]);
+    bounds.atomic_merge_local(binInfo.boundsX[i.z()]);
 
-  gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.x()] + 0,1);
-  gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.y()] + 1,1);
-  gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.z()] + 2,1);        
-}
+    gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.x()] + 0,1);
+    gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.y()] + 1,1);
+    gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.z()] + 2,1);        
+  }
 
 
   
@@ -71,22 +71,171 @@ namespace embree
 									      gpu::BinInfo &binInfo,
 									      uint *primref_index0,
 									      uint *primref_index1)
-{
-  const uint startID = record.start;
-  const uint endID   = record.end;
+  {
+    const uint startID = record.start;
+    const uint endID   = record.end;
   
-  binInfo.init(subgroup);
+    binInfo.init(subgroup);
 
-  const uint subgroupLocalID = subgroup.get_local_id()[0];
-  const uint subgroupSize    = subgroup.get_local_range().size();
+    const uint subgroupLocalID = subgroup.get_local_id()[0];
+    const uint subgroupSize    = subgroup.get_local_range().size();
 
-  for (uint t=startID+subgroupLocalID;t<endID;t+=subgroupSize)
-    {
-      const uint index = primref_index0[t];
-      primref_index1[t] = index;
-      atomicUpdateLocalBinInfo(binMapping,binInfo,primref[index]);      
+    for (uint t=startID+subgroupLocalID;t<endID;t+=subgroupSize)
+      {
+	const uint index = primref_index0[t];
+	primref_index1[t] = index;
+	atomicUpdateLocalBinInfo(binMapping,binInfo,primref[index]);      
+      }
+  }
+
+
+  inline bool is_left(const gpu::BinMapping &binMapping, const gpu::Split &split, const gpu::AABB &primref)
+  {
+#if 0  // ORG OCL CODE  
+    const uint   dim  = split.dim;
+    const float lower = primref.lower[dim];    
+    const float upper = primref.upper[dim];
+    const float c     = lower+upper;
+    const uint pos    = convert_uint_rtz((c-binMapping.ofs[dim])*binMapping.scale[dim]);
+    return pos < split->pos;
+#else
+    return 0;
+#endif    
+  }
+
+
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void serial_partition_index(cl::sycl::intel::sub_group &sg,
+										   const gpu::AABB *const primref,
+										   const gpu::BinMapping &binMapping,
+										   const gpu::BuildRecord &current,										    
+										   gpu::Split &split,
+										   gpu::BuildRecord &outLeft,
+										   gpu::BuildRecord &outRight,
+										   gpu::AABB &outGeometryBoundsLeft,
+										   gpu::AABB &outGeometryBoundsRight,
+										   uint *primref_index0,
+										   uint *primref_index1)
+{
+  const uint subgroupLocalID = sg.get_local_id()[0];
+  const uint subgroupSize    = sg.get_local_range().size();
+
+  // const uint localID    = get_local_id(0);
+  // const uint subgroupLocalID = get_sub_group_local_id();  
+  // const uint subgroupID      = get_sub_group_id();
+  // const uint subgroup_size   = get_sub_group_size();
+    
+  gpu::AABB leftCentroid;
+  gpu::AABB rightCentroid;
+
+  const uint begin = current.start;
+  const uint end   = current.end;  
+  
+  leftCentroid .init();
+  rightCentroid.init();
+
+  gpu::AABB leftAABB;
+  gpu::AABB rightAABB;
+
+  leftAABB.init();
+  rightAABB.init();
+  
+  uint* l = primref_index0 + begin;
+  uint* r = primref_index0 + end;
+
+  /* no valid split, just split in the middle */
+  if (split.sah == (float)(INFINITY))
+    {      
+      for (uint i=begin + subgroupLocalID;i<split.pos;i+=subgroupSize)
+	{
+	  const uint index       = primref_index1[i];
+	  const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
+	  leftCentroid.extend(primref[index].centroid2());
+	  leftAABB.extend(primref[index]);
+	  //extendBinBounds(&left,&primref[index]);
+	  //extendAABBlu(&leftAABB,primref[index].lower,primref[index].upper);
+	  l[subgroupLocalID] = index;	  
+	  l+=count;
+	}
+
+      for (uint i=split.pos + subgroupLocalID;i<end;i+=subgroupSize)
+	{
+	  const uint index       = primref_index1[i];
+	  const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
+	  rightCentroid.extend(primref[index].centroid2());
+	  rightAABB.extend(primref[index]);	  
+	  //extendBinBounds(&right,&primref[index]);
+	  //extendAABBlu(&rightAABB,primref[index].lower,primref[index].upper);
+	  r-=count;
+	  r[subgroupLocalID] = index;	  
+	}      
     }
+  
+  else
+    {
+      for (uint i=begin + subgroupLocalID;i<end;i+=subgroupSize)
+	{
+	  const uint index       = primref_index1[i];
+	  const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
+	  const uint isRight     = 1 - isLeft;
+	  const uint countLeft   = sg.reduce<uint,cl::sycl::intel::plus>(isLeft );
+	  const uint countRight  = sg.reduce<uint,cl::sycl::intel::plus>(isRight);
+	  const uint prefixLeft  = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isLeft);
+	  const uint prefixRight = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isRight);
+          
+	  r -= countRight;
+      
+	  if (isLeft)
+	    {
+	      // extendBinBounds(&left,&primref[index]);
+	      // extendAABBlu(&leftAABB,primref[index].lower,primref[index].upper);
+	      leftCentroid.extend(primref[index].centroid2());
+	      leftAABB.extend(primref[index]);	      
+	      l[prefixLeft] = index;
+	    }
+	  else
+	    {
+	      // extendBinBounds(&right,&primref[index]);
+	      // extendAABBlu(&rightAABB,primref[index].lower,primref[index].upper);
+	      rightCentroid.extend(primref[index].centroid2());
+	      rightAABB.extend(primref[index]);	  	      
+	      r[prefixRight] = index;
+	    }
+	  l += countLeft;
+	}
+    }
+
+#if 0
+
+  left.centroidBounds  = subgroupReduceAABB(&left.centroidBounds);
+  right.centroidBounds = subgroupReduceAABB(&right.centroidBounds);
+  leftAABB  = subgroupReduceAABB(&leftAABB);
+  rightAABB = subgroupReduceAABB(&rightAABB);
+
+  if (subgroupLocalID == 0)
+    {
+      uint pos =  l - primref_index0;  // single first thread needs to compute "pos"
+      left.end    = pos;
+      right.start = pos;
+      
+      const uint depth = getBuildRecursionDepth(binBounds) + 1;
+      setBuildRecursionDepth(&left,depth);
+      setBuildRecursionDepth(&right,depth);
+      
+      setGeometryBoundsHalfArea(&left ,halfArea(&leftAABB));
+      setGeometryBoundsHalfArea(&right,halfArea(&rightAABB));
+
+      leftAABB.upper.w = as_float(getNumPrimsBinBounds(&left));
+      rightAABB.upper.w = as_float(getNumPrimsBinBounds(&right));
+
+      *outLeft  = left;
+      *outRight = right;
+      *outGeometryBoundsLeft = leftAABB;
+      *outGeometryBoundsRight = rightAABB;
+    }
+#endif
+  
 }
+  
 
   /* ======================================== */  
   /* === build bvh for single buildrecord === */
@@ -104,7 +253,7 @@ namespace embree
 									     gpu::BuildRecord &current,
 									     gpu::BuildRecord &brecord,
 									     gpu::Split &split,
-									     gpu::AABB childrenABBB[BVH_NODE_N],
+									     gpu::AABB childrenAABB[BVH_NODE_N],
 									     gpu::BuildRecord stack[BUILDRECORD_STACK_SIZE])
   {
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;
@@ -140,11 +289,11 @@ namespace embree
 		binMapping.init(current.centroidBounds,BINS);
 		serial_find_split(subgroup,current,primref,binMapping,split,binInfo,primref_index0,primref_index1);
 		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);	      
+		serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
 
 #if 0			      
 		
 	      
-		serial_partition_index(primref,&binMapping,&current.binBounds,&split,&children[0].binBounds,&children[1].binBounds,&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1);
 	      
 		while (numChildren < BVH_NODE_N)
 		  {

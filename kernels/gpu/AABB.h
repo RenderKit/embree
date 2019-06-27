@@ -42,7 +42,7 @@ namespace embree
 	upper = { neg_inf,neg_inf,neg_inf,0 };	
       }
       
-      inline void extend(AABB &aabb)
+      inline void extend(const AABB &aabb)
       {
 	lower = min(lower,aabb.lower);
 	upper = max(upper,aabb.upper);	
