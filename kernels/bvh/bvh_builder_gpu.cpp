@@ -91,16 +91,20 @@ namespace embree
 
   inline bool is_left(const gpu::BinMapping &binMapping, const gpu::Split &split, const gpu::AABB &primref)
   {
-#if 0  // ORG OCL CODE  
+#if 1    
     const uint   dim  = split.dim;
+    const float lower = ((float*)&primref.lower)[dim]; // FIXME    
+    const float upper = ((float*)&primref.upper)[dim];
+    const float c     = lower+upper;
+    const uint pos    = (uint)floor((c-((float*)&binMapping.ofs)[dim])*((float*)&binMapping.scale)[dim]);
+#else
+    // ORG OCL CODE    
     const float lower = primref.lower[dim];    
     const float upper = primref.upper[dim];
     const float c     = lower+upper;
     const uint pos    = convert_uint_rtz((c-binMapping.ofs[dim])*binMapping.scale[dim]);
-    return pos < split->pos;
-#else
-    return 0;
-#endif    
+#endif
+    return pos < split.pos;    
   }
 
 
