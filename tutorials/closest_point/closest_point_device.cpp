@@ -174,10 +174,14 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
 
 inline void pushInstanceIdAndTransform(RTCPointQueryInstanceStack* stack, 
                                        unsigned int id, 
-                                       AffineSpace3fa w2i, 
-                                       AffineSpace3fa i2w)
+                                       AffineSpace3fa const& w2i_in, 
+                                       AffineSpace3fa const& i2w_in)
 {
   stack->instID[stack->size] = id;
+
+  // local copies of const references to fullfill alignment constraints
+  AffineSpace3fa w2i = w2i_in;
+  AffineSpace3fa i2w = i2w_in;
 
   if (stack->size > 0) {
     w2i = transform_from_raw(stack->world2inst[stack->size]) * w2i;
