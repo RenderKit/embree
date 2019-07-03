@@ -229,10 +229,7 @@ namespace embree
   
   void Geometry::setPointQueryFunction (RTCPointQueryFunction func) 
   {
-    // TODO: PointQuery test if all these primitve types work
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"point query functions not supported for this geometry"); 
-
+    // TODO: PointQuery test if all primitve types work
     pointQueryFunc = func;
   }
 
