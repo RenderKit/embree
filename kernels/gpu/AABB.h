@@ -162,7 +162,7 @@ namespace embree
 	return result;	
       }
       
-      inline void print()
+      inline void print() const
       {
 	printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z());	
       }

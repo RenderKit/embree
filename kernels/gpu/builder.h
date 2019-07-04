@@ -217,9 +217,9 @@ namespace embree
 	centroidBounds.extend(primref.centroid2());
       }
 
-      inline unsigned int size() { return end - start; }
+      inline unsigned int size() const { return end - start; }
 
-      inline void print()
+      inline void print() const
       {
 	printf("buildrecord: start %d end %d size %d parent %p \n",start,end,size(),parent);
 	centroidBounds.print();

@@ -81,6 +81,13 @@ namespace embree
 	const uint &t_ref = reinterpret_cast<const uint&>(t);	
 	return t_ref;
       }
+
+    template<typename T>
+      static inline float as_float(T t)
+      {
+	const float &t_ref = reinterpret_cast<const float&>(t);	
+	return t_ref;
+      }
     
   };
 };

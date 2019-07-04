@@ -40,13 +40,15 @@ namespace embree
     const cl::sycl::float4 p = primref.centroid2();
     const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
     cl::sycl::uint4 i;
-  
+
+#if 1
     i.x() = (uint)bin4.x();
     i.y() = (uint)bin4.y();
     i.z() = (uint)bin4.z();
-
-    //i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
-
+#else
+    i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+#endif
+    
     assert(i.x() < BINS);
     assert(i.y() < BINS);
     assert(i.z() < BINS);
@@ -96,7 +98,7 @@ namespace embree
     const float lower = ((float*)&primref.lower)[dim]; // FIXME    
     const float upper = ((float*)&primref.upper)[dim];
     const float c     = lower+upper;
-    const uint pos    = (uint)floor((c-((float*)&binMapping.ofs)[dim])*((float*)&binMapping.scale)[dim]);
+    const uint pos    = (uint)cl::sycl::floor((c-((float*)&binMapping.ofs)[dim])*((float*)&binMapping.scale)[dim]); // FIXME
 #else
     // ORG OCL CODE    
     const float lower = primref.lower[dim];    
@@ -131,7 +133,7 @@ namespace embree
   gpu::AABB leftCentroid;
   gpu::AABB rightCentroid;
 
-  const uint begin = current.start;
+  const uint start = current.start;
   const uint end   = current.end;  
   
   leftCentroid .init();
@@ -143,13 +145,13 @@ namespace embree
   leftAABB.init();
   rightAABB.init();
   
-  uint* l = primref_index0 + begin;
+  uint* l = primref_index0 + start;
   uint* r = primref_index0 + end;
 
   /* no valid split, just split in the middle */
   if (split.sah == (float)(INFINITY))
     {      
-      for (uint i=begin + subgroupLocalID;i<split.pos;i+=subgroupSize)
+      for (uint i=start + subgroupLocalID;i<split.pos;i+=subgroupSize)
 	{
 	  const uint index       = primref_index1[i];
 	  const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
@@ -176,7 +178,7 @@ namespace embree
   
   else
     {
-      for (uint i=begin + subgroupLocalID;i<end;i+=subgroupSize)
+      for (uint i=start + subgroupLocalID;i<end;i+=subgroupSize)
 	{
 	  const uint index       = primref_index1[i];
 	  const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
@@ -208,35 +210,26 @@ namespace embree
 	}
     }
 
-#if 0
-
-  left.centroidBounds  = subgroupReduceAABB(&left.centroidBounds);
-  right.centroidBounds = subgroupReduceAABB(&right.centroidBounds);
-  leftAABB  = subgroupReduceAABB(&leftAABB);
-  rightAABB = subgroupReduceAABB(&rightAABB);
-
+  leftCentroid  = leftCentroid.sub_group_reduce(sg);
+  rightCentroid = rightCentroid.sub_group_reduce(sg);
+  leftAABB  = leftAABB.sub_group_reduce(sg);
+  rightAABB = rightAABB.sub_group_reduce(sg);
+  
   if (subgroupLocalID == 0)
     {
       uint pos =  l - primref_index0;  // single first thread needs to compute "pos"
-      left.end    = pos;
-      right.start = pos;
+      outLeft.init(start,pos,leftCentroid);
+      outRight.init(pos,end,rightCentroid);
       
-      const uint depth = getBuildRecursionDepth(binBounds) + 1;
-      setBuildRecursionDepth(&left,depth);
-      setBuildRecursionDepth(&right,depth);
-      
-      setGeometryBoundsHalfArea(&left ,halfArea(&leftAABB));
-      setGeometryBoundsHalfArea(&right,halfArea(&rightAABB));
+      const uint sizeLeft  = outLeft.size();
+      const uint sizeRight = outRight.size();
+            
+      leftAABB.upper.w() = gpu::as_float(sizeLeft);
+      rightAABB.upper.w() = gpu::as_float(sizeRight);
 
-      leftAABB.upper.w = as_float(getNumPrimsBinBounds(&left));
-      rightAABB.upper.w = as_float(getNumPrimsBinBounds(&right));
-
-      *outLeft  = left;
-      *outRight = right;
-      *outGeometryBoundsLeft = leftAABB;
-      *outGeometryBoundsRight = rightAABB;
+      outGeometryBoundsLeft   = leftAABB;
+      outGeometryBoundsRight  = rightAABB;
     }
-#endif
   
 }
   
@@ -549,7 +542,7 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
-
+		      
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
 			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,split,childrenAABB.get_pointer(),stack.get_pointer());
 		    });
