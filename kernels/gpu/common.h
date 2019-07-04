@@ -61,12 +61,22 @@ namespace embree
     {
       return fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
     }
+
+    inline float halfarea(const cl::sycl::float4 &d)
+    {
+      return fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
+    }
     
     inline float area(const cl::sycl::float3 &d)
     {
       return halfarea(d) * 2.0f;
     }
 
+    inline float area(const cl::sycl::float4 &d)
+    {
+      return halfarea(d) * 2.0f;
+    }
+    
     template<typename T, cl::sycl::access::address_space space>
       static inline uint atomic_add(T *dest, const T count=1)
       {

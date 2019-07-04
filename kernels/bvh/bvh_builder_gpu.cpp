@@ -125,16 +125,11 @@ namespace embree
   const uint subgroupLocalID = sg.get_local_id()[0];
   const uint subgroupSize    = sg.get_local_range().size();
 
-  // const uint localID    = get_local_id(0);
-  // const uint subgroupLocalID = get_sub_group_local_id();  
-  // const uint subgroupID      = get_sub_group_id();
-  // const uint subgroup_size   = get_sub_group_size();
+  const uint start = current.start;
+  const uint end   = current.end;  
     
   gpu::AABB leftCentroid;
   gpu::AABB rightCentroid;
-
-  const uint start = current.start;
-  const uint end   = current.end;  
   
   leftCentroid .init();
   rightCentroid.init();
@@ -217,7 +212,7 @@ namespace embree
   
   if (subgroupLocalID == 0)
     {
-      uint pos =  l - primref_index0;  // single first thread needs to compute "pos"
+      uint pos =  l - primref_index0;  // single lane needs to compute "pos"
       outLeft.init(start,pos,leftCentroid);
       outRight.init(pos,end,rightCentroid);
       
@@ -241,7 +236,7 @@ namespace embree
      
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_serial(cl::sycl::intel::sub_group &subgroup,
 									     gpu::BuildRecord &record,
-									     const gpu::Globals &globals,									     
+									     gpu::Globals &globals,									     
 									     char *bvh_mem,
 									     const gpu::AABB *const primref,
 									     uint *primref_index0,
@@ -253,6 +248,9 @@ namespace embree
 									     gpu::AABB childrenAABB[BVH_NODE_N],
 									     gpu::BuildRecord stack[BUILDRECORD_STACK_SIZE])
   {
+    const uint subgroupLocalID = subgroup.get_local_id()[0];
+    const uint subgroupSize    = subgroup.get_local_range().size();
+    
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;
     
     uint sindex = 1;
@@ -288,10 +286,7 @@ namespace embree
 		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);	      
 		serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
 
-#if 0			      
-		
-	      
-	      
+			      	      
 		while (numChildren < BVH_NODE_N)
 		  {
 		    /*! find best child to split */
@@ -300,50 +295,47 @@ namespace embree
 		    for (int i=0; i<numChildren; i++)
 		      {
 			/* ignore leaves as they cannot get split */
-			if (getNumPrims(&children[i].binBounds) <= cfg_minLeafSize) continue;
+			if (children[i].size() <= cfg_minLeafSize) continue;
 
 			/* find child with largest surface area */
-			if (halfArea(&childrenAABB[i]) > bestArea) {
+			if (gpu::halfarea(childrenAABB[i].size()) > bestArea) {
 			  bestChild = i;
-			  bestArea = halfArea(&childrenAABB[i]);
+			  bestArea = gpu::halfarea(childrenAABB[i].size());
 			}
 		      }
 		    if (bestChild == -1) break;
 
 		    /* perform best found split */
 		    brecord = children[bestChild];
-		    struct BuildRecord *lrecord = &children[bestChild];
-		    struct BuildRecord *rrecord = &children[numChildren];	
+		    gpu::BuildRecord &lrecord = children[bestChild];
+		    gpu::BuildRecord &rrecord = children[numChildren];	
 
-		    initBinMapping(&binMapping,&brecord.binBounds.centroidBounds,BINS);
-		    serial_find_split(primref,&binMapping,&brecord.binBounds,&split,&binInfo,primref_index0,primref_index1);
-		    split = reduceBinsAndComputeBestSplit16(&binInfo,binMapping.scale,brecord.binBounds.start,brecord.binBounds.end);
-
-		    DBG(printf("split sah %f dim %d pos %d \n",split.sah,split.dim,split.pos));
-
-		    serial_partition_index(primref,&binMapping,&brecord.binBounds,&split,&lrecord->binBounds,&rrecord->binBounds,&childrenAABB[bestChild],&childrenAABB[numChildren],primref_index0,primref_index1);
-
+		    binMapping.init(brecord.centroidBounds,BINS);
+		    serial_find_split(subgroup,brecord,primref,binMapping,split,binInfo,primref_index0,primref_index1);
+		    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end);	      
+		    serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
 		    numChildren++;
 		  }
 
 		/* sort children based on range size */
-		const uint numPrimsIDs = select((uint)0,(as_uint(childrenAABB[subgroupLocalID].upper.w) << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
+		const float _sortID = childrenAABB[subgroupLocalID].upper.w();
+		const uint sortID = gpu::as_uint(_sortID);
+		const uint numPrimsIDs = select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
 		const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
 
-		uint node_offset = subgroup_createNode(globals,IDs,childrenAABB,numChildren,bvh_mem);
+		uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem);
 	  
 		/* set parent pointer in child build records */
-		global struct BVHNodeN *node = (global struct BVHNodeN*)(bvh_mem + node_offset);
+		struct gpu::BVHNodeN *node = (struct gpu::BVHNodeN*)(bvh_mem + node_offset);
 		if (subgroupLocalID < numChildren)
 		  {
-		    children[IDs].binBounds.parent = ((global uint *)&node->offset) + subgroupLocalID;
+		    children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
 		  }
 
 		/* update parent pointer */
-		*current.binBounds.parent = encodeOffset(bvh_mem,current.binBounds.parent,node_offset);
+		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
 
 		sindex += numChildren;
-#endif			      
 		
 	      }
 	  }
@@ -372,8 +364,6 @@ namespace embree
 
       BVHGPUBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
-
-      // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
       void build()
       {

@@ -459,12 +459,102 @@ namespace embree
       return final;
     }
 
+    inline uint createNode(cl::sycl::intel::sub_group &sg, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem)
+    {
+#if 0      
+      const uint subgroupLocalID = get_sub_group_local_id();
+
+      uint node_offset = 0;
+      if (subgroupLocalID == 0)
+	node_offset = alloc_node_mem(globals,sizeof(struct BVHNodeN));
+      node_offset = sub_group_broadcast(node_offset,0);
+	  
+      global struct BVHNodeN *node = (global struct BVHNodeN*)(bvh_mem + node_offset);
+
+      if (subgroupLocalID < numChildren)
+	setBVHNodeN(node,&childrenAABB[ID],subgroupLocalID);
+  
+      if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
+	initBVHNodeN(node,subgroupLocalID);	      
+
+      return node_offset;
+#else
+      return 0; // FIXME
+#endif      
+    }
+    
     struct Quad1
     {
       cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
     };
 
 
+    /* ======================================================================== */
+    /* ============================== BVH NODES =============================== */
+    /* ======================================================================== */
+
+    struct BVHNodeN
+    {              
+      uint offset[BVH_NODE_N];  
+      uint parent[BVH_NODE_N]; 
+      float lower_x[BVH_NODE_N]; 
+      float upper_x[BVH_NODE_N]; 
+      float lower_y[BVH_NODE_N]; 
+      float upper_y[BVH_NODE_N]; 
+      float lower_z[BVH_NODE_N]; 
+      float upper_z[BVH_NODE_N]; 
+
+      inline void initBVHNodeN(uint slotID)
+      {
+	offset[slotID]  =  (uint)(-1);  
+	parent[slotID]  =  (uint)(-1); 
+	lower_x[slotID] =  (float)INFINITY; 
+	upper_x[slotID] = -(float)INFINITY;
+	lower_y[slotID] =  (float)INFINITY; 
+	upper_y[slotID] = -(float)INFINITY;
+	lower_z[slotID] =  (float)INFINITY; 
+	upper_z[slotID] = -(float)INFINITY;  
+      }
+
+
+      inline void setBVHNodeN(const struct AABB &aabb, uint slot)
+      {
+	lower_x[slot] = aabb.lower.x();
+	lower_y[slot] = aabb.lower.y();
+	lower_z[slot] = aabb.lower.z();
+	upper_x[slot] = aabb.upper.x();
+	upper_y[slot] = aabb.upper.y();
+	upper_z[slot] = aabb.upper.z();
+      }
+
+      inline void setBVHNodeN_offset(const struct AABB &aabb, const uint _offset, const uint _parent, uint slot)
+      {
+	offset[slot] = _offset;
+	parent[slot] = _parent;  
+	lower_x[slot] = aabb.lower.x();
+	lower_y[slot] = aabb.lower.y();
+	lower_z[slot] = aabb.lower.z();
+	upper_x[slot] = aabb.upper.x();
+	upper_y[slot] = aabb.upper.y();
+	upper_z[slot] = aabb.upper.z();
+      }
+
+
+      inline void print()
+      {
+	for (uint i=0;i<BVH_NODE_N;i++)
+	  {
+	    printf(" i      %d \n",i);
+	    printf(" offset %d \n",offset[i]);
+	    printf(" lower_x %f \n",lower_x[i]);
+	    printf(" upper_x %f \n",upper_x[i]);
+	    printf(" lower_y %f \n",lower_y[i]);
+	    printf(" upper_y %f \n",upper_y[i]);
+	    printf(" lower_z %f \n",lower_z[i]);
+	    printf(" upper_z %f \n",upper_z[i]);
+	  }
+      }
+    };
     
   };
 };
