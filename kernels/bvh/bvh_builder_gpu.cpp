@@ -263,6 +263,10 @@ namespace embree
 	/* next element from stack */
 	sindex--;      
 	current = stack[sindex];
+
+	//if (subgroupLocalID == 0)
+	//  current.print();
+	
 	gpu::BinMapping binMapping;
 
 	const uint items = current.size();
@@ -546,7 +550,7 @@ namespace embree
 	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-	    PING;
+	    //PING;
 	    //std::cout << "bounds " << (float)bounds.lower.x() << std::endl;
 	    exit(0);
 
