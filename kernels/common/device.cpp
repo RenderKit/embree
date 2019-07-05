@@ -518,7 +518,20 @@ namespace embree
 
 
 #if defined(EMBREE_DPCPP_SUPPORT)
+
+  // === create exception handler ===
   
+  auto exception_handler = [] (cl::sycl::exception_list exceptions) {
+    for (std::exception_ptr const& e : exceptions) {
+      try {
+	std::rethrow_exception(e);
+      } catch(cl::sycl::exception const& e) {
+	std::cout << "Caught asynchronous SYCL exception:\n"
+	<< e.what() << std::endl;
+      }
+    }
+  };
+
   DeviceGPU::DeviceGPU(const char* cfg) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
   {
     
@@ -528,7 +541,7 @@ namespace embree
     NEOGPUDeviceSelector selector;
 
     try {
-      gpu_queue = queue(selector);
+      gpu_queue = queue(selector, exception_handler);
       gpu_device = device(selector);
     } catch (cl::sycl::invalid_parameter_error &E) {
       std::cout << E.what() << std::endl;

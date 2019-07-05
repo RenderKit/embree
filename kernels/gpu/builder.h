@@ -399,7 +399,7 @@ namespace embree
 	const cl::sycl::float3 lr_count_f((float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z());
 	const cl::sycl::float3 rl_count_f((float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z());	
 	
-	cl::sycl::float3 sah           = fma(lr_area,lr_count_f,rl_area*rl_count_f);
+	cl::sycl::float3 sah           = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
 
 	/* first bin is invalid */
 

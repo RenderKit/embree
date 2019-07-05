@@ -59,12 +59,12 @@ namespace embree
 
     inline float halfarea(const cl::sycl::float3 &d)
     {
-      return fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
+      return cl::sycl::fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
     }
 
     inline float halfarea(const cl::sycl::float4 &d)
     {
-      return fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
+      return cl::sycl::fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
     }
     
     inline float area(const cl::sycl::float3 &d)
