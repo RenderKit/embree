@@ -24,7 +24,7 @@ buffer can be released using the `rtcReleaseBuffer` function.
 At construction time, the pointer to the user-managed buffer data
 (`ptr` argument) including its size in bytes (`byteSize` argument) is
 provided to create the buffer. At buffer construction time no buffer
-data is allocated, but the buffer data provided be the application is
+data is allocated, but the buffer data provided by the application is
 used. The buffer data must remain valid for as long as the buffer may
 be used, and the user is responsible to free the buffer data when no
 longer required.
