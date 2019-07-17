@@ -38,80 +38,27 @@ extern "C" bool g_changed;
 #define STREAM_SIZE (TILE_SIZE_X * TILE_SIZE_Y)
 
 /*
- * There is an instance stack on RTCIntersectContext, but it is used by 
- * Embree internally.
- * We must copy this stack for all intersections we find.
- * This struct is here to provide storage for this purpose.
+ * There is an issue in ISPC where foreach_tiled can generate
+ * empty gangs. This is problematic when scalar operations
+ * (e.g. increment) run inside the loop.
  */
-struct InstanceStack
-{
-  unsigned int instanceStackSize[STREAM_SIZE];
-  unsigned int instanceStack[STREAM_SIZE][RTC_MAX_INSTANCE_LEVEL_COUNT];
-};
-
-/* 
- * Copy an instance stack. This is called from the intersection filter below.
- */
-void copyInstanceStack(const RTCIntersectContext* context,
-                       unsigned rayId,
-                       InstanceStack* stack)
-{
-  assert(context);
-  assert(stack);
-  if (context && stack && rayId < STREAM_SIZE)
-  {
-    const unsigned size = context->instStackSize;
-    assert(size <= RTC_MAX_INSTANCE_LEVEL_COUNT);
-    for (unsigned int i=0; i<size; i++)
-      stack->instanceStack[rayId][i] = context->instID[i];
-    stack->instanceStackSize[rayId] = size;
-  }
-}
-
-/*
- * The intersection filter we use to copy instance stacks.
- * In this tutorial, we set it as the context intersection filter so that we do not
- * have to worry about setting it on all geometries.
- * This may be inefficient if your scene contains many geometries that are not
- * instanced.
- */
-void intersectFilter(const RTCFilterFunctionNArguments* args)
-{
-  assert(args);
-  IntersectContext* context = (IntersectContext*)(args->context);
-  assert(context);
-  InstanceStack* stack = (InstanceStack*)(context->userRayExt);
-  if (stack)
-  {
-    for (unsigned int i=0; i<args->N; i++) 
-    {
-      unsigned int rayId = RTCRayN_id(args->ray, args->N, i);
-      if (args->valid[i])
-        copyInstanceStack(&context->context, rayId, stack);
-    }
-  }
-}
+#define FOREACH_TILED_MITIGATION if (1 == 0) { continue; }
 
 /* 
  * Accumulate an instance transformation given an instance stack. 
  * We use this only for normal transformations in this example.
  */
-LinearSpace3fa accumulateNormalTransform(const struct InstanceStack* stack,
-                                        unsigned rayId,
+LinearSpace3fa accumulateNormalTransform(const Ray& ray,
                                         float time)
 {
   LinearSpace3fa transform = LinearSpace3fa(one);
-  if (rayId < STREAM_SIZE)
+  for (unsigned int level = 0; level < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[level] != RTC_INVALID_GEOMETRY_ID; ++level)
   {
-    const unsigned int stackSize = stack->instanceStackSize[rayId];
-    for (unsigned int level = 0; level < stackSize; ++level)
-    {
-      assert(level < g_instanceLevels.numLevels);
-      const unsigned int instId = stack->instanceStack[rayId][level];
-      assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
-      LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
-      transform = transform * M;
-    }
+    assert(level < g_instanceLevels.numLevels);
+    const unsigned int instId = ray.instID[level];
+    assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
+    LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
+    transform = transform * LinearSpace3fa(M);
   }
   return transform;
 }
@@ -238,8 +185,7 @@ inline Ray makeShadowRay(const Ray& primary,
 /*
  * Our shader for this scene: Lambertian shading with normal display.
  */
-Vec3fa shader(const InstanceStack& instanceStack,
-             const Ray& primaryRay, 
+Vec3fa shader(const Ray& primaryRay, 
              const Ray& shadowRay,
              const Vec3fa& lightDir,
              const Vec3fa& emission)
@@ -247,7 +193,7 @@ Vec3fa shader(const InstanceStack& instanceStack,
   if (primaryRay.geomID == RTC_INVALID_GEOMETRY_ID || shadowRay.tfar < 0.f)
     return Vec3fa(0.f);
 
-  const LinearSpace3fa xfm = accumulateNormalTransform(&instanceStack, primaryRay.id, 0.f);
+  const LinearSpace3fa xfm = accumulateNormalTransform(primaryRay, 0.f);
   Vec3fa Ns = normalize(xfmVector(xfm, Vec3fa(primaryRay.Ng)));
 
   const float cosThetaOut = dot(Ns, lightDir);
@@ -318,7 +264,6 @@ void renderTileStream(int* pixels,
                       const unsigned int y1,
                       IntersectContext& primaryContext,
                       IntersectContext& shadowContext,
-                      InstanceStack& instanceStack,
                       RayStats& stats)
 {
   RandomSampler sampler;
@@ -330,7 +275,10 @@ void renderTileStream(int* pixels,
   unsigned int numPackets = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
+    FOREACH_TILED_MITIGATION
+
     primary[numPackets] = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
+
     ++numPackets;
   }
 
@@ -343,6 +291,8 @@ void renderTileStream(int* pixels,
   numPackets = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
+    FOREACH_TILED_MITIGATION
+
     // This is only needed for streaming mode, as we keep invalid
     // rays in flight. This call will invalidate instances that 
     // are not currently active.
@@ -368,8 +318,9 @@ void renderTileStream(int* pixels,
   numPackets = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    const Vec3fa color = shader(instanceStack, 
-                               primary[numPackets],
+    FOREACH_TILED_MITIGATION
+
+    const Vec3fa color = shader(primary[numPackets],
                                shadow[numPackets],
                                lightDir[numPackets],
                                emission[numPackets]);
@@ -393,13 +344,14 @@ void renderTileNormal(int* pixels,
                       const unsigned int y1,
                       IntersectContext& primaryContext,
                       IntersectContext& shadowContext,
-                      InstanceStack& instanceStack,
                       RayStats& stats)
 {
   RandomSampler sampler;
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
+    FOREACH_TILED_MITIGATION
+
     Ray primaryRay = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
     rtcIntersect1(g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
 
@@ -411,7 +363,7 @@ void renderTileNormal(int* pixels,
       sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
       Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
       rtcOccluded1(g_scene, &shadowContext.context, RTCRay_(shadowRay));
-      color = shader(instanceStack, primaryRay, shadowRay, lightDir, emission);
+      color = shader(primaryRay, shadowRay, lightDir, emission);
     }
 
     splat(pixels, width, x, y, color);
@@ -450,23 +402,12 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   // for shadow rays, since there is a spherical environment light.
   primaryContext.context.flags = g_iflags_coherent; 
 
-  // For multi-level instancing to work, we need to set up an intersection
-  // filter that copies instance stacks for later use in shading, as well
-  // as storage for these stacks.
-  // Note that we do not set the filter on the shadow context to avoid
-  // unnecessary copying.
-  primaryContext.context.filter = intersectFilter;
-  InstanceStack instanceStack;
-  for (unsigned int i=0; i<STREAM_SIZE; i++) { instanceStack.instanceStackSize[i] = 0; }
-  primaryContext.userRayExt = &instanceStack;
-
   if (g_mode == MODE_NORMAL) 
     renderTileNormal(pixels, width,
                      time, camera,
                      x0, x1, y0, y1,
                      primaryContext,
                      shadowContext,
-                     instanceStack,
                      g_stats[threadIndex]);
   else                       
     renderTileStream(pixels, width,
@@ -474,7 +415,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                      x0, x1, y0, y1,
                      primaryContext,
                      shadowContext,
-                     instanceStack,
                      g_stats[threadIndex]);
 }
 

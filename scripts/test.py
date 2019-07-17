@@ -73,6 +73,9 @@ def runConfig(config):
   if "package" in config:
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
 
+  if "maxinstancelevelcount" in config:
+    conf.append("-D EMBREE_MAX_INSTANCE_LEVEL_COUNT="+config["maxinstancelevelcount"])
+
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
 

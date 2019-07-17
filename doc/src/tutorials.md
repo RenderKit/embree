@@ -188,16 +188,17 @@ Multi Level Instancing
 ![][imgMultiLevelInstancing]
 
 This tutorial demonstrates multi-level instancing, i.e., nesting instances
-into instances. The renderer uses a basic path tracing approach, and the
+into instances. To enable the tutorial, set the compile-time variable
+`EMBREE_MAX_INSTANCE_LEVEL_COUNT` to a value other than the default 1.
+This variable is available in the code as `RTC_MAX_INSTANCE_LEVEL_COUNT`.
+
+The renderer uses a basic path tracing approach, and the
 image will progressively refine over time.
 There are two levels of instances in this scene: multiple instances of
 the same tree nest instances of a twig.
-Intersection on up to `RTC_MAX_INSTANCE_LEVEL_COUNT` nested levels of
-instances work out of the box. However, to be able to correctly transform shading 
-information from local instance space to world space, users must obtain a 
-copy of the current *instance id stack* during traversal.
-The tutorial uses a context intersection filter to copy the stack,
-but users may prefer to instead use per-geometry intersection filters.
+Intersections on up to `RTC_MAX_INSTANCE_LEVEL_COUNT` nested levels of
+instances work out of the box. Users may obtain the *instance ID stack* for
+a given hitpoint from the `instID` member.
 During shading, the instance ID stack is used to accumulate
 normal transformation matrices for each hit. The tutorial visualizes
 transformed normals as colors.

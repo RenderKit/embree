@@ -166,8 +166,8 @@ Vec3fa getVertex(GridMesh& gmesh, Grid& grid, int x, int y)
   int startVertexID = grid.startVertexID;
   int strideX = grid.strideX;
   int strideY = grid.strideY;
-  int width   = (int)grid.width;
-  int height  = (int)grid.height;
+  MAYBE_UNUSED int width = (int)grid.width;
+  MAYBE_UNUSED int height = (int)grid.height;
   assert(x >= 0 && x < width);
   assert(y >= 0 && y < height);
   return Vec3fa(gmesh.vertices[startVertexID + y*strideY + x*strideX]);

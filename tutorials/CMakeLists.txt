@@ -64,7 +64,11 @@ ADD_SUBDIRECTORY(dynamic_scene)
 ADD_SUBDIRECTORY(user_geometry)
 ADD_SUBDIRECTORY(viewer)
 ADD_SUBDIRECTORY(instanced_geometry)
-ADD_SUBDIRECTORY(multi_instanced_geometry)
+
+if ("${EMBREE_MAX_INSTANCE_LEVEL_COUNT}" GREATER "1")
+  ADD_SUBDIRECTORY(multi_instanced_geometry)
+endif()
+
 ADD_SUBDIRECTORY(intersection_filter)
 ADD_SUBDIRECTORY(pathtracer)
 ADD_SUBDIRECTORY(hair_geometry)

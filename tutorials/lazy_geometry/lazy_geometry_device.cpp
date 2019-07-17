@@ -182,7 +182,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
   rtcIntersect1(instance->object,context,RTCRayHit_(*ray));
   if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
-  else ray->instID = instance->userID;
+  else ray->instID[0] = instance->userID;
 }
 
 void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
@@ -285,7 +285,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectContext(&context);
   
   /* initialize ray */
-  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, 4);
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
+  ray.instID[0] = 4;
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene,&context,RTCRayHit_(ray));

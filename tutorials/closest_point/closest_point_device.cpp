@@ -709,7 +709,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), 
                      Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 
                      0.0f, inf, 0.0f, -1,
-                     RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
+                     RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene, &context, RTCRayHit_(ray));
@@ -730,13 +730,13 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
-    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
+    if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
     {
       if (g_userDefinedInstancing)
-        Ns = xfmVector(g_instanceUserDefined[ray.instID]->normal2world, Vec3fa(Ns));
+        Ns = xfmVector(g_instanceUserDefined[ray.instID[0]]->normal2world, Vec3fa(Ns));
       else
         // convert geomID (ray.instID) in the scene to instance idx (-4)
-        Ns = xfmVector(g_normal_xfm[ray.instID-4], Vec3fa(Ns));
+        Ns = xfmVector(g_normal_xfm[ray.instID[0]-4], Vec3fa(Ns));
     }
 
     Ns = face_forward(ray.dir,normalize(Ns));

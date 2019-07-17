@@ -32,8 +32,7 @@ range $[0, ∞]$, thus ranges that start behind the ray origin are not
 valid, but ranges can reach to infinity. See Section [RTCRay] for the
 ray layout description.
 
-The instance ID (`instID` hit member) and geometry ID (`geomID` hit
-member) of the hit data must be initialized to
+The geometry ID (`geomID` hit member) of the hit data must be initialized to
 `RTC_INVALID_GEOMETRY_ID` (-1).
 
 Further, an intersection context for the ray query function must be
@@ -43,19 +42,19 @@ When no intersection is found, the ray/hit data is not updated. When an
 intersection is found, the hit distance is written into the `tfar`
 member of the ray and all hit data is set, such as unnormalized
 geometry normal in object space (`Ng` hit member), local hit
-coordinates (`u`, `v` hit member), instance ID (`instID` hit member),
+coordinates (`u`, `v` hit member), instance ID stack (`instID` hit member),
 geometry ID (`geomID` hit member), and primitive ID (`primID` hit
 member). See Section [RTCHit] for the hit layout description.
 
-If the instance ID was set (thus it is not equal to
-`RTC_INVALID_GEOMETRY_ID`), the instance ID corresponds to the geometry
-ID of the hit instance of the top-level scene, the geometry ID
+If the instance ID stack has a prefix of values not equal to
+`RTC_INVALID_GEOMETRY_ID`, the instance ID on each level corresponds to the geometry
+ID of the hit instance of the higher-level scene, the geometry ID
 corresponds to the hit geometry inside the hit instanced scene, and the
 primitive ID corresponds to the n-th primitive of that geometry.
 
-If the instance ID was not set (thus it is still equal to
-`RTC_INVALID_GEOMETRY_ID`), the geometry ID corresponds to the hit
-geometry inside the scene, and the primitive ID corresponds to the
+If level 0 of the instance ID stack is equal to
+`RTC_INVALID_GEOMETRY_ID`, the geometry ID corresponds to the hit
+geometry inside the top-level scene, and the primitive ID corresponds to the
 n-th primitive of that geometry.
 
 The implementation makes no guarantees that primitives whose hit

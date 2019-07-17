@@ -16,30 +16,12 @@
 
 #include "instance_intersector.h"
 #include "../common/scene.h"
+#include "../common/instance_stack.h"
 
 namespace embree
 {
   namespace isa
   {
-    /* Push an instance to the stack. */
-    RTC_FORCEINLINE bool pushInstance(RTCIntersectContext* context, unsigned int instanceId)
-    {
-      const bool spaceAvailable = context && context->instStackSize < RTC_MAX_INSTANCE_LEVEL_COUNT;
-      /* We assert here because instances are silently dropped when the stack is full. 
-         This might be quite hard to find in production. */
-      assert(spaceAvailable); 
-      if (likely(spaceAvailable))
-        context->instID[context->instStackSize++] = instanceId;
-      return spaceAvailable;
-    }
-
-    /* Pop the last instance pushed to the stack. Do not call on an empty stack. */
-    RTC_FORCEINLINE void popInstance(RTCIntersectContext* context)
-    {
-      assert(context && context->instStackSize > 0);
-      context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
-    }
-    
     /* Push an instance to the stack. */
     RTC_FORCEINLINE bool pushInstance(PointQueryContext* context, 
                       unsigned int instanceId, 
@@ -83,7 +65,7 @@ namespace embree
 #endif
 
       RTCIntersectContext* user_context = context->user;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
         const Vec3fa ray_org = ray.org;
@@ -94,7 +76,7 @@ namespace embree
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
     }
     
@@ -110,7 +92,7 @@ namespace embree
       
       RTCIntersectContext* user_context = context->user;
       bool occluded = false;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
         const Vec3fa ray_org = ray.org;
@@ -122,7 +104,7 @@ namespace embree
         ray.org = ray_org;
         ray.dir = ray_dir;
         occluded = ray.tfar < 0.0f;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
       return occluded;
     }
@@ -170,7 +152,7 @@ namespace embree
 #endif
       
       RTCIntersectContext* user_context = context->user;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
         const Vec3fa ray_org = ray.org;
@@ -181,7 +163,7 @@ namespace embree
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
     }
     
@@ -197,7 +179,7 @@ namespace embree
       
       RTCIntersectContext* user_context = context->user;
       bool occluded = false;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
         const Vec3fa ray_org = ray.org;
@@ -209,7 +191,7 @@ namespace embree
         ray.org = ray_org;
         ray.dir = ray_dir;
         occluded = ray.tfar < 0.0f;
-        popInstance(user_context);      
+        instance_id_stack::pop(user_context);      
       }
       return occluded;
     }
@@ -258,7 +240,7 @@ namespace embree
 #endif
         
       RTCIntersectContext* user_context = context->user;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -269,7 +251,7 @@ namespace embree
         instance->object->intersectors.intersect(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
     }
 
@@ -287,7 +269,7 @@ namespace embree
         
       RTCIntersectContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -299,7 +281,7 @@ namespace embree
         ray.org = ray_org;
         ray.dir = ray_dir;
         occluded = ray.tfar < 0.0f;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
       return occluded;    
     }
@@ -317,7 +299,7 @@ namespace embree
 #endif
         
       RTCIntersectContext* user_context = context->user;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;
@@ -328,7 +310,7 @@ namespace embree
         instance->object->intersectors.intersect(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
     }
 
@@ -346,7 +328,7 @@ namespace embree
         
       RTCIntersectContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(pushInstance(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, instance->geomID)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;
@@ -358,7 +340,7 @@ namespace embree
         ray.org = ray_org;
         ray.dir = ray_dir;
         occluded = ray.tfar < 0.0f;
-        popInstance(user_context);
+        instance_id_stack::pop(user_context);
       }
       return occluded;
     }

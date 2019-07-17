@@ -148,7 +148,7 @@ namespace embree
     rh.hit.v = 0.0f;
     rh.hit.geomID = -1;
     rh.hit.primID = -1;
-    rh.hit.instID = -1;
+    rh.hit.instID[0] = -1;
   }
 
   __forceinline RTCRayHit makeRay(const Vec3fa& org, const Vec3fa& dir) 
@@ -158,7 +158,7 @@ namespace embree
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = 0.0f; rh.ray.tfar = inf;
     rh.ray.time = 0; rh.ray.mask = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
     return rh;
   }
 
@@ -169,7 +169,7 @@ namespace embree
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
     rh.ray.time = 0; rh.ray.mask = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
     return rh;
   }
 
@@ -183,7 +183,7 @@ namespace embree
     rh.ray.time = 0; 
     rh.ray.mask = -1;
     rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
     return rh;
   }
 
@@ -201,7 +201,7 @@ namespace embree
     rh.ray.time = 0; 
     rh.ray.mask = -1;
     rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
   }
 
   __forceinline void fastMakeRay(RTCRayHit& ray, const Vec3fa& org, RandomSampler& sampler)
@@ -216,7 +216,7 @@ namespace embree
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
     rh.ray.time = 0; rh.ray.mask = -1; rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID = -1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
     return rh;
   }
 
@@ -247,21 +247,29 @@ namespace embree
   /* Outputs ray to stream */
   __forceinline std::ostream& operator<<(std::ostream& cout, const RTCRayHit& rh)
   {
-    return cout << "Ray { " << std::endl
-                << "  org = " << rh.ray.org_x << " " << rh.ray.org_y << " " << rh.ray.org_z << std::endl
-                << "  dir = " << rh.ray.dir_x << " " << rh.ray.dir_y << " " << rh.ray.dir_z << std::endl
-                << "  near = " << rh.ray.tnear << std::endl
-                << "  far = " << rh.ray.tfar << std::endl
-                << "  time = " << rh.ray.time << std::endl
-                << "  mask = " << rh.ray.mask << std::endl
-                << "  id = " << rh.ray.id << std::endl
-                << "  instID = " << rh.hit.instID << std::endl
-                << "  geomID = " << rh.hit.geomID << std::endl
-                << "  primID = " << rh.hit.primID <<  std::endl
-                << "  u = " << rh.hit.u <<  std::endl
-                << "  v = " << rh.hit.v << std::endl
-                << "  Ng = " << rh.hit.Ng_x << " " << rh.hit.Ng_y << " " << rh.hit.Ng_z << std::endl
-                << "}";
+    cout << "Ray { " << std::endl
+         << "  org = " << rh.ray.org_x << " " << rh.ray.org_y << " " << rh.ray.org_z << std::endl
+         << "  dir = " << rh.ray.dir_x << " " << rh.ray.dir_y << " " << rh.ray.dir_z << std::endl
+         << "  near = " << rh.ray.tnear << std::endl
+         << "  far = " << rh.ray.tfar << std::endl
+         << "  time = " << rh.ray.time << std::endl
+         << "  mask = " << rh.ray.mask << std::endl
+         << "  id = " << rh.ray.id << std::endl
+         << "  instID =";
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    {
+      cout << " " << rh.hit.instID[l];
+      if (rh.hit.instID[l] == RTC_INVALID_GEOMETRY_ID)
+        break;
+    }
+    cout << std::endl
+         << "  geomID = " << rh.hit.geomID << std::endl
+         << "  primID = " << rh.hit.primID <<  std::endl
+         << "  u = " << rh.hit.u <<  std::endl
+         << "  v = " << rh.hit.v << std::endl
+         << "  Ng = " << rh.hit.Ng_x << " " << rh.hit.Ng_y << " " << rh.hit.Ng_z << std::endl
+         << "}";
+    return cout;
   }
 
   __forceinline void setRay(RTCRayHit4& ray_o, size_t i, const RTCRayHit& ray_i)
@@ -277,7 +285,6 @@ namespace embree
     ray_o.ray.time[i] = ray_i.ray.time;
     ray_o.ray.mask[i] = ray_i.ray.mask;
     ray_o.ray.id[i] = ray_i.ray.id;
-    ray_o.hit.instID[i] = ray_i.hit.instID;
     ray_o.hit.geomID[i] = ray_i.hit.geomID;
     ray_o.hit.primID[i] = ray_i.hit.primID;
     ray_o.hit.u[i] = ray_i.hit.u;
@@ -285,6 +292,9 @@ namespace embree
     ray_o.hit.Ng_x[i] = ray_i.hit.Ng_x;
     ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
     ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l][i] = ray_i.hit.instID[l];
   }
 
   __forceinline void setRay(RTCRayHit8& ray_o, size_t i, const RTCRayHit& ray_i)
@@ -300,7 +310,6 @@ namespace embree
     ray_o.ray.time[i] = ray_i.ray.time;
     ray_o.ray.mask[i] = ray_i.ray.mask;
     ray_o.ray.id[i] = ray_i.ray.id;
-    ray_o.hit.instID[i] = ray_i.hit.instID;
     ray_o.hit.geomID[i] = ray_i.hit.geomID;
     ray_o.hit.primID[i] = ray_i.hit.primID;
     ray_o.hit.u[i] = ray_i.hit.u;
@@ -308,6 +317,9 @@ namespace embree
     ray_o.hit.Ng_x[i] = ray_i.hit.Ng_x;
     ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
     ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l][i] = ray_i.hit.instID[l];
   }
 
   __forceinline void setRay(RTCRayHit16& ray_o, size_t i, const RTCRayHit& ray_i)
@@ -323,7 +335,6 @@ namespace embree
     ray_o.ray.time[i] = ray_i.ray.time;
     ray_o.ray.mask[i] = ray_i.ray.mask;
     ray_o.ray.id[i] = ray_i.ray.id;
-    ray_o.hit.instID[i] = ray_i.hit.instID;
     ray_o.hit.geomID[i] = ray_i.hit.geomID;
     ray_o.hit.primID[i] = ray_i.hit.primID;
     ray_o.hit.u[i] = ray_i.hit.u;
@@ -331,6 +342,9 @@ namespace embree
     ray_o.hit.Ng_x[i] = ray_i.hit.Ng_x;
     ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
     ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l][i] = ray_i.hit.instID[l];
   }
 
   __forceinline void setRay(RTCRayHitN* rayhit_o, unsigned int N, unsigned int i, const RTCRayHit& ray_i)
@@ -348,7 +362,6 @@ namespace embree
     RTCRayN_mask(ray_o,N,i) = ray_i.ray.mask;
     RTCRayN_id(ray_o,N,i) = ray_i.ray.id;
     RTCHitN* hit_o = RTCRayHitN_HitN(rayhit_o,N);
-    RTCHitN_instID(hit_o,N,i) = ray_i.hit.instID;
     RTCHitN_geomID(hit_o,N,i) = ray_i.hit.geomID;
     RTCHitN_primID(hit_o,N,i) = ray_i.hit.primID;
     RTCHitN_u(hit_o,N,i) = ray_i.hit.u;
@@ -356,6 +369,9 @@ namespace embree
     RTCHitN_Ng_x(hit_o,N,i) = ray_i.hit.Ng_x;
     RTCHitN_Ng_y(hit_o,N,i) = ray_i.hit.Ng_y;
     RTCHitN_Ng_z(hit_o,N,i) = ray_i.hit.Ng_z;
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      RTCHitN_instID(hit_o,N,i,l) = ray_i.hit.instID[l];
   }
 
   __forceinline RTCRayHit getRay(RTCRayHit4& ray_i, size_t i)
@@ -372,7 +388,6 @@ namespace embree
     ray_o.ray.time = ray_i.ray.time[i];
     ray_o.ray.mask = ray_i.ray.mask[i];
     ray_o.ray.id = ray_i.ray.id[i];
-    ray_o.hit.instID = ray_i.hit.instID[i];
     ray_o.hit.geomID = ray_i.hit.geomID[i];
     ray_o.hit.primID = ray_i.hit.primID[i];
     ray_o.hit.u = ray_i.hit.u[i];
@@ -380,6 +395,10 @@ namespace embree
     ray_o.hit.Ng_x = ray_i.hit.Ng_x[i];
     ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
     ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l] = ray_i.hit.instID[l][i];
+
     return ray_o;
   }
 
@@ -397,7 +416,6 @@ namespace embree
     ray_o.ray.time = ray_i.ray.time[i];
     ray_o.ray.mask = ray_i.ray.mask[i];
     ray_o.ray.id = ray_i.ray.id[i];
-    ray_o.hit.instID = ray_i.hit.instID[i];
     ray_o.hit.geomID = ray_i.hit.geomID[i];
     ray_o.hit.primID = ray_i.hit.primID[i];
     ray_o.hit.u = ray_i.hit.u[i];
@@ -405,6 +423,10 @@ namespace embree
     ray_o.hit.Ng_x = ray_i.hit.Ng_x[i];
     ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
     ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l] = ray_i.hit.instID[l][i];
+
     return ray_o;
   }
 
@@ -422,7 +444,6 @@ namespace embree
     ray_o.ray.time = ray_i.ray.time[i];
     ray_o.ray.mask = ray_i.ray.mask[i];
     ray_o.ray.id = ray_i.ray.id[i];
-    ray_o.hit.instID = ray_i.hit.instID[i];
     ray_o.hit.geomID = ray_i.hit.geomID[i];
     ray_o.hit.primID = ray_i.hit.primID[i];
     ray_o.hit.u = ray_i.hit.u[i];
@@ -430,6 +451,9 @@ namespace embree
     ray_o.hit.Ng_x = ray_i.hit.Ng_x[i];
     ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
     ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l] = ray_i.hit.instID[l][i];
     return ray_o;
   }
 
@@ -449,7 +473,6 @@ namespace embree
     ray_o.ray.time = RTCRayN_time(ray_i,N,i);
     ray_o.ray.mask = RTCRayN_mask(ray_i,N,i);
     ray_o.ray.id = RTCRayN_id(ray_i,N,i);
-    ray_o.hit.instID = RTCHitN_instID(hit_i,N,i);
     ray_o.hit.geomID = RTCHitN_geomID(hit_i,N,i);
     ray_o.hit.primID = RTCHitN_primID(hit_i,N,i);
     ray_o.hit.u = RTCHitN_u(hit_i,N,i);
@@ -457,6 +480,10 @@ namespace embree
     ray_o.hit.Ng_x = RTCHitN_Ng_x(hit_i,N,i);
     ray_o.hit.Ng_y = RTCHitN_Ng_y(hit_i,N,i);
     ray_o.hit.Ng_z = RTCHitN_Ng_z(hit_i,N,i);
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      ray_o.hit.instID[l] = RTCHitN_instID(hit_i, N, i, l);
+
     return ray_o;
   }
 
@@ -705,7 +732,6 @@ namespace embree
     rayp.ray.mask = &RTCRayN_mask(ray, N, 0);
     rayp.ray.id = &RTCRayN_id(ray, N, 0);
     rayp.ray.flags = &RTCRayN_flags(ray, N, 0);
-    rayp.hit.instID = &RTCHitN_instID(hit, N, 0);
     rayp.hit.geomID = &RTCHitN_geomID(hit, N, 0);
     rayp.hit.primID = &RTCHitN_primID(hit, N, 0);
     rayp.hit.u = &RTCHitN_u(hit, N, 0);
@@ -713,6 +739,9 @@ namespace embree
     rayp.hit.Ng_x = &RTCHitN_Ng_x(hit, N, 0);
     rayp.hit.Ng_y = &RTCHitN_Ng_y(hit, N, 0);
     rayp.hit.Ng_z = &RTCHitN_Ng_z(hit, N, 0);
+
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      rayp.hit.instID[l] = &RTCHitN_instID(hit, N, 0, l);
     
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNp(scene, context, &rayp, N); break;

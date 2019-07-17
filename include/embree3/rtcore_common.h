@@ -214,10 +214,12 @@ struct RTCIntersectContext
 /* Initializes an intersection context. */
 RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
 {
+  unsigned l = 0;
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
   context->instStackSize = 0;
-  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
+  for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    context->instID[l] = RTC_INVALID_GEOMETRY_ID;
 }
 
 /* Point query structure for closest point query */
