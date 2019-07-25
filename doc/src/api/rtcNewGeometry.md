@@ -65,7 +65,7 @@ user-defined geometries (`RTC_GEOMETRY_TYPE_USER`), and instances
 
 The types `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, and
-`RTC_GEOMETRY_TYPE_ROUND_ATMULL_ROM_CURVE` will treat the curve as a
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` will treat the curve as a
 sweep surface of a varying-radius circle swept tangentially along the
 curve. The types `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`, and
