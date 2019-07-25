@@ -54,9 +54,9 @@ argument can be used to input geometry data of the scene or output results of
 the point query (e.g. closest point currently found on surface geometry (see
 tutorial [ClosestPoint])).
 
-If parameter `queryFunc` is optional and can be NULL, for example, if the
-callback function should not be called for all geometries in the scene. In
-this case the callback function can be attached to a specific `RTCGeometry`
+The parameter `queryFunc` is optional and can be NULL, in which case
+the callback function is not invoked. However, a callback function
+can still get attached to a specific `RTCGeometry`
 object using [rtcSetGeometryPointQueryFunction]. If a callback function is
 attached to a geometry and (a potentially different) callback function is passed
 as an argument to `rtcPointQuery`, both functions are called for the
