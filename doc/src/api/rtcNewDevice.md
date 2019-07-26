@@ -49,6 +49,14 @@ The following configuration is supported:
   of 0 enables all detected hardware threads. By default all hardware
   threads are used.
 
++ `user_threads=[int]`: Sets the number of user threads that can be
+  used to join and participate in a scene commit using
+  `rtcJoinCommitScene`. The tasking system will only use
+  threads-user_threads many worker threads, thus if the app wants to
+  solely use its threads to commit scenes, just set threads equal to
+  user_threads. This option only has effect with the Intel(R)
+  Threading Building Blocks (TBB) tasking system.
+
 + `set_affinity=[0/1]`: When enabled, build threads are affinitized to
   hardware threads. This option is disabled by default on standard
   CPUs, and enabled by default on Xeon Phi Processors.
