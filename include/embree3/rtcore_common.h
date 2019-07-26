@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
-#include "rtcore_version.h"
+#include "rtcore_config.h"
 
 RTC_NAMESPACE_BEGIN
 
@@ -59,8 +59,6 @@ typedef int ssize_t;
 
 /* Maximum number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
-
-#include "rtcore_instance_levels.h"
 
 /* Formats of buffers and other data structures */
 enum RTCFormat

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rtcore_version.h"
+#include "rtcore_config.h"
 #include "rtcore_common.h"
 #include "rtcore_device.h"
 #include "rtcore_buffer.h"

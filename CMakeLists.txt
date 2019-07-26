@@ -62,14 +62,8 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 ENDIF()
 
 CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/rtcore_version.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_version.h"
-)
-
-SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 8 CACHE INT "Maximum number of instance levels.")
-CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/rtcore_instance_levels.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_instance_levels.h"
+  "${PROJECT_SOURCE_DIR}/kernels/rtcore_config.h.in"
+  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_config.h"
 )
 
 CONFIGURE_FILE(
@@ -135,7 +129,7 @@ IF (EMBREE_API_NAMESPACE AND EMBREE_ISPC_SUPPORT)
 ENDIF()
 
 ##############################################################################
-# Configurations (add configurations also to common/cmake/embree-config-default.cmake)
+# Configurations (add configurations also to common/cmake/embree-config.cmake)
 
 OPTION(EMBREE_INSTALL_DEPENDENCIES "Install Embree dependencies in binary packages and install" OFF)
 MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
@@ -158,6 +152,7 @@ OPTION(EMBREE_GEOMETRY_GRID "Enables support for grid geometries." ON)
 OPTION(EMBREE_GEOMETRY_POINT "Enables support for point geometries." ON)
 OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 
+SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 8 CACHE INT "Maximum number of instance levels.")
 SET(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0 CACHE STRING "Self intersection avoidance factor for flat curves. Specify floating point value in range 0 to inf.")
 
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
