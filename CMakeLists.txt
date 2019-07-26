@@ -61,24 +61,6 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   ENDIF()
 ENDIF()
 
-CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/rtcore_config.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_config.h"
-)
-
-CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
-  "${PROJECT_SOURCE_DIR}/kernels/hash.h"
-)
-CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map.in"
-  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map"
-)
-CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map.in"
-  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
-)
-
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
     cmake_policy(SET CMP0003 NEW)
@@ -181,11 +163,6 @@ ELSE()
   ADD_DEFINITIONS(-DTASKING_INTERNAL)
   LIST(APPEND ISPC_DEFINITIONS -DTASKING_INTERNAL)
 ENDIF()
-
-CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
-  "${PROJECT_SOURCE_DIR}/kernels/config.h"
-)
 
 ##############################################################
 # Compiler
@@ -456,6 +433,33 @@ INCLUDE (ispc)
 # Create Binary Packages (uses above config options)
 ##############################################################
 include(package)
+
+##############################################################
+# Create Config files
+##############################################################
+
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
+  "${PROJECT_SOURCE_DIR}/kernels/config.h"
+)
+
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/rtcore_config.h.in"
+  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_config.h"
+)
+
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
+  "${PROJECT_SOURCE_DIR}/kernels/hash.h"
+)
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map.in"
+  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map"
+)
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map.in"
+  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
+)
 
 ##############################################################
 # Search paths
