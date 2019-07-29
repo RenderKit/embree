@@ -17,8 +17,8 @@
       float u;             // barycentric u coordinate of hit
       float v;             // barycentric v coordinate of hit
 
-      unsigned int primID; // geometry ID
-      unsigned int geomID; // primitive ID
+      unsigned int primID; // primitive ID
+      unsigned int geomID; // geometry ID
       unsigned int instID; // instance ID
     };
 
