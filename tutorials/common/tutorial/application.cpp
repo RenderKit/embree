@@ -47,7 +47,7 @@ namespace embree
       registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
           rtcore += ",threads=" + toString(cin->getInt());
         }, "--threads <int>: number of threads to use");
-      
+
       registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
           rtcore += ",set_affinity=1";
         }, "--affinity: affinitize threads");
