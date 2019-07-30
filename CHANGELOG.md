@@ -2,6 +2,7 @@ Version History
 ---------------
 
 ### New Features in Embree 3.6
+-   Added support for point queries.
 -   Added Catmull-Rom curve types.
 -   Added support for multi-level instancing.
 -   Added support for point queries.
