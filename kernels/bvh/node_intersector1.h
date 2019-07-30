@@ -236,7 +236,7 @@ namespace embree
       dist = vX * vX + vY * vY + vZ * vZ;
       const vbool<N> vmask = dist <= query.tfar()*query.tfar();
       const vbool<N> valid = minX <= maxX;
-      return movemask(vmask) & movemask(valid) & ((1<<N)-1);
+      return movemask(vmask) & movemask(valid);
     }
 
     template<int N>
@@ -349,7 +349,7 @@ namespace embree
       const vbool<N> vmask = !((maxX < query.org.x - query.rad.x) | (minX > query.org.x + query.rad.x) |
                                (maxY < query.org.y - query.rad.y) | (minY > query.org.y + query.rad.y) |
                                (maxZ < query.org.z - query.rad.z) | (minZ > query.org.z + query.rad.z));
-      return movemask(vmask) & movemask(valid) & ((1<<N)-1);
+      return movemask(vmask) & movemask(valid);
     }
 
     template<int N>
