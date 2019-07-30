@@ -3,14 +3,17 @@ Version History
 
 ### New Features in Embree 3.6
 -   Added Catmull-Rom curve types.
+-   Added support for multi-level instancing.
+-   Added support for point queries.
 -   Fixed a bug preventing normal oriented curves being used unless timesteps were
     specified.
 -   Fixed bug in external BVH builder when configured for dynamic build.
 -   Added support for new config flag "user_threads=N" to device initialization
     which sets the number of threads used by TBB but created by the user.
+-   Fixed automatic vertex buffer padding when using rtcSetNewGeometry API function.
 
 ### New Features in Embree 3.5.2
--   Added EMBREE_ISA_NAMESPACE cmake option that allows to put all Embree API functions
+-   Added EMBREE_API_NAMESPACE cmake option that allows to put all Embree API functions
     inside a user defined namespace.
 -   Added EMBREE_LIBRARY_NAME cmake option that allows to rename the Embree library.
 -   When Embree is compiled as static library, EMBREE_STATIC_LIB has no longer to get
