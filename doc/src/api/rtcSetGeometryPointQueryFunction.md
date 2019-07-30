@@ -64,7 +64,9 @@ A `RTCPointQueryFunction` can also be passed directly as an argument to
 the scene that intersect the query domain. If a callback function is passed
 as an argument to [rtcPointQuery] and (a potentially different) callback
 function is set for a geometry with [rtcSetGeometryPointQueryFunction] both
-callback functions are invoked.
+callback functions are invoked and the callback function passed to
+[rtcPointQuery] will be called before the geometry specific callback
+function.
 
 If instancing is used, the parameter `simliarityScale` indicates whether the
 current instance transform (top element of `instStack`) is a similarity
