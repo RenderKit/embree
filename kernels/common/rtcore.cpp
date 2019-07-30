@@ -349,7 +349,7 @@ RTC_NAMESPACE_BEGIN;
     if (((size_t)query) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "query not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,cnt,cnt,cnt);
+    STAT3(point_query.travs,cnt,cnt,cnt);
 
     PointQuery4* query4 = (PointQuery4*)query;
     for (size_t i=0; i<4; i++) {
@@ -378,7 +378,7 @@ RTC_NAMESPACE_BEGIN;
     if (((size_t)query) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "query not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,cnt,cnt,cnt);
+    STAT3(point_query.travs,cnt,cnt,cnt);
 
     PointQuery8* query8 = (PointQuery8*)query;
     for (size_t i=0; i<8; i++) {
@@ -407,7 +407,7 @@ RTC_NAMESPACE_BEGIN;
     if (((size_t)query) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "query not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,cnt,cnt,cnt);
+    STAT3(point_query.travs,cnt,cnt,cnt);
 
     PointQuery16* query16 = (PointQuery16*)query;
     for (size_t i=0; i<16; i++) {

@@ -261,14 +261,14 @@ namespace embree
         {
           /* intersect node */
           size_t mask; vfloat<N> tNear;
-          STAT3(normal.trav_nodes,1,1,1);
+          STAT3(point_query.trav_nodes,1,1,1);
           bool nodeIntersected;
           if (likely(context->query_type == POINT_QUERY_TYPE_SPHERE)) {
             nodeIntersected = BVHNNodePointQuerySphere1<N, types>::pointQuery(cur, tquery, query->time, tNear, mask);
           } else {
             nodeIntersected = BVHNNodePointQueryAABB1  <N, types>::pointQuery(cur, tquery, query->time, tNear, mask);
           }
-          if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
+          if (unlikely(!nodeIntersected)) { STAT3(point_query.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
           if (unlikely(mask == 0))
@@ -280,7 +280,7 @@ namespace embree
 
         /* this is a leaf node */
         assert(cur != BVH::emptyNode);
-        STAT3(normal.trav_leaves,1,1,1);
+        STAT3(point_query.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
         PrimitiveIntersector1::pointQuery(This, query, context, prim, num, tquery, lazy_node);
