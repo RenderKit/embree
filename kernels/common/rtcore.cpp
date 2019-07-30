@@ -303,11 +303,10 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcQueryPoint);
 #if defined(DEBUG)
     RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_HANDLE(instStack);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     if (((size_t)query) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "query not aligned to 16 bytes");   
 #endif
-    RTC_VERIFY_HANDLE(instStack);
-
     if (instStack->size > 0)
     {
       const AffineSpace3fa transform = loadTransform(RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, 
