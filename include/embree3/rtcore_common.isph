@@ -292,11 +292,12 @@ struct RTCPointQueryFunctionArguments
   //    for all x,y: dist(Mx, My) = similarityScale * dist(x, y),
   // The similarity scale is 0, if the current instance transform is not a
   // similarity transform and vice versa. The similarity scale allows to compute
-  // distance information in instance space and scale the distances accordingly
-  // into world space, for example, to update the query radius. If the current
-  // instance transform is not a similarity transform (similarityScale = 0), the
-  // distance computation has to be performed in world space to ensure correctness.
-  // if there is no instance transform (instStack->size == 0), the similarity scale is 1.
+  // distance information in instance space and scale the distances into world
+  // space by dividing with the similarity scale, for example, to update the
+  // query radius. If the current instance transform is not a similarity
+  // transform (similarityScale = 0), the distance computation has to be
+  // performed in world space to ensure correctness. if there is no instance
+  // transform (instStack->size == 0), the similarity scale is 1.
   float similarityScale;
 };
 
