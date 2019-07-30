@@ -28,23 +28,20 @@ namespace embree
                       AffineSpace3fa const& w2i, 
                       AffineSpace3fa const& i2w)
     {
+      assert(context);
       PointQueryInstanceStack* stack = context->instStack;
       const size_t stackSize = stack->size;
-      const bool spaceAvailable = context && stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT;
-      assert(spaceAvailable); 
-      if (likely(spaceAvailable)) 
+      assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT); 
+      stack->instID[stackSize] = instanceId;
+      stack->instW2I[stackSize] = w2i;
+      stack->instI2W[stackSize] = i2w;
+      if (unlikely(stackSize > 0))
       {
-        stack->instID[stackSize] = instanceId;
-        stack->instW2I[stackSize] = w2i;
-        stack->instI2W[stackSize] = i2w;
-        if (unlikely(stackSize > 0))
-        {
-          stack->instW2I[stackSize] = stack->instW2I[stackSize  ] * stack->instW2I[stackSize-1];
-          stack->instI2W[stackSize] = stack->instI2W[stackSize-1] * stack->instI2W[stackSize  ];
-        }
-        stack->size++;
+        stack->instW2I[stackSize] = stack->instW2I[stackSize  ] * stack->instW2I[stackSize-1];
+        stack->instI2W[stackSize] = stack->instI2W[stackSize-1] * stack->instI2W[stackSize  ];
       }
-      return spaceAvailable;
+      stack->size++;
+      return true;
     }
 
     /* Pop the last instance pushed to the stack. Do not call on an empty stack. */
