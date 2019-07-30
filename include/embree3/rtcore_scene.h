@@ -92,13 +92,13 @@ RTC_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bou
 RTC_API void rtcPointQuery(RTCScene scene, struct RTCPointQuery* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void* userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
-RTC_API void rtcPointQuery4(const int* valid, RTCScene scene, struct RTCPointQuery4* query, RTCPointQueryFunction queryFunc, void** userPtr);
+RTC_API void rtcPointQuery4(const int* valid, RTCScene scene, struct RTCPointQuery4* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
-RTC_API void rtcPointQuery8(const int* valid, RTCScene scene, struct RTCPointQuery8* query, RTCPointQueryFunction queryFunc, void** userPtr);
+RTC_API void rtcPointQuery8(const int* valid, RTCScene scene, struct RTCPointQuery8* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
-RTC_API void rtcPointQuery16(const int* valid, RTCScene scene, struct RTCPointQuery16* query, RTCPointQueryFunction queryFunc, void** userPtr);
+RTC_API void rtcPointQuery16(const int* valid, RTCScene scene, struct RTCPointQuery16* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtr);
 
 /* Intersects a single ray with the scene. */
 RTC_API void rtcIntersect1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit);

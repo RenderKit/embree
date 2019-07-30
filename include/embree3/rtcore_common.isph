@@ -263,7 +263,7 @@ struct RTCPointQueryInstanceStack
 };
 
 /* Initializes an intersection context. */
-RTC_FORCEINLINE void rtcInitPointQueryInstanceStack(uniform RTCPointQueryInstanceStack* uniform instStack)
+RTC_FORCEINLINE void rtcInitPointQueryInstanceStack(varying RTCPointQueryInstanceStack *uniform instStack)
 {
   instStack->size = 0;
   instStack->instID[0] = RTC_INVALID_GEOMETRY_ID;

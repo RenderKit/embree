@@ -336,7 +336,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcPointQuery4 (const int* valid, RTCScene hscene, RTCPointQuery4* query, RTCPointQueryFunction queryFunc, void** userPtrN) 
+  RTC_API void rtcPointQuery4 (const int* valid, RTCScene hscene, RTCPointQuery4* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -355,9 +355,7 @@ RTC_NAMESPACE_BEGIN;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query4->get(i,query1);
-      RTCPointQueryInstanceStack instStack;
-      rtcInitPointQueryInstanceStack(&instStack);
-      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,&instStack,1.f,userPtrN?userPtrN[i]:NULL);
+      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,instStack,1.f,userPtrN?userPtrN[i]:NULL);
       scene->intersectors.pointQuery(&query1, &context);
       query4->set(i,query1);
     }
@@ -365,7 +363,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcPointQuery8 (const int* valid, RTCScene hscene, RTCPointQuery8* query, RTCPointQueryFunction queryFunc, void** userPtrN) 
+  RTC_API void rtcPointQuery8 (const int* valid, RTCScene hscene, RTCPointQuery8* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -384,9 +382,7 @@ RTC_NAMESPACE_BEGIN;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query8->get(i,query1);
-      RTCPointQueryInstanceStack instStack;
-      rtcInitPointQueryInstanceStack(&instStack);
-      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,&instStack,1.f,userPtrN?userPtrN[i]:NULL);
+      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,instStack,1.f,userPtrN?userPtrN[i]:NULL);
       scene->intersectors.pointQuery(&query1, &context);
       query8->set(i,query1);
     }
@@ -394,7 +390,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcPointQuery16 (const int* valid, RTCScene hscene, RTCPointQuery16* query, RTCPointQueryFunction queryFunc, void** userPtrN) 
+  RTC_API void rtcPointQuery16 (const int* valid, RTCScene hscene, RTCPointQuery16* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -413,9 +409,7 @@ RTC_NAMESPACE_BEGIN;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query16->get(i,query1);
-      RTCPointQueryInstanceStack instStack;
-      rtcInitPointQueryInstanceStack(&instStack);
-      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,&instStack,1.f,userPtrN?userPtrN[i]:NULL);
+      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,instStack,1.f,userPtrN?userPtrN[i]:NULL);
       scene->intersectors.pointQuery(&query1, &context);
       query16->set(i,query1);
     }
