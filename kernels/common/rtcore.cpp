@@ -300,7 +300,7 @@ RTC_NAMESPACE_BEGIN;
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcQueryPoint);
+    RTC_TRACE(rtcPointQuery);
 #if defined(DEBUG)
     RTC_VERIFY_HANDLE(hscene);
     RTC_VERIFY_HANDLE(instStack);
