@@ -232,9 +232,6 @@ namespace embree
       stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
       
-      if (bvh->root == BVH::emptyNode)
-        return;
-      
       /* verify correct input */
       assert(!(types & BVH_MB) || (query->time >= 0.0f && query->time <= 1.0f));
 
