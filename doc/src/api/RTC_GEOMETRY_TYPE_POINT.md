@@ -22,7 +22,7 @@
 #### DESCRIPTION
 
 Points with per vertex radii are supported with sphere, ray-oriented
-discs, and normal-oriented discs geometric represetntations. Such
+discs, and normal-oriented discs geometric representations. Such
 point geometries are
 created by passing `RTC_GEOMETRY_TYPE_SPHERE_POINT`,
 `RTC_GEOMETRY_TYPE_DISC_POINT`, or
