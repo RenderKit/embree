@@ -82,6 +82,13 @@ inner BVH nodes that do not intersect the query domain. See
 
 The point query structure must be aligned to 16 bytes.
 
+#### SUPPORTED PRIMITIVES
+
+Currenly, all primitive types are supported by the point query API except of
+points (see [RTC_GEOMETRY_TYPE_POINT]), curves (see
+[RTC_GEOMETRY_TYPE_CURVE]) and sudivision surfaces (see
+[RTC_GEOMETRY_SUBDIVISION]).
+
 #### EXIT STATUS
 
 For performance reasons this function does not do any error checks,

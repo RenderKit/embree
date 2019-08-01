@@ -84,7 +84,7 @@ namespace embree
       template<int N>
         static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
       {
-          assert(false && "not implemented");
+          // TODO: PointQuery implement
       }
 
       template<int N>
@@ -139,7 +139,7 @@ namespace embree
       template<int N>
         static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
       {
-          assert(false && "not implemented");
+          // TODO: PointQuery implement
       }
 
       template<int N, int Nx, bool robust>

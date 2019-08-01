@@ -47,11 +47,14 @@ namespace embree
       for (size_t i = 0; i < Primitive::max_size(); i++)
       {
         if (!prim.valid(i)) break;
+        STAT3(point_query.trav_prims,1,1,1);
         AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID(i));
         context->geomID = prim.geomID(i);
         context->primID = prim.primID(i);
         accel->pointQuery(query, context);
       }
     }
+    
+    static __forceinline void pointQueryNoop(PointQuery* query, PointQueryContext* context, const Primitive& prim) { }
   };
 }

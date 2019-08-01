@@ -1373,6 +1373,20 @@ namespace embree
       }
     };
     
+    template<int N>
+    struct BVHNQuantizedBaseNodePointQuerySphere1
+    {
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
+      {
+        return pointQueryNodeSphere(node,query,dist);
+      }
+
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
+      {
+        return pointQueryNodeSphere(node,query,time,dist);
+      }
+    };
+
     /*! Computes traversal information for N nodes with 1 point query */
     template<int N, int types>
     struct BVHNNodePointQueryAABB1;
@@ -1456,6 +1470,21 @@ namespace embree
         return true;
       }
     };
+    
+    template<int N>
+    struct BVHNQuantizedBaseNodePointQueryAABB1
+    {
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
+      {
+        return pointQueryNodeAABB(node,query,dist);
+      }
+
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
+      {
+        return pointQueryNodeAABB(node,query,time,dist);
+      }
+    };
+
     
     //////////////////////////////////////////////////////////////////////////////////////
     // Node intersectors used in ray traversal

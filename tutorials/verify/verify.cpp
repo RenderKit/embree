@@ -3209,6 +3209,269 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   
+  struct PointQueryAPICallsTest : public VerifyApplication::Test
+  {
+    SceneFlags sflags; 
+
+    PointQueryAPICallsTest (std::string name, int isa, SceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication *state, bool silent)
+    {
+      // This test assures that the expected internal point query calls are made
+      // for supported primitive/geometry types
+      
+      std::string cfg = state->rtcore + ",isa=" + stringOfISA(isa);
+      printf("run test %s\n", cfg.c_str());
+
+      auto queryFunc = [](RTCPointQueryFunctionArguments* args) -> bool
+      {
+        assert(args->userPtr);
+        //printf("query callback called for geomID %u and primID %u\n", args->geomID, args->primID);
+        uint32_t *numCalls = (uint32_t*)args->userPtr;
+        (*numCalls)++;
+        return false;
+      };
+      RTCPointQuery query;
+      query.x = query.y = query.z = query.time = 0.f;
+      query.radius = inf;
+
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr, rtcGetDeviceError(device));
+      
+      // triangle mesh
+      if (1) {
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene, sflags.sflags);
+        rtcSetSceneBuildQuality(scene, sflags.qflags);
+
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+        rtcSetGeometryBuildQuality(geom, sflags.qflags);
+
+        Vec3f *vertices = (Vec3f *)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3f), 3);
+        Triangle *triangles = (Triangle *)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle), 1);
+        vertices[0] = Vec3f(-1.0f, 0.0f, -1.0f);
+        vertices[1] = Vec3f(+1.0f, 0.0f, -1.0f);
+        vertices[2] = Vec3f(+0.0f, 0.0f, +1.0f);
+        triangles[0] = Triangle(0, 1, 2);
+
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        uint32_t numCalls = 0;
+        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        if (numCalls != 1)
+          return VerifyApplication::FAILED;
+        AssertNoError(device);
+      }
+      
+      // flat linear curve
+      if (1) {
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene, sflags.sflags);
+        rtcSetSceneBuildQuality(scene, sflags.qflags);
+
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+        rtcSetGeometryBuildQuality(geom, sflags.qflags);
+
+        Vec4f *vertices = (Vec4f *)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 3);
+        uint32_t *indices = (uint32_t*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, sizeof(uint32_t), 2);
+        vertices[0] = Vec4f(-1.0f, 0.0f, 0.0f, 0.1f);
+        vertices[1] = Vec4f(+0.0f, 0.0f, 0.0f, 0.1f);
+        vertices[2] = Vec4f(+1.0f, 0.0f, 0.0f, 0.1f);
+        indices[0] = 0;
+        indices[1] = 1;
+
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        uint32_t numCalls = 0;
+        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        if (numCalls != 0)
+        {
+          return VerifyApplication::FAILED;
+        }
+        AssertNoError(device);
+      }
+      
+      // flat bezier curve
+      if (1) {
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene, sflags.sflags);
+        rtcSetSceneBuildQuality(scene, sflags.qflags);
+
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
+        rtcSetGeometryBuildQuality(geom, sflags.qflags);
+
+        Vec4f *vertices = (Vec4f *)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 4);
+        uint32_t *indices = (uint32_t*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, sizeof(uint32_t), 1);
+        vertices[0] = Vec4f(-1.0f, 0.0f, 0.0f, 0.1f);
+        vertices[1] = Vec4f(-1.0f, 0.0f, 1.0f, 0.1f);
+        vertices[2] = Vec4f(+1.0f, 0.0f, 1.0f, 0.1f);
+        vertices[2] = Vec4f(+1.0f, 0.0f, 0.0f, 0.1f);
+        indices[0] = 0;
+
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        uint32_t numCalls = 0;
+        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        if (numCalls != 0)
+        {
+          return VerifyApplication::FAILED;
+        }
+        AssertNoError(device);
+      }
+      
+      // grid geometry
+      if (1) {
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene, sflags.sflags);
+        rtcSetSceneBuildQuality(scene, sflags.qflags);
+
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_GRID);
+        rtcSetGeometryBuildQuality(geom, sflags.qflags);
+
+        RTCGrid* grid = (RTCGrid*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, sizeof(RTCGrid), 2);
+        grid[0].startVertexID = 0;
+        grid[0].stride        = 3;
+        grid[0].width         = 3;
+        grid[0].height        = 3;
+        grid[1].startVertexID = 9;
+        grid[1].stride        = 2;
+        grid[1].width         = 2;
+        grid[1].height        = 2;
+
+        /* set vertices */
+        Vec3f* vertices = (Vec3f*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vec3f),13);
+        for (int j = 0; j < 3; ++j)
+        for (int i = 0; i < 3; ++i)
+        {
+          vertices[j * 3 + i] = Vec3f(float(i), (j == 1) ? 0.5f : 1.f, 2.f-float(j));
+        }
+        vertices[ 9] = Vec3f(0.f, 2.f, 1.f);
+        vertices[10] = Vec3f(1.f, 2.f, 1.f);
+        vertices[11] = Vec3f(1.f, 2.f, 0.f);
+        vertices[12] = Vec3f(0.f, 2.f, 0.f);
+
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        uint32_t numCalls = 0;
+        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        if (numCalls != 2)
+        {
+          return VerifyApplication::FAILED;
+        }
+        AssertNoError(device);
+      }
+
+      // user geometry
+      if (1) {
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene, sflags.sflags);
+        rtcSetSceneBuildQuality(scene, sflags.qflags);
+
+        struct Sphere { ALIGNED_STRUCT_(16) Vec3fa p; float r; };
+        auto boundsFunc = [](const struct RTCBoundsFunctionArguments* args)
+        {
+          const Sphere* spheres = (const Sphere*) args->geometryUserPtr;
+          RTCBounds* bounds_o = args->bounds_o;
+          const Sphere& sphere = spheres[args->primID];
+          bounds_o->lower_x = sphere.p.x-sphere.r;
+          bounds_o->lower_y = sphere.p.y-sphere.r;
+          bounds_o->lower_z = sphere.p.z-sphere.r;
+          bounds_o->upper_x = sphere.p.x+sphere.r;
+          bounds_o->upper_y = sphere.p.y+sphere.r;
+          bounds_o->upper_z = sphere.p.z+sphere.r;
+        };
+        auto intersectFunc = [](const RTCIntersectFunctionNArguments* args) {};
+        auto occludedFunc  = [](const RTCOccludedFunctionNArguments* args)  {};
+        
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+        rtcSetGeometryBuildQuality(geom, sflags.qflags);
+
+        Sphere* sphere = (Sphere*) alignedMalloc(2*sizeof(Sphere),16);
+        sphere[0].p = Vec3fa(0.f, 0.f, 0.f);
+        sphere[0].r = 1.f;
+        sphere[1].p = Vec3fa(2.f, 0.f, 0.f);
+        sphere[1].r = 1.f;
+        rtcSetGeometryUserPrimitiveCount(geom, 2);
+        rtcSetGeometryUserData(geom, sphere);
+        rtcSetGeometryBoundsFunction(geom, boundsFunc, nullptr);
+        rtcSetGeometryIntersectFunction(geom, intersectFunc);
+        rtcSetGeometryOccludedFunction (geom, occludedFunc);
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        uint32_t numCalls = 0;
+        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        if (numCalls != 2)
+        {
+          return VerifyApplication::FAILED;
+        }
+        AssertNoError(device);
+      }
+      
+      // point geometry
+      if (1) {
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene, sflags.sflags);
+        rtcSetSceneBuildQuality(scene, sflags.qflags);
+
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
+        rtcSetGeometryBuildQuality(geom, sflags.qflags);
+
+        Vec4f* vertices = (Vec4f*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 10);
+        for (int i = 0; i < 10; ++i)
+          vertices[i] = Vec4f((float)i, 0.f, 0.f, 0.1f);
+
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        RTCPointQueryInstanceStack instStack;
+        rtcInitPointQueryInstanceStack(&instStack);
+        uint32_t numCalls = 0;
+        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        if (numCalls != 0)
+        {
+          return VerifyApplication::FAILED;
+        }
+        AssertNoError(device);
+      }
+
+      return VerifyApplication::PASSED;
+    }
+  };
+  
   struct PointQueryInstanceStackTest : public VerifyApplication::Test
   {
     PointQueryInstanceStackTest (std::string name, int isa)
@@ -5079,6 +5342,7 @@ namespace embree
 
       push(new TestGroup("point_query",true,true));
       for (auto sflags : sceneFlags) {
+        groups.top()->add(new PointQueryAPICallsTest("point_query_api_calls",isa,sflags));
         groups.top()->add(new PointQueryInstanceStackTest(to_string(sflags),isa));
         if (stringOfISA(isa) == "SSE4.1" || stringOfISA(isa) == "SSE4.2") {
           groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh4.triangle4v"));
