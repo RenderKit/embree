@@ -85,30 +85,32 @@ RTC_API void rtcGetSceneBounds(RTCScene scene, uniform RTCBounds* uniform bounds
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCLinearBounds* uniform bounds_o);
 
 /* perform a closest point query of the scene. */
-RTC_API void rtcPointQuery(RTCScene scene, uniform RTCPointQuery* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void* uniform userPtr);
+RTC_API bool rtcPointQuery(RTCScene scene, uniform RTCPointQuery* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void* uniform userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
-RTC_API void rtcPointQuery4(const int* uniform valid, RTCScene scene, void* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
+RTC_API bool rtcPointQuery4(const int* uniform valid, RTCScene scene, void* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
-RTC_API void rtcPointQuery8(const int* uniform valid, RTCScene scene, void* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
+RTC_API bool rtcPointQuery8(const int* uniform valid, RTCScene scene, void* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
-RTC_API void rtcPointQuery16(const int* uniform valid, RTCScene scene, void* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
+RTC_API bool rtcPointQuery16(const int* uniform valid, RTCScene scene, void* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
 
 /* Intersects a varying ray with the scene. */
-RTC_FORCEINLINE void rtcPointQueryV(RTCScene scene, varying RTCPointQuery* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr) 
+RTC_FORCEINLINE bool rtcPointQueryV(RTCScene scene, varying RTCPointQuery* uniform query, varying RTCPointQueryInstanceStack* uniform instStack, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr) 
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
   if (sizeof(varying float) == 16)
-    rtcPointQuery4((uniform int* uniform)&imask, scene, query, instStack, queryFunc, userPtr);
+    return rtcPointQuery4((uniform int* uniform)&imask, scene, query, instStack, queryFunc, userPtr);
   else if (sizeof(varying float) == 32)
-    rtcPointQuery8((uniform int* uniform)&imask, scene, query, instStack, queryFunc, userPtr);
+    return rtcPointQuery8((uniform int* uniform)&imask, scene, query, instStack, queryFunc, userPtr);
   else if (sizeof(varying float) == 64)
-    rtcPointQuery16((uniform int* uniform)&imask, scene, query, instStack, queryFunc, userPtr);
+    return rtcPointQuery16((uniform int* uniform)&imask, scene, query, instStack, queryFunc, userPtr);
+  else
+    return false;
 }
 
 /* Intersects a single ray with the scene. */

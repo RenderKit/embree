@@ -229,7 +229,6 @@ namespace embree
   
   void Geometry::setPointQueryFunction (RTCPointQueryFunction func) 
   {
-    // TODO: PointQuery test if all primitve types work
     pointQueryFunc = func;
   }
 
@@ -307,7 +306,7 @@ namespace embree
     }
   }
     
-  void Geometry::pointQuery(PointQuery* query, PointQueryContext* context)
+  bool Geometry::pointQuery(PointQuery* query, PointQueryContext* context)
   {
     assert(context->primID < size());
    
@@ -333,5 +332,6 @@ namespace embree
         query->radius = context->query_ws->radius * context->similarityScale;
       }
     }
+    return update;
   }
 }

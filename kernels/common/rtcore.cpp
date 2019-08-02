@@ -296,7 +296,7 @@ RTC_NAMESPACE_BEGIN;
 
   AffineSpace3fa loadTransform(RTCFormat format, const float* xfm);
 
-  RTC_API void rtcPointQuery(RTCScene hscene, RTCPointQuery* query, RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void* userPtr)
+  RTC_API bool rtcPointQuery(RTCScene hscene, RTCPointQuery* query, RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void* userPtr)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -307,6 +307,8 @@ RTC_NAMESPACE_BEGIN;
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     if (((size_t)query) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "query not aligned to 16 bytes");   
 #endif
+
+    bool changed = false;
     if (instStack->size > 0)
     {
       const AffineSpace3fa transform = loadTransform(RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, 
@@ -324,18 +326,19 @@ RTC_NAMESPACE_BEGIN;
       PointQueryContext context_inst(scene, (PointQuery*)query,
         similtude ? POINT_QUERY_TYPE_SPHERE : POINT_QUERY_TYPE_AABB,
         queryFunc, instStack, similarityScale, userPtr);
-      scene->intersectors.pointQuery((PointQuery*)&query_inst, &context_inst);
+      changed = scene->intersectors.pointQuery((PointQuery*)&query_inst, &context_inst);
     }
     else
     {
       PointQueryContext context(scene, (PointQuery*)query, 
         POINT_QUERY_TYPE_SPHERE, queryFunc, instStack, 1.f, userPtr);
-      scene->intersectors.pointQuery((PointQuery*)query, &context);
+      changed = scene->intersectors.pointQuery((PointQuery*)query, &context);
     }
+    return changed;
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcPointQuery4 (const int* valid, RTCScene hscene, RTCPointQuery4* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
+  RTC_API bool rtcPointQuery4 (const int* valid, RTCScene hscene, RTCPointQuery4* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -350,19 +353,20 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(point_query.travs,cnt,cnt,cnt);
 
+    bool changed = false;
     PointQuery4* query4 = (PointQuery4*)query;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query4->get(i,query1);
       PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,instStack,1.f,userPtrN?userPtrN[i]:NULL);
-      scene->intersectors.pointQuery(&query1, &context);
+      changed |= scene->intersectors.pointQuery(&query1, &context);
       query4->set(i,query1);
     }
-    
+    return changed;
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcPointQuery8 (const int* valid, RTCScene hscene, RTCPointQuery8* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
+  RTC_API bool rtcPointQuery8 (const int* valid, RTCScene hscene, RTCPointQuery8* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -377,19 +381,20 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(point_query.travs,cnt,cnt,cnt);
 
+    bool changed = false;
     PointQuery8* query8 = (PointQuery8*)query;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query8->get(i,query1);
       PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,instStack,1.f,userPtrN?userPtrN[i]:NULL);
-      scene->intersectors.pointQuery(&query1, &context);
+      changed |= scene->intersectors.pointQuery(&query1, &context);
       query8->set(i,query1);
     }
-
+    return changed;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcPointQuery16 (const int* valid, RTCScene hscene, RTCPointQuery16* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
+  RTC_API bool rtcPointQuery16 (const int* valid, RTCScene hscene, RTCPointQuery16* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -404,15 +409,16 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(point_query.travs,cnt,cnt,cnt);
 
+    bool changed = false;
     PointQuery16* query16 = (PointQuery16*)query;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query16->get(i,query1);
       PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,instStack,1.f,userPtrN?userPtrN[i]:NULL);
-      scene->intersectors.pointQuery(&query1, &context);
+      changed |= scene->intersectors.pointQuery(&query1, &context);
       query16->set(i,query1);
     }
-    
+    return changed;
     RTC_CATCH_END2(scene);
   }
   RTC_API void rtcIntersect1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit) 

@@ -106,7 +106,7 @@ namespace embree
       return occluded;
     }
     
-    void InstanceIntersector1::pointQuery(PointQuery* query, PointQueryContext* context, const InstancePrimitive& prim)
+    bool InstanceIntersector1::pointQuery(PointQuery* query, PointQueryContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
 
@@ -133,9 +133,11 @@ namespace embree
           similarityScale,
           context->userPtr); 
 
-        instance->object->intersectors.pointQuery(&query_inst, &context_inst);
+        bool changed = instance->object->intersectors.pointQuery(&query_inst, &context_inst);
         popInstance(context);
+        return changed;
       }
+      return false;
     }
 
     void InstanceIntersector1MB::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
@@ -193,7 +195,7 @@ namespace embree
       return occluded;
     }
     
-    void InstanceIntersector1MB::pointQuery(PointQuery* query, PointQueryContext* context, const InstancePrimitive& prim)
+    bool InstanceIntersector1MB::pointQuery(PointQuery* query, PointQueryContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
 
@@ -219,9 +221,11 @@ namespace embree
           similarityScale,
           context->userPtr); 
 
-        instance->object->intersectors.pointQuery(&query_inst, &context_inst);
+        bool changed = instance->object->intersectors.pointQuery(&query_inst, &context_inst);
         popInstance(context);
+        return changed;
       }
+      return false;
     }
     
     template<int K>

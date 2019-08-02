@@ -44,12 +44,14 @@ namespace embree
     accels.clear();
   }
 
-  void AccelN::pointQuery (Accel::Intersectors* This_in, PointQuery* query, PointQueryContext* context)
+  bool AccelN::pointQuery (Accel::Intersectors* This_in, PointQuery* query, PointQueryContext* context)
   {
+    bool changed = false;
     AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->accels.size(); i++)
       if (!This->accels[i]->isEmpty())
-        This->accels[i]->intersectors.pointQuery(query,context);
+        changed |= This->accels[i]->intersectors.pointQuery(query,context);
+    return changed;
   }
 
   void AccelN::intersect (Accel::Intersectors* This_in, RTCRayHit& ray, IntersectContext* context) 

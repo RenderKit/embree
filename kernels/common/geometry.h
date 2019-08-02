@@ -284,7 +284,7 @@ namespace embree
     virtual void interpolateN(const RTCInterpolateNArguments* const args);
 
     /* point query api */
-    void pointQuery(PointQuery* query, PointQueryContext* context);
+    bool pointQuery(PointQuery* query, PointQueryContext* context);
 
     /*! for subdivision surfaces only */
   public:

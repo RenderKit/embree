@@ -61,12 +61,12 @@ namespace embree
         return ray.tfar < 0.0f;
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
       {
         AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID());
         context->geomID = prim.geomID();
         context->primID = prim.primID();
-        accel->pointQuery(query, context);
+        return accel->pointQuery(query, context);
       }
       
       template<int K>

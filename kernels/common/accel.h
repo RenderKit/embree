@@ -75,7 +75,7 @@ namespace embree
 
     struct Intersectors;
 
-    typedef void(*PointQueryFunc)(Intersectors* This,          /*!< this pointer to accel */
+    typedef bool(*PointQueryFunc)(Intersectors* This,          /*!< this pointer to accel */
                                   PointQuery* query,        /*!< point query for lookup */
                                   PointQueryContext* context); /*!< point query context */
 
@@ -280,9 +280,9 @@ namespace embree
         }        
       }
 
-      __forceinline void pointQuery (PointQuery* query, PointQueryContext* context) {
+      __forceinline bool pointQuery (PointQuery* query, PointQueryContext* context) {
         assert(intersector1.pointQuery);
-        intersector1.pointQuery(this,query,context);
+        return intersector1.pointQuery(this,query,context);
       }
 
       /*! Intersects a single ray with the scene. */

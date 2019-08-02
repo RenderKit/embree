@@ -82,14 +82,16 @@ namespace embree
       }
       
       template<int N>
-        static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
+        static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
       {
           // TODO: PointQuery implement
+          assert(false && "not implemented");
+          return false;
       }
 
       template<int N>
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
-        pointQuery(This,query,context,prim,ty,tquery,lazy_node);
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
+        return pointQuery(This,query,context,prim,ty,tquery,lazy_node);
       }
     };
 
@@ -137,14 +139,16 @@ namespace embree
       }
       
       template<int N>
-        static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
+        static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
       {
           // TODO: PointQuery implement
+          assert(false && "not implemented");
+          return false;
       }
 
       template<int N, int Nx, bool robust>
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
-        pointQuery(This,query,context,prim,ty,tquery,lazy_node);
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
+        return pointQuery(This,query,context,prim,ty,tquery,lazy_node);
       }
     };
 

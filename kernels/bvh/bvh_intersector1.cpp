@@ -229,13 +229,13 @@ namespace embree
       /* right now AVX512KNL SIMD extension only for standard node types */
       static const size_t Nx = (types == BVH_AN1 || types == BVH_QN1) ? vextend<N>::size : N;
 
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context)
       {
         const BVH* __restrict__ bvh = (const BVH*)This->ptr;
         
         /* we may traverse an empty BVH in case all geometry was invalid */
         if (bvh->root == BVH::emptyNode)
-          return;
+          return false;
         
         /* stack state */
         StackItemT<NodeRef> stack[stackSize];    // stack of nodes
@@ -253,6 +253,11 @@ namespace embree
         /* initialize the node traverser */
         BVHNNodeTraverser1Hit<N, N, types> nodeTraverser;
 
+        bool changed = false;
+        float cull_radius = context->query_type == POINT_QUERY_TYPE_SPHERE
+                          ? query->radius * query->radius
+                          : dot(context->query_radius, context->query_radius);
+
         /* pop loop */
         while (true) pop:
         {
@@ -262,9 +267,6 @@ namespace embree
           NodeRef cur = NodeRef(stackPtr->ptr);
 
           /* if popped node is too far, pop next one */
-          const float cull_radius = context->query_type == POINT_QUERY_TYPE_SPHERE
-                                  ? query->radius * query->radius
-                                  : dot(context->query_radius, context->query_radius);
           if (unlikely(*(float*)&stackPtr->dist > cull_radius))
             continue;
 
@@ -295,8 +297,14 @@ namespace embree
           STAT3(point_query.trav_leaves,1,1,1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           size_t lazy_node = 0;
-          PrimitiveIntersector1::pointQuery(This, query, context, prim, num, tquery, lazy_node);
-          tquery.rad = context->query_radius;
+          if (PrimitiveIntersector1::pointQuery(This, query, context, prim, num, tquery, lazy_node))
+          {
+            changed = true;
+            tquery.rad = context->query_radius;
+            cull_radius = context->query_type == POINT_QUERY_TYPE_SPHERE
+                        ? query->radius * query->radius
+                        : dot(context->query_radius, context->query_radius);
+          }
 
           /* push lazy node onto stack */
           if (unlikely(lazy_node)) {
@@ -305,30 +313,31 @@ namespace embree
             stackPtr++;
           }
         }
+        return changed;
       }
     };
 
     /* disable point queries for not yet supported geometry types */
     template<int N, int types, bool robust>
     struct PointQueryDispatch<N, types, robust, VirtualCurveIntersector1> {
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { }
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { return false; }
     };
     
     template<int N, int types, bool robust>
     struct PointQueryDispatch<N, types, robust, SubdivPatch1Intersector1> {
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { }
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { return false; }
     };
     
     template<int N, int types, bool robust>
     struct PointQueryDispatch<N, types, robust, SubdivPatch1MBIntersector1> {
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { }
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { return false; }
     };
 
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
-    void BVHNIntersector1<N, types, robust, PrimitiveIntersector1>::pointQuery(
+    bool BVHNIntersector1<N, types, robust, PrimitiveIntersector1>::pointQuery(
       const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context)
     {
-      PointQueryDispatch<N, types, robust, PrimitiveIntersector1>::pointQuery(This, query, context);
+      return PointQueryDispatch<N, types, robust, PrimitiveIntersector1>::pointQuery(This, query, context);
     }
   }
 }

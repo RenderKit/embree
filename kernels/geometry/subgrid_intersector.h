@@ -56,13 +56,13 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
       {
         STAT3(point_query.trav_prims,1,1,1);
         AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
         context->geomID = subgrid.geomID();
         context->primID = subgrid.primID();
-        accel->pointQuery(query, context);
+        return accel->pointQuery(query, context);
       }
 
       template<int Nx, bool robust>
@@ -109,8 +109,9 @@ namespace embree
         return false;
       }
     
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {
+        bool changed = false;
         for (size_t i=0;i<num;i++)
         {
           vfloat<N> dist;
@@ -127,9 +128,10 @@ namespace embree
           {
             const size_t ID = bscf(mask); 
             assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
-            pointQuery(query, context, prim[i].subgrid(ID));
+            changed |= pointQuery(query, context, prim[i].subgrid(ID));
           }
         }
+        return changed;
       }
     };
 
@@ -159,13 +161,13 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
       {
         STAT3(point_query.trav_prims,1,1,1);
         AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
         context->geomID = subgrid.geomID();
         context->primID = subgrid.primID();
-        accel->pointQuery(query, context);
+        return accel->pointQuery(query, context);
       }
 
       template<int Nx, bool robust>
@@ -212,8 +214,9 @@ namespace embree
         return false;
       }
       
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {
+        bool changed = false;
         for (size_t i=0;i<num;i++)
         {
           vfloat<N> dist;
@@ -230,9 +233,10 @@ namespace embree
           {
             const size_t ID = bscf(mask); 
             assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
-            pointQuery(query, context, prim[i].subgrid(ID));
+            changed |= pointQuery(query, context, prim[i].subgrid(ID));
           }
         }
+        return changed;
       }
     };
 

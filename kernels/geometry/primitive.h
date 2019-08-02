@@ -42,8 +42,9 @@ namespace embree
   template<typename Primitive>
   struct PrimitivePointQuery1
   {
-    static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
+    static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
     {
+      bool changed = false;
       for (size_t i = 0; i < Primitive::max_size(); i++)
       {
         if (!prim.valid(i)) break;
@@ -51,8 +52,9 @@ namespace embree
         AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID(i));
         context->geomID = prim.geomID(i);
         context->primID = prim.primID(i);
-        accel->pointQuery(query, context);
+        changed |= accel->pointQuery(query, context);
       }
+      return changed;
     }
     
     static __forceinline void pointQueryNoop(PointQuery* query, PointQueryContext* context, const Primitive& prim) { }

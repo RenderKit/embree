@@ -46,9 +46,9 @@ namespace embree
         return pre.intersect(ray,tri.v0,tri.v1,tri.v2,/*UVIdentity<Mx>(),*/Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
       }
     };
 
@@ -74,9 +74,9 @@ namespace embree
         return intersec::intersect(ray,pre,tri.v0,tri.v1,tri.v2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
       }
     };
 
@@ -156,9 +156,9 @@ namespace embree
         return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& tri)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, tri);
       }
     };
 
