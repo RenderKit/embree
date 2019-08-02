@@ -60,6 +60,25 @@ namespace embree
     Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
   }
 
+#define RTC_CATCH_END2_FALSE(scene)                                             \
+  } catch (std::bad_alloc&) {                                                   \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
+    return false;                                                               \
+  } catch (rtcore_error& e) {                                                   \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,e.error,e.what());                             \
+    return false;                                                               \
+  } catch (std::exception& e) {                                                 \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,e.what());                   \
+    return false;                                                               \
+  } catch (...) {                                                               \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
+    return false;                                                               \
+  }
+
 #define RTC_VERIFY_HANDLE(handle)                               \
   if (handle == nullptr) {                                         \
     throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \

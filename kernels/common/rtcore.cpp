@@ -335,7 +335,7 @@ RTC_NAMESPACE_BEGIN;
       changed = scene->intersectors.pointQuery((PointQuery*)query, &context);
     }
     return changed;
-    RTC_CATCH_END2(scene);
+    RTC_CATCH_END2_FALSE(scene);
   }
   
   RTC_API bool rtcPointQuery4 (const int* valid, RTCScene hscene, RTCPointQuery4* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
@@ -363,7 +363,7 @@ RTC_NAMESPACE_BEGIN;
       query4->set(i,query1);
     }
     return changed;
-    RTC_CATCH_END2(scene);
+    RTC_CATCH_END2_FALSE(scene);
   }
   
   RTC_API bool rtcPointQuery8 (const int* valid, RTCScene hscene, RTCPointQuery8* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
@@ -391,7 +391,7 @@ RTC_NAMESPACE_BEGIN;
       query8->set(i,query1);
     }
     return changed;
-    RTC_CATCH_END2(scene);
+    RTC_CATCH_END2_FALSE(scene);
   }
 
   RTC_API bool rtcPointQuery16 (const int* valid, RTCScene hscene, RTCPointQuery16* query, struct RTCPointQueryInstanceStack* instStack, RTCPointQueryFunction queryFunc, void** userPtrN) 
@@ -419,8 +419,9 @@ RTC_NAMESPACE_BEGIN;
       query16->set(i,query1);
     }
     return changed;
-    RTC_CATCH_END2(scene);
+    RTC_CATCH_END2_FALSE(scene);
   }
+
   RTC_API void rtcIntersect1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit) 
   {
     Scene* scene = (Scene*) hscene;
