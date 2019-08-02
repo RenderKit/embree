@@ -3392,18 +3392,17 @@ namespace embree
         rtcSetSceneFlags(scene, sflags.sflags);
         rtcSetSceneBuildQuality(scene, sflags.qflags);
 
-        struct Sphere { ALIGNED_STRUCT_(16) Vec3fa p; float r; };
         auto boundsFunc = [](const struct RTCBoundsFunctionArguments* args)
         {
-          const Sphere* spheres = (const Sphere*) args->geometryUserPtr;
+          const Vec4f* spheres = (const Vec4f*) args->geometryUserPtr;
           RTCBounds* bounds_o = args->bounds_o;
-          const Sphere& sphere = spheres[args->primID];
-          bounds_o->lower_x = sphere.p.x-sphere.r;
-          bounds_o->lower_y = sphere.p.y-sphere.r;
-          bounds_o->lower_z = sphere.p.z-sphere.r;
-          bounds_o->upper_x = sphere.p.x+sphere.r;
-          bounds_o->upper_y = sphere.p.y+sphere.r;
-          bounds_o->upper_z = sphere.p.z+sphere.r;
+          const Vec4f& sphere = spheres[args->primID];
+          bounds_o->lower_x = sphere.x-sphere.w;
+          bounds_o->lower_y = sphere.y-sphere.w;
+          bounds_o->lower_z = sphere.z-sphere.w;
+          bounds_o->upper_x = sphere.x+sphere.w;
+          bounds_o->upper_y = sphere.y+sphere.w;
+          bounds_o->upper_z = sphere.z+sphere.w;
         };
         auto intersectFunc = [](const RTCIntersectFunctionNArguments* args) {};
         auto occludedFunc  = [](const RTCOccludedFunctionNArguments* args)  {};
@@ -3411,13 +3410,11 @@ namespace embree
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryBuildQuality(geom, sflags.qflags);
 
-        Sphere* sphere = (Sphere*) alignedMalloc(2*sizeof(Sphere),16);
-        sphere[0].p = Vec3fa(0.f, 0.f, 0.f);
-        sphere[0].r = 1.f;
-        sphere[1].p = Vec3fa(2.f, 0.f, 0.f);
-        sphere[1].r = 1.f;
+        Vec4f* spheres = (Vec4f*) alignedMalloc(2*sizeof(Vec4f),16);
+        spheres[0] = Vec4f(0.f, 0.f, 0.f, 1.f);
+        spheres[1] = Vec4f(2.f, 0.f, 0.f, 1.f);
         rtcSetGeometryUserPrimitiveCount(geom, 2);
-        rtcSetGeometryUserData(geom, sphere);
+        rtcSetGeometryUserData(geom, spheres);
         rtcSetGeometryBoundsFunction(geom, boundsFunc, nullptr);
         rtcSetGeometryIntersectFunction(geom, intersectFunc);
         rtcSetGeometryOccludedFunction (geom, occludedFunc);
@@ -3436,6 +3433,7 @@ namespace embree
           return VerifyApplication::FAILED;
         }
         AssertNoError(device);
+        alignedFree(spheres);
       }
       
       // point geometry
