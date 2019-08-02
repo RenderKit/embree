@@ -31,7 +31,10 @@
 #### DESCRIPTION
 
 A stack (`RTCPointQueryInstanceStack` type) which stores the IDs and instance
-transformations during a BVH traversal for a point query. 
+transformations during a BVH traversal for a point query. The transformations
+are assumed to be affine transformations (3×3 matrix plus translation) and
+therefore the last column is ignored (see [RTC_GEOMETRY_TYPE_INSTANCE] for
+details).
 
 The `rtcInitPointQueryStack` function initializes the stack to
 default values and should be called for initialization.
