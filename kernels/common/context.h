@@ -109,18 +109,9 @@ namespace embree
       }
 
       AffineSpace3fa const& m = instStack->instW2I[instStack->size-1];
-      Vec3fa bbmin(inf), bbmax(neg_inf);
-
-      // iterate over 8 AABB corners
-      for (int i = 0; i < 8; ++i) 
-      {
-        // compute i-th AABB corner c
-        const Vec3fa c((i/1)%2 == 0 ? -1.f : 1.f, (i/2)%2 == 0 ? -1.f : 1.f, (i/4)%2 == 0 ? -1.f : 1.f);
-        const Vec3fa v = xfmPoint(m, query_ws->p + query_ws->radius * c);
-        bbmin = min(bbmin, v);
-        bbmax = max(bbmax, v);
-      }
-      query_radius = Vec3fa(0.5f * (bbmax.x - bbmin.x));
+      BBox3fa bbox(Vec3fa(-query_ws->radius), Vec3fa(query_ws->radius));
+      bbox = xfmBounds(m, bbox);
+      query_radius = 0.5f * (bbox.upper - bbox.lower);
     }
 
 public:
