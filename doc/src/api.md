@@ -970,8 +970,8 @@ Embree API Reference
 ```
 \pagebreak
 
-## rtcInitPointQueryInstanceStack
-``` {include=src/api/rtcInitPointQueryInstanceStack.md}
+## rtcInitPointQueryContext
+``` {include=src/api/rtcInitPointQueryContext.md}
 ```
 \pagebreak
 ## rtcPointQuery

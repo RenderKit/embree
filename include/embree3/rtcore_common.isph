@@ -287,7 +287,7 @@ struct RTCPointQueryFunctionArguments
   // the context with transformation and instance ID stack
   RTCPointQueryContext* context;
   
-  // If the current instance transform M (= instStack->world2inst[instStack->size]) 
+  // If the current instance transform M (= context->world2inst[context->instStackSize]) 
   // is a similarity matrix, i.e there is a constant factor similarityScale such that,
   //    for all x,y: dist(Mx, My) = similarityScale * dist(x, y),
   // The similarity scale is 0, if the current instance transform is not a
@@ -297,7 +297,7 @@ struct RTCPointQueryFunctionArguments
   // query radius. If the current instance transform is not a similarity
   // transform (similarityScale = 0), the distance computation has to be
   // performed in world space to ensure correctness. if there is no instance
-  // transform (instStack->size == 0), the similarity scale is 1.
+  // transform (context->instStackSize == 0), the similarity scale is 1.
   float similarityScale;
 };
 

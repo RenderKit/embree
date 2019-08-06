@@ -23,7 +23,7 @@
     void rtcPointQuery(
       RTCScene scene,
       struct RTCPointQuery* query,
-      struct RTCPointQueryInstanceStack* instStack,
+      struct RTCPointQueryContext* context,
       struct RTCPointQueryFunction* queryFunc,
       void* userPtr
     );
@@ -40,10 +40,10 @@ query radius in the range $[0, ∞]$. If the scene contains motion blur
 geometries, also the query time (`time` member) must be initialized to a
 value in the range $[0, 1]$.
 
-Further, a `RTCPointQueryInstanceStack` (`instStack` argument) must be
+Further, a `RTCPointQueryContext` (`context` argument) must be
 created and initialized. It contains ID and transformation information of the
 instancing hierarchy if (multilevel-)instancing is used. See
-[rtcInitPointQueryInstanceStack] for further information.
+[rtcInitPointQueryContext] for further information.
 
 For every primitive that intersects the query domain, the callback function
 (`queryFunc` argument) is called, in which distance computations to the
@@ -96,4 +96,4 @@ thus will not set any error flags on failure.
 
 #### SEE ALSO
 
-[rtcSetGeometryPointQueryFunction], [rtcInitPointQueryInstanceStack]
+[rtcSetGeometryPointQueryFunction], [rtcInitPointQueryContext]
