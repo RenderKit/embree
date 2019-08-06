@@ -46,20 +46,6 @@ namespace embree
     Scene* scene;
     RTCIntersectContext* user;
   };
-
-  struct __aligned(16) PointQueryInstanceStack
-  {
-    ALIGNED_STRUCT_(16);
-
-    __forceinline PointQueryInstanceStack()
-      : size(0u)
-    { }
-
-    AffineSpace3fa instW2I[RTC_MAX_INSTANCE_LEVEL_COUNT]; // the current stack of accumulated transformations from world to instance space
-    AffineSpace3fa instI2W[RTC_MAX_INSTANCE_LEVEL_COUNT]; // the current stack of accumulated transformations fom instance to world space
-    unsigned int   instID [RTC_MAX_INSTANCE_LEVEL_COUNT]; // the current stack of instance ids.
-    unsigned int   size;                                  // number of instances currently on the stack.
-  };
   
   enum PointQueryType
   {
@@ -84,7 +70,7 @@ namespace embree
       , query_ws(query_ws)
       , query_type(query_type)
       , func(func)
-      , instStack((PointQueryInstanceStack*)instStack)
+      , instStack(instStack)
       , similarityScale(similarityScale)
       , userPtr(userPtr) 
       , primID(RTC_INVALID_GEOMETRY_ID)
@@ -108,7 +94,7 @@ namespace embree
         return;
       }
 
-      AffineSpace3fa const& m = instStack->instW2I[instStack->size-1];
+      AffineSpace3fa const& m = *(AffineSpace3fa*)instStack->world2inst[instStack->size-1];
       BBox3fa bbox(Vec3fa(-query_ws->radius), Vec3fa(query_ws->radius));
       bbox = xfmBounds(m, bbox);
       query_radius = 0.5f * (bbox.upper - bbox.lower);
@@ -120,7 +106,7 @@ public:
     PointQuery* query_ws; // the original world space point query 
     PointQueryType query_type;
     PointQueryFunction func;
-    PointQueryInstanceStack* instStack;
+    RTCPointQueryInstanceStack* instStack;
     const float similarityScale;
 
     void* userPtr;

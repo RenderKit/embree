@@ -315,7 +315,7 @@ namespace embree
     args.userPtr         = context->userPtr;
     args.primID          = context->primID;
     args.geomID          = context->geomID;
-    args.instStack       = (RTCPointQueryInstanceStack*)context->instStack;
+    args.instStack       = context->instStack;
     args.similarityScale = context->similarityScale;
     
     bool update = false;

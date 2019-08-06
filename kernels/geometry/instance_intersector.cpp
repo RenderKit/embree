@@ -29,16 +29,16 @@ namespace embree
                       AffineSpace3fa const& i2w)
     {
       assert(context);
-      PointQueryInstanceStack* stack = context->instStack;
+      RTCPointQueryInstanceStack* stack = context->instStack;
       const size_t stackSize = stack->size;
       assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT); 
       stack->instID[stackSize] = instanceId;
-      stack->instW2I[stackSize] = w2i;
-      stack->instI2W[stackSize] = i2w;
+      *(AffineSpace3fa*)stack->world2inst[stackSize] = w2i;
+      *(AffineSpace3fa*)stack->inst2world[stackSize] = i2w;
       if (unlikely(stackSize > 0))
       {
-        stack->instW2I[stackSize] = stack->instW2I[stackSize  ] * stack->instW2I[stackSize-1];
-        stack->instI2W[stackSize] = stack->instI2W[stackSize-1] * stack->instI2W[stackSize  ];
+        *(AffineSpace3fa*)stack->world2inst[stackSize] = (*(AffineSpace3fa*)stack->world2inst[stackSize  ]) * (*(AffineSpace3fa*)stack->world2inst[stackSize-1]);
+        *(AffineSpace3fa*)stack->inst2world[stackSize] = (*(AffineSpace3fa*)stack->inst2world[stackSize-1]) * (*(AffineSpace3fa*)stack->inst2world[stackSize  ]);
       }
       stack->size++;
       return true;

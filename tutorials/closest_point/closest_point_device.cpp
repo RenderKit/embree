@@ -72,26 +72,6 @@ unsigned int g_line_index_buffer[g_num_point_queries] = {
   0, 2, 4, 6, 8, 10, 12, 14, 16, 18
 };
 
-// helper to convert raw matrix pointer to matrix struct
-inline AffineSpace3fa transform_from_raw(float data[16])
-{
-  AffineSpace3fa m;
-  m.l.vx = Vec3fa(data[ 0], data[ 1], data[ 2], data[ 3]);
-  m.l.vy = Vec3fa(data[ 4], data[ 5], data[ 6], data[ 7]);
-  m.l.vz = Vec3fa(data[ 8], data[ 9], data[10], data[11]);
-  m.p    = Vec3fa(data[12], data[13], data[14], data[15]);
-  return m;
-}
-
-// helper to convert raw matrix pointer to matrix struct
-inline void transform_to_raw(float data[16], AffineSpace3fa const& m)
-{
-  data[ 0] = m.l.vx.x; data[ 1] = m.l.vx.y; data[ 2] = m.l.vx.z; data[ 3] = m.l.vx.a; 
-  data[ 4] = m.l.vy.x; data[ 5] = m.l.vy.y; data[ 6] = m.l.vy.z; data[ 7] = m.l.vy.a; 
-  data[ 8] = m.l.vz.x; data[ 9] = m.l.vz.y; data[10] = m.l.vz.z; data[11] = m.l.vz.a; 
-  data[12] = m.p.x;    data[13] = m.p.y;    data[14] = m.p.z;    data[15] = m.p.a; 
-}
-
 // ======================================================================== //
 //                         User defined instancing                          //
 // ======================================================================== //
@@ -184,12 +164,12 @@ inline void pushInstanceIdAndTransform(RTCPointQueryInstanceStack* stack,
   AffineSpace3fa i2w = i2w_in;
 
   if (stack->size > 0) {
-    w2i = transform_from_raw(stack->world2inst[stack->size]) * w2i;
-    i2w = i2w * transform_from_raw(stack->inst2world[stack->size]);
+    w2i = (*(AffineSpace3fa*)stack->world2inst[stack->size-1]) * w2i;
+    i2w = i2w * (*(AffineSpace3fa*)stack->inst2world[stack->size-1]);
   }
 
-  transform_to_raw(stack->world2inst[stack->size], w2i);
-  transform_to_raw(stack->inst2world[stack->size], i2w);
+  (*(AffineSpace3fa*)stack->world2inst[stack->size]) = w2i;
+  (*(AffineSpace3fa*)stack->inst2world[stack->size]) = i2w;
 
   stack->size++;
 }
@@ -296,7 +276,7 @@ bool closestPointFunc(RTCPointQueryFunctionArguments* args)
   const unsigned int stackPtr = stackSize-1;
 
   AffineSpace3fa inst2world = stackSize > 0
-                            ? transform_from_raw(stack->inst2world[stackPtr]) 
+                            ? (*(AffineSpace3fa*)stack->inst2world[stackPtr]) 
                             : one;
   
 
@@ -323,7 +303,7 @@ bool closestPointFunc(RTCPointQueryFunctionArguments* args)
     // Instance transform is a similarity transform, therefore we 
     // can comute distance insformation in instance space. Therefore,
     // transform query position into local instance space.
-    AffineSpace3fa m = transform_from_raw(stack->world2inst[stackPtr]);
+    AffineSpace3fa const& m = (*(AffineSpace3fa*)stack->world2inst[stackPtr]);
     q = xfmPoint(m, q);
   }
   else if (stackSize > 0)

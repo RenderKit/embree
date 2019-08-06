@@ -311,8 +311,7 @@ RTC_NAMESPACE_BEGIN;
     bool changed = false;
     if (instStack->size > 0)
     {
-      const AffineSpace3fa transform = loadTransform(RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, 
-                                                     instStack->world2inst[instStack->size-1]);
+      const AffineSpace3fa &transform = (*(AffineSpace3fa*)instStack->world2inst[instStack->size-1]);
 
       float similarityScale = 0.f;
       const bool similtude = similarityTransform(transform, &similarityScale);
