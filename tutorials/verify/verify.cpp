@@ -3261,10 +3261,10 @@ namespace embree
         rtcCommitScene(scene);
         AssertNoError(device);
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
         uint32_t numCalls = 0;
-        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        rtcPointQuery(scene, &query, &context, queryFunc, (void*)&numCalls);
         if (numCalls != 1)
           return VerifyApplication::FAILED;
         AssertNoError(device);
@@ -3293,10 +3293,10 @@ namespace embree
         rtcCommitScene(scene);
         AssertNoError(device);
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
         uint32_t numCalls = 0;
-        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        rtcPointQuery(scene, &query, &context, queryFunc, (void*)&numCalls);
         if (numCalls != 0)
         {
           return VerifyApplication::FAILED;
@@ -3327,10 +3327,10 @@ namespace embree
         rtcCommitScene(scene);
         AssertNoError(device);
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
         uint32_t numCalls = 0;
-        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        rtcPointQuery(scene, &query, &context, queryFunc, (void*)&numCalls);
         if (numCalls != 0)
         {
           return VerifyApplication::FAILED;
@@ -3375,10 +3375,10 @@ namespace embree
         rtcCommitScene(scene);
         AssertNoError(device);
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
         uint32_t numCalls = 0;
-        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        rtcPointQuery(scene, &query, &context, queryFunc, (void*)&numCalls);
         if (numCalls != 2)
         {
           return VerifyApplication::FAILED;
@@ -3424,10 +3424,10 @@ namespace embree
         rtcCommitScene(scene);
         AssertNoError(device);
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
         uint32_t numCalls = 0;
-        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        rtcPointQuery(scene, &query, &context, queryFunc, (void*)&numCalls);
         if (numCalls != 2)
         {
           return VerifyApplication::FAILED;
@@ -3455,75 +3455,16 @@ namespace embree
         rtcCommitScene(scene);
         AssertNoError(device);
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
         uint32_t numCalls = 0;
-        rtcPointQuery(scene, &query, &instStack, queryFunc, (void*)&numCalls);
+        rtcPointQuery(scene, &query, &context, queryFunc, (void*)&numCalls);
         if (numCalls != 0)
         {
           return VerifyApplication::FAILED;
         }
         AssertNoError(device);
       }
-
-      return VerifyApplication::PASSED;
-    }
-  };
-  
-  struct PointQueryInstanceStackTest : public VerifyApplication::Test
-  {
-    PointQueryInstanceStackTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
-
-    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
-    {
-      // This test assures that we can properly cast RTCPointQueryInstanceStack
-      // to PointQueryInstanceStack and vice versa
-      #if 0
-      {
-        PointQueryInstanceStack stack;
-        stack.instI2W[0] = AffineSpace3fa::rotate(Vec3f(1.f, 1.f, 1.f), M_PI/2.f);
-        float* raw = (float*)&(stack.instI2W[0]);
-
-        RTCPointQueryInstanceStack* rtcStack = (RTCPointQueryInstanceStack*)&stack;
-        float* rtc_raw = &(rtcStack->inst2world[0][0]);
-
-        if(raw != rtc_raw)                                        return VerifyApplication::FAILED;
-        if((void*)&stack != (void*)rtcStack)                      return VerifyApplication::FAILED;
-        if(rtcStack->inst2world[0][0] != stack.instI2W[0].l.vx.x) return VerifyApplication::FAILED;
-        if(rtcStack->inst2world[0][1] != stack.instI2W[0].l.vx.y) return VerifyApplication::FAILED;
-        if(rtcStack->inst2world[0][2] != stack.instI2W[0].l.vx.z) return VerifyApplication::FAILED;
-        if(rtcStack->inst2world[0][4] != stack.instI2W[0].l.vy.x) return VerifyApplication::FAILED;
-        if(rtcStack->inst2world[0][5] != stack.instI2W[0].l.vy.y) return VerifyApplication::FAILED;
-        if(rtcStack->inst2world[0][6] != stack.instI2W[0].l.vy.z) return VerifyApplication::FAILED;
-      }
-      
-      {
-        RTCPointQueryInstanceStack rtcStack;
-        rtcInitPointQueryInstanceStack(&rtcStack);
-        for (int i = 0; i < RTC_MAX_INSTANCE_LEVEL_COUNT; ++i) {
-          rtcStack.instID[i] = i;
-          for (int k = 0; k < 16; ++k)
-          {
-            rtcStack.inst2world[i][k] = i * 16 + k;
-            rtcStack.world2inst[i][k] = -(i * 16 + k);
-          }
-        }
-
-        PointQueryInstanceStack* stack = (PointQueryInstanceStack*)&rtcStack;
-        if((void*)stack != (void*)&rtcStack) return VerifyApplication::FAILED;
-        for (int i = 0; i < RTC_MAX_INSTANCE_LEVEL_COUNT; ++i) {
-          if (stack->instID[i] != i) return VerifyApplication::FAILED;
-          float* i2w = (float*)&stack->instI2W[i];
-          float* w2i = (float*)&stack->instW2I[i];
-          for (int k = 0; k < 16; ++k)
-          {
-            if (i2w[k] != i * 16 + k)    return VerifyApplication::FAILED;
-            if (w2i[k] != -(i * 16 + k)) return VerifyApplication::FAILED;
-          }
-        }
-      }
-      #endif
 
       return VerifyApplication::PASSED;
     }
@@ -3588,9 +3529,9 @@ namespace embree
         data.vertices  = vertices;
         data.triangles = triangles;
 
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query, &instStack, [](RTCPointQueryFunctionArguments* args) -> bool
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query, &context, [](RTCPointQueryFunctionArguments* args) -> bool
         {
           UserData* data = (UserData*)args->userPtr;
           // get triangle info
@@ -3701,23 +3642,23 @@ namespace embree
       query0.time = query1.time = query2.time = 0.f;
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query0, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query0, &context, nullptr, &primID);
         if (primID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query1, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query1, &context, nullptr, &primID);
         if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query2, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query2, &context, nullptr, &primID);
         if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
 
@@ -3725,23 +3666,23 @@ namespace embree
       query0.time = query1.time = query2.time = 0.5f;
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query0, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query0, &context, nullptr, &primID);
         if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query1, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query1, &context, nullptr, &primID);
         if (primID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query2, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query2, &context, nullptr, &primID);
         if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       
@@ -3749,23 +3690,23 @@ namespace embree
       query0.time = query1.time = query2.time = 1.f;
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query0, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query0, &context, nullptr, &primID);
         if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query1, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query1, &context, nullptr, &primID);
         if (primID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
       {
         unsigned int primID = RTC_INVALID_GEOMETRY_ID;
-        RTCPointQueryInstanceStack instStack;
-        rtcInitPointQueryInstanceStack(&instStack);
-        rtcPointQuery(scene, &query2, &instStack, nullptr, &primID);
+        RTCPointQueryContext context;
+        rtcInitPointQueryContext(&context);
+        rtcPointQuery(scene, &query2, &context, nullptr, &primID);
         if (primID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
       }
 
@@ -5343,7 +5284,6 @@ namespace embree
       push(new TestGroup("point_query",true,true));
       for (auto sflags : sceneFlags) {
         groups.top()->add(new PointQueryAPICallsTest("point_query_api_calls",isa,sflags));
-        groups.top()->add(new PointQueryInstanceStackTest(to_string(sflags),isa));
         if (stringOfISA(isa) == "SSE4.1" || stringOfISA(isa) == "SSE4.2") {
           groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh4.triangle4v"));
           groups.top()->add(new PointQueryTest(to_string(sflags),isa,sflags,"bvh4.triangle4i"));

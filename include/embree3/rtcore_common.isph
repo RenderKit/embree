@@ -245,14 +245,8 @@ struct RTCPointQuery16
 
 struct RTCPointQueryN;
 
-struct RTCPointQueryInstanceStack
+struct RTCPointQueryContext
 {
-  // number of instances currently on the stack.
-  unsigned int size;                                 
-
-  // instance ids.
-  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; 
-
   // accumulated 4x4 column major matrices from world space to instance space.
   // undefined if size == 0.
   float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
@@ -260,13 +254,19 @@ struct RTCPointQueryInstanceStack
   // accumulated 4x4 column major matrices from instance space to world space.
   // undefined if size == 0.
   float inst2world[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
+
+  // instance ids.
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; 
+
+  // number of instances currently on the stack.
+  unsigned int instStackSize;                                 
 };
 
 /* Initializes an intersection context. */
-RTC_FORCEINLINE void rtcInitPointQueryInstanceStack(varying RTCPointQueryInstanceStack *uniform instStack)
+RTC_FORCEINLINE void rtcInitPointQueryContext(varying RTCPointQueryContext *uniform context)
 {
-  instStack->size = 0;
-  instStack->instID[0] = RTC_INVALID_GEOMETRY_ID;
+  context->instStackSize = 0;
+  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
 
 struct RTCPointQueryFunctionArguments
@@ -284,8 +284,8 @@ struct RTCPointQueryFunctionArguments
   unsigned int  primID;        
   unsigned int  geomID;    
 
-  // the instance stack with transformation information
-  RTCPointQueryInstanceStack* uniform instStack;
+  // the context with transformation and instance ID stack
+  RTCPointQueryContext* context;
   
   // If the current instance transform M (= instStack->world2inst[instStack->size]) 
   // is a similarity matrix, i.e there is a constant factor similarityScale such that,

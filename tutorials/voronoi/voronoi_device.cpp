@@ -143,9 +143,9 @@ void knnQuery(Vec3f const& q, float radius, KNNResult* result)
   query.z = q.z;
   query.radius = radius;
   query.time = 0.f;
-  RTCPointQueryInstanceStack instStack;
-  rtcInitPointQueryInstanceStack(&instStack);
-  rtcPointQuery(g_scene, &query, &instStack, pointQueryFunc, (void*)result);
+  RTCPointQueryContext context;
+  rtcInitPointQueryContext(&context);
+  rtcPointQuery(g_scene, &query, &context, pointQueryFunc, (void*)result);
 }
 
 Point* createPoints (RTCScene scene, unsigned int N)

@@ -152,31 +152,32 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
   ray->tfar = updated_tfar;
 }
 
-inline void pushInstanceIdAndTransform(RTCPointQueryInstanceStack* stack, 
+inline void pushInstanceIdAndTransform(RTCPointQueryContext* context,
                                        unsigned int id, 
                                        AffineSpace3fa const& w2i_in, 
                                        AffineSpace3fa const& i2w_in)
 {
-  stack->instID[stack->size] = id;
+  context->instID[context->instStackSize] = id;
 
   // local copies of const references to fullfill alignment constraints
   AffineSpace3fa w2i = w2i_in;
   AffineSpace3fa i2w = i2w_in;
 
-  if (stack->size > 0) {
-    w2i = (*(AffineSpace3fa*)stack->world2inst[stack->size-1]) * w2i;
-    i2w = i2w * (*(AffineSpace3fa*)stack->inst2world[stack->size-1]);
+  const unsigned int stackSize = context->instStackSize;
+  if (stackSize > 0) {
+    w2i = (*(AffineSpace3fa*)context->world2inst[stackSize-1]) * w2i;
+    i2w = i2w * (*(AffineSpace3fa*)context->inst2world[stackSize-1]);
   }
 
-  (*(AffineSpace3fa*)stack->world2inst[stack->size]) = w2i;
-  (*(AffineSpace3fa*)stack->inst2world[stack->size]) = i2w;
+  (*(AffineSpace3fa*)context->world2inst[stackSize]) = w2i;
+  (*(AffineSpace3fa*)context->inst2world[stackSize]) = i2w;
 
-  stack->size++;
+  context->instStackSize++;
 }
 
-inline void popInstanceIdAndTransform(RTCPointQueryInstanceStack* stack)
+inline void popInstanceIdAndTransform(RTCPointQueryContext* context)
 {
-  stack->instID[--stack->size] = RTC_INVALID_GEOMETRY_ID;
+  context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
 }
 
 bool instanceClosestPointFunc(RTCPointQueryFunctionArguments* args)
@@ -185,14 +186,14 @@ bool instanceClosestPointFunc(RTCPointQueryFunctionArguments* args)
 
   // convert geomID in the scene to instance idx (-4)
   Instance* instance = g_instanceUserDefined[geomID - 4];
-  pushInstanceIdAndTransform(args->instStack, instance->userID, instance->world2local, instance->local2world);
+  pushInstanceIdAndTransform(args->context, instance->userID, instance->world2local, instance->local2world);
 
   // for checking if the query radius is updated
   const float radius = args->query->radius;
 
-  rtcPointQuery(instance->object, args->query, args->instStack, 0, args->userPtr);
+  rtcPointQuery(instance->object, args->query, args->context, 0, args->userPtr);
   
-  popInstanceIdAndTransform(args->instStack);
+  popInstanceIdAndTransform(args->context);
 
   // check if the query radius was updated
   return args->query->radius < radius;
@@ -271,12 +272,12 @@ bool closestPointFunc(RTCPointQueryFunctionArguments* args)
   const unsigned int geomID = args->geomID;
   const unsigned int primID = args->primID;
 
-  RTCPointQueryInstanceStack* stack = args->instStack;
-  const unsigned int stackSize = args->instStack->size; 
+  RTCPointQueryContext* context = args->context;
+  const unsigned int stackSize = args->context->instStackSize;
   const unsigned int stackPtr = stackSize-1;
 
   AffineSpace3fa inst2world = stackSize > 0
-                            ? (*(AffineSpace3fa*)stack->inst2world[stackPtr]) 
+                            ? (*(AffineSpace3fa*)context->inst2world[stackPtr])
                             : one;
   
 
@@ -303,7 +304,7 @@ bool closestPointFunc(RTCPointQueryFunctionArguments* args)
     // Instance transform is a similarity transform, therefore we 
     // can comute distance insformation in instance space. Therefore,
     // transform query position into local instance space.
-    AffineSpace3fa const& m = (*(AffineSpace3fa*)stack->world2inst[stackPtr]);
+    AffineSpace3fa const& m = (*(AffineSpace3fa*)context->world2inst[stackPtr]);
     q = xfmPoint(m, q);
   }
   else if (stackSize > 0)
@@ -563,9 +564,9 @@ void updateGeometryAndQueries(float time)
     query.time = 0.f;
 
     ClosestPointResult result;
-    RTCPointQueryInstanceStack instStack;
-    rtcInitPointQueryInstanceStack(&instStack);
-    rtcPointQuery(g_scene, &query, &instStack, nullptr, (void*)&result);
+    RTCPointQueryContext context;
+    rtcInitPointQueryContext(&context);
+    rtcPointQuery(g_scene, &query, &context, nullptr, (void*)&result);
     assert(result.primID != RTC_INVALID_GEOMETRY_ID || result.geomID != RTC_INVALID_GEOMETRY_ID);
     g_sphere_locations[2*i+1] = result.p;
 

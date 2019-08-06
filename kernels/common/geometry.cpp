@@ -315,14 +315,14 @@ namespace embree
     args.userPtr         = context->userPtr;
     args.primID          = context->primID;
     args.geomID          = context->geomID;
-    args.instStack       = context->instStack;
+    args.context         = context->userContext;
     args.similarityScale = context->similarityScale;
     
     bool update = false;
     if(context->func)  update |= context->func(&args);
     if(pointQueryFunc) update |= pointQueryFunc(&args);
 
-    if (update && context->instStack->size > 0) 
+    if (update && context->userContext->instStackSize > 0)
     {
       // update point query
       if (context->query_type == POINT_QUERY_TYPE_AABB) {

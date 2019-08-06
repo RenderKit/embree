@@ -63,14 +63,14 @@ namespace embree
                                     PointQuery* query_ws, 
                                     PointQueryType query_type,
                                     PointQueryFunction func, 
-                                    RTCPointQueryInstanceStack* instStack,
+                                    RTCPointQueryContext* userContext,
                                     float similarityScale,
                                     void* userPtr)
       : scene(scene)
       , query_ws(query_ws)
       , query_type(query_type)
       , func(func)
-      , instStack(instStack)
+      , userContext(userContext)
       , similarityScale(similarityScale)
       , userPtr(userPtr) 
       , primID(RTC_INVALID_GEOMETRY_ID)
@@ -81,7 +81,7 @@ namespace embree
         assert(similarityScale == 0.f);
         updateAABB();
       }
-      if (instStack->size == 0) {
+      if (userContext->instStackSize == 0) {
         assert(similarityScale == 1.f);
       }
     }
@@ -89,12 +89,12 @@ namespace embree
   public:
     __forceinline void updateAABB() 
     {
-      if (likely(query_ws->radius == (float)inf || instStack->size == 0)) {
+      if (likely(query_ws->radius == (float)inf || userContext->instStackSize == 0)) {
         query_radius = Vec3fa(query_ws->radius);
         return;
       }
 
-      AffineSpace3fa const& m = *(AffineSpace3fa*)instStack->world2inst[instStack->size-1];
+      AffineSpace3fa const& m = *(AffineSpace3fa*)userContext->world2inst[userContext->instStackSize-1];
       BBox3fa bbox(Vec3fa(-query_ws->radius), Vec3fa(query_ws->radius));
       bbox = xfmBounds(m, bbox);
       query_radius = 0.5f * (bbox.upper - bbox.lower);
@@ -106,7 +106,7 @@ public:
     PointQuery* query_ws; // the original world space point query 
     PointQueryType query_type;
     PointQueryFunction func;
-    RTCPointQueryInstanceStack* instStack;
+    RTCPointQueryContext* userContext;
     const float similarityScale;
 
     void* userPtr;

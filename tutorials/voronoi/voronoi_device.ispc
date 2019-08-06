@@ -169,12 +169,12 @@ void renderTileStandard(uniform int taskIndex,
     result[programIndex].primID = RTC_INVALID_GEOMETRY_ID;
     void* userPtr = (void*)&result[programIndex];
     
-    RTCPointQueryInstanceStack instStack;
-    rtcInitPointQueryInstanceStack(&instStack);
-    rtcPointQueryV(g_scene, 
-                  (varying RTCPointQuery* uniform)&query, 
-                  (varying RTCPointQueryInstanceStack* uniform)&instStack, 
-                  pointQueryFunc, 
+    RTCPointQueryContext context;
+    rtcInitPointQueryContext(&context);
+    rtcPointQueryV(g_scene,
+                  (varying RTCPointQuery* uniform)&query,
+                  (varying RTCPointQueryContext* uniform)&context,
+                  pointQueryFunc,
                   &userPtr);
 
     unsigned int primID = result[programIndex].primID;

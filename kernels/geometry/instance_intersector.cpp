@@ -23,32 +23,31 @@ namespace embree
   namespace isa
   {
     /* Push an instance to the stack. */
-    RTC_FORCEINLINE bool pushInstance(PointQueryContext* context, 
-                      unsigned int instanceId, 
-                      AffineSpace3fa const& w2i, 
+    RTC_FORCEINLINE bool pushInstance(RTCPointQueryContext* context,
+                      unsigned int instanceId,
+                      AffineSpace3fa const& w2i,
                       AffineSpace3fa const& i2w)
     {
       assert(context);
-      RTCPointQueryInstanceStack* stack = context->instStack;
-      const size_t stackSize = stack->size;
+      const size_t stackSize = context->instStackSize;
       assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT); 
-      stack->instID[stackSize] = instanceId;
-      *(AffineSpace3fa*)stack->world2inst[stackSize] = w2i;
-      *(AffineSpace3fa*)stack->inst2world[stackSize] = i2w;
+      context->instID[stackSize] = instanceId;
+      *(AffineSpace3fa*)context->world2inst[stackSize] = w2i;
+      *(AffineSpace3fa*)context->inst2world[stackSize] = i2w;
       if (unlikely(stackSize > 0))
       {
-        *(AffineSpace3fa*)stack->world2inst[stackSize] = (*(AffineSpace3fa*)stack->world2inst[stackSize  ]) * (*(AffineSpace3fa*)stack->world2inst[stackSize-1]);
-        *(AffineSpace3fa*)stack->inst2world[stackSize] = (*(AffineSpace3fa*)stack->inst2world[stackSize-1]) * (*(AffineSpace3fa*)stack->inst2world[stackSize  ]);
+        *(AffineSpace3fa*)context->world2inst[stackSize] = (*(AffineSpace3fa*)context->world2inst[stackSize  ]) * (*(AffineSpace3fa*)context->world2inst[stackSize-1]);
+        *(AffineSpace3fa*)context->inst2world[stackSize] = (*(AffineSpace3fa*)context->inst2world[stackSize-1]) * (*(AffineSpace3fa*)context->inst2world[stackSize  ]);
       }
-      stack->size++;
+      context->instStackSize++;
       return true;
     }
 
     /* Pop the last instance pushed to the stack. Do not call on an empty stack. */
-    RTC_FORCEINLINE void popInstance(PointQueryContext* context)
+    RTC_FORCEINLINE void popInstance(RTCPointQueryContext* context)
     {
-      assert(context && context->instStack->size > 0);
-      context->instStack->instID[--context->instStack->size] = RTC_INVALID_GEOMETRY_ID;
+      assert(context && context->instStackSize > 0);
+      context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
     }
 
     void InstanceIntersector1::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
@@ -117,7 +116,7 @@ namespace embree
                            && similarityTransform(world2local, &similarityScale);
       assert((similtude && similarityScale > 0) || !similtude);
 
-      if (likely(pushInstance(context, instance->geomID, world2local, local2world)))
+      if (likely(pushInstance(context->userContext, instance->geomID, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -129,12 +128,12 @@ namespace embree
           context->query_ws, 
           similtude ? POINT_QUERY_TYPE_SPHERE : POINT_QUERY_TYPE_AABB,
           context->func, 
-          (RTCPointQueryInstanceStack*)context->instStack,
+          context->userContext,
           similarityScale,
           context->userPtr); 
 
         bool changed = instance->object->intersectors.pointQuery(&query_inst, &context_inst);
-        popInstance(context);
+        popInstance(context->userContext);
         return changed;
       }
       return false;
@@ -205,7 +204,7 @@ namespace embree
       const bool similtude = context->query_type == POINT_QUERY_TYPE_SPHERE
                            && similarityTransform(world2local, &similarityScale);
 
-      if (likely(pushInstance(context, instance->geomID, world2local, local2world)))
+      if (likely(pushInstance(context->userContext, instance->geomID, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -217,12 +216,12 @@ namespace embree
           context->query_ws, 
           similtude ? POINT_QUERY_TYPE_SPHERE : POINT_QUERY_TYPE_AABB,
           context->func, 
-          (RTCPointQueryInstanceStack*)context->instStack,
+          context->userContext,
           similarityScale,
           context->userPtr); 
 
         bool changed = instance->object->intersectors.pointQuery(&query_inst, &context_inst);
-        popInstance(context);
+        popInstance(context->userContext);
         return changed;
       }
       return false;
