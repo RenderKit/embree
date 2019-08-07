@@ -204,7 +204,7 @@ struct RTCFilterFunctionNArguments
 typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform args);
 
 /* Point query structure for closest point query */
-struct RTCPointQuery 
+struct RTC_ALIGN(16) RTCPointQuery 
 {
   float x;      // x coordinate of the query point
   float y;      // y coordinate of the query point
@@ -214,7 +214,7 @@ struct RTCPointQuery
 };
 
 /* Structure of a packet of 4 query points */
-struct RTCPointQuery4
+struct RTC_ALIGN(16) RTCPointQuery4
 {
   float x[4];
   float y[4];
@@ -224,7 +224,7 @@ struct RTCPointQuery4
 };
 
 /* Structure of a packet of 8 query points */
-struct RTCPointQuery8
+struct RTC_ALIGN(32) RTCPointQuery8
 {
   float x[8];
   float y[8];
@@ -234,7 +234,7 @@ struct RTCPointQuery8
 };
 
 /* Structure of a packet of 16 query points */
-struct RTCPointQuery16
+struct RTC_ALIGN(64) RTCPointQuery16
 {
   float x[16]; 
   float y[16];
@@ -245,7 +245,7 @@ struct RTCPointQuery16
 
 struct RTCPointQueryN;
 
-struct RTCPointQueryContext
+struct RTC_ALIGN(16) RTCPointQueryContext
 {
   // accumulated 4x4 column major matrices from world space to instance space.
   // undefined if size == 0.
@@ -263,13 +263,13 @@ struct RTCPointQueryContext
 };
 
 /* Initializes an intersection context. */
-RTC_FORCEINLINE void rtcInitPointQueryContext(varying RTCPointQueryContext *uniform context)
+RTC_FORCEINLINE void rtcInitPointQueryContext(uniform RTCPointQueryContext* uniform context)
 {
   context->instStackSize = 0;
   context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
 
-struct RTCPointQueryFunctionArguments
+struct RTC_ALIGN(16) RTCPointQueryFunctionArguments
 {
   // The query object that was passed as an argument of rtcPointQuery. The
   // radius of the query can be decreased inside the callback to shrink the
@@ -285,7 +285,7 @@ struct RTCPointQueryFunctionArguments
   unsigned int  geomID;    
 
   // the context with transformation and instance ID stack
-  RTCPointQueryContext* context;
+  uniform RTCPointQueryContext* uniform context;
   
   // If the current instance transform M (= context->world2inst[context->instStackSize]) 
   // is a similarity matrix, i.e there is a constant factor similarityScale such that,

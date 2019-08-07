@@ -182,21 +182,13 @@ inline void popInstanceIdAndTransform(RTCPointQueryContext* context)
 
 bool instanceClosestPointFunc(RTCPointQueryFunctionArguments* args)
 {
-  const unsigned int geomID = args->geomID;
-
   // convert geomID in the scene to instance idx (-4)
-  Instance* instance = g_instanceUserDefined[geomID - 4];
+  Instance* instance = g_instanceUserDefined[args->geomID - 4];
+
   pushInstanceIdAndTransform(args->context, instance->userID, instance->world2local, instance->local2world);
-
-  // for checking if the query radius is updated
-  const float radius = args->query->radius;
-
-  rtcPointQuery(instance->object, args->query, args->context, 0, args->userPtr);
-  
+  bool changed = rtcPointQuery(instance->object, args->query, args->context, 0, args->userPtr);
   popInstanceIdAndTransform(args->context);
-
-  // check if the query radius was updated
-  return args->query->radius < radius;
+  return changed;
 }
 
 Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec3fa& lower, const Vec3fa& upper)

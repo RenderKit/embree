@@ -16,9 +16,10 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(closest_point)
+ADD_TUTORIAL_ISPC(closest_point)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST_WITHOUT_ISPC(closest_point)
+  ADD_EMBREE_TEST(closest_point)
 ENDIF()
 
 

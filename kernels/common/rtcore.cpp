@@ -357,8 +357,7 @@ RTC_NAMESPACE_BEGIN;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query4->get(i,query1);
-      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,userContext,1.f,userPtrN?userPtrN[i]:NULL);
-      changed |= scene->intersectors.pointQuery(&query1, &context);
+      changed |= rtcPointQuery(hscene, (RTCPointQuery*)&query1, userContext, queryFunc, userPtrN?userPtrN[i]:NULL);
       query4->set(i,query1);
     }
     return changed;
@@ -385,8 +384,7 @@ RTC_NAMESPACE_BEGIN;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query8->get(i,query1);
-      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,userContext,1.f,userPtrN?userPtrN[i]:NULL);
-      changed |= scene->intersectors.pointQuery(&query1, &context);
+      changed |= rtcPointQuery(hscene, (RTCPointQuery*)&query1, userContext, queryFunc, userPtrN?userPtrN[i]:NULL);
       query8->set(i,query1);
     }
     return changed;
@@ -413,8 +411,7 @@ RTC_NAMESPACE_BEGIN;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query16->get(i,query1);
-      PointQueryContext context(scene,&query1,POINT_QUERY_TYPE_SPHERE,queryFunc,userContext,1.f,userPtrN?userPtrN[i]:NULL);
-      changed |= scene->intersectors.pointQuery(&query1, &context);
+      changed |= rtcPointQuery(hscene, (RTCPointQuery*)&query1, userContext, queryFunc, userPtrN?userPtrN[i]:NULL);
       query16->set(i,query1);
     }
     return changed;

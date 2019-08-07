@@ -288,7 +288,7 @@ RTC_FORCEINLINE void rtcInitPointQueryContext(struct RTCPointQueryContext* conte
   context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
 
-struct RTCPointQueryFunctionArguments
+struct RTC_ALIGN(16) RTCPointQueryFunctionArguments
 {
   // The (world space) query object that was passed as an argument of rtcPointQuery. The
   // radius of the query can be decreased inside the callback to shrink the
