@@ -497,14 +497,15 @@ namespace embree
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
 		  auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
+		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
 		  cgh.single_task<class init_builder>([=]() {
 		      gpu::Globals *globals    = accessor_globals.get_pointer();
 		      char *bvh_mem            = accessor_bvh.get_pointer();
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      record->init(0,numPrimitives,globals->centroidBounds);
 		      globals->numBuildRecords = 1;
-		      //globals->geometryBounds.print();
-		      //globals->centroidBounds.print();
+		      globals->geometryBounds.print(out);
+		      globals->centroidBounds.print(out);
 		    });
 		});
 	      try {

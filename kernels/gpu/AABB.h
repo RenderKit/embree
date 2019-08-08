@@ -162,9 +162,9 @@ namespace embree
 	return result;	
       }
       
-      inline void print(cl::sycl::stream &out) const
+      inline void print(const cl::sycl::stream &out) const
       {
-	out << "AABB: lower " << (float)lower.x() << " " << (float)lower.y() << " " << (float)lower.z() << " upper " << (float)upper.x() << " " << (float)upper.y() << " " << (float)upper.z() << cl::sycl::endl;
+	out << "AABB: lower " << lower << "  upper " << upper << cl::sycl::endl;
       }
     };
   };
