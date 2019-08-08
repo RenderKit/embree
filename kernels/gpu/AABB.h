@@ -162,9 +162,9 @@ namespace embree
 	return result;	
       }
       
-      inline void print() const
+      inline void print(cl::sycl::stream &out) const
       {
-	printf("AABB: lower %f %f %f upper %f %f %f \n",(float)lower.x(),(float)lower.y(),(float)lower.z(),(float)upper.x(),(float)upper.y(),(float)upper.z());	
+	out << "AABB: lower " << (float)lower.x() << " " << (float)lower.y() << " " << (float)lower.z() << " upper " << (float)upper.x() << " " << (float)upper.y() << " " << (float)upper.z() << cl::sycl::endl;
       }
     };
   };

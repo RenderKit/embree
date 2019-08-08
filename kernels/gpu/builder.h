@@ -219,10 +219,10 @@ namespace embree
 
       inline unsigned int size() const { return end - start; }
 
-      inline void print() const
+      inline void print(cl::sycl::stream &out) const
       {
-	printf("buildrecord: start %d end %d size %d parent %p \n",start,end,size(),parent);
-	centroidBounds.print();
+	out << "buildrecord: start " << start << " end " << end << " size " << size() << " parent " << parent << cl::sycl::endl;
+	centroidBounds.print(out);
       }
     };
 
@@ -306,7 +306,7 @@ namespace embree
 
       [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void init(const cl::sycl::intel::sub_group &subgroup)
       {
-	printf("subgroup.get_local_range().size() %d \n",(uint)subgroup.get_local_range().size());
+	//printf("subgroup.get_local_range().size() %d \n",(uint)subgroup.get_local_range().size());
 	for (uint i=subgroup.get_local_id()[0];i<BINS;i+=subgroup.get_local_range().size())
 	  {
 	    boundsX[i].init();
@@ -540,18 +540,11 @@ namespace embree
       }
 
 
-      inline void print()
+      inline void print(cl::sycl::stream &out)
       {
 	for (uint i=0;i<BVH_NODE_N;i++)
 	  {
-	    printf(" i      %d \n",i);
-	    printf(" offset %d \n",offset[i]);
-	    printf(" lower_x %f \n",lower_x[i]);
-	    printf(" upper_x %f \n",upper_x[i]);
-	    printf(" lower_y %f \n",lower_y[i]);
-	    printf(" upper_y %f \n",upper_y[i]);
-	    printf(" lower_z %f \n",lower_z[i]);
-	    printf(" upper_z %f \n",upper_z[i]);
+	    out << " i " << i << " offset " << offset[i] << " lower_x " << lower_x[i] << " upper_x " << upper_x[i] << " lower_y " << lower_y[i] << " upper_y " << upper_y[i] << " lower_z " << lower_z[i] << " upper_z " << upper_z[i] << cl::sycl::endl;
 	  }
       }
     };

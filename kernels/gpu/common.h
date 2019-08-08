@@ -21,17 +21,17 @@
 #include <CL/sycl.hpp>
 
 #ifdef __SYCL_DEVICE_ONLY__
-#define GLOBAL __global
-#define LOCAL  __local
+#define GLOBAL __attribute__((ocl_global))
+#define LOCAL  __attribute__((ocl_local))
 
 extern int   work_group_reduce_add(int x);
 extern float work_group_reduce_min(float x);
 extern float work_group_reduce_max(float x);
 
-extern float atomic_min(volatile __global float *p, float val);
-extern float atomic_min(volatile __local  float *p, float val);
-extern float atomic_max(volatile __global float *p, float val);
-extern float atomic_max(volatile __local  float *p, float val);
+extern float atomic_min(volatile GLOBAL float *p, float val);
+extern float atomic_min(volatile LOCAL  float *p, float val);
+extern float atomic_max(volatile GLOBAL float *p, float val);
+extern float atomic_max(volatile LOCAL  float *p, float val);
 
 #else
 #define GLOBAL 

@@ -256,7 +256,7 @@ namespace embree
     uint sindex = 1;
     stack[0] = record;	  
 
-    record.print();
+    //record.print();
     
     while(sindex) 
       {
@@ -290,7 +290,7 @@ namespace embree
 	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);	      
 	    serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
 
-			      	      
+#if 0			      	      
 	    while (numChildren < BVH_NODE_N)
 	      {
 		/*! find best child to split */
@@ -320,7 +320,7 @@ namespace embree
 		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
 		numChildren++;
 	      }
-
+#endif
 	    /* sort children based on range size */
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
@@ -339,7 +339,7 @@ namespace embree
 	    /* update parent pointer */
 	    *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
 
-	    sindex += numChildren;
+	    //sindex += numChildren;
 		
 	  }
       }
@@ -503,8 +503,8 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      record->init(0,numPrimitives,globals->centroidBounds);
 		      globals->numBuildRecords = 1;
-		      globals->geometryBounds.print();
-		      globals->centroidBounds.print();
+		      //globals->geometryBounds.print();
+		      //globals->centroidBounds.print();
 		    });
 		});
 	      try {
@@ -514,7 +514,7 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
-
+	    exit(0);
 	    
 
 	    /* --- single HW thread recursive build --- */
