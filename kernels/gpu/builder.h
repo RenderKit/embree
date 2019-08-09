@@ -375,11 +375,12 @@ namespace embree
       {
 	gpu::Split split;	
 	
-	const uint subgroupLocalID = sg.get_local_id()[0];	
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	split.sah = (float)subgroupLocalID;
+#if 0	
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);
 	split.sah = lr_areaX;
-#if 0
 	
 	const float rl_areaX  = right_to_left_area16(sg,bX);
 	const AABB3f &bY      = boundsY[subgroupLocalID];

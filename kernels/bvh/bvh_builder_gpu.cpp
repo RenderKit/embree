@@ -68,8 +68,7 @@ namespace embree
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void serial_find_split(cl::sycl::intel::sub_group &subgroup,
 									      const gpu::BuildRecord &record,
 									      const gpu::AABB *const primref,
-									      gpu::BinMapping &binMapping,			      
-									      gpu::Split &split,
+									      gpu::BinMapping &binMapping,
 									      gpu::BinInfo &binInfo,
 									      uint *primref_index0,
 									      uint *primref_index1)
@@ -244,7 +243,6 @@ namespace embree
 									     gpu::BinInfo &binInfo,
 									     gpu::BuildRecord &current,
 									     gpu::BuildRecord &brecord,
-									     gpu::Split &split,
 									     gpu::AABB childrenAABB[BVH_NODE_N],
 									     gpu::BuildRecord stack[BUILDRECORD_STACK_SIZE],
 									     const cl::sycl::stream &out)
@@ -287,8 +285,8 @@ namespace embree
 	    uint numChildren = 2;
 	    struct gpu::BuildRecord *children = &stack[sindex];
 	    binMapping.init(current.centroidBounds,BINS);
-	    serial_find_split(subgroup,current,primref,binMapping,split,binInfo,primref_index0,primref_index1);
-	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);
+	    serial_find_split(subgroup,current,primref,binMapping,binInfo,primref_index0,primref_index1);
+	    const gpu::Split split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);
 
 	    out << "split.sah " << split.sah << " " << cl::sycl::endl;
 	    
@@ -547,7 +545,7 @@ namespace embree
 		  cl::sycl::accessor< gpu::BinInfo    , 0, sycl_read_write, sycl_local> binInfo(cgh);
 		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> current(cgh);
 		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> brecord(cgh);
-		  cl::sycl::accessor< gpu::Split      , 0, sycl_read_write, sycl_local> split(cgh);		  
+		  //cl::sycl::accessor< gpu::Split      , 0, sycl_read_write, sycl_local> split(cgh);		  
 		  cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N),cgh);
 		  cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> stack(cl::sycl::range<1>(BUILDRECORD_STACK_SIZE),cgh);
 		  
@@ -569,7 +567,7 @@ namespace embree
 		      const uint numRecords = globals->numBuildRecords;
 		      
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
-			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,split,childrenAABB.get_pointer(),stack.get_pointer(),out);
+			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
 		    });
 		});
 	      try {
