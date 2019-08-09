@@ -221,7 +221,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BuildRecord& r) {
-      return out << "buildrecord: start " << r.start << " end " << r.end << " size " << r.size() << " parent " << r.parent << " bounds " << r.centroidBounds;
+      return out << " start " << r.start << " end " << r.end << " size " << r.size() << " parent " << r.parent << " bounds " << r.centroidBounds;
     }
 
 
