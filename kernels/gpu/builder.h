@@ -218,13 +218,12 @@ namespace embree
       }
 
       inline unsigned int size() const { return end - start; }
-
-      inline void print(cl::sycl::stream &out) const
-      {
-	out << "buildrecord: start " << start << " end " << end << " size " << size() << " parent " << parent << cl::sycl::endl;
-	centroidBounds.print(out);
-      }
     };
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BuildRecord& r) {
+      return out << "buildrecord: start " << r.start << " end " << r.end << " size " << r.size() << " parent " << r.parent << " bounds " << r.centroidBounds;
+    }
+
 
     struct BinaryMortonCodeHierarchy
     {
@@ -540,14 +539,16 @@ namespace embree
       }
 
 
-      inline void print(cl::sycl::stream &out)
-      {
-	for (uint i=0;i<BVH_NODE_N;i++)
-	  {
-	    out << " i " << i << " offset " << offset[i] << " lower_x " << lower_x[i] << " upper_x " << upper_x[i] << " lower_y " << lower_y[i] << " upper_y " << upper_y[i] << " lower_z " << lower_z[i] << " upper_z " << upper_z[i] << cl::sycl::endl;
-	  }
-      }
     };
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BVHNodeN& node) {
+      for (uint i=0;i<BVH_NODE_N;i++)
+	{
+	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i];
+	}      
+      return out; 
+    }
+
     
   };
 };

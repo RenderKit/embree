@@ -161,12 +161,13 @@ namespace embree
 	result.upper.w() = 0.0f;	
 	return result;	
       }
-      
-      inline void print(const cl::sycl::stream &out) const
-      {
-	out << "AABB: lower " << lower << "  upper " << upper << cl::sycl::endl;
-      }
+            
     };
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB& aabb) {
+      return out << "lower " << aabb.lower << "  upper " << aabb.upper;
+    }
+
   };
 };
 
