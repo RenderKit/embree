@@ -288,11 +288,11 @@ namespace embree
 	    serial_find_split(subgroup,current,primref,binMapping,binInfo,primref_index0,primref_index1);
 	    const gpu::Split split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);
 
-	    out << "split.sah " << split.sah << " " << cl::sycl::endl;
+#if 1	    
+	    if (subgroup.get_local_id() == 0)
+	      out << "split " << split << cl::sycl::endl;
+#endif
 	    
-	    //if (subgroup.get_local_id() == 0)
-	    //out << "split " << split << cl::sycl::endl;
-
 	    //serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
 
 	    //if (subgroup.get_local_id() == 0)

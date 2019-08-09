@@ -376,12 +376,9 @@ namespace embree
 	gpu::Split split;	
 	
 	const uint subgroupLocalID = sg.get_local_id()[0];
-	split.sah = (float)subgroupLocalID;
-#if 0	
+#if 1
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);
-	split.sah = lr_areaX;
-	
 	const float rl_areaX  = right_to_left_area16(sg,bX);
 	const AABB3f &bY      = boundsY[subgroupLocalID];
 	const float lr_areaY  = left_to_right_area16(sg,bY);
@@ -396,8 +393,6 @@ namespace embree
 	const uint rl_countsY = right_to_left_counts16(sg,c.y());  
 	const uint lr_countsZ = left_to_right_counts16(sg,c.z());
 	const uint rl_countsZ = right_to_left_counts16(sg,c.z());
-
-	out << "lr_areaY " << lr_areaY << cl::sycl::endl;
 	
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;  
 	cl::sycl::uint3 blocks_add = (cl::sycl::uint3)((1 << blocks_shift)-1);
@@ -418,8 +413,6 @@ namespace embree
 	sah.x() = select( (float)(INFINITY), sah.x(), subgroupLocalID != 0);
 	sah.y() = select( (float)(INFINITY), sah.y(), subgroupLocalID != 0);
 	sah.z() = select( (float)(INFINITY), sah.z(), subgroupLocalID != 0);
-
-	out << "sah " << sah << cl::sycl::endl;
 	
 	//printf("sah xyz %f blocks_shift %d \n",sah,blocks_shift);
 	const uint mid = (startID+endID)/2;
@@ -431,7 +424,7 @@ namespace embree
 	const uint bestSplit32 = (uint)(bestSplit >> 32);
 	const float split_sah = __builtin_bit_cast(float,bestSplit32);	
 
-	split.sah = split_sah;
+	split.sah = lr_areaX; //split_sah;
 	split.dim = (uint)bestSplit & 3;
 	split.pos = (uint)bestSplit >> 2;
 #endif 
