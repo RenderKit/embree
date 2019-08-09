@@ -113,7 +113,7 @@ namespace embree
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void serial_partition_index(cl::sycl::intel::sub_group &sg,
 										   const gpu::AABB *const primref,
 										   const gpu::BinMapping &binMapping,
-										   const gpu::BuildRecord &current,										    
+										   const gpu::BuildRecord &current,
 										   gpu::Split &split,
 										   gpu::BuildRecord &outLeft,
 										   gpu::BuildRecord &outRight,
@@ -253,7 +253,9 @@ namespace embree
     const uint subgroupSize    = subgroup.get_local_range().size();
     
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;
-    
+
+    //out << "cfg_minLeafSize " << cfg_minLeafSize << cl::sycl::endl;
+
     uint sindex = 1;
     stack[0] = record;
         
@@ -287,9 +289,20 @@ namespace embree
 	    binMapping.init(current.centroidBounds,BINS);
 	    serial_find_split(subgroup,current,primref,binMapping,split,binInfo,primref_index0,primref_index1);
 	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);
+
+	    out << "split.sah " << split.sah << " " << cl::sycl::endl;
 	    
+	    //if (subgroup.get_local_id() == 0)
+	    //out << "split " << split << cl::sycl::endl;
+
 	    //serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
 
+	    //if (subgroup.get_local_id() == 0)
+	    //  {
+	    //	out << "children[0] " << children[0] << cl::sycl::endl;
+	    //	out << "children[1] " << children[1] << cl::sycl::endl;
+	    //  }
+	    
 #if 0			      	      
 	    while (numChildren < BVH_NODE_N)
 	      {
@@ -317,10 +330,11 @@ namespace embree
 		binMapping.init(brecord.centroidBounds,BINS);
 		serial_find_split(subgroup,brecord,primref,binMapping,split,binInfo,primref_index0,primref_index1);
 		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end);	      
-		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
+		//serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
 		numChildren++;
 	      }
 #endif
+#if 0	    
 	    /* sort children based on range size */
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
@@ -340,7 +354,7 @@ namespace embree
 	    *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
 
 	    //sindex += numChildren;
-		
+#endif		
 	  }
       }
 			      

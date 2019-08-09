@@ -256,6 +256,11 @@ namespace embree
       int pos;
     };
 
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Split& s) {
+      return out << " sah " << s.sah << " dim " << s.dim << " pos " << s.pos;
+    }
+
+
     struct BinMapping
     {
       cl::sycl::float4 ofs, scale;
@@ -368,9 +373,14 @@ namespace embree
       
       [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const cl::sycl::float4 scale, const uint startID, const uint endID)
       {
+	gpu::Split split;	
+	
 	const uint subgroupLocalID = sg.get_local_id()[0];	
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);
+	split.sah = lr_areaX;
+#if 0
+	
 	const float rl_areaX  = right_to_left_area16(sg,bX);
 	const AABB3f &bY      = boundsY[subgroupLocalID];
 	const float lr_areaY  = left_to_right_area16(sg,bY);
@@ -385,7 +395,9 @@ namespace embree
 	const uint rl_countsY = right_to_left_counts16(sg,c.y());  
 	const uint lr_countsZ = left_to_right_counts16(sg,c.z());
 	const uint rl_countsZ = right_to_left_counts16(sg,c.z());
-  
+
+	out << "lr_areaY " << lr_areaY << cl::sycl::endl;
+	
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;  
 	cl::sycl::uint3 blocks_add = (cl::sycl::uint3)((1 << blocks_shift)-1);
 
@@ -399,34 +411,29 @@ namespace embree
 	const cl::sycl::float3 rl_count_f((float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z());	
 	
 	cl::sycl::float3 sah           = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
-
+       
 	/* first bin is invalid */
 
 	sah.x() = select( (float)(INFINITY), sah.x(), subgroupLocalID != 0);
 	sah.y() = select( (float)(INFINITY), sah.y(), subgroupLocalID != 0);
 	sah.z() = select( (float)(INFINITY), sah.z(), subgroupLocalID != 0);
 
+	out << "sah " << sah << cl::sycl::endl;
+	
 	//printf("sah xyz %f blocks_shift %d \n",sah,blocks_shift);
 	const uint mid = (startID+endID)/2;
-#if 0	
-	const uint &maxSAH = reinterpret_cast<const uint&>((float)(INFINITY));
-#else
+
 	const float inf = (float)(INFINITY);
-	const uint &maxSAH = reinterpret_cast<const uint&>(inf);	
-#endif	
+	const uint maxSAH = __builtin_bit_cast(uint,inf);	
 	const ulong defaultSplit = (((ulong)maxSAH) << 32) | ((uint)mid << 2) | 0;    
 	const ulong bestSplit = getBestSplit(sg, sah, subgroupLocalID, scale, defaultSplit);
-#if 0
-	const float& split_sah = reinterpret_cast<const float&>((uint)(bestSplit >> 32));
-#else
 	const uint bestSplit32 = (uint)(bestSplit >> 32);
-	const float& split_sah = reinterpret_cast<const float&>(bestSplit32);	
-#endif	
-	gpu::Split split;
+	const float split_sah = __builtin_bit_cast(float,bestSplit32);	
+
 	split.sah = split_sah;
 	split.dim = (uint)bestSplit & 3;
 	split.pos = (uint)bestSplit >> 2;
-  
+#endif 
 	return split;
       }
       

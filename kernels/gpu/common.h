@@ -20,8 +20,8 @@
 #define SYCL_SIMPLE_SWIZZLES
 #include <CL/sycl.hpp>
 
-#define DBG_PRINT_BUFFER_SIZE 1024
-#define DBG_PRINT_LINE_SIZE 128
+#define DBG_PRINT_BUFFER_SIZE 1024*1024
+#define DBG_PRINT_LINE_SIZE 512
 
 #ifdef __SYCL_DEVICE_ONLY__
 #define GLOBAL __attribute__((ocl_global))
