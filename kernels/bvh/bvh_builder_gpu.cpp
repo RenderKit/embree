@@ -71,7 +71,8 @@ namespace embree
 									      gpu::BinMapping &binMapping,
 									      gpu::BinInfo &binInfo,
 									      uint *primref_index0,
-									      uint *primref_index1)
+									      uint *primref_index1,
+									      const cl::sycl::stream &out)
   {
     const uint startID = record.start;
     const uint endID   = record.end;
@@ -249,6 +250,7 @@ namespace embree
   {
     const uint subgroupLocalID = subgroup.get_local_id()[0];
     const uint subgroupSize    = subgroup.get_local_range().size();
+
     
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;
 
@@ -269,7 +271,8 @@ namespace embree
 	gpu::BinMapping binMapping;
 
 	const uint items = current.size();
-	  
+	gpu::Split split;
+	
 	/*! create a leaf node when #items < threshold */
 	if (items <= cfg_minLeafSize)
 	  {
@@ -284,13 +287,17 @@ namespace embree
 		
 	    uint numChildren = 2;
 	    struct gpu::BuildRecord *children = &stack[sindex];
-	    binMapping.init(current.centroidBounds,BINS);
-	    serial_find_split(subgroup,current,primref,binMapping,binInfo,primref_index0,primref_index1);
-	    const gpu::Split split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);
 
-#if 1	    
+	    
+	    binMapping.init(current.centroidBounds,BINS);
+	    
+	    serial_find_split(subgroup,current,primref,binMapping,binInfo,primref_index0,primref_index1,out);
+	    
+	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end,out);
+
+#if 1
 	    if (subgroup.get_local_id() == 0)
-	      out << "split " << split << cl::sycl::endl;
+	      out << "split.dim " << split.dim << " split.pos " << split.pos << cl::sycl::endl;
 #endif
 	    
 	    //serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
@@ -354,7 +361,13 @@ namespace embree
 	    //sindex += numChildren;
 #endif		
 	  }
+#if 0
+	//if (subgroup.get_local_id() == 0)
+	      out << "split.sah " << split.sah << cl::sycl::endl;
+#endif
+	
       }
+
 			      
   }
 
@@ -565,6 +578,9 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
+
+		      //const uint subgroupLocalID = subgroup.get_local_id()[0];
+		      //out << binInfo.get_pointer()->boundsX[subgroupLocalID] << cl::sycl::endl;
 		      
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
 			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);

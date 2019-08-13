@@ -310,14 +310,13 @@ namespace embree
 
       [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void init(const cl::sycl::intel::sub_group &subgroup)
       {
-	//printf("subgroup.get_local_range().size() %d \n",(uint)subgroup.get_local_range().size());
 	for (uint i=subgroup.get_local_id()[0];i<BINS;i+=subgroup.get_local_range().size())
 	  {
 	    boundsX[i].init();
 	    boundsY[i].init();
 	    boundsZ[i].init();
 	    counts[i] = (cl::sycl::uint3)(0);
-	  }	
+	  }
       }
 
 
@@ -371,14 +370,19 @@ namespace embree
       }
 
       
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const cl::sycl::float4 scale, const uint startID, const uint endID)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const cl::sycl::float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
       {
 	gpu::Split split;	
 	
 	const uint subgroupLocalID = sg.get_local_id()[0];
-#if 1
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);
+
+	for (int i=0;i<BVH_NODE_N;i++)
+	  if (subgroupLocalID == i)
+	    out << bX.halfArea() << " " << cl::sycl::endl;
+	
+#if 0
 	const float rl_areaX  = right_to_left_area16(sg,bX);
 	const AABB3f &bY      = boundsY[subgroupLocalID];
 	const float lr_areaY  = left_to_right_area16(sg,bY);
@@ -410,21 +414,23 @@ namespace embree
        
 	/* first bin is invalid */
 
-	sah.x() = select( (float)(INFINITY), sah.x(), subgroupLocalID != 0);
-	sah.y() = select( (float)(INFINITY), sah.y(), subgroupLocalID != 0);
-	sah.z() = select( (float)(INFINITY), sah.z(), subgroupLocalID != 0);
+	sah.x() = select( pos_inf, sah.x(), subgroupLocalID != 0);
+	sah.y() = select( pos_inf, sah.y(), subgroupLocalID != 0);
+	sah.z() = select( pos_inf, sah.z(), subgroupLocalID != 0);
+
+	//out << (uint)__builtin_bit_cast(uint,tmp) << " " << cl::sycl::endl;
+	out << sah.x() << " " << cl::sycl::endl;
 	
 	//printf("sah xyz %f blocks_shift %d \n",sah,blocks_shift);
 	const uint mid = (startID+endID)/2;
 
-	const float inf = (float)(INFINITY);
-	const uint maxSAH = __builtin_bit_cast(uint,inf);	
+	const uint maxSAH = __builtin_bit_cast(uint,pos_inf);	
 	const ulong defaultSplit = (((ulong)maxSAH) << 32) | ((uint)mid << 2) | 0;    
 	const ulong bestSplit = getBestSplit(sg, sah, subgroupLocalID, scale, defaultSplit);
 	const uint bestSplit32 = (uint)(bestSplit >> 32);
 	const float split_sah = __builtin_bit_cast(float,bestSplit32);	
 
-	split.sah = lr_areaX; //split_sah;
+	split.sah = split_sah;
 	split.dim = (uint)bestSplit & 3;
 	split.pos = (uint)bestSplit >> 2;
 #endif 
@@ -506,14 +512,16 @@ namespace embree
 
       inline void initBVHNodeN(uint slotID)
       {
+	const float pos_inf =  INFINITY;
+	const float neg_inf = -INFINITY;	
 	offset[slotID]  =  (uint)(-1);  
 	parent[slotID]  =  (uint)(-1); 
-	lower_x[slotID] =  (float)INFINITY; 
-	upper_x[slotID] = -(float)INFINITY;
-	lower_y[slotID] =  (float)INFINITY; 
-	upper_y[slotID] = -(float)INFINITY;
-	lower_z[slotID] =  (float)INFINITY; 
-	upper_z[slotID] = -(float)INFINITY;  
+	lower_x[slotID] =  pos_inf; 
+	upper_x[slotID] =  neg_inf;
+	lower_y[slotID] =  pos_inf; 
+	upper_y[slotID] =  neg_inf;
+	lower_z[slotID] =  pos_inf; 
+	upper_z[slotID] =  neg_inf;  
       }
 
 

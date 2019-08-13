@@ -55,6 +55,7 @@ constexpr cl::sycl::access::mode sycl_read_write = cl::sycl::access::mode::read_
 constexpr cl::sycl::access::mode sycl_read       = cl::sycl::access::mode::read;
 constexpr cl::sycl::access::mode sycl_write      = cl::sycl::access::mode::write;
 
+
 namespace embree
 {
   namespace gpu
