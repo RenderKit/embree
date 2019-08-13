@@ -60,6 +60,7 @@ namespace embree
       {
         STAT3(point_query.trav_prims,1,1,1);
         AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
+        assert(accel);
         context->geomID = subgrid.geomID();
         context->primID = subgrid.primID();
         return accel->pointQuery(query, context);
@@ -121,9 +122,6 @@ namespace embree
           } else {
             mask = BVHNQuantizedBaseNodePointQueryAABB1<N>::pointQuery(&prim[i].qnode,tquery,dist);
           }
-#if defined(__AVX__)
-          STAT3(point_query.trav_hit_boxes[popcnt(mask)],1,1,1);
-#endif
           while(mask != 0)
           {
             const size_t ID = bscf(mask); 

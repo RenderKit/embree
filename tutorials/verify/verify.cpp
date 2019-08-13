@@ -3222,7 +3222,6 @@ namespace embree
       // for supported primitive/geometry types
       
       std::string cfg = state->rtcore + ",isa=" + stringOfISA(isa);
-      printf("run test %s\n", cfg.c_str());
 
       auto queryFunc = [](RTCPointQueryFunctionArguments* args) -> bool
       {
