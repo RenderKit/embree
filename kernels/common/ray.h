@@ -108,11 +108,17 @@ namespace embree
                           const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                           const vfloat<K>& time = zero, const vint<K>& mask = -1, const vint<K>& id = 0, const vint<K>& flags = 0)
       : RayK<K>(org, dir, tnear, tfar, time, mask, id, flags),
-        geomID(RTC_INVALID_GEOMETRY_ID) {}
+        geomID(RTC_INVALID_GEOMETRY_ID) 
+    {
+      instID[0] = RTC_INVALID_GEOMETRY_ID;
+    }
 
     __forceinline RayHitK(const RayK<K>& ray)
       : RayK<K>(ray),
-        geomID(RTC_INVALID_GEOMETRY_ID) {}
+        geomID(RTC_INVALID_GEOMETRY_ID) 
+    {
+      instID[0] = RTC_INVALID_GEOMETRY_ID;
+    }
 
     __forceinline RayHitK<K>& operator =(const RayK<K>& ray)
     {
@@ -126,6 +132,7 @@ namespace embree
       flags  = ray.flags;
 
       geomID = RTC_INVALID_GEOMETRY_ID;
+      instID[0] = RTC_INVALID_GEOMETRY_ID;
 
       return *this;
     }
