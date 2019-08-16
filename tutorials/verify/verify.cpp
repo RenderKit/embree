@@ -3317,7 +3317,7 @@ namespace embree
         vertices[0] = Vec4f(-1.0f, 0.0f, 0.0f, 0.1f);
         vertices[1] = Vec4f(-1.0f, 0.0f, 1.0f, 0.1f);
         vertices[2] = Vec4f(+1.0f, 0.0f, 1.0f, 0.1f);
-        vertices[2] = Vec4f(+1.0f, 0.0f, 0.0f, 0.1f);
+        vertices[3] = Vec4f(+1.0f, 0.0f, 0.0f, 0.1f);
         indices[0] = 0;
 
         rtcCommitGeometry(geom);
