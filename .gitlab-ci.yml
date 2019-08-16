@@ -160,10 +160,10 @@ nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
 
 # ICC compilation and testing of different ISAs
 
-nightly-macosx-x64-RelWithDebInfo-ICC15-ISPC1.9.2-AVX-INT:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 ispc:ispc1.9.2 isa:AVX tasking:INT intensity:4"
-  tags:   [mac, icc15]
-  only:   [schedules]
+#nightly-macosx-x64-RelWithDebInfo-ICC15-ISPC1.9.2-AVX-INT:
+#  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 ispc:ispc1.9.2 isa:AVX tasking:INT intensity:4"
+#  tags:   [mac, icc15]
+#  only:   [schedules]
 
 nightly-macosx-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
