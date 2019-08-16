@@ -287,7 +287,6 @@ namespace embree
     template<int N>
     __forceinline size_t pointQueryNodeSphere(const typename BVHN<N>::QuantizedBaseNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
     {
-      const size_t mvalid  = movemask(node->validMask());
       const vfloat<N> start_x(node->start.x);
       const vfloat<N> scale_x(node->scale.x);
       const vfloat<N> minX = madd(node->template dequantize<N>((0*sizeof(vfloat<N>)) >> 2),scale_x,start_x);
@@ -300,20 +299,19 @@ namespace embree
       const vfloat<N> scale_z(node->scale.z);
       const vfloat<N> minZ = madd(node->template dequantize<N>((4*sizeof(vfloat<N>)) >> 2),scale_z,start_z);
       const vfloat<N> maxZ = madd(node->template dequantize<N>((5*sizeof(vfloat<N>)) >> 2),scale_z,start_z);
-      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ) & mvalid;
+      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
     }
     
     template<int N>
     __forceinline size_t pointQueryNodeSphere(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
     {
-      const size_t mvalid  = movemask(node->validMask());
       const vfloat<N> minX = node->dequantizeLowerX(time);
       const vfloat<N> maxX = node->dequantizeUpperX(time);
       const vfloat<N> minY = node->dequantizeLowerY(time);
       const vfloat<N> maxY = node->dequantizeUpperY(time);
       const vfloat<N> minZ = node->dequantizeLowerZ(time);
       const vfloat<N> maxZ = node->dequantizeUpperZ(time);     
-      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ) & mvalid;
+      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
     }
     
     template<int N>
