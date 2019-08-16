@@ -35,11 +35,13 @@
 namespace embree
 {
   
-  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref)
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(cl::sycl::intel::sub_group &subgroup, const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref,const cl::sycl::stream &out)
   {
     const cl::sycl::float4 p = primref.centroid2();
     const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
     cl::sycl::uint4 i;
+
+    const uint subgroupLocalID = subgroup.get_local_id()[0];
 
 #if 1
     i.x() = (uint)bin4.x();
@@ -48,15 +50,16 @@ namespace embree
 #else
     i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
 #endif
-    
+
     assert(i.x() < BINS);
-    assert(i.y() < BINS);
+    assert(i.y() < BINS); 
     assert(i.z() < BINS);
   
     gpu::AABB3f bounds = convert_AABB3f(primref);
+
     bounds.atomic_merge_local(binInfo.boundsX[i.x()]);
-    bounds.atomic_merge_local(binInfo.boundsX[i.y()]);
-    bounds.atomic_merge_local(binInfo.boundsX[i.z()]);
+    bounds.atomic_merge_local(binInfo.boundsY[i.y()]);
+    bounds.atomic_merge_local(binInfo.boundsZ[i.z()]);
 
     gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.x()] + 0,1);
     gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&binInfo.counts[i.y()] + 1,1);
@@ -85,9 +88,15 @@ namespace embree
     for (uint t=startID+subgroupLocalID;t<endID;t+=subgroupSize)
       {
 	const uint index = primref_index0[t];
-	primref_index1[t] = index;
-	atomicUpdateLocalBinInfo(binMapping,binInfo,primref[index]);      
+	primref_index1[t] = index;	
+	atomicUpdateLocalBinInfo(subgroup,binMapping,binInfo,primref[index],out);      
       }
+
+#if 0    
+    for (uint i=0;i<subgroupSize;i++)
+      if (i == subgroupLocalID)	
+	out << "i " << i << " " << binInfo.boundsX[i] << cl::sycl::endl;
+#endif    
   }
 
 
@@ -496,11 +505,15 @@ namespace embree
 	      
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);		  
-		  auto accessor_aabb    = aabb_buffer.get_access<sycl_read>(cgh);		  
+		  auto accessor_aabb    = aabb_buffer.get_access<sycl_read>(cgh);
+
+		  auto accessor_primref_index = primref_index.get_access<sycl_write>(cgh);
+		  
 		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		{
 		  const gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
-		  const gpu::AABB aabb_centroid(aabb_geom.centroid2());						       
+		  const gpu::AABB aabb_centroid(aabb_geom.centroid2());
+		  accessor_primref_index[item.get_global_id(0)] = item.get_global_id(0);
 		  const gpu::AABB reduced_geometry_aabb = aabb_geom.work_group_reduce();
 		  const gpu::AABB reduced_centroid_aabb = aabb_centroid.work_group_reduce();						       
 		  cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());

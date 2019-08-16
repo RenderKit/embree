@@ -34,7 +34,9 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
         {
-          num = min(BINS,size_t(4.0f + 0.05f*N));
+          //num = min(BINS,size_t(4.0f + 0.05f*N));
+	  num = BINS;
+	  PRINT(num);
           assert(num >= 1);
           const vfloat4 eps = 1E-34f;
           const vfloat4 diag = max(eps, (vfloat4) centBounds.size());
@@ -57,7 +59,9 @@ namespace embree
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           const vfloat4 eps = 1E-34f;
-          num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
+          //num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
+	  num = BINS;
+	  PRINT(BINS);
           const vfloat4 diag = max(eps,(vfloat4) pinfo.centBounds.size());
           scale = select(diag > eps,vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
@@ -356,6 +360,13 @@ namespace embree
 	vfloat4 rAreas[BINS];
 	vuint4 rCounts[BINS];
 	vuint4 count = 0; BBox bx = empty; BBox by = empty; BBox bz = empty;
+
+	for (size_t i=0;i<mapping.size();i++)
+        {
+	  std::cout << i << " " << bounds(i,0) << std::endl;
+	}
+	exit(0);
+	
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
           count += counts(i);

@@ -68,24 +68,24 @@ namespace embree
 
       inline void atomic_merge_global(AABB3f &dest) const
       {
-	atomic_min(((volatile GLOBAL float *)&dest) + 0,lower.x());
-	atomic_min(((volatile GLOBAL float *)&dest) + 1,lower.y());
-	atomic_min(((volatile GLOBAL float *)&dest) + 2,lower.z());
+	atomic_min(((volatile GLOBAL float *)&dest.lower) + 0,lower.x());
+	atomic_min(((volatile GLOBAL float *)&dest.lower) + 1,lower.y());
+	atomic_min(((volatile GLOBAL float *)&dest.lower) + 2,lower.z());
 	
-	atomic_max(((volatile GLOBAL float *)&dest) + 4,upper.x());
-	atomic_max(((volatile GLOBAL float *)&dest) + 5,upper.y());
-	atomic_max(((volatile GLOBAL float *)&dest) + 6,upper.z());	
+	atomic_max(((volatile GLOBAL float *)&dest.upper) + 0,upper.x());
+	atomic_max(((volatile GLOBAL float *)&dest.upper) + 1,upper.y());
+	atomic_max(((volatile GLOBAL float *)&dest.upper) + 2,upper.z());	
       }
 
       inline void atomic_merge_local(AABB3f &dest) const
       {
-	atomic_min(((volatile LOCAL float *)&dest) + 0,lower.x());
-	atomic_min(((volatile LOCAL float *)&dest) + 1,lower.y());
-	atomic_min(((volatile LOCAL float *)&dest) + 2,lower.z());
+	atomic_min(((volatile LOCAL float *)&dest.lower) + 0,lower.x());
+	atomic_min(((volatile LOCAL float *)&dest.lower) + 1,lower.y());
+	atomic_min(((volatile LOCAL float *)&dest.lower) + 2,lower.z());
 	
-	atomic_max(((volatile LOCAL float *)&dest) + 4,upper.x());
-	atomic_max(((volatile LOCAL float *)&dest) + 5,upper.y());
-	atomic_max(((volatile LOCAL float *)&dest) + 6,upper.z());	
+	atomic_max(((volatile LOCAL float *)&dest.upper) + 0,upper.x());
+	atomic_max(((volatile LOCAL float *)&dest.upper) + 1,upper.y());
+	atomic_max(((volatile LOCAL float *)&dest.upper) + 2,upper.z());	
       }
       
       inline AABB3f sub_group_reduce(cl::sycl::intel::sub_group& sg) const
@@ -158,7 +158,16 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB3f& aabb) {
+#if 1      
+      AABB3f tmp = aabb;
+      tmp.lower = max(tmp.lower,cl::sycl::float3(-MAXFLOAT));
+      tmp.lower = min(tmp.lower,cl::sycl::float3( MAXFLOAT));
+      tmp.upper = max(tmp.upper,cl::sycl::float3(-MAXFLOAT));
+      tmp.upper = min(tmp.upper,cl::sycl::float3( MAXFLOAT));      
+      return out << "lower " << tmp.lower << "  upper " << tmp.upper;
+#else      
       return out << "lower " << aabb.lower << "  upper " << aabb.upper;
+#endif      
     }
     
   };

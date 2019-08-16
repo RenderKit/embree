@@ -376,13 +376,7 @@ namespace embree
 	
 	const uint subgroupLocalID = sg.get_local_id()[0];
 	const AABB3f &bX      = boundsX[subgroupLocalID];
-	const float lr_areaX  = left_to_right_area16(sg,bX);
-
-	for (int i=0;i<BVH_NODE_N;i++)
-	  if (subgroupLocalID == i)
-	    out << bX.halfArea() << " " << cl::sycl::endl;
-	
-#if 0
+	const float lr_areaX  = left_to_right_area16(sg,bX);	
 	const float rl_areaX  = right_to_left_area16(sg,bX);
 	const AABB3f &bY      = boundsY[subgroupLocalID];
 	const float lr_areaY  = left_to_right_area16(sg,bY);
@@ -413,6 +407,7 @@ namespace embree
 	cl::sycl::float3 sah           = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
        
 	/* first bin is invalid */
+	const float pos_inf =  INFINITY;
 
 	sah.x() = select( pos_inf, sah.x(), subgroupLocalID != 0);
 	sah.y() = select( pos_inf, sah.y(), subgroupLocalID != 0);
@@ -433,7 +428,6 @@ namespace embree
 	split.sah = split_sah;
 	split.dim = (uint)bestSplit & 3;
 	split.pos = (uint)bestSplit >> 2;
-#endif 
 	return split;
       }
       
