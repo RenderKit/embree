@@ -270,11 +270,16 @@ namespace embree
 	const cl::sycl::float4 eps(1E-34f);
 	const cl::sycl::float4 diag = max(eps, centBounds.upper - centBounds.lower);
 	scale = (cl::sycl::float4)(0.99f*(float)bins)/diag;
-	scale = select((cl::sycl::float4)(0.0f), scale, (diag > eps));
+	scale = cl::sycl::select((cl::sycl::float4)(0.0f), scale, (diag > eps));
 	ofs  = centBounds.lower;
       }
 
     };
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BinMapping& bm) {
+      return out << "ofs " << bm.ofs.xyz() << " scale " << bm.scale.xyz();
+    }
+
 
     inline AABB3f convert_AABB3f(const AABB &aabb)
     {
@@ -375,6 +380,8 @@ namespace embree
 	gpu::Split split;	
 	
 	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();
+	
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);	
 	const float rl_areaX  = right_to_left_area16(sg,bX);
@@ -407,16 +414,23 @@ namespace embree
 	cl::sycl::float3 sah           = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
        
 	/* first bin is invalid */
-	const float pos_inf =  INFINITY;
+	const float pos_inf = (float)INFINITY;
 
-	sah.x() = select( pos_inf, sah.x(), subgroupLocalID != 0);
-	sah.y() = select( pos_inf, sah.y(), subgroupLocalID != 0);
-	sah.z() = select( pos_inf, sah.z(), subgroupLocalID != 0);
+	// FIXME: select has issues with data types
+	sah.x() = cl::sycl::select( (float)pos_inf, (float)sah.x(), (int)(subgroupLocalID != 0));
+	sah.y() = cl::sycl::select( (float)pos_inf, (float)sah.y(), (int)(subgroupLocalID != 0));
+	sah.z() = cl::sycl::select( (float)pos_inf, (float)sah.z(), (int)(subgroupLocalID != 0));
 
 	//out << (uint)__builtin_bit_cast(uint,tmp) << " " << cl::sycl::endl;
-	out << sah.x() << " " << cl::sycl::endl;
+
+#if 1
+	for (uint i=0;i<subgroupSize;i++)
+	  if (i == subgroupLocalID)	
+	    out << "i " << i << " " << lr_countsX << " " << cl::sycl::endl;
+	    //out << "i " << i << " " << min(lr_areaX,cl::sycl::float3(MAXFLOAT)) << " " << cl::sycl::endl; 
+	    
+#endif
 	
-	//printf("sah xyz %f blocks_shift %d \n",sah,blocks_shift);
 	const uint mid = (startID+endID)/2;
 
 	const uint maxSAH = __builtin_bit_cast(uint,pos_inf);	

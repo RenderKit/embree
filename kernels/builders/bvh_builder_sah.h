@@ -229,7 +229,7 @@ namespace embree
             /*! perform initial split */
             Set lprims,rprims;
             heuristic.split(split,current.prims,lprims,rprims);
-
+	    
             /*! initialize child list with initial split */
             ReductionTy values[MAX_BRANCHING_FACTOR];
             BuildRecord children[MAX_BRANCHING_FACTOR];

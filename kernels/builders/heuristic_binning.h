@@ -34,9 +34,7 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
         {
-          //num = min(BINS,size_t(4.0f + 0.05f*N));
-	  num = BINS;
-	  PRINT(num);
+          num = min(BINS,size_t(4.0f + 0.05f*N));
           assert(num >= 1);
           const vfloat4 eps = 1E-34f;
           const vfloat4 diag = max(eps, (vfloat4) centBounds.size());
@@ -59,9 +57,7 @@ namespace embree
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           const vfloat4 eps = 1E-34f;
-          //num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
-	  num = BINS;
-	  PRINT(BINS);
+          num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
           const vfloat4 diag = max(eps,(vfloat4) pinfo.centBounds.size());
           scale = select(diag > eps,vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
@@ -365,7 +361,6 @@ namespace embree
         {
 	  std::cout << i << " " << bounds(i,0) << std::endl;
 	}
-	exit(0);
 	
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
@@ -414,6 +409,7 @@ namespace embree
             bestSAH = vbestSAH[dim];
           }
         }
+
 	return Split(bestSAH,bestDim,bestPos,mapping);
       }
       

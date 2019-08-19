@@ -92,10 +92,11 @@ namespace embree
 	atomicUpdateLocalBinInfo(subgroup,binMapping,binInfo,primref[index],out);      
       }
 
-#if 0    
+#if 1
+    out << "binMapping " << binMapping << cl::sycl::endl;
     for (uint i=0;i<subgroupSize;i++)
       if (i == subgroupLocalID)	
-	out << "i " << i << " " << binInfo.boundsX[i] << cl::sycl::endl;
+	out << "i " << i << " " << binInfo.counts[i] << cl::sycl::endl;
 #endif    
   }
 
@@ -263,8 +264,6 @@ namespace embree
     
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;
 
-    //out << "cfg_minLeafSize " << cfg_minLeafSize << cl::sycl::endl;
-
     uint sindex = 1;
     stack[0] = record;
         
@@ -306,19 +305,19 @@ namespace embree
 
 #if 1
 	    if (subgroup.get_local_id() == 0)
-	      out << "split.dim " << split.dim << " split.pos " << split.pos << cl::sycl::endl;
+	      out << "split " << split << cl::sycl::endl;
 #endif
 	    
-	    //serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
+	    serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
 
-	    //if (subgroup.get_local_id() == 0)
-	    //  {
-	    //	out << "children[0] " << children[0] << cl::sycl::endl;
-	    //	out << "children[1] " << children[1] << cl::sycl::endl;
-	    //  }
+	    if (subgroup.get_local_id() == 0)
+	      {
+	    	out << "children[0] " << children[0] << " " << childrenAABB[0] << cl::sycl::endl;
+	    	out << "children[1] " << children[1] << " " << childrenAABB[1] << cl::sycl::endl;
+	      }
 	    
-#if 0			      	      
-	    while (numChildren < BVH_NODE_N)
+#if 1			      	      
+	    while (numChildren < 3 /*BVH_NODE_N*/)
 	      {
 		/*! find best child to split */
 		float bestArea = -(float)INFINITY;
@@ -342,17 +341,28 @@ namespace embree
 		gpu::BuildRecord &rrecord = children[numChildren];	
 
 		binMapping.init(brecord.centroidBounds,BINS);
-		serial_find_split(subgroup,brecord,primref,binMapping,split,binInfo,primref_index0,primref_index1);
-		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end);	      
-		//serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
+		serial_find_split(subgroup,brecord,primref,binMapping,binInfo,primref_index0,primref_index1,out);
+		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end,out);
+
+		if (subgroup.get_local_id() == 0)
+		  out << "split " << split << cl::sycl::endl;
+		
+		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
 		numChildren++;
+
+		if (subgroup.get_local_id() == 0)
+		  {
+		    out << "children[bestChild]   " << children[bestChild] << cl::sycl::endl;
+		    out << "children[numChildren] " << children[numChildren] << cl::sycl::endl;
+		  }
+		
 	      }
 #endif
 #if 0	    
 	    /* sort children based on range size */
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
-	    const uint numPrimsIDs = select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
+	    const uint numPrimsIDs = cl::sycl::select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
 	    const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
 
 	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem);
