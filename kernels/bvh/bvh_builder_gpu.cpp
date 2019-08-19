@@ -88,12 +88,15 @@ namespace embree
     for (uint t=startID+subgroupLocalID;t<endID;t+=subgroupSize)
       {
 	const uint index = primref_index0[t];
+	
 	primref_index1[t] = index;	
 	atomicUpdateLocalBinInfo(subgroup,binMapping,binInfo,primref[index],out);      
       }
 
 #if 1
-    out << "binMapping " << binMapping << cl::sycl::endl;
+    if (0 == subgroupLocalID)	
+      out << "binMapping " << binMapping << cl::sycl::endl;
+    
     for (uint i=0;i<subgroupSize;i++)
       if (i == subgroupLocalID)	
 	out << "i " << i << " " << binInfo.counts[i] << cl::sycl::endl;
@@ -130,7 +133,8 @@ namespace embree
 										   gpu::AABB &outGeometryBoundsLeft,
 										   gpu::AABB &outGeometryBoundsRight,
 										   uint *primref_index0,
-										   uint *primref_index1)
+										   uint *primref_index1,
+										   const cl::sycl::stream &out)
   {
     const uint subgroupLocalID = sg.get_local_id()[0];
     const uint subgroupSize    = sg.get_local_range().size();
@@ -223,6 +227,8 @@ namespace embree
     if (subgroupLocalID == 0)
       {
 	uint pos =  l - primref_index0;  // single lane needs to compute "pos"
+	//out << "pos = " << pos << cl::sycl::endl;
+	
 	outLeft.init(start,pos,leftCentroid);
 	outRight.init(pos,end,rightCentroid);
       
@@ -308,12 +314,12 @@ namespace embree
 	      out << "split " << split << cl::sycl::endl;
 #endif
 	    
-	    serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1);
+	    serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1,out);
 
 	    if (subgroup.get_local_id() == 0)
 	      {
-	    	out << "children[0] " << children[0] << " " << childrenAABB[0] << cl::sycl::endl;
-	    	out << "children[1] " << children[1] << " " << childrenAABB[1] << cl::sycl::endl;
+	    	//out << "children[0] " << children[0] << " " << childrenAABB[0] << cl::sycl::endl;
+	    	//out << "children[1] " << children[1] << " " << childrenAABB[1] << cl::sycl::endl;
 	      }
 	    
 #if 1			      	      
@@ -347,13 +353,13 @@ namespace embree
 		if (subgroup.get_local_id() == 0)
 		  out << "split " << split << cl::sycl::endl;
 		
-		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1);		    
+		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1,out);		    
 		numChildren++;
 
 		if (subgroup.get_local_id() == 0)
 		  {
-		    out << "children[bestChild]   " << children[bestChild] << cl::sycl::endl;
-		    out << "children[numChildren] " << children[numChildren] << cl::sycl::endl;
+		    //out << "children[bestChild]   " << children[bestChild] << cl::sycl::endl;
+		    //out << "children[numChildren] " << children[numChildren] << cl::sycl::endl;
 		  }
 		
 	      }

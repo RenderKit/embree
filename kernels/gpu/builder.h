@@ -325,19 +325,19 @@ namespace embree
       }
 
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float left_to_right_area16(cl::sycl::intel::sub_group &sg, const AABB3f &low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float left_to_right_area16(const cl::sycl::intel::sub_group &sg, const AABB3f &low)
       {
 	struct AABB3f low_prefix = low.sub_group_scan_exclusive_min_max(sg);
 	return low_prefix.halfArea();
       }
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint left_to_right_counts16(cl::sycl::intel::sub_group &sg, uint low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint left_to_right_counts16(const cl::sycl::intel::sub_group &sg, uint low)
       {
 	return sg.exclusive_scan<uint,cl::sycl::intel::plus>(low);
       }
 
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float right_to_left_area16(cl::sycl::intel::sub_group &sg, const AABB3f &low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float right_to_left_area16(const cl::sycl::intel::sub_group &sg, const AABB3f &low)
       {
 	const uint subgroupLocalID = sg.get_local_id()[0];
 	const uint subgroupSize    = sg.get_local_range().size();	
@@ -348,7 +348,7 @@ namespace embree
 	return low_area;
       }
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint right_to_left_counts16(cl::sycl::intel::sub_group &sg, uint low)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint right_to_left_counts16(const cl::sycl::intel::sub_group &sg, uint low)
       {
 	const uint subgroupLocalID = sg.get_local_id()[0];
 	const uint subgroupSize    = sg.get_local_range().size();	
@@ -399,12 +399,23 @@ namespace embree
 	const uint lr_countsZ = left_to_right_counts16(sg,c.z());
 	const uint rl_countsZ = right_to_left_counts16(sg,c.z());
 	
-	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;  
-	cl::sycl::uint3 blocks_add = (cl::sycl::uint3)((1 << blocks_shift)-1);
-
+	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;       
+	const uint blocks_add = ((1 << blocks_shift)-1);
+	
 	const cl::sycl::float3 lr_area(lr_areaX,lr_areaY,lr_areaZ);
 	const cl::sycl::float3 rl_area(rl_areaX,rl_areaY,rl_areaZ);
-	const cl::sycl::uint3 lr_count = ((cl::sycl::uint3)(lr_countsX,lr_countsY,lr_countsZ)+blocks_add) >> blocks_shift;
+
+	const cl::sycl::uint3 lr_count = (((cl::sycl::uint3)(lr_countsX,lr_countsY,lr_countsZ))+blocks_add) >> blocks_shift;
+#if 1
+	for (uint i=0;i<subgroupSize;i++)
+	  if (i == subgroupLocalID)	
+	    out << "i " << i << " lr_countsX " << lr_countsX << " bad lr_count.x " <<  lr_count.x() << " correct " << ((lr_countsX+blocks_add) >> blocks_shift) << cl::sycl::endl;
+	    
+#endif
+
+
+	    //out << "i " << i << " " << min(lr_count_f,cl::sycl::float3(MAXFLOAT)) << " " << cl::sycl::endl; 
+	
 	const cl::sycl::uint3 rl_count = ((cl::sycl::uint3)(rl_countsX,rl_countsY,rl_countsZ)+blocks_add) >> blocks_shift;
 
 	// FIXME !!!
@@ -423,13 +434,6 @@ namespace embree
 
 	//out << (uint)__builtin_bit_cast(uint,tmp) << " " << cl::sycl::endl;
 
-#if 1
-	for (uint i=0;i<subgroupSize;i++)
-	  if (i == subgroupLocalID)	
-	    out << "i " << i << " " << lr_countsX << " " << cl::sycl::endl;
-	    //out << "i " << i << " " << min(lr_areaX,cl::sycl::float3(MAXFLOAT)) << " " << cl::sycl::endl; 
-	    
-#endif
 	
 	const uint mid = (startID+endID)/2;
 

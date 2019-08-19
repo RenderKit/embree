@@ -92,7 +92,7 @@ namespace embree
 	atomic_max(((volatile LOCAL float *)&dest) + 6,upper.z());	
       }
       
-      inline AABB sub_group_reduce(cl::sycl::intel::sub_group& sg) const
+      inline AABB sub_group_reduce(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB result;
 	result.lower.x() = sg.reduce<float,cl::sycl::intel::minimum>(lower.x());
@@ -106,7 +106,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB sub_group_broadcast(cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
+      inline AABB sub_group_broadcast(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
       {
 	AABB result;
 	result.lower.x() = sg.broadcast<float>(lower.x(),localID);
@@ -120,7 +120,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB sub_group_scan_exclusive_min_max(cl::sycl::intel::sub_group& sg) const
+      inline AABB sub_group_scan_exclusive_min_max(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB result;
 	result.lower.x() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.x());
@@ -134,7 +134,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB sub_group_scan_inclusive_min_max(cl::sycl::intel::sub_group& sg) const 
+      inline AABB sub_group_scan_inclusive_min_max(const cl::sycl::intel::sub_group& sg) const 
       {
 	AABB result;
 	result.lower.x() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.x());
