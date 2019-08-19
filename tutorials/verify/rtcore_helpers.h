@@ -148,7 +148,8 @@ namespace embree
     rh.hit.v = 0.0f;
     rh.hit.geomID = -1;
     rh.hit.primID = -1;
-    rh.hit.instID[0] = -1;
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
   }
 
   __forceinline RTCRayHit makeRay(const Vec3fa& org, const Vec3fa& dir) 
@@ -158,7 +159,9 @@ namespace embree
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = 0.0f; rh.ray.tfar = inf;
     rh.ray.time = 0; rh.ray.mask = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    rh.hit.geomID = rh.hit.primID = -1;
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
     return rh;
   }
 
@@ -169,7 +172,9 @@ namespace embree
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
     rh.ray.time = 0; rh.ray.mask = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    rh.hit.geomID = rh.hit.primID = -1;
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
     return rh;
   }
 
@@ -183,7 +188,9 @@ namespace embree
     rh.ray.time = 0; 
     rh.ray.mask = -1;
     rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    rh.hit.geomID = rh.hit.primID = -1;
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
     return rh;
   }
 
@@ -216,7 +223,9 @@ namespace embree
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
     rh.ray.time = 0; rh.ray.mask = -1; rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    rh.hit.geomID = rh.hit.primID = -1;
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+      rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
     return rh;
   }
 

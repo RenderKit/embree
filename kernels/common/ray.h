@@ -110,14 +110,16 @@ namespace embree
       : RayK<K>(org, dir, tnear, tfar, time, mask, id, flags),
         geomID(RTC_INVALID_GEOMETRY_ID) 
     {
-      instID[0] = RTC_INVALID_GEOMETRY_ID;
+      for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+        instID[l] = RTC_INVALID_GEOMETRY_ID;
     }
 
     __forceinline RayHitK(const RayK<K>& ray)
       : RayK<K>(ray),
         geomID(RTC_INVALID_GEOMETRY_ID) 
     {
-      instID[0] = RTC_INVALID_GEOMETRY_ID;
+      for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+        instID[l] = RTC_INVALID_GEOMETRY_ID;
     }
 
     __forceinline RayHitK<K>& operator =(const RayK<K>& ray)
@@ -132,7 +134,8 @@ namespace embree
       flags  = ray.flags;
 
       geomID = RTC_INVALID_GEOMETRY_ID;
-      instID[0] = RTC_INVALID_GEOMETRY_ID;
+      for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+        instID[l] = RTC_INVALID_GEOMETRY_ID;
 
       return *this;
     }
@@ -437,8 +440,6 @@ namespace embree
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     {
       cout << " " << ray.instID[l];
-      if (ray.instID[l] == RTC_INVALID_GEOMETRY_ID)
-        break;
     }
     cout << std::endl;
     return cout << "}";
@@ -605,7 +606,7 @@ namespace embree
 
           vuint<K>::storeu(valid, instID(0, offset), ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-          for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID); ++l)
+          for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
             vuint<K>::storeu(valid, instID(l, offset), ray.instID[l]);
 #endif
         }
@@ -711,7 +712,7 @@ namespace embree
 
         vuint<K>::template scatter<1>(valid, instID(0), offset, ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID); ++l)
+        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
           vuint<K>::template scatter<1>(valid, instID(l), offset, ray.instID[l]);
 #endif
 #else
@@ -902,7 +903,7 @@ namespace embree
 
         vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID[0] + offset), ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID); ++l)
+        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
           vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID[l] + offset), ray.instID[l]);
 #endif
       }
@@ -1016,7 +1017,7 @@ namespace embree
 
         vuint<K>::template scatter<1>(valid, (unsigned int*)instID[0], offset, ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID); ++l)
+        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
           vuint<K>::template scatter<1>(valid, (unsigned int*)instID[l], offset, ray.instID[l]);
 #endif
 #else
@@ -1139,7 +1140,7 @@ namespace embree
 
         vuint<K>::template scatter<1>(valid, (unsigned int*)&((RayHit*)ptr)->instID[0], offset, ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID); ++l)
+        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
           vuint<K>::template scatter<1>(valid, (unsigned int*)&((RayHit*)ptr)->instID[l], offset, ray.instID[l]);
 #endif
 #else

@@ -33,6 +33,8 @@ namespace embree
     __forceinline HitK(const RTCIntersectContext* context, const vuint<K>& geomID, const vuint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const Vec3vf<K>& Ng)
       : Ng(Ng), u(u), v(v), primID(primID), geomID(geomID) 
     {
+      for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+        instID[l] = RTC_INVALID_GEOMETRY_ID;
       instance_id_stack::copy(context->instID, instID);
     }
 
@@ -94,8 +96,6 @@ namespace embree
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     {
       cout << " " << ray.instID[l];
-      if (ray.instID[l] == RTC_INVALID_GEOMETRY_ID)
-        break;
     }
     cout << std::endl;
     return cout << "}";
