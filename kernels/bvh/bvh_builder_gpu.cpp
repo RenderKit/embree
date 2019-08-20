@@ -41,8 +41,6 @@ namespace embree
     const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
     cl::sycl::uint4 i;
 
-    const uint subgroupLocalID = subgroup.get_local_id()[0];
-
 #if 1
     i.x() = (uint)bin4.x();
     i.y() = (uint)bin4.y();
@@ -265,7 +263,7 @@ namespace embree
 									     const cl::sycl::stream &out)
   {
     const uint subgroupLocalID = subgroup.get_local_id()[0];
-    const uint subgroupSize    = subgroup.get_local_range().size();
+    //const uint subgroupSize    = subgroup.get_local_range().size();
 
     
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;

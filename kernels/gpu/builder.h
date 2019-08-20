@@ -402,27 +402,25 @@ namespace embree
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;       
 	const uint blocks_add = ((1 << blocks_shift)-1);
 	
-	const cl::sycl::float3 lr_area(lr_areaX,lr_areaY,lr_areaZ);
-	const cl::sycl::float3 rl_area(rl_areaX,rl_areaY,rl_areaZ);
-
-	const cl::sycl::uint3 lr_count = (((cl::sycl::uint3)(lr_countsX,lr_countsY,lr_countsZ))+blocks_add) >> blocks_shift;
+	const cl::sycl::uint3 lr_count = { (lr_countsX+blocks_add)>>blocks_shift , (lr_countsY+blocks_add)>>blocks_shift, (lr_countsZ+blocks_add)>>blocks_shift };
+	
 #if 1
 	for (uint i=0;i<subgroupSize;i++)
 	  if (i == subgroupLocalID)	
-	    out << "i " << i << " lr_countsX " << lr_countsX << " bad lr_count.x " <<  lr_count.x() << " correct " << ((lr_countsX+blocks_add) >> blocks_shift) << cl::sycl::endl;
+	    out << "i " << i << " lr_countsX " << lr_countsX << " wrong lr_count.x() " <<  lr_count.x() << cl::sycl::endl;
 	    
 #endif
 
+	const cl::sycl::float3 lr_area = { lr_areaX,lr_areaY,lr_areaZ };
+	const cl::sycl::float3 rl_area = { rl_areaX,rl_areaY,rl_areaZ };
 
-	    //out << "i " << i << " " << min(lr_count_f,cl::sycl::float3(MAXFLOAT)) << " " << cl::sycl::endl; 
+	//out << "i " << i << " " << min(lr_count_f,cl::sycl::float3(MAXFLOAT)) << " " << cl::sycl::endl; 
 	
-	const cl::sycl::uint3 rl_count = ((cl::sycl::uint3)(rl_countsX,rl_countsY,rl_countsZ)+blocks_add) >> blocks_shift;
-
-	// FIXME !!!
-	const cl::sycl::float3 lr_count_f((float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z());
-	const cl::sycl::float3 rl_count_f((float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z());	
+	const cl::sycl::uint3 rl_count = { (rl_countsX+blocks_add)>>blocks_shift , (rl_countsY+blocks_add)>>blocks_shift, (rl_countsZ+blocks_add)>>blocks_shift };
+	const cl::sycl::float3 lr_count_f = { (float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z() };
+	const cl::sycl::float3 rl_count_f = { (float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z() };	
 	
-	cl::sycl::float3 sah           = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
+	cl::sycl::float3 sah = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
        
 	/* first bin is invalid */
 	const float pos_inf = (float)INFINITY;
@@ -433,7 +431,6 @@ namespace embree
 	sah.z() = cl::sycl::select( (float)pos_inf, (float)sah.z(), (int)(subgroupLocalID != 0));
 
 	//out << (uint)__builtin_bit_cast(uint,tmp) << " " << cl::sycl::endl;
-
 	
 	const uint mid = (startID+endID)/2;
 
