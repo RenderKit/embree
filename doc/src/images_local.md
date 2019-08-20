@@ -18,3 +18,6 @@
 [imgPointGeometry]: images/point_geometry.jpg
 [imgMotionBlurGeometry]: images/motion_blur_geometry.jpg
 [imgInterpolation]: images/interpolation.jpg
+[imgClosestPoint]: images/closest_point.jpg
+[imgVoronoi]: images/voronoi.jpg
+
