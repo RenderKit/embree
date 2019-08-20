@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.6.0-beta.0
+% Embree: High Performance Ray Tracing Kernels 3.6.0
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.6.0-beta.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x64.vc12.msi). This
+[embree-3.6.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.6.0-beta.0 x64`.
+Files\Intel\Embree v3.6.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.6.0-beta.0 x64`.
+Files\Intel\Embree v3.6.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.6.0-beta.0 x64` and uninstall it.
+3.6.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.6.0-beta.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x64.vc12.windows.zip)
+[embree-3.6.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.6.0-beta.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x64.vc14.windows.zip)
+[embree-3.6.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.6.0-beta.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x86_64.rpm.tar.gz)
+[embree-3.6.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.6.0-beta.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.6.0.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.6.0-beta.0-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.6.0-beta.0-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.6.0-beta.0-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.6.0-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.6.0-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.6.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.6.0-beta.0-1.x86_64.rpm
-    sudo alien embree3-devel-3.6.0-beta.0-1.noarch.rpm
-    sudo alien embree3-examples-3.6.0-beta.0-1.x86_64.rpm
+    sudo alien embree3-lib-3.6.0-1.x86_64.rpm
+    sudo alien embree3-devel-3.6.0-1.noarch.rpm
+    sudo alien embree3-examples-3.6.0-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.6.0-beta.0-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.6.0-beta.0-2_all.deb
-    sudo dpkg -i embree3-examples_3.6.0-beta.0-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.6.0-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.6.0-2_all.deb
+    sudo dpkg -i embree3-examples_3.6.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.6.0-beta.0-1.x86_64
-    sudo rpm --erase embree3-devel-3.6.0-beta.0-1.noarch
-    sudo rpm --erase embree3-examples-3.6.0-beta.0-1.x86_64
+    sudo rpm --erase embree3-lib-3.6.0-1.x86_64
+    sudo rpm --erase embree3-devel-3.6.0-1.noarch
+    sudo rpm --erase embree3-examples-3.6.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.6.0-beta.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.6.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.6.0-beta.0.x86_64.linux.tar.gz
-    source embree-3.6.0-beta.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.6.0.x86_64.linux.tar.gz
+    source embree-3.6.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.6.0-beta.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x86_64.pkg). This
+[embree-3.6.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.6.0-beta.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.6.0-beta.0/embree-3.6.0-beta.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.6.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.6.0/embree-3.6.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.6.0-beta.0.x64.macosx.tar.gz
-    source embree-3.6.0-beta.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.6.0.x64.macosx.tar.gz
+    source embree-3.6.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -564,7 +564,7 @@ parameters that can be configured in CMake:
   intersection avoidance while 2.0f is the default value.
 
 + `EMBREE_MAX_INSTANCE_LEVEL_COUNT`: Specifies the maximum number of nested
-  instance levels. Should be greater than 0; the default value is 8.
+  instance levels. Should be greater than 0; the default value is 1.
   Instances nested any deeper than this value will silently disappear in
   release mode, and cause assertions in debug mode.
 
@@ -768,9 +768,9 @@ See Sections [rtcIntersect1](#rtcintersect1) and
 [rtcOccluded1](#rtcoccluded1) for a detailed description of how to set
 up and trace a ray.
 
-See tutorial [Triangle Geometry] for a complete example of how to trace
-single rays and ray packets. Also have a look at the tutorial [Stream
-Viewer] for an example of how to trace ray streams.
+See tutorial [Triangle Geometry] for a complete example of how to
+trace single rays and ray packets. Also have a look at the tutorial
+[Stream Viewer] for an example of how to trace ray streams.
 
 Point Queries
 -------------
@@ -782,8 +782,8 @@ called which allows queries such as finding the closest point on the
 surface geometries of the scene (see Tutorial [ClosestPoint]) or
 nearest neighbour queries (see Tutorial [Voronoi]).
 
-See Section [rtcPointQuery] for a detailed description of how to set up
-point queries.
+See Section [rtcPointQuery] for a detailed description of how to set
+up point queries.
 
 Miscellaneous
 -------------
@@ -1171,8 +1171,8 @@ The following configuration is supported:
 -   `enable_selockmemoryprivilege=[0/1]`: When set to 1, this enables
     the `SeLockMemoryPrivilege` privilege with is required to use huge
     pages on Windows. This option has an effect only under Windows and
-    is ignored on other platforms. See Section [Huge Page Support] for
-    more details.
+    is ignored on other platforms. See Section [Huge Page Support]
+    for more details.
 
 -   `ignore_config_files=[0/1]`: When set to 1, configuration files are
     ignored. Default is 0.
@@ -1390,6 +1390,7 @@ Possible properties to query are:
     0.  internal tasking system
     1.  Intel Threading Building Blocks (TBB)
     2.  Parallel Patterns Library (PPL)
+
 -   `RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED`: Queries whether
     `rtcJoinCommitScene` is supported. This is not the case when Embree
     is compiled with PPL or older versions of TBB.
@@ -1566,15 +1567,15 @@ threads concurrently.
 
 The application can track the current memory usage of the Embree device
 by atomically accumulating the `bytes` input parameter provided to the
-callback function. This parameter will be \>0 for allocations and \<0
-for deallocations.
+callback function. This parameter will be &gt;0 for allocations and
+&lt;0 for deallocations.
 
 Embree will continue its operation normally when returning `true` from
 the callback function. If `false` is returned, Embree will cancel the
 current operation with the `RTC_ERROR_OUT_OF_MEMORY` error code.
 Issuing multiple cancel requests from different threads is allowed.
 Canceling will only happen when the callback was called for allocations
-(bytes \> 0), otherwise the cancel request will be ignored.
+(bytes &gt; 0), otherwise the cancel request will be ignored.
 
 If a callback to cancel was invoked before the allocation happens
 (`post == false`), then the `bytes` parameter should not be
@@ -2509,8 +2510,8 @@ over the quadrilateral the following way:
 
 Mixed triangle/quad meshes are supported by encoding a triangle as a
 quad, which can be achieved by replicating the last triangle vertex
-(`v0,v1,v2` -\> `v0,v1,v2,v2`). This way the second triangle is a line
-(which can never get hit), and the parametrization of the first
+(`v0,v1,v2` -&gt; `v0,v1,v2,v2`). This way the second triangle is a
+line (which can never get hit), and the parametrization of the first
 triangle is compatible with the standard triangle parametrization.
 
 A quad whose vertices are laid out counter-clockwise has its geometry
@@ -2987,8 +2988,8 @@ basis also a tangent buffer has to be set for each time step and for
 normal oriented curves a normal buffer has to get specified for each
 time step.
 
-Also see tutorials [Hair] and [Curves] for examples of how to create
-and use curve geometries.
+Also see tutorials [Hair] and [Curves] for examples of how to
+create and use curve geometries.
 
 #### EXIT STATUS {#exit-status}
 
@@ -3026,7 +3027,7 @@ RTC\_GEOMETRY\_TYPE\_POINT
 #### DESCRIPTION {#description}
 
 Points with per vertex radii are supported with sphere, ray-oriented
-discs, and normal-oriented discs geometric represetntations. Such point
+discs, and normal-oriented discs geometric representations. Such point
 geometries are created by passing `RTC_GEOMETRY_TYPE_SPHERE_POINT`,
 `RTC_GEOMETRY_TYPE_DISC_POINT`, or
 `RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT` to the `rtcNewGeometry`
@@ -3456,9 +3457,9 @@ camera shutter closes. The startTime has to be smaller or equal to the
 endTime.
 
 The default time range when this function is not called is the entire
-camera shutter [0,1]. For best performance at most one time segment of
-the piece wise linear definition of the motion should fall outside the
-shutter window to the left and to the right. Thus do not set the
+camera shutter [0,1]. For best performance at most one time segment
+of the piece wise linear definition of the motion should fall outside
+the shutter window to the left and to the right. Thus do not set the
 startTime or endTime too far outside the [0,1] interval for best
 performance.
 
@@ -4508,8 +4509,8 @@ rtcSetGeometryPointQueryFunction
       unsigned int  primID;        
       unsigned int  geomID;    
 
-      // the instance stack with instance IDs and transformation information
-      struct RTCPointQueryInstanceStack* instStack;
+      // the context with transformation and instance ID stack
+      struct RTCPointQueryContext* context;
 
       // scaling factor indicating whether the current instance transformation
       // is a similarity transformation.
@@ -4541,33 +4542,36 @@ every primitive of the geometry that intersects the corresponding point
 query domain. The callback function of type `RTCPointQueryFunction`
 gets passed a number of arguments through the
 `RTCPointQueryFunctionArguments` structure. The `query` object is the
-original point query object passed into [rtcPointQuery], `usrPtr` is an
-arbitrary pointer to pass input into and store results of the callback
-function. The `primID`, `geomID` and `instStack` (see
-[rtcInitPointQueryInstanceStack] for details) can be used to identify
-the geometry data of the primitive.
+original point query object passed into [rtcPointQuery], `usrPtr` is
+an arbitrary pointer to pass input into and store results of the
+callback function. The `primID`, `geomID` and `context` (see
+[rtcInitPointQueryContext] for details) can be used to identify the
+geometry data of the primitive.
 
 A `RTCPointQueryFunction` can also be passed directly as an argument to
 [rtcPointQuery]. In this case the callback is invoked for all
 primitives in the scene that intersect the query domain. If a callback
-function is passed as an argument to [rtcPointQuery] and (a potentially
-different) callback function is set for a geometry with
-[rtcSetGeometryPointQueryFunction] both callback functions are invoked.
+function is passed as an argument to [rtcPointQuery] and (a
+potentially different) callback function is set for a geometry with
+[rtcSetGeometryPointQueryFunction] both callback functions are
+invoked and the callback function passed to [rtcPointQuery] will be
+called before the geometry specific callback function.
 
 If instancing is used, the parameter `simliarityScale` indicates
-whether the current instance transform (top element of `instStack`) is
-a similarity transformation or not. Similarity transformations are
-composed of translation, rotation and uniform scaling and if a matrix M
-defines a similarity transformation, there is a scaling factor D such
-that for all x,y: dist(Mx, My) = D \* dist(x, y). In this case the
-parameter `scalingFactor` is this scaling factor D and otherwise it is
-0. A valid similarity scale (`similarityScale` \> 0) allows to compute
-distance information in instance space and scale the distances
-accordingly into world space (for example, to update the query radius,
-see below). If the current instance transform is not a similarity
+whether the current instance transform (top element of the stack in
+`context`) is a similarity transformation or not. Similarity
+transformations are composed of translation, rotation and uniform
+scaling and if a matrix M defines a similarity transformation, there is
+a scaling factor D such that for all x,y: dist(Mx, My) = D \* dist(x,
+y). In this case the parameter `scalingFactor` is this scaling factor D
+and otherwise it is 0. A valid similarity scale (`similarityScale` &gt;
+0) allows to compute distance information in instance space and scale
+the distances into world space (for example, to update the query
+radius, see below) by dividing the instance space distance with the
+similarity scale. If the current instance transform is not a similarity
 transform (`similarityScale` is 0), the distance computation has to be
 performed in world space to ensure correctness. In this case the
-instance to world transformations given with the `instStack` should be
+instance to world transformations given with the `context` should be
 used to transform the primitive data into world space. Otherwise, the
 query location can be transformed into instance space which can be more
 efficient. If there is no instance transform, the similarity scale is
@@ -4593,11 +4597,12 @@ callback function should return `true` to issue an update of internal
 traversal information. Increasing the radius or modifying the time or
 position of the query results in undefined behaviour.
 
-Within the callback function, it is safe to call [rtcPointQuery] again,
-for example when implementing instancing manually. In this case the
-instance transformation should be pushed onto the `instStack`. Embree
-will internally compute the point query information in instance space
-using the top element of `instStack` when [rtcPointQuery] is called.
+Within the callback function, it is safe to call [rtcPointQuery]
+again, for example when implementing instancing manually. In this case
+the instance transformation should be pushed onto the stack in
+`context`. Embree will internally compute the point query information
+in instance space using the top element of the stack in `context` when
+[rtcPointQuery] is called.
 
 For a reference implementation of a closest point traversal of triangle
 meshes using instancing and user defined instancing see the tutorial
@@ -4605,7 +4610,7 @@ meshes using instancing and user defined instancing see the tutorial
 
 #### SEE ALSO {#see-also}
 
-[rtcPointQuery], [rtcInitPointQueryInstanceStack]
+[rtcPointQuery], [rtcInitPointQueryContext]
 
 
 
@@ -4919,7 +4924,8 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO {#see-also}
 
-[rtcSetGeometrySubdivisionMode], [rtcInterpolate], [rtcInterpolateN]
+[rtcSetGeometrySubdivisionMode], [rtcInterpolate],
+[rtcInterpolateN]
 
 
 
@@ -4997,8 +5003,8 @@ All passed arrays must be aligned to 64 bytes and properly padded to
 make wide vector processing inside the displacement function easily
 possible.
 
-Also see tutorial [Displacement Geometry] for an example of how to use
-the displacement mapping functions.
+Also see tutorial [Displacement Geometry] for an example of how to
+use the displacement mapping functions.
 
 #### EXIT STATUS {#exit-status}
 
@@ -5607,8 +5613,8 @@ is considered valid.
 
 The ray segment must be in the range $[0, ∞]$, thus ranges that start
 behind the ray origin are not allowed, but ranges can reach to
-infinity. For rays inside a ray stream, `tfar` \< `tnear` identifies an
-inactive ray.
+infinity. For rays inside a ray stream, `tfar` &lt; `tnear` identifies
+an inactive ray.
 
 The ray further contains a motion blur time in the range $[0, 1]$
 (`time` member), a ray mask (`mask` member), a ray ID (`id` member),
@@ -6305,8 +6311,8 @@ The `rtcIntersect1M` function finds the closest hits for a stream of
 `M` single rays (`rayhit` argument) with the scene (`scene` argument).
 The `rayhit` argument points to an array of ray and hit data with
 specified byte stride (`byteStride` argument) between the ray/hit
-structures. See Section [rtcIntersect1] for a description of how to set
-up and trace rays.
+structures. See Section [rtcIntersect1] for a description of how to
+set up and trace rays.
 
 The intersection context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
@@ -6608,8 +6614,8 @@ The `rtcOccludedNM` function checks whether there are any hits for a
 stream of `M` ray packets (`ray` argument) of size `N` with the scene
 (`scene` argument). The `ray` argument points to an array of ray
 packets with specified byte stride (`byteStride` argument) between the
-ray packets. See Section [rtcOccluded1] for a description of how to set
-up and trace occlusion rays.
+ray packets. See Section [rtcOccluded1] for a description of how to
+set up and trace occlusion rays.
 
 The intersection context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
@@ -6771,19 +6777,19 @@ thus will not set any error flags on failure.
 
 
 
-rtcInitPointQueryInstanceStack
-------------------------------
+rtcInitPointQueryContext
+------------------------
 
 #### NAME {#name}
 
-    rtcInitPointQueryInstanceStack - initializes the stack of (multilevel-)instance
-      information for point queries
+    rtcInitPointQueryContext - initializes the context information (e.g.
+      stack of (multilevel-)instance transformations) for point queries
 
 #### SYNOPSIS {#synopsis}
 
     #include <embree3/rtcore.h>
 
-    struct RTC_ALIGN(16) RTCPointQueryInstanceStack
+    struct RTC_ALIGN(16) RTCPointQueryContext
     {
       // accumulated 4x4 column major matrices from world to instance space.
       float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
@@ -6795,28 +6801,31 @@ rtcInitPointQueryInstanceStack
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
       
       // number of instances currently on the stack.
-      unsigned int size;
+      unsigned int instStackSize;
     };
 
-    void rtcInitPointQueryInstanceStack(
-      struct RTCPointQueryInstanceStack* instStack
+    void rtcInitPointQueryContext(
+      struct RTCPointQueryContext* context
     );
 
 #### DESCRIPTION {#description}
 
-A stack (`RTCPointQueryInstanceStack` type) which stores the IDs and
-instance transformations during a BVH traversal for a point query.
+A stack (`RTCPointQueryContext` type) which stores the IDs and instance
+transformations during a BVH traversal for a point query. The
+transformations are assumed to be affine transformations (3×3 matrix
+plus translation) and therefore the last column is ignored (see
+[RTC\_GEOMETRY\_TYPE\_INSTANCE] for details).
 
-The `rtcInitPointQueryStack` function initializes the stack to default
+The `rtcInitPointContext` function initializes the context to default
 values and should be called for initialization.
 
-The stack will be passed as an argument to the point query callback
-function (see [rtcSetGeometryPointQueryFunction]) and should be used to
-pass instance information down the instancing chain for user defined
-instancing (see tutorial [ClosestPoint] for a reference implementation
-of point queries with user defined instancing).
+The context will be passed as an argument to the point query callback
+function (see [rtcSetGeometryPointQueryFunction]) and should be used
+to pass instance information down the instancing chain for user defined
+instancing (see tutorial [ClosestPoint] for a reference
+implementation of point queries with user defined instancing).
 
-The stack is an necessary argument to [rtcPointQuery] and Embree
+The context is an necessary argument to [rtcPointQuery] and Embree
 internally uses the topmost instance tranformation of the stack to
 transform the point query into instance space.
 
@@ -6854,7 +6863,7 @@ No error code is set by this function.
     void rtcPointQuery(
       RTCScene scene,
       struct RTCPointQuery* query,
-      struct RTCPointQueryInstanceStack* instStack,
+      struct RTCPointQueryContext* context,
       struct RTCPointQueryFunction* queryFunc,
       void* userPtr
     );
@@ -6871,10 +6880,10 @@ and query radius in the range $[0, ∞]$. If the scene contains motion
 blur geometries, also the query time (`time` member) must be
 initialized to a value in the range $[0, 1]$.
 
-Further, a `RTCPointQueryInstanceStack` (`instStack` argument) must be
-created and initialized. It contains ID and transformation information
-of the instancing hierarchy if (multilevel-)instancing is used. See
-[rtcInitPointQueryInstanceStack] for further information.
+Further, a `RTCPointQueryContext` (`context` argument) must be created
+and initialized. It contains ID and transformation information of the
+instancing hierarchy if (multilevel-)instancing is used. See
+[rtcInitPointQueryContext] for further information.
 
 For every primitive that intersects the query domain, the callback
 function (`queryFunc` argument) is called, in which distance
@@ -6889,10 +6898,10 @@ input geometry data of the scene or output results of the point query
 The parameter `queryFunc` is optional and can be NULL, in which case
 the callback function is not invoked. However, a callback function can
 still get attached to a specific `RTCGeometry` object using
-[rtcSetGeometryPointQueryFunction]. If a callback function is attached
-to a geometry and (a potentially different) callback function is passed
-as an argument to `rtcPointQuery`, both functions are called for the
-primitives of the according geometries.
+[rtcSetGeometryPointQueryFunction]. If a callback function is
+attached to a geometry and (a potentially different) callback function
+is passed as an argument to `rtcPointQuery`, both functions are called
+for the primitives of the according geometries.
 
 The query radius can be decreased inside the callback function, which
 allows to efficiently cull parts of the scene during BVH traversal.
@@ -6914,6 +6923,13 @@ the query domain. See [rtcSetGeometryPointQueryFunction] for details.
 
 The point query structure must be aligned to 16 bytes.
 
+#### SUPPORTED PRIMITIVES
+
+Currenly, all primitive types are supported by the point query API
+except of points (see [RTC\_GEOMETRY\_TYPE\_POINT]), curves (see
+[RTC\_GEOMETRY\_TYPE\_CURVE]) and sudivision surfaces (see
+[RTC\_GEOMETRY\_SUBDIVISION]).
+
 #### EXIT STATUS {#exit-status}
 
 For performance reasons this function does not do any error checks,
@@ -6921,7 +6937,7 @@ thus will not set any error flags on failure.
 
 #### SEE ALSO {#see-also}
 
-[rtcSetGeometryPointQueryFunction], [rtcInitPointQueryInstanceStack]
+[rtcSetGeometryPointQueryFunction], [rtcInitPointQueryContext]
 
 
 
@@ -7332,9 +7348,9 @@ Linux](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
 To use huge pages under Windows, the current user must have the "Lock
 pages in memory" (SeLockMemoryPrivilege) assigned. This can be
 configured through the "Local Security Policy" application, by adding a
-user to "Local Policies" -\> "User Rights Assignment" -\> "Lock pages
-in memory". You have to log out and in again for this change to take
-effect.
+user to "Local Policies" -&gt; "User Rights Assignment" -&gt; "Lock
+pages in memory". You have to log out and in again for this change to
+take effect.
 
 Further, your application must be executed as an elevated process ("Run
 as administrator") and the "SeLockMemoryPrivilege" must be explicitly
@@ -7667,6 +7683,28 @@ Interpolation
 
 This tutorial demonstrates interpolation of user-defined per-vertex data.
 
+Closest Point
+----------------------
+
+![][imgClosestPoint]
+
+This tutorial demonstrates a use-case of the point query API. The scene
+consists of a simple collection of objects that are instanced and for several
+point in the scene (red points) the closest point on the surfaces of the
+scene are computed (white points). The closest point functionality is
+implemented for Embree internal and for user-defined instancing. The tutorial
+also illustrates how to handle instance transformations that are not
+similarity transforms.
+
+Voronoi
+----------------------
+
+![][imgVoronoi]
+
+This tutorial demonstrates how to implement nearest neighbour lookups using
+the point query API. Several colored points are located on a plane and the
+corresponding voroni regions are illustrated.
+
 BVH Builder
 -----------
 
@@ -7728,3 +7766,5 @@ installation: `C:\Program Files\Intel\Embree3`.
 [imgPointGeometry]: https://embree.github.io/images/point_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
+[imgClosestPoint]: https://embree.github.io/images/closest_point.jpg
+[imgVoronoi]: https://embree.github.io/images/voronoi.jpg
