@@ -284,7 +284,8 @@ namespace embree
 	  {
 	    if (subgroup.get_local_id() == 0)
 	      {
-		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1));  
+		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1));
+		out << "leaf_offset " << leaf_offset << cl::sycl::endl;
 		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);
 	      }
 	  }
@@ -568,8 +569,6 @@ namespace embree
 		      const uint numGroups = item.get_group_range(0);
 		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();
 		      
-		      //printf("groupID %d numGroups %d \n",groupID,numGroups);
-		      
 		      gpu::Globals *globals  = accessor_globals.get_pointer();
 		      char *bvh_mem          = accessor_bvh.get_pointer();
 		      gpu::AABB *primref     = accessor_aabb.get_pointer();
@@ -578,13 +577,10 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
-
-		      //const uint subgroupLocalID = subgroup.get_local_id()[0];
-		      //out << binInfo.get_pointer()->boundsX[subgroupLocalID] << cl::sycl::endl;
 		      
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
 			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
-		    });
+		    });		  
 		});
 	      try {
 		gpu_queue.wait_and_throw();
@@ -593,6 +589,97 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
+
+	    /* --- convert primrefs to primitives --- */
+	    {
+	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+
+		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+		  
+		  auto accessor_globals       = globals_buffer.get_access<sycl_read_write>(cgh);
+		  auto accessor_bvh           = bvh_buffer.get_access<sycl_read_write>(cgh);
+		  auto accessor_aabb          = aabb_buffer.get_access<sycl_read>(cgh);		  		  
+		  auto accessor_primref_index = primref_index.get_access<sycl_read_write>(cgh);
+		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
+		  
+		  cgh.parallel_for<class primref2primitive>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		      const uint groupID   = item.get_group(0);
+		      const uint numGroups = item.get_group_range(0);
+		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();
+		      
+		      gpu::Globals *globals  = accessor_globals.get_pointer();
+		      char *bvh_mem          = accessor_bvh.get_pointer();
+		      gpu::AABB *primref     = accessor_aabb.get_pointer();
+		      uint *primref_index0   = accessor_primref_index.get_pointer() + 0;
+		      uint *primref_index1   = accessor_primref_index.get_pointer() + globals->numPrimitives;		      
+		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
+		      
+		      const uint numPrimitives = globals->numBuildRecords;
+
+#if 0
+		      const uint numQuads = globals->numQuads;
+		      const uint startID  = (taskID+0)*numQuads/numTasks;
+		      const uint endID    = (taskID+1)*numQuads/numTasks;
+
+		      for (uint i=startID+localID;i<endID;i+=local_size)    
+			{       
+			  const uint primrefID = *(uint *)(primref_index + i * stride + offset);
+
+			  const uint meshID  = as_uint(primref[primrefID].lower.w);
+			  const uint ID0 = as_uint(primref[primrefID].upper.w);
+			  const uint ID1 = ID0 + 1;
+
+			  global struct Triangle *tri = triangles + offset_triangle[meshID];
+			  global float4          *vtx = vertex    + offset_vertex[meshID];
+			  const uint numTrisPerMesh   = numTrianglesPerMesh[meshID];
+
+			  const int a0 = tri[ID0].vtx[0];
+			  const int a1 = tri[ID0].vtx[1];
+			  const int a2 = tri[ID0].vtx[2];
+
+			  if (ID1 == numTrisPerMesh)
+			    {
+			      /* extend bounds */
+			      setQuad1(quad1 , i, vtx[a0], vtx[a1], vtx[a2], vtx[a2], meshID, ID0, ID0);
+			      continue;
+			    }
+	  
+			  const int b0 = tri[ID1].vtx[0];
+			  const int b1 = tri[ID1].vtx[1];
+			  const int b2 = tri[ID1].vtx[2];
+      
+			  const int2 q = quad_index3(a0, a1, a2, b0, b1, b2);
+			  const int a3 = q.y;	  
+			  if (a3 == -1)
+			    {
+			      /* extend bounds */
+			      setQuad1(quad1 , i, vtx[a0], vtx[a1], vtx[a2], vtx[a2], meshID, ID0, ID0);
+			    }
+			  else
+			    {
+			      if (q.x == -1)
+				setQuad1(quad1 , i, vtx[a1], vtx[a2], vtx[a3], vtx[a0], meshID, ID0, ID1);	    
+			      else if (q.x == 0)
+				setQuad1(quad1 , i, vtx[a3], vtx[a1], vtx[a2], vtx[a0], meshID, ID0, ID1);	    
+			      else if (q.x == 1)
+				setQuad1(quad1 , i, vtx[a0], vtx[a1], vtx[a3], vtx[a2], meshID, ID0, ID1);	    
+			      else if (q.x == 2)
+				setQuad1(quad1 , i, vtx[a1], vtx[a2], vtx[a3], vtx[a0], meshID, ID0, ID1);
+			    }
+  
+			}  
+#endif		      
+		      
+		    });		  
+		});
+	      try {
+		gpu_queue.wait_and_throw();
+	      } catch (cl::sycl::exception const& e) {
+		std::cout << "Caught synchronous SYCL exception:\n"
+			  << e.what() << std::endl;
+	      }
+	    }
+	    
 	    
 
 	    //global struct BuildRecord *record = (global struct BuildRecord*)(bvh_mem + globals->leaf_mem_allocator[1]);
