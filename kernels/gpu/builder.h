@@ -23,9 +23,9 @@
 #define BUILDRECORD_STACK_SIZE 64
 #define BINS 16
 
-#define BVH_LEAF_MASK       8
-#define BVH_INVALID_NODE    3
-#define BVH_NODE_N           16
+#define BVH_LEAF_MASK        8
+#define BVH_INVALID_NODE     3
+#define BVH_NODE_N          16
 #define BVH_NODE_N_LOG       4
 #define SAH_LOG_BLOCK_SHIFT  2
 #define BVH_LEAF_N_MIN       4
@@ -36,6 +36,7 @@ namespace embree
 {
   namespace gpu
   {
+
     
     struct BVHBase
     {
@@ -472,36 +473,6 @@ namespace embree
       return final;
     }
 
-    inline uint createNode(cl::sycl::intel::sub_group &sg, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem)
-    {
-#if 0      
-      const uint subgroupLocalID = get_sub_group_local_id();
-
-      uint node_offset = 0;
-      if (subgroupLocalID == 0)
-	node_offset = alloc_node_mem(globals,sizeof(struct BVHNodeN));
-      node_offset = sub_group_broadcast(node_offset,0);
-	  
-      global struct BVHNodeN *node = (global struct BVHNodeN*)(bvh_mem + node_offset);
-
-      if (subgroupLocalID < numChildren)
-	setBVHNodeN(node,&childrenAABB[ID],subgroupLocalID);
-  
-      if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
-	initBVHNodeN(node,subgroupLocalID);	      
-
-      return node_offset;
-#else
-      return 0; // FIXME
-#endif      
-    }
-    
-    struct Quad1
-    {
-      cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
-    };
-
-
     /* ======================================================================== */
     /* ============================== BVH NODES =============================== */
     /* ======================================================================== */
@@ -564,9 +535,49 @@ namespace embree
 	}      
       return out; 
     }
+    
+    inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem, const cl::sycl::stream &out)
+    {
+#if 1     
+      const uint subgroupLocalID = subgroup.get_local_id()[0];
+      const uint subgroupSize    = subgroup.get_local_range().size();
+
+      uint node_offset = 0;
+      if (subgroupLocalID == 0)
+	{
+	  node_offset = globals.alloc_node_mem(sizeof(gpu::BVHNodeN));
+	  out << "node offset " << node_offset << cl::sycl::endl;
+	}
+      node_offset = subgroup.broadcast<uint>(node_offset,0); 
+
+      gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_mem + node_offset);
+
+#if 0     
+      
+      if (subgroupLocalID < numChildren)
+	setBVHNodeN(node,&childrenAABB[ID],subgroupLocalID);
+  
+      if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
+	initBVHNodeN(node,subgroupLocalID);	      
+      
+#endif
+
+      return node_offset;
+      
+#else
+      return 0; // FIXME
+#endif      
+    }
+    
+    struct Quad1
+    {
+      cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
+    };
+
+
 
     
-  };
+    };
 };
 
 #endif

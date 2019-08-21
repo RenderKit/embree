@@ -91,14 +91,8 @@ namespace embree
 	atomicUpdateLocalBinInfo(subgroup,binMapping,binInfo,primref[index],out);      
       }
 
-#if 1
-    if (0 == subgroupLocalID)	
-      out << "binMapping " << binMapping << cl::sycl::endl;
-    
-    for (uint i=0;i<subgroupSize;i++)
-      if (i == subgroupLocalID)	
-	out << "i " << i << " " << binInfo.counts[i] << cl::sycl::endl;
-#endif    
+    //if (0 == subgroupLocalID)	
+    //  out << "binMapping " << binMapping << cl::sycl::endl;    
   }
 
 
@@ -271,14 +265,14 @@ namespace embree
     uint sindex = 1;
     stack[0] = record;
         
-    //while(sindex) 
+    while(sindex) 
       {
 	/* next element from stack */
 	sindex--;      
 	current = stack[sindex];
 
 	if (subgroupLocalID == 0)
-	  out << "current " << current << cl::sycl::endl;
+	  out << "sindex = " << sindex << " current " << current << cl::sycl::endl;
 	
 	gpu::BinMapping binMapping;
 
@@ -348,15 +342,14 @@ namespace embree
 		numChildren++;		
 	      }
 
-#if 0	    
 	    /* sort children based on range size */
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
-	    const uint numPrimsIDs = cl::sycl::select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
+	    const uint numPrimsIDs = cl::sycl::select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, (int)(subgroupLocalID < numChildren));
 	    const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
+	    
+	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
 
-	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem);
-	  
 	    /* set parent pointer in child build records */
 	    struct gpu::BVHNodeN *node = (struct gpu::BVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
@@ -367,14 +360,8 @@ namespace embree
 	    /* update parent pointer */
 	    *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
 
-	    //sindex += numChildren;
-#endif		
+	    sindex += numChildren;
 	  }
-#if 0
-	//if (subgroup.get_local_id() == 0)
-	      out << "split.sah " << split.sah << cl::sycl::endl;
-#endif
-	
       }
 
 			      
