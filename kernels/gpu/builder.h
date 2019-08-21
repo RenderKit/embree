@@ -404,7 +404,7 @@ namespace embree
 	
 	const cl::sycl::uint3 lr_count = { (lr_countsX+blocks_add)>>blocks_shift , (lr_countsY+blocks_add)>>blocks_shift, (lr_countsZ+blocks_add)>>blocks_shift };
 	
-#if 1
+#if 0
 	for (uint i=0;i<subgroupSize;i++)
 	  if (i == subgroupLocalID)	
 	    out << "i " << i << " lr_countsX " << lr_countsX << " wrong lr_count.x() " <<  lr_count.x() << cl::sycl::endl;
@@ -413,8 +413,6 @@ namespace embree
 
 	const cl::sycl::float3 lr_area = { lr_areaX,lr_areaY,lr_areaZ };
 	const cl::sycl::float3 rl_area = { rl_areaX,rl_areaY,rl_areaZ };
-
-	//out << "i " << i << " " << min(lr_count_f,cl::sycl::float3(MAXFLOAT)) << " " << cl::sycl::endl; 
 	
 	const cl::sycl::uint3 rl_count = { (rl_countsX+blocks_add)>>blocks_shift , (rl_countsY+blocks_add)>>blocks_shift, (rl_countsZ+blocks_add)>>blocks_shift };
 	const cl::sycl::float3 lr_count_f = { (float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z() };

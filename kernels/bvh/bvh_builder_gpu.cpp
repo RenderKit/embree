@@ -313,15 +313,8 @@ namespace embree
 #endif
 	    
 	    serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1,out);
-
-	    if (subgroup.get_local_id() == 0)
-	      {
-	    	//out << "children[0] " << children[0] << " " << childrenAABB[0] << cl::sycl::endl;
-	    	//out << "children[1] " << children[1] << " " << childrenAABB[1] << cl::sycl::endl;
-	      }
 	    
-#if 1			      	      
-	    while (numChildren < 3 /*BVH_NODE_N*/)
+	    while (numChildren < BVH_NODE_N)
 	      {
 		/*! find best child to split */
 		float bestArea = -(float)INFINITY;
@@ -352,16 +345,9 @@ namespace embree
 		  out << "split " << split << cl::sycl::endl;
 		
 		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1,out);		    
-		numChildren++;
-
-		if (subgroup.get_local_id() == 0)
-		  {
-		    //out << "children[bestChild]   " << children[bestChild] << cl::sycl::endl;
-		    //out << "children[numChildren] " << children[numChildren] << cl::sycl::endl;
-		  }
-		
+		numChildren++;		
 	      }
-#endif
+
 #if 0	    
 	    /* sort children based on range size */
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
