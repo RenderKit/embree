@@ -381,7 +381,7 @@ namespace embree
 	gpu::Split split;	
 	
 	const uint subgroupLocalID = sg.get_local_id()[0];
-	const uint subgroupSize    = sg.get_local_range().size();
+	//const uint subgroupSize    = sg.get_local_range().size();
 	
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);	
@@ -538,9 +538,8 @@ namespace embree
     
     inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem, const cl::sycl::stream &out)
     {
-#if 1     
       const uint subgroupLocalID = subgroup.get_local_id()[0];
-      const uint subgroupSize    = subgroup.get_local_range().size();
+      //const uint subgroupSize    = subgroup.get_local_range().size();
 
       uint node_offset = 0;
       if (subgroupLocalID == 0)
@@ -552,21 +551,14 @@ namespace embree
 
       gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_mem + node_offset);
 
-#if 0     
-      
       if (subgroupLocalID < numChildren)
-	setBVHNodeN(node,&childrenAABB[ID],subgroupLocalID);
+	node.setBVHNodeN(childrenAABB[subgroupLocalID],subgroupLocalID);
   
       if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
-	initBVHNodeN(node,subgroupLocalID);	      
+	node.initBVHNodeN(subgroupLocalID);	      
       
-#endif
 
-      return node_offset;
-      
-#else
-      return 0; // FIXME
-#endif      
+      return node_offset;      
     }
     
     struct Quad1
