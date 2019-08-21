@@ -453,21 +453,38 @@ namespace embree
 	    unsigned int leaf_data_start = numPrimitives * 64;
 
 	    /* --- allocate buffers --- */
+
+	    gpu::AABB *aabb = (gpu::AABB*)cl::sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrimitives,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    assert(aabb);
+
+	    char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    assert(bvh_buffer);
+
+	    uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    assert(primref_index);
+
+	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    assert(globals);
 	    
-	    cl::sycl::buffer<char> bvh_buffer(totalSize);
-	    cl::sycl::buffer<gpu::AABB> aabb_buffer((gpu::AABB*)prims.data(),numPrimitives);
-	    cl::sycl::buffer<uint> primref_index(2*numPrimitives);	    
-	    cl::sycl::buffer<gpu::Globals> globals_buffer(1);	    
+	    /* copy primrefs for now */
+	    
+	    for (size_t i=0;i<numPrimitives;i++)
+	      ((PrimRef*)aabb)[i] = prims[i];
+	    
+	    //cl::sycl::buffer<char> bvh_buffer(totalSize);
+	    //cl::sycl::buffer<gpu::AABB> aabb_buffer((gpu::AABB*)prims.data(),numPrimitives);
+	    //cl::sycl::buffer<uint> primref_index(2*numPrimitives);	    
+	    //cl::sycl::buffer<gpu::Globals> globals_buffer(1);	    
 	    
 	    /* --- init globals --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
-		  auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
+		  //auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
+		  //auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
 		  cgh.single_task<class init_first_kernel>([=]() {
-		      gpu::Globals *g  = accessor_globals.get_pointer();
-		      char *bvh_mem    = accessor_bvh.get_pointer();
-		      g->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
+		      //gpu::Globals *g  = accessor_globals.get_pointer();
+		      //char *bvh_mem    = accessor_bvh.get_pointer();
+		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
 		    });
 		});
 	      try {
@@ -484,19 +501,18 @@ namespace embree
 	    {
 	      
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);		  
-		  auto accessor_aabb    = aabb_buffer.get_access<sycl_read>(cgh);
-
-		  auto accessor_primref_index = primref_index.get_access<sycl_write>(cgh);
+		  //auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);		  
+		  //auto accessor_aabb    = aabb_buffer.get_access<sycl_read>(cgh);
+		  //auto accessor_primref_index = primref_index.get_access<sycl_write>(cgh);
 		  
 		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		{
-		  const gpu::AABB aabb_geom = accessor_aabb[item.get_global_id(0)];
+		  const gpu::AABB aabb_geom = aabb[item.get_global_id(0)];
 		  const gpu::AABB aabb_centroid(aabb_geom.centroid2());
-		  accessor_primref_index[item.get_global_id(0)] = item.get_global_id(0);
+		  primref_index[item.get_global_id(0)] = item.get_global_id(0);
 		  const gpu::AABB reduced_geometry_aabb = aabb_geom.work_group_reduce();
 		  const gpu::AABB reduced_centroid_aabb = aabb_centroid.work_group_reduce();						       
-		  cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(accessor_globals.get_pointer());
+		  cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(globals);
 		  reduced_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
 		  reduced_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);						       
 		});
@@ -513,12 +529,12 @@ namespace embree
 	    /* --- init bvh sah builder --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
-		  auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
+		  //auto accessor_globals = globals_buffer.get_access<sycl_read_write>(cgh);
+		  //auto accessor_bvh     = bvh_buffer.get_access<sycl_read_write>(cgh);
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
 		  cgh.single_task<class init_builder>([=]() {
-		      gpu::Globals *globals    = accessor_globals.get_pointer();
-		      char *bvh_mem            = accessor_bvh.get_pointer();
+		      //gpu::Globals *globals    = accessor_globals.get_pointer();
+		      //char *bvh_mem            = accessor_bvh.get_pointer();
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      record->init(0,numPrimitives,globals->centroidBounds);
 		      globals->numBuildRecords = 1;
@@ -541,10 +557,10 @@ namespace embree
 
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
 		  
-		  auto accessor_globals       = globals_buffer.get_access<sycl_read_write>(cgh);
-		  auto accessor_bvh           = bvh_buffer.get_access<sycl_read_write>(cgh);
-		  auto accessor_aabb          = aabb_buffer.get_access<sycl_read>(cgh);		  		  
-		  auto accessor_primref_index = primref_index.get_access<sycl_read_write>(cgh);
+		  //auto accessor_globals       = globals_buffer.get_access<sycl_read_write>(cgh);
+		  //auto accessor_bvh           = bvh_buffer.get_access<sycl_read_write>(cgh);
+		  //auto accessor_aabb          = aabb_buffer.get_access<sycl_read>(cgh);		  		  
+		  //auto accessor_primref_index = primref_index.get_access<sycl_read_write>(cgh);
 		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
 		  
 		  /* local variables */
@@ -561,11 +577,10 @@ namespace embree
 		      const uint numGroups = item.get_group_range(0);
 		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();
 		      
-		      gpu::Globals *globals  = accessor_globals.get_pointer();
-		      char *bvh_mem          = accessor_bvh.get_pointer();
-		      gpu::AABB *primref     = accessor_aabb.get_pointer();
-		      uint *primref_index0   = accessor_primref_index.get_pointer() + 0;
-		      uint *primref_index1   = accessor_primref_index.get_pointer() + globals->numPrimitives;		      
+		      //gpu::Globals *globals  = accessor_globals.get_pointer();
+		      gpu::AABB *primref     = aabb;
+		      uint *primref_index0   = primref_index + 0;
+		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
@@ -586,6 +601,9 @@ namespace embree
 	    
 	    
 
+	    /* --- deallocate temporary data structures --- */
+	    cl::sycl::free(aabb,deviceGPU->getContext());
+	    
 	    //global struct BuildRecord *record = (global struct BuildRecord*)(bvh_mem + globals->leaf_mem_allocator[1]);
 
 	    
