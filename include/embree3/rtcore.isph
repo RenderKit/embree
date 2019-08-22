@@ -17,7 +17,7 @@
 #ifndef __RTC_ISPH__
 #define __RTC_ISPH__
 
-#include "rtcore_version.h"
+#include "rtcore_config.h"
 #include "rtcore_common.isph"
 #include "rtcore_device.isph"
 #include "rtcore_buffer.isph"

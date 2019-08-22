@@ -66,7 +66,7 @@ user-defined primitive with the ray was found in the valid range (from
 (`tfar` member) and the hit (`u`, `v`, `Ng`, `instID`, `geomID`,
 `primID` members). In particular, the currently intersected instance is
 stored in the `instID` field of the intersection context, which must be
-copied into the `instID` member of the hit.
+deep copied into the `instID` member of the hit.
 
 As a primitive might have multiple intersections with a ray, the
 intersection filter function needs to be invoked by the user geometry

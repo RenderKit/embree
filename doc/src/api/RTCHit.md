@@ -10,16 +10,16 @@
 
     struct RTCHit
     {
-      float Ng_x;          // x coordinate of geometry normal
-      float Ng_y;          // y coordinate of geometry normal
-      float Ng_z;          // z coordinate of geometry normal
+      float Ng_x;                                        // x coordinate of geometry normal
+      float Ng_y;                                        // y coordinate of geometry normal
+      float Ng_z;                                        // z coordinate of geometry normal
 
-      float u;             // barycentric u coordinate of hit
-      float v;             // barycentric v coordinate of hit
+      float u;                                           // barycentric u coordinate of hit
+      float v;                                           // barycentric v coordinate of hit
 
-      unsigned int primID; // geometry ID
-      unsigned int geomID; // primitive ID
-      unsigned int instID; // instance ID
+      unsigned int primID;                               // geometry ID
+      unsigned int geomID;                               // primitive ID
+      unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // instance ID
     };
 
 #### DESCRIPTION
@@ -29,11 +29,9 @@ result. The hit contains the unnormalized geometric normal in object
 space at the hit location (`Ng_x`, `Ng_y`, `Ng_z` members), the
 barycentric u/v coordinates of the hit (`u` and `v` members), as well
 as the primitive ID (`primID` member), geometry ID (`geomID` member),
-and instance ID (`instID` member) of the hit. The latter is only useful
-in single-level instancing. For multi-level instancing, the user must
-intercept the instance ID stack in an intersection filter. The parametric
-intersection distance is not stored inside the hit, but stored inside
-the `tfar` member of the ray.
+and instance ID stack (`instID` member) of the hit. 
+The parametric intersection distance is not stored inside the hit, but stored inside the `tfar`
+member of the ray.
 
 The `embree3/rtcore_ray.h` header additionally defines the same hit
 structure in structure of array (SOA) layout for hit packets of size 4

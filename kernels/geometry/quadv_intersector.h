@@ -45,9 +45,9 @@ namespace embree
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -128,9 +128,9 @@ namespace embree
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 

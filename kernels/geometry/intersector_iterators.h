@@ -50,10 +50,12 @@ namespace embree
       }
       
       template<int N>
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {
+        bool changed = false;
         for (size_t i=0; i<num; i++)
-          Intersector::pointQuery(query, context, prim[i]);
+          changed |= Intersector::pointQuery(query, context, prim[i]);
+        return changed;
       }
 
       template<int K>

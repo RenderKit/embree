@@ -18,3 +18,5 @@
 [imgPointGeometry]: https://embree.github.io/images/point_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
+[imgClosestPoint]: https://embree.github.io/images/closest_point.jpg
+[imgVoronoi]: https://embree.github.io/images/voronoi.jpg

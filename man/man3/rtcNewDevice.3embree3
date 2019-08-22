@@ -57,6 +57,15 @@ The following configuration is supported:
 A value of 0 enables all detected hardware threads.
 By default all hardware threads are used.
 .IP \[bu] 2
+\f[C]user_threads=[int]\f[]: Sets the number of user threads that can be
+used to join and participate in a scene commit using
+\f[C]rtcJoinCommitScene\f[].
+The tasking system will only use threads\-user_threads many worker
+threads, thus if the app wants to solely use its threads to commit
+scenes, just set threads equal to user_threads.
+This option only has effect with the Intel(R) Threading Building Blocks
+(TBB) tasking system.
+.IP \[bu] 2
 \f[C]set_affinity=[0/1]\f[]: When enabled, build threads are affinitized
 to hardware threads.
 This option is disabled by default on standard CPUs, and enabled by

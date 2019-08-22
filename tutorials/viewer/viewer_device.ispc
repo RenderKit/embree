@@ -207,7 +207,7 @@ typedef ISPCInstance* uniform ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  foreach_unique (instID in ray.instID) {
+  foreach_unique (instID in ray.instID[0]) {
     foreach_unique (geomID in ray.geomID) {
       ISPCGeometry* uniform geometry = NULL;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
@@ -222,7 +222,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    foreach_unique (instID in ray.instID)
+    foreach_unique (instID in ray.instID[0])
     {
       /* get instance and geometry pointers */
       ISPCInstance* uniform instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];

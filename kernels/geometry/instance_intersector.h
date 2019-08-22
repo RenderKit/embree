@@ -34,7 +34,7 @@ namespace embree
       
       static void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim);
       static bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim);
-      static void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim);
+      static bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim);
     };
 
     struct InstanceIntersector1MB
@@ -47,7 +47,7 @@ namespace embree
       
       static void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim);
       static bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim);
-      static void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim);
+      static bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim);
     };
 
     template<int K>

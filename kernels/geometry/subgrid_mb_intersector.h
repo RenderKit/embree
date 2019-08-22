@@ -53,10 +53,9 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
       {
-        // TODO: PointQuery
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, subgrid);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, subgrid);
       }
 
       template<int Nx, bool robust>
@@ -102,9 +101,10 @@ namespace embree
         return false;
       }
       
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {
         assert(false && "not implemented");
+        return false;
       }
     };
 

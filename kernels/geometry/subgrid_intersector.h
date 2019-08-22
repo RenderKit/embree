@@ -56,9 +56,14 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, subgrid);
+        STAT3(point_query.trav_prims,1,1,1);
+        AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
+        assert(accel);
+        context->geomID = subgrid.geomID();
+        context->primID = subgrid.primID();
+        return accel->pointQuery(query, context);
       }
 
       template<int Nx, bool robust>
@@ -105,9 +110,26 @@ namespace embree
         return false;
       }
     
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {
-        assert(false && "not implemented");
+        bool changed = false;
+        for (size_t i=0;i<num;i++)
+        {
+          vfloat<N> dist;
+          size_t mask;
+          if (likely(context->query_type == POINT_QUERY_TYPE_SPHERE)) {
+            mask = BVHNQuantizedBaseNodePointQuerySphere1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          } else {
+            mask = BVHNQuantizedBaseNodePointQueryAABB1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          }
+          while(mask != 0)
+          {
+            const size_t ID = bscf(mask); 
+            assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+            changed |= pointQuery(query, context, prim[i].subgrid(ID));
+          }
+        }
+        return changed;
       }
     };
 
@@ -137,9 +159,13 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, subgrid);
+        STAT3(point_query.trav_prims,1,1,1);
+        AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
+        context->geomID = subgrid.geomID();
+        context->primID = subgrid.primID();
+        return accel->pointQuery(query, context);
       }
 
       template<int Nx, bool robust>
@@ -186,9 +212,29 @@ namespace embree
         return false;
       }
       
-      static __forceinline void pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {
-        assert(false && "not implemented");
+        bool changed = false;
+        for (size_t i=0;i<num;i++)
+        {
+          vfloat<N> dist;
+          size_t mask;
+          if (likely(context->query_type == POINT_QUERY_TYPE_SPHERE)) {
+            mask = BVHNQuantizedBaseNodePointQuerySphere1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          } else {
+            mask = BVHNQuantizedBaseNodePointQueryAABB1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          }
+#if defined(__AVX__)
+          STAT3(point_query.trav_hit_boxes[popcnt(mask)],1,1,1);
+#endif
+          while(mask != 0)
+          {
+            const size_t ID = bscf(mask); 
+            assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+            changed |= pointQuery(query, context, prim[i].subgrid(ID));
+          }
+        }
+        return changed;
       }
     };
 

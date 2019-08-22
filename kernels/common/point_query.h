@@ -22,7 +22,7 @@ namespace embree
 {
   /* Point query structure for closest point query */
   template<int K>
-  struct PointQueryK 
+  struct RTC_ALIGN(16) PointQueryK 
   {
     /* Default construction does nothing */
     __forceinline PointQueryK() {}
@@ -58,7 +58,7 @@ namespace embree
   
   /* Specialization for a single point query */
   template<>
-  struct PointQueryK<1>
+  struct RTC_ALIGN(16) PointQueryK<1>
   {
     /* Default construction does nothing */
     __forceinline PointQueryK() {}

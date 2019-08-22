@@ -631,9 +631,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3fa diffuse = Vec3fa(0.5f,0.5f,0.5f);
-    if (ray.instID == RTC_INVALID_GEOMETRY_ID)
-      ray.instID = ray.geomID;
-    switch (ray.instID / 2) {
+    if (ray.instID[0] == RTC_INVALID_GEOMETRY_ID)
+      ray.instID[0] = ray.geomID;
+    switch (ray.instID[0] / 2) {
     case 0: diffuse = face_colors[ray.primID]; break;
     case 1: diffuse = face_colors[2*ray.primID]; break;
     case 2: diffuse = face_colors[2*ray.primID]; break;

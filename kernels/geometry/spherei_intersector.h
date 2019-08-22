@@ -56,11 +56,11 @@ namespace embree
             valid, ray, pre, v0, Occluded1EpilogM<M, Mx, filter>(ray, context, sphere.geomID(), sphere.primID()));
       }
       
-      static __forceinline void pointQuery(PointQuery* query,
+      static __forceinline bool pointQuery(PointQuery* query,
                                            PointQueryContext* context,
                                            const Primitive& sphere)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
       }
     };
 
@@ -96,11 +96,11 @@ namespace embree
             valid, ray, pre, v0, Occluded1EpilogM<M, Mx, filter>(ray, context, sphere.geomID(), sphere.primID()));
       }
 
-      static __forceinline void pointQuery(PointQuery* query,
+      static __forceinline bool pointQuery(PointQuery* query,
                                            PointQueryContext* context,
                                            const Primitive& sphere)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
       }
     };
 

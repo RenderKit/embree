@@ -29,7 +29,7 @@ continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
 #  only:   [pushes]
 
 continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2 maxinstancelevelcount:8"
   tags:   [win7, v141]
   only:   [pushes]
  
@@ -40,7 +40,7 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
 
 continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX512SKX-TBB2019.2:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:2"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:2 maxinstancelevelcount:4"
   tags:   [docker, skx]
   only:   [pushes]
 
@@ -144,7 +144,7 @@ nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2019.2:
 # CLANG compilation and testing of different ISAs
 
 nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-SSE2-TBB2019.2-NAMESPACE:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 api_namespace:myembree maxinstancelevelcount:4"
   tags:   [mac, clang]
   only:   [schedules]
 
@@ -160,10 +160,10 @@ nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
 
 # ICC compilation and testing of different ISAs
 
-nightly-macosx-x64-RelWithDebInfo-ICC15-ISPC1.9.2-AVX-INT:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 ispc:ispc1.9.2 isa:AVX tasking:INT intensity:4"
-  tags:   [mac, icc15]
-  only:   [schedules]
+#nightly-macosx-x64-RelWithDebInfo-ICC15-ISPC1.9.2-AVX-INT:
+#  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 ispc:ispc1.9.2 isa:AVX tasking:INT intensity:4"
+#  tags:   [mac, icc15]
+#  only:   [schedules]
 
 nightly-macosx-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
@@ -175,7 +175,7 @@ nightly-macosx-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
 
 nightly-linux-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-SSE2-TBB-NAMESPACE:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 api_namespace:myembree maxinstancelevelcount:8"
   tags:   [docker]
   only:   [schedules]
 

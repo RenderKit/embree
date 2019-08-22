@@ -31,7 +31,7 @@ At construction time, the pointer to the user\-managed buffer data
 (\f[C]ptr\f[] argument) including its size in bytes (\f[C]byteSize\f[]
 argument) is provided to create the buffer.
 At buffer construction time no buffer data is allocated, but the buffer
-data provided be the application is used.
+data provided by the application is used.
 The buffer data must remain valid for as long as the buffer may be used,
 and the user is responsible to free the buffer data when no longer
 required.

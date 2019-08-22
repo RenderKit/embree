@@ -185,7 +185,7 @@ void castRay(RTCScene scene,
   rayhit.ray.mask = 0;
   rayhit.ray.flags = 0;
   rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-  rayhit.hit.instID = RTC_INVALID_GEOMETRY_ID;
+  rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
 
   /*
    * There are multiple variants of rtcIntersect. This one
@@ -201,7 +201,7 @@ void castRay(RTCScene scene,
      * compute shading, etc.
      * Since there is only a single triangle in this scene, we will
      * get geomID=0 / primID=0 for all hits.
-     * There is also instID, used for single-level instancing. See
+     * There is also instID, used for instancing. See
      * the instancing tutorials for more information */
     printf("Found intersection on geometry %d, primitive %d at tfar=%f\n", 
            rayhit.hit.geomID,

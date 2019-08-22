@@ -47,9 +47,9 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomID(),quad.primID());
       }
 
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -135,9 +135,9 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomID(),quad.primID());
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -223,9 +223,9 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomID(),quad.primID());
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -303,9 +303,9 @@ namespace embree
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomID(),quad.primID());
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 

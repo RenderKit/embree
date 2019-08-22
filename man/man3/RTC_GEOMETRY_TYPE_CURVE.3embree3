@@ -15,6 +15,9 @@ RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\ \-\
 RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE\ \-\ 
 \ \ flat\ curve\ geometry\ with\ cubic\ Hermite\ basis
 
+RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE\ \-\ 
+\ \ flat\ curve\ geometry\ with\ Catmull\-Rom\ basis
+
 RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE\ \-
 \ \ flat\ normal\ oriented\ curve\ geometry\ with\ cubic\ Bézier\ basis
 
@@ -24,6 +27,9 @@ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE\ \-\
 RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE\ \-\ 
 \ \ flat\ normal\ oriented\ curve\ geometry\ with\ cubic\ Hermite\ basis
 
+RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE\ \-\ 
+\ \ flat\ normal\ oriented\ curve\ geometry\ with\ Catmull\-Rom\ basis
+
 RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\ \-
 \ \ sweep\ surface\ curve\ geometry\ with\ cubic\ Bézier\ basis
 
@@ -32,6 +38,9 @@ RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\ \-
 
 RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE\ \-
 \ \ sweep\ surface\ curve\ geometry\ with\ cubic\ Hermite\ basis
+
+RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE\ \-
+\ \ sweep\ surface\ curve\ geometry\ with\ Catmull\-Rom\ basis
 \f[]
 .fi
 .SS SYNOPSIS
@@ -44,12 +53,15 @@ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE);
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE);
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE);
 \f[]
 .fi
 .SS DESCRIPTION
@@ -61,12 +73,15 @@ Such curve geometries are created by passing
 \f[C]RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BEZIER_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\f[],
-\f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[], or
-\f[C]RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE\f[] to the
+\f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE\f[], or
+\f[C]RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE\f[] to the
 \f[C]rtcNewGeometry\f[] function.
 The curve indices can be specified through an index buffer
 (\f[C]RTC_BUFFER_TYPE_INDEX\f[]) and the curve vertices through a vertex
@@ -139,6 +154,10 @@ the previous segment can be shared.
 Different versions of Catmull\-Rom splines can be easily constructed
 usig the Hermite basis, by calculating a proper tangent buffer from the
 control points.
+.PP
+For the Catmull\-Rom basis the indices point to the first of 4
+consecutive control points in the vertex buffer.
+This basis goes through p0 and p3, with p0\-p1 and p2\-p3 tangents.
 .PP
 The \f[C]RTC_GEOMETRY_TYPE_FLAT_*\f[] flat mode is a fast mode designed
 to render distant hair.

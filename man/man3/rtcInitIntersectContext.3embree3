@@ -23,6 +23,7 @@ struct\ RTCIntersectContext
 {
 \ \ enum\ RTCIntersectContextFlags\ flags;
 \ \ RTCFilterFunctionN\ filter;
+\ \ unsigned\ int\ instStackSize;
 \ \ unsigned\ int\ instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
 };
 
@@ -36,9 +37,9 @@ void\ rtcInitIntersectContext(
 A per ray\-query intersection context (\f[C]RTCIntersectContext\f[]
 type) is supported that can be used to configure intersection flags
 (\f[C]flags\f[] member), specify a filter callback function
-(\f[C]filter\f[] member), specify the ID of the current instance
-(\f[C]instID\f[] member), and to attach arbitrary data to the query
-(e.g.
+(\f[C]filter\f[] member), specify the chain of IDs of the current
+instance (\f[C]instID\f[] and \f[C]instStackSize\f[] members), and to
+attach arbitrary data to the query (e.g.
 per ray data).
 .PP
 The \f[C]rtcInitIntersectContext\f[] function initializes the context to

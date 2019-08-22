@@ -46,9 +46,9 @@ namespace embree
         return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
       }
     };
 
@@ -74,9 +74,9 @@ namespace embree
         return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
       
-      static __forceinline void pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
       {
-        PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
       }
     };
 

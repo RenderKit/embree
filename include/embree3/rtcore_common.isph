@@ -21,11 +21,7 @@
 #define RTC_API extern "C" unmasked
 #endif
 
-#ifdef _WIN32
-#  define RTC_ALIGN(...) // FIXME: need to specify alignment
-#else
-#  define RTC_ALIGN(...) // FIXME: need to specify alignment
-#endif
+#define RTC_ALIGN(...) varying int align[0]  //!< aligns point query context on stack to at least 16 bytes
 
 #if !defined(RTC_DEPRECATED)
 #define RTC_DEPRECATED // FIXME: deprecation not supported by ISPC
@@ -40,8 +36,6 @@
 
 /* Maximum number of time steps */
 #define RTC_MAX_TIME_STEP_COUNT 129
-
-#include "rtcore_instance_levels.h"
 
 /* Formats of buffers and other data structures */
 enum RTCFormat
@@ -150,17 +144,19 @@ enum RTCBuildQuality
 };
 
 /* Axis-aligned bounding box representation */
-struct RTC_ALIGN(16) RTCBounds
+struct RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
+  RTC_ALIGN();
 };
 
 /* Linear axis-aligned bounding box representation */
-struct RTC_ALIGN(16) RTCLinearBounds
+struct RTCLinearBounds
 {
   RTCBounds bounds0;
   RTCBounds bounds1;
+  RTC_ALIGN();
 };
 
 /* Intersection context flags */
@@ -183,10 +179,12 @@ struct RTCIntersectContext
 /* Initializes an intersection context. */
 RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* uniform context)
 {
+  uniform unsigned l = 0;
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
   context->instStackSize = 0;
-  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
+  for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    context->instID[l] = RTC_INVALID_GEOMETRY_ID;
 }
 
 /* Arguments for RTCFilterFunctionN */
@@ -211,6 +209,7 @@ struct RTCPointQuery
   float z;      // z coordinate of the query point
   float time;   // time for motion blur
   float radius; // radius for the point query
+  RTC_ALIGN();
 };
 
 /* Structure of a packet of 4 query points */
@@ -221,6 +220,7 @@ struct RTCPointQuery4
   float z[4];
   float time[4];
   float radius[4];
+  RTC_ALIGN();
 };
 
 /* Structure of a packet of 8 query points */
@@ -231,6 +231,7 @@ struct RTCPointQuery8
   float z[8];
   float time[8];
   float radius[8];
+  RTC_ALIGN();
 };
 
 /* Structure of a packet of 16 query points */
@@ -241,18 +242,13 @@ struct RTCPointQuery16
   float z[16];
   float time[16];
   float radius[16];
+  RTC_ALIGN();
 };
 
 struct RTCPointQueryN;
 
-struct RTCPointQueryInstanceStack
+struct RTCPointQueryContext
 {
-  // number of instances currently on the stack.
-  unsigned int size;                                 
-
-  // instance ids.
-  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; 
-
   // accumulated 4x4 column major matrices from world space to instance space.
   // undefined if size == 0.
   float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
@@ -260,13 +256,21 @@ struct RTCPointQueryInstanceStack
   // accumulated 4x4 column major matrices from instance space to world space.
   // undefined if size == 0.
   float inst2world[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
+
+  // instance ids.
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; 
+
+  // number of instances currently on the stack.
+  unsigned int instStackSize;                                 
+  
+  RTC_ALIGN();
 };
 
 /* Initializes an intersection context. */
-RTC_FORCEINLINE void rtcInitPointQueryInstanceStack(uniform RTCPointQueryInstanceStack* uniform instStack)
+RTC_FORCEINLINE void rtcInitPointQueryContext(uniform RTCPointQueryContext* uniform context)
 {
-  instStack->size = 0;
-  instStack->instID[0] = RTC_INVALID_GEOMETRY_ID;
+  context->instStackSize = 0;
+  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
 
 struct RTCPointQueryFunctionArguments
@@ -284,19 +288,20 @@ struct RTCPointQueryFunctionArguments
   unsigned int  primID;        
   unsigned int  geomID;    
 
-  // the instance stack with transformation information
-  RTCPointQueryInstanceStack* uniform instStack;
+  // the context with transformation and instance ID stack
+  uniform RTCPointQueryContext* uniform context;
   
-  // If the current instance transform M (= instStack->world2inst[instStack->size]) 
+  // If the current instance transform M (= context->world2inst[context->instStackSize]) 
   // is a similarity matrix, i.e there is a constant factor similarityScale such that,
   //    for all x,y: dist(Mx, My) = similarityScale * dist(x, y),
   // The similarity scale is 0, if the current instance transform is not a
   // similarity transform and vice versa. The similarity scale allows to compute
-  // distance information in instance space and scale the distances accordingly
-  // into world space, for example, to update the query radius. If the current
-  // instance transform is not a similarity transform (similarityScale = 0), the
-  // distance computation has to be performed in world space to ensure correctness.
-  // if there is no instance transform (instStack->size == 0), the similarity scale is 1.
+  // distance information in instance space and scale the distances into world
+  // space by dividing with the similarity scale, for example, to update the
+  // query radius. If the current instance transform is not a similarity
+  // transform (similarityScale = 0), the distance computation has to be
+  // performed in world space to ensure correctness. if there is no instance
+  // transform (context->instStackSize == 0), the similarity scale is 1.
   float similarityScale;
 };
 

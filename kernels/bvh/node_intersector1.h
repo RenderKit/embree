@@ -236,30 +236,30 @@ namespace embree
       dist = vX * vX + vY * vY + vZ * vZ;
       const vbool<N> vmask = dist <= query.tfar()*query.tfar();
       const vbool<N> valid = minX <= maxX;
-      return movemask(vmask) & movemask(valid) & ((1<<N)-1);
+      return movemask(vmask) & movemask(valid);
     }
 
     template<int N>
     __forceinline size_t pointQueryNodeSphere(const typename BVHN<N>::AlignedNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
     {
-      const vfloat<N> minX = vfloat<N>::load((float*)((const char*)&node->lower_x+(0*sizeof(vfloat<N>))));
-      const vfloat<N> minY = vfloat<N>::load((float*)((const char*)&node->lower_x+(2*sizeof(vfloat<N>))));
-      const vfloat<N> minZ = vfloat<N>::load((float*)((const char*)&node->lower_x+(4*sizeof(vfloat<N>))));
-      const vfloat<N> maxX = vfloat<N>::load((float*)((const char*)&node->lower_x+(1*sizeof(vfloat<N>))));
-      const vfloat<N> maxY = vfloat<N>::load((float*)((const char*)&node->lower_x+(3*sizeof(vfloat<N>))));
-      const vfloat<N> maxZ = vfloat<N>::load((float*)((const char*)&node->lower_x+(5*sizeof(vfloat<N>))));
+      const vfloat<N> minX = vfloat<N>::load((float*)((const char*)&node->lower_x));
+      const vfloat<N> minY = vfloat<N>::load((float*)((const char*)&node->lower_y));
+      const vfloat<N> minZ = vfloat<N>::load((float*)((const char*)&node->lower_z));
+      const vfloat<N> maxX = vfloat<N>::load((float*)((const char*)&node->upper_x));
+      const vfloat<N> maxY = vfloat<N>::load((float*)((const char*)&node->upper_y));
+      const vfloat<N> maxZ = vfloat<N>::load((float*)((const char*)&node->upper_z));
       return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
     }
     
     template<int N>
     __forceinline size_t pointQueryNodeSphere(const typename BVHN<N>::AlignedNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
     {
-      const vfloat<N>* pMinX = (const vfloat<N>*)((const char*)&node->lower_x+(0*sizeof(vfloat<N>)));
-      const vfloat<N>* pMinY = (const vfloat<N>*)((const char*)&node->lower_x+(2*sizeof(vfloat<N>)));
-      const vfloat<N>* pMinZ = (const vfloat<N>*)((const char*)&node->lower_x+(4*sizeof(vfloat<N>)));
-      const vfloat<N>* pMaxX = (const vfloat<N>*)((const char*)&node->lower_x+(1*sizeof(vfloat<N>)));
-      const vfloat<N>* pMaxY = (const vfloat<N>*)((const char*)&node->lower_x+(3*sizeof(vfloat<N>)));
-      const vfloat<N>* pMaxZ = (const vfloat<N>*)((const char*)&node->lower_x+(5*sizeof(vfloat<N>)));
+      const vfloat<N>* pMinX = (const vfloat<N>*)((const char*)&node->lower_x);
+      const vfloat<N>* pMinY = (const vfloat<N>*)((const char*)&node->lower_y);
+      const vfloat<N>* pMinZ = (const vfloat<N>*)((const char*)&node->lower_z);
+      const vfloat<N>* pMaxX = (const vfloat<N>*)((const char*)&node->upper_x);
+      const vfloat<N>* pMaxY = (const vfloat<N>*)((const char*)&node->upper_y);
+      const vfloat<N>* pMaxZ = (const vfloat<N>*)((const char*)&node->upper_z);
       const vfloat<N> minX = madd(time,pMinX[6],vfloat<N>(pMinX[0]));
       const vfloat<N> minY = madd(time,pMinY[6],vfloat<N>(pMinY[0]));
       const vfloat<N> minZ = madd(time,pMinZ[6],vfloat<N>(pMinZ[0]));
@@ -287,7 +287,6 @@ namespace embree
     template<int N>
     __forceinline size_t pointQueryNodeSphere(const typename BVHN<N>::QuantizedBaseNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
     {
-      const size_t mvalid  = movemask(node->validMask());
       const vfloat<N> start_x(node->start.x);
       const vfloat<N> scale_x(node->scale.x);
       const vfloat<N> minX = madd(node->template dequantize<N>((0*sizeof(vfloat<N>)) >> 2),scale_x,start_x);
@@ -300,20 +299,19 @@ namespace embree
       const vfloat<N> scale_z(node->scale.z);
       const vfloat<N> minZ = madd(node->template dequantize<N>((4*sizeof(vfloat<N>)) >> 2),scale_z,start_z);
       const vfloat<N> maxZ = madd(node->template dequantize<N>((5*sizeof(vfloat<N>)) >> 2),scale_z,start_z);
-      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ) & mvalid;
+      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
     }
     
     template<int N>
     __forceinline size_t pointQueryNodeSphere(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
     {
-      const size_t mvalid  = movemask(node->validMask());
       const vfloat<N> minX = node->dequantizeLowerX(time);
       const vfloat<N> maxX = node->dequantizeUpperX(time);
       const vfloat<N> minY = node->dequantizeLowerY(time);
       const vfloat<N> maxY = node->dequantizeUpperY(time);
       const vfloat<N> minZ = node->dequantizeLowerZ(time);
       const vfloat<N> maxZ = node->dequantizeUpperZ(time);     
-      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ) & mvalid;
+      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
     }
     
     template<int N>
@@ -349,30 +347,30 @@ namespace embree
       const vbool<N> vmask = !((maxX < query.org.x - query.rad.x) | (minX > query.org.x + query.rad.x) |
                                (maxY < query.org.y - query.rad.y) | (minY > query.org.y + query.rad.y) |
                                (maxZ < query.org.z - query.rad.z) | (minZ > query.org.z + query.rad.z));
-      return movemask(vmask) & movemask(valid) & ((1<<N)-1);
+      return movemask(vmask) & movemask(valid);
     }
 
     template<int N>
     __forceinline size_t pointQueryNodeAABB(const typename BVHN<N>::AlignedNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
     {
-      const vfloat<N> minX = vfloat<N>::load((float*)((const char*)&node->lower_x+(0*sizeof(vfloat<N>))));
-      const vfloat<N> minY = vfloat<N>::load((float*)((const char*)&node->lower_x+(2*sizeof(vfloat<N>))));
-      const vfloat<N> minZ = vfloat<N>::load((float*)((const char*)&node->lower_x+(4*sizeof(vfloat<N>))));
-      const vfloat<N> maxX = vfloat<N>::load((float*)((const char*)&node->lower_x+(1*sizeof(vfloat<N>))));
-      const vfloat<N> maxY = vfloat<N>::load((float*)((const char*)&node->lower_x+(3*sizeof(vfloat<N>))));
-      const vfloat<N> maxZ = vfloat<N>::load((float*)((const char*)&node->lower_x+(5*sizeof(vfloat<N>))));
+      const vfloat<N> minX = vfloat<N>::load((float*)((const char*)&node->lower_x));
+      const vfloat<N> minY = vfloat<N>::load((float*)((const char*)&node->lower_y));
+      const vfloat<N> minZ = vfloat<N>::load((float*)((const char*)&node->lower_z));
+      const vfloat<N> maxX = vfloat<N>::load((float*)((const char*)&node->upper_x));
+      const vfloat<N> maxY = vfloat<N>::load((float*)((const char*)&node->upper_y));
+      const vfloat<N> maxZ = vfloat<N>::load((float*)((const char*)&node->upper_z));
       return pointQueryAABBDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
     }
     
     template<int N>
     __forceinline size_t pointQueryNodeAABB(const typename BVHN<N>::AlignedNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
     {
-      const vfloat<N>* pMinX = (const vfloat<N>*)((const char*)&node->lower_x+(0*sizeof(vfloat<N>)));
-      const vfloat<N>* pMinY = (const vfloat<N>*)((const char*)&node->lower_x+(2*sizeof(vfloat<N>)));
-      const vfloat<N>* pMinZ = (const vfloat<N>*)((const char*)&node->lower_x+(4*sizeof(vfloat<N>)));
-      const vfloat<N>* pMaxX = (const vfloat<N>*)((const char*)&node->lower_x+(1*sizeof(vfloat<N>)));
-      const vfloat<N>* pMaxY = (const vfloat<N>*)((const char*)&node->lower_x+(3*sizeof(vfloat<N>)));
-      const vfloat<N>* pMaxZ = (const vfloat<N>*)((const char*)&node->lower_x+(5*sizeof(vfloat<N>)));
+      const vfloat<N>* pMinX = (const vfloat<N>*)((const char*)&node->lower_x);
+      const vfloat<N>* pMinY = (const vfloat<N>*)((const char*)&node->lower_y);
+      const vfloat<N>* pMinZ = (const vfloat<N>*)((const char*)&node->lower_z);
+      const vfloat<N>* pMaxX = (const vfloat<N>*)((const char*)&node->upper_x);
+      const vfloat<N>* pMaxY = (const vfloat<N>*)((const char*)&node->upper_y);
+      const vfloat<N>* pMaxZ = (const vfloat<N>*)((const char*)&node->upper_z);
       const vfloat<N> minX = madd(time,pMinX[6],vfloat<N>(pMinX[0]));
       const vfloat<N> minY = madd(time,pMinY[6],vfloat<N>(pMinY[0]));
       const vfloat<N> minZ = madd(time,pMinZ[6],vfloat<N>(pMinZ[0]));
@@ -1373,6 +1371,20 @@ namespace embree
       }
     };
     
+    template<int N>
+    struct BVHNQuantizedBaseNodePointQuerySphere1
+    {
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
+      {
+        return pointQueryNodeSphere(node,query,dist);
+      }
+
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
+      {
+        return pointQueryNodeSphere(node,query,time,dist);
+      }
+    };
+
     /*! Computes traversal information for N nodes with 1 point query */
     template<int N, int types>
     struct BVHNNodePointQueryAABB1;
@@ -1456,6 +1468,21 @@ namespace embree
         return true;
       }
     };
+    
+    template<int N>
+    struct BVHNQuantizedBaseNodePointQueryAABB1
+    {
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNode* node, const TravPointQuery<N>& query, vfloat<N>& dist)
+      {
+        return pointQueryNodeAABB(node,query,dist);
+      }
+
+      static __forceinline size_t pointQuery(const typename BVHN<N>::QuantizedBaseNodeMB* node, const TravPointQuery<N>& query, const float time, vfloat<N>& dist)
+      {
+        return pointQueryNodeAABB(node,query,time,dist);
+      }
+    };
+
     
     //////////////////////////////////////////////////////////////////////////////////////
     // Node intersectors used in ray traversal

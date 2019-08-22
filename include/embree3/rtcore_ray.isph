@@ -20,7 +20,7 @@
 #include "rtcore_common.isph"
 
 /* Ray structure */
-struct RTC_ALIGN(16) RTCRay
+struct RTCRay
 {
   float org_x;        // x coordinate of ray origin
   float org_y;        // y coordinate of ray origin
@@ -36,6 +36,7 @@ struct RTC_ALIGN(16) RTCRay
   unsigned int mask;  // ray mask
   unsigned int id;    // ray ID
   unsigned int flags; // ray flags
+  RTC_ALIGN();
 };
 
 /* Hit structure */
@@ -50,7 +51,7 @@ struct RTCHit
 
   unsigned int primID; // primitive ID
   unsigned int geomID; // geometry ID
-  unsigned int instID; // instance ID
+  unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // instance ID
 };
 
 /* Combined ray/hit structure */
@@ -88,7 +89,7 @@ RTC_FORCEINLINE varying float& RTCHitN_u   (const RTCHitN* uniform hit, uniform 
 RTC_FORCEINLINE varying float& RTCHitN_v   (const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)hit)[4*N+i]); }
 RTC_FORCEINLINE varying unsigned int& RTCHitN_primID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[5*N+i]); }
 RTC_FORCEINLINE varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[6*N+i]); }
-RTC_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[7*N+i]); }
+RTC_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[7*N+i+l*N]); }
 
 /* Helper functions to extract RTCRayN and RTCHitN from RTCRayHitN */
 RTC_FORCEINLINE RTCRayN* uniform RTCRayHitN_RayN(RTCRayHitN* uniform rayhit, uniform unsigned int N) { return (RTCRayN* uniform)&((uniform float* uniform)rayhit)[0*N]; }
@@ -125,7 +126,7 @@ struct RTCHitNp
 
   uniform unsigned int* uniform primID;
   uniform unsigned int* uniform geomID;
-  uniform unsigned int* uniform instID;
+  uniform unsigned int* uniform instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
 };
 
 /* Combined ray/hit structure for a packet/stream of N rays in pointer SOA layout */
@@ -163,7 +164,8 @@ RTC_FORCEINLINE RTCHit rtcGetHitFromHitN(RTCHitN* uniform hitN, uniform unsigned
   hit.v      = RTCHitN_v(hitN,N,i);
   hit.primID = RTCHitN_primID(hitN,N,i);
   hit.geomID = RTCHitN_geomID(hitN,N,i);
-  hit.instID = RTCHitN_instID(hitN,N,i);
+  for (uniform unsigned int l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
+    hit.instID[l] = RTCHitN_instID(hitN,N,i,l);
   return hit;
 }
 
@@ -176,7 +178,8 @@ RTC_FORCEINLINE void rtcCopyHitToHitN(RTCHitN* uniform hitN, const varying RTCHi
   RTCHitN_v(hitN,N,i)      = hit->v;
   RTCHitN_primID(hitN,N,i) = hit->primID;
   RTCHitN_geomID(hitN,N,i) = hit->geomID;
-  RTCHitN_instID(hitN,N,i) = hit->instID;
+  for (uniform unsigned int l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
+    RTCHitN_instID(hitN,N,i,l) = hit->instID[l];
 }
 
 RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* uniform rayhitN, uniform unsigned int N, uniform unsigned int i)
@@ -205,7 +208,8 @@ RTC_FORCEINLINE RTCRayHit rtcGetRayHitFromRayHitN(RTCRayHitN* uniform rayhitN, u
   rh.hit.v      = RTCHitN_v(hit,N,i);
   rh.hit.primID = RTCHitN_primID(hit,N,i);
   rh.hit.geomID = RTCHitN_geomID(hit,N,i);
-  rh.hit.instID = RTCHitN_instID(hit,N,i);
+  for (uniform unsigned int l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; l++)
+    rh.hit.instID[l] = RTCHitN_instID(hit,N,i,l);
 
   return rh;
 }

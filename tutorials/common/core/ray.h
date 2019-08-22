@@ -48,9 +48,11 @@
                       float time = embree::zero, 
                       int mask = -1,
                       unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
-                      unsigned int primID = RTC_INVALID_GEOMETRY_ID, 
-                      unsigned int instID = RTC_INVALID_GEOMETRY_ID)
-      : org(org,tnear), dir(dir,time), tfar(tfar), mask(mask), primID(primID), geomID(geomID), instID(instID)  {}
+                      unsigned int primID = RTC_INVALID_GEOMETRY_ID)
+      : org(org,tnear), dir(dir,time), tfar(tfar), mask(mask), primID(primID), geomID(geomID)
+    {
+      instID[0] = RTC_INVALID_GEOMETRY_ID;
+    }
 
     /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
@@ -71,7 +73,7 @@
     float v;                  //!< Barycentric v coordinate of hit
     unsigned int primID;           //!< primitive ID
     unsigned int geomID;           //!< geometry ID
-    unsigned int instID;           //!< instance ID
+    unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];           //!< instance ID
 
     __forceinline float &tnear() { return org.w; };
     __forceinline float &time()  { return dir.w; };
@@ -89,10 +91,9 @@ __forceinline void init_Ray(Ray &ray,
                             float time = embree::zero, 
                             int mask = -1,
                             unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
-                            unsigned int primID = RTC_INVALID_GEOMETRY_ID, 
-                            unsigned int instID = RTC_INVALID_GEOMETRY_ID)
+                            unsigned int primID = RTC_INVALID_GEOMETRY_ID)
 {
-  ray = Ray(org,dir,tnear,tfar,time,mask,geomID,primID,instID);
+  ray = Ray(org,dir,tnear,tfar,time,mask,geomID,primID);
 }
 
 typedef Ray Ray1;
@@ -123,7 +124,8 @@ __forceinline RTCRay* RTCRay1_(Ray& ray) {
   inline std::ostream& operator<<(std::ostream& cout, const Ray& ray) {
     return cout << "{ " << 
       "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear() << ", far = " << ray.tfar << ", time = " << ray.time() << ", " <<
-      "instID = " << ray.instID <<  ", geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";
+      //"instID = " << ray.instID 
+      "geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";
   }
 
 /*! intersection context passed to intersect/occluded calls */

@@ -209,14 +209,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   {
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
-    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[ray.instID],Ns);
+    if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
+      Ns = xfmVector(normal_xfm[ray.instID[0]],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[ray.instID][ray.geomID];
+    if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
+      diffuse = colors[ray.instID[0]][ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -348,14 +348,14 @@ void renderTileStandardStream(int taskIndex,
     /* calculate shading normal in world space */
     Ray& primary = primary_stream[N];
     Vec3fa Ns = primary.Ng;
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[primary.instID],Ns);
+    if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
+      Ns = xfmVector(normal_xfm[primary.instID[0]],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[primary.instID][primary.geomID];
+    if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
+      diffuse = colors[primary.instID[0]][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
     /* initialize shadow ray tnear/tfar */
@@ -389,14 +389,14 @@ void renderTileStandardStream(int taskIndex,
     /* calculate shading normal in world space */
     Ray& primary = primary_stream[N];
     Vec3fa Ns = primary.Ng;
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[primary.instID],Ns);
+    if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
+      Ns = xfmVector(normal_xfm[primary.instID[0]],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[primary.instID][primary.geomID];
+    if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
+      diffuse = colors[primary.instID[0]][primary.geomID];
 
     /* add light contrinution */
     Ray& shadow = shadow_stream[N];

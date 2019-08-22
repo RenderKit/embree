@@ -42,86 +42,21 @@ extern uniform bool g_changed;
  */
 #define FOREACH_TILED_MITIGATION if (lanemask() == 0) { continue; }
 
-/*
- * There is an instance stack on RTCIntersectContext, but it is used by 
- * Embree internally.
- * We must copy this stack for all intersections we find.
- * This struct is here to provide storage for this purpose.
- */
-struct InstanceStack
-{
-  unsigned int instanceStackSize[STREAM_SIZE];
-  unsigned int instanceStack[STREAM_SIZE][RTC_MAX_INSTANCE_LEVEL_COUNT];
-};
-
-/* 
- * Copy an instance stack. This is called from the intersection filter below.
- */
-void copyInstanceStack(uniform const RTCIntersectContext* uniform context,
-                       unsigned rayId,
-                       uniform InstanceStack uniform* stack)
-{
-  assert(context);
-  assert(stack);
-  if (context && stack && rayId < STREAM_SIZE)
-  {
-    const unsigned size = context->instStackSize;
-    assert(size <= RTC_MAX_INSTANCE_LEVEL_COUNT);
-    foreach_active(active)
-    {
-      unmasked {
-        foreach (i = 0 ... extract(size, active))
-          stack->instanceStack[extract(rayId, active)][i] = context->instID[i];
-      }
-    }
-    stack->instanceStackSize[rayId] = size;
-  }
-}
-
-/*
- * The intersection filter we use to copy instance stacks.
- * In this tutorial, we set it as the context intersection filter so that we do not
- * have to worry about setting it on all geometries.
- * This may be inefficient if your scene contains many geometries that are not
- * instanced.
- */
-unmasked void intersectFilter(uniform const RTCFilterFunctionNArguments* uniform args)
-{
-  assert(args);
-  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform)(args->context);
-  assert(context);
-  uniform InstanceStack* uniform stack = (uniform InstanceStack* uniform)(context->userRayExt);
-  if (stack)
-  {
-    foreach (i = 0 ... args->N) 
-    {
-      unsigned int rayId = RTCRayN_id(args->ray, args->N, extract(i, 0));
-      if (args->valid[i])
-        copyInstanceStack(&context->context, rayId, stack);
-    }
-  }
-}
-
 /* 
  * Accumulate an instance transformation given an instance stack. 
  * We use this only for normal transformations in this example.
  */
-LinearSpace3f accumulateNormalTransform(const uniform struct InstanceStack* uniform stack,
-                                        unsigned rayId,
+LinearSpace3f accumulateNormalTransform(const Ray& ray,
                                         float time)
 {
   LinearSpace3f transform = make_LinearSpace3f_identity();
-  if (rayId < STREAM_SIZE)
+  for (unsigned int level = 0; level < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[level] != RTC_INVALID_GEOMETRY_ID; ++level)
   {
-    const unsigned int stackSize = stack->instanceStackSize[rayId];
-    for (unsigned int level = 0; level < stackSize; ++level)
-    {
-      assert(level < g_instanceLevels.numLevels);
-      const unsigned int instId = stack->instanceStack[rayId][level];
-      assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
-      LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
-      transform = transform * make_LinearSpace3f(M);
-    }
+    assert(level < g_instanceLevels.numLevels);
+    const unsigned int instId = ray.instID[level];
+    assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
+    LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
+    transform = transform * make_LinearSpace3f(M);
   }
   return transform;
 }
@@ -248,8 +183,7 @@ inline Ray makeShadowRay(const Ray& primary,
 /*
  * Our shader for this scene: Lambertian shading with normal display.
  */
-Vec3f shader(const uniform InstanceStack& instanceStack,
-             const Ray& primaryRay, 
+Vec3f shader(const Ray& primaryRay, 
              const Ray& shadowRay,
              const Vec3f& lightDir,
              const Vec3f& emission)
@@ -257,7 +191,7 @@ Vec3f shader(const uniform InstanceStack& instanceStack,
   if (primaryRay.geomID == RTC_INVALID_GEOMETRY_ID || shadowRay.tfar < 0.f)
     return make_Vec3f(0.f);
 
-  const LinearSpace3f xfm = accumulateNormalTransform(&instanceStack, primaryRay.id, 0.f);
+  const LinearSpace3f xfm = accumulateNormalTransform(primaryRay, 0.f);
   Vec3f Ns = normalize(xfmVector(xfm, make_Vec3f(primaryRay.Ng)));
 
   const float cosThetaOut = dot(Ns, lightDir);
@@ -328,7 +262,6 @@ void renderTileStream(uniform int* uniform pixels,
                       const uniform unsigned int y1,
                       uniform IntersectContext& primaryContext,
                       uniform IntersectContext& shadowContext,
-                      uniform InstanceStack& instanceStack,
                       uniform RayStats& stats)
 {
   RandomSampler sampler;
@@ -385,8 +318,7 @@ void renderTileStream(uniform int* uniform pixels,
   {
     FOREACH_TILED_MITIGATION
 
-    const Vec3f color = shader(instanceStack, 
-                               primary[numPackets],
+    const Vec3f color = shader(primary[numPackets],
                                shadow[numPackets],
                                lightDir[numPackets],
                                emission[numPackets]);
@@ -410,7 +342,6 @@ void renderTileNormal(uniform int* uniform pixels,
                       const uniform unsigned int y1,
                       uniform IntersectContext& primaryContext,
                       uniform IntersectContext& shadowContext,
-                      uniform InstanceStack& instanceStack,
                       uniform RayStats& stats)
 {
   RandomSampler sampler;
@@ -430,7 +361,7 @@ void renderTileNormal(uniform int* uniform pixels,
       sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
       Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
       rtcOccludedV(g_scene, &shadowContext.context, RTCRay_(shadowRay));
-      color = shader(instanceStack, primaryRay, shadowRay, lightDir, emission);
+      color = shader(primaryRay, shadowRay, lightDir, emission);
     }
 
     splat(pixels, width, x, y, color);
@@ -469,21 +400,12 @@ task void renderTileTask(uniform int* uniform pixels,
   // for shadow rays, since there is a spherical environment light.
   primaryContext.context.flags = g_iflags_coherent; 
 
-  // For multi-level instancing to work, we need to set up an intersection
-  // filter that copies intstance stacks for later use in shading, as well
-  // as storage for these stacks.
-  primaryContext.context.filter = intersectFilter;
-  uniform InstanceStack instanceStack;
-  foreach (i = 0 ... STREAM_SIZE) { instanceStack.instanceStackSize[i] = 0; }
-  primaryContext.userRayExt = &instanceStack;
-
   if (g_mode == MODE_NORMAL) 
     renderTileNormal(pixels, width,
                      time, camera,
                      x0, x1, y0, y1,
                      primaryContext,
                      shadowContext,
-                     instanceStack,
                      g_stats[threadIndex]);
   else                       
     renderTileStream(pixels, width,
@@ -491,7 +413,6 @@ task void renderTileTask(uniform int* uniform pixels,
                      x0, x1, y0, y1,
                      primaryContext,
                      shadowContext,
-                     instanceStack,
                      g_stats[threadIndex]);
 }
 
