@@ -35,6 +35,11 @@
 namespace embree
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
+
+  inline cl::sycl::float4 Vec3fa_to_float4(const Vec3fa& v)
+  {
+    return (cl::sycl::float4){v.x,v.y,v.z,v.w};
+  }
   
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(cl::sycl::intel::sub_group &subgroup, const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref,const cl::sycl::stream &out)
   {
@@ -573,15 +578,45 @@ namespace embree
 	    }
 
 	    /* --- convert primrefs to primitives --- */
-	    
-	    
+#if 0	    
+	    for (size_t i=0;i<numPrimitives;i++)
+	      std::cout << "i " << i << " index " << primref_index[i] << " aabb[primref_index[i]] " << ((PrimRef*)aabb)[primref_index[i]] << std::endl;
+#endif
+
+	    gpu::Quad1 *quad1 = (gpu::Quad1 *)(bvh_mem + globals->leaf_mem_allocator[1]);
+	    PRINT(globals->leaf_mem_allocator[1]);
+	    for (size_t i=0;i<numPrimitives;i++)
+	      {
+		const uint index = primref_index[i];
+		const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
+		const uint primID = gpu::as_uint((float)aabb[index].upper.w());
+		//std::cout << " i " << i << " index " << index << " geomID " << geomID << " primID " << primID << std::endl;
+		TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
+		const TriangleMesh::Triangle &tri = mesh->triangle(primID);
+		const Vec3fa v0 = mesh->vertex(tri.v[0]);
+		const Vec3fa v1 = mesh->vertex(tri.v[1]);
+		const Vec3fa v2 = mesh->vertex(tri.v[2]);
+
+		quad1[i].init(Vec3fa_to_float4(v0),
+			      Vec3fa_to_float4(v1),
+			      Vec3fa_to_float4(v2),
+			      Vec3fa_to_float4(v2),
+			      geomID,
+			      primID,
+			      primID);
+		
+		// PRINT(mesh);
+		// PRINT(v0);
+		// PRINT(v1);
+		// PRINT(v2);
+		
+	      }
 
 	    /* --- deallocate temporary data structures --- */
-	    cl::sycl::free(aabb,deviceGPU->getContext());
-	    
-	    //global struct BuildRecord *record = (global struct BuildRecord*)(bvh_mem + globals->leaf_mem_allocator[1]);
-
-	    
+	    cl::sycl::free(aabb         ,deviceGPU->getContext());
+	    cl::sycl::free(primref_index,deviceGPU->getContext());
+	    cl::sycl::free(globals      ,deviceGPU->getContext());
+	    	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 	    //PING;

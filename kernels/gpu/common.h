@@ -92,17 +92,21 @@ namespace embree
     template<typename T>
       static inline uint as_uint(T t)
       {
-	const uint &t_ref = reinterpret_cast<const uint&>(t);	
-	return t_ref;
+	return __builtin_bit_cast(uint,t);
       }
 
     template<typename T>
-      static inline float as_float(T t)
+      static inline uint as_int(T t)
       {
-	const float &t_ref = reinterpret_cast<const float&>(t);	
-	return t_ref;
+	return __builtin_bit_cast(int,t);
       }
     
+    template<typename T>
+      static inline float as_float(T t)
+      {
+	return __builtin_bit_cast(float,t);
+      }
+     
   };
 };
 

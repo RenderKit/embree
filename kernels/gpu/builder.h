@@ -381,7 +381,6 @@ namespace embree
 	gpu::Split split;	
 	
 	const uint subgroupLocalID = sg.get_local_id()[0];
-	//const uint subgroupSize    = sg.get_local_range().size();
 	
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);	
@@ -428,16 +427,14 @@ namespace embree
 	sah.x() = cl::sycl::select( (float)pos_inf, (float)sah.x(), (int)(subgroupLocalID != 0));
 	sah.y() = cl::sycl::select( (float)pos_inf, (float)sah.y(), (int)(subgroupLocalID != 0));
 	sah.z() = cl::sycl::select( (float)pos_inf, (float)sah.z(), (int)(subgroupLocalID != 0));
-
-	//out << (uint)__builtin_bit_cast(uint,tmp) << " " << cl::sycl::endl;
 	
 	const uint mid = (startID+endID)/2;
 
-	const uint maxSAH = __builtin_bit_cast(uint,pos_inf);	
+	const uint maxSAH = as_uint(pos_inf);	
 	const ulong defaultSplit = (((ulong)maxSAH) << 32) | ((uint)mid << 2) | 0;    
 	const ulong bestSplit = getBestSplit(sg, sah, subgroupLocalID, scale, defaultSplit);
 	const uint bestSplit32 = (uint)(bestSplit >> 32);
-	const float split_sah = __builtin_bit_cast(float,bestSplit32);	
+	const float split_sah = as_float(bestSplit32);	
 
 	split.sah = split_sah;
 	split.dim = (uint)bestSplit & 3;
@@ -564,6 +561,24 @@ namespace embree
     struct Quad1
     {
       cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
+
+      void init(const cl::sycl::float4 &_v0,
+		const cl::sycl::float4 &_v1,
+		const cl::sycl::float4 &_v2,
+		const cl::sycl::float4 &_v3,
+		const uint geomID,
+		const uint primID0,
+		const uint primID1)
+      {
+	v0 = _v0;
+	v1 = _v1;
+	v2 = _v2;
+	v3 = _v3;
+	v1.w() = as_float(geomID);
+	v0.w() = as_float(primID0);
+	v2.w() = as_float(primID1);
+	v3.w() = 0.0f;
+      }
     };
 
 
