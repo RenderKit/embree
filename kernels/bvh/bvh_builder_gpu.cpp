@@ -629,12 +629,11 @@ namespace embree
 	    cl::sycl::free(aabb         ,deviceGPU->getContext());
 	    cl::sycl::free(primref_index,deviceGPU->getContext());
 	    cl::sycl::free(globals      ,deviceGPU->getContext());
-	    	    
+
+	    std::cout << "BVH GPU Builder DONE" << std::endl << std::flush;
+	    
             /* call BVH builder */
             NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-	    //PING;
-	    //std::cout << "bounds " << (float)bounds.lower.x() << std::endl;
-	    exit(0);
 
 #endif	    
             //bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
