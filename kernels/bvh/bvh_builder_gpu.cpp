@@ -494,19 +494,32 @@ namespace embree
 	    }
 	    
 	    const int sizeWG = deviceGPU->getMaxWorkGroupSize();
-	    const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG));	      	    
+	    //const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)pinfo.size()),cl::sycl::range<1>(sizeWG));
+	    const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)sizeWG),cl::sycl::range<1>(sizeWG));	    
 	    {	      
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
 		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
 		{
-		  const gpu::AABB aabb_geom = aabb[item.get_global_id(0)];
-		  const gpu::AABB aabb_centroid(aabb_geom.centroid2());
-		  primref_index[item.get_global_id(0)] = item.get_global_id(0);
-		  const gpu::AABB reduced_geometry_aabb = aabb_geom.work_group_reduce();
-		  const gpu::AABB reduced_centroid_aabb = aabb_centroid.work_group_reduce();						       
+		  const uint startID = item.get_global_id(0);
+		  const uint step    = item.get_global_range().size();
+
+		  gpu::AABB local_geometry_aabb;
+		  gpu::AABB local_centroid_aabb;
+		  local_geometry_aabb.init();
+		  local_centroid_aabb.init();
+		  
+		  for (uint i=startID;i<numPrimitives;i+=step)
+		    {
+		      const gpu::AABB aabb_geom = aabb[i];
+		      const gpu::AABB aabb_centroid(aabb_geom.centroid2());
+		      primref_index[i] = i;
+		      local_geometry_aabb.extend(aabb_geom);
+		      local_centroid_aabb.extend(aabb_centroid);		      
+		    }
 		  cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(globals);
-		  reduced_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
-		  reduced_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);						       
+		  local_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
+		  local_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);		  
 		});
 		  
 		});
