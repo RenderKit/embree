@@ -84,7 +84,7 @@ typedef ISPCInstance* ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned int instID = ray.instID; {
+  unsigned int instID = ray.instID[0]; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
