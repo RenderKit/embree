@@ -34,6 +34,7 @@
 
 namespace embree
 {
+#if defined(EMBREE_DPCPP_SUPPORT)
   
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(cl::sycl::intel::sub_group &subgroup, const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref,const cl::sycl::stream &out)
   {
@@ -355,10 +356,9 @@ namespace embree
 
 	    sindex += numChildren;
 	  }
-      }
-
-			      
+      }			      
   }
+#endif
 
   namespace isa
   {    
