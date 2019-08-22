@@ -70,7 +70,7 @@ namespace embree
       unsigned int procedural_mem_allocator_start;
       unsigned int procedural_mem_allocator_cur;
       unsigned int back_pointer_start;
-      unsigned int leaf_mem_allocator[11];
+      unsigned int leaf_mem_pad[11];
 
       /* 4. cacheline */
       unsigned int numPrimitives;
@@ -465,7 +465,7 @@ namespace embree
 			   const uint items,
 			   const uint stride)
     {
-      const uint offset = globals.leaf_mem_allocator[1] + start * stride;
+      const uint offset = globals.leaf_mem_allocator_start + start * stride;
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
       return final;
     }

@@ -165,7 +165,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB& aabb) {
-      return out << "lower " << (cl::sycl::float3)aabb.lower.xyz() << "  upper " << (cl::sycl::float3)aabb.upper.xyz();
+      return out << "lower " << (cl::sycl::float3)aabb.lower.xyz() << " " << as_int((float)aabb.lower.w()) << "  upper " << (cl::sycl::float3)aabb.upper.xyz() << " " << as_int((float)aabb.upper.w());
     }    
 
   };

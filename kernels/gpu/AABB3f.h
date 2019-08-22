@@ -158,16 +158,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB3f& aabb) {
-#if 1      
-      AABB3f tmp = aabb;
-      tmp.lower = max(tmp.lower,cl::sycl::float3(-MAXFLOAT));
-      tmp.lower = min(tmp.lower,cl::sycl::float3( MAXFLOAT));
-      tmp.upper = max(tmp.upper,cl::sycl::float3(-MAXFLOAT));
-      tmp.upper = min(tmp.upper,cl::sycl::float3( MAXFLOAT));      
-      return out << "lower " << tmp.lower << "  upper " << tmp.upper;
-#else      
       return out << "lower " << aabb.lower << "  upper " << aabb.upper;
-#endif      
     }
     
   };
