@@ -46,7 +46,7 @@ a primitive and reject hits that are outside the silhouette. E.g. a
 tree leaf could be modeled with an alpha texture that decides whether
 hit points lie inside or outside the leaf.
 
-If the `RTC_SCENE_HIGH_QUALITY` mode is set, the filter functions may
+If the `RTC_BUILD_QUALITY_HIGH` mode is set, the filter functions may
 be called multiple times for the same primitive hit. Further, rays
 hitting exactly the edge might also report two hits for the same
 surface. For certain use cases, the application may have to work around
