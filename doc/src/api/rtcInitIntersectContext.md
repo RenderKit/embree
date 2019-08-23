@@ -19,7 +19,9 @@
     {
       enum RTCIntersectContextFlags flags;
       RTCFilterFunctionN filter;
+      #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
       unsigned int instStackSize;
+      #endif
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
     };
 
