@@ -185,7 +185,9 @@ enum RTCIntersectContextFlags
 {
   RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
   RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0), // optimize for incoherent rays
-  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)  // optimize for coherent rays
+  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0), // optimize for coherent rays
+  RTC_INTERSECT_CONTEXT_FLAG_GPU        = (1 << 31) // trace ray stream on the GPU
+  
 };
 
 /* Arguments for RTCFilterFunctionN */

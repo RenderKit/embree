@@ -253,8 +253,12 @@ namespace embree
     struct Split
     {
       float sah;
-      int dim;
-      int pos;
+      uint dim;
+      uint pos;
+
+      Split() {}
+
+      Split(const float sah, const uint dim, const uint pos) : sah(sah), dim(dim), pos(pos) {}
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Split& s) {
@@ -378,10 +382,7 @@ namespace embree
       
       [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const cl::sycl::float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
       {
-	gpu::Split split;	
-	
-	const uint subgroupLocalID = sg.get_local_id()[0];
-	
+	const uint subgroupLocalID = sg.get_local_id()[0];		
 	const AABB3f &bX      = boundsX[subgroupLocalID];
 	const float lr_areaX  = left_to_right_area16(sg,bX);	
 	const float rl_areaX  = right_to_left_area16(sg,bX);
@@ -400,46 +401,26 @@ namespace embree
 	const uint rl_countsZ = right_to_left_counts16(sg,c.z());
 	
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;       
-	const uint blocks_add = ((1 << blocks_shift)-1);
-	
-	const cl::sycl::uint3 lr_count = { (lr_countsX+blocks_add)>>blocks_shift , (lr_countsY+blocks_add)>>blocks_shift, (lr_countsZ+blocks_add)>>blocks_shift };
-	
-#if 0
-	for (uint i=0;i<subgroupSize;i++)
-	  if (i == subgroupLocalID)	
-	    out << "i " << i << " lr_countsX " << lr_countsX << " wrong lr_count.x() " <<  lr_count.x() << cl::sycl::endl;
-	    
-#endif
+	const uint blocks_add = ((1 << blocks_shift)-1);	
+	const cl::sycl::uint3 lr_count( (lr_countsX+blocks_add)>>blocks_shift , (lr_countsY+blocks_add)>>blocks_shift, (lr_countsZ+blocks_add)>>blocks_shift );       
+	const cl::sycl::float3 lr_area(lr_areaX,lr_areaY,lr_areaZ);
+	const cl::sycl::float3 rl_area(rl_areaX,rl_areaY,rl_areaZ);	
+	const cl::sycl::uint3 rl_count( (rl_countsX+blocks_add)>>blocks_shift , (rl_countsY+blocks_add)>>blocks_shift, (rl_countsZ+blocks_add)>>blocks_shift );
+	const cl::sycl::float3 lr_count_f ( (float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z() );
+	const cl::sycl::float3 rl_count_f ( (float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z() );	
 
-	const cl::sycl::float3 lr_area = { lr_areaX,lr_areaY,lr_areaZ };
-	const cl::sycl::float3 rl_area = { rl_areaX,rl_areaY,rl_areaZ };
-	
-	const cl::sycl::uint3 rl_count = { (rl_countsX+blocks_add)>>blocks_shift , (rl_countsY+blocks_add)>>blocks_shift, (rl_countsZ+blocks_add)>>blocks_shift };
-	const cl::sycl::float3 lr_count_f = { (float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z() };
-	const cl::sycl::float3 rl_count_f = { (float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z() };	
-	
-	cl::sycl::float3 sah = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
-       
 	/* first bin is invalid */
 	const float pos_inf = (float)INFINITY;
+	const cl::sycl::float3 sah = cl::sycl::select( cl::sycl::float3(pos_inf), cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f), (int)(subgroupLocalID != 0) );
 
-	// FIXME: select has issues with data types
-	sah.x() = cl::sycl::select( (float)pos_inf, (float)sah.x(), (int)(subgroupLocalID != 0));
-	sah.y() = cl::sycl::select( (float)pos_inf, (float)sah.y(), (int)(subgroupLocalID != 0));
-	sah.z() = cl::sycl::select( (float)pos_inf, (float)sah.z(), (int)(subgroupLocalID != 0));
-	
+	/* select best split */
 	const uint mid = (startID+endID)/2;
-
 	const uint maxSAH = as_uint(pos_inf);	
 	const ulong defaultSplit = (((ulong)maxSAH) << 32) | ((uint)mid << 2) | 0;    
 	const ulong bestSplit = getBestSplit(sg, sah, subgroupLocalID, scale, defaultSplit);
 	const uint bestSplit32 = (uint)(bestSplit >> 32);
 	const float split_sah = as_float(bestSplit32);	
-
-	split.sah = split_sah;
-	split.dim = (uint)bestSplit & 3;
-	split.pos = (uint)bestSplit >> 2;
-	return split;
+	return gpu::Split(split_sah,(uint)bestSplit & 3,(uint)bestSplit >> 2);
       }
       
       

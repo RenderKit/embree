@@ -38,8 +38,8 @@ namespace embree
       {
 	const float pos_inf =  INFINITY;
 	const float neg_inf = -INFINITY;
-	lower = { pos_inf,pos_inf,pos_inf,0 };
-	upper = { neg_inf,neg_inf,neg_inf,0 };	
+	lower = cl::sycl::float4(pos_inf,pos_inf,pos_inf,0.0f);
+	upper = cl::sycl::float4(neg_inf,neg_inf,neg_inf,0.0f);	
       }
       
       inline void extend(const AABB &aabb)
