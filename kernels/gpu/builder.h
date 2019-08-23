@@ -16,42 +16,23 @@
 #pragma once
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-#include "../gpu/common.h"
+#include "common.h"
 #include "AABB.h"
 #include "AABB3f.h"
+#include "bvh.h"
+#include "geometry.h"
+
 
 #define BUILDRECORD_STACK_SIZE 64
-#define BINS 16
-
-#define BVH_LEAF_MASK        8
-#define BVH_INVALID_NODE     3
-#define BVH_NODE_N          16
-#define BVH_NODE_N_LOG       4
-#define SAH_LOG_BLOCK_SHIFT  2
-#define BVH_LEAF_N_MIN       4
-#define BVH_LEAF_N_MAX       4
+#define SAH_LOG_BLOCK_SHIFT     2
+#define BVH_LEAF_N_MIN          4
+#define BVH_LEAF_N_MAX          4
 
 
 namespace embree
 {
   namespace gpu
   {
-
-    
-    struct BVHBase
-    {
-      unsigned long rootNodeOffset; 
-      AABB3f bounds;
-
-      unsigned int nodeDataStart;
-      unsigned int nodeDataCur;
-      unsigned int leafDataStart;
-      unsigned int leafDataCur;
-      unsigned int proceduralDataStart;
-      unsigned int proceduralDataCur;
-      unsigned int backPointerDataStart;
-      unsigned int backPointerDataEnd;
-    };
     
     struct Globals
     {
@@ -178,13 +159,6 @@ namespace embree
       unsigned int start, end;
     };
 
-    struct Triangle
-    {
-      unsigned int vtx[3];
-      //unsigned int primID;
-      //unsigned int geomID;
-    };
-
     struct MortonCodePrimitive
     {
       uint64_t index_code; // 64bit code + index combo
@@ -258,7 +232,7 @@ namespace embree
 
       Split() {}
 
-      Split(const float sah, const uint dim, const uint pos) : sah(sah), dim(dim), pos(pos) {}
+    Split(const float sah, const uint dim, const uint pos) : sah(sah), dim(dim), pos(pos) {}
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Split& s) {
@@ -422,8 +396,7 @@ namespace embree
 	const float split_sah = as_float(bestSplit32);	
 	return gpu::Split(split_sah,(uint)bestSplit & 3,(uint)bestSplit >> 2);
       }
-      
-      
+            
     };
 
     struct BinInfo2 {
@@ -451,68 +424,6 @@ namespace embree
       return final;
     }
 
-    /* ======================================================================== */
-    /* ============================== BVH NODES =============================== */
-    /* ======================================================================== */
-
-    struct BVHNodeN
-    {              
-      uint offset[BVH_NODE_N];  
-      uint parent[BVH_NODE_N]; 
-      float lower_x[BVH_NODE_N]; 
-      float upper_x[BVH_NODE_N]; 
-      float lower_y[BVH_NODE_N]; 
-      float upper_y[BVH_NODE_N]; 
-      float lower_z[BVH_NODE_N]; 
-      float upper_z[BVH_NODE_N]; 
-
-      inline void initBVHNodeN(uint slotID)
-      {
-	const float pos_inf =  INFINITY;
-	const float neg_inf = -INFINITY;	
-	offset[slotID]  =  (uint)(-1);  
-	parent[slotID]  =  (uint)(-1); 
-	lower_x[slotID] =  pos_inf; 
-	upper_x[slotID] =  neg_inf;
-	lower_y[slotID] =  pos_inf; 
-	upper_y[slotID] =  neg_inf;
-	lower_z[slotID] =  pos_inf; 
-	upper_z[slotID] =  neg_inf;  
-      }
-
-
-      inline void setBVHNodeN(const struct AABB &aabb, uint slot)
-      {
-	lower_x[slot] = aabb.lower.x();
-	lower_y[slot] = aabb.lower.y();
-	lower_z[slot] = aabb.lower.z();
-	upper_x[slot] = aabb.upper.x();
-	upper_y[slot] = aabb.upper.y();
-	upper_z[slot] = aabb.upper.z();
-      }
-
-      inline void setBVHNodeN_offset(const struct AABB &aabb, const uint _offset, const uint _parent, uint slot)
-      {
-	offset[slot] = _offset;
-	parent[slot] = _parent;  
-	lower_x[slot] = aabb.lower.x();
-	lower_y[slot] = aabb.lower.y();
-	lower_z[slot] = aabb.lower.z();
-	upper_x[slot] = aabb.upper.x();
-	upper_y[slot] = aabb.upper.y();
-	upper_z[slot] = aabb.upper.z();
-      }
-
-
-    };
-
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BVHNodeN& node) {
-      for (uint i=0;i<BVH_NODE_N;i++)
-	{
-	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i];
-	}      
-      return out; 
-    }
     
     inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem, const cl::sycl::stream &out)
     {
@@ -538,34 +449,8 @@ namespace embree
 
       return node_offset;      
     }
-    
-    struct Quad1
-    {
-      cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
-
-      void init(const cl::sycl::float4 &_v0,
-		const cl::sycl::float4 &_v1,
-		const cl::sycl::float4 &_v2,
-		const cl::sycl::float4 &_v3,
-		const uint geomID,
-		const uint primID0,
-		const uint primID1)
-      {
-	v0 = _v0;
-	v1 = _v1;
-	v2 = _v2;
-	v3 = _v3;
-	v1.w() = as_float(geomID);
-	v0.w() = as_float(primID0);
-	v2.w() = as_float(primID1);
-	v3.w() = 0.0f;
-      }
-    };
-
-
-
-    
-    };
+        
+  };
 };
 
 #endif
