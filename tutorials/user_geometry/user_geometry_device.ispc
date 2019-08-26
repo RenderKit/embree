@@ -47,12 +47,20 @@ inline void invalidateRay(Ray& ray)
 
 inline void pushInstanceId(uniform RTCIntersectContext* uniform ctx, uniform unsigned int id)
 {
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[ctx->instStackSize++] = id;
+#else
+  ctx->instID[0] = id;
+#endif
 }
 
 inline void popInstanceId(uniform RTCIntersectContext* uniform ctx)
 {
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#else
+  ctx->instID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
 }
 
 inline void copyInstanceIdStack(uniform const RTCIntersectContext* uniform ctx, varying unsigned* uniform tgt)

@@ -114,12 +114,20 @@ void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 
 inline void pushInstanceId(RTCIntersectContext* ctx, unsigned int id)
 {
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[ctx->instStackSize++] = id;
+#else
+  ctx->instID[0] = id;
+#endif
 }
 
 inline void popInstanceId(RTCIntersectContext* ctx)
 {
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#else
+  ctx->instID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
 }
 
 void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)

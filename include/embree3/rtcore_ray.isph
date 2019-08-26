@@ -20,7 +20,7 @@
 #include "rtcore_common.isph"
 
 /* Ray structure */
-struct RTCRay
+struct RTC_ALIGN(16) RTCRay
 {
   float org_x;        // x coordinate of ray origin
   float org_y;        // y coordinate of ray origin
@@ -36,7 +36,6 @@ struct RTCRay
   unsigned int mask;  // ray mask
   unsigned int id;    // ray ID
   unsigned int flags; // ray flags
-  RTC_ALIGN();
 };
 
 /* Hit structure */

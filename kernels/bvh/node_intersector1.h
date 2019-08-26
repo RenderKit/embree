@@ -299,7 +299,7 @@ namespace embree
       const vfloat<N> scale_z(node->scale.z);
       const vfloat<N> minZ = madd(node->template dequantize<N>((4*sizeof(vfloat<N>)) >> 2),scale_z,start_z);
       const vfloat<N> maxZ = madd(node->template dequantize<N>((5*sizeof(vfloat<N>)) >> 2),scale_z,start_z);
-      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
+      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ) & movemask(node->validMask());
     }
     
     template<int N>
@@ -311,7 +311,7 @@ namespace embree
       const vfloat<N> maxY = node->dequantizeUpperY(time);
       const vfloat<N> minZ = node->dequantizeLowerZ(time);
       const vfloat<N> maxZ = node->dequantizeUpperZ(time);     
-      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ);
+      return pointQuerySphereDistAndMask(query, dist, minX, maxX, minY, maxY, minZ, maxZ) & movemask(node->validMask());
     }
     
     template<int N>
@@ -799,6 +799,7 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<4,4>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,4,false>& ray, vfloat4& dist)
     {
+      const size_t mvalid  = movemask(node->validMask());
       const vfloat4 start_x(node->start.x);
       const vfloat4 scale_x(node->scale.x);
       const vfloat4 lower_x = madd(node->dequantize<4>(ray.nearX >> 2),scale_x,start_x);
@@ -845,12 +846,13 @@ namespace embree
       const size_t mask = movemask(vmask);
 #endif
       dist = tNear;
-      return mask;
+      return mask & mvalid;
     }
 
     template<>
       __forceinline size_t intersectNode<4,4>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,4,true>& ray, vfloat4& dist)
     {
+      const size_t mvalid  = movemask(node->validMask());
       const vfloat4 start_x(node->start.x);
       const vfloat4 scale_x(node->scale.x);
       const vfloat4 lower_x = madd(node->dequantize<4>(ray.nearX >> 2),scale_x,start_x);
@@ -876,7 +878,7 @@ namespace embree
       const vbool4 vmask = tNear <= tFar;
       const size_t mask = movemask(vmask);
       dist = tNear;
-      return mask;
+      return mask & mvalid;
     }
 
 
@@ -885,6 +887,7 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<8,8>(const typename BVH8::QuantizedBaseNode* node, const TravRay<8,8,false>& ray, vfloat8& dist)
     {
+      const size_t mvalid  = movemask(node->validMask());
       const vfloat8 start_x(node->start.x);
       const vfloat8 scale_x(node->scale.x);
       const vfloat8 lower_x = madd(node->dequantize<8>(ray.nearX >> 2),scale_x,start_x);
@@ -931,12 +934,13 @@ namespace embree
       const size_t mask = movemask(vmask);
 #endif
       dist = tNear;
-      return mask;
+      return mask & mvalid;
     }
 
     template<>
       __forceinline size_t intersectNode<8,8>(const typename BVH8::QuantizedBaseNode* node, const TravRay<8,8,true>& ray, vfloat8& dist)
     {
+      const size_t mvalid  = movemask(node->validMask());
       const vfloat8 start_x(node->start.x);
       const vfloat8 scale_x(node->scale.x);
       const vfloat8 lower_x = madd(node->dequantize<8>(ray.nearX >> 2),scale_x,start_x);
@@ -963,7 +967,7 @@ namespace embree
       const size_t mask = movemask(vmask);
 
       dist = tNear;
-      return mask;
+      return mask & mvalid;
     }
 
 
@@ -974,6 +978,7 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<4,16>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,16,false>& ray, vfloat16& dist)
     {
+      const size_t mvalid  = movemask(node->validMask());
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
       const vfloat16 lower_x = madd(vfloat16(node->dequantize<4>(ray.nearX >> 2)),scale_x,start_x);
@@ -996,7 +1001,7 @@ namespace embree
       const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,ray.tnear);
       const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,ray.tfar);
       const vbool16 vmask   = le(vbool16(0xf),tNear,tFar);
-      const size_t mask     = movemask(vmask);
+      const size_t mask     = movemask(vmask) & mvalid;
       dist = tNear;
       return mask;
     }
@@ -1004,6 +1009,7 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<4,16>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,16,true>& ray, vfloat16& dist)
     {
+      const size_t mvalid  = movemask(node->validMask());
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
       const vfloat16 lower_x = madd(vfloat16(node->dequantize<4>(ray.nearX >> 2)),scale_x,start_x);
@@ -1027,7 +1033,7 @@ namespace embree
       const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,ray.tnear);
       const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,ray.tfar);
       const vbool16 vmask   = le(vbool16(0xf),tNear,tFar);
-      const size_t mask     = movemask(vmask);
+      const size_t mask     = movemask(vmask) & mvalid;
       dist = tNear;
       return mask;
     }

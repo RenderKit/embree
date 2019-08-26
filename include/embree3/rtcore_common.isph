@@ -21,7 +21,11 @@
 #define RTC_API extern "C" unmasked
 #endif
 
-#define RTC_ALIGN(...) varying int align[0]  //!< aligns point query context on stack to at least 16 bytes
+#ifdef _WIN32
+#  define RTC_ALIGN(...) // FIXME: need to specify alignment
+#else
+#  define RTC_ALIGN(...) // FIXME: need to specify alignment
+#endif
 
 #if !defined(RTC_DEPRECATED)
 #define RTC_DEPRECATED // FIXME: deprecation not supported by ISPC
@@ -144,19 +148,17 @@ enum RTCBuildQuality
 };
 
 /* Axis-aligned bounding box representation */
-struct RTCBounds
+struct RTC_ALIGN(16) RTCBounds
 {
   float lower_x, lower_y, lower_z, align0;
   float upper_x, upper_y, upper_z, align1;
-  RTC_ALIGN();
 };
 
 /* Linear axis-aligned bounding box representation */
-struct RTCLinearBounds
+struct RTC_ALIGN(16) RTCLinearBounds
 {
   RTCBounds bounds0;
   RTCBounds bounds1;
-  RTC_ALIGN();
 };
 
 /* Intersection context flags */
@@ -172,7 +174,9 @@ struct RTCIntersectContext
 {
   RTCIntersectContextFlags flags;                    // intersection flags
   void* filter;                                      // filter function to execute
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   unsigned int instStackSize;                        // Number of instances currently on the stack.
+#endif
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
 };
 
@@ -182,7 +186,9 @@ RTC_FORCEINLINE void rtcInitIntersectContext(uniform RTCIntersectContext* unifor
   uniform unsigned l = 0;
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   context->instStackSize = 0;
+#endif
   for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     context->instID[l] = RTC_INVALID_GEOMETRY_ID;
 }
@@ -202,47 +208,43 @@ struct RTCFilterFunctionNArguments
 typedef unmasked void (*uniform RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* uniform args);
 
 /* Point query structure for closest point query */
-struct RTCPointQuery 
+struct RTC_ALIGN(16) RTCPointQuery 
 {
   float x;      // x coordinate of the query point
   float y;      // y coordinate of the query point
   float z;      // z coordinate of the query point
   float time;   // time for motion blur
   float radius; // radius for the point query
-  RTC_ALIGN();
 };
 
 /* Structure of a packet of 4 query points */
-struct RTCPointQuery4
+struct RTC_ALIGN(16) RTCPointQuery4
 {
   float x[4];
   float y[4];
   float z[4];
   float time[4];
   float radius[4];
-  RTC_ALIGN();
 };
 
 /* Structure of a packet of 8 query points */
-struct RTCPointQuery8
+struct RTC_ALIGN(32) RTCPointQuery8
 {
   float x[8];
   float y[8];
   float z[8];
   float time[8];
   float radius[8];
-  RTC_ALIGN();
 };
 
 /* Structure of a packet of 16 query points */
-struct RTCPointQuery16
+struct RTC_ALIGN(64) RTCPointQuery16
 {
   float x[16]; 
   float y[16];
   float z[16];
   float time[16];
   float radius[16];
-  RTC_ALIGN();
 };
 
 struct RTCPointQueryN;
@@ -263,7 +265,7 @@ struct RTCPointQueryContext
   // number of instances currently on the stack.
   unsigned int instStackSize;                                 
   
-  RTC_ALIGN();
+  varying int align[0];  //!< aligns point query context on stack to at least 16 bytes
 };
 
 /* Initializes an intersection context. */
