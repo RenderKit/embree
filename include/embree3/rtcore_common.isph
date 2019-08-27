@@ -265,7 +265,7 @@ struct RTCPointQueryContext
   // number of instances currently on the stack.
   unsigned int instStackSize;                                 
   
-  varying int align[0];  //!< aligns point query context on stack to at least 16 bytes
+  //varying int align[0];  //!< aligns point query context on stack to at least 16 bytes
 };
 
 /* Initializes an intersection context. */
