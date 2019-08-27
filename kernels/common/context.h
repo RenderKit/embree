@@ -41,6 +41,10 @@ namespace embree
     __forceinline bool isIncoherent() const {
       return embree::isIncoherent(user->flags);
     }
+
+    __forceinline bool traceOnGPU() const {
+      return embree::traceOnGPU(user->flags);
+    }
     
   public:
     Scene* scene;

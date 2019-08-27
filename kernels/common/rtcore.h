@@ -25,6 +25,8 @@ namespace embree
   __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_COHERENT; }
   __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT; }
 
+  __forceinline bool traceOnGPU(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_GPU) == RTC_INTERSECT_CONTEXT_FLAG_GPU; }
+
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR >= 8)
 #  define USE_TASK_ARENA 1
 #else

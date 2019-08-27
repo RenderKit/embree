@@ -46,10 +46,6 @@ namespace embree
     const cl::sycl::float4 p = primref.centroid2();
     const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
     const cl::sycl::uint4 i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
-
-    assert(i.x() < BINS);
-    assert(i.y() < BINS); 
-    assert(i.z() < BINS);
   
     gpu::AABB3f bounds = convert_AABB3f(primref);
 
@@ -88,9 +84,6 @@ namespace embree
 	primref_index1[t] = index;	
 	atomicUpdateLocalBinInfo(subgroup,binMapping,binInfo,primref[index],out);      
       }
-
-    //if (0 == subgroupLocalID)	
-    //  out << "binMapping " << binMapping << cl::sycl::endl;    
   }
 
 
@@ -465,7 +458,7 @@ namespace embree
 	    assert(aabb);
 
 	    char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
-	    assert(bvh_buffer);
+	    assert(bvh_mem);
 
 	    uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
 	    assert(primref_index);
@@ -638,6 +631,7 @@ namespace embree
 #endif	    
             //bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
 	    bvh->clear();
+	    exit(0);
 #if PROFILE
           });
 #endif

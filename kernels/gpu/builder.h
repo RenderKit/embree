@@ -321,9 +321,9 @@ namespace embree
 	const uint subgroupLocalID = sg.get_local_id()[0];
 	const uint subgroupSize    = sg.get_local_range().size();	
 	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
-	AABB3f low_reverse         = low.sub_group_broadcast(sg,ID);
+	AABB3f low_reverse         = low.sub_group_shuffle(sg,ID);
 	AABB3f low_prefix          = low_reverse.sub_group_scan_inclusive_min_max(sg);
-	const float low_area       = sg.broadcast<float>(low_prefix.halfArea(),ID);
+	const float low_area       = sg.shuffle<float>(low_prefix.halfArea(),ID);
 	return low_area;
       }
 
@@ -332,9 +332,9 @@ namespace embree
 	const uint subgroupLocalID = sg.get_local_id()[0];
 	const uint subgroupSize    = sg.get_local_range().size();	
 	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
-	const uint low_reverse     = sg.broadcast<uint>(low,ID);
+	const uint low_reverse     = sg.shuffle<uint>(low,ID);
 	const uint low_prefix      = sg.inclusive_scan<float,cl::sycl::intel::plus>(low_reverse);
-	return sg.broadcast<uint>(low_prefix,ID);
+	return sg.shuffle<uint>(low_prefix,ID);
       }
 
       [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(cl::sycl::intel::sub_group &sg, const cl::sycl::float3 sah, uint ID, const cl::sycl::float4 scale, const ulong defaultSplit)

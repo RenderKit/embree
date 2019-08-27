@@ -100,15 +100,15 @@ namespace embree
 	return result;	
       }
 
-      inline AABB3f sub_group_broadcast(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
+      inline AABB3f sub_group_shuffle(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
       {
 	AABB3f result;
-	result.lower.x() = sg.broadcast<float>(lower.x(),localID);
-	result.lower.y() = sg.broadcast<float>(lower.y(),localID);
-	result.lower.z() = sg.broadcast<float>(lower.z(),localID);
-	result.upper.x() = sg.broadcast<float>(upper.x(),localID);
-	result.upper.y() = sg.broadcast<float>(upper.y(),localID);
-	result.upper.z() = sg.broadcast<float>(upper.z(),localID);
+	result.lower.x() = sg.shuffle<float>(lower.x(),localID);
+	result.lower.y() = sg.shuffle<float>(lower.y(),localID);
+	result.lower.z() = sg.shuffle<float>(lower.z(),localID);
+	result.upper.x() = sg.shuffle<float>(upper.x(),localID);
+	result.upper.y() = sg.shuffle<float>(upper.y(),localID);
+	result.upper.z() = sg.shuffle<float>(upper.z(),localID);
 	return result;	
       }
 

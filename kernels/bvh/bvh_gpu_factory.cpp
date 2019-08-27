@@ -14,9 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/isa.h" // to define EMBREE_TARGET_SIMD8
-
-
+#include "../common/isa.h" 
 #include "bvh_gpu_factory.h"
 #include "../bvh/bvh.h"
 #include "../geometry/triangle1v.h"
@@ -25,6 +23,7 @@
 namespace embree
 {
   DECLARE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVHGPUIntersectorStream);
 
   BVHGPUFactory::BVHGPUFactory()
   {
@@ -40,7 +39,8 @@ namespace embree
 
   void BVHGPUFactory::selectIntersectors(int features)
   {
-    
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVHGPUIntersectorStream);
+ 
   }
 
   Accel::Intersectors BVHGPUFactory::BVHGPUTriangle1vIntersectors(BVH4* bvh)
@@ -52,7 +52,7 @@ namespace embree
     intersectors.intersector4    = NULL;
     intersectors.intersector8    = NULL;
     intersectors.intersector16   = NULL;
-    intersectors.intersectorN    = NULL;
+    intersectors.intersectorN    = BVHGPUIntersectorStream();
 #endif
     return intersectors;
   

@@ -81,8 +81,8 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_sah_mb.cpp
   bvh/bvh_builder_twolevel.cpp
   bvh/bvh_builder_gpu.cpp
-
   bvh/bvh_intersector1_bvh4.cpp
+  bvh/bvh_intersector_stream_gpu.cpp  
   )
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)
@@ -98,7 +98,6 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-
   bvh/bvh_intersector_hybrid4_bvh4.cpp
   bvh/bvh_intersector_stream_bvh4.cpp
   bvh/bvh_intersector_stream_filters.cpp)

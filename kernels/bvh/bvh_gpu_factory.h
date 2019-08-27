@@ -36,6 +36,7 @@ namespace embree
 
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUIntersectorStream);
 
   };
 }
