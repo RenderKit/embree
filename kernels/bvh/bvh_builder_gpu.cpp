@@ -615,14 +615,15 @@ namespace embree
 	    cl::sycl::free(primref_index,deviceGPU->getContext());
 	    cl::sycl::free(globals      ,deviceGPU->getContext());
 
-	    std::cout << "BVH GPU Builder DONE" << std::endl << std::flush;
 	    
             /* call BVH builder */
-            NodeRef root(0); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = NodeRef((size_t)bvh_mem); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 
 #endif	    
-            //bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-	    bvh->clear();
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+
+	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
+
 #if PROFILE
           });
 #endif

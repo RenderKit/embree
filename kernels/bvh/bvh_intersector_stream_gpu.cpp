@@ -18,6 +18,10 @@
 #include "node_intersector_frustum.h"
 #include "bvh_traverser_stream.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#include "../gpu/bvh.h"
+#endif
+
 namespace embree
 {
   namespace isa
@@ -26,16 +30,60 @@ namespace embree
     /*! BVH ray stream GPU intersector */
     class BVHNGPUIntersectorStream
     {
+      typedef BVHN<4> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
     public:
       static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
 
     };
 
-
-    void BVHNGPUIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context)
+#if defined(EMBREE_DPCPP_SUPPORT)
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceBVH16()
     {
       
+    }
+#endif
+
+    void BVHNGPUIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
+    {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      
+      if (bvh->root == BVH::emptyNode)
+	{
+	  PRINT(bvh);
+	  PRINT(bvh->root);
+	  PRINT("empty");
+	  exit(0);
+	  return;
+	}
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+      RayHit* inputRays = (RayHit*)_inputRays;
+      // for (size_t i=0;i<numRays;i++)
+      // 	std::cout << i << " " << inputRays[i] << std::endl;
+      
+      DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
+      cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
+
+      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+
+	  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
+	  cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
+	    });		  
+	});
+      try {
+	gpu_queue.wait_and_throw();
+      } catch (cl::sycl::exception const& e) {
+	std::cout << "Caught synchronous SYCL exception:\n"
+		  << e.what() << std::endl;
+      }
+
+      exit(0);
+#endif      
     }
 
     void BVHNGPUIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
