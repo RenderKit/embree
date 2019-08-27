@@ -94,7 +94,7 @@ namespace embree
         return;
       }
 
-      AffineSpace3fa const& m = *(AffineSpace3fa*)userContext->world2inst[userContext->instStackSize-1];
+      const AffineSpace3fa m = AffineSpace3fa_load_unaligned((AffineSpace3fa*)userContext->world2inst[userContext->instStackSize-1]);
       BBox3fa bbox(Vec3fa(-query_ws->radius), Vec3fa(query_ws->radius));
       bbox = xfmBounds(m, bbox);
       query_radius = 0.5f * (bbox.upper - bbox.lower);
