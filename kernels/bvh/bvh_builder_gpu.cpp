@@ -149,8 +149,6 @@ namespace embree
 	    const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
 	    leftCentroid.extend(primref[index].centroid2());
 	    leftAABB.extend(primref[index]);
-	    //extendBinBounds(&left,&primref[index]);
-	    //extendAABBlu(&leftAABB,primref[index].lower,primref[index].upper);
 	    l[subgroupLocalID] = index;	  
 	    l+=count;
 	  }
@@ -161,8 +159,6 @@ namespace embree
 	    const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
 	    rightCentroid.extend(primref[index].centroid2());
 	    rightAABB.extend(primref[index]);	  
-	    //extendBinBounds(&right,&primref[index]);
-	    //extendAABBlu(&rightAABB,primref[index].lower,primref[index].upper);
 	    r-=count;
 	    r[subgroupLocalID] = index;	  
 	  }      
@@ -184,16 +180,12 @@ namespace embree
       
 	    if (isLeft)
 	      {
-		// extendBinBounds(&left,&primref[index]);
-		// extendAABBlu(&leftAABB,primref[index].lower,primref[index].upper);
 		leftCentroid.extend(primref[index].centroid2());
 		leftAABB.extend(primref[index]);	      
 		l[prefixLeft] = index;
 	      }
 	    else
 	      {
-		// extendBinBounds(&right,&primref[index]);
-		// extendAABBlu(&rightAABB,primref[index].lower,primref[index].upper);
 		rightCentroid.extend(primref[index].centroid2());
 		rightAABB.extend(primref[index]);	  	      
 		r[prefixRight] = index;
@@ -631,7 +623,6 @@ namespace embree
 #endif	    
             //bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
 	    bvh->clear();
-	    exit(0);
 #if PROFILE
           });
 #endif

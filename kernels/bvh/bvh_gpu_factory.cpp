@@ -23,6 +23,8 @@
 namespace embree
 {
   DECLARE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVHGPUIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVHGPUIntersector4);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVHGPUIntersectorStream);
 
   BVHGPUFactory::BVHGPUFactory()
@@ -39,6 +41,8 @@ namespace embree
 
   void BVHGPUFactory::selectIntersectors(int features)
   {
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVHGPUIntersector1);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVHGPUIntersector4);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVHGPUIntersectorStream);
  
   }
@@ -47,9 +51,9 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1    = NULL;
+    intersectors.intersector1    = BVHGPUIntersector1();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4    = NULL;
+    intersectors.intersector4    = BVHGPUIntersector4();
     intersectors.intersector8    = NULL;
     intersectors.intersector16   = NULL;
     intersectors.intersectorN    = BVHGPUIntersectorStream();
