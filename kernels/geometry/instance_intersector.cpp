@@ -22,6 +22,7 @@ namespace embree
 {
   namespace isa
   {
+
     /* Push an instance to the stack. */
     RTC_FORCEINLINE bool pushInstance(RTCPointQueryContext* context,
                       unsigned int instanceId,
@@ -32,6 +33,19 @@ namespace embree
       const size_t stackSize = context->instStackSize;
       assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT); 
       context->instID[stackSize] = instanceId;
+#if 1 // workaround if context is not aligned to 16-bytes boundary
+      AffineSpace3fa_store_unaligned(w2i,(AffineSpace3fa*)context->world2inst[stackSize]);
+      AffineSpace3fa_store_unaligned(i2w,(AffineSpace3fa*)context->inst2world[stackSize]);
+
+      if (unlikely(stackSize > 0))
+      {
+        const AffineSpace3fa world2inst = AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->world2inst[stackSize  ]) * AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->world2inst[stackSize-1]);
+        const AffineSpace3fa inst2world = AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->inst2world[stackSize-1]) * AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->inst2world[stackSize  ]);
+        
+        AffineSpace3fa_store_unaligned(world2inst,(AffineSpace3fa*)context->world2inst[stackSize]);
+        AffineSpace3fa_store_unaligned(inst2world,(AffineSpace3fa*)context->inst2world[stackSize]);
+      }
+#else
       *(AffineSpace3fa*)context->world2inst[stackSize] = w2i;
       *(AffineSpace3fa*)context->inst2world[stackSize] = i2w;
       if (unlikely(stackSize > 0))
@@ -39,6 +53,7 @@ namespace embree
         *(AffineSpace3fa*)context->world2inst[stackSize] = (*(AffineSpace3fa*)context->world2inst[stackSize  ]) * (*(AffineSpace3fa*)context->world2inst[stackSize-1]);
         *(AffineSpace3fa*)context->inst2world[stackSize] = (*(AffineSpace3fa*)context->inst2world[stackSize-1]) * (*(AffineSpace3fa*)context->inst2world[stackSize  ]);
       }
+#endif
       context->instStackSize++;
       return true;
     }
