@@ -32,6 +32,19 @@ namespace embree
 
     };
 
+
+    void BVHNGPUIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context)
+    {
+      
+    }
+
+    void BVHNGPUIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
+    {
+    }
+
+
+    /*! BVH ray GPU intersectors */
+    
     class BVHNGPUIntersector1
     {
     public:
@@ -58,15 +71,6 @@ namespace embree
     }
     
 
-    void BVHNGPUIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context)
-    {
-      PING;
-    }
-
-    void BVHNGPUIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
-    {
-      PING;
-    }
 
 
     class BVHNGPUIntersector4
