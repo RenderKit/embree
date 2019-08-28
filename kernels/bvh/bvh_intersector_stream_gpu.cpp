@@ -73,22 +73,23 @@ namespace embree
 				     cl::sycl::select(1E-18f,(float)dir.y(),(int)(dir.y() != 0.0f)),
 				     cl::sycl::select(1E-18f,(float)dir.z(),(int)(dir.z() != 0.0f)));
 
-#if 0
-      const float r = cl::sycl::recip((float)new_dir.x());
+      //const cl::sycl::float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z())); // FIXME
+      const cl::sycl::float3 inv_dir(1.0f / (float)new_dir.x(),1.0f / (float)new_dir.y(),1.0f / (float)new_dir.z());
+
+      //const cl::sycl::float3 inv_dir_org = -inv_dir * org; // FIXME
+      const cl::sycl::float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
       
-      const cl::sycl::float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z()));
-      const cl::sycl::float3 inv_dir_org = -inv_dir * org;
   
       const unsigned int max_uint  = 0xffffffff;  
       const unsigned int mask_uint = 0xfffffff0;
 
-      const global char *bvh = _bvh + sizeof(struct BVHBase);
+      const char *bvh = (char*)bvh_mem + sizeof(struct gpu::BVHBase);
       stack_offset[0] = max_uint; // sentinel
       stack_dist[0]   = -(float)INFINITY;
 
-      stack_offset[1] = sizeof(struct BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
+      stack_offset[1] = sizeof(struct gpu::BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
       stack_dist[1]   = -(float)INFINITY;
-#endif      
+
       //if (i == subgroupLocalID)
 
       // for (uint i=0;i<subgroupSize;i++)
