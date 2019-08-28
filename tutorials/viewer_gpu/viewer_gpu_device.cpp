@@ -263,7 +263,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
 cl::sycl::queue   *gpu_queue   = nullptr;
 cl::sycl::device  *gpu_device  = nullptr;
-cl::sycl::context *gpu_context = nullptr;
 
 #endif
 
@@ -271,7 +270,6 @@ cl::sycl::context *gpu_context = nullptr;
 extern "C" void device_init (char* cfg)
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
-
   {
     using namespace cl::sycl;
     
@@ -279,7 +277,9 @@ extern "C" void device_init (char* cfg)
 
     try {
       gpu_queue   = new queue(selector, exception_handler);
+      assert(gpu_queue);
       gpu_device  = new device(selector);
+      assert(gpu_device);
     } catch (cl::sycl::invalid_parameter_error &E) {
       std::cout << E.what() << std::endl;
     }
@@ -307,14 +307,91 @@ extern "C" void device_render (int* pixels,
     rtcCommitScene (g_scene);
   }
 
-  /* render image */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });   
+#if defined(EMBREE_DPCPP_SUPPORT)
+  
+  /* allocate stream of rays in USM */  
+  const size_t numRays = width*height;
+  Ray *rays = (Ray*)cl::sycl::aligned_alloc(64,sizeof(Ray)*numRays,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
+  assert(rays);
+
+  
+  /* init stream of rays */  
+  parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
+      for (size_t y=rangeY.begin(); y<rangeY.end(); y++)
+	{	   
+	  for (size_t x=0; x<width; x++)
+	    {
+	      Ray& ray = rays[y*width+x];
+	      ray.tnear() = 0.0f;
+	      ray.tfar    = (float)(inf);
+	      init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar);
+	    }
+	}      
+    });
+
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+  context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
+  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],numRays,sizeof(Ray));
+
+  /* shade stream of rays */
+
+  parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
+      for (size_t y=rangeY.begin(); y<rangeY.end(); y++)
+	{	   
+	  for (size_t x=0; x<width; x++)
+	    {
+	      Ray& ray = rays[y*width+x];
+
+	      /* eyelight shading */
+	      Vec3fa color = Vec3fa(0.0f);
+	      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+#if SIMPLE_SHADING == 1
+		{
+#if OBJ_MATERIAL == 1
+		  Vec3fa Kd = Vec3fa(0.5f);
+		  DifferentialGeometry dg;
+		  dg.geomID = ray.geomID;
+		  dg.primID = ray.primID;
+		  dg.u = ray.u;
+		  dg.v = ray.v;
+		  dg.P  = ray.org+ray.tfar*ray.dir;
+		  dg.Ng = ray.Ng;
+		  dg.Ns = ray.Ng;
+		  int materialID = postIntersect(ray,dg);
+		  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+		  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+      
+		  /* shade */
+		  if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+		    ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
+		    Kd = Vec3fa(material->Kd);
+		  }
+      
+		  color = Kd*dot(neg(ray.dir),dg.Ns);
+#else
+		  color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+#endif
+		}
+#else
+	      color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
+#endif
+
+	      /* write color to framebuffer */
+	      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+	      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+	      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+	      pixels[y*width+x] = (b << 16) + (g << 8) + r;
+	      
+	    }
+	}      
+    });
+  
+
+  /* free stream of rays USM memory */  
+  cl::sycl::free(rays,gpu_queue->get_context());
+
+#endif  
 }
 
 /* called by the C++ code for cleanup */

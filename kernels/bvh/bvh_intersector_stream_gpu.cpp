@@ -60,10 +60,9 @@ namespace embree
 	}
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-
       RayHit* inputRays = (RayHit*)_inputRays;
-      // for (size_t i=0;i<numRays;i++)
-      // 	std::cout << i << " " << inputRays[i] << std::endl;
+      //for (size_t i=0;i<10;i++)
+      // std::cout << i << " " << inputRays[i] << std::endl;
       
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
@@ -82,7 +81,6 @@ namespace embree
 		  << e.what() << std::endl;
       }
 
-      exit(0);
 #endif      
     }
 

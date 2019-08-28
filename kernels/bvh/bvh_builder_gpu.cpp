@@ -420,9 +420,7 @@ namespace embree
               createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
               createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
 
-
-	    
-	    
+	    	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
 	      {
