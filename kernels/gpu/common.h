@@ -19,6 +19,7 @@
 #define CL_TARGET_OPENCL_VERSION 220
 #define SYCL_SIMPLE_SWIZZLES
 #include <CL/sycl.hpp>
+#include <CL/sycl/builtins.hpp>
 
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
