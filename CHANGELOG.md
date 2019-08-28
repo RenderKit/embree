@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### New Features in Embree 3.6.1
+-   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
+-   Fixed bug in subgrid intersector
+-   Removed point query alignment in ISPC header
+
 ### New Features in Embree 3.6
 -   Added Catmull-Rom curve types.
 -   Added support for multi-level instancing.
