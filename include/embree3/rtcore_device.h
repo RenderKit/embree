@@ -27,7 +27,7 @@ typedef struct RTCDeviceTy* RTCDevice;
 RTC_API RTCDevice rtcNewDevice(const char* config);
 
 /* Creates a new Embree GPU device. */
-RTC_API RTCDevice rtcNewDeviceGPU(const char* config);
+RTC_API RTCDevice rtcNewDeviceGPU(const char* config, void *device, void *queue);
 
 /* Retains the Embree device (increments the reference count). */
 RTC_API void rtcRetainDevice(RTCDevice device);

@@ -519,43 +519,21 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-  // === create exception handler ===
-  
-  auto exception_handler = [] (cl::sycl::exception_list exceptions) {
-    for (std::exception_ptr const& e : exceptions) {
-      try {
-	std::rethrow_exception(e);
-      } catch(cl::sycl::exception const& e) {
-	std::cout << "Caught asynchronous SYCL exception:\n"
-	<< e.what() << std::endl;
-      }
-    }
-  };
 
-  DeviceGPU::DeviceGPU(const char* cfg) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
+  DeviceGPU::DeviceGPU(const char* cfg, void *device, void *queue) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
   {
-    
-    
-    using namespace cl::sycl;
 
-    NEOGPUDeviceSelector selector;
-
-    try {
-      gpu_queue = queue(selector, exception_handler);
-      gpu_device = device(selector);
-    } catch (cl::sycl::invalid_parameter_error &E) {
-      std::cout << E.what() << std::endl;
-    }
-
+    gpu_device  = (cl::sycl::device *)device;
+    gpu_queue   = (cl::sycl::queue  *)queue;
+    gpu_context = getQueue().get_context();
+      
     // Printing Device Information
-    maxWorkGroupSize = gpu_device.get_info<cl::sycl::info::device::max_work_group_size>();
-    maxComputeUnits  = gpu_device.get_info<cl::sycl::info::device::max_compute_units>();    
+    maxWorkGroupSize = getDevice().get_info<cl::sycl::info::device::max_work_group_size>();
+    maxComputeUnits  = getDevice().get_info<cl::sycl::info::device::max_compute_units>();    
     
-    std::cout << "Device: " << gpu_queue.get_device().get_info<cl::sycl::info::device::name>() << std::endl;
+    std::cout << "Device: " << getDevice().get_info<cl::sycl::info::device::name>() << std::endl;
     std::cout << "- Max Work Group Size : " << maxWorkGroupSize << std::endl;
     std::cout << "- Max Compute Units   : " << maxComputeUnits  << std::endl;
-
-    gpu_context = gpu_queue.get_context();
   }
 
   DeviceGPU::~DeviceGPU()

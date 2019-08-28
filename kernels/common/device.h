@@ -103,36 +103,25 @@ namespace embree
   };
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-  
-  class NEOGPUDeviceSelector : public cl::sycl::device_selector {
-  public:
-    int operator()(const cl::sycl::device &Device) const override {
-      using namespace cl::sycl::info;
-
-      const std::string DeviceName = Device.get_info<device::name>();
-      const std::string DeviceVendor = Device.get_info<device::vendor>();
-
-      return Device.is_gpu() && DeviceName.find("HD Graphics NEO") ? 1 : -1;
-    }
-  };
-   
+     
   class DeviceGPU : public Device
   {
   public:
 
-    DeviceGPU(const char* cfg);
+    DeviceGPU(const char* cfg, void *device, void *queue);
     ~DeviceGPU();
 
   private:
-    cl::sycl::queue   gpu_queue;
-    cl::sycl::device  gpu_device;
+    cl::sycl::queue   *gpu_queue;
+    cl::sycl::device  *gpu_device;
     cl::sycl::context gpu_context;
     
     unsigned int maxWorkGroupSize;
     unsigned int maxComputeUnits;
+    
   public:
-    inline cl::sycl::queue   &getQueue()   { return gpu_queue; }
-    inline cl::sycl::device  &getDevice()  { return gpu_device; }        
+    inline cl::sycl::queue   &getQueue()   { return *gpu_queue; }
+    inline cl::sycl::device  &getDevice()  { return *gpu_device; }        
     inline cl::sycl::context &getContext() { return gpu_context; }    
 
     inline unsigned int getMaxWorkGroupSize() { return maxWorkGroupSize; }

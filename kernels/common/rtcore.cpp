@@ -41,17 +41,16 @@ RTC_NAMESPACE_BEGIN;
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-  RTC_API RTCDevice rtcNewDeviceGPU(const char* config)
+  RTC_API RTCDevice rtcNewDeviceGPU(const char* config, void *device, void *queue)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
 
     std::string new_cfg(config);
-    //new_cfg += " tri_accel=bvh4.triangle4";
-
-    DeviceGPU* device = new DeviceGPU(new_cfg.c_str());
-    return (RTCDevice) device->refInc();
+    DeviceGPU* gpu_device = new DeviceGPU(new_cfg.c_str(),device,queue);
+    
+    return (RTCDevice) gpu_device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
   }

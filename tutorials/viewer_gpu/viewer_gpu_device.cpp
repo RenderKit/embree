@@ -19,6 +19,12 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#define CL_TARGET_OPENCL_VERSION 220
+#define SYCL_SIMPLE_SWIZZLES
+#include <CL/sycl.hpp>
+#endif
+
 namespace embree {
 
 #define OBJ_MATERIAL 1
@@ -228,13 +234,59 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+  class NEOGPUDeviceSelector : public cl::sycl::device_selector {
+  public:
+    int operator()(const cl::sycl::device &Device) const override {
+      using namespace cl::sycl::info;
+
+      const std::string DeviceName = Device.get_info<device::name>();
+      const std::string DeviceVendor = Device.get_info<device::vendor>();
+
+      return Device.is_gpu() && DeviceName.find("HD Graphics NEO") ? 1 : -1;
+    }
+  };
+
+// === create exception handler ===
+  
+  auto exception_handler = [] (cl::sycl::exception_list exceptions) {
+    for (std::exception_ptr const& e : exceptions) {
+      try {
+	std::rethrow_exception(e);
+      } catch(cl::sycl::exception const& e) {
+	std::cout << "Caught asynchronous SYCL exception:\n"
+	<< e.what() << std::endl;
+      }
+    }
+  };
+
+cl::sycl::queue   *gpu_queue   = nullptr;
+cl::sycl::device  *gpu_device  = nullptr;
+cl::sycl::context *gpu_context = nullptr;
+
+#endif
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
+
+  {
+    using namespace cl::sycl;
+    
+    NEOGPUDeviceSelector selector;
+
+    try {
+      gpu_queue   = new queue(selector, exception_handler);
+      gpu_device  = new device(selector);
+    } catch (cl::sycl::invalid_parameter_error &E) {
+      std::cout << E.what() << std::endl;
+    }
+  }
   
   /* init embree GPU device */
-  g_device = rtcNewDeviceGPU(cfg);
+  g_device = rtcNewDeviceGPU(cfg,gpu_device,gpu_queue);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
