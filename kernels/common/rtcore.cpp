@@ -299,7 +299,7 @@ RTC_NAMESPACE_BEGIN;
     bool changed = false;
     if (userContext->instStackSize > 0)
     {
-      const AffineSpace3fa &transform = (*(AffineSpace3fa*)userContext->world2inst[userContext->instStackSize-1]);
+      const AffineSpace3fa transform = AffineSpace3fa_load_unaligned((AffineSpace3fa*)userContext->world2inst[userContext->instStackSize-1]);
 
       float similarityScale = 0.f;
       const bool similtude = similarityTransform(transform, &similarityScale);
