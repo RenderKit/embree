@@ -33,17 +33,16 @@ namespace embree
     
     struct BVHBase
     {
+      AABB3f bounds; 
       unsigned long rootNodeOffset; 
-      AABB3f bounds;
-
       unsigned int nodeDataStart;
       unsigned int nodeDataCur;
       unsigned int leafDataStart;
       unsigned int leafDataCur;
       unsigned int proceduralDataStart;
       unsigned int proceduralDataCur;
-      unsigned int backPointerDataStart;
-      unsigned int backPointerDataEnd;
+      /* unsigned int backPointerDataStart; */
+      /* unsigned int backPointerDataEnd; */
     };
 
     /* ======================================================================== */
@@ -104,7 +103,7 @@ namespace embree
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BVHNodeN& node) {
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
-	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i];
+	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i] << cl::sycl::endl;
 	}      
       return out; 
     }

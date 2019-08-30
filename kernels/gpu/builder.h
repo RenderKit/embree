@@ -93,8 +93,8 @@ namespace embree
 	base->leafDataCur          = _leaf_data_start/64;
 	base->proceduralDataStart  = _procedural_data_start/64;
 	base->proceduralDataCur    = _procedural_data_start/64;
-	base->backPointerDataStart = _back_pointer_start/64;
-	base->backPointerDataEnd   = _totalBytes/64;
+	/* base->backPointerDataStart = _back_pointer_start/64; */ // FIXME
+	/* base->backPointerDataEnd   = _totalBytes/64; */
 	base->rootNodeOffset       = _node_data_start; // FIXME: should be set by builder
 
 	geometryBounds.init();
@@ -446,7 +446,10 @@ namespace embree
       if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
 	node.initBVHNodeN(subgroupLocalID);	      
       
-
+      if (subgroupLocalID == 0)
+	{
+	  out << node << cl::sycl::endl;
+	}
       return node_offset;      
     }
         

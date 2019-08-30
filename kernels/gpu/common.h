@@ -32,6 +32,8 @@ extern int   work_group_reduce_add(int x);
 extern float work_group_reduce_min(float x);
 extern float work_group_reduce_max(float x);
 
+//extern uint cl_intel_sub_group_ballot(bool valid);
+
 extern float atomic_min(volatile GLOBAL float *p, float val);
 extern float atomic_min(volatile LOCAL  float *p, float val);
 extern float atomic_max(volatile GLOBAL float *p, float val);

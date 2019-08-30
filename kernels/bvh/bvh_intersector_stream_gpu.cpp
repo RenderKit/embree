@@ -22,6 +22,9 @@
 #include "../gpu/bvh.h"
 #include "../gpu/ray.h"
 #include "../gpu/geometry.h"
+
+extern "C" uint intel_sub_group_ballot(bool valid);
+
 #endif
 
 #define STACK_ENTRIES 64
@@ -64,6 +67,8 @@ namespace embree
 
       const cl::sycl::float3 &org = rayhit.ray.org;
       const cl::sycl::float3 &dir = rayhit.ray.dir;
+      const float tnear = rayhit.ray.tnear;
+      float tfar        = rayhit.ray.tfar;
       
       const unsigned int maskX = cl::sycl::select(1,0,(uint)(dir.x() >= 0.0f));
       const unsigned int maskY = cl::sycl::select(1,0,(uint)(dir.y() >= 0.0f));
@@ -74,24 +79,106 @@ namespace embree
 				     cl::sycl::select(1E-18f,(float)dir.z(),(int)(dir.z() != 0.0f)));
 
       //const cl::sycl::float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z())); // FIXME
-      const cl::sycl::float3 inv_dir(1.0f / (float)new_dir.x(),1.0f / (float)new_dir.y(),1.0f / (float)new_dir.z());
+      
+      const cl::sycl::float3 inv_dir( cl::sycl::native::recip((float)new_dir.x()),
+				      cl::sycl::native::recip((float)new_dir.y()),
+				      cl::sycl::native::recip((float)new_dir.z()));
 
       //const cl::sycl::float3 inv_dir_org = -inv_dir * org; // FIXME
+
       const cl::sycl::float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
       
   
       const unsigned int max_uint  = 0xffffffff;  
       const unsigned int mask_uint = 0xfffffff0;
 
-      const char *bvh = (char*)bvh_mem + sizeof(struct gpu::BVHBase);
+      const char *bvh_base = (char*)bvh_mem + sizeof(struct gpu::BVHBase);
       stack_offset[0] = max_uint; // sentinel
       stack_dist[0]   = -(float)INFINITY;
 
-      stack_offset[1] = sizeof(struct gpu::BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
+      stack_offset[1] = 0; //sizeof(struct gpu::BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
       stack_dist[1]   = -(float)INFINITY;
 
-      //if (i == subgroupLocalID)
+      if (0 == subgroupLocalID)
+	{
+	  out << "sizes " << sizeof(cl::sycl::float3) << " " << sizeof(gpu::AABB3f) << " " <<  sizeof(gpu::BVHBase) << cl::sycl::endl;
+	  out << ((gpu::BVHNodeN *)bvh_base)[0] << cl::sycl::endl;
+	}
 
+      unsigned int sindex = 2; 
+
+      while(1)
+	{ 
+	  sindex--;
+       
+	  unsigned int cur = stack_offset[sindex]; 
+
+	  //while((cur & BVH_LEAF_MASK) == 0) 
+	    {
+	      const gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_base + cur);
+	      
+	      const float _lower_x = node.lower_x[subgroupLocalID];
+	      const float _lower_y = node.lower_y[subgroupLocalID];
+	      const float _lower_z = node.lower_z[subgroupLocalID];
+	      const float _upper_x = node.upper_x[subgroupLocalID];
+	      const float _upper_y = node.upper_y[subgroupLocalID];
+	      const float _upper_z = node.upper_z[subgroupLocalID];
+	      const uint  offset   = node.offset[subgroupLocalID];
+
+	      const float lower_x = cl::sycl::select(_lower_x,_upper_x,maskX);
+	      const float upper_x = cl::sycl::select(_upper_x,_lower_x,maskX);
+	      const float lower_y = cl::sycl::select(_lower_y,_upper_y,maskY);
+	      const float upper_y = cl::sycl::select(_upper_y,_lower_y,maskY);
+	      const float lower_z = cl::sycl::select(_lower_z,_upper_z,maskZ);
+	      const float upper_z = cl::sycl::select(_upper_z,_lower_z,maskZ);
+	      
+	      const float lowerX = cl::sycl::fma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
+	      const float upperX = cl::sycl::fma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
+	      const float lowerY = cl::sycl::fma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
+	      const float upperY = cl::sycl::fma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
+	      const float lowerZ = cl::sycl::fma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
+	      const float upperZ = cl::sycl::fma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
+
+	      const float near = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
+	      const float far  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar) );
+	      const uint valid = islessequal(near,far);	  // final valid mask
+	      uint mask = intel_sub_group_ballot(subgroupLocalID < 8);  
+
+	      if (0 == subgroupLocalID)
+		{
+		  out << mask << cl::sycl::endl;
+		}
+
+#if 0	      
+	      if (mask == 0)
+		{
+		  sindex--;	   
+		  cur = stack_offset[sindex];
+		  continue;
+		}
+	    
+	      offset += cur; /* relative encoding */
+	      const uint popc = popcount(mask); 
+	      cur = broadcast(offset, ctz(mask));
+	      if (popc == 1) continue; // single hit only
+	      int t = (as_int(near) & mask_uint) | slotID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
+	      t = valid ? t : max_uint;                     // invalid slots set to MIN_INT, as we sort descending;	
+
+	      for (uint i=0;i<popc-1;i++)
+		{
+		  const int t_max = sub_group_reduce_max(t); // from larger to smaller distance
+		  t = (t == t_max) ? max_uint : t;
+		  stack_offset[sindex] = broadcast(offset,t_max & (~mask_uint));
+		  stack_dist[sindex]   = broadcast(near  ,t_max & (~mask_uint));
+		  sindex++;
+		}
+	      const int t_max = sub_group_reduce_max(t); // from larger to smaller distance
+	      cur = broadcast(offset,t_max & (~mask_uint));
+#endif	      
+	    }
+	  if (cur == max_uint) break; // sentinel reached -> exit
+	}
+      
       // for (uint i=0;i<subgroupSize;i++)
       // 	if (i == subgroupLocalID)
       // 	  out << "groupID " << groupID << " numGroups " << numGroups << cl::sycl::endl;
@@ -121,7 +208,7 @@ namespace embree
       // std::cout << i << " " << inputRays[i] << std::endl;
 
 
-      numRays = 2;
+      numRays = 1;
       
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();

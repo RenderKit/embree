@@ -25,7 +25,7 @@ namespace embree
   {
     class AABB3f {
     public:
-      cl::sycl::float3 lower;
+      cl::sycl::float3 lower; // very careful here, as sizeof(float3) == 16 in SYCL...
       cl::sycl::float3 upper;
       
       AABB3f() = default;
