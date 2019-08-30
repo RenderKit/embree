@@ -24,6 +24,7 @@
 #include "../gpu/geometry.h"
 
 extern "C" uint intel_sub_group_ballot(bool valid);
+extern int ctz(int t);
 
 #endif
 
@@ -57,18 +58,93 @@ namespace embree
     };
 
 #if defined(EMBREE_DPCPP_SUPPORT)
+
+    inline unsigned int getNumLeafPrims(unsigned int offset)
+    {
+      return (offset & 0x7)+1;
+    }
+
+    inline unsigned int getLeafOffset(unsigned int offset)
+    {
+      return offset & (~63);
+    }
+
+    inline float intersectQuad1(const gpu::Quad1 *const quad1,
+				const uint numQuads,
+				const cl::sycl::float3 &org,
+				const cl::sycl::float3 &dir,
+				const float &tnear,
+				const float &tfar, gpu::RTCHitGPU &hit,
+				const unsigned int slotID)
+    {
+      float new_tfar = tfar;
+      const uint quadID = slotID >> 1;  
+      if (slotID < numQuads*2)
+	{
+#if 0
+	  /* compute triangle normal */
+	  const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+	  const uint primID = as_uint(_v0.w());
+	  // const float3 v1 = as_float3(quad1[quadID].v1);
+	  // const float3 v2 = as_float3(quad1[quadID].v3);
+	  const float8 vv = *(float8*)&quad1[quadID].v1;
+	  const float3 v1 = as_float3(vv.lo);
+	  const uint geomID = as_uint(vv.s3);
+	  const float3 v2 = as_float3(vv.hi);
+
+	  const float3 e1 = v0 - v1;
+	  const float3 e2 = v2 - v0;
+	  //printf("slotID %d v0 %f v1 %f v2 %f e1 %f e2 %f \n",slotID, v0,v1,v2,e1,e2);
+      
+	  const float3 tri_Ng = cross(e1,e2);
+	  const float den = dot(tri_Ng,dir.xyz);   			   
+	  const float inv_den = native_recip(den); // should be fast on GEN, don't think we need the sign trick
+	  /* moeller-trumbore test */
+	  const float3 tri_v0_org = v0 - org.xyz;
+	  const float3 R = cross(dir.xyz,tri_v0_org);
+	  const float u = dot(R,e2) * inv_den;
+	  const float v = dot(R,e1) * inv_den;
+	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
+	  int m_hit = u >= 0.0f && v >= 0.0f && u+v <= 1.0f;
+
+	  //if (m_hit == 0) return; // early out
+	  m_hit &= tnear <= t && t < tfar; // den != 0.0f &&
+	  //printf("m_hit %d u %f v %f \n",m_hit,u,v);
+	  if (m_hit) 
+	    {
+	      new_tfar = t;
+	      hit->s0   = tri_Ng.x;
+	      hit->s1   = tri_Ng.y;
+	      hit->s2   = tri_Ng.z;
+	      hit->s3   = u;
+	      hit->s4   = v;
+	      hit->s5   = as_float(primID);
+	      hit->s6   = as_float(geomID);
+	    }
+#endif	  
+	}
+      return new_tfar;
+    }
+    
+
     [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayHitGPU &rayhit, void *bvh_mem, const cl::sycl::stream &out)
     {
       unsigned int stack_offset[STACK_ENTRIES]; 
       float        stack_dist[STACK_ENTRIES];  
-      
+
+      // === init local hit ===
+      gpu::RTCHitGPU local_hit;
+      local_hit.primID = -1;
+
       const uint subgroupLocalID = sg.get_local_id()[0];
       const uint subgroupSize    = sg.get_local_range().size();
 
-      const cl::sycl::float3 &org = rayhit.ray.org;
-      const cl::sycl::float3 &dir = rayhit.ray.dir;
+      const cl::sycl::float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
+      const cl::sycl::float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
+            
       const float tnear = rayhit.ray.tnear;
       float tfar        = rayhit.ray.tfar;
+      float hit_tfar    = rayhit.ray.tfar;
       
       const unsigned int maskX = cl::sycl::select(1,0,(uint)(dir.x() >= 0.0f));
       const unsigned int maskY = cl::sycl::select(1,0,(uint)(dir.y() >= 0.0f));
@@ -88,7 +164,10 @@ namespace embree
 
       const cl::sycl::float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
       
-  
+      // for (uint i=0;i<subgroupSize;i++)
+      // 	if (i == subgroupLocalID)
+      // 	  out << "new_dir " << new_dir << " inv_dir " << inv_dir << " inv_dir_org " << inv_dir_org << cl::sycl::endl;
+      
       const unsigned int max_uint  = 0xffffffff;  
       const unsigned int mask_uint = 0xfffffff0;
 
@@ -99,11 +178,11 @@ namespace embree
       stack_offset[1] = 0; //sizeof(struct gpu::BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
       stack_dist[1]   = -(float)INFINITY;
 
-      if (0 == subgroupLocalID)
-	{
-	  out << "sizes " << sizeof(cl::sycl::float3) << " " << sizeof(gpu::AABB3f) << " " <<  sizeof(gpu::BVHBase) << cl::sycl::endl;
-	  out << ((gpu::BVHNodeN *)bvh_base)[0] << cl::sycl::endl;
-	}
+      // if (0 == subgroupLocalID)
+      // 	{
+      // 	  out << "sizes " << sizeof(cl::sycl::float3) << " " << sizeof(gpu::AABB3f) << " " <<  sizeof(gpu::BVHBase) << cl::sycl::endl;
+      // 	  out << ((gpu::BVHNodeN *)bvh_base)[0] << cl::sycl::endl;
+      // 	}
 
       unsigned int sindex = 2; 
 
@@ -113,9 +192,14 @@ namespace embree
        
 	  unsigned int cur = stack_offset[sindex]; 
 
-	  //while((cur & BVH_LEAF_MASK) == 0) 
+	  while((cur & BVH_LEAF_MASK) == 0) 
 	    {
 	      const gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_base + cur);
+
+	       if (0 == subgroupLocalID)
+	       	{
+	       	  out << node << cl::sycl::endl;
+	       	}
 	      
 	      const float _lower_x = node.lower_x[subgroupLocalID];
 	      const float _lower_y = node.lower_y[subgroupLocalID];
@@ -123,7 +207,7 @@ namespace embree
 	      const float _upper_x = node.upper_x[subgroupLocalID];
 	      const float _upper_y = node.upper_y[subgroupLocalID];
 	      const float _upper_z = node.upper_z[subgroupLocalID];
-	      const uint  offset   = node.offset[subgroupLocalID];
+	      uint  offset   = node.offset[subgroupLocalID];
 
 	      const float lower_x = cl::sycl::select(_lower_x,_upper_x,maskX);
 	      const float upper_x = cl::sycl::select(_upper_x,_lower_x,maskX);
@@ -139,49 +223,73 @@ namespace embree
 	      const float lowerZ = cl::sycl::fma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
 	      const float upperZ = cl::sycl::fma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
 
-	      const float near = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
-	      const float far  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar) );
-	      const uint valid = islessequal(near,far);	  // final valid mask
-	      uint mask = intel_sub_group_ballot(subgroupLocalID < 8);  
+	      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
+	      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar) );
+	      const uint valid = islessequal(fnear,ffar);	  // final valid mask
+	      uint mask = intel_sub_group_ballot(valid);  
 
-	      if (0 == subgroupLocalID)
-		{
-		  out << mask << cl::sycl::endl;
-		}
-
-#if 0	      
+	      // for (uint i=0;i<subgroupSize;i++)
+	      // 	if (i == subgroupLocalID)
+	      // 	  out << "fnear " << fnear << " ffar " << ffar << " lowerX " << lowerX << cl::sycl::endl;
+	      
 	      if (mask == 0)
 		{
 		  sindex--;	   
 		  cur = stack_offset[sindex];
 		  continue;
 		}
-	    
+
 	      offset += cur; /* relative encoding */
-	      const uint popc = popcount(mask); 
-	      cur = broadcast(offset, ctz(mask));
+	      const uint popc = cl::sycl::popcount(mask); 
+	      cur = sg.broadcast<uint>(offset, ctz(mask));
+	      
+
+	      // if (0 == subgroupLocalID)
+	      // 	{
+	      // 	  out << "cur " << cur << " mask " << mask << cl::sycl::endl;
+	      // 	}
+	      
 	      if (popc == 1) continue; // single hit only
-	      int t = (as_int(near) & mask_uint) | slotID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
+	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
 	      t = valid ? t : max_uint;                     // invalid slots set to MIN_INT, as we sort descending;	
 
 	      for (uint i=0;i<popc-1;i++)
 		{
-		  const int t_max = sub_group_reduce_max(t); // from larger to smaller distance
+		  const int t_max = sg.reduce<int,cl::sycl::intel::minimum>(t); // from larger to smaller distance
 		  t = (t == t_max) ? max_uint : t;
-		  stack_offset[sindex] = broadcast(offset,t_max & (~mask_uint));
-		  stack_dist[sindex]   = broadcast(near  ,t_max & (~mask_uint));
+		  stack_offset[sindex] = sg.broadcast<uint> (offset,t_max & (~mask_uint));
+		  stack_dist[sindex]   = sg.broadcast<float>(fnear  ,t_max & (~mask_uint));
 		  sindex++;
 		}
-	      const int t_max = sub_group_reduce_max(t); // from larger to smaller distance
-	      cur = broadcast(offset,t_max & (~mask_uint));
-#endif	      
+	      const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 	    }
+
+	  if (0 == subgroupLocalID)
+	    {
+	      out << "leaf " << cur << cl::sycl::endl;
+	    }
+	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
+
+	  const unsigned int numPrims = getNumLeafPrims(cur);
+	  const unsigned int leafOffset = getLeafOffset(cur);    
+
+	  // CHECK: bvh_base or bvh_mem in builder
+	  const gpu::Quad1 *const quads = (struct gpu::Quad1 *)(bvh_base + leafOffset);
+	  hit_tfar = intersectQuad1(quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
+    
+	  //const float old_tfar = tfar;
+	  tfar = sg.reduce<int,cl::sycl::intel::minimum>(hit_tfar);
+	  
 	}
-      
-      // for (uint i=0;i<subgroupSize;i++)
-      // 	if (i == subgroupLocalID)
-      // 	  out << "groupID " << groupID << " numGroups " << numGroups << cl::sycl::endl;
+
+      const uint index = ctz(intel_sub_group_ballot(tfar == hit_tfar));
+      if (subgroupLocalID == index)
+	{
+	  rayhit.hit = local_hit;
+	  rayhit.ray.tfar = tfar;
+	}
       
     }
 #endif
@@ -235,105 +343,6 @@ namespace embree
 
     void BVHNGPUIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
     {
-#if 0	
-      const unsigned int slotID  = get_sub_group_local_id();
-
-      const float   ray  = as_float((intel_sub_group_block_read((const __global uint*)(rh))));
-      const float3 org   = (float3)(sub_group_broadcast(ray,0),sub_group_broadcast(ray,1),sub_group_broadcast(ray,2));
-      const float tnear  = sub_group_broadcast(ray,3);
-      const float3 dir   = (float3)(sub_group_broadcast(ray,4),sub_group_broadcast(ray,5),sub_group_broadcast(ray,6));
-      float tfar         = sub_group_broadcast(ray,8);
-    
-      unsigned int stack_offset[STACK_ENTRIES]; 
-      float        stack_dist[STACK_ENTRIES];  
-
-      // hold local tfar and hit in registers
-      float hit_tfar = tfar;  
-      float8 local_hit;
-      local_hit.s5 = as_float(-1);
-      local_hit.s6 = as_float(-1);
-
-      const unsigned int maskX = select(1,0,dir.x >= 0.0f);
-      const unsigned int maskY = select(1,0,dir.y >= 0.0f);
-      const unsigned int maskZ = select(1,0,dir.z >= 0.0f);
-   
-      const float3 inv_dir = native_recip(select(1E-18f,dir,dir != 0.0f));
-      const float3 inv_dir_org = -inv_dir * org;
-  
-      const unsigned int max_uint  = 0xffffffff;  
-      const unsigned int mask_uint = 0xfffffff0;
-
-      const global char *bvh = _bvh + sizeof(struct BVHBase);
-      stack_offset[0] = max_uint; // sentinel
-      stack_dist[0]   = -(float)INFINITY;
-
-      stack_offset[1] = sizeof(struct BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
-      stack_dist[1]   = -(float)INFINITY;
-  
-      unsigned int sindex = 2; 
-      while(1) { 
-	sindex--;
-    
-#if STACK_CULLING  == 1    
-	if (stack_dist[sindex] > tfar) continue;
-#endif
-    
-	unsigned int cur = stack_offset[sindex]; 
-
-	while((cur & BVH_LEAF_MASK) == 0) 
-	  {	
-	    RAY_STATS(travStats_inc_tsteps());
-
-	    const struct NodeIntersection nsec = intersectNode(bvh, cur, maskX, maskY, maskZ, inv_dir, inv_dir_org, tnear, tfar);
-	    unsigned int offset      = nsec.offset;
-	    const float near         = nsec.near;
-	    const unsigned int valid = nsec.valid;
-	
-	    uint mask = intel_sub_group_ballot(valid);  
-	    if (mask == 0)
-	      {
-#if STACK_CULLING  == 1
-		do { 
-		  sindex--;
-		} while (stack_dist[sindex] > tfar);
-#else
-		sindex--;	   
-#endif	   
-		cur = stack_offset[sindex];
-		continue;
-	      }
-	    offset += cur; /* relative encoding */
-	    const uint popc = popcount(mask); 
-	    cur = broadcast(offset, ctz(mask));
-	    if (popc == 1) continue; // single hit only
-	    int t = (as_int(near) & mask_uint) | slotID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
-	    t = valid ? t : max_uint;                     // invalid slots set to MIN_INT, as we sort descending;	
-
-	    for (uint i=0;i<popc-1;i++)
-	      {
-		const int t_max = sub_group_reduce_max(t); // from larger to smaller distance
-		t = (t == t_max) ? max_uint : t;
-		stack_offset[sindex] = broadcast(offset,t_max & (~mask_uint));
-		stack_dist[sindex]   = broadcast(near  ,t_max & (~mask_uint));
-		sindex++;
-	      }
-	    const int t_max = sub_group_reduce_max(t); // from larger to smaller distance
-	    cur = broadcast(offset,t_max & (~mask_uint));	
-	  }
-	if (cur == max_uint) break; // sentinel reached -> exit
-
-	const unsigned int numPrims = getNumLeafPrims(cur);
-	const unsigned int leafOffset = getLeafOffset(cur);    
-    
-	RAY_STATS(travStats_inc_leaves());    
-	RAY_STATS(travStats_inc_isteps(numPrims));
-
-	global struct Quad1 *quads = (global struct Quad1 *)(bvh + leafOffset);
-	hit_tfar = intersectQuad1(quads, numPrims, org, dir, tnear, hit_tfar, &local_hit, slotID);
-    
-	const float old_tfar = tfar;
-	tfar = sub_group_reduce_min(hit_tfar);
-#endif	
     }
 
 

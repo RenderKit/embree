@@ -22,13 +22,14 @@ namespace embree
 {
   namespace gpu
   {
-
+    // FIXME: can't use float3 here due to stupid size/alignment restriction
+    
     /* Ray structure for a single ray */
     struct RTCRayGPU
     {
-      cl::sycl::float3 org; // x,y,z coordinates of ray origin
+      float org[3];         // x,y,z coordinates of ray origin
       float tnear;          // start of ray segment
-      cl::sycl::float3 dir; // x,y,z coordinate of ray direction
+      float dir[3];         // x,y,z coordinate of ray direction
       float time;           // time of this ray for motion blur
       float tfar;           // end of ray segment (set to hit distance)
       unsigned int mask;    // ray mask
@@ -39,7 +40,7 @@ namespace embree
     /* Hit structure for a single ray */
     struct RTCHitGPU
     {
-      cl::sycl::float3 Ng; // x,y,z coordinates of geometry normal
+      float Ng[3];         // x,y,z coordinates of geometry normal
       float u;             // barycentric u coordinate of hit
       float v;             // barycentric v coordinate of hit
       unsigned int primID; // primitive ID
