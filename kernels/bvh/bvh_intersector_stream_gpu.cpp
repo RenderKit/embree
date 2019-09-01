@@ -84,15 +84,19 @@ namespace embree
       if (slotID < numQuads*2)
 	{
 	  /* compute triangle normal */
-	  const cl::sycl::float4 v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
-	  const uint primID = gpu::as_uint((float)v0.w());
+	  const cl::sycl::float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+	  const uint primID = gpu::as_uint((float)_v0.w());
 	  // const float3 v1 = as_float3(quad1[quadID].v1);
 	  // const float3 v2 = as_float3(quad1[quadID].v3);
 	  const cl::sycl::float8 vv = *(cl::sycl::float8*)&quad1[quadID].v1;
-	  const cl::sycl::float4 v1 = vv.lo();
+	  const cl::sycl::float4 _v1 = vv.lo();
 	  const uint geomID = gpu::as_uint((float)vv.s3());
-	  const cl::sycl::float4 v2 = vv.hi();
+	  const cl::sycl::float4 _v2 = vv.hi();
 
+	  const cl::sycl::float3 v0 = _v0.xyz();
+	  const cl::sycl::float3 v1 = _v1.xyz();
+	  const cl::sycl::float3 v2 = _v2.xyz();
+	  
 	  if (slotID == 0)
 	    {
 	      out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
