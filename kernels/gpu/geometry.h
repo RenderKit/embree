@@ -52,7 +52,17 @@ namespace embree
 	v3.w() = 0.0f;
       }
     };
-    
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Quad1& quad) {
+      return out << "v0 " << quad.v0
+		 << "v1 " << quad.v1
+		 << "v2 " << quad.v2
+		 << "v3 " << quad.v3
+		 << "geomID " << gpu::as_int((float)quad.v1.w())
+		 << "primID0 " << gpu::as_int((float)quad.v0.w())
+		 << "primID1 " << gpu::as_int((float)quad.v2.w());	      
+    }
+
   };
 };
 

@@ -29,6 +29,7 @@ extern int ctz(int t);
 #endif
 
 #define STACK_ENTRIES 64
+#define DBG(x) 
 
 #if defined(ENABLE_RAY_STATS)
 #define RAY_STATS(x) x
@@ -96,12 +97,12 @@ namespace embree
 	  const cl::sycl::float3 v0 = _v0.xyz();
 	  const cl::sycl::float3 v1 = _v1.xyz();
 	  const cl::sycl::float3 v2 = _v2.xyz();
-	  
-	  if (slotID == 0)
-	    {
-	      out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
-	    }
-	  #if 0
+
+	  DBG(
+	      if (slotID == 0)
+		{
+		  out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
+		});
 	  
 	  const cl::sycl::float3 e1 = v0 - v1;
 	  const cl::sycl::float3 e2 = v2 - v0;
@@ -110,13 +111,13 @@ namespace embree
 	  const cl::sycl::float3 tri_Ng = cross(e1,e2);
 
 
-	  const float den = dot(tri_Ng,dir.xyz);   			   
-	  const float inv_den = native_recip(den); // should be fast on GEN, don't think we need the sign trick
+	  const float den = dot(tri_Ng,dir);   			   
+	  const float inv_den = cl::sycl::native::recip(den); // should be fast on GEN, don't think we need the sign trick
 	  /* moeller-trumbore test */
-	  const float3 tri_v0_org = v0 - org.xyz;
-	  const float3 R = cross(dir.xyz,tri_v0_org);
-	  const float u = dot(R,e2) * inv_den;
-	  const float v = dot(R,e1) * inv_den;
+	  const cl::sycl::float3 tri_v0_org = v0 - org;
+	  const cl::sycl::float3 R = cl::sycl::cross(dir,tri_v0_org);
+	  const float u = cl::sycl::dot(R,e2) * inv_den;
+	  const float v = cl::sycl::dot(R,e1) * inv_den;
 	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = u >= 0.0f && v >= 0.0f && u+v <= 1.0f;
 
@@ -126,15 +127,14 @@ namespace embree
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit->s0   = tri_Ng.x;
-	      hit->s1   = tri_Ng.y;
-	      hit->s2   = tri_Ng.z;
-	      hit->s3   = u;
-	      hit->s4   = v;
-	      hit->s5   = as_float(primID);
-	      hit->s6   = as_float(geomID);
+	      hit.Ng[0]  = tri_Ng.x();
+	      hit.Ng[1]  = tri_Ng.y();
+	      hit.Ng[2]  = tri_Ng.z();	      
+	      hit.u      = u;
+	      hit.v      = v;
+	      hit.primID = primID;
+	      hit.geomID = geomID;
 	    }
-#endif	  
 	}
       return new_tfar;
     }
@@ -147,7 +147,7 @@ namespace embree
 
       // === init local hit ===
       gpu::RTCHitGPU local_hit;
-      local_hit.primID = -1;
+      local_hit.init();
 
       const uint subgroupLocalID = sg.get_local_id()[0];
       const uint subgroupSize    = sg.get_local_range().size();
@@ -158,6 +158,10 @@ namespace embree
       const float tnear = rayhit.ray.tnear;
       float tfar        = rayhit.ray.tfar;
       float hit_tfar    = rayhit.ray.tfar;
+
+      DBG(
+	  out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
+	  );
       
       const unsigned int maskX = cl::sycl::select(1,0,(uint)(dir.x() >= 0.0f));
       const unsigned int maskY = cl::sycl::select(1,0,(uint)(dir.y() >= 0.0f));
@@ -208,11 +212,12 @@ namespace embree
 	    {
 	      const gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_base + cur);
 
-	       if (0 == subgroupLocalID)
-	       	{
-		  out << "bvh_base " << (void*)bvh_base;
-	       	  out << node << cl::sycl::endl;
-	       	}
+	      DBG(
+		  if (0 == subgroupLocalID)
+		    {
+		      out << "bvh_base " << (void*)bvh_base;
+		      out << node << cl::sycl::endl;
+		    });
 	      
 	      const float _lower_x = node.lower_x[subgroupLocalID];
 	      const float _lower_y = node.lower_y[subgroupLocalID];
@@ -254,10 +259,12 @@ namespace embree
 	      cur = sg.broadcast<uint>(offset, ctz(mask));
 	      
 
-	      if (0 == subgroupLocalID)
-	       	{
-	       	  out << "cur " << cur << " mask " << mask << " popc " << popc << cl::sycl::endl;
-	       	}
+	      DBG(
+		  if (0 == subgroupLocalID)
+		    {
+		      out << "cur " << cur << " mask " << mask << " popc " << popc << cl::sycl::endl;
+		    }
+		  );
 	      
 	      if (popc == 1) continue; // single hit only
 	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
@@ -291,10 +298,12 @@ namespace embree
 	      
 	    }
 
-	  if (0 == subgroupLocalID)
-	    {
-	      out << "leaf " << cur << cl::sycl::endl;
-	    }
+	  DBG(
+	      if (0 == subgroupLocalID)
+		{
+		  out << "leaf " << cur << cl::sycl::endl;
+		}
+	      );
 	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
 
@@ -311,10 +320,12 @@ namespace embree
 
       const uint index = ctz(intel_sub_group_ballot(tfar == hit_tfar));
       if (subgroupLocalID == index)
-	{
-	  rayhit.hit = local_hit;
-	  rayhit.ray.tfar = tfar;
-	}
+	if (local_hit.primID != -1)
+	  {	 
+	    DBG(out << "local_hit " << local_hit << cl::sycl::endl);
+	    rayhit.hit = local_hit;
+	    rayhit.ray.tfar = tfar;
+	  }
       
     }
 #endif
@@ -346,6 +357,8 @@ namespace embree
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 
+      for (size_t i=0;i<16;i++)
+	{
       cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
 	  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
@@ -353,7 +366,7 @@ namespace embree
 	  cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 	      const uint groupID   = item.get_group(0);
 	      cl::sycl::intel::sub_group sg = item.get_sub_group();	      
-	      traceRayBVH16(sg,inputRays[groupID],bvh_mem,out);	      
+	      traceRayBVH16(sg,inputRays[i /*groupID*/],bvh_mem,out);	      
 	    });		  
 	});
       try {
@@ -362,6 +375,7 @@ namespace embree
 	std::cout << "Caught synchronous SYCL exception:\n"
 		  << e.what() << std::endl;
       }
+	}
 
 #endif      
     }

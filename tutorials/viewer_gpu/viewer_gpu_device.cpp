@@ -156,21 +156,13 @@ void renderTileStandard(int taskIndex,
     RayStats_addRay(stats);
   }
 
+  /* trace stream of rays */  
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
   rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],N,sizeof(Ray));
   
-  /* trace stream of rays */
-// #if USE_INTERFACE == 0
-// #elif USE_INTERFACE == 1
-//   for (unsigned int i=0; i<N; i++)
-//     rtcIntersect1(g_scene,&context,RTCRayHit_(rays[i]));
-// #else
-//   for (unsigned int i=0; i<N; i++)
-//     rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[i],1,sizeof(Ray));
-// #endif
-
+#if 1
   /* shade stream of rays */
   N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
@@ -219,6 +211,7 @@ void renderTileStandard(int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+#endif  
  
 }
 

@@ -46,6 +46,16 @@ namespace embree
       unsigned int primID; // primitive ID
       unsigned int geomID; // geometry ID
       unsigned int instID; // instance ID
+
+      inline void init()
+      {
+	primID = -1;
+	geomID = -1;
+	instID = 0;
+	u = 0.0f;
+	v = 0.0f;
+	Ng[0] = Ng[1] = Ng[2] = 0.0f;
+      }
     };
 
     /* Combined ray/hit structure for a single ray */
@@ -54,6 +64,17 @@ namespace embree
       struct RTCRayGPU ray;
       struct RTCHitGPU hit;
     };
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCHitGPU& hit) {
+      return out << " Ng " << cl::sycl::float3(hit.Ng[0],hit.Ng[1],hit.Ng[2])
+		 << " u " << hit.u
+		 << " v " << hit.v
+		 << " primID " << hit.primID
+		 << " geomID " << hit.geomID
+		 << " instID " << hit.instID;
+      
+    }
+
 
   };
 };
