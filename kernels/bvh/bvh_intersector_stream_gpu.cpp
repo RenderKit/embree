@@ -74,29 +74,38 @@ namespace embree
 				const cl::sycl::float3 &org,
 				const cl::sycl::float3 &dir,
 				const float &tnear,
-				const float &tfar, gpu::RTCHitGPU &hit,
-				const unsigned int slotID)
+				const float &tfar,
+				gpu::RTCHitGPU &hit,
+				const unsigned int slotID,
+				const cl::sycl::stream &out)
     {
       float new_tfar = tfar;
       const uint quadID = slotID >> 1;  
       if (slotID < numQuads*2)
 	{
-#if 0
 	  /* compute triangle normal */
-	  const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
-	  const uint primID = as_uint(_v0.w());
+	  const cl::sycl::float4 v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+	  const uint primID = gpu::as_uint((float)v0.w());
 	  // const float3 v1 = as_float3(quad1[quadID].v1);
 	  // const float3 v2 = as_float3(quad1[quadID].v3);
-	  const float8 vv = *(float8*)&quad1[quadID].v1;
-	  const float3 v1 = as_float3(vv.lo);
-	  const uint geomID = as_uint(vv.s3);
-	  const float3 v2 = as_float3(vv.hi);
+	  const cl::sycl::float8 vv = *(cl::sycl::float8*)&quad1[quadID].v1;
+	  const cl::sycl::float4 v1 = vv.lo();
+	  const uint geomID = gpu::as_uint((float)vv.s3());
+	  const cl::sycl::float4 v2 = vv.hi();
 
-	  const float3 e1 = v0 - v1;
-	  const float3 e2 = v2 - v0;
+	  if (slotID == 0)
+	    {
+	      out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
+	    }
+	  #if 0
+	  
+	  const cl::sycl::float3 e1 = v0 - v1;
+	  const cl::sycl::float3 e2 = v2 - v0;
 	  //printf("slotID %d v0 %f v1 %f v2 %f e1 %f e2 %f \n",slotID, v0,v1,v2,e1,e2);
       
-	  const float3 tri_Ng = cross(e1,e2);
+	  const cl::sycl::float3 tri_Ng = cross(e1,e2);
+
+
 	  const float den = dot(tri_Ng,dir.xyz);   			   
 	  const float inv_den = native_recip(den); // should be fast on GEN, don't think we need the sign trick
 	  /* moeller-trumbore test */
@@ -171,11 +180,10 @@ namespace embree
       const unsigned int max_uint  = 0xffffffff;  
       const unsigned int mask_uint = 0xfffffff0;
 
-      const char *bvh_base = (char*)bvh_mem + sizeof(struct gpu::BVHBase);
+      const char *const bvh_base = (char*)bvh_mem;
       stack_offset[0] = max_uint; // sentinel
       stack_dist[0]   = -(float)INFINITY;
-
-      stack_offset[1] = 0; //sizeof(struct gpu::BVHNodeN); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
+      stack_offset[1] = sizeof(struct gpu::BVHBase); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
       stack_dist[1]   = -(float)INFINITY;
 
       // if (0 == subgroupLocalID)
@@ -198,6 +206,7 @@ namespace embree
 
 	       if (0 == subgroupLocalID)
 	       	{
+		  out << "bvh_base " << (void*)bvh_base;
 	       	  out << node << cl::sycl::endl;
 	       	}
 	      
@@ -228,9 +237,6 @@ namespace embree
 	      const uint valid = islessequal(fnear,ffar);	  // final valid mask
 	      uint mask = intel_sub_group_ballot(valid);  
 
-	      // for (uint i=0;i<subgroupSize;i++)
-	      // 	if (i == subgroupLocalID)
-	      // 	  out << "fnear " << fnear << " ffar " << ffar << " lowerX " << lowerX << cl::sycl::endl;
 	      
 	      if (mask == 0)
 		{
@@ -244,25 +250,41 @@ namespace embree
 	      cur = sg.broadcast<uint>(offset, ctz(mask));
 	      
 
-	      // if (0 == subgroupLocalID)
-	      // 	{
-	      // 	  out << "cur " << cur << " mask " << mask << cl::sycl::endl;
-	      // 	}
+	      if (0 == subgroupLocalID)
+	       	{
+	       	  out << "cur " << cur << " mask " << mask << " popc " << popc << cl::sycl::endl;
+	       	}
 	      
 	      if (popc == 1) continue; // single hit only
 	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
 	      t = valid ? t : max_uint;                     // invalid slots set to MIN_INT, as we sort descending;	
 
+	      // for (uint i=0;i<subgroupSize;i++)
+	      //  	if (i == subgroupLocalID)
+	      //  	  out << "i " << i << " t " << t << " offset "<< offset << cl::sycl::endl;
+	      
 	      for (uint i=0;i<popc-1;i++)
 		{
-		  const int t_max = sg.reduce<int,cl::sycl::intel::minimum>(t); // from larger to smaller distance
+		  const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 		  t = (t == t_max) ? max_uint : t;
-		  stack_offset[sindex] = sg.broadcast<uint> (offset,t_max & (~mask_uint));
-		  stack_dist[sindex]   = sg.broadcast<float>(fnear  ,t_max & (~mask_uint));
+		  const uint index = t_max & (~mask_uint);
+		  stack_offset[sindex] = sg.broadcast<uint> (offset,index);
+		  // if (0 == subgroupLocalID)
+		  //   {
+		  //     out << "t " << t << " t_max " << t_max << " index " << index << " stack_offset[sindex] " << stack_offset[sindex] << cl::sycl::endl;
+		  //   }
+
+		  stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
 		  sindex++;
 		}
 	      const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
+
+	      // if (0 == subgroupLocalID)
+	      //  	{
+	      //  	  out << "cur " << cur << " sindex " << sindex << cl::sycl::endl;
+	      //  	}
+	      
 	    }
 
 	  if (0 == subgroupLocalID)
@@ -275,9 +297,8 @@ namespace embree
 	  const unsigned int numPrims = getNumLeafPrims(cur);
 	  const unsigned int leafOffset = getLeafOffset(cur);    
 
-	  // CHECK: bvh_base or bvh_mem in builder
 	  const gpu::Quad1 *const quads = (struct gpu::Quad1 *)(bvh_base + leafOffset);
-	  hit_tfar = intersectQuad1(quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
+	  hit_tfar = intersectQuad1(quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);
     
 	  //const float old_tfar = tfar;
 	  tfar = sg.reduce<int,cl::sycl::intel::minimum>(hit_tfar);

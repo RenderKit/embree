@@ -439,7 +439,7 @@ namespace embree
 
 	    /* --- estimate size of the BVH --- */
 	    unsigned int totalSize       = 64 + numPrimitives * 2 * 64;
-	    unsigned int node_data_start = 64;
+	    unsigned int node_data_start = sizeof(gpu::BVHBase);
 	    unsigned int leaf_data_start = numPrimitives * 64;
 
 	    /* --- allocate buffers --- */
