@@ -18,24 +18,26 @@
 
 namespace embree
 {
-  static std::unique_ptr<std::vector<RegressionTest*>> regression_tests;
+  /* registerRegressionTest is invoked from static initializers, thus
+   * we cannot have the regression_tests variable as global static
+   * variable due to issues with static variable initialization
+   * order. */
+  std::vector<RegressionTest*>& get_regression_tests()
+  {
+    static std::vector<RegressionTest*> regression_tests;
+    return regression_tests;
+  } 
 
   void registerRegressionTest(RegressionTest* test) 
   {
-    if (!regression_tests) 
-      regression_tests = std::unique_ptr<std::vector<RegressionTest*>>(new std::vector<RegressionTest*>);
-
-    regression_tests->push_back(test);
+    get_regression_tests().push_back(test);
   }
 
   RegressionTest* getRegressionTest(size_t index)
   {
-    if (!regression_tests) 
-      return nullptr;
-
-    if (index >= regression_tests->size())
+    if (index >= get_regression_tests().size())
       return nullptr;
     
-    return (*regression_tests)[index];
+    return get_regression_tests()[index];
   }
 }

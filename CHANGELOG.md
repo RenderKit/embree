@@ -1,11 +1,17 @@
 Version History
 ---------------
 
+### New Features in Embree 3.6.1
+-   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
+-   Fixed bug in subgrid intersector
+-   Removed point query alignment in ISPC header
+
 ### New Features in Embree 3.6
 -   Added Catmull-Rom curve types.
 -   Added support for multi-level instancing.
 -   Added support for point queries.
--   Fixed a bug preventing normal oriented curves being used unless timesteps were specified.
+-   Fixed a bug preventing normal oriented curves being used unless timesteps were
+    specified.
 -   Fixed bug in external BVH builder when configured for dynamic build.
 -   Added support for new config flag "user_threads=N" to device initialization
     which sets the number of threads used by TBB but created by the user.
