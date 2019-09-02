@@ -120,8 +120,8 @@ namespace embree
     struct QBVHNodeN
     {
       uint   offset[BVH_NODE_N];
-      cl::sycl::float4 org;
-      cl::sycl::float4 scale;
+      float4 org;
+      float4 scale;
 
       /* special layout requires less block loads */
       struct {  
@@ -155,18 +155,18 @@ namespace embree
 	else
 	  child.init();
 	AABB aabb = child.sub_group_reduce(sg);
-	const cl::sycl::float4 minF = aabb.lower;
-	const cl::sycl::float4 maxF = aabb.upper;      
-	const cl::sycl::float4 diff = aabb.size()*(1.0f+2.0f*FLT_MIN);
-	cl::sycl::float4 decode_scale = diff / (cl::sycl::float4)(QUANT_MAX);
+	const float4 minF = aabb.lower;
+	const float4 maxF = aabb.upper;      
+	const float4 diff = aabb.size()*(1.0f+2.0f*FLT_MIN);
+	float4 decode_scale = diff / (float4)(QUANT_MAX);
 	
-	decode_scale = cl::sycl::float4(decode_scale.x() == 0.0f ? 2.0f*FLT_MIN : decode_scale.x(),
+	decode_scale = float4(decode_scale.x() == 0.0f ? 2.0f*FLT_MIN : decode_scale.x(),
 					decode_scale.y() == 0.0f ? 2.0f*FLT_MIN : decode_scale.y(),
 					decode_scale.z() == 0.0f ? 2.0f*FLT_MIN : decode_scale.z(),
 					0.0f);
 	  
-	cl::sycl::float4 encode_scale = (cl::sycl::float4)(QUANT_MAX) / diff;
-	encode_scale = cl::sycl::float4(diff.x() > 0.0f ? diff.x() : 0.0f,
+	float4 encode_scale = (float4)(QUANT_MAX) / diff;
+	encode_scale = float4(diff.x() > 0.0f ? diff.x() : 0.0f,
 					diff.y() > 0.0f ? diff.y() : 0.0f,
 					diff.z() > 0.0f ? diff.z() : 0.0f,
 					0.0f);
@@ -176,11 +176,11 @@ namespace embree
 
 	  int m_valid = subgroupLocalID < numChildren;
 	  
-	  const cl::sycl::float4 lower = child.lower;
-	  const cl::sycl::float4 upper = child.upper;
+	  const float4 lower = child.lower;
+	  const float4 upper = child.upper;
 	  
-	  cl::sycl::float4 lowerf = floor((lower - minF)*encode_scale);
-	  cl::sycl::float4 upperf =  ceil((upper - minF)*encode_scale);
+	  float4 lowerf = floor((lower - minF)*encode_scale);
+	  float4 upperf =  ceil((upper - minF)*encode_scale);
 	  
   #if 0
 	  int4 ilower = max(convert_int4_rtn(),cl::sycl::int4(QUANT_MIN));

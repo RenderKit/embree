@@ -25,8 +25,8 @@ namespace embree
   {
     class AABB3f {
     public:
-      cl::sycl::float3 lower; // very careful here, as sizeof(float3) == 16 in SYCL...
-      cl::sycl::float3 upper;
+      float3 lower; // very careful here, as sizeof(float3) == 16 in SYCL...
+      float3 upper;
       
       AABB3f() = default;
 
@@ -34,8 +34,8 @@ namespace embree
       {
 	const float pos_inf =  INFINITY;
 	const float neg_inf = -INFINITY;
-	lower = (cl::sycl::float3)(pos_inf);
-	upper = (cl::sycl::float3)(neg_inf);
+	lower = (float3)(pos_inf);
+	upper = (float3)(neg_inf);
       }
       
       inline void extend(class AABB3f &aabb)
@@ -44,24 +44,24 @@ namespace embree
 	upper = max(upper,aabb.upper);	
       }
 
-      inline void extend(const cl::sycl::float3 &v)
+      inline void extend(const float3 &v)
       {
 	lower = min(lower,v);
 	upper = max(upper,v);	
       }
 
-      inline void enlarge(const cl::sycl::float3 &v)
+      inline void enlarge(const float3 &v)
       {
 	lower -= v;
 	upper += v;	
       }
 
-      inline cl::sycl::float3 size() const
+      inline float3 size() const
       {
 	return upper - lower;
       }
 
-      inline cl::sycl::float3 centroid2() const
+      inline float3 centroid2() const
       {
 	return upper + lower;
       }
@@ -151,7 +151,7 @@ namespace embree
 
       inline float halfArea() const
       {
-	const cl::sycl::float3 d = size();
+	const float3 d = size();
 	return halfarea(d);
       }
       

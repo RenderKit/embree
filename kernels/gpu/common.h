@@ -58,12 +58,21 @@ constexpr cl::sycl::access::mode sycl_read_write = cl::sycl::access::mode::read_
 constexpr cl::sycl::access::mode sycl_read       = cl::sycl::access::mode::read;
 constexpr cl::sycl::access::mode sycl_write      = cl::sycl::access::mode::write;
 
+using cl::sycl::float8;
+using cl::sycl::float4;
+using cl::sycl::float3;
+using cl::sycl::int8;
+using cl::sycl::int4;
+using cl::sycl::int3;
+using cl::sycl::uint4;
+using cl::sycl::uint4;
+using cl::sycl::uint3;
 
 namespace embree
 {
   namespace gpu
   {
-
+      
     inline float halfarea(const cl::sycl::float3 &d)
     {
       return cl::sycl::fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());

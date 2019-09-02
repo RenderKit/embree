@@ -73,8 +73,8 @@ namespace embree
     inline float intersectQuad1(const cl::sycl::intel::sub_group &sg,
 				const gpu::Quad1 *const quad1,
 				const uint numQuads,
-				const cl::sycl::float3 &org,
-				const cl::sycl::float3 &dir,
+				const float3 &org,
+				const float3 &dir,
 				const float &tnear,
 				const float &tfar,
 				gpu::RTCHitGPU &hit,
@@ -89,18 +89,18 @@ namespace embree
       if (slotID < numQuads*2)
 	{
 	  /* compute triangle normal */
-	  const cl::sycl::float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+	  const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
 	  const uint primID = gpu::as_uint((float)_v0.w());
 	  // const float3 v1 = as_float3(quad1[quadID].v1);
 	  // const float3 v2 = as_float3(quad1[quadID].v3);
-	  const cl::sycl::float8 vv = *(cl::sycl::float8*)&quad1[quadID].v1;
-	  const cl::sycl::float4 _v1 = vv.lo();
+	  const float8 vv = *(cl::sycl::float8*)&quad1[quadID].v1;
+	  const float4 _v1 = vv.lo();
 	  const uint geomID = gpu::as_uint((float)vv.s3());
-	  const cl::sycl::float4 _v2 = vv.hi();
+	  const float4 _v2 = vv.hi();
 
-	  const cl::sycl::float3 v0 = _v0.xyz();
-	  const cl::sycl::float3 v1 = _v1.xyz();
-	  const cl::sycl::float3 v2 = _v2.xyz();
+	  const float3 v0 = _v0.xyz();
+	  const float3 v1 = _v1.xyz();
+	  const float3 v2 = _v2.xyz();
 
 	  DBG(
 	      if (slotID == 0)
@@ -108,18 +108,18 @@ namespace embree
 		  out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
 		});
 	  
-	  const cl::sycl::float3 e1 = v0 - v1;
-	  const cl::sycl::float3 e2 = v2 - v0;
+	  const float3 e1 = v0 - v1;
+	  const float3 e2 = v2 - v0;
 	  //printf("slotID %d v0 %f v1 %f v2 %f e1 %f e2 %f \n",slotID, v0,v1,v2,e1,e2);
       
-	  const cl::sycl::float3 tri_Ng = cross(e1,e2);
+	  const float3 tri_Ng = cross(e1,e2);
 
 
 	  const float den = dot(tri_Ng,dir);   			   
 	  const float inv_den = cl::sycl::native::recip(den); // should be fast on GEN, don't think we need the sign trick
 	  /* moeller-trumbore test */
-	  const cl::sycl::float3 tri_v0_org = v0 - org;
-	  const cl::sycl::float3 R = cl::sycl::cross(dir,tri_v0_org);
+	  const float3 tri_v0_org = v0 - org;
+	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
 	  const float u = cl::sycl::dot(R,e2) * inv_den;
 	  const float v = cl::sycl::dot(R,e1) * inv_den;
 	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
@@ -163,8 +163,8 @@ namespace embree
       const uint subgroupLocalID = sg.get_local_id()[0];
       const uint subgroupSize    = sg.get_local_range().size();
 
-      const cl::sycl::float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
-      const cl::sycl::float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
+      const float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
+      const float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
             
       const float tnear = rayhit.ray.tnear;
       float tfar        = rayhit.ray.tfar;
@@ -179,19 +179,19 @@ namespace embree
       const unsigned int maskY = cl::sycl::select(1,0,(uint)(dir.y() >= 0.0f));
       const unsigned int maskZ = cl::sycl::select(1,0,(uint)(dir.z() >= 0.0f));
 
-      const cl::sycl::float3 new_dir(cl::sycl::select(1E-18f,(float)dir.x(),(int)(dir.x() != 0.0f)),
+      const float3 new_dir(cl::sycl::select(1E-18f,(float)dir.x(),(int)(dir.x() != 0.0f)),
 				     cl::sycl::select(1E-18f,(float)dir.y(),(int)(dir.y() != 0.0f)),
 				     cl::sycl::select(1E-18f,(float)dir.z(),(int)(dir.z() != 0.0f)));
 
-      //const cl::sycl::float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z())); // FIXME
+      //const float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z())); // FIXME
       
-      const cl::sycl::float3 inv_dir( cl::sycl::native::recip((float)new_dir.x()),
+      const float3 inv_dir( cl::sycl::native::recip((float)new_dir.x()),
 				      cl::sycl::native::recip((float)new_dir.y()),
 				      cl::sycl::native::recip((float)new_dir.z()));
 
-      //const cl::sycl::float3 inv_dir_org = -inv_dir * org; // FIXME
+      //const float3 inv_dir_org = -inv_dir * org; // FIXME
 
-      const cl::sycl::float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
+      const float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
       
       // for (uint i=0;i<subgroupSize;i++)
       // 	if (i == subgroupLocalID)
@@ -208,7 +208,7 @@ namespace embree
 
       // if (0 == subgroupLocalID)
       // 	{
-      // 	  out << "sizes " << sizeof(cl::sycl::float3) << " " << sizeof(gpu::AABB3f) << " " <<  sizeof(gpu::BVHBase) << cl::sycl::endl;
+      // 	  out << "sizes " << sizeof(float3) << " " << sizeof(gpu::AABB3f) << " " <<  sizeof(gpu::BVHBase) << cl::sycl::endl;
       // 	  out << ((gpu::BVHNodeN *)bvh_base)[0] << cl::sycl::endl;
       // 	}
 

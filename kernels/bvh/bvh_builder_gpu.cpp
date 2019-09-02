@@ -36,15 +36,15 @@ namespace embree
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-  inline cl::sycl::float4 Vec3fa_to_float4(const Vec3fa& v)
+  inline float4 Vec3fa_to_float4(const Vec3fa& v)
   {
-    return (cl::sycl::float4){v.x,v.y,v.z,v.w};
+    return (float4){v.x,v.y,v.z,v.w};
   }
   
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void atomicUpdateLocalBinInfo(cl::sycl::intel::sub_group &subgroup, const gpu::BinMapping &binMapping, gpu::BinInfo &binInfo, const gpu::AABB &primref,const cl::sycl::stream &out)
   {
-    const cl::sycl::float4 p = primref.centroid2();
-    const cl::sycl::float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
+    const float4 p = primref.centroid2();
+    const float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
     const cl::sycl::uint4 i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
   
     gpu::AABB3f bounds = convert_AABB3f(primref);

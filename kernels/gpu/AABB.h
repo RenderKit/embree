@@ -25,21 +25,21 @@ namespace embree
   {
     class AABB {
     public:
-      cl::sycl::float4 lower;
-      cl::sycl::float4 upper;
+      float4 lower;
+      float4 upper;
 
       AABB() = default;
 
       AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
 
-      AABB(const cl::sycl::float4 &v) : lower(v),upper(v) {}
+      AABB(const float4 &v) : lower(v),upper(v) {}
       
       inline void init()
       {
 	const float pos_inf =  INFINITY;
 	const float neg_inf = -INFINITY;
-	lower = cl::sycl::float4(pos_inf,pos_inf,pos_inf,0.0f);
-	upper = cl::sycl::float4(neg_inf,neg_inf,neg_inf,0.0f);	
+	lower = float4(pos_inf,pos_inf,pos_inf,0.0f);
+	upper = float4(neg_inf,neg_inf,neg_inf,0.0f);	
       }
       
       inline void extend(const AABB &aabb)
@@ -48,24 +48,24 @@ namespace embree
 	upper = max(upper,aabb.upper);	
       }
 
-      inline void extend(const cl::sycl::float4 &v)
+      inline void extend(const float4 &v)
       {
 	lower = min(lower,v);
 	upper = max(upper,v);	
       }
       
-      inline void enlarge(const cl::sycl::float4 &v)
+      inline void enlarge(const float4 &v)
       {
 	lower -= v;
 	upper += v;	
       }
 
-      inline cl::sycl::float4 size() const
+      inline float4 size() const
       {
 	return upper - lower;
       }
 
-      inline cl::sycl::float4 centroid2() const
+      inline float4 centroid2() const
       {
 	return upper + lower;
       }
@@ -165,7 +165,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB& aabb) {
-      return out << "lower " << (cl::sycl::float3)aabb.lower.xyz() << " " << as_int((float)aabb.lower.w()) << "  upper " << (cl::sycl::float3)aabb.upper.xyz() << " " << as_int((float)aabb.upper.w());
+      return out << "lower " << (float3)aabb.lower.xyz() << " " << as_int((float)aabb.lower.w()) << "  upper " << (float3)aabb.upper.xyz() << " " << as_int((float)aabb.upper.w());
     }    
 
   };

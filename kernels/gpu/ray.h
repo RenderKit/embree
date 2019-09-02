@@ -66,7 +66,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCHitGPU& hit) {
-      return out << " Ng " << cl::sycl::float3(hit.Ng[0],hit.Ng[1],hit.Ng[2])
+      return out << " Ng " << float3(hit.Ng[0],hit.Ng[1],hit.Ng[2])
 		 << " u " << hit.u
 		 << " v " << hit.v
 		 << " primID " << hit.primID
