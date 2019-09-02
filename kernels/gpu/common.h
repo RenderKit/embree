@@ -71,6 +71,12 @@ using cl::sycl::uchar8;
 using cl::sycl::uchar4;
 using cl::sycl::uchar3;
 
+template<typename T, typename M>
+  inline T cselect(const M &mask, const T &a, const T &b)
+{
+  return cl::sycl::select(b,a,mask);
+}
+
 namespace embree
 {
   namespace gpu

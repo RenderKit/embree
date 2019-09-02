@@ -32,12 +32,12 @@ namespace embree
 
     struct Quad1
     {
-      cl::sycl::float4 v0,v2,v1,v3; //v1v3 loaded once
+      float4 v0,v2,v1,v3; //v1v3 loaded once
 
-      void init(const cl::sycl::float4 &_v0,
-		const cl::sycl::float4 &_v1,
-		const cl::sycl::float4 &_v2,
-		const cl::sycl::float4 &_v3,
+      void init(const float4 &_v0,
+		const float4 &_v1,
+		const float4 &_v2,
+		const float4 &_v3,
 		const uint geomID,
 		const uint primID0,
 		const uint primID1)

@@ -325,9 +325,9 @@ namespace embree
 	      }
 
 	    /* sort children based on range size */
-	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
-	    const uint sortID = gpu::as_uint(_sortID);
-	    const uint numPrimsIDs = cl::sycl::select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, (int)(subgroupLocalID < numChildren));
+	    //const float _sortID = childrenAABB[subgroupLocalID].upper.w();
+	    //const uint sortID = gpu::as_uint(_sortID);
+	    //const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
 	    const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
 
 	    /* create bvh node */

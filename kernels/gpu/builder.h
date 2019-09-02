@@ -243,14 +243,14 @@ namespace embree
 
     struct BinMapping
     {
-      cl::sycl::float4 ofs, scale;
+      float4 ofs, scale;
 
       inline void init(const AABB &centBounds, const uint bins)
       {
-	const cl::sycl::float4 eps(1E-34f);
-	const cl::sycl::float4 diag = max(eps, centBounds.upper - centBounds.lower);
-	scale = (cl::sycl::float4)(0.99f*(float)bins)/diag;
-	scale = cl::sycl::select((cl::sycl::float4)(0.0f), scale, (diag > eps));
+	const float4 eps(1E-34f);
+	const float4 diag = max(eps, centBounds.upper - centBounds.lower);
+	scale = (float4)(0.99f*(float)bins)/diag;
+	scale = cselect(diag > eps, scale, (float4)(0.0f));
 	ofs  = centBounds.lower;
       }
 
@@ -280,7 +280,7 @@ namespace embree
       AABB3f boundsX[BINS];
       AABB3f boundsY[BINS];
       AABB3f boundsZ[BINS];
-      cl::sycl::uint3 counts[BINS];
+      uint3 counts[BINS];
 
       inline void init()
       {
@@ -289,7 +289,7 @@ namespace embree
 	    boundsX[i].init();
 	    boundsY[i].init();
 	    boundsZ[i].init();
-	    counts[i] = (cl::sycl::uint3)(0);
+	    counts[i] = (uint3)(0);
 	  }	
       }
 
@@ -300,7 +300,7 @@ namespace embree
 	    boundsX[i].init();
 	    boundsY[i].init();
 	    boundsZ[i].init();
-	    counts[i] = (cl::sycl::uint3)(0);
+	    counts[i] = (uint3)(0);
 	  }
       }
 
@@ -338,7 +338,7 @@ namespace embree
 	return sg.shuffle<uint>(low_prefix,ID);
       }
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(cl::sycl::intel::sub_group &sg, const cl::sycl::float3 sah, uint ID, const cl::sycl::float4 scale, const ulong defaultSplit)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(cl::sycl::intel::sub_group &sg, const float3 sah, uint ID, const float4 scale, const ulong defaultSplit)
       {
 	ulong splitX = (((ulong)as_uint((float)sah.x())) << 32) | ((uint)ID << 2) | 0;
 	ulong splitY = (((ulong)as_uint((float)sah.y())) << 32) | ((uint)ID << 2) | 1;
@@ -346,16 +346,16 @@ namespace embree
 	
 	
 	/* ignore zero sized dimensions */
-	splitX = cl::sycl::select( splitX, defaultSplit, (ulong)(scale.x() == 0));
-	splitY = cl::sycl::select( splitY, defaultSplit, (ulong)(scale.y() == 0));
-	splitZ = cl::sycl::select( splitZ, defaultSplit, (ulong)(scale.z() == 0));
+	splitX = cselect( (ulong)(scale.x() == 0), defaultSplit, splitX);
+	splitY = cselect( (ulong)(scale.y() == 0), defaultSplit, splitY);
+	splitZ = cselect( (ulong)(scale.z() == 0), defaultSplit, splitZ);
 	ulong bestSplit = min(min(splitX,splitY),splitZ);
 	bestSplit = sg.reduce<ulong,cl::sycl::intel::minimum>(bestSplit);
 	return bestSplit;
       }
 
       
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const cl::sycl::float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
+      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
       {
 	const uint subgroupLocalID = sg.get_local_id()[0];		
 	const AABB3f &bX      = boundsX[subgroupLocalID];
@@ -367,7 +367,7 @@ namespace embree
 	const AABB3f &bZ      = boundsZ[subgroupLocalID];
 	const float lr_areaZ  = left_to_right_area16(sg,bZ);
 	const float rl_areaZ  = right_to_left_area16(sg,bZ);
-	const cl::sycl::uint3 &c = counts[subgroupLocalID];
+	const uint3 &c = counts[subgroupLocalID];
 	const uint lr_countsX = left_to_right_counts16(sg,c.x());
 	const uint rl_countsX = right_to_left_counts16(sg,c.x());
 	const uint lr_countsY = left_to_right_counts16(sg,c.y());
@@ -377,16 +377,16 @@ namespace embree
 	
 	const uint blocks_shift = SAH_LOG_BLOCK_SHIFT;       
 	const uint blocks_add = ((1 << blocks_shift)-1);	
-	const cl::sycl::uint3 lr_count( (lr_countsX+blocks_add)>>blocks_shift , (lr_countsY+blocks_add)>>blocks_shift, (lr_countsZ+blocks_add)>>blocks_shift );       
-	const cl::sycl::float3 lr_area(lr_areaX,lr_areaY,lr_areaZ);
-	const cl::sycl::float3 rl_area(rl_areaX,rl_areaY,rl_areaZ);	
-	const cl::sycl::uint3 rl_count( (rl_countsX+blocks_add)>>blocks_shift , (rl_countsY+blocks_add)>>blocks_shift, (rl_countsZ+blocks_add)>>blocks_shift );
-	const cl::sycl::float3 lr_count_f ( (float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z() );
-	const cl::sycl::float3 rl_count_f ( (float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z() );	
+	const uint3 lr_count( (lr_countsX+blocks_add)>>blocks_shift , (lr_countsY+blocks_add)>>blocks_shift, (lr_countsZ+blocks_add)>>blocks_shift );       
+	const float3 lr_area(lr_areaX,lr_areaY,lr_areaZ);
+	const float3 rl_area(rl_areaX,rl_areaY,rl_areaZ);	
+	const uint3 rl_count( (rl_countsX+blocks_add)>>blocks_shift , (rl_countsY+blocks_add)>>blocks_shift, (rl_countsZ+blocks_add)>>blocks_shift );
+	const float3 lr_count_f ( (float)lr_count.x(),(float)lr_count.y(),(float)lr_count.z() );
+	const float3 rl_count_f ( (float)rl_count.x(),(float)rl_count.y(),(float)rl_count.z() );	
 
 	/* first bin is invalid */
 	const float pos_inf = (float)INFINITY;
-	const cl::sycl::float3 sah = cl::sycl::select( cl::sycl::float3(pos_inf), cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f), (int)(subgroupLocalID != 0) );
+	const float3 sah = cselect( (int)(subgroupLocalID != 0), cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f), float3(pos_inf));
 
 	/* select best split */
 	const uint mid = (startID+endID)/2;
@@ -401,10 +401,10 @@ namespace embree
     };
 
     struct BinInfo2 {
-      struct AABB3f boundsX[BINS*2];
-      struct AABB3f boundsY[BINS*2];
-      struct AABB3f boundsZ[BINS*2];
-      cl::sycl::uint3 counts[BINS*2];
+      AABB3f boundsX[BINS*2];
+      AABB3f boundsY[BINS*2];
+      AABB3f boundsZ[BINS*2];
+      uint3 counts[BINS*2];
     };
 
     inline uint encodeOffset(char *bvh_mem, uint *parent, uint global_child_offset)

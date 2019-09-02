@@ -177,19 +177,19 @@ namespace embree
 	    out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
 	  );
       
-      const unsigned int maskX = cl::sycl::select(1,0,(uint)(dir.x() >= 0.0f));
-      const unsigned int maskY = cl::sycl::select(1,0,(uint)(dir.y() >= 0.0f));
-      const unsigned int maskZ = cl::sycl::select(1,0,(uint)(dir.z() >= 0.0f));
+      const unsigned int maskX = cselect((uint)(dir.x() >= 0.0f),0,1);
+      const unsigned int maskY = cselect((uint)(dir.y() >= 0.0f),0,1);
+      const unsigned int maskZ = cselect((uint)(dir.z() >= 0.0f),0,1);
 
-      const float3 new_dir(cl::sycl::select(1E-18f,(float)dir.x(),(int)(dir.x() != 0.0f)),
-				     cl::sycl::select(1E-18f,(float)dir.y(),(int)(dir.y() != 0.0f)),
-				     cl::sycl::select(1E-18f,(float)dir.z(),(int)(dir.z() != 0.0f)));
+      const float3 new_dir(cselect((int)(dir.x() != 0.0f),(float)dir.x(),1E-18f),
+			   cselect((int)(dir.y() != 0.0f),(float)dir.y(),1E-18f),
+			   cselect((int)(dir.z() != 0.0f),(float)dir.z(),1E-18f));
 
       //const float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z())); // FIXME
       
       const float3 inv_dir( cl::sycl::native::recip((float)new_dir.x()),
-				      cl::sycl::native::recip((float)new_dir.y()),
-				      cl::sycl::native::recip((float)new_dir.z()));
+			    cl::sycl::native::recip((float)new_dir.y()),
+			    cl::sycl::native::recip((float)new_dir.z()));
 
       //const float3 inv_dir_org = -inv_dir * org; // FIXME
 
@@ -256,12 +256,12 @@ namespace embree
 		      out << node << cl::sycl::endl;
 		    });
 
-	      const float lower_x = cl::sycl::select(_lower_x,_upper_x,maskX);
-	      const float upper_x = cl::sycl::select(_upper_x,_lower_x,maskX);
-	      const float lower_y = cl::sycl::select(_lower_y,_upper_y,maskY);
-	      const float upper_y = cl::sycl::select(_upper_y,_lower_y,maskY);
-	      const float lower_z = cl::sycl::select(_lower_z,_upper_z,maskZ);
-	      const float upper_z = cl::sycl::select(_upper_z,_lower_z,maskZ);
+	      const float lower_x = cselect(maskX,_upper_x,_lower_x);
+	      const float upper_x = cselect(maskX,_lower_x,_upper_x);
+	      const float lower_y = cselect(maskY,_upper_y,_lower_y);
+	      const float upper_y = cselect(maskY,_lower_y,_upper_y);
+	      const float lower_z = cselect(maskZ,_upper_z,_lower_z);
+	      const float upper_z = cselect(maskZ,_lower_z,_upper_z);	     
 	      
 	      const float lowerX = cl::sycl::fma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
 	      const float upperX = cl::sycl::fma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
