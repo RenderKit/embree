@@ -171,21 +171,21 @@ namespace embree
 	
 	const float4 minF = aabb.lower;
 	const float4 diff = aabb.size()*(1.0f+2.0f*FLT_MIN);
-	float4 decode_scale = diff / (float4)(QUANT_MAX);
+	float4 decode_scale = diff / (float4)((float)QUANT_MAX);
 	
 	decode_scale = float4(decode_scale.x() == 0.0f ? 2.0f*FLT_MIN : decode_scale.x(),
 			      decode_scale.y() == 0.0f ? 2.0f*FLT_MIN : decode_scale.y(),
 			      decode_scale.z() == 0.0f ? 2.0f*FLT_MIN : decode_scale.z(),
 			      0.0f);
 	  
-	float4 encode_scale = (float4)(QUANT_MAX) / diff;
-	encode_scale = float4(diff.x() > 0.0f ? diff.x() : 0.0f,
-			      diff.y() > 0.0f ? diff.y() : 0.0f,
-			      diff.z() > 0.0f ? diff.z() : 0.0f,
+	float4 encode_scale = (float4)((float)QUANT_MAX) / diff;
+	encode_scale = float4(diff.x() > 0.0f ? encode_scale.x() : 0.0f,
+			      diff.y() > 0.0f ? encode_scale.y() : 0.0f,
+			      diff.z() > 0.0f ? encode_scale.z() : 0.0f,
 			      0.0f);
 
-	if (subgroupLocalID == 0)
-	  out << aabb << " diff " << diff << " encode_scale " << encode_scale << cl::sycl::endl;
+	/* if (subgroupLocalID == 0) */
+	/*   out << aabb << " diff " << diff << " encode_scale " << encode_scale << cl::sycl::endl; */
 	
 	if (subgroupLocalID < BVH_NODE_N)
 	{
@@ -204,16 +204,11 @@ namespace embree
 	  /* lower/upper correction */
 	  int4 m_lower_correction = (cl::sycl::fma(ilower.convert<float,cl::sycl::rounding_mode::rtn>(),decode_scale,minF)) > lower;
 	  int4 m_upper_correction = (cl::sycl::fma(iupper.convert<float,cl::sycl::rounding_mode::rtp>(),decode_scale,minF)) < upper;
-
-	  //ilower = max((m_lower_correction ? ilower-1 : ilower),QUANT_MIN);
-	  //iupper = min((m_upper_correction ? iupper+1 : iupper),QUANT_MAX);
 	  
 	  ilower = max(cl::sycl::select(ilower,ilower-1,m_lower_correction),QUANT_MIN);
 	  iupper = min(cl::sycl::select(iupper,iupper+1,m_upper_correction),QUANT_MAX);	  
 
 	  /* disable invalid lanes */	  
-	  //ilower = m_valid ? ilower : (int4)QUANT_MAX;
-	  //iupper = m_valid ? iupper : (int4)QUANT_MIN;
 
 	  ilower = cl::sycl::select((int4)QUANT_MAX,ilower,m_valid);
 	  iupper = cl::sycl::select((int4)QUANT_MIN,iupper,m_valid);
@@ -231,9 +226,9 @@ namespace embree
 	  node.scale = decode_scale;	  
 	}
 
-	for (uint i=0;i<numChildren;i++)
-	  if (i == subgroupLocalID)
-	    out << childrenAABB[i] << " -> " << node.getBounds(i) << cl::sycl::endl;
+	/* for (uint i=0;i<numChildren;i++) */
+	/*   if (i == subgroupLocalID) */
+	/*     out << childrenAABB[i] << " -> " << node.getBounds(i) << cl::sycl::endl; */
 
       }
     };

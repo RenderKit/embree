@@ -442,8 +442,6 @@ namespace embree
 #if 1
       gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_mem + node_offset);
       gpu::QBVHNodeN::init(subgroup,node,childrenAABB,numChildren,out);
-      /* if (subgroupLocalID == 0) */
-      /* 	out << node << cl::sycl::endl; */
 #else      
       gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_mem + node_offset);
 
