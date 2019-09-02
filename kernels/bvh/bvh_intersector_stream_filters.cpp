@@ -607,7 +607,7 @@ namespace embree
 
     void RayStreamFilter::intersectAOS(Scene* scene, RTCRayHit* _rayN, size_t N, size_t stride, IntersectContext* context) {
       if (unlikely(context->traceOnGPU()))
-	{	  
+	{
 	  scene->intersectors.intersectN((RTCRayHitN**)_rayN, N, context);		    
 	}
       else if (unlikely(context->isCoherent()))

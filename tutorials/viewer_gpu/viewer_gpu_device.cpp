@@ -122,97 +122,7 @@ void renderTileStandard(int taskIndex,
 			const ISPCCamera& camera,
 			const int numTilesX,
 			const int numTilesY)
-{
-
-   const unsigned int tileY = taskIndex / numTilesX;
-  const unsigned int tileX = taskIndex - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  RayStats& stats = g_stats[threadIndex];
-
-  Ray rays[TILE_SIZE_X*TILE_SIZE_Y];
-
-  /* generate stream of primary rays */
-  int N = 0;
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    /* ISPC workaround for mask == 0 */
-    
-
-    RandomSampler sampler;
-    RandomSampler_init(sampler, x, y, 0);
-
-    /* initialize ray */
-    Ray& ray = rays[N++];
-    bool mask = 1; { // invalidates inactive rays
-      ray.tnear() = mask ? 0.0f         : (float)(pos_inf);
-      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
-    }
-    init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar, RandomSampler_get1D(sampler));
-
-    RayStats_addRay(stats);
-  }
-
-  /* trace stream of rays */  
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
-  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],N,sizeof(Ray));
-  
-#if 1
-  /* shade stream of rays */
-  N = 0;
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    /* ISPC workaround for mask == 0 */
-    
-    Ray& ray = rays[N++];
-
-    /* eyelight shading */
-    Vec3fa color = Vec3fa(0.0f);
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-#if SIMPLE_SHADING == 1
-    {
-#if OBJ_MATERIAL == 1
-      Vec3fa Kd = Vec3fa(0.5f);
-      DifferentialGeometry dg;
-      dg.geomID = ray.geomID;
-      dg.primID = ray.primID;
-      dg.u = ray.u;
-      dg.v = ray.v;
-      dg.P  = ray.org+ray.tfar*ray.dir;
-      dg.Ng = ray.Ng;
-      dg.Ns = ray.Ng;
-      int materialID = postIntersect(ray,dg);
-      dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-      dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
-      
-      /* shade */
-      if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
-        ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
-        Kd = Vec3fa(material->Kd);
-      }
-      
-      color = Kd*dot(neg(ray.dir),dg.Ns);
-#else
-      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-#endif
-    }
-#else
-      color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
-#endif
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-#endif  
- 
+{ 
 }
 
 /* task that renders a single screen tile */
@@ -280,6 +190,7 @@ extern "C" void device_init (char* cfg)
   
   /* init embree GPU device */
   g_device = rtcNewDeviceGPU(cfg,gpu_device,gpu_queue);
+  //g_device = rtcNewDevice(cfg);
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
@@ -298,8 +209,7 @@ extern "C" void device_render (int* pixels,
   if (!g_scene) {
     g_scene = convertScene(g_ispc_scene);
     rtcCommitScene (g_scene);
-  }
-
+  }  
 #if defined(EMBREE_DPCPP_SUPPORT)
   
   /* allocate stream of rays in USM */  
@@ -328,7 +238,6 @@ extern "C" void device_render (int* pixels,
   rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],numRays,sizeof(Ray));
 
   /* shade stream of rays */
-
   parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
       for (size_t y=rangeY.begin(); y<rangeY.end(); y++)
 	{	   
@@ -379,7 +288,6 @@ extern "C" void device_render (int* pixels,
 	    }
 	}      
     });
-  
 
   /* free stream of rays USM memory */  
   cl::sycl::free(rays,gpu_queue->get_context());

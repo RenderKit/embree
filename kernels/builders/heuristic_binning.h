@@ -356,11 +356,6 @@ namespace embree
 	vfloat4 rAreas[BINS];
 	vuint4 rCounts[BINS];
 	vuint4 count = 0; BBox bx = empty; BBox by = empty; BBox bz = empty;
-
-	for (size_t i=0;i<mapping.size();i++)
-        {
-	  std::cout << i << " " << bounds(i,0) << std::endl;
-	}
 	
 	for (size_t i=mapping.size()-1; i>0; i--)
         {

@@ -270,13 +270,10 @@ namespace embree
 	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
 	      t = valid ? t : max_uint;                     // invalid slots set to MIN_INT, as we sort descending;	
 
-	      // for (uint i=0;i<subgroupSize;i++)
-	      //  	if (i == subgroupLocalID)
-	      //  	  out << "i " << i << " t " << t << " offset "<< offset << cl::sycl::endl;
 	      
 	      for (uint i=0;i<popc-1;i++)
 		{
-		  const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+		  const int t_max = sg.reduce<float,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 		  t = (t == t_max) ? max_uint : t;
 		  const uint index = t_max & (~mask_uint);
 		  stack_offset[sindex] = sg.broadcast<uint> (offset,index);
@@ -288,7 +285,7 @@ namespace embree
 		  stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
 		  sindex++;
 		}
-	      const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+	      const int t_max = sg.reduce<float,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 
 	      // if (0 == subgroupLocalID)
@@ -314,10 +311,15 @@ namespace embree
 	  hit_tfar = intersectQuad1(quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);
     
 	  //const float old_tfar = tfar;
-	  tfar = sg.reduce<int,cl::sycl::intel::minimum>(hit_tfar);
+	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);
 	  
 	}
 
+      for (uint i=0;i<subgroupSize;i++)
+       	if (i == subgroupLocalID)
+       	  out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
+
+	  
       const uint index = ctz(intel_sub_group_ballot(tfar == hit_tfar));
       if (subgroupLocalID == index)
 	if (local_hit.primID != -1)
@@ -325,6 +327,9 @@ namespace embree
 	    DBG(out << "local_hit " << local_hit << cl::sycl::endl);
 	    rayhit.hit = local_hit;
 	    rayhit.ray.tfar = tfar;
+
+	    out << "rayhit.hit " << rayhit.hit << cl::sycl::endl;
+
 	  }
       
     }
@@ -357,7 +362,7 @@ namespace embree
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 
-      for (size_t i=0;i<16;i++)
+      for (size_t i=1;i<2;i++)
 	{
       cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -377,6 +382,7 @@ namespace embree
       }
 	}
 
+      exit(0);
 #endif      
     }
 
