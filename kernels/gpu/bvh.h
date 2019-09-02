@@ -142,11 +142,24 @@ namespace embree
       /* uchar upper_y[BVH_NODE_N]; */
       /* uchar lower_z[BVH_NODE_N]; */
       /* uchar upper_z[BVH_NODE_N]; */
+
+      inline AABB getBounds(const uint i)
+      {
+	const uchar4 ilower(bounds_xy[i].lower_x,bounds_xy[i].lower_y,bounds_z[i].lower_z,0);
+	const uchar4 iupper(bounds_xy[i].upper_x,bounds_xy[i].upper_y,bounds_z[i].upper_z,0);	      
+	const float4 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
+	const float4 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();	
+	AABB aabb;
+	aabb.lower = cl::sycl::fma(lowerf,scale,org);
+	aabb.upper = cl::sycl::fma(upperf,scale,org);
+	return aabb;
+      }
       
       inline static void init(cl::sycl::intel::sub_group &sg,
 			      QBVHNodeN &node,			      
 			      AABB *childrenAABB,
-			      uint numChildren)
+			      uint numChildren,
+			      const cl::sycl::stream &out)
       {
 	AABB child;
 	const uint subgroupLocalID = sg.get_local_id()[0];
@@ -155,8 +168,8 @@ namespace embree
 	else
 	  child.init();
 	AABB aabb = child.sub_group_reduce(sg);
+	
 	const float4 minF = aabb.lower;
-	const float4 maxF = aabb.upper;      
 	const float4 diff = aabb.size()*(1.0f+2.0f*FLT_MIN);
 	float4 decode_scale = diff / (float4)(QUANT_MAX);
 	
@@ -170,6 +183,9 @@ namespace embree
 			      diff.y() > 0.0f ? diff.y() : 0.0f,
 			      diff.z() > 0.0f ? diff.z() : 0.0f,
 			      0.0f);
+
+	if (subgroupLocalID == 0)
+	  out << aabb << " diff " << diff << " encode_scale " << encode_scale << cl::sycl::endl;
 	
 	if (subgroupLocalID < BVH_NODE_N)
 	{
@@ -201,34 +217,43 @@ namespace embree
 
 	  ilower = cl::sycl::select((int4)QUANT_MAX,ilower,m_valid);
 	  iupper = cl::sycl::select((int4)QUANT_MIN,iupper,m_valid);
-	  uchar4 clower = ilower.convert<cl::sycl::uchar,cl::sycl::rounding_mode::rtz>();
-	  uchar4 cupper = iupper.convert<cl::sycl::uchar,cl::sycl::rounding_mode::rtz>();
+	  uchar4 clower = ilower.convert<cl::sycl::uchar,cl::sycl::rounding_mode::rtn>();
+	  uchar4 cupper = iupper.convert<cl::sycl::uchar,cl::sycl::rounding_mode::rtp>();
 	  
 	  node.offset[subgroupLocalID] = -1;
-	  node.bounds_xy[subgroupLocalID].lower_x = clower.x();
-	  node.bounds_xy[subgroupLocalID].lower_y = clower.y();
-	  node.bounds_z [subgroupLocalID].lower_z = clower.z();
-	  node.bounds_xy[subgroupLocalID].upper_x = cupper.x();
-	  node.bounds_xy[subgroupLocalID].upper_y = cupper.y();
-	  node.bounds_z [subgroupLocalID].upper_z = cupper.z();	  
+	  node.bounds_xy[subgroupLocalID].lower_x = ilower.x();
+	  node.bounds_xy[subgroupLocalID].lower_y = ilower.y();
+	  node.bounds_z [subgroupLocalID].lower_z = ilower.z();
+	  node.bounds_xy[subgroupLocalID].upper_x = iupper.x();
+	  node.bounds_xy[subgroupLocalID].upper_y = iupper.y();
+	  node.bounds_z [subgroupLocalID].upper_z = iupper.z();	  
 	  node.org   = minF;
 	  node.scale = decode_scale;	  
 	}
+
+	for (uint i=0;i<numChildren;i++)
+	  if (i == subgroupLocalID)
+	    out << childrenAABB[i] << " -> " << node.getBounds(i) << cl::sycl::endl;
+
       }
     };
 
     
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeN& node) {
+      out << " org "     << node.org
+	  << " scale "   << node.scale
+	  << cl::sycl::endl;
+      
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
-	  out << " i " << i
-	      << " offset  " << node.offset[i]
+	  out << " offset  " << node.offset[i]
 	      << " lower_x " << (int)node.bounds_xy[i].lower_x
 	      << " upper_x " << (int)node.bounds_xy[i].upper_x
 	      << " lower_y " << (int)node.bounds_xy[i].lower_y
 	      << " upper_y " << (int)node.bounds_xy[i].upper_y
 	      << " lower_z " << (int)node.bounds_z[i] .lower_z
-	      << " upper_z " << (int)node.bounds_z[i] .upper_z;
+	      << " upper_z " << (int)node.bounds_z[i] .upper_z
+	      << cl::sycl::endl;
 	}      
       return out; 
     }

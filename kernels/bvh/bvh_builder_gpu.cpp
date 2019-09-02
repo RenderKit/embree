@@ -329,15 +329,14 @@ namespace embree
 	    const uint sortID = gpu::as_uint(_sortID);
 	    const uint numPrimsIDs = cl::sycl::select((uint)0,(sortID << BVH_NODE_N_LOG) | subgroupLocalID, (int)(subgroupLocalID < numChildren));
 	    const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
-	    
+
+	    /* create bvh node */
 	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
 
 	    /* set parent pointer in child build records */
 	    struct gpu::BVHNodeN *node = (struct gpu::BVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
-	      {
 		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
-	      }
 
 	    /* update parent pointer */
 	    *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);

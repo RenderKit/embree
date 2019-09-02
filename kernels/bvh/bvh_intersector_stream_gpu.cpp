@@ -81,8 +81,10 @@ namespace embree
 				const unsigned int slotID,
 				const cl::sycl::stream &out)
     {
-      const uint subgroupLocalID = sg.get_local_id()[0];
-      const uint subgroupSize    = sg.get_local_range().size();
+      DBG(
+	  const uint subgroupLocalID = sg.get_local_id()[0];
+	  const uint subgroupSize    = sg.get_local_range().size();
+	  );
       
       float new_tfar = tfar;
       const uint quadID = slotID >> 1;  
@@ -161,7 +163,7 @@ namespace embree
       local_hit.init();
 
       const uint subgroupLocalID = sg.get_local_id()[0];
-      const uint subgroupSize    = sg.get_local_range().size();
+      //const uint subgroupSize    = sg.get_local_range().size();
 
       const float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
       const float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
@@ -222,22 +224,37 @@ namespace embree
 
 	  while((cur & BVH_LEAF_MASK) == 0) 
 	    {
-	      const gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_base + cur);
-
-	      DBG(
-		  if (0 == subgroupLocalID)
-		    {
-		      out << "bvh_base " << (void*)bvh_base;
-		      out << node << cl::sycl::endl;
-		    });
-	      
+#if 1
+	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
+	      const float3 org      = node.org.xyz();
+	      const float3 scale    = node.scale.xyz();
+	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
+	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);	      
+	      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
+	      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
+	      const float3 _lower  = fma(lowerf,scale,org);
+	      const float3 _upper  = fma(upperf,scale,org);
+	      const float _lower_x = _lower.x();
+	      const float _upper_x = _upper.x();
+	      const float _lower_y = _lower.y();
+	      const float _upper_y = _upper.y();
+	      const float _lower_z = _lower.z();
+	      const float _upper_z = _upper.z();
+#else	      
+	      const gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_base + cur);	      
 	      const float _lower_x = node.lower_x[subgroupLocalID];
 	      const float _lower_y = node.lower_y[subgroupLocalID];
 	      const float _lower_z = node.lower_z[subgroupLocalID];
 	      const float _upper_x = node.upper_x[subgroupLocalID];
 	      const float _upper_y = node.upper_y[subgroupLocalID];
 	      const float _upper_z = node.upper_z[subgroupLocalID];
-	      uint  offset   = node.offset[subgroupLocalID];
+#endif
+	      uint  offset   = node.offset[subgroupLocalID];	      
+	      DBG(
+		  if (0 == subgroupLocalID)
+		    {
+		      out << node << cl::sycl::endl;
+		    });
 
 	      const float lower_x = cl::sycl::select(_lower_x,_upper_x,maskX);
 	      const float upper_x = cl::sycl::select(_upper_x,_lower_x,maskX);
