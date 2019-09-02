@@ -29,7 +29,7 @@ extern int ctz(int t);
 #endif
 
 #define STACK_ENTRIES 64
-#define DBG(x) x
+#define DBG(x) 
 
 #if defined(ENABLE_RAY_STATS)
 #define RAY_STATS(x) x
@@ -129,9 +129,11 @@ namespace embree
 	  m_hit &= (tnear <= t) && (t < tfar); // den != 0.0f &&
 	  //printf("m_hit %d u %f v %f \n",m_hit,u,v);
 
-	  for (uint i=0;i<subgroupSize;i++)
-	     if (i == subgroupLocalID)
-	       out << "i " << i << " t " << t << cl::sycl::endl;
+	  DBG(
+	      for (uint i=0;i<subgroupSize;i++)
+		if (i == subgroupLocalID)
+		  out << "i " << i << " t " << t << " m_hit " << m_hit << cl::sycl::endl;
+	      );
 	  
 	  if (m_hit) 
 	    {
@@ -256,6 +258,12 @@ namespace embree
 	      const uint valid = islessequal(fnear,ffar);	  // final valid mask
 	      uint mask = intel_sub_group_ballot(valid);  
 
+	      DBG(
+		  for (uint i=0;i<subgroupSize;i++)
+		    if (i == subgroupLocalID)
+		      out << "i " << i << " offset " << offset << " valid " << valid << " fnear " << fnear << " ffar " << ffar << cl::sycl::endl;
+		  );
+
 	      
 	      if (mask == 0)
 		{
@@ -283,19 +291,21 @@ namespace embree
 	      
 	      for (uint i=0;i<popc-1;i++)
 		{
-		  const int t_max = sg.reduce<float,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+		  const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 		  t = (t == t_max) ? max_uint : t;
 		  const uint index = t_max & (~mask_uint);
 		  stack_offset[sindex] = sg.broadcast<uint> (offset,index);
-		  // if (0 == subgroupLocalID)
-		  //   {
-		  //     out << "t " << t << " t_max " << t_max << " index " << index << " stack_offset[sindex] " << stack_offset[sindex] << cl::sycl::endl;
-		  //   }
+
+		  DBG(
+		      if (0 == subgroupLocalID)
+			{
+			  out << "t " << t << " t_max " << t_max << " index " << index << " stack_offset[sindex] " << stack_offset[sindex] << cl::sycl::endl;
+			});
 
 		  stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
 		  sindex++;
 		}
-	      const int t_max = sg.reduce<float,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+	      const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 
 	      // if (0 == subgroupLocalID)
@@ -329,21 +339,20 @@ namespace embree
 	  
 	}
 
-      for (uint i=0;i<subgroupSize;i++)
-       	if (i == subgroupLocalID)
-       	  out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
+      DBG(
+	  for (uint i=0;i<subgroupSize;i++)
+	    if (i == subgroupLocalID)
+	      out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
+	  );
 
 	  
       const uint index = ctz(intel_sub_group_ballot(tfar == hit_tfar));
       if (subgroupLocalID == index)
 	if (local_hit.primID != -1)
 	  {	 
-	    DBG(out << "local_hit " << local_hit << cl::sycl::endl);
 	    rayhit.hit = local_hit;
 	    rayhit.ray.tfar = tfar;
-
-	    out << "rayhit.hit " << rayhit.hit << cl::sycl::endl;
-
+	    DBG(out << "rayhit.ray.tfar " << rayhit.ray.tfar << " rayhit.hit " << rayhit.hit << cl::sycl::endl);
 	  }
       
     }
@@ -367,18 +376,14 @@ namespace embree
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
       void *bvh_mem = (void*)(size_t)(bvh->root);
       
-      //for (size_t i=0;i<10;i++)
-      // std::cout << i << " " << inputRays[i] << std::endl;
-
-      PRINT(sizeof(gpu::RTCRayHitGPU));
-      PRINT(sizeof(RTCRayHit));
+      assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );
       
-      numRays = 1;
+      //numRays = 16;
       
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 
-      for (size_t i=1;i<2;i++)
+      //for (size_t i=0;i<16;i++)
 	{
       cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -387,7 +392,7 @@ namespace embree
 	  cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 	      const uint groupID   = item.get_group(0);
 	      cl::sycl::intel::sub_group sg = item.get_sub_group();	      
-	      traceRayBVH16(sg,inputRays[i /*groupID*/],bvh_mem,out);	      
+	      traceRayBVH16(sg,inputRays[groupID],bvh_mem,out);	      
 	    });		  
 	});
       try {
@@ -398,7 +403,7 @@ namespace embree
       }
 	}
 
-      exit(0);
+	//exit(0);
 #endif      
     }
 
